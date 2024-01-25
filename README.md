@@ -96,8 +96,7 @@ In the comic-translate directory, run
 python comic.py
 ```
 This will launch the GUI
-
-![Model](https://i.imgur.com/Z9CURJ6.mp4)
+https://github.com/ogkalu2/comic-translate/assets/115248977/14caf9e7-3e22-4bbe-a3e9-d12d0a42e5c3
 
 ### Tips
 * Import > Images to select a Single or multiple Images. If you have a CBR file, you'll need to install Winrar or 7-Zip then add the folder it's installed to (e.g "C:\Program Files\WinRAR" for Windows) to Path. If it's installed but not to Path, you may get the error, 
