@@ -1,5 +1,5 @@
 # Comic Translate
-English | [Korean](docs/README_ko.md)
+English | [한국어](docs/README_ko.md)
 ## Intro
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
 This project was created to utilize the ability of GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian.
