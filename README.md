@@ -1,6 +1,8 @@
 # Comic Translate
 English | [한국어](docs/README_ko.md)
 
+https://github.com/ogkalu2/comic-translate/assets/115248977/b57360d3-eaad-4a93-bc46-94c01d38927c
+
 ## Intro
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
 This project was created to utilize the ability of GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian.
@@ -97,12 +99,6 @@ In the comic-translate directory, run
 python comic.py
 ```
 This will launch the GUI
-
-
-
-https://github.com/ogkalu2/comic-translate/assets/115248977/ff8e5716-7da2-47da-8008-21324ca68ca8
-
-
 
 ### Tips
 * Import > Images to select a Single or multiple Images. If you have a CBR file, you'll need to install Winrar or 7-Zip then add the folder it's installed to (e.g "C:\Program Files\WinRAR" for Windows) to Path. If it's installed but not to Path, you may get the error, 
