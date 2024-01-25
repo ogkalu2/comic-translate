@@ -90,7 +90,7 @@ python comic.py
 ```
 이렇게 하면 GUI가 실행됩니다.
 
-![모델](https://i.imgur.com/Z9CURJ6.mp4)
+https://github.com/ogkalu2/comic-translate/assets/115248977/5d335d98-5c8b-4a52-bd20-7c5583c04ad5
 
 ### 팁
 * Import > 이미지를 선택하면 단일 이미지나 여러 이미지를 선택할 수 있습니다. CBR 파일이 있다면, Winrar나 7-Zip을 설치하고 설치된 폴더(e.g "C:\Program Files\WinRAR" for Windows)를 Path에 추가해야 합니다. 설치는 했지만 Path에 추가하지 않으면, 다음과 같은 에러가 발생할 수 있습니다.
