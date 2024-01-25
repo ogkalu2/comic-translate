@@ -1,4 +1,7 @@
 # 만화 번역
+
+https://github.com/ogkalu2/comic-translate/assets/115248977/afb01782-71a7-4bb7-9869-4f45da5a7bb5
+
 ## 소개
 자동 만화 번역기가 많이 있습니다. 하지만 다른 언어로 된 여러 종류의 코믹스를 제대로 지원하는 번역기는 많지 않습니다.
 이 프로젝트는 전 세계의 코믹스를 번역하기 위해 GPT-4의 능력을 활용하여 만들어졌습니다. 현재 영어, 한국어, 일본어, 프랑스어, 간체 중국어, 번체 중국어, 러시아어, 독일어, 네덜란드어, 스페인어 및 이탈리아어로 번역을 지원합니다.
@@ -89,8 +92,6 @@ comic-translate 디렉토리에서 다음을 실행합니다.
 python comic.py
 ```
 이렇게 하면 GUI가 실행됩니다.
-
-https://github.com/ogkalu2/comic-translate/assets/115248977/5d335d98-5c8b-4a52-bd20-7c5583c04ad5
 
 ### 팁
 * Import > 이미지를 선택하면 단일 이미지나 여러 이미지를 선택할 수 있습니다. CBR 파일이 있다면, Winrar나 7-Zip을 설치하고 설치된 폴더(e.g "C:\Program Files\WinRAR" for Windows)를 Path에 추가해야 합니다. 설치는 했지만 Path에 추가하지 않으면, 다음과 같은 에러가 발생할 수 있습니다.
