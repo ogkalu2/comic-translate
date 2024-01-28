@@ -82,7 +82,10 @@ def does_rectangle_fit(bigger_rect, smaller_rect):
 def combine_results(bubble_detec_results: YOLO, text_seg_results: YOLO):
     bubble_bounding_boxes = np.array(bubble_detec_results.boxes.xyxy.cpu(), dtype="int")
     text_bounding_boxes = np.array(text_seg_results.boxes.xyxy.cpu(), dtype="int")
-    segment_points = list(map(lambda a: a.astype("int"), text_seg_results.masks.xy))
+
+    segment_points = None
+    if text_seg_results.masks is not None:
+        segment_points = list(map(lambda a: a.astype("int"), text_seg_results.masks.xy))
 
     raw_results = []
     text_matched = [False] * len(text_bounding_boxes)
