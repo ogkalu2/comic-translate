@@ -83,23 +83,24 @@ def combine_results(bubble_detec_results: YOLO, text_seg_results: YOLO):
     bubble_bounding_boxes = np.array(bubble_detec_results.boxes.xyxy.cpu(), dtype="int")
     text_bounding_boxes = np.array(text_seg_results.boxes.xyxy.cpu(), dtype="int")
 
-    segment_points = None
+    segment_points = []
     if text_seg_results.masks is not None:
         segment_points = list(map(lambda a: a.astype("int"), text_seg_results.masks.xy))
 
     raw_results = []
     text_matched = [False] * len(text_bounding_boxes)
     
-    for txt_idx, txt_box in enumerate(text_bounding_boxes):
-        for bble_box in bubble_bounding_boxes:
-            if does_rectangle_fit(bble_box, txt_box):
-                raw_results.append((txt_box, bble_box, segment_points[txt_idx], 'text_bubble'))
-                text_matched[txt_idx] = True
-                break
-            elif do_rectangles_overlap(bble_box, txt_box):
-                raw_results.append((txt_box, bble_box, segment_points[txt_idx], 'text_free'))
-                text_matched[txt_idx] = True
-                break
+    if segment_points:
+        for txt_idx, txt_box in enumerate(text_bounding_boxes):
+            for bble_box in bubble_bounding_boxes:
+                if does_rectangle_fit(bble_box, txt_box):
+                    raw_results.append((txt_box, bble_box, segment_points[txt_idx], 'text_bubble'))
+                    text_matched[txt_idx] = True
+                    break
+                elif do_rectangles_overlap(bble_box, txt_box):
+                    raw_results.append((txt_box, bble_box, segment_points[txt_idx], 'text_free'))
+                    text_matched[txt_idx] = True
+                    break
         
         # if not text_matched[txt_idx]:
         #     raw_results.append((txt_box, None, segment_points[txt_idx], 'text_free'))
