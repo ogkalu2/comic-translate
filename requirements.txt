@@ -3,7 +3,7 @@ requests==2.31.0
 opencv_python
 matplotlib==3.8.2
 torch==2.1.2
-torchvision==0.16.2
+torchvision==0.16.0
 openai==1.8.0
 py7zr==0.20.8
 rarfile==4.1
