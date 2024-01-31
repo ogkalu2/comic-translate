@@ -1,4 +1,4 @@
-dearpygui==1.10.1
+dearpygui
 requests==2.31.0
 opencv_python
 matplotlib==3.8.2

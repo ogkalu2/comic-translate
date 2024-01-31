@@ -234,7 +234,9 @@ def process(SM: AppStateManager):
             blk_list = sort_regions(blk_list)
 
         # OCR
-        if microsoft_ocr:
+        if en_source_lang == 'Chinese' and (not microsoft_ocr and not google_ocr):
+            ocr_blk_list_paddle(img, blk_list)
+        elif microsoft_ocr:
             ocr_blk_list_microsoft(img, blk_list, api_key=microsoft_api_key, endpoint=microsoft_endpoint_url)
         elif google_ocr:
             ocr_blk_list_google(img, blk_list, google_api_key)

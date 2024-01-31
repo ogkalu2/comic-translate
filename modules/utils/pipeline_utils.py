@@ -222,6 +222,22 @@ def ocr_blk_list_google(img: np.ndarray, blk_list: List[TextBlock], api_key:str)
     
     return blk_list
 
+def ocr_blk_list_paddle(img, blk_list):
+    from paddleocr import PaddleOCR
+    
+    ch_ocr = PaddleOCR(lang='ch')
+    result = ch_ocr.ocr(img)
+    result = result[0]
+
+    texts_bboxes = [tuple(coord for point in bbox for coord in point) for bbox, _ in result] if result else []
+    condensed_texts_bboxes = [(x1, y1, x2, y2) for (x1, y1, x2, y1_, x2_, y2, x1_, y2_) in texts_bboxes]
+
+    texts_string = [line[1][0] for line in result] if result else []
+
+    blk_list = lists_to_blk_list(blk_list, condensed_texts_bboxes, texts_string)
+    
+    return blk_list
+
 def ensure_within_bounds(coords, im_width, im_height, width_expansion_percentage: int, height_expansion_percentage: int):
     x1, y1, x2, y2 = coords
 
@@ -288,15 +304,6 @@ def ocr_blk_list(img: np.ndarray, blk_list: List[TextBlock], source_language: st
                 descriptions = result['description']
                 all_descriptions = ' '.join(descriptions)
                 blk.text = all_descriptions     
-
-            elif source_language == 'Chinese':
-                from paddleocr import PaddleOCR
-    
-                ch_ocr = PaddleOCR(lang='ch')
-                result = ch_ocr.ocr(img)
-                result = result[0]
-                texts_string = [line[1][0] for line in result] if result else []  
-                blk.text = ' '.join(texts_string)
 
         else:
             print('Invalid textbbox to target img')
