@@ -52,8 +52,8 @@ def start_process(SM: AppStateManager):
 
 def error_handler(exception):
     end_process_callback()
-    print(f"An Error occurred: {exception}")
-    messagebox.showerror('Error', exception)
+    print(f"An Error occurred: {exception}.\n\nLast progress at {dpg.get_value('progress_bar_text')}")
+    messagebox.showerror('Error', f"{exception}.\n\nLast progress at {dpg.get_value('progress_bar_text')}")
 
 def end_process_callback():
     dpg.hide_item("progress_bar_text")
