@@ -1,5 +1,5 @@
 # Comic Translate
-English | [한국어](docs/README_ko.md)
+English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) 
 
 https://github.com/ogkalu2/comic-translate/assets/115248977/b57360d3-eaad-4a93-bc46-94c01d38927c
 
