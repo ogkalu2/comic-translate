@@ -93,6 +93,14 @@ and install the requirements
 pip install -r requirements.txt
 ```
 
+If you have an NVIDIA GPU, then it is recommended to run
+```bash
+pip uninstall torch torchvision
+pip install torch==2.1.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+pip install torchvision==0.16.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+```
+Note: The 121 in +cu121 represents the CUDA version - 12.1. Replace 121 with your CUDA version. E.g 118 if you are running CUDA 11.8
+
 ## Usage
 In the comic-translate directory, run
 ```bash
