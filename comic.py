@@ -1,12 +1,12 @@
 import dearpygui.dearpygui as dpg
 import os
-from modules.utils.download import get_models, models_data
+from modules.utils.download import get_models, mandatory_models
 from app.callbacks import *
 from app.state_manager import AppStateManager, get_key, open_lang_file
 from pipeline import start_process, stop_process
 
-for data in models_data:
-    get_models(data)
+for model in mandatory_models:
+    get_models(model)
 
 supported_source_languages = ["Korean", "Japanese", "French", "Chinese", "English", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_target_languages = ["English", "Korean", "Japanese", "French", "Simplified Chinese", "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", "Italian"]
@@ -83,7 +83,7 @@ with dpg.window(width=420, height=560, tag="primary_window"):
             with dpg.menu(label= "Import", tag = "import_menu_title"):
                 with dpg.menu(label= "Comic", tag = "import_comic_menu_title"):
                     dpg.add_menu_item(label="Images", callback=lambda: import_images(state_manager), tag = "images_menu_item_title")
-                    dpg.add_menu_item(label="CBR/CBZ/CB7/CBT", callback=lambda: import_cbr_et_el(state_manager), tag = "cbr_cbz_menu_item_title")
+                    dpg.add_menu_item(label="CBR/CBZ/CB7/CBT", callback=lambda: import_cbr_et_al(state_manager), tag = "cbr_cbz_menu_item_title")
                     dpg.add_menu_item(label="Pdf/Epub", callback=lambda: import_ebook(state_manager), tag = "ebook_menu_item_title")
                 dpg.add_menu_item(label="Font", callback=import_font, user_data="font_dropdown", tag = "import_font_menu_item_title")
             

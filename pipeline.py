@@ -1,4 +1,5 @@
 import dearpygui.dearpygui as dpg
+import sys
 from ultralytics import YOLO
 import os, string, shutil
 import cv2
@@ -17,8 +18,8 @@ from app.localizations.progress_mappings import progress_mappings
 from modules.utils.detection import combine_results, make_bubble_mask, bubble_interior_bounds
 from modules.rendering.render import draw_text
 from app.state_manager import AppStateManager, open_lang_file, all_loc_mappings
+from app.callbacks import show_error_mac
 from modules.utils.pipeline_utils import *
-from tkinter import messagebox
 
 
 class ProcessThread(Thread):
@@ -53,7 +54,13 @@ def start_process(SM: AppStateManager):
 def error_handler(exception):
     end_process_callback()
     print(f"An Error occurred: {exception}.\n\nLast progress at {dpg.get_value('progress_bar_text')}")
-    messagebox.showerror('Error', f"{exception}.\n\nLast progress at {dpg.get_value('progress_bar_text')}")
+
+    oper_system = sys.platform
+    if oper_system == 'darwin':
+        show_error_mac(exception)
+    else:
+        from tkinter import messagebox
+        messagebox.showerror('Error', f"{exception}.\n\nLast progress at {dpg.get_value('progress_bar_text')}")
 
 def end_process_callback():
     dpg.hide_item("progress_bar_text")
