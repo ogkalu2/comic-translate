@@ -18,6 +18,7 @@ from ..ocr.pororo.main import PororoOcr
 from typing import List, Tuple
 from .textblock import TextBlock
 from .detection import does_rectangle_fit, do_rectangles_overlap
+from .download import get_models, manga_ocr_data, pororo_data
 
 manga_ocr_path = 'models/ocr/manga-ocr-base'
 
@@ -283,6 +284,7 @@ def ocr_blk_list(img: np.ndarray, blk_list: List[TextBlock], source_language: st
         # Check if the coordinates are valid and the bounding box does not extend outside the image
         if x1 < x2 and y1 < y2:
             if source_language == 'Japanese':
+                get_models(manga_ocr_data)
                 manga_ocr = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
                 blk.text = manga_ocr(img[y1:y2, x1:x2])
 
@@ -298,6 +300,7 @@ def ocr_blk_list(img: np.ndarray, blk_list: List[TextBlock], source_language: st
                 blk.text = text
             
             elif source_language == 'Korean':
+                get_models(pororo_data)
                 kor_ocr = PororoOcr()
                 kor_ocr.run_ocr(img[y1:y2, x1:x2])
                 result = kor_ocr.get_ocr_result()

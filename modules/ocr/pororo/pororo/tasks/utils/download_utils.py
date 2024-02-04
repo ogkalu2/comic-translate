@@ -2,7 +2,7 @@
 
 import logging
 import os
-import platform
+#import platform
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -53,16 +53,18 @@ def get_save_dir(save_dir: str = None) -> str:
         os.makedirs(save_dir, exist_ok=True)
         return save_dir
 
-    pf = platform.system()
+    #pf = platform.system()
 
-    if pf == "Windows":
-        save_dir = "C:\\pororo"
-    else:
-        home_dir = os.path.expanduser("~")
-        save_dir = os.path.join(home_dir, ".pororo")
+    # if pf == "Windows":
+    #     save_dir = "C:\\pororo"
+    # else:
+    #     home_dir = os.path.expanduser("~")
+    #     save_dir = os.path.join(home_dir, ".pororo")
+
+    save_dir = "models/ocr/pororo"
 
     if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+        os.makedirs(save_dir, exist_ok=True)
 
     return save_dir
 

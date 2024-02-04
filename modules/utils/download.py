@@ -104,4 +104,17 @@ comic_bubble_detector_data = {
     'save_dir': 'models/detection'  
 }
 
-models_data = [manga_ocr_data, comic_text_segmenter_data, inpaint_lama_finetuned_data, comic_bubble_detector_data]
+pororo_data = {
+    'url': 'https://twg.kakaocdn.net/pororo/ko/models/misc/',
+    'files': [
+        'craft.pt', 'brainocr.pt', 'ocr-opt.txt'
+    ],
+    'sha256_pre_calculated': [
+        '4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17',
+        '125820ba8ae4fa5d9fd8b8a2d4d4a7afe96a70c32b1aa01d4129001a6f61baec',
+        'dd471474e91d78e54b179333439fea58158ad1a605df010ea0936dcf4387a8c2'
+    ],
+    'save_dir': 'models/ocr/pororo'  
+}
+
+mandatory_models = [comic_text_segmenter_data, inpaint_lama_finetuned_data, comic_bubble_detector_data]

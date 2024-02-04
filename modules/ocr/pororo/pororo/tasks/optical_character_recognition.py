@@ -85,15 +85,15 @@ class PororoOcrFactory(PororoFactoryBase):
                 )
 
             det_model_path = download_or_load(
-                f"misc/{self.detect_model}.pt",
+                f"{self.detect_model}.pt",
                 self.config.lang,
             )
             rec_model_path = download_or_load(
-                f"misc/{self.config.n_model}.pt",
+                f"{self.config.n_model}.pt",
                 self.config.lang,
             )
             opt_fp = download_or_load(
-                f"misc/{self.ocr_opt}.txt",
+                f"{self.ocr_opt}.txt",
                 self.config.lang,
             )
             model = brainocr.Reader(
