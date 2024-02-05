@@ -65,7 +65,6 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
             set fpath to POSIX path of (choose file default location apath ¬
                          of type fileTypes without invisibles, multiple selections allowed allowMultiple and ¬
                          showing package contents)
-            set fpath to POSIX path of fpath
         else if action contains "Save" then
             set fpath to POSIX path of (choose file name default location apath)
         end if
