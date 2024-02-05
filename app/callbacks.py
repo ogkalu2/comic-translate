@@ -32,28 +32,62 @@ def show_error_mac(exception):
     '''
     subprocess.run(["osascript", "-e", applescript_command], check=True)
 
-def open_file_dialog_mac(filetypes, multiple=True):
-    filetypes = filetypes[0]
-    # Extract the file types/extensions
-    _, extensions = filetypes
-    # Convert the space-separated extensions to a list, then to AppleScript's format
-    filetypes_list = extensions.split()
-    # Convert each extension to AppleScript's UTI format
-    filetypes_str = " ".join([f"\"{ft}\"" for ft in filetypes_list])
-    # Construct the AppleScript command
-    multiple_str = 'with multiple selections allowed' if multiple else ''
-    script = f"""
-    set theFiles to (choose file of type {{{filetypes_str}}} {multiple_str} without invisibles)
-    set fileList to ""
-    repeat with aFile in theFiles
-        set fileList to fileList & (POSIX path of aFile) & "\\n"
-    end repeat
-    return fileList
-    """
-    # Execute the AppleScript
-    proc = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
-    # Process and return the output
-    return proc.stdout.strip().split('\n') if proc.stdout else []
+
+default_mac_dialog_path = os.path.expanduser('~/Desktop')
+def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=default_mac_dialog_path):
+    # Extract extensions from the file_types
+    file_types = file_types[0]
+    _, extensions = file_types
+    # Split the extensions string and remove the asterisks
+    extensions_list = extensions.replace("*.", "").split()
+    # Format the extensions for AppleScript
+    file_types_str = "{" + ", ".join('"' + ext + '"' for ext in extensions_list) + "}"
+    multiple_selections = "true" if multiple else "false"
+    
+    ascript = f'''
+    -- apath - default path for dialogs to open to
+    -- cmd   - "Select", "Save"
+    -- fileTypes - list of allowed file extensions
+    -- allowMultiple - boolean to allow multiple file selections
+    on run argv
+        set userCanceled to false
+        if (count of argv) < 3 then
+            tell application "System Events" to display dialog "Not enough arguments" ¬
+                giving up after 10
+        else
+            set apath to POSIX file (item 1 of argv) as alias
+            set action to (item 2 of argv) as text
+            set fileTypes to {file_types_str}
+            set allowMultiple to {multiple_selections}
+        end if
+        try
+        if action contains "Select" then
+            set fpath to POSIX path of (choose file default location apath ¬
+                         of type fileTypes without invisibles, multiple selections allowed allowMultiple and ¬
+                         showing package contents)
+            set fpath to POSIX path of fpath
+        else if action contains "Save" then
+            set fpath to POSIX path of (choose file name default location apath)
+        end if
+        return fpath as text
+        on error number -128
+            set userCanceled to true
+        end try
+        if userCanceled then
+            return "Cancel"
+        else
+            return fpath
+        end if
+    end run
+    '''
+    try:
+        proc = subprocess.run(['osascript', '-e', ascript, apath, cmd], capture_output=True, text=True)
+        output = proc.stdout.strip()
+        if 'Cancel' in output:  # User pressed Cancel button
+            return [] if multiple else ""
+        return output.split('\n') if multiple else output
+    except subprocess.CalledProcessError as e:
+        print(f'Python error: [{e.returncode}]\n{e.output.decode("utf-8")}\n')
 
 def open_file_dialog_tkinter(filetypes, multiple=True):
     from tkinter import filedialog
