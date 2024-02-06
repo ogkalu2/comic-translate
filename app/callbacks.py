@@ -49,8 +49,8 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
     -- fileTypes - list of allowed file extensions
     -- allowMultiple - boolean to allow multiple file selections
 
-    set apath to POSIX file {apath} as alias
-    set action to {cmd} as text
+    set apath to POSIX file "{apath}" as alias
+    set action to "{cmd}" as text
     set fileTypes to {file_types_str}
     set allowMultiple to {multiple_selections}
     set selectedFiles to {empty_list}
@@ -73,6 +73,8 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
                 -- Handle single file selection
                 set fpath to POSIX path of (choose file with prompt "Select a file:" default location apath of type fileTypes without invisibles and showing package contents)
             end if
+        else if action contains "Save" then
+            set fpath to POSIX path of (choose file name default location apath)
         end if
     on error number -128
         -- Handle user cancel action
