@@ -33,6 +33,7 @@ def show_error_mac(exception):
 
 default_mac_dialog_path = os.path.expanduser('~/Desktop')
 def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=default_mac_dialog_path):
+    empty_list = "{}"
     # Extract extensions from the file_types
     file_types = file_types[0]
     prompt, extensions = file_types
@@ -57,7 +58,7 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
             set action to (item 2 of argv) as text
             set fileTypes to {file_types_str}
             set allowMultiple to {multiple_selections}
-            set selectedFiles to {{}}
+            set selectedFiles to {empty_list}
         end if
         try
             if (action contains "Select") and (allowMultiple) then
