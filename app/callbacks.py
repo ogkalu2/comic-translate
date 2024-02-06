@@ -48,57 +48,46 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
     -- cmd   - "Select", "Save"
     -- fileTypes - list of allowed file extensions
     -- allowMultiple - boolean to allow multiple file selections
-    on run argv
-        set userCanceled to false
-        if (count of argv) < 3 then
-            tell application "System Events" to display dialog "Not enough arguments" ¬
-                giving up after 10
-        else
-            set apath to POSIX file (item 1 of argv) as alias
-            set action to (item 2 of argv) as text
-            set fileTypes to {file_types_str}
-            set allowMultiple to {multiple_selections}
-            set selectedFiles to {empty_list}
-        end if
-        try
-            if (action contains "Select") and (allowMultiple) then
-                set fpaths to choose file with prompt {prompt} default location apath ¬
-                    of type fileTypes with multiple selections allowed and showing package contents without invisibles
+
+    set apath to POSIX file {apath} as alias
+    set action to {cmd} as text
+    set fileTypes to {file_types_str}
+    set allowMultiple to {multiple_selections}
+    set selectedFiles to {empty_list}
+
+    try
+        -- Check if the action is to select files
+        if action contains "Select" then
+            -- Handle multiple file selections
+            if allowMultiple then
+                set fpaths to choose file with prompt "Select files:" default location apath of type fileTypes with multiple selections allowed and showing package contents without invisibles
+                -- Loop through the selected files to convert them to POSIX paths
                 repeat with aFile in fpaths
                     set end of selectedFiles to POSIX path of aFile
                 end repeat
-            else if action contains "Select" then
-                set fpath to POSIX path of ¬
-                    (choose file with prompt {prompt} default location apath ¬
-                        of type fileTypes without invisibles and showing package contents)
-            else if action contains "Save" then
-                set fpath to POSIX path of (choose file name default location apath)
-            end if
-            if (count of selectedFiles) is greater than 0 then
-                set fileListString to ""
-                repeat with i from 1 to count of selectedFiles
-                    if i is 1 then
-                        set fileListString to fileListString & item i of selectedFiles
-                    else
-                        set fileListString to fileListString & "\n" & item i of selectedFiles
-                    end if
-                end repeat
-                return fileListString
+                -- Combine the POSIX paths into a single string to return
+                set AppleScript's text item delimiters to ", "
+                set fpath to selectedFiles as text
+                set AppleScript's text item delimiters to ""
             else
-                return fpath
+                -- Handle single file selection
+                set fpath to POSIX path of (choose file with prompt "Select a file:" default location apath of type fileTypes without invisibles and showing package contents)
             end if
-        on error number -128
-            set userCanceled to true
-        end try
-        if userCanceled then
-            return "Cancel"
-        else
-            return fpath
         end if
-    end run
+    on error number -128
+        -- Handle user cancel action
+        return "Cancel"
+    end try
+
+    -- Return the selected file path(s) or indicate cancellation
+    if selectedFiles is not {empty_list} then
+        return fpath
+    else
+        return "Cancel"
+    end if
     '''
     try:
-        proc = subprocess.check_output(['osascript', '-e', ascript, apath, cmd])
+        proc = subprocess.check_output(['osascript', '-e', ascript])
         out = proc.decode('utf-8')
         if 'Cancel' in out:  # User pressed Cancel button
             return [] if multiple else ""
