@@ -33,7 +33,7 @@ def show_error_mac(exception):
 
 default_mac_dialog_path = os.path.expanduser('~/Desktop')
 def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=default_mac_dialog_path):
-    empty_list = "{}"
+    empty_list = "{"+"}"
     # Extract extensions from the file_types
     file_types = file_types[0]
     prompt, extensions = file_types
@@ -75,7 +75,15 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
                 set fpath to POSIX path of (choose file name default location apath)
             end if
             if (count of selectedFiles) is greater than 0 then
-                return selectedFiles
+                set fileListString to ""
+                repeat with i from 1 to count of selectedFiles
+                    if i is 1 then
+                        set fileListString to fileListString & item i of selectedFiles
+                    else
+                        set fileListString to fileListString & "\n" & item i of selectedFiles
+                    end if
+                end repeat
+                return fileListString
             else
                 return fpath
             end if
@@ -90,11 +98,11 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
     end run
     '''
     try:
-        proc = subprocess.run(['osascript', '-e', ascript, apath, cmd], capture_output=True, text=True)
-        output = proc.stdout.strip()
-        if 'Cancel' in output:  # User pressed Cancel button
+        proc = subprocess.check_output(['osascript', '-e', ascript, apath, cmd])
+        out = proc.decode('utf-8')
+        if 'Cancel' in out:  # User pressed Cancel button
             return [] if multiple else ""
-        return output.split('\n') if multiple else output
+        return out.split('\n') if multiple else out
     except subprocess.CalledProcessError as e:
         print(f'Python error: [{e.returncode}]\n{e.output.decode("utf-8")}\n')
 
