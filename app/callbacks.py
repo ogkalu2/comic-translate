@@ -27,17 +27,15 @@ def on_combo_change(state_manager: AppStateManager):
 def show_error_mac(exception):
     applescript_command = f'''
     display dialog "{exception}.\\n\\nLast progress at {dpg.get_value('progress_bar_text')}" ¬
-    with title "Error" ¬
-    buttons {{"OK"}} default button "OK" with icon stop
+    with title "Error" buttons {{"OK"}} default button "OK" with icon stop
     '''
     subprocess.run(["osascript", "-e", applescript_command], check=True)
-
 
 default_mac_dialog_path = os.path.expanduser('~/Desktop')
 def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=default_mac_dialog_path):
     # Extract extensions from the file_types
     file_types = file_types[0]
-    _, extensions = file_types
+    prompt, extensions = file_types
     # Split the extensions string and remove the asterisks
     extensions_list = extensions.replace("*.", "").split()
     # Format the extensions for AppleScript
@@ -59,16 +57,27 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
             set action to (item 2 of argv) as text
             set fileTypes to {file_types_str}
             set allowMultiple to {multiple_selections}
+            set selectedFiles to {{}}
         end if
         try
-        if action contains "Select" then
-            set fpath to POSIX path of (choose file default location apath ¬
-                         of type fileTypes without invisibles, multiple selections allowed allowMultiple and ¬
-                         showing package contents)
-        else if action contains "Save" then
-            set fpath to POSIX path of (choose file name default location apath)
-        end if
-        return fpath as text
+            if (action contains "Select") and (allowMultiple) then
+                set fpaths to choose file with prompt {prompt} default location apath ¬
+                    of type fileTypes with multiple selections allowed and showing package contents without invisibles
+                repeat with aFile in fpaths
+                    set end of selectedFiles to POSIX path of aFile
+                end repeat
+            else if action contains "Select" then
+                set fpath to POSIX path of ¬
+                    (choose file with prompt {prompt} default location apath ¬
+                        of type fileTypes without invisibles and showing package contents)
+            else if action contains "Save" then
+                set fpath to POSIX path of (choose file name default location apath)
+            end if
+            if (count of selectedFiles) is greater than 0 then
+                return selectedFiles
+            else
+                return fpath
+            end if
         on error number -128
             set userCanceled to true
         end try
@@ -154,3 +163,4 @@ def import_font(sender, app_data, user_data):
         dpg.configure_item("import_confirmed", show=True)
     else:
         dpg.configure_item("import_not_confirmed", show=True)
+
