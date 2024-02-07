@@ -54,6 +54,7 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
     set fileTypes to {file_types_str}
     set allowMultiple to {multiple_selections}
     set selectedFiles to {empty_list}
+    set fpath to ""
 
     try
         -- Check if the action is to select files
@@ -82,7 +83,7 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
     end try
 
     -- Return the selected file path(s) or indicate cancellation
-    if selectedFiles is not {empty_list} then
+    if fpath is not "" then
         return fpath
     else
         return "Cancel"
@@ -93,7 +94,7 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
         out = proc.decode('utf-8')
         if 'Cancel' in out:  # User pressed Cancel button
             return [] if multiple else ""
-        return out.split('\n') if multiple else out
+        return out.split(", ") if multiple else out
     except subprocess.CalledProcessError as e:
         print(f'Python error: [{e.returncode}]\n{e.output.decode("utf-8")}\n')
 
