@@ -91,7 +91,7 @@ def open_file_dialog_mac(file_types, multiple=False, cmd = "Select", apath=defau
     '''
     try:
         proc = subprocess.check_output(['osascript', '-e', ascript])
-        out = proc.decode('utf-8')
+        out = proc.decode('utf-8').strip()
         if 'Cancel' in out:  # User pressed Cancel button
             return [] if multiple else ""
         return out.split(", ") if multiple else out
