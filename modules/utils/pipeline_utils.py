@@ -410,7 +410,7 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
         else:
             blk.translation = translation.upper() if upper_case else translation.capitalize()
 
-def generate_mask(img: np.ndarray, blk_list: [TextBlock], default_kernel_size=5):
+def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_kernel_size=5):
     h, w, c = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
 
