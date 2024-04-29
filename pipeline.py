@@ -6,7 +6,6 @@ import cv2
 import threading
 from threading import Thread
 import tempfile
-from openai import OpenAI
 from datetime import datetime
 from matplotlib import pyplot as plt
 
@@ -17,9 +16,11 @@ from modules.utils import TextBlock, sort_regions, visualize_textblocks
 from app.localizations.progress_mappings import progress_mappings
 from modules.utils.detection import combine_results, make_bubble_mask, bubble_interior_bounds
 from modules.rendering.render import draw_text
+from modules.translator import Translator
 from app.state_manager import AppStateManager, open_lang_file, all_loc_mappings
 from app.callbacks import show_error_mac
 from modules.utils.pipeline_utils import *
+from modules.utils.translator_utils import get_client, get_api_key, get_raw_translation, get_raw_text, format_translations
 
 
 class ProcessThread(Thread):
@@ -100,6 +101,9 @@ def process(SM: AppStateManager):
     en_translator = translator_mappings[dpg.get_value("translator_dropdown")]
     en_ocr = ocr_mappings[dpg.get_value("ocr_dropdown")]
     open_ai_api_key = dpg.get_value("gpt_api_key")
+    anthropic_ai_api_key = dpg.get_value("claude_api_key")
+    gemini_api_key = dpg.get_value("gemini_api_key")
+    yandex_api_key = dpg.get_value("yandex_api_key")
     deepl_api_key = dpg.get_value("deepl_api_key")
     google_api_key = dpg.get_value("google_api_key")
     microsoft_api_key = dpg.get_value("microsoft_api_key")
@@ -117,7 +121,6 @@ def process(SM: AppStateManager):
     en_alignment = alignment_mappings[dpg.get_value("text_alignment_dropdown")]
     font_color = rgba2hex(dpg.get_value("font_color"))
 
-    sys_prompt = get_gpt_system_prompt(en_source_lang, en_target_lang)
     src_lng_cd, trg_lng_cd = get_language_codes(en_source_lang, en_target_lang)
     font_path = f'fonts/{font}'
 
@@ -126,7 +129,19 @@ def process(SM: AppStateManager):
         dpg.configure_item("api_key_translator_error", show=True)
         return
     
+    if en_translator == "Yandex" and not yandex_api_key:
+        dpg.configure_item("api_key_translator_error", show=True)
+        return
+    
     if 'GPT' in en_translator and not open_ai_api_key:
+        dpg.configure_item("api_key_translator_error", show=True)
+        return
+    
+    if 'Gemini' in en_translator and not gemini_api_key:
+        dpg.configure_item("api_key_translator_error", show=True)
+        return
+    
+    if 'Claude' in en_translator and not anthropic_ai_api_key:
         dpg.configure_item("api_key_translator_error", show=True)
         return
     
@@ -159,8 +174,9 @@ def process(SM: AppStateManager):
         device = 'cpu'
         yolo_device = 'cpu'
 
-    if open_ai_api_key:
-        client = OpenAI(api_key=open_ai_api_key)
+    client = get_client(en_translator)
+    api_key = get_api_key(en_translator)
+
     if en_source_lang in ["French", "German", "Dutch", "Russian", "Spanish", "Italian"] and en_ocr == "Default":
         gpt_ocr = True
     else:
@@ -310,19 +326,8 @@ def process(SM: AppStateManager):
         
         # Get Translations/ Export if selected
         entire_raw_text = get_raw_text(blk_list)
-        if 'GPT' in en_translator:
-            if en_source_lang in ["English", "French", "Dutch", "German", "Russian", "Spanish", "Italian"]:
-                gpt_4v_img = img
-            else:
-                gpt_4v_img = inpaint_input_img
-            model = get_gpt_model(en_translator)
-            entire_translated_text = get_gpt_translation(client, entire_raw_text, model, sys_prompt, gpt_4v_img, extra_context)
-            set_texts_from_json(blk_list, entire_translated_text)
-        else:
-            if en_translator == 'DeepL':
-                trad_translate(blk_list, en_translator, en_target_lang, src_lng_cd, trg_lng_cd, deepl_api_key)      
-            else:
-                trad_translate(blk_list, en_translator, en_target_lang, src_lng_cd, trg_lng_cd)
+        translator = Translator(client, api_key)
+        translator.translate(blk_list, en_translator, en_target_lang, src_lng_cd, trg_lng_cd, img, inpaint_input_img, extra_context)    
         entire_translated_text = get_raw_translation(blk_list)
 
         # Saving the Raw Texts

@@ -22,3 +22,5 @@ largestinteriorrectangle<=0.2.0
 paddleocr<=2.7.0.3
 paddlepaddle<=2.5.2
 loguru<=0.7.2
+google-generativeai<=0.5.2
+anthropic<=0.25.6

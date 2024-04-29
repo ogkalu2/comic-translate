@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 import numpy as np
 import cv2
 from functools import cached_property
@@ -76,6 +76,54 @@ def sort_regions(regions: List[TextBlock], right_to_left=True) -> List[TextBlock
         else:
             sorted_regions.append(region)
     return sorted_regions
+
+def sort_textblock_rectangles(coords_text_list: List[Tuple[Tuple[int, int, int, int], str]], direction: str = 'ver_rtl', threshold: int = 5):
+    
+    def in_same_line(coor_a, coor_b):
+        # For horizontal text, check if word boxes are in the same horizontal band
+        if 'hor' in direction:
+            return abs(coor_a[1] - coor_b[1]) <= threshold
+        # For vertical text, check if word boxes are in the same vertical band
+        elif 'ver' in direction:
+            return abs(coor_a[0] - coor_b[0]) <= threshold
+
+    # Group word bounding boxes into lines
+    lines = []
+    remaining_boxes = coords_text_list[:]  # create a shallow copy
+
+    while remaining_boxes:
+        box = remaining_boxes.pop(0)  # Start with the first bounding box
+        current_line = [box]
+
+        boxes_to_check_against = remaining_boxes[:]
+        for comparison_box in boxes_to_check_against:
+            if in_same_line(box[0], comparison_box[0]):
+                remaining_boxes.remove(comparison_box)
+                current_line.append(comparison_box)
+
+        lines.append(current_line)
+
+    # Sort the boxes in each line based on the reading direction
+    for i, line in enumerate(lines):
+        if direction == 'hor_ltr':
+            lines[i] = sorted(line, key=lambda box: box[0][0])  # Sort by leftmost x-coordinate
+        elif direction == 'hor_rtl':
+            lines[i] = sorted(line, key=lambda box: -box[0][0])  # Sort by leftmost x-coordinate, reversed
+        elif direction in ['ver_ltr', 'ver_rtl']:
+            lines[i] = sorted(line, key=lambda box: box[0][1])  # Sort by topmost y-coordinate
+
+    # Sort the lines themselves based on the orientation of the text
+    if 'hor' in direction:
+        lines.sort(key=lambda line: min(box[0][1] for box in line))  # Sort by topmost y-coordinate for horizontal text
+    elif direction == 'ver_ltr':
+        lines.sort(key=lambda line: min(box[0][0] for box in line)) # Sort by leftmost x-coordinate for vertical text
+    elif direction == 'ver_rtl':
+        lines.sort(key=lambda line: min(box[0][0] for box in line), reverse=True)  # Reversed order of sort by leftmost x-coordinate 
+
+    # Flatten the list of lines to return a single list with all grouped boxes
+    grouped_boxes = [box for line in lines for box in line]
+    
+    return grouped_boxes
 
 def visualize_textblocks(canvas, blk_list: List[TextBlock]):
     lw = max(round(sum(canvas.shape) / 2 * 0.003), 2)  # line width

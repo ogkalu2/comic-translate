@@ -11,13 +11,14 @@ for model in mandatory_models:
 supported_source_languages = ["Korean", "Japanese", "French", "Chinese", "English", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_target_languages = ["English", "Korean", "Japanese", "French", "Simplified Chinese", "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
-supported_translators = ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Google Translate"]
+supported_translators = ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "Google Translate"]
 dpg_windows = [
 "primary_window", "import_confirmed", "import_not_confirmed", "gpt_credentials", 
 "deepl_credentials", "microsoft_credentials", "google_credentials", "gpt_prompts", 
 "adjust_textblocks", "text_alignment", "font", "gpt_for_ocr_warning", 
 "api_key_translator_error", "api_key_ocr_error", "api_key_ocr_gpt-4v_error", 
-"endpoint_url_error", "deepl_ch_error", "translation_complete", "save_as"
+"endpoint_url_error", "deepl_ch_error", "translation_complete", "save_as",
+"gemini_credentials", "claude_credentials", "yandex_credentials"
 ]
 
 font_folder_path = os.path.join(os.getcwd(), "fonts")
@@ -115,6 +116,9 @@ with dpg.window(width=420, height=560, tag="primary_window"):
                 dpg.add_menu_item(label="Microsoft", callback=lambda: dpg.configure_item("microsoft_credentials", show=True), tag = "microsoft_set_credentials_menu_item_title")
                 dpg.add_menu_item(label="Google", callback=lambda: dpg.configure_item("google_credentials", show=True), tag = "google_set_credentials_menu_item_title")
                 dpg.add_menu_item(label="DeepL", callback=lambda: dpg.configure_item("deepl_credentials", show=True), tag = "deepl_set_credentials_menu_item_title")
+                dpg.add_menu_item(label="Claude", callback=lambda: dpg.configure_item("claude_credentials", show=True), tag = "claude_set_credentials_menu_item_title")
+                dpg.add_menu_item(label="Gemini", callback=lambda: dpg.configure_item("gemini_credentials", show=True), tag = "gemini_set_credentials_menu_item_title")
+                dpg.add_menu_item(label="Yandex", callback=lambda: dpg.configure_item("yandex_credentials", show=True), tag = "yandex_set_credentials_menu_item_title")
 
             dpg.add_menu_item(label="GPT Prompt", callback=lambda: dpg.configure_item("gpt_prompts", show=True), tag = "gpt_prompts_menu_item_title")
 
@@ -189,6 +193,33 @@ with dpg.window(modal=True, show=False, tag="gpt_credentials", no_title_bar=True
 
     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gpt_credentials", show=False), tag = "gpt_api_key_ok")
 
+# Claude
+with dpg.window(modal=True, show=False, tag="claude_credentials", no_title_bar=True):
+    dpg.add_text("API Key", tag = "claude_api_key_title")
+    dpg.add_input_text(password=True, width=250, tag = "claude_api_key")
+
+    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_claude_checkbox")
+
+    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("claude_credentials", show=False), tag = "claude_api_key_ok")
+
+# Gemini
+with dpg.window(modal=True, show=False, tag="gemini_credentials", no_title_bar=True):
+    dpg.add_text("API Key", tag = "gemini_api_key_title")
+    dpg.add_input_text(password=True, width=250, tag = "gemini_api_key")
+
+    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_gemini_checkbox")
+
+    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gemini_credentials", show=False), tag = "gemini_api_key_ok")
+
+# Yandex
+with dpg.window(modal=True, show=False, tag="yandex_credentials", no_title_bar=True):
+    dpg.add_text("API Key", tag = "yandex_api_key_title")
+    dpg.add_input_text(password=True, width=250, tag = "yandex_api_key")
+
+    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_yandex_checkbox")
+
+    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("yandex_credentials", show=False), tag = "yandex_api_key_ok")
+
 # DeepL
 with dpg.window(modal=True, show=False, tag="deepl_credentials", no_title_bar=True):
     dpg.add_text("API Key", tag = "deepl_api_key_title")
@@ -210,7 +241,7 @@ with dpg.window(modal=True, show=False, tag="microsoft_credentials", no_title_ba
 
     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("microsoft_credentials", show=False), tag = "microsoft_api_key_ok")
 
-# Google
+# Google (OCR)
 with dpg.window(modal=True, show=False, tag="google_credentials", no_title_bar=True):
     dpg.add_text("API Key", tag = "google_api_key_title")
     dpg.add_input_text(password=True, width=250, tag = "google_api_key")

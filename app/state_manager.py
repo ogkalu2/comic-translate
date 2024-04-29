@@ -104,6 +104,9 @@ class AppStateManager:
             "save_keys_for_deepl_checkbox": dpg.get_value("save_keys_for_deepl_checkbox"),
             "save_keys_for_microsoft_checkbox": dpg.get_value("save_keys_for_microsoft_checkbox"),
             "save_keys_for_google_checkbox": dpg.get_value("save_keys_for_google_checkbox"),
+            "save_keys_for_gemini_checkbox": dpg.get_value("save_keys_for_gemini_checkbox"),
+            "save_keys_for_claude_checkbox": dpg.get_value("save_keys_for_claude_checkbox"),
+            "save_keys_for_yandex_checkbox": dpg.get_value("save_keys_for_yandex_checkbox"),
             "width_adjustment_number": dpg.get_value("width_adjustment_number"),
             "height_adjustment_number": dpg.get_value("height_adjustment_number"),
             "text_alignment_dropdown": dpg.get_value("text_alignment_dropdown"),
@@ -139,6 +142,15 @@ class AppStateManager:
 
         if dpg.get_value("save_keys_for_google_checkbox"):
             state["google_api_key"] = dpg.get_value("google_api_key")
+
+        if dpg.get_value("save_keys_for_gemini_checkbox"):
+            state["gemini_api_key"] = dpg.get_value("gemini_api_key")
+
+        if dpg.get_value("save_keys_for_claude_checkbox"):
+            state["claude_api_key"] = dpg.get_value("claude_api_key")
+
+        if dpg.get_value("save_keys_for_yandex_checkbox"):
+            state["yandex_api_key"] = dpg.get_value("yandex_api_key")
 
         # Save the window positions
         state["viewport"] = {
