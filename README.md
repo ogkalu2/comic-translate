@@ -18,6 +18,7 @@ This project was created to utilize the ability of GPT-4 and translate comics fr
         - [Getting API Keys](#getting-api-keys)
             - [Open AI](#open-ai-gpt)
             - [Google Cloud Vision](#google-cloud-vision)
+            - [Google Gemini](#google-gemini)
 
 - [How it works](#how-it-works)
     - [Text Detection](#text-detection)
@@ -125,7 +126,8 @@ To following selections will require access to closed resources and subsequently
 * DeepL Translator (Free for 500,000 characters/month)
 * GPT-4-Vision for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.04 USD/Page)
 * Microsoft Azure Vision for OCR (Free for 5000 images/month)
-* Google Cloud Vision for OCR (Free for 1000 images/month).
+* Google Cloud Vision for OCR (Free for 1000 images/month)
+* Google Gemini for translation (Free for 1500 images per day) (Paid, about $0.001 USD/Page)
 You can set your API Keys by going to Settings > Set Credentials
 
 ### Getting API Keys
@@ -139,6 +141,9 @@ You can set your API Keys by going to Settings > Set Credentials
 * [Select your project here](https://console.cloud.google.com/welcome) then select "Billing" then "Create Account". In the pop-up, "Enable billing account", and accept the offer of a free trial account. Your "Account type" should be individual. Fill in a valid credit card.
 * Enable Google Cloud Vison for your project [here](https://console.cloud.google.com/apis/library/vision.googleapis.com)
 * In the [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials) page, click "Create Credentials" then API Key. Copy and store it.
+  
+#### Google Gemini
+* Go to the Google AI Studio website at [aistudio.google.com](https://aistudio.google.com/app/apikey). Once there, locate the option to create an API key and click on it. The API key will then be displayed. Make sure to save this API key in a secure location for future use."
 
 ## How it works
 ### Speech Bubble Detection and Text Segmentation
