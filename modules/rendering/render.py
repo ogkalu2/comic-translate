@@ -45,7 +45,7 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_
                 columns -= 1
                 if columns == 0:
                     break
-                mutable_message = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, hyphenate_broken_words=True)) 
+                mutable_message = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True)) 
                 wrapped_width, _ = eval_metrics(mutable_message, font)
                 if wrapped_width <= roi_width:
                     break
