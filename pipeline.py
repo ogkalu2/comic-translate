@@ -253,20 +253,21 @@ def process(SM: AppStateManager):
         for txt_bbox, bble_bbox, txt_seg_points, txt_class in combined:
             text_region = TextBlock(txt_bbox, txt_seg_points, bble_bbox, txt_class, alignment=en_alignment, source_lang=src_lng_cd)
             blk_list.append(text_region)
+
         if blk_list:
             blk_list = sort_regions(blk_list)
 
-        # OCR
-        if en_source_lang == 'Chinese' and (not microsoft_ocr and not google_ocr):
-            ocr_blk_list_paddle(img, blk_list)
-        elif microsoft_ocr:
-            ocr_blk_list_microsoft(img, blk_list, api_key=microsoft_api_key, endpoint=microsoft_endpoint_url)
-        elif google_ocr:
-            ocr_blk_list_google(img, blk_list, google_api_key)
-        elif gpt_ocr:
-            ocr_blk_list_gpt(img, blk_list, client)
-        else:
-            ocr_blk_list(img, blk_list, en_source_lang, device)
+            # OCR
+            if en_source_lang == 'Chinese' and (not microsoft_ocr and not google_ocr):
+                ocr_blk_list_paddle(img, blk_list)
+            elif microsoft_ocr:
+                ocr_blk_list_microsoft(img, blk_list, api_key=microsoft_api_key, endpoint=microsoft_endpoint_url)
+            elif google_ocr:
+                ocr_blk_list_google(img, blk_list, google_api_key)
+            elif gpt_ocr:
+                ocr_blk_list_gpt(img, blk_list, client)
+            else:
+                ocr_blk_list(img, blk_list, en_source_lang, device)
         
         if len(blk_list) == 0:
             if save_to_cbr_et_al:
