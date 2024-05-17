@@ -72,7 +72,7 @@
     "upper_case_checkbox": "以大写字母渲染文本",
     "font_dropdown_title": "字体",
     "translator_dropdown_title": "翻译器",
-    "translator_dropdown": ["GPT-4-视觉", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "谷歌翻译"],
+    "translator_dropdown": ["GPT-4-视觉", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "谷歌翻译"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["默认", "微软OCR", "谷歌云视觉"], 
     "translate_button": "翻译",
@@ -133,7 +133,7 @@
         "Claude-3-Opus": "Claude-3-Opus",
         "Claude-3-Sonnet": "Claude-3-Sonnet",
         "Claude-3-Haiku": "Claude-3-Haiku",
-        "Gemini-1-Pro": "Gemini-1-Pro",
+        "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
         "谷歌翻译": "Google Translate"

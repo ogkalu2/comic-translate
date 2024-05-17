@@ -72,7 +72,7 @@
     "upper_case_checkbox": "Text in Großbuchstaben rendern",
     "font_dropdown_title": "Schriftart",
     "translator_dropdown_title": "Übersetzer",
-    "translator_dropdown": ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "Google Übersetzer"],
+    "translator_dropdown": ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Übersetzer"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["Standard", "Microsoft OCR", "Google Cloud Vision"],
     "translate_button": "Übersetzen",
@@ -133,7 +133,7 @@
         "Claude-3-Opus": "Claude-3-Opus",
         "Claude-3-Sonnet": "Claude-3-Sonnet",
         "Claude-3-Haiku": "Claude-3-Haiku",
-        "Gemini-1-Pro": "Gemini-1-Pro",
+        "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
         "Google Übersetzer": "Google Translate"

@@ -72,7 +72,7 @@
     "upper_case_checkbox": "Tekst in hoofdletters weergeven",
     "font_dropdown_title": "Lettertype",
     "translator_dropdown_title": "Vertaler",
-    "translator_dropdown": ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "Google Vertalen"],
+    "translator_dropdown": ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Vertalen"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["Standaard", "Microsoft OCR", "Google Cloud Vision"],
     "translate_button": "Vertalen",
@@ -133,7 +133,7 @@
         "Claude-3-Opus": "Claude-3-Opus",
         "Claude-3-Sonnet": "Claude-3-Sonnet",
         "Claude-3-Haiku": "Claude-3-Haiku",
-        "Gemini-1-Pro": "Gemini-1-Pro",
+        "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
         "Google Vertalen": "Google Translate"

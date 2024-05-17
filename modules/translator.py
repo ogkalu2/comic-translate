@@ -20,7 +20,7 @@ class Translator:
             "Claude-3-Opus": "claude-3-opus-20240229",
             "Claude-3-Sonnet": "claude-3-sonnet-20240229",
             "Claude-3-Haiku": "claude-3-haiku-20240307",
-            "Gemini-1-Pro": "gemini-1.0-pro-vision-latest",
+            "Gemini-1.5-Flash": "gemini-1.5-flash-latest",
             "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
         }
         return model_map.get(translator)
@@ -103,17 +103,9 @@ class Translator:
                 },
         ]
 
-        if model == "gemini-1.0-pro-vision-latest":
-            model_instance = self.client.GenerativeModel(model_name = model, generation_config=generation_config, safety_settings=safety_settings)
-        else:
-            model_instance = self.client.GenerativeModel(model_name = model, generation_config=generation_config, system_instruction=system_prompt, safety_settings=safety_settings)
-
+        model_instance = self.client.GenerativeModel(model_name = model, generation_config=generation_config, system_instruction=system_prompt, safety_settings=safety_settings)
         chat = model_instance.start_chat(history=[])
-
-        if model == "gemini-1.0-pro-vision-latest":
-            chat.send_message([system_prompt, image, user_prompt])
-        else:
-            chat.send_message([image, user_prompt])
+        chat.send_message([image, user_prompt])
         response = chat.last.text
 
         return response

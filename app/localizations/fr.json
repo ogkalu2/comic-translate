@@ -72,7 +72,7 @@
     "upper_case_checkbox": "Rendre le texte en majuscules",
     "font_dropdown_title": "Police",
     "translator_dropdown_title": "Traducteur",
-    "translator_dropdown": ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "Google Traduction"],
+    "translator_dropdown": ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Traduction"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["Défaut", "Microsoft OCR", "Google Cloud Vision"],
     "translate_button": "Traduire",
@@ -133,7 +133,7 @@
         "Claude-3-Opus": "Claude-3-Opus",
         "Claude-3-Sonnet": "Claude-3-Sonnet",
         "Claude-3-Haiku": "Claude-3-Haiku",
-        "Gemini-1-Pro": "Gemini-1-Pro",
+        "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
         "Google Traduction": "Google Translate" 

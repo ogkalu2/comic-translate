@@ -11,7 +11,7 @@ for model in mandatory_models:
 supported_source_languages = ["Korean", "Japanese", "French", "Chinese", "English", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_target_languages = ["English", "Korean", "Japanese", "French", "Simplified Chinese", "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
-supported_translators = ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "Google Translate"]
+supported_translators = ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Translate"]
 dpg_windows = [
 "primary_window", "import_confirmed", "import_not_confirmed", "gpt_credentials", 
 "deepl_credentials", "microsoft_credentials", "google_credentials", "gpt_prompts", 

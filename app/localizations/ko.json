@@ -72,7 +72,7 @@
     "upper_case_checkbox": "문자를 대문자로 표시하기",
     "font_dropdown_title": "글꼴",
     "translator_dropdown_title": "번역기",
-    "translator_dropdown": ["GPT-4-비전", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1-Pro", "Gemini-1.5-Pro", "Yandex", "구글 번역"],
+    "translator_dropdown": ["GPT-4-비전", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "구글 번역"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["기본 인식", "마이크로소프트 OCR", "구글 클라우드 비전"],
     "translate_button": "번역하기",
@@ -133,7 +133,7 @@
         "Claude-3-Opus": "Claude-3-Opus",
         "Claude-3-Sonnet": "Claude-3-Sonnet",
         "Claude-3-Haiku": "Claude-3-Haiku",
-        "Gemini-1-Pro": "Gemini-1-Pro",
+        "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
         "구글 번역": "Google Translate"
