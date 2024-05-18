@@ -20,7 +20,7 @@ from modules.translator import Translator
 from app.state_manager import AppStateManager, open_lang_file, all_loc_mappings
 from app.callbacks import show_error_mac
 from modules.utils.pipeline_utils import *
-from modules.utils.translator_utils import get_client, get_api_key, get_raw_translation, get_raw_text, format_translations
+from modules.utils.translator_utils import get_llm_client, get_api_key, get_raw_translation, get_raw_text, format_translations
 
 
 class ProcessThread(Thread):
@@ -174,7 +174,7 @@ def process(SM: AppStateManager):
         device = 'cpu'
         yolo_device = 'cpu'
 
-    client = get_client(en_translator)
+    translator_client = get_llm_client(en_translator)
     api_key = get_api_key(en_translator)
 
     if en_source_lang in ["French", "German", "Dutch", "Russian", "Spanish", "Italian"] and en_ocr == "Default":
@@ -265,7 +265,8 @@ def process(SM: AppStateManager):
             elif google_ocr:
                 ocr_blk_list_google(img, blk_list, google_api_key)
             elif gpt_ocr:
-                ocr_blk_list_gpt(img, blk_list, client)
+                gpt_client = get_llm_client('GPT')
+                ocr_blk_list_gpt(img, blk_list, gpt_client)
             else:
                 ocr_blk_list(img, blk_list, en_source_lang, device)
         
@@ -327,7 +328,7 @@ def process(SM: AppStateManager):
         
         # Get Translations/ Export if selected
         entire_raw_text = get_raw_text(blk_list)
-        translator = Translator(client, api_key)
+        translator = Translator(translator_client, api_key)
         translator.translate(blk_list, en_translator, en_target_lang, src_lng_cd, trg_lng_cd, img, inpaint_input_img, extra_context)    
         entire_translated_text = get_raw_translation(blk_list)
 

@@ -11,7 +11,7 @@ for model in mandatory_models:
 supported_source_languages = ["Korean", "Japanese", "French", "Chinese", "English", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_target_languages = ["English", "Korean", "Japanese", "French", "Simplified Chinese", "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", "Italian"]
 supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
-supported_translators = ["GPT-4-Vision", "GPT-4", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Translate"]
+supported_translators = ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Translate"]
 dpg_windows = [
 "primary_window", "import_confirmed", "import_not_confirmed", "gpt_credentials", 
 "deepl_credentials", "microsoft_credentials", "google_credentials", "gpt_prompts", 
@@ -293,9 +293,9 @@ with dpg.window(show=False, tag="font", no_title_bar=True, width = 320, height =
    
     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("font", show=False), tag = "font_ok") 
 
-# GPT-4-Vision Warning
+# GPT-4o Warning
 with dpg.window(label="CAUTION!", modal=True, show=False, tag="gpt_for_ocr_warning", no_title_bar=False):
-    dpg.add_text("The Default OCR for French,\nGerman, Dutch, Spanish, Italian\n and Russian is GPT-4-Vision.\nThis will require an API\nKey and incur costs. Expect\n about $0.04 USD per page.\n Go to Settings > Set Credentials > GPT\nto set one if you haven't already.", tag = "gpt_ocr_caution_message")
+    dpg.add_text("The Default OCR for French,\nGerman, Dutch, Spanish, Italian\n and Russian is GPT-4o.\nThis will require an API\nKey and incur costs. Expect\n about $0.04 USD per page.\n Go to Settings > Set Credentials > GPT\nto set one if you haven't already.", tag = "gpt_ocr_caution_message")
     dpg.add_checkbox(label="Don't tell me next time", tag = "stop_gpt_ocr_warning_checkbox")
 
     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gpt_for_ocr_warning", show=False), tag = "gpt_ocr_warning_ok")
@@ -313,7 +313,7 @@ with dpg.window(label="ERROR!", modal=True, show=False, tag="api_key_ocr_error",
 
 # api key for gpt-4v ocr
 with dpg.window(label="ERROR!", modal=True, show=False, tag="api_key_ocr_gpt-4v_error", no_title_bar=False):
-    dpg.add_text("Default Ocr for the selected\nSource Language is GPT-4-Vision\nwhich requires an API Key. Go to\nSettings > Set Credentials > GPT to set one", tag = "api_key_ocr_gpt-4v_error_message")
+    dpg.add_text("Default Ocr for the selected\nSource Language is GPT-4o\nwhich requires an API Key. Go to\nSettings > Set Credentials > GPT to set one", tag = "api_key_ocr_gpt-4v_error_message")
     dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("api_key_ocr_gpt-4v_error", show=False), tag = "api_key_ocr_gpt-4v_error_ok")
 
 # endpoint url

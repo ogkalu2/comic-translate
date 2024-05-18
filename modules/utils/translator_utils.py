@@ -16,7 +16,7 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def get_client(translator: str):
+def get_llm_client(translator: str):
     if 'GPT' in translator:
         client  = OpenAI(api_key = dpg.get_value("gpt_api_key"))
     elif 'Claude' in translator:

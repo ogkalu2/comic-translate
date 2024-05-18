@@ -84,18 +84,18 @@ def adjust_blks_size(blk_list: List[TextBlock], img_shape: Tuple[int, int, int],
 
 def get_gpt_ocr(base64_image: str, client):
     response = client.chat.completions.create(
-    model="gpt-4-vision-preview",
+    model="gpt-4o",
     messages=[
     {
       "role": "user",
       "content": [
         {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
         {"type": "text", "text": """ Write out the text in this image. Do NOT Translate. Do not write anything else"""},
-      ]
-    }
-  ],
-  max_tokens=500,
-  )
+                 ]
+        }
+    ],
+    max_tokens=500,
+    )
     text = response.choices[0].message.content
     text = text.replace('\n', ' ') if '\n' in text else text
     return text
