@@ -138,17 +138,18 @@ class Translator:
             entire_raw_text = get_raw_text(blk_list)
             system_prompt = self.get_system_prompt(source_lang_code, target_lang_code)
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
+            image = inpainted_img
 
             if 'GPT' in translator:
                 entire_translated_text = self.get_gpt_translation(user_prompt, model, system_prompt, image)
 
             elif 'Claude' in translator:
                 # Adjust image based on source language
-                image = image if source_lang_code in ["en", "fr", "nl", "de", "ru", "es", "it"] else inpainted_img
+                #image = image if source_lang_code in ["en", "fr", "nl", "de", "ru", "es", "it"] else inpainted_img
                 entire_translated_text = self.get_claude_translation(user_prompt, model, system_prompt, image)
 
             elif 'Gemini' in translator:
-                image = image if source_lang_code in ["en", "fr", "nl", "de", "ru", "es", "it"] else inpainted_img
+                #image = image if source_lang_code in ["en", "fr", "nl", "de", "ru", "es", "it"] else inpainted_img
                 image = cv2_to_pil(image)
                 entire_translated_text = self.get_gemini_translation(user_prompt, model, system_prompt, image)
 
