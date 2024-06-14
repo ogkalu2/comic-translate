@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "Lingua Sorgente",
     "source_lang_dropdown": ["Coreano", "Giapponese", "Francese", "Cinese", "Inglese", "Russo", "Tedesco", "Olandese", "Spagnolo", "Italiano"],
     "target_lang_dropdown_title": "Lingua di Destinazione",
-    "target_lang_dropdown": ["Inglese", "Coreano", "Giapponese", "Francese", "Cinese Semplificato", "Cinese Tradizionale", "Russo", "Tedesco", "Olandese", "Spagnolo", "Italiano"],
+    "target_lang_dropdown": ["Inglese", "Coreano", "Giapponese", "Francese", 
+                            "Cinese Semplificato", "Cinese Tradizionale", 
+                            "Russo", "Tedesco", "Olandese", "Spagnolo", "Italiano",
+                            "Turco", "Polacco", "Portoghese", "Portoghese Brasiliano"],
     "upper_case_checkbox": "Rendi il Testo Maiuscolo",
     "font_dropdown_title": "Font",
     "translator_dropdown_title": "Traduttore",
@@ -116,7 +119,11 @@
         "Olandese": "Dutch",
         "Spagnolo": "Spanish",
         "Italiano": "Italian",
-        "Cinese": "Chinese"
+        "Cinese": "Chinese",
+        "Turco": "Turkish",
+        "Polacco": "Polish",
+        "Portoghese": "Portuguese",
+        "Portoghese Brasiliano": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

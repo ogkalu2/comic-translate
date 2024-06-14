@@ -8,10 +8,25 @@ from pipeline import start_process, stop_process
 for model in mandatory_models:
     get_models(model)
 
-supported_source_languages = ["Korean", "Japanese", "French", "Chinese", "English", "Russian", "German", "Dutch", "Spanish", "Italian"]
-supported_target_languages = ["English", "Korean", "Japanese", "French", "Simplified Chinese", "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", "Italian"]
+supported_source_languages = [
+"Korean", "Japanese", "French", "Chinese", "English",
+"Russian", "German", "Dutch", "Spanish", "Italian"
+]
+
+supported_target_languages = [
+"English", "Korean", "Japanese", "French", "Simplified Chinese",
+"Traditional Chinese", "Russian", "German", "Dutch", "Spanish", 
+"Italian", "Turkish", "Polish", "Portuguese", "Portuguese (Brazilian)"
+]
+
 supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
-supported_translators = ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Translate"]
+
+supported_translators = [
+"GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus",
+"Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", 
+"Gemini-1.5-Pro", "Yandex", "Google Translate"
+]
+
 dpg_windows = [
 "primary_window", "import_confirmed", "import_not_confirmed", "gpt_credentials", 
 "deepl_credentials", "microsoft_credentials", "google_credentials", "gpt_prompts", 
@@ -56,7 +71,11 @@ font_mappings = {
     "de": latin_cyrillic_font,
     "nl": latin_cyrillic_font,
     "es": latin_cyrillic_font,
-    "it": latin_cyrillic_font 
+    "it": latin_cyrillic_font,
+    "tr": latin_cyrillic_font,
+    "pl": latin_cyrillic_font,
+    "pt": latin_cyrillic_font,
+    "pt-br": latin_cyrillic_font,
 }
 
 state_manager = AppStateManager(font_mappings, dpg_windows)

@@ -69,7 +69,10 @@
     "source_lang_dropdown_title": "Source Language",
     "source_lang_dropdown": ["Korean", "Japanese", "French", "Chinese", "English", "Russian", "German", "Dutch", "Spanish", "Italian"],
     "target_lang_dropdown_title": "Target Language",
-    "target_lang_dropdown": ["English", "Korean", "Japanese", "French", "Simplified Chinese", "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", "Italian"],
+    "target_lang_dropdown": ["English", "Korean", "Japanese", "French", 
+                            "Simplified Chinese", "Traditional Chinese", 
+                            "Russian", "German", "Dutch", "Spanish", "Italian",
+                            "Turkish", "Polish", "Portuguese", "Portuguese (Brazilian)"],
     "upper_case_checkbox": "Render Text in Upper Case",
     "font_dropdown_title": "Font",
     "translator_dropdown_title": "Translator",
@@ -117,7 +120,11 @@
         "German": "German",
         "Dutch": "Dutch",
         "Spanish": "Spanish",
-        "Italian": "Italian"
+        "Italian": "Italian",
+        "Turkish": "Turkish",
+        "Polish": "Polish",
+        "Portuguese": "Portuguese",
+        "Portuguese (Brazilian)": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

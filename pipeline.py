@@ -329,7 +329,7 @@ def process(SM: AppStateManager):
         # Get Translations/ Export if selected
         entire_raw_text = get_raw_text(blk_list)
         translator = Translator(translator_client, api_key)
-        translator.translate(blk_list, en_translator, en_target_lang, src_lng_cd, trg_lng_cd, img, inpaint_input_img, extra_context)    
+        translator.translate(blk_list, en_translator, en_source_lang, en_target_lang, img, inpaint_input_img, extra_context)    
         entire_translated_text = get_raw_translation(blk_list)
 
         # Saving the Raw Texts

@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "Quellsprache",
     "source_lang_dropdown": ["Koreanisch", "Japanisch", "Französisch", "Chinesisch", "Englisch", "Russisch", "Deutsch", "Niederländisch", "Spanisch", "Italienisch"],
     "target_lang_dropdown_title": "Zielsprache",
-    "target_lang_dropdown": ["Englisch", "Koreanisch", "Japanisch", "Französisch", "Vereinfachtes Chinesisch", "Traditionelles Chinesisch", "Russisch", "Deutsch", "Niederländisch", "Spanisch", "Italienisch"],
+    "target_lang_dropdown": ["Englisch", "Koreanisch", "Japanisch", "Französisch",
+                            "Vereinfachtes Chinesisch", "Traditionelles Chinesisch", 
+                            "Russisch", "Deutsch", "Niederländisch", "Spanisch", "Italienisch",
+                            "Türkisch", "Polnisch", "Portugiesisch", "Brasilianisches Portugiesisch"],
     "upper_case_checkbox": "Text in Großbuchstaben rendern",
     "font_dropdown_title": "Schriftart",
     "translator_dropdown_title": "Übersetzer",
@@ -116,7 +119,11 @@
         "Deutsch": "German",
         "Niederländisch": "Dutch",
         "Spanisch": "Spanish",
-        "Italienisch": "Italian"
+        "Italienisch": "Italian",
+        "Türkisch": "Turkish",
+        "Polnisch": "Polish",
+        "Portugiesisch": "Portuguese",
+        "Brasilianisches Portugiesisch": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

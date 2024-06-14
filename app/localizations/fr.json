@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "Langue source",
     "source_lang_dropdown": ["Coréen", "Japonais", "Français", "Chinois", "Anglais", "Russe", "Allemand", "Néerlandais", "Espagnol", "Italien"],
     "target_lang_dropdown_title": "Langue cible",
-    "target_lang_dropdown": ["Anglais", "Coréen", "Japonais", "Français", "Chinois Simplifié", "Chinois Traditionnel", "Russe", "Allemand", "Néerlandais", "Espagnol", "Italien"],
+    "target_lang_dropdown": ["Anglais", "Coréen", "Japonais", "Français", 
+                            "Chinois Simplifié", "Chinois Traditionnel", 
+                            "Russe", "Allemand", "Néerlandais", "Espagnol", "Italien",
+                            "Turc", "Polonais", "Portugais", "Portugais Brésilien"],
     "upper_case_checkbox": "Rendre le texte en majuscules",
     "font_dropdown_title": "Police",
     "translator_dropdown_title": "Traducteur",
@@ -116,7 +119,11 @@
         "Allemand": "German",
         "Néerlandais": "Dutch",
         "Espagnol": "Spanish",
-        "Italien": "Italian"
+        "Italien": "Italian",
+        "Turc": "Turkish",
+        "Polonais": "Polish",
+        "Portugais": "Portuguese",
+        "Portugais Brésilien": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

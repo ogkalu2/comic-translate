@@ -3,6 +3,7 @@ from typing import List
 from .utils.textblock import TextBlock
 from .rendering.render import cv2_to_pil
 from .utils.translator_utils import encode_image_array, get_raw_text, set_texts_from_json
+from .utils.pipeline_utils import get_language_codes
 from deep_translator import GoogleTranslator, YandexTranslator
 import deepl
 
@@ -111,7 +112,9 @@ class Translator:
 
         return response
 
-    def translate(self, blk_list: List[TextBlock], translator: str, target_lang: str, source_lang_code: str, target_lang_code: str, image: np.ndarray, inpainted_img: np.ndarray, extra_context: str):
+    def translate(self, blk_list: List[TextBlock], translator: str, source_lang: str, target_lang: str, image: np.ndarray, inpainted_img: np.ndarray, extra_context: str):
+        source_lang_code, target_lang_code = get_language_codes(source_lang, target_lang)
+
         # Non LLM Based
         if translator in ["Google Translate", "DeepL", "Yandex"]:
             for blk in blk_list:
@@ -136,7 +139,7 @@ class Translator:
         else:
             model = self.get_llm_model(translator)
             entire_raw_text = get_raw_text(blk_list)
-            system_prompt = self.get_system_prompt(source_lang_code, target_lang_code)
+            system_prompt = self.get_system_prompt(source_lang, target_lang)
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
             image = inpainted_img
 

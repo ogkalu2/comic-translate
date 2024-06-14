@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "원본 언어",
     "source_lang_dropdown": ["한국어", "일본어", "프랑스어", "중국어", "영어", "러시아어", "독일어", "네덜란드어", "스페인어", "이탈리아어"],
     "target_lang_dropdown_title": "대상 언어",
-    "target_lang_dropdown": ["영어", "한국어", "일본어", "프랑스어", "중국어 간체", "중국어 번체", "러시아어", "독일어", "네덜란드어", "스페인어", "이탈리아어"],
+    "target_lang_dropdown": ["영어", "한국어", "일본어", "프랑스어", 
+                            "중국어 간체", "중국어 번체", "러시아어", 
+                            "독일어", "네덜란드어", "스페인어", "이탈리아어",
+                            "터키어", "폴란드어", "포르투갈어", "브라질 포르투갈어"],
     "upper_case_checkbox": "문자를 대문자로 표시하기",
     "font_dropdown_title": "글꼴",
     "translator_dropdown_title": "번역기",
@@ -116,7 +119,11 @@
         "독일어": "German",
         "네덜란드어": "Dutch",
         "스페인어": "Spanish",
-        "이탈리아어": "Italian"
+        "이탈리아어": "Italian",
+        "터키어": "Turkish",
+        "폴란드어": "Polish",
+        "포르투갈어": "Portuguese",
+        "브라질 포르투갈어": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

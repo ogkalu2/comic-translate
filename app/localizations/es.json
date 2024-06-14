@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "Idioma de Origen",
     "source_lang_dropdown": ["Coreano", "Japonés", "Francés", "Chino", "Inglés", "Ruso", "Alemán", "Holandés", "Español", "Italiano"],
     "target_lang_dropdown_title": "Idioma de Destino",
-    "target_lang_dropdown": ["Inglés", "Coreano", "Japonés", "Francés", "Chino Simplificado", "Chino Tradicional", "Ruso", "Alemán", "Holandés", "Español", "Italiano"],
+    "target_lang_dropdown": ["Inglés", "Coreano", "Japonés", "Francés", 
+                            "Chino Simplificado", "Chino Tradicional", 
+                            "Ruso", "Alemán", "Holandés", "Español", "Italiano",
+                            "Turco", "Polaco", "Portugués", "Portugués Brasileño"],
     "upper_case_checkbox": "Mostrar Texto en Mayúsculas",
     "font_dropdown_title": "Fuente",
     "translator_dropdown_title": "Traductor",
@@ -116,7 +119,11 @@
         "Alemán": "German",
         "Holandés": "Dutch",
         "Español": "Spanish",
-        "Italiano": "Italian"
+        "Italiano": "Italian",
+        "Turco": "Turkish",
+        "Polaco": "Polish",
+        "Portugués": "Portuguese",
+        "Portugués Brasileño": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

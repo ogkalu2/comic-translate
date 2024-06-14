@@ -68,7 +68,9 @@
     "source_lang_dropdown_title": "源语言",
     "source_lang_dropdown": ["韩语", "日语", "法语", "中文", "英语", "俄语", "德语", "荷兰语", "西班牙语", "意大利语"],
     "target_lang_dropdown_title": "目标语言",
-    "target_lang_dropdown": ["英语", "韩语", "日语", "法语", "简体中文", "繁体中文", "俄语", "德语", "荷兰语", "西班牙语", "意大利语"],
+    "target_lang_dropdown": ["英语", "韩语", "日语", "法语", "简体中文", 
+                            "繁体中文", "俄语", "德语", "荷兰语", "西班牙语", 
+                            "意大利语", "土耳其语", "波兰语", "葡萄牙语", "巴西葡萄牙语"],
     "upper_case_checkbox": "以大写字母渲染文本",
     "font_dropdown_title": "字体",
     "translator_dropdown_title": "翻译器",
@@ -116,7 +118,11 @@
         "德语": "German",
         "荷兰语": "Dutch",
         "西班牙语": "Spanish",
-        "意大利语": "Italian"
+        "意大利语": "Italian",
+        "土耳其语": "Turkish",
+        "波兰语": "Polish",
+        "葡萄牙语": "Portuguese",
+        "巴西葡萄牙语": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

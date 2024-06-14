@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "原文言語",
     "source_lang_dropdown": ["韓国語", "日本語", "フランス語", "中国語", "英語", "ロシア語", "ドイツ語", "オランダ語", "スペイン語", "イタリア語"],
     "target_lang_dropdown_title": "目的言語",
-    "target_lang_dropdown": ["英語", "韓国語", "日本語", "フランス語", "簡体字中国語", "繁体字中国語", "ロシア語", "ドイツ語", "オランダ語", "スペイン語", "イタリア語"],
+    "target_lang_dropdown": ["英語", "韓国語", "日本語", "フランス語", 
+                            "簡体字中国語", "繁体字中国語", "ロシア語", "ドイツ語", 
+                            "オランダ語", "スペイン語", "イタリア語", "トルコ語", 
+                            "ポーランド語", "ポルトガル語", "ブラジルポルトガル語"],
     "upper_case_checkbox": "文字を大文字で表示",
     "font_dropdown_title": "フォント",
     "translator_dropdown_title": "翻訳機",
@@ -116,7 +119,11 @@
         "ドイツ語": "German",
         "オランダ語": "Dutch",
         "スペイン語": "Spanish",
-        "イタリア語": "Italian"
+        "イタリア語": "Italian",
+        "トルコ語": "Turkish",
+        "ポーランド語": "Polish",
+        "ポルトガル語": "Portuguese",
+        "ブラジルポルトガル語": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {

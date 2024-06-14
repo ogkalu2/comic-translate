@@ -68,7 +68,10 @@
     "source_lang_dropdown_title": "Bronstaal",
     "source_lang_dropdown": ["Koreaans", "Japans", "Frans", "Chinees", "Engels", "Russisch", "Duits", "Nederlands", "Spaans", "Italiaans"],
     "target_lang_dropdown_title": "Doeltaal",
-    "target_lang_dropdown": ["Engels", "Koreaans", "Japans", "Frans", "Vereenvoudigd Chinees", "Traditioneel Chinees", "Russisch", "Duits", "Nederlands", "Spaans", "Italiaans"],
+    "target_lang_dropdown": ["Engels", "Koreaans", "Japans", "Frans", 
+                            "Vereenvoudigd Chinees", "Traditioneel Chinees", 
+                            "Russisch", "Duits", "Nederlands", "Spaans", "Italiaans",
+                            "Turks", "Pools", "Portugees", "Braziliaans Portugees"],
     "upper_case_checkbox": "Tekst in hoofdletters weergeven",
     "font_dropdown_title": "Lettertype",
     "translator_dropdown_title": "Vertaler",
@@ -116,7 +119,11 @@
         "Duits": "German",
         "Nederlands": "Dutch",
         "Spaans": "Spanish",
-        "Italiaans": "Italian"
+        "Italiaans": "Italian",
+        "Turks": "Turkish",
+        "Pools": "Polish",
+        "Portugees": "Portuguese",
+        "Braziliaans Portugees": "Portuguese (Brazilian)"
     },
 
     "ocr_mappings": {
