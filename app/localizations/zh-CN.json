@@ -103,7 +103,8 @@
     "save_cbt_as_title": "另存为CBT",
     "save_epub_as_title": "另存为EPUB",
     "save_as_ok": "确定",
-    "cancel_translation_button": "取消"
+    "cancel_translation_button": "取消",
+    "img_as_input_to_llm_checkbox": "为LLM提供图像作为上下文"
     },
 
     "lang_mappings": {

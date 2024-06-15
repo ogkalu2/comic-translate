@@ -1,3 +1,4 @@
+import dearpygui.dearpygui as dpg
 import numpy as np
 from typing import List
 from .utils.textblock import TextBlock
@@ -12,6 +13,7 @@ class Translator:
     def __init__(self, client = None, api_key: str = ''):
         self.client = client
         self.api_key = api_key
+        self.img_as_llm_input = dpg.get_value("img_as_input_to_llm_checkbox")
 
     def get_llm_model(self, translator: str):
         model_map = {
@@ -37,26 +39,23 @@ class Translator:
     def get_gpt_translation(self, user_prompt: str, model: str, system_prompt: str, image: np.ndarray):
         encoded_image = encode_image_array(image)
 
-        if model == "gpt-3.5-turbo":
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
-                    {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
-                ],
-                temperature=1,
-                max_tokens=1000,
-            )
-        else:
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=[
+        if self.img_as_llm_input and model != "gpt-3.5-turbo":
+            message = [
                     {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
                     {"role": "user", "content": [{"type": "text", "text": user_prompt}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded_image}"}}]}
-                ],
-                temperature=1,
-                max_tokens=1000,
-            )
+                ]
+        else:
+            message = [
+                    {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
+                    {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
+                ]
+
+        response = self.client.chat.completions.create(
+            model=model,
+            messages=message,
+            temperature=1,
+            max_tokens=1000,
+        )
 
         translated = response.choices[0].message.content
         return translated
@@ -65,12 +64,17 @@ class Translator:
         encoded_image = encode_image_array(image)
         media_type = "image/png"
 
+        if self.img_as_llm_input:
+            message = [
+                {"role": "user", "content": [{"type": "text", "text": user_prompt}, {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": encoded_image}}]}
+            ]
+        else:
+            message = [{"role": "user", "content": [{"type": "text", "text": user_prompt}]}]
+
         response = self.client.messages.create(
             model = model,
             system = system_prompt,
-            messages=[
-                {"role": "user", "content": [{"type": "text", "text": user_prompt}, {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": encoded_image}}]}
-            ],
+            messages=message,
             temperature=1,
             max_tokens=1000,
         )
@@ -107,7 +111,10 @@ class Translator:
 
         model_instance = self.client.GenerativeModel(model_name = model, generation_config=generation_config, system_instruction=system_prompt, safety_settings=safety_settings)
         chat = model_instance.start_chat(history=[])
-        chat.send_message([image, user_prompt])
+        if self.img_as_llm_input:
+            chat.send_message([image, user_prompt])
+        else:
+            chat.send_message([user_prompt])
         response = chat.last.text
 
         return response
@@ -141,18 +148,17 @@ class Translator:
             entire_raw_text = get_raw_text(blk_list)
             system_prompt = self.get_system_prompt(source_lang, target_lang)
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
-            image = inpainted_img
 
             if 'GPT' in translator:
                 entire_translated_text = self.get_gpt_translation(user_prompt, model, system_prompt, image)
 
             elif 'Claude' in translator:
                 # Adjust image based on source language
-                #image = image if source_lang_code in ["en", "fr", "nl", "de", "ru", "es", "it"] else inpainted_img
+                image = image if source_lang_code not in ['zh-CN', 'zh-TW', 'ja', 'ko'] else inpainted_img
                 entire_translated_text = self.get_claude_translation(user_prompt, model, system_prompt, image)
 
             elif 'Gemini' in translator:
-                #image = image if source_lang_code in ["en", "fr", "nl", "de", "ru", "es", "it"] else inpainted_img
+                image = image if source_lang_code not in ['zh-CN', 'zh-TW', 'ja', 'ko'] else inpainted_img
                 image = cv2_to_pil(image)
                 entire_translated_text = self.get_gemini_translation(user_prompt, model, system_prompt, image)
 

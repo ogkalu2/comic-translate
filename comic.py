@@ -72,10 +72,6 @@ font_mappings = {
     "nl": latin_cyrillic_font,
     "es": latin_cyrillic_font,
     "it": latin_cyrillic_font,
-    "tr": latin_cyrillic_font,
-    "pl": latin_cyrillic_font,
-    "pt": latin_cyrillic_font,
-    "pt-br": latin_cyrillic_font,
 }
 
 state_manager = AppStateManager(font_mappings, dpg_windows)
@@ -147,6 +143,7 @@ with dpg.window(width=420, height=560, tag="primary_window"):
                 dpg.add_menu_item(label="Font", callback=lambda: dpg.configure_item("font", show=True), tag = "font_menu_item_title") 
 
             dpg.add_checkbox(label="Use GPU", tag = "use_gpu_checkbox")
+            dpg.add_checkbox(label="Provide Image to LLMs as context", tag = "img_as_input_to_llm_checkbox", default_value=True)
             dpg.add_checkbox(label="Export raw text", tag = "export_raw_text_checkbox")
             dpg.add_checkbox(label="Export translated text", tag = "export_translated_text_checkbox")
             dpg.add_checkbox(label="Preview Annotated Image", tag = "preview_annot_img_checkbox")

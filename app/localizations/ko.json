@@ -104,7 +104,8 @@
     "save_cbt_as_title": "CBT로 저장",
     "save_epub_as_title": "EPUB로 저장",
     "save_as_ok": "확인",
-    "cancel_translation_button": "취소"
+    "cancel_translation_button": "취소",
+    "img_as_input_to_llm_checkbox": "LLM에 컨텍스트로 이미지 제공"
     },
 
     "lang_mappings": {

@@ -117,6 +117,8 @@ class AppStateManager:
             "save_cb7_as_dropdown": dpg.get_value("save_cb7_as_dropdown"),
             "save_cbz_as_dropdown": dpg.get_value("save_cbz_as_dropdown"),
             "save_epub_as_dropdown": dpg.get_value("save_epub_as_dropdown"),
+            "img_as_input_to_llm_checkbox": dpg.get_value("img_as_input_to_llm_checkbox"),
+
             "export_options": {
                 "export_raw_text_checkbox": dpg.get_value("export_raw_text_checkbox"),
                 "export_translated_text_checkbox": dpg.get_value("export_translated_text_checkbox"),
@@ -184,7 +186,7 @@ class AppStateManager:
                     current_language = self.lang_settings.get_curr_lang()
                     if current_language in ['zh-CN', 'zh-TW', 'ja', 'ko']:
                         dpg.hide_item("upper_case_checkbox")
-                    elif current_language in ['en', 'ru', 'de', 'nl', 'fr', 'es', 'it']:
+                    else:
                         dpg.show_item("upper_case_checkbox")
                     if current_language != 'en':
                         self.change_language(value)
@@ -205,7 +207,7 @@ class AppStateManager:
         current_language = self.lang_settings.get_curr_lang()
         if current_language in ['zh-CN', 'zh-TW', 'ja', 'ko']:
             dpg.hide_item("upper_case_checkbox")
-        elif current_language in ['en', 'ru', 'de', 'nl', 'fr', 'it', 'es']:
+        else:
             dpg.show_item("upper_case_checkbox")
         self.change_language(lang_code)
         self.change_font(lang_code)

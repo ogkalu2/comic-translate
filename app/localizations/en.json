@@ -105,7 +105,8 @@
     "save_cbt_as_title": "Save CBT as",
     "save_epub_as_title": "Save EPUB as",
     "save_as_ok": "OK",
-    "cancel_translation_button": "Cancel"
+    "cancel_translation_button": "Cancel",
+    "img_as_input_to_llm_checkbox": "Provide Image to LLMs as context"
     },
 
     "lang_mappings": {
