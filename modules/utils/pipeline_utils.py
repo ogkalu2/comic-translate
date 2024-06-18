@@ -139,12 +139,17 @@ def ocr_blk_list_microsoft(img: np.ndarray, blk_list: List[TextBlock], api_key: 
 
     if result.read is not None:
         for line in result.read.blocks[0].lines:
-            x1 = line.bounding_polygon[0]['x']
-            x2 = line.bounding_polygon[2]['x']
-            y1 = line.bounding_polygon[0]['y']
-            y2 = line.bounding_polygon[2]['y']
-            texts_bboxes.append((x1, y1, x2, y2))
-            texts_string.append(line.text)
+            vertices = line.bounding_polygon
+            
+            # Ensure all vertices have both 'x' and 'y' coordinates
+            if all('x' in vertex and 'y' in vertex for vertex in vertices):
+                x1 = vertices[0]['x']
+                y1 = vertices[0]['y']
+                x2 = vertices[2]['x']
+                y2 = vertices[2]['y']
+                
+                texts_bboxes.append((x1, y1, x2, y2))
+                texts_string.append(line.text)
 
     blk_list = lists_to_blk_list(blk_list, texts_bboxes, texts_string)
 
@@ -161,16 +166,21 @@ def ocr_blk_list_google(img: np.ndarray, blk_list: List[TextBlock], api_key:str)
     result = response.json()
     texts = result['responses'][0]['textAnnotations']
 
-    for index, text in enumerate(texts):
-        if index == 0:
-            continue
-        x1 = text['boundingPoly']['vertices'][0]['x']
-        x2 = text['boundingPoly']['vertices'][2]['x']
-        y1 = text['boundingPoly']['vertices'][0]['y']
-        y2 = text['boundingPoly']['vertices'][2]['y']
-        string = text['description']
-        texts_bboxes.append((x1, y1, x2, y2))
-        texts_string.append(string)
+    if texts is not None:
+        for index, text in enumerate(texts):
+            vertices = text['boundingPoly']['vertices']
+            if index == 0:
+                continue
+
+            if all('x' in vertex and 'y' in vertex for vertex in vertices):
+                x1 = vertices[0]['x']
+                y1 = vertices[0]['y']
+                x2 = vertices[2]['x']
+                y2 = vertices[2]['y']
+                
+                string = text['description']
+                texts_bboxes.append((x1, y1, x2, y2))
+                texts_string.append(string)
 
     blk_list = lists_to_blk_list(blk_list, texts_bboxes, texts_string)
     
