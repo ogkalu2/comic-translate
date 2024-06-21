@@ -23,7 +23,7 @@ supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
 
 supported_translators = [
 "GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus",
-"Claude-3-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", 
+"Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", 
 "Gemini-1.5-Pro", "Yandex", "Google Translate"
 ]
 
