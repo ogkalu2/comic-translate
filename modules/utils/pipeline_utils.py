@@ -281,6 +281,9 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_kernel_siz
 
     for blk in blk_list:
         seg = blk.segm_pts
+
+        if seg.size == 0:
+            continue  # Skip if the segment is empty
         
         if blk.source_lang == 'en':
             default_kernel_size = 1
