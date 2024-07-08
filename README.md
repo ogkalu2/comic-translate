@@ -1,11 +1,11 @@
 # Comic Translate
-English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) 
+English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md) | [日本語](docs/README_ja.md) 
 
 https://github.com/ogkalu2/comic-translate/assets/115248977/b57360d3-eaad-4a93-bc46-94c01d38927c
 
 ## Intro
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
-This project was created to utilize the ability of GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian.
+This project was created to utilize the ability of GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to (but not from) Turkish, Polish, Portuguese and Brazillian Portuguese.
 
 - [The State of Machine Translation](#the-state-of-machine-translation)
 - [Preview](#comic-samples)
@@ -35,7 +35,7 @@ Excerpt from "The Walking Practice"(보행 연습) by Dolki Min(돌기민)
 ![Model](https://i.imgur.com/e1aeLej.png)
 
 ## Comic Samples
-GPT-4-Vision as Translator.
+GPT-4o as Translator.
 Note: Some of these also have Official English Translations
 
 [The Wretched of the High Seas](https://www.drakoo.fr/bd/drakoo/les_damnes_du_grand_large/les_damnes_du_grand_large_-_histoire_complete/9782382330128)
@@ -121,9 +121,9 @@ It will apply to all detcted blocks on the page
 
 ## API Keys
 To following selections will require access to closed resources and subsequently, API Keys:
-* GPT-4-Vision, 4 or 3.5 for Translation (Paid, about $0.02 USD/Page for 4-Turbo)
+* GPT-4o or 3.5 for Translation (Paid, about $0.01 USD/Page for 4o)
 * DeepL Translator (Free for 500,000 characters/month)
-* GPT-4-Vision for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.04 USD/Page)
+* GPT-4o for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.04 USD/Page)
 * Microsoft Azure Vision for OCR (Free for 5000 images/month)
 * Google Cloud Vision for OCR (Free for 1000 images/month).
 You can set your API Keys by going to Settings > Set Credentials
@@ -152,7 +152,7 @@ By Default:
 * [manga-ocr](https://github.com/kha-white/manga-ocr) for Japanese
 * [Pororo](https://github.com/yunwoong7/korean_ocr_using_pororo) for Korean 
 * [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) for Chinese 
-* [GPT-4-Vision](https://platform.openai.com/docs/guides/vision) for French, Russian, German, Dutch, Spanish and Italian. Paid, Requires an API Key.
+* [GPT-4o](https://platform.openai.com/docs/guides/vision) for French, Russian, German, Dutch, Spanish and Italian. Paid, Requires an API Key.
 
 Optional:
 
@@ -167,9 +167,9 @@ A [Manga/Anime finetuned](https://huggingface.co/dreMaz/AnimeMangaInpainting) [l
 <img src="https://i.imgur.com/cVVGVXp.jpg" width="49%"> <img src="https://i.imgur.com/bLkPyqG.jpg" width="49%">
 
 ### Translation
-Currently, this supports using GPT-4-Vision, GPT-4, GPT-3.5, DeepL and Google Translate.
+Currently, this supports using GPT-4o, GPT-4, GPT-3.5, DeepL and Google Translate.
 All GPT models are fed the context of the entire page text to aid translations. 
-GPT-4-Vision specifically is also provided the image of the page, the page with the original text for
+GPT-4o specifically is also provided the image of the page, the page with the original text for
 languages it is competent at recognizing (French, Russian, German, Dutch, Spanish, Italian) and the Inpainted Image for the rest. 
 
 ### Text Rendering
@@ -185,3 +185,6 @@ PIL for rendering wrapped text in bounding boxes obtained from bubbles and text.
 * [https://github.com/kha-white/manga-ocr](https://github.com/kha-white/manga-ocr)
 * [https://github.com/JaidedAI/EasyOCR](https://github.com/JaidedAI/EasyOCR)
 * [https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
+
+
+
