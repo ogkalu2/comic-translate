@@ -123,7 +123,7 @@ It will apply to all detcted blocks on the page
 To following selections will require access to closed resources and subsequently, API Keys:
 * GPT-4o or 3.5 for Translation (Paid, about $0.01 USD/Page for 4o)
 * DeepL Translator (Free for 500,000 characters/month)
-* GPT-4o for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.04 USD/Page)
+* GPT-4o for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.02 USD/Page)
 * Microsoft Azure Vision for OCR (Free for 5000 images/month)
 * Google Cloud Vision for OCR (Free for 1000 images/month).
 You can set your API Keys by going to Settings > Set Credentials
