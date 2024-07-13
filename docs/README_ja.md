@@ -113,6 +113,7 @@ raise RarCannotExec("Cannot find working tool")
 以下の選択肢では、閉じたリソースへのアクセスとそれに伴うAPIキーが必要です：
 * GPT-4oまたは3.5での翻訳（有料、約$0.01 USD/ページ for 4o）
 * DeepL Translator（無料、月間500,000文字まで）
+* Microsoft Azure AI 翻訳（無料、月間2,000,000文字まで）
 * フランス語、ロシア語、ドイツ語、オランダ語、スペイン語、イタリア語のOCR（有料、約$0.02 USD/ページ）にはGPT-4oがデフォルト
 * Microsoft Azure Vision（無料、月間5000画像まで）
 * Google Cloud Vision（無料、月間1000画像まで）

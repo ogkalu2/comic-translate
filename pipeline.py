@@ -106,7 +106,9 @@ def process(SM: AppStateManager):
     yandex_api_key = dpg.get_value("yandex_api_key")
     deepl_api_key = dpg.get_value("deepl_api_key")
     google_api_key = dpg.get_value("google_api_key")
-    microsoft_api_key = dpg.get_value("microsoft_api_key")
+    microsoft_trans_api_key = dpg.get_value("microsoft_trans_api_key")
+    microsoft_trans_region = dpg.get_value("microsoft_trans_region")
+    microsoft_ocr_api_key = dpg.get_value("microsoft_ocr_api_key")
     microsoft_endpoint_url = dpg.get_value("microsoft_endpoint_url")
     preview_annot_img = dpg.get_value("preview_annot_img_checkbox")
     preview_inpainted_img = dpg.get_value("preview_inpainted_img_checkbox")
@@ -145,7 +147,15 @@ def process(SM: AppStateManager):
         dpg.configure_item("api_key_translator_error", show=True)
         return
     
-    if en_ocr == "Microsoft OCR" and not microsoft_api_key:
+    if 'Azure' in en_translator and not microsoft_trans_api_key:
+        dpg.configure_item("api_key_translator_error", show=True)
+        return
+    
+    if 'Azure' in en_translator and not microsoft_trans_region:
+        dpg.configure_item("api_key_translator_error", show=True)
+        return
+
+    if en_ocr == "Microsoft OCR" and not microsoft_ocr_api_key:
         dpg.configure_item("api_key_ocr_error", show=True)
         return
     
@@ -261,7 +271,7 @@ def process(SM: AppStateManager):
             if en_source_lang == 'Chinese' and (not microsoft_ocr and not google_ocr):
                 ocr_blk_list_paddle(img, blk_list)
             elif microsoft_ocr:
-                ocr_blk_list_microsoft(img, blk_list, api_key=microsoft_api_key, endpoint=microsoft_endpoint_url)
+                ocr_blk_list_microsoft(img, blk_list, api_key=microsoft_ocr_api_key, endpoint=microsoft_endpoint_url)
             elif google_ocr:
                 ocr_blk_list_google(img, blk_list, google_api_key)
             elif gpt_ocr:
@@ -328,7 +338,7 @@ def process(SM: AppStateManager):
         
         # Get Translations/ Export if selected
         entire_raw_text = get_raw_text(blk_list)
-        translator = Translator(translator_client, api_key)
+        translator = Translator(translator_client, api_key, microsoft_trans_region)
         translator.translate(blk_list, en_translator, en_source_lang, en_target_lang, img, inpaint_input_img, extra_context)    
         entire_translated_text = get_raw_translation(blk_list)
 

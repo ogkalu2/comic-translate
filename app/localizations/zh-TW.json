@@ -75,7 +75,7 @@
     "upper_case_checkbox": "將文字渲染為大寫",
     "font_dropdown_title": "字體",
     "translator_dropdown_title": "翻譯器",
-    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "谷歌翻譯"],
+    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Azure AI 翻譯", "谷歌翻譯"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["預設", "微軟OCR", "谷歌雲視覺"],
     "translate_button": "翻譯",
@@ -143,6 +143,7 @@
         "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
+        "Azure AI 翻譯": "Azure AI Translator",
         "谷歌翻譯": "Google Translate"
     },
 

@@ -37,6 +37,8 @@ def get_api_key(translator: str):
         api_key = dpg.get_value("claude_api_key")
     elif 'Gemini' in translator:
         api_key = dpg.get_value("gemini_api_key")
+    elif 'Azure' in translator:
+        api_key = dpg.get_value("microsoft_trans_api_key")
     else:
         map = {
             "DeepL": dpg.get_value("deepl_api_key"),

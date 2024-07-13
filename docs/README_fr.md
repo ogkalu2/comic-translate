@@ -110,6 +110,7 @@ Cela s'appliquera à tous les blocs détectés sur la page
 Les sélections suivantes nécessiteront un accès à des ressources fermées et, par conséquent, des clés API :
 * GPT-4-Vision, 4 ou 3.5 pour la traduction (Payant, environ $0.02 USD/Page pour 4-Turbo)
 * Traducteur DeepL (Gratuit pour 500 000 caractères/mois)
+* Microsoft Azure AI Traducteur (Gratuit pour 2 000 000 caractères/mois)
 * GPT-4-Vision pour OCR (Option par défaut pour le français, le russe, l'allemand, le néerlandais, l'espagnol, l'italien) (Payant, environ $0.04 USD/Page)
 * Microsoft Azure Vision pour OCR (Gratuit pour 5000 images/mois)
 * Google Cloud Vision pour OCR (Gratuit pour 1000 images/mois).

@@ -139,7 +139,9 @@ class AppStateManager:
             state["deepl_api_key"] = dpg.get_value("deepl_api_key")
 
         if dpg.get_value("save_keys_for_microsoft_checkbox"):
-            state["microsoft_api_key"] = dpg.get_value("microsoft_api_key")
+            state["microsoft_trans_api_key"] = dpg.get_value("microsoft_trans_api_key")
+            state["microsoft_trans_region"] = dpg.get_value("microsoft_trans_region")
+            state["microsoft_ocr_api_key"] = dpg.get_value("microsoft_ocr_api_key")
             state["microsoft_endpoint_url"] = dpg.get_value("microsoft_endpoint_url")
 
         if dpg.get_value("save_keys_for_google_checkbox"):

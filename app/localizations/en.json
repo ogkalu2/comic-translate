@@ -76,7 +76,7 @@
     "upper_case_checkbox": "Render Text in Upper Case",
     "font_dropdown_title": "Font",
     "translator_dropdown_title": "Translator",
-    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Translate"],
+    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Azure AI Translator", "Google Translate"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["Default", "Microsoft OCR", "Google Cloud Vision"],
     "translate_button": "Translate",
@@ -144,6 +144,7 @@
         "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
+        "Azure AI Translator": "Azure AI Translator",
         "Google Translate": "Google Translate"    
     },
 

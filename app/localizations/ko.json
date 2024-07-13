@@ -9,7 +9,8 @@
     "deepl_api_key_title": "API 키",
     "save_keys_for_deepl_checkbox": "키 저장하기",
     "deepl_api_key_ok": "확인",
-    "microsoft_api_key_title": "API 키",
+    "microsoft_trans_api_key_title": "번역 API 키",
+    "microsoft_api_key_title": "OCR API 키",
     "microsoft_endpoint_url_title": "엔드포인트 URL",
     "save_keys_for_microsoft_checkbox": "저장하기",
     "microsoft_api_key_ok": "확인",
@@ -75,7 +76,7 @@
     "upper_case_checkbox": "문자를 대문자로 표시하기",
     "font_dropdown_title": "글꼴",
     "translator_dropdown_title": "번역기",
-    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "구글 번역"],
+    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "마이크로소프트 Azure AI 번역", "구글 번역"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["기본 인식", "마이크로소프트 OCR", "구글 클라우드 비전"],
     "translate_button": "번역하기",
@@ -143,6 +144,7 @@
         "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
+        "마이크로소프트 Azure AI 번역": "Azure AI Translator",
         "구글 번역": "Google Translate"
     },
 

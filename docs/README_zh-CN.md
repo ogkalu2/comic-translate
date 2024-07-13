@@ -121,6 +121,7 @@ raise RarCannotExec("Cannot find working tool")
 以下选择将需要访问封闭资源，因此需要 API 密钥：
 * 用于翻译的 GPT-4o 或 3.5（付费，每页约 $0.01 美元用于 4o）
 * DeepL 翻译器（免费，每月 500,000 个字符）
+* Microsoft Azure 翻译（免费，每月 2,000,000 个字符）
 * 用于 OCR 的 GPT-4o（法文、俄文、德文、荷兰文、西班牙文、意大利文的默认选项）（付费，每页约 $0.02 美元）
 * Microsoft Azure Vision 用于 OCR（免费，每月 5000 张图片）
 * Google Cloud Vision 用于 OCR（免费，每月 1000 张图片）。

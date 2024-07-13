@@ -75,7 +75,7 @@
     "upper_case_checkbox": "Отображать текст заглавными буквами",
     "font_dropdown_title": "Шрифт",
     "translator_dropdown_title": "Переводчик",
-    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Google Переводчик"],
+    "translator_dropdown": ["GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus", "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", "Gemini-1.5-Pro", "Yandex", "Azure AI Переводчик", "Google Переводчик"],
     "ocr_dropdown_title": "OCR",
     "ocr_dropdown": ["По умолчанию", "Майкрософт OCR", "Google Cloud Vision"],
     "translate_button": "Перевести",
@@ -143,6 +143,7 @@
         "Gemini-1.5-Flash": "Gemini-1.5-Flash",
         "Gemini-1.5-Pro": "Gemini-1.5-Pro",
         "Yandex": "Yandex",
+        "Azure AI Переводчик": "Azure AI Translator",
         "Google Переводчик": "Google Translate"
     },
 

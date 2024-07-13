@@ -24,7 +24,7 @@ supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
 supported_translators = [
 "GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus",
 "Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", 
-"Gemini-1.5-Pro", "Yandex", "Google Translate"
+"Gemini-1.5-Pro", "Yandex", "Azure AI Translator", "Google Translate"
 ]
 
 dpg_windows = [
@@ -247,10 +247,16 @@ with dpg.window(modal=True, show=False, tag="deepl_credentials", no_title_bar=Tr
 
 # Microsoft
 with dpg.window(modal=True, show=False, tag="microsoft_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "microsoft_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "microsoft_api_key")
+    dpg.add_text("Translator API Key", tag = "microsoft_trans_api_key_title")
+    dpg.add_input_text(password=True, width=250, tag = "microsoft_trans_api_key")
+
+    dpg.add_text("Translator API Region", tag = "microsoft_trans_region_title")
+    dpg.add_input_text(password=False, width=250, tag = "microsoft_trans_region")
+
+    dpg.add_text("OCR API Key", tag = "microsoft_api_key_title")
+    dpg.add_input_text(password=True, width=250, tag = "microsoft_ocr_api_key")
     
-    dpg.add_text("Endpoint URL", tag = "microsoft_endpoint_url_title")
+    dpg.add_text("OCR Endpoint URL", tag = "microsoft_endpoint_url_title")
     dpg.add_input_text(password=True, width=250, tag = "microsoft_endpoint_url")
 
     dpg.add_checkbox(label="Save", tag = "save_keys_for_microsoft_checkbox")

@@ -7,13 +7,15 @@ from .utils.translator_utils import encode_image_array, get_raw_text, set_texts_
 from .utils.pipeline_utils import get_language_codes
 from deep_translator import GoogleTranslator, YandexTranslator
 import deepl
+import requests
 
 
 class Translator:
-    def __init__(self, client = None, api_key: str = ''):
+    def __init__(self, client = None, api_key: str = '', region = None):
         self.client = client
         self.api_key = api_key
         self.img_as_llm_input = dpg.get_value("img_as_input_to_llm_checkbox")
+        self.region = region    # Used in Microsoft Azure AI Translator
 
     def get_llm_model(self, translator: str):
         model_map = {
@@ -35,6 +37,30 @@ class Translator:
         - If it's already in {target_lang} or looks like gibberish, OUTPUT IT AS IT IS instead
         - DO NOT give explanations
         Do Your Best! I'm really counting on you."""
+    
+    def get_azure_translation(self, user_prompt: str, source_lang: str, target_lang: str, key: str, region: str, endpoint = 'https://api.cognitive.microsofttranslator.com/'):
+        url = endpoint + 'translate'
+        # Build the request
+        params = {
+            'api-version': '3.0',
+            'from': source_lang,
+            'to': target_lang
+        }
+        headers = {
+            'Ocp-Apim-Subscription-Key': key,
+            'Ocp-Apim-Subscription-Region': region,
+            'Content-type': 'application/json'
+        }
+        body = [{
+            'text': user_prompt
+        }]
+        # Send the request and get response
+        request = requests.post(url, params=params, headers=headers, json=body)
+        response = request.json()
+        # Get translation
+        translation = response[0]["translations"][0]["text"]
+        # Return the translation
+        return translation
 
     def get_gpt_translation(self, user_prompt: str, model: str, system_prompt: str, image: np.ndarray):
         encoded_image = encode_image_array(image)
@@ -123,13 +149,15 @@ class Translator:
         source_lang_code, target_lang_code = get_language_codes(source_lang, target_lang)
 
         # Non LLM Based
-        if translator in ["Google Translate", "DeepL", "Yandex"]:
+        if translator in ["Google Translate", "DeepL", "Yandex", "Azure AI Translator"]:
             for blk in blk_list:
                 text = blk.text.replace(" ", "") if 'zh' in source_lang_code.lower() or source_lang_code.lower() == 'ja' else blk.text
                 if translator == "Google Translate":
                     translation = GoogleTranslator(source='auto', target=target_lang_code).translate(text)
                 elif translator == "Yandex":
                     translation = YandexTranslator(self.api_key).translate(source='auto', target=target_lang_code, text=text)
+                elif translator == "Azure AI Translator":
+                    translation = self.get_azure_translation(text, source_lang_code, target_lang_code, self.api_key, self.region)
                 else:
                     trans = deepl.Translator(self.api_key)
                     if target_lang == "Chinese (Simplified)":

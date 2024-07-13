@@ -108,6 +108,7 @@ raise RarCannotExec("Cannot find working tool")
 다음 선택사항에는 폐쇄된 리소스에 대한 접근과, 이에 따른 API 키가 필요합니다:
 * 번역을 위한 GPT-4-Vision, 4 또는 3.5 (유료, 4-Turbo에 대해 페이지당 약 $0.02 USD)
 * DeepL 번역기 (월 500,000자까지 무료)
+* Microsoft Azure AI 번역기 (월 2,000,000자까지 무료)
 * OCR을 위한 GPT-4-Vision (프랑스어, 러시아어, 독일어, 네덜란드어, 스페인어, 이탈리아어를 충분히 인식할 경우 기본 옵션) (유료, 페이지당 약 $0.04 USD)
 * OCR을 위한 Microsoft Azure Vision (월 5000 이미지까지 무료)
 * OCR을 위한 Google Cloud Vision (월 1000 이미지까지 무료).
