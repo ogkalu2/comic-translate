@@ -15,7 +15,6 @@ from loguru import logger
 from torch.hub import download_url_to_file, get_dir
 import hashlib
 
-
 def md5sum(filename):
     md5 = hashlib.md5()
     with open(filename, "rb") as f:
