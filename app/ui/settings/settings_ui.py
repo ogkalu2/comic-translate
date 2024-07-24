@@ -530,7 +530,7 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         for file_type in file_types:
             save_layout = QtWidgets.QHBoxLayout()
-            save_label = MLabel(self.tr(f"Save {file_type} as:"))
+            save_label = MLabel(self.tr("Save {file_type} as:").format(file_type=file_type))
             save_combo = MComboBox().small()
             save_items = [ft for ft in available_file_types if ft != 'cbr']
             save_combo.addItems(save_items)  # Exclude 'CBR'
