@@ -4,7 +4,6 @@ import json
 import re
 import stanza
 import numpy as np
-import dearpygui.dearpygui as dpg
 from openai import OpenAI
 import google.generativeai as genai
 import anthropic
@@ -16,35 +15,18 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def get_llm_client(translator: str):
+def get_llm_client(translator: str, api_key: str):
     if 'GPT' in translator:
-        client  = OpenAI(api_key = dpg.get_value("gpt_api_key"))
+        client  = OpenAI(api_key = api_key)
     elif 'Claude' in translator:
-        client = anthropic.Anthropic(api_key = dpg.get_value("claude_api_key"))
+        client = anthropic.Anthropic(api_key = api_key)
     elif 'Gemini' in translator:
         client = genai
-        client.configure(api_key = dpg.get_value("gemini_api_key"))
+        client.configure(api_key = api_key)
     else:
         client = None
 
     return client
-
-def get_api_key(translator: str):
-    api_key = ""
-    if 'GPT' in translator:
-        api_key = dpg.get_value("gpt_api_key")
-    elif 'Claude' in translator:
-        api_key = dpg.get_value("claude_api_key")
-    elif 'Gemini' in translator:
-        api_key = dpg.get_value("gemini_api_key")
-    else:
-        map = {
-            "DeepL": dpg.get_value("deepl_api_key"),
-            "Yandex": dpg.get_value("yandex_api_key"),
-        }
-        api_key = map.get(translator)
-
-    return api_key
 
 def get_raw_text(blk_list: List[TextBlock]):
     rw_txts_dict = {}
@@ -71,21 +53,16 @@ def set_texts_from_json(blk_list: List[TextBlock], json_string: str):
     if match:
         # Extract the JSON string from the matched regular expression
         json_string = match.group(0)
-        try:
-            parsed_json = json.loads(json_string)
-        except json.JSONDecodeError as e:
-            print("Error decoding JSON:", e)
+        translation_dict = json.loads(json_string)
+        
+        for idx, blk in enumerate(blk_list):
+            block_key = f"block_{idx}"
+            if block_key in translation_dict:
+                blk.translation = translation_dict[block_key]
+            else:
+                print(f"Warning: {block_key} not found in JSON string.")
     else:
         print("No JSON found in the input string.")
-
-    translation_dict = json.loads(json_string)
-    
-    for idx, blk in enumerate(blk_list):
-        block_key = f"block_{idx}"
-        if block_key in translation_dict:
-            blk.translation = translation_dict[block_key]
-        else:
-            print(f"Warning: {block_key} not found in JSON string.")
 
 def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: bool =True):
     for blk in blk_list:
