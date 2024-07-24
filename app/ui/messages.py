@@ -23,7 +23,7 @@ class Messages:
     @staticmethod
     def show_api_key_ocr_gpt4v_error(parent):
         MMessage.error(
-            text=QCoreApplication.translate("Messages", "Default OCR for the selected Source Language is GPT-4o\nwhich requires an API Key. Go to Settings > Credentials > GPT to set one"),
+            text=QCoreApplication.translate("Messages", "Default OCR for one of the selected Source Languages is GPT-4o\nwhich requires an API Key. Go to Settings > Credentials > GPT to set one"),
             parent=parent,
             duration=None,
             closable=True
