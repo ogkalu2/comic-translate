@@ -6,12 +6,12 @@
     <message>
         <location filename="../../comic.py" line="674"/>
         <source>Korean</source>
-        <translation type="unfinished"></translation>
+        <translation>Korece</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="675"/>
         <source>English</source>
-        <translation type="unfinished"></translation>
+        <translation>İngilizce</translation>
     </message>
 </context>
 <context>
@@ -19,233 +19,233 @@
     <message>
         <location filename="../ui/main_window.py" line="61"/>
         <source>English</source>
-        <translation type="unfinished"></translation>
+        <translation>İngilizce</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="62"/>
         <source>Korean</source>
-        <translation type="unfinished"></translation>
+        <translation>Korece</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="63"/>
         <source>Japanese</source>
-        <translation type="unfinished"></translation>
+        <translation>Japonca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="64"/>
         <source>French</source>
-        <translation type="unfinished"></translation>
+        <translation>Fransızca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="65"/>
         <source>Simplified Chinese</source>
-        <translation type="unfinished"></translation>
+        <translation>Basitleştirilmiş Çince</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="66"/>
         <source>Traditional Chinese</source>
-        <translation type="unfinished"></translation>
+        <translation>Geleneksel Çince</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="67"/>
         <source>Russian</source>
-        <translation type="unfinished"></translation>
+        <translation>Rusça</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="68"/>
         <source>German</source>
-        <translation type="unfinished"></translation>
+        <translation>Almanca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="69"/>
         <source>Dutch</source>
-        <translation type="unfinished"></translation>
+        <translation>Hollandaca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="70"/>
         <source>Spanish</source>
-        <translation type="unfinished"></translation>
+        <translation>İspanyolca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="71"/>
         <source>Italian</source>
-        <translation type="unfinished"></translation>
+        <translation>İtalyanca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="72"/>
         <source>Turkish</source>
-        <translation type="unfinished"></translation>
+        <translation>Türkçe</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="73"/>
         <source>Polish</source>
-        <translation type="unfinished"></translation>
+        <translation>Lehçe</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="74"/>
         <source>Portuguese</source>
-        <translation type="unfinished"></translation>
+        <translation>Portekizce</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="75"/>
         <source>Brazilian Portuguese</source>
-        <translation type="unfinished"></translation>
+        <translation>Brezilya Portekizcesi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="106"/>
         <location filename="../ui/main_window.py" line="231"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
-        <translation type="unfinished"></translation>
+        <translation>Resimleri, PDF'leri, Epub'ları veya Çizgi Roman Arşiv Dosyalarını (cbr, cbz, vb.) içe aktarın</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="111"/>
         <source>Save Currently Loaded Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Yüklenen Resmi Kaydet</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="125"/>
         <source>Save all Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Tüm Resimleri Kaydet</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="129"/>
         <source>Home</source>
-        <translation type="unfinished"></translation>
+        <translation>Anasayfa</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="130"/>
         <source>Settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Ayarlar</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="162"/>
         <source>Detect Text Boxes</source>
-        <translation type="unfinished"></translation>
+        <translation>Metin Kutularını Algıla</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="163"/>
         <source>OCR</source>
-        <translation type="unfinished"></translation>
+        <translation>OCR</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="164"/>
         <source>Get Translations</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevirileri Al</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="165"/>
         <source>Segment Text</source>
-        <translation type="unfinished"></translation>
+        <translation>Metni Bölümlendir</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="166"/>
         <source>Clean Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntüyü Temizle</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="167"/>
         <source>Paste Translations</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevirileri Yapıştır</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="183"/>
         <source>Manual</source>
-        <translation type="unfinished"></translation>
+        <translation>Manuel</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="186"/>
         <source>Automatic</source>
-        <translation type="unfinished"></translation>
+        <translation>Otomatik</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="190"/>
         <source>Translate</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevir</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="193"/>
         <source>Cancel</source>
-        <translation type="unfinished"></translation>
+        <translation>İptal</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="208"/>
         <source>Loaded Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Yüklenen Resimler</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="226"/>
         <source>Click or drag files here</source>
-        <translation type="unfinished"></translation>
+        <translation>Dosyaları buraya tıklayın veya sürükleyin</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="281"/>
         <source>Set for all</source>
-        <translation type="unfinished"></translation>
+        <translation>Tümü için ayarla</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="282"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
-        <translation type="unfinished"></translation>
+        <translation>Geçerli sayfadaki Kaynak ve Hedef Dili tüm sayfalar için ayarlar</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="301"/>
         <source>Remove all the Boxes on the Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Resimdeki Tüm Kutuları Kaldır</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="312"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntüyü Temizlemek için Fırça Darbeleri Çizin</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="317"/>
         <source>Erase Brush Strokes</source>
-        <translation type="unfinished"></translation>
+        <translation>Fırça Darbelerini Sil</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="323"/>
         <source>Undo Brush Stroke</source>
-        <translation type="unfinished"></translation>
+        <translation>Fırça Darbesini Geri Al</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="324"/>
         <source>Redo Brush Stroke</source>
-        <translation type="unfinished"></translation>
+        <translation>Fırça Darbesini Yinele</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="329"/>
         <source>Remove all the brush strokes on the Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Resimdeki Tüm Fırça Darbelerini Kaldır</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="349"/>
         <source>Brush Size Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>Fırça Boyutu Kaydırıcısı</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="350"/>
         <source>Eraser Size Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>Silgi Boyutu Kaydırıcısı</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="356"/>
         <source>Undo Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntüyü Geri Al</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="357"/>
         <source>Redo Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntüyü Yinele</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="365"/>
         <source>Box Drawing</source>
-        <translation type="unfinished"></translation>
+        <translation>Kutu Çizimi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="369"/>
         <source>Inpainting</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntü Doldurma</translation>
     </message>
 </context>
 <context>
@@ -254,74 +254,82 @@
         <location filename="../../comic.py" line="148"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation type="unfinished"></translation>
+        <translation>Metin Bloğu Algılanmadı.
+Atlıyor:</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="149"/>
         <source>Could not OCR detected text.
 Skipping:</source>
-        <translation type="unfinished"></translation>
+        <translation>Algılanan metin OCR edilemedi.
+Atlıyor:</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="150"/>
         <source>Could not get translations.
 Skipping:</source>
-        <translation type="unfinished"></translation>
+        <translation>Çeviriler alınamadı.
+Atlıyor:</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="550"/>
         <source>Processing:</source>
-        <translation type="unfinished"></translation>
+        <translation>İşleniyor:</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="553"/>
         <source>Archiving:</source>
-        <translation type="unfinished"></translation>
+        <translation>Arşivleniyor:</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="8"/>
         <source>An API Key is required for the selected translator.
-Go to Settings &gt; Credentials to set one</source>
-        <translation type="unfinished"></translation>
+Go to Settings > Credentials to set one</source>
+        <translation>Seçilen çevirmen için bir API Anahtarı gereklidir.
+Ayarlamak için Ayarlar > Kimlik Bilgileri'ne gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="17"/>
         <source>An API Key is required for the selected OCR.
-Go to Settings &gt; Credentials to set one</source>
-        <translation type="unfinished"></translation>
+Go to Settings > Credentials to set one</source>
+        <translation>Seçilen OCR için bir API Anahtarı gereklidir.
+Ayarlamak için Ayarlar > Kimlik Bilgileri'ne gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="26"/>
         <source>Default OCR for the selected Source Language is GPT-4o
-which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
-        <translation type="unfinished"></translation>
+which requires an API Key. Go to Settings > Credentials > GPT to set one</source>
+        <translation>Seçilen Kaynak Dil için varsayılan OCR, bir API Anahtarı gerektiren GPT-4o'dır.
+Bir tane ayarlamak için Ayarlar > Kimlik Bilgileri > GPT'ye gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
         <source>An Endpoint URL is required for Microsoft OCR.
-Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
-        <translation type="unfinished"></translation>
+Go to Settings > Credentials > Microsoft to set one</source>
+        <translation>Microsoft OCR için bir Uç Nokta URL'si gereklidir.
+Bir tane ayarlamak için Ayarlar > Kimlik Bilgileri > Microsoft'a gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="44"/>
         <source>DeepL does not translate to Traditional Chinese</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL, Geleneksel Çince'ye çeviri yapmaz</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="53"/>
         <source>Google Translate does not support Brazillian Portuguese</source>
-        <translation type="unfinished"></translation>
+        <translation>Google Translate, Brezilya Portekizcesi'ni desteklemiyor</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="62"/>
         <source>Comic has been Translated!</source>
-        <translation type="unfinished"></translation>
+        <translation>Çizgi Roman Çevrildi!</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>No Font selected.
-Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
-        <translation type="unfinished"></translation>
+Go to Settings > Text Rendering > Font to select or import one </source>
+        <translation>Yazı tipi seçilmedi.
+Seçmek veya içe aktarmak için Ayarlar > Metin İşleme > Yazı Tipi'ne gidin </translation>
     </message>
 </context>
 <context>
@@ -330,19 +338,19 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
         <location filename="../ui/settings/settings_ui.py" line="82"/>
         <source>Default</source>
-        <translation type="unfinished"></translation>
+        <translation>Varsayılan</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
         <location filename="../ui/settings/settings_ui.py" line="83"/>
         <source>Microsoft OCR</source>
-        <translation type="unfinished"></translation>
+        <translation>Microsoft OCR</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
         <location filename="../ui/settings/settings_ui.py" line="84"/>
         <source>Google Cloud Vision</source>
-        <translation type="unfinished"></translation>
+        <translation>Google Cloud Vision</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
@@ -350,76 +358,76 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <location filename="../ui/settings/settings_ui.py" line="240"/>
         <location filename="../ui/settings/settings_ui.py" line="558"/>
         <source>Resize</source>
-        <translation type="unfinished"></translation>
+        <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
         <location filename="../ui/settings/settings_ui.py" line="91"/>
         <location filename="../ui/settings/settings_ui.py" line="563"/>
         <source>Original</source>
-        <translation type="unfinished"></translation>
+        <translation>Orijinal</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
         <location filename="../ui/settings/settings_ui.py" line="92"/>
         <location filename="../ui/settings/settings_ui.py" line="559"/>
         <source>Crop</source>
-        <translation type="unfinished"></translation>
+        <translation>Kırp</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
         <location filename="../ui/settings/settings_ui.py" line="65"/>
         <source>Dark</source>
-        <translation type="unfinished"></translation>
+        <translation>Koyu</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
         <location filename="../ui/settings/settings_ui.py" line="66"/>
         <source>Light</source>
-        <translation type="unfinished"></translation>
+        <translation>Aydınlık</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
         <location filename="../ui/settings/settings_ui.py" line="95"/>
         <source>Left</source>
-        <translation type="unfinished"></translation>
+        <translation>Sol</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
         <location filename="../ui/settings/settings_ui.py" line="96"/>
         <location filename="../ui/settings/settings_ui.py" line="451"/>
         <source>Center</source>
-        <translation type="unfinished"></translation>
+        <translation>Orta</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
         <location filename="../ui/settings/settings_ui.py" line="97"/>
         <source>Right</source>
-        <translation type="unfinished"></translation>
+        <translation>Sağ</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
         <location filename="../ui/settings/settings_ui.py" line="100"/>
         <source>Open AI GPT</source>
-        <translation type="unfinished"></translation>
+        <translation>Open AI GPT</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
         <location filename="../ui/settings/settings_ui.py" line="101"/>
         <source>Microsoft Azure</source>
-        <translation type="unfinished"></translation>
+        <translation>Microsoft Azure</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
         <location filename="../ui/settings/settings_ui.py" line="102"/>
         <source>Google Cloud</source>
-        <translation type="unfinished"></translation>
+        <translation>Google Cloud</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
         <location filename="../ui/settings/settings_ui.py" line="103"/>
         <source>Google Gemini</source>
-        <translation type="unfinished"></translation>
+        <translation>Google Gemini</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
@@ -427,13 +435,13 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <location filename="../ui/settings/settings_ui.py" line="71"/>
         <location filename="../ui/settings/settings_ui.py" line="104"/>
         <source>DeepL</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
         <location filename="../ui/settings/settings_ui.py" line="105"/>
         <source>Anthropic Claude</source>
-        <translation type="unfinished"></translation>
+        <translation>Anthropic Claude</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
@@ -441,243 +449,244 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <location filename="../ui/settings/settings_ui.py" line="77"/>
         <location filename="../ui/settings/settings_ui.py" line="106"/>
         <source>Yandex</source>
-        <translation type="unfinished"></translation>
+        <translation>Yandex</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
         <location filename="../ui/settings/settings_ui.py" line="69"/>
         <source>GPT-4o</source>
-        <translation type="unfinished"></translation>
+        <translation>GPT-4o</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
         <location filename="../ui/settings/settings_ui.py" line="70"/>
         <location filename="../ui/settings/settings_ui.py" line="226"/>
         <source>GPT-4o mini</source>
-        <translation type="unfinished"></translation>
+        <translation>GPT-4o mini</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
         <location filename="../ui/settings/settings_ui.py" line="72"/>
         <source>Claude-3-Opus</source>
-        <translation type="unfinished"></translation>
+        <translation>Claude-3-Opus</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
         <location filename="../ui/settings/settings_ui.py" line="73"/>
         <source>Claude-3.5-Sonnet</source>
-        <translation type="unfinished"></translation>
+        <translation>Claude-3.5-Sonnet</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
         <location filename="../ui/settings/settings_ui.py" line="74"/>
         <source>Claude-3-Haiku</source>
-        <translation type="unfinished"></translation>
+        <translation>Claude-3-Haiku</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
         <location filename="../ui/settings/settings_ui.py" line="75"/>
         <source>Gemini-1.5-Flash</source>
-        <translation type="unfinished"></translation>
+        <translation>Gemini-1.5-Flash</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
         <location filename="../ui/settings/settings_ui.py" line="76"/>
         <source>Gemini-1.5-Pro</source>
-        <translation type="unfinished"></translation>
+        <translation>Gemini-1.5-Pro</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
         <location filename="../ui/settings/settings_ui.py" line="78"/>
         <source>Google Translate</source>
-        <translation type="unfinished"></translation>
+        <translation>Google Translate</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="43"/>
         <location filename="../ui/settings/settings_ui.py" line="79"/>
         <source>Microsoft Translator</source>
-        <translation type="unfinished"></translation>
+        <translation>Microsoft Translator</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="161"/>
         <location filename="../ui/settings/settings_ui.py" line="233"/>
         <source>Inpainter</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntü Doldurucu</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="162"/>
         <location filename="../ui/settings/settings_ui.py" line="236"/>
         <source>HD Strategy</source>
-        <translation type="unfinished"></translation>
+        <translation>HD Stratejisi</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="179"/>
         <source>Personalization</source>
-        <translation type="unfinished"></translation>
+        <translation>Kişiselleştirme</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="180"/>
         <source>Tools</source>
-        <translation type="unfinished"></translation>
+        <translation>Araçlar</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="181"/>
         <source>Credentials</source>
-        <translation type="unfinished"></translation>
+        <translation>Kimlik Bilgileri</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="182"/>
         <source>LLMs</source>
-        <translation type="unfinished"></translation>
+        <translation>LLM'ler</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="183"/>
         <source>Text Rendering</source>
-        <translation type="unfinished"></translation>
+        <translation>Metin İşleme</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="184"/>
         <source>Export</source>
-        <translation type="unfinished"></translation>
+        <translation>Dışa Aktar</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="211"/>
         <source>Language</source>
-        <translation type="unfinished"></translation>
+        <translation>Dil</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="213"/>
         <source>Theme</source>
-        <translation type="unfinished"></translation>
+        <translation>Tema</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="225"/>
         <source>Translator</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevirmen</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="229"/>
         <location filename="../ui/settings/settings_ui.py" line="339"/>
         <source>OCR</source>
-        <translation type="unfinished"></translation>
+        <translation>OCR</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="251"/>
         <source>Resize Limit:</source>
-        <translation type="unfinished"></translation>
+        <translation>Yeniden Boyutlandırma Sınırı:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="252"/>
         <source>Resize the longer side of the image to a specific size,
 then do inpainting on the resized image.</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntünün uzun kenarını belirli bir boyuta yeniden boyutlandırın,
+ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="269"/>
         <source>Crop masking area from the original image to do inpainting.</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntü doldurma yapmak için maskeleme alanını orijinal görüntüden kırpın.</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="271"/>
         <source>Crop Margin:</source>
-        <translation type="unfinished"></translation>
+        <translation>Kırpma Payı:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="281"/>
         <source>Crop Trigger Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Kırpma Tetikleme Boyutu:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="307"/>
         <source>Use GPU</source>
-        <translation type="unfinished"></translation>
+        <translation>GPU Kullan</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="346"/>
         <location filename="../ui/settings/settings_ui.py" line="373"/>
         <location filename="../ui/settings/settings_ui.py" line="396"/>
         <source>API Key</source>
-        <translation type="unfinished"></translation>
+        <translation>API Anahtarı</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="357"/>
         <source>Endpoint URL</source>
-        <translation type="unfinished"></translation>
+        <translation>Uç Nokta URL'si</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="366"/>
         <source>Translate</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevir</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="384"/>
         <source>Region</source>
-        <translation type="unfinished"></translation>
+        <translation>Bölge</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="408"/>
         <source>Save Keys</source>
-        <translation type="unfinished"></translation>
+        <translation>Anahtarları Kaydet</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="429"/>
         <source>Extra Context:</source>
-        <translation type="unfinished"></translation>
+        <translation>Ek Bağlam:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="432"/>
         <source>Provide Image as input to multimodal LLMs</source>
-        <translation type="unfinished"></translation>
+        <translation>Çok modlu LLM'lere girdi olarak Görüntü sağlayın</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="447"/>
         <source>Text Alignment</source>
-        <translation type="unfinished"></translation>
+        <translation>Metin Hizalama</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="460"/>
         <source>Font</source>
-        <translation type="unfinished"></translation>
+        <translation>Yazı Tipi</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="469"/>
         <source>Import the Font to use for Rendering Text on Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntülerde Metin İşleme için kullanılacak Yazı Tipini içe aktarın</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="483"/>
         <source>Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Renk</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="497"/>
         <source>Render Text in UpperCase</source>
-        <translation type="unfinished"></translation>
+        <translation>Metni Büyük Harfle İşle</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="512"/>
         <source>Automatic Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>Otomatik Mod</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="514"/>
         <source>Export Raw Text</source>
-        <translation type="unfinished"></translation>
+        <translation>Ham Metni Dışa Aktar</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="515"/>
         <source>Export Translated text</source>
-        <translation type="unfinished"></translation>
+        <translation>Çevrilen Metni Dışa Aktar</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="516"/>
         <source>Export Inpainted Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Doldurulmuş Görüntüyü Dışa Aktar</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="532"/>
         <source>Save {file_type} as:</source>
-        <translation type="unfinished"></translation>
+        <translation>{file_type} dosyasını farklı kaydet:</translation>
     </message>
 </context>
 <context>
@@ -685,7 +694,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../ui/main_window.py" line="451"/>
         <source>Light</source>
-        <translation type="unfinished"></translation>
+        <translation>Aydınlık</translation>
     </message>
 </context>
 <context>
@@ -693,22 +702,22 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../ui/settings/settings_page.py" line="102"/>
         <source>Resize</source>
-        <translation type="unfinished"></translation>
+        <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_page.py" line="104"/>
         <source>Crop</source>
-        <translation type="unfinished"></translation>
+        <translation>Kırp</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation type="unfinished"></translation>
+        <translation>Yeniden Başlatma Gerekiyor</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation type="unfinished"></translation>
+        <translation>Değişikliklerin etkili olması için lütfen yeniden başlatın.</translation>
     </message>
 </context>
 </TS>
