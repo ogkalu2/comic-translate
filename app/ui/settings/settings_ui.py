@@ -430,6 +430,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.llm_widgets['extra_context'] = MTextEdit()
 
         image_checkbox = MCheckBox(self.tr("Provide Image as input to multimodal LLMs"))
+        image_checkbox.setChecked(True)
         self.llm_widgets['image_input'] = image_checkbox
 
         llms_layout.addWidget(prompt_label)

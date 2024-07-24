@@ -257,7 +257,7 @@ class SettingsPage(QtWidgets.QWidget):
         # Load LLM settings
         settings.beginGroup('llm')
         self.ui.llm_widgets['extra_context'].setPlainText(settings.value('extra_context', ''))
-        self.ui.llm_widgets['image_input'].setChecked(settings.value('image_input_enabled', False, type=bool))
+        self.ui.llm_widgets['image_input'].setChecked(settings.value('image_input_enabled', True, type=bool))
         settings.endGroup()
 
         # Load export settings
