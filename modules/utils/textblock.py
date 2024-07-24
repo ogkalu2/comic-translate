@@ -9,7 +9,7 @@ class TextBlock(object):
     """
     def __init__(self, 
                  text_bbox: np.ndarray,
-                 text_segm_points: np.ndarray,
+                 text_segm_points: np.ndarray = None, 
                  bubble_bbox: np.ndarray = None,
                  text_class: str = "",
                  lines: List = None,
@@ -54,28 +54,27 @@ class TextBlock(object):
         else:
             return 'hor_ltr'
 
-
-def sort_regions(regions: List[TextBlock], right_to_left=True) -> List[TextBlock]:
-    # Sort regions from right to left, top to bottom
-    sorted_regions = []
-    for region in sorted(regions, key=lambda region: region.center[1]):
-        for i, sorted_region in enumerate(sorted_regions):
-            if region.center[1] > sorted_region.xyxy[3]:
+def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:
+    # Sort blk_list from right to left, top to bottom
+    sorted_blk_list = []
+    for blk in sorted(blk_list, key=lambda blk: blk.center[1]):
+        for i, sorted_blk in enumerate(sorted_blk_list):
+            if blk.center[1] > sorted_blk.xyxy[3]:
                 continue
-            if region.center[1] < sorted_region.xyxy[1]:
-                sorted_regions.insert(i + 1, region)
+            if blk.center[1] < sorted_blk.xyxy[1]:
+                sorted_blk_list.insert(i + 1, blk)
                 break
 
-            # y center of region inside sorted_region so sort by x instead
-            if right_to_left and region.center[0] > sorted_region.center[0]:
-                sorted_regions.insert(i, region)
+            # y center of blk inside sorted_blk so sort by x instead
+            if right_to_left and blk.center[0] > sorted_blk.center[0]:
+                sorted_blk_list.insert(i, blk)
                 break
-            if not right_to_left and region.center[0] < sorted_region.center[0]:
-                sorted_regions.insert(i, region)
+            if not right_to_left and blk.center[0] < sorted_blk.center[0]:
+                sorted_blk_list.insert(i, blk)
                 break
         else:
-            sorted_regions.append(region)
-    return sorted_regions
+            sorted_blk_list.append(blk)
+    return sorted_blk_list
 
 def sort_textblock_rectangles(coords_text_list: List[Tuple[Tuple[int, int, int, int], str]], direction: str = 'ver_rtl', threshold: int = 5):
     
@@ -166,3 +165,37 @@ def visualize_speech_bubbles(canvas, blk_list: List[TextBlock]):
         #cv2.putText(canvas, label, (bx1, by1 - baseline), cv2.FONT_HERSHEY_SIMPLEX, lw / 6, (255, 255, 255), max(lw - 1, 1), cv2.LINE_AA)
 
     return canvas
+
+def adjust_text_line_coordinates(coords, width_expansion_percentage: int, height_expansion_percentage: int):
+    top_left_x, top_left_y, bottom_right_x, bottom_right_y = coords
+    # Calculate width, height, and respective expansion offsets
+    width = bottom_right_x - top_left_x
+    height = bottom_right_y - top_left_y
+    width_expansion_offset = int(((width * width_expansion_percentage) / 100) / 2)
+    height_expansion_offset = int(((height * height_expansion_percentage) / 100) / 2)
+
+    # Define the rectangle origin points (bottom left, top right) with expansion/contraction
+    pt1_expanded = (
+        top_left_x - width_expansion_offset,
+        top_left_y - height_expansion_offset,
+    )
+    pt2_expanded = (
+        bottom_right_x + width_expansion_offset,
+        bottom_right_y + height_expansion_offset,
+    )
+
+    return pt1_expanded[0], pt1_expanded[1], pt2_expanded[0], pt2_expanded[1]
+
+def adjust_blks_size(blk_list: List[TextBlock], img_shape: Tuple[int, int, int], w_expan: int = 0, h_expan: int = 0):
+    im_h, im_w = img_shape[:2]
+    for blk in blk_list:
+        coords = blk.xyxy
+        expanded_coords = adjust_text_line_coordinates(coords, w_expan, h_expan)
+
+        # Ensuring that the box does not exceed image boundaries
+        new_x1 = max(expanded_coords[0], 0)
+        new_y1 = max(expanded_coords[1], 0)
+        new_x2 = min(expanded_coords[2], im_w)
+        new_y2 = min(expanded_coords[3], im_h)
+
+        blk.xyxy[:] = [new_x1, new_y1, new_x2, new_y2]
