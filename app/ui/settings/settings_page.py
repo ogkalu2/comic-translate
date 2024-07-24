@@ -295,8 +295,8 @@ class SettingsPage(QtWidgets.QWidget):
 
     def show_restart_dialog(self):
         msg_box = QtWidgets.QMessageBox(self)
-        msg_box.setWindowTitle(self.ui.tr("Restart Required"))
-        msg_box.setText(self.ui.tr("Please restart for the changes to take effect."))
+        msg_box.setWindowTitle(self.tr("Restart Required"))
+        msg_box.setText(self.tr("Please restart the application for the language changes to take effect."))
         msg_box.setIcon(QtWidgets.QMessageBox.Information)
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msg_box.exec()
