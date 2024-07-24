@@ -100,6 +100,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         nav_divider.setFixedWidth(30)
 
         self.tool_browser = MClickBrowserFileToolButton(multiple=True)
+        self.tool_browser.set_dayu_svg("upload-file.svg")
         self.tool_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
@@ -108,6 +109,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.save_browser = MClickSaveFileToolButton()
         save_file_types = [("Images", ["png", "jpg", "jpeg", "webp", "bmp"])]
         self.save_browser.set_file_types(save_file_types)
+        self.save_browser.set_dayu_svg("save.svg")
         self.save_browser.setToolTip(self.tr("Save Currently Loaded Image"))
 
         save_all_file_types = [
