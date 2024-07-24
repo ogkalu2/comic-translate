@@ -1,5 +1,5 @@
-dearpygui
 opencv_python
+PySide6>=6.7.2
 requests>=2.31.0
 matplotlib>=3.8.2
 torch>=2.1.0
