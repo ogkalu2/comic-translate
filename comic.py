@@ -1,413 +1,784 @@
-import dearpygui.dearpygui as dpg
 import os
+import cv2, shutil
+import tempfile
+import numpy as np
+from typing import Callable, Tuple, List
+
+from PySide6 import QtWidgets
+from PySide6 import QtCore
+from PySide6.QtCore import QCoreApplication
+from PySide6.QtCore import QSettings
+from PySide6.QtCore import QThreadPool
+from PySide6.QtCore import QTranslator, QLocale
+from PySide6.QtWidgets import QApplication
+
+from app.ui.dayu_widgets import dayu_theme
+from app.ui.dayu_widgets.clickable_card import ClickMeta
+from app.ui.dayu_widgets.qt import MPixmap
+from app.ui.main_window import ComicTranslateUI
+from app.ui.messages import Messages
+from app.thread_worker import GenericWorker
+from app.ui.dayu_widgets.message import MMessage
+
+from modules.detection import do_rectangles_overlap
+from modules.utils.textblock import TextBlock
+from modules.rendering.render import draw_text
+from modules.utils.file_handler import FileHandler
+from modules.utils.pipeline_utils import set_alignment, font_selected, validate_settings, \
+                                         validate_ocr, validate_translator, get_language_code
+from modules.utils.archives import make
 from modules.utils.download import get_models, mandatory_models
-from app.callbacks import *
-from app.state_manager import AppStateManager, get_key, open_lang_file
-from pipeline import start_process, stop_process
+from modules.utils.translator_utils import format_translations
+from pipeline import ComicTranslatePipeline
+
 
 for model in mandatory_models:
     get_models(model)
 
-supported_source_languages = [
-"Korean", "Japanese", "French", "Chinese", "English",
-"Russian", "German", "Dutch", "Spanish", "Italian"
-]
+class ComicTranslate(ComicTranslateUI):
+    image_processed = QtCore.Signal(int, object, str)
+    progress_update = QtCore.Signal(int, int, int, int, bool)
+    image_skipped = QtCore.Signal(str, str, str)
 
-supported_target_languages = [
-"English", "Korean", "Japanese", "French", "Simplified Chinese",
-"Traditional Chinese", "Russian", "German", "Dutch", "Spanish", 
-"Italian", "Turkish", "Polish", "Portuguese", "Portuguese (Brazilian)"
-]
+    def __init__(self, parent=None):
+        super(ComicTranslate, self).__init__(parent)
 
-supported_ocr = ["Default", "Microsoft OCR", "Google Cloud Vision"]
+        self.image_files = []
+        self.current_image_index = -1
+        self.image_states = {}
 
-supported_translators = [
-"GPT-4o", "GPT-3.5", "DeepL", "Claude-3-Opus",
-"Claude-3.5-Sonnet", "Claude-3-Haiku", "Gemini-1.5-Flash", 
-"Gemini-1.5-Pro", "Yandex", "Google Translate"
-]
+        self.blk_list = []
+        self.image_data = {}  # Store the latest version of each image
+        self.image_history = {}  # Store undo/redo history for each image
+        self.current_history_index = {}  # Current position in the undo/redo history for each image
+        self.displayed_images = set()  # New set to track displayed images
+        self.current_text_block = None
 
-dpg_windows = [
-"primary_window", "import_confirmed", "import_not_confirmed", "gpt_credentials", 
-"deepl_credentials", "microsoft_credentials", "google_credentials", "gpt_prompts", 
-"adjust_textblocks", "text_alignment", "font", "gpt_for_ocr_warning", 
-"api_key_translator_error", "api_key_ocr_error", "api_key_ocr_gpt-4v_error", 
-"endpoint_url_error", "deepl_ch_error", "translation_complete", "save_as",
-"gemini_credentials", "claude_credentials", "yandex_credentials"
-]
+        self.pipeline = ComicTranslatePipeline(self)
+        self.file_handler = FileHandler()
+        self.threadpool = QThreadPool()
+        self.current_worker = None
 
-font_folder_path = os.path.join(os.getcwd(), "fonts")
-manga_ocr_path = 'models/ocr/manga-ocr-base'
+        self.image_skipped.connect(self.on_image_skipped)
+        self.image_processed.connect(self.on_image_processed)
+        self.progress_update.connect(self.update_progress)
 
-# DearPyGui initialization
-dpg.create_context()
+        self.image_cards = []
+        self.current_highlighted_card = None
 
-with dpg.font_registry():
-    with dpg.font("app/fonts/NotoSans-Medium.ttf", 20) as latin_cyrillic_font:
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Cyrillic)
+        self.connect_ui_elements()
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
-    with dpg.font("app/fonts/NotoSansKR-Medium.ttf", 20) as ko_font:
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Korean)
+        self.load_main_page_settings()
+        self.settings_page.load_settings()
+
+    def connect_ui_elements(self):
+        # Browsers
+        self.tool_browser.sig_files_changed.connect(self.thread_load_images)
+        self.save_browser.sig_file_changed.connect(self.save_current_image)
+        self.save_all_browser.sig_file_changed.connect(self.save_and_make)
+        self.drag_browser.sig_files_changed.connect(self.thread_load_images)
+       
+        self.manual_radio.clicked.connect(self.manual_mode_selected)
+        self.automatic_radio.clicked.connect(self.batch_mode_selected)
+
+        # Connect buttons from button_groups
+        self.hbutton_group.get_button_group().buttons()[0].clicked.connect(lambda: self.block_detect())
+        self.hbutton_group.get_button_group().buttons()[1].clicked.connect(self.ocr)
+        self.hbutton_group.get_button_group().buttons()[2].clicked.connect(self.translate_image)
+        self.hbutton_group.get_button_group().buttons()[3].clicked.connect(self.load_segmentation_points)
+        self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
+        self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.render_text)
+
+        self.return_buttons_group.get_button_group().buttons()[0].clicked.connect(self.undo_image)
+        self.return_buttons_group.get_button_group().buttons()[1].clicked.connect(self.redo_image)
+
+        # Connect other buttons and widgets
+        self.translate_button.clicked.connect(self.start_batch_process)
+        self.cancel_button.clicked.connect(self.cancel_current_task)
+        self.set_all_button.clicked.connect(self.set_src_trg_all)
+        self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
+        self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
+
+        # Connect text edit widgets
+        self.s_text_edit.textChanged.connect(self.update_text_block)
+        self.t_text_edit.textChanged.connect(self.update_text_block)
+
+        self.s_combo.currentTextChanged.connect(self.save_src_trg)
+        self.t_combo.currentTextChanged.connect(self.save_src_trg)
+
+        # Connect image viewer signals
+        self.image_viewer.rectangle_selected.connect(self.handle_rectangle_selection)
+        self.image_viewer.rectangle_changed.connect(self.handle_rectangle_change)
+
+    def save_src_trg(self):
+        source_lang = self.s_combo.currentText()
+        target_lang = self.t_combo.currentText()
+        if self.current_image_index >= 0:
+            current_file = self.image_files[self.current_image_index]
+            self.image_states[current_file]['source_lang'] = source_lang
+            self.image_states[current_file]['target_lang'] = target_lang
+
+    def set_src_trg_all(self):
+        source_lang = self.s_combo.currentText()
+        target_lang = self.t_combo.currentText()
+        for image_path in self.image_files:
+            self.image_states[image_path]['source_lang'] = source_lang
+            self.image_states[image_path]['target_lang'] = target_lang
+
+    def batch_mode_selected(self):
+        self.disable_hbutton_group()
+        self.translate_button.setEnabled(True)
+        self.cancel_button.setEnabled(True)
+
+    def manual_mode_selected(self):
+        self.enable_hbutton_group()
+        self.translate_button.setEnabled(False)
+        self.cancel_button.setEnabled(False)
+    
+    def on_image_processed(self, index: int, rendered_image: np.ndarray, image_path: str):
+        if index == self.current_image_index:
+            self.set_cv2_image(rendered_image)
+        else:
+            self.update_image_history(image_path, rendered_image)
+            self.image_data[image_path] = rendered_image
+
+    def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
+        message = { 
+            "Text Blocks": QCoreApplication.translate('Messages', 'No Text Blocks Detected.\nSkipping:') + f" {image_path}\n{error}", 
+            "OCR": QCoreApplication.translate('Messages', 'Could not OCR detected text.\nSkipping:') + f" {image_path}\n{error}",
+            "Translator": QCoreApplication.translate('Messages', 'Could not get translations.\nSkipping:') + f" {image_path}\n{error}"        
+        }
+
+        text = message.get(skip_reason, f"Unknown skip reason: {skip_reason}. Error: {error}")
         
-    with dpg.font("app/fonts/NotoSansJP-Medium.ttf", 20) as ja_font:
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Japanese)
+        MMessage.info(
+            text=text,
+            parent=self,
+            duration=5,
+            closable=True
+        )
 
-    with dpg.font("app/fonts/NotoSansTC-Medium.ttf", 20) as ch_tr_font:
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Simplified_Common)
+    def on_manual_finished(self):
+        self.loading.setVisible(False)
+        self.enable_hbutton_group()
     
-    with dpg.font("app/fonts/NotoSansSC-Medium.ttf", 20) as ch_sim_font:
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
-        dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Simplified_Common)
+    def run_threaded(self, callback: Callable, result_callback: Callable=None, error_callback: Callable=None, finished_callback: Callable=None, *args, **kwargs):
+        worker = GenericWorker(callback, *args, **kwargs)
 
-font_mappings = {
-    "en": latin_cyrillic_font,
-    "ko": ko_font,
-    "ja": ja_font,
-    "zh-CN": ch_sim_font,
-    "zh-TW": ch_tr_font,
-    "ru": latin_cyrillic_font,
-    "fr": latin_cyrillic_font,
-    "de": latin_cyrillic_font,
-    "nl": latin_cyrillic_font,
-    "es": latin_cyrillic_font,
-    "it": latin_cyrillic_font,
-}
-
-state_manager = AppStateManager(font_mappings, dpg_windows)
-
-disabled_color = (0.50 * 255, 0.50 * 255, 0.50 * 255, 1.00 * 255)
-disabled_button_color = (45, 45, 48)
-disabled_button_hover_color = (45, 45, 48)
-disabled_button_active_color = (45, 45, 48)
-with dpg.theme() as disabled_theme:
-    with dpg.theme_component(dpg.mvButton, enabled_state=False):
-        dpg.add_theme_color(dpg.mvThemeCol_Text, disabled_color, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_Button, disabled_button_color, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, disabled_button_hover_color, category=dpg.mvThemeCat_Core)
-        dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, disabled_button_active_color, category=dpg.mvThemeCat_Core)
-    dpg.bind_theme(disabled_theme)
-
-# Set main viewport settings
-dpg.create_viewport(title='Comic Translate v1.0', width=400, height=500)
-
-# Primary Window
-with dpg.window(width=420, height=560, tag="primary_window"):
-    with dpg.menu_bar():
+        if result_callback:
+            worker.signals.result.connect(lambda result: QtCore.QTimer.singleShot(0, lambda: result_callback(result)))
+        if error_callback:
+            worker.signals.error.connect(lambda error: QtCore.QTimer.singleShot(0, lambda: error_callback(error)))
+        if finished_callback:
+            worker.signals.finished.connect(finished_callback)
         
-        with dpg.menu(label= "File", tag = "file_menu_title"):
-            with dpg.menu(label= "Import", tag = "import_menu_title"):
-                with dpg.menu(label= "Comic", tag = "import_comic_menu_title"):
-                    dpg.add_menu_item(label="Images", callback=lambda: import_images(state_manager), tag = "images_menu_item_title")
-                    dpg.add_menu_item(label="CBR/CBZ/CB7/CBT", callback=lambda: import_cbr_et_al(state_manager), tag = "cbr_cbz_menu_item_title")
-                    dpg.add_menu_item(label="Pdf/Epub", callback=lambda: import_ebook(state_manager), tag = "ebook_menu_item_title")
-                dpg.add_menu_item(label="Font", callback=import_font, user_data="font_dropdown", tag = "import_font_menu_item_title")
+        self.current_worker = worker
+        self.threadpool.start(worker)
+
+    def cancel_current_task(self):
+        if self.current_worker:
+            self.current_worker.cancel()
+        # No need to Enable necessary Widgets/Buttons because the threads 
+        # already have finish callbacks that handle this.
+
+    def default_error_handler(self, error_tuple: Tuple):
+        exctype, value, traceback_str = error_tuple
+        error_msg = f"An error occurred:\n{exctype.__name__}: {value}"
+        error_msg_trcbk = f"An error occurred:\n{exctype.__name__}: {value}\n\nTraceback:\n{traceback_str}"
+        print(error_msg_trcbk)
+        QtWidgets.QMessageBox.critical(self, "Error", error_msg)
+        self.loading.setVisible(False)
+        self.enable_hbutton_group()
+
+    def start_batch_process(self):
+        for image_path in self.image_files:
+            source_lang = self.image_states[image_path]['source_lang']
+            target_lang = self.image_states[image_path]['target_lang']
+
+            if not validate_settings(self, source_lang, target_lang):
+                return
             
-            dpg.add_menu_item(label="Save As", callback=lambda: dpg.configure_item("save_as", show=True), tag = "save_as_menu_item_title")
+        self.translate_button.setEnabled(False)
+        self.progress_bar.setVisible(True) 
+        self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
 
-        with dpg.menu(label="Settings", tag = "settings_menu_title"):
-            with dpg.menu(label="Language", tag = "language_menu_title"):
-                dpg.add_menu_item(label='한국어', callback=lambda: state_manager.lang_change_process('ko'), tag = 'ko_lang_select')
-                dpg.add_menu_item(label='English', callback=lambda: state_manager.lang_change_process('en'), tag = 'en_lang_select')
-                dpg.add_menu_item(label='Français', callback=lambda: state_manager.lang_change_process('fr'), tag = 'fr_lang_select')
-                dpg.add_menu_item(label='日本語', callback=lambda: state_manager.lang_change_process('ja'), tag = 'ja_lang_select')
-                dpg.add_menu_item(label='简体中文', callback=lambda: state_manager.lang_change_process('zh-CN'), tag = 'zh-CN_lang_select')
-                dpg.add_menu_item(label='繁體中文', callback=lambda: state_manager.lang_change_process('zh-TW'), tag = 'zh-TW_lang_select')
-                dpg.add_menu_item(label='русский', callback=lambda: state_manager.lang_change_process('ru'), tag = 'ru_lang_select')
-                dpg.add_menu_item(label='Deutsch', callback=lambda: state_manager.lang_change_process('de'), tag = 'de_lang_select')
-                dpg.add_menu_item(label='Nederlands', callback=lambda: state_manager.lang_change_process('nl'), tag = 'nl_lang_select')
-                dpg.add_menu_item(label='Español', callback=lambda: state_manager.lang_change_process('es'), tag = 'es_lang_select')
-                dpg.add_menu_item(label='Italiano', callback=lambda: state_manager.lang_change_process('it'), tag = 'it_lang_select')
+    def on_batch_process_finished(self):
+        self.progress_bar.setVisible(False)
+        self.translate_button.setEnabled(True)
+        Messages.show_translation_complete(self)
 
-                dpg.bind_item_font('ko_lang_select', ko_font)
-                dpg.bind_item_font('ja_lang_select', ja_font)
-                dpg.bind_item_font('zh-CN_lang_select', ch_sim_font)
-                dpg.bind_item_font('zh-TW_lang_select', ch_tr_font)
-                for lng in ['en_lang_select', 'it_lang_select', 'es_lang_select', 'nl_lang_select', 'de_lang_select', 'ru_lang_select', 'fr_lang_select']:
-                    dpg.bind_item_font(lng, latin_cyrillic_font)
+    def disable_hbutton_group(self):
+        for button in self.hbutton_group.get_button_group().buttons():
+            button.setEnabled(False)
 
-            with dpg.menu(label="Set Credentials", tag = "set_credentials_menu_title"):
-                dpg.add_menu_item(label="GPT", callback=lambda: dpg.configure_item("gpt_credentials", show=True), tag = "gpt_set_credentials_menu_item_title")
-                dpg.add_menu_item(label="Microsoft", callback=lambda: dpg.configure_item("microsoft_credentials", show=True), tag = "microsoft_set_credentials_menu_item_title")
-                dpg.add_menu_item(label="Google", callback=lambda: dpg.configure_item("google_credentials", show=True), tag = "google_set_credentials_menu_item_title")
-                dpg.add_menu_item(label="DeepL", callback=lambda: dpg.configure_item("deepl_credentials", show=True), tag = "deepl_set_credentials_menu_item_title")
-                dpg.add_menu_item(label="Claude", callback=lambda: dpg.configure_item("claude_credentials", show=True), tag = "claude_set_credentials_menu_item_title")
-                dpg.add_menu_item(label="Gemini", callback=lambda: dpg.configure_item("gemini_credentials", show=True), tag = "gemini_set_credentials_menu_item_title")
-                dpg.add_menu_item(label="Yandex", callback=lambda: dpg.configure_item("yandex_credentials", show=True), tag = "yandex_set_credentials_menu_item_title")
+    def enable_hbutton_group(self):
+        for button in self.hbutton_group.get_button_group().buttons():
+            button.setEnabled(True)
 
-            dpg.add_menu_item(label="GPT Prompt", callback=lambda: dpg.configure_item("gpt_prompts", show=True), tag = "gpt_prompts_menu_item_title")
+    def block_detect(self, load_rects: bool = True):
+        self.loading.setVisible(True)
+        self.disable_hbutton_group()
+        self.run_threaded(self.pipeline.detect_blocks, self.pipeline.on_blk_detect_complete, 
+                          self.default_error_handler, self.on_manual_finished, load_rects)
 
-            with dpg.menu(label="Text Rendering", tag = "text_rendering_menu_title"):
-                dpg.add_menu_item(label="Adjust TextBlocks", callback=lambda: dpg.configure_item("adjust_textblocks", show=True), tag = "adjust_textblocks_menu_item_title")
-                dpg.add_menu_item(label="Text Alignment", callback=lambda: dpg.configure_item("text_alignment", show=True), tag = "text_alignment_menu_item_title")
-                dpg.add_menu_item(label="Font", callback=lambda: dpg.configure_item("font", show=True), tag = "font_menu_item_title") 
+    def finish_ocr_translate(self):
+        rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
+        self.image_viewer.select_rectangle(rect)
+        self.set_tool('box')
+        self.on_manual_finished()
 
-            dpg.add_checkbox(label="Use GPU", tag = "use_gpu_checkbox")
-            dpg.add_checkbox(label="Provide Image to LLMs as context", tag = "img_as_input_to_llm_checkbox", default_value=True)
-            dpg.add_checkbox(label="Export raw text", tag = "export_raw_text_checkbox")
-            dpg.add_checkbox(label="Export translated text", tag = "export_translated_text_checkbox")
-            dpg.add_checkbox(label="Preview Annotated Image", tag = "preview_annot_img_checkbox")
-            dpg.add_checkbox(label="Preview Inpainted Image", tag = "preview_inpainted_img_checkbox")
-            dpg.add_checkbox(label="Export Annotated Image", tag = "export_annot_img_checkbox")
-            dpg.add_checkbox(label="Export Inpainted Image", tag = "export_inpainted_img_checkbox")
+    def ocr(self):
+        source_lang = self.s_combo.currentText()
+        if not validate_ocr(self, source_lang):
+            return
+        self.loading.setVisible(True)
+        self.disable_hbutton_group()
+        self.run_threaded(self.pipeline.OCR_image, None, self.default_error_handler, self.finish_ocr_translate)
 
+    def translate_image(self):
+        source_lang = self.s_combo.currentText()
+        target_lang = self.t_combo.currentText()
+        if not validate_translator(self, source_lang, target_lang):
+            return
+        self.loading.setVisible(True)
+        self.disable_hbutton_group()
+        self.run_threaded(self.pipeline.translate_image, None, self.default_error_handler, self.finish_ocr_translate)
+
+    def inpaint_and_set(self):
+        if self.image_viewer.hasPhoto() and self.image_viewer.has_drawn_elements():
+            self.loading.setVisible(True)
+            self.disable_hbutton_group()
+            self.run_threaded(self.pipeline.inpaint, self.pipeline.inpaint_complete, 
+                              self.default_error_handler, self.on_manual_finished)
+
+    def load_images_threaded(self, file_paths: List[str]):
+        self.file_handler.file_paths = file_paths
+        file_paths = self.file_handler.prepare_files()
+
+        loaded_images = []
+        for file_path in file_paths:
+            cv2_image = cv2.imread(file_path)
+            if cv2_image is not None:
+                cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+                loaded_images.append((file_path, cv2_image))
+
+        return loaded_images
+
+    def thread_load_images(self, file_paths: List[str]):
+        self.run_threaded(self.load_images_threaded, self.on_images_loaded, self.default_error_handler, None, file_paths)
+
+    def on_images_loaded(self, loaded_images: List[Tuple[str, np.ndarray]]):
+        # Clear existing image data
+        self.image_files = []
+        self.image_states.clear()
+        self.image_data.clear()
+        self.image_history.clear()
+        self.current_history_index.clear()
+        self.blk_list = []
+        self.displayed_images.clear()
+        self.image_viewer.clear_rectangles()
+        self.image_viewer.clear_brush_strokes()
+        self.s_text_edit.clear()
+        self.t_text_edit.clear()
+
+        # Reset current_image_index
+        self.current_image_index = -1
+
+        for file_path, cv2_image in loaded_images:
+            self.image_files.append(file_path)
+            self.image_data[file_path] = cv2_image
+            self.image_history[file_path] = [cv2_image.copy()]
+            self.current_history_index[file_path] = 0
+            self.save_image_state(file_path)
+
+        self.update_image_cards()
+
+        # If we have loaded images, display the first one
+        if self.image_files:
+            self.display_image(0)
+        else:
+            # If no images were successfully loaded, clear the viewer
+            self.image_viewer.clear_scene()
+
+        # Reset the image viewer's transformation
+        self.image_viewer.resetTransform()
+        self.image_viewer.fitInView()
+
+    def update_image_cards(self):
+        # Clear existing cards
+        for i in reversed(range(self.image_card_layout.count())):
+            widget = self.image_card_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.setParent(None)
+        
+        self.image_cards = []  # Reset the list of cards
+
+        # Add new cards
+        for index, file_path in enumerate(self.image_files):
+            file_name = os.path.basename(file_path)
+            card = ClickMeta(extra=False, avatar_size=(35, 50))
+            card.setup_data({
+                "title": file_name,
+                "avatar": MPixmap(file_path)
+            })
+            card.connect_clicked(lambda idx=index: self.on_card_clicked(idx))
+            self.image_card_layout.insertWidget(self.image_card_layout.count() - 1, card)
+            self.image_cards.append(card)
+
+
+    def highlight_card(self, index: int):
+        if 0 <= index < len(self.image_cards):
+            # Remove highlight from the previously highlighted card
+            if self.current_highlighted_card:
+                self.current_highlighted_card.set_highlight(False)
             
-    dpg.add_text("Source Language", tag = "source_lang_dropdown_title")
-    dpg.add_combo(items=supported_source_languages, width=250, tag="source_lang_dropdown", callback=lambda: on_combo_change(state_manager))
+            # Highlight the new card
+            self.image_cards[index].set_highlight(True)
+            self.current_highlighted_card = self.image_cards[index]
 
-    dpg.add_text("Target Language", tag="target_lang_dropdown_title")
-    dpg.add_combo(items=supported_target_languages, width=250, tag="target_lang_dropdown", callback=lambda: on_combo_change(state_manager))
-    
-    dpg.add_checkbox(label="Render Text in Upper Case", tag = "upper_case_checkbox")
+    def on_card_clicked(self, index: int):
+        self.highlight_card(index)
+        self.display_image(index)
 
-    if not os.path.exists(font_folder_path):
-        os.mkdir(font_folder_path)
+    def save_image_state(self, file: str):
+        # print('hehe')
+        # print(self.image_viewer._undo_brush_stack)
+        self.image_states[file] = {
+            'viewer_state': self.image_viewer.save_state(),
+            'source_text': self.s_text_edit.toPlainText(),
+            'source_lang': self.s_combo.currentText(),
+            'target_text': self.t_text_edit.toPlainText(),
+            'target_lang': self.t_combo.currentText(),
+            'brush_strokes': self.image_viewer.save_brush_strokes(),
+            'undo_brush_stack': self.image_viewer._undo_brush_stack,
+            'redo_brush_stack': self.image_viewer._redo_brush_stack,
+            'blk_list': self.blk_list
+        }
 
-    dpg.add_text("Font", tag = "font_dropdown_title")
-    font_combobox_id = dpg.add_combo(width=250, tag = "font_dropdown")
-    set_font_list(font_folder_path, font_combobox_id)
+    def save_current_image_state(self):
+        if self.current_image_index >= 0:
+            current_file = self.image_files[self.current_image_index]
+            self.save_image_state(current_file)
+
+    def load_image_state(self, file_path: str):
+        cv2_image = self.image_data[file_path]
+
+        self.set_cv2_image(cv2_image)
+        if file_path in self.image_states:
+            state = self.image_states[file_path]
+            self.image_viewer.load_state(state['viewer_state'])
+            self.s_text_edit.setPlainText(state['source_text'])
+            self.s_combo.setCurrentText(state['source_lang'])
+            self.t_text_edit.setPlainText(state['target_text'])
+            self.t_combo.setCurrentText(state['target_lang'])
+            self.image_viewer.load_brush_strokes(state['brush_strokes'])
+            self.blk_list = state['blk_list']
+        else:
+            self.s_text_edit.clear()
+            self.t_text_edit.clear()
+
+    def display_image(self, index: int):
+        if 0 <= index < len(self.image_files):
+            self.save_current_image_state()
+            self.current_image_index = index
+            file_path = self.image_files[index]
             
-    dpg.add_text("Translator", tag = "translator_dropdown_title")
-    dpg.add_combo(items=supported_translators, width=250, tag = "translator_dropdown", callback=lambda: on_combo_change(state_manager))
+            # Check if this image has been displayed before
+            first_time_display = file_path not in self.displayed_images
+            
+            self.load_image_state(file_path)
+            self.central_stack.setCurrentWidget(self.image_viewer)
+            self.central_stack.layout().activate()
+            
+            # Fit in view only if it's the first time displaying this image
+            if first_time_display:
+                self.image_viewer.fitInView()
+                self.displayed_images.add(file_path)  # Mark this image as displayed
 
-    dpg.add_text("OCR", tag = "ocr_dropdown_title")
-    dpg.add_combo(items=supported_ocr, width=250, tag = "ocr_dropdown", callback=lambda: on_combo_change(state_manager))
+    def blk_detect_segment(self, result): 
+        blk_list, load_rects = result
+        self.blk_list = blk_list
+        for blk in self.blk_list:
+            segm_pts = blk.segm_pts
+            if segm_pts.size > 0:
+                self.image_viewer.draw_segmentation_lines(segm_pts)
 
-    dpg.add_progress_bar(tag = "progress_bar", default_value=0, width=250)
-    with dpg.tooltip("progress_bar", tag = "progress_bar_tooltip_window"):
-        dpg.add_text("Progress Bar", tag = "progress_bar_hint")
-    dpg.hide_item("progress_bar")
-    dpg.hide_item("progress_bar_hint")
-    dpg.configure_item("progress_bar_tooltip_window", show=False)
 
-    dpg.add_text("", tag = "progress_bar_text")
-    dpg.hide_item("progress_bar_text")
+    def load_segmentation_points(self):
+        if self.image_viewer.hasPhoto():
+            self.disable_hbutton_group()
+            self.image_viewer.clear_rectangles()
+            if self.blk_list:
+                for blk in self.blk_list:
+                    segm_pts = blk.segm_pts
+                    if segm_pts.size > 0:
+                        self.image_viewer.draw_segmentation_lines(segm_pts)
+                
+                self.enable_hbutton_group()
 
-    with dpg.group(horizontal=True):
-        dpg.add_button(label="Translate", callback =lambda: start_process(state_manager), width=120, height=30, tag = "translate_button")
-        dpg.add_button(label="Cancel", callback = stop_process, width=120, height=30, tag = "cancel_translation_button")
-        dpg.hide_item("cancel_translation_button")
+            else:
+                self.loading.setVisible(True)
+                self.disable_hbutton_group()
+                self.run_threaded(self.pipeline.detect_blocks, self.blk_detect_segment, 
+                          self.default_error_handler, self.on_manual_finished)
+                
+    def update_image_history(self, file_path: str, cv2_img: np.ndarray):
+         # Check if the new image is different from the current one
+        if not np.array_equal(self.image_data[file_path], cv2_img):
+            self.image_data[file_path] = cv2_img
+                
+            # Add to history
+            history = self.image_history[file_path]
+            current_index = self.current_history_index[file_path]
+                
+            # Remove any future history if we're not at the end
+            del history[current_index + 1:]
+                
+            history.append(cv2_img.copy())
+            self.current_history_index[file_path] = len(history) - 1
 
-# Secondary Windows, Modal
+    def set_cv2_image(self, cv2_img: np.ndarray):
+        if self.current_image_index >= 0:
+            file_path = self.image_files[self.current_image_index]
 
-# Confirm Imports
-with dpg.window(modal=True, show=False, tag="import_confirmed", no_title_bar=True):
-    dpg.add_text("Imported!", tag = "import_confirmed_title")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("import_confirmed", show=False), tag = "import_confirmed_ok")
+            self.update_image_history(file_path, cv2_img)
+            self.image_viewer.display_cv2_image(cv2_img)
 
-with dpg.window(modal=True, show=False, tag="import_not_confirmed", no_title_bar=True):
-    dpg.add_text("Nothing was Imported", tag = "import_not_confirmed_title")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("import_not_confirmed", show=False), tag = "import_not_confirmed_ok")
+    def undo_image(self):
+        if self.current_image_index >= 0:
+            file_path = self.image_files[self.current_image_index]
+            current_index = self.current_history_index[file_path]
+            while current_index > 0:
+                current_index -= 1
+                cv2_img = self.image_history[file_path][current_index]
+                if not np.array_equal(self.image_data[file_path], cv2_img):
+                    self.current_history_index[file_path] = current_index
+                    self.image_data[file_path] = cv2_img
+                    self.image_viewer.display_cv2_image(cv2_img)
+                    break
 
-# Set Credentials for External Resources
-# GPT
-with dpg.window(modal=True, show=False, tag="gpt_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "gpt_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "gpt_api_key")
+    def redo_image(self):
+        if self.current_image_index >= 0:
+            file_path = self.image_files[self.current_image_index]
+            current_index = self.current_history_index[file_path]
+            while current_index < len(self.image_history[file_path]) - 1:
+                current_index += 1
+                cv2_img = self.image_history[file_path][current_index]
+                if not np.array_equal(self.image_data[file_path], cv2_img):
+                    self.current_history_index[file_path] = current_index
+                    self.image_data[file_path] = cv2_img
+                    self.image_viewer.display_cv2_image(cv2_img)
+                    break
 
-    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_gpt_checkbox")
+    def update_blk_list(self):
+        # Get the current rectangles from the image viewer
+        current_rectangles = self.image_viewer.get_rectangle_coordinates()
+        
+        # Create a new list to store updated TextBlocks
+        updated_blk_list = []
+        
+        # Check existing blocks against current rectangles
+        for blk in self.blk_list:
+            blk_rect = tuple(blk.xyxy)
+            
+            # Check if this block still exists or has been slightly modified
+            for i, curr_rect in enumerate(current_rectangles):
+                if do_rectangles_overlap(blk_rect, curr_rect, iou_threshold=0.5):
+                    # Update the block's coordinates
+                    blk.xyxy[:] = list(curr_rect)
+                    updated_blk_list.append(blk)
+                    current_rectangles.pop(i)
+                    break
+        
+        # Add new TextBlocks for any remaining rectangles
+        for new_rect in current_rectangles:
+            new_blk = TextBlock(np.array(new_rect))
+            updated_blk_list.append(new_blk)
+        
+        # Update self.blk_list with the new configuration
+        self.blk_list = updated_blk_list
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gpt_credentials", show=False), tag = "gpt_api_key_ok")
+    def find_corresponding_text_block(self, rect: Tuple[float], iou_threshold: int):
+        for blk in self.blk_list:
+            if do_rectangles_overlap(rect, blk.xyxy, iou_threshold):
+                return blk
+        return None
 
-# Claude
-with dpg.window(modal=True, show=False, tag="claude_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "claude_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "claude_api_key")
-
-    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_claude_checkbox")
-
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("claude_credentials", show=False), tag = "claude_api_key_ok")
-
-# Gemini
-with dpg.window(modal=True, show=False, tag="gemini_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "gemini_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "gemini_api_key")
-
-    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_gemini_checkbox")
-
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gemini_credentials", show=False), tag = "gemini_api_key_ok")
-
-# Yandex
-with dpg.window(modal=True, show=False, tag="yandex_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "yandex_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "yandex_api_key")
-
-    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_yandex_checkbox")
-
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("yandex_credentials", show=False), tag = "yandex_api_key_ok")
-
-# DeepL
-with dpg.window(modal=True, show=False, tag="deepl_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "deepl_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "deepl_api_key")
-
-    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_deepl_checkbox")
-
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("deepl_credentials", show=False), tag = "deepl_api_key_ok")
-
-# Microsoft
-with dpg.window(modal=True, show=False, tag="microsoft_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "microsoft_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "microsoft_api_key")
+    def find_corresponding_rect(self, tblock: TextBlock, iou_threshold: int):
+        for rect in self.image_viewer._rectangles:
+            x1, y1, w, h = rect.rect().getRect()
+            rect_coord = (x1, y1, x1 + w, y1 + h)
+            if do_rectangles_overlap(rect_coord, tblock.xyxy, iou_threshold):
+                return rect
+        return None
     
-    dpg.add_text("Endpoint URL", tag = "microsoft_endpoint_url_title")
-    dpg.add_input_text(password=True, width=250, tag = "microsoft_endpoint_url")
+    def handle_rectangle_selection(self, rect: QtCore.QRectF):
+        x1, y1, w, h = rect.getRect()
+        rect = (x1, y1, x1 + w, y1 + h)
+        self.update_blk_list()
+        self.current_text_block = self.find_corresponding_text_block(rect, 0.5)
+        if self.current_text_block:
+            self.s_text_edit.textChanged.disconnect(self.update_text_block)
+            self.t_text_edit.textChanged.disconnect(self.update_text_block)
+            self.s_text_edit.setPlainText(self.current_text_block.text)
+            self.t_text_edit.setPlainText(self.current_text_block.translation)
+            self.s_text_edit.textChanged.connect(self.update_text_block)
+            self.t_text_edit.textChanged.connect(self.update_text_block)
+        else:
+            self.s_text_edit.clear()
+            self.t_text_edit.clear()
+            self.current_text_block = None
 
-    dpg.add_checkbox(label="Save", tag = "save_keys_for_microsoft_checkbox")
+    def update_text_block(self):
+        if self.current_text_block:
+            self.current_text_block.text = self.s_text_edit.toPlainText()
+            self.current_text_block.translation = self.t_text_edit.toPlainText()
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("microsoft_credentials", show=False), tag = "microsoft_api_key_ok")
+    def update_progress(self, index: int, total_images: int, step: int, total_steps: int, change_name: bool):
+        # Assign weights to image processing and archiving (adjust as needed)
+        image_processing_weight = 0.9
+        archiving_weight = 0.1
 
-# Google (OCR)
-with dpg.window(modal=True, show=False, tag="google_credentials", no_title_bar=True):
-    dpg.add_text("API Key", tag = "google_api_key_title")
-    dpg.add_input_text(password=True, width=250, tag = "google_api_key")
+        archive_info_list = self.file_handler.archive_info
+        total_archives = len(archive_info_list)
 
-    dpg.add_checkbox(label="Save Key", tag = "save_keys_for_google_checkbox")
+        if change_name:
+            if index < total_images:
+                im_path = self.image_files[index]
+                im_name = os.path.basename(im_path)
+                self.progress_bar.setFormat(QCoreApplication.translate('Messages', 'Processing:') + f" {im_name} . . . %p%")
+            else:
+                archive_index = index - total_images
+                self.progress_bar.setFormat(QCoreApplication.translate('Messages', 'Archiving:') + f" {archive_index + 1}/{total_archives} . . . %p%")
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("google_credentials", show=False), tag = "google_api_key_ok")
+        if index < total_images:
+            # Image processing progress
+            task_progress = (index / total_images) * image_processing_weight
+            step_progress = (step / total_steps) * (1 / total_images) * image_processing_weight
+        else:
+            # Archiving progress
+            archive_index = index - total_images
+            task_progress = image_processing_weight + (archive_index / total_archives) * archiving_weight
+            step_progress = (step / total_steps) * (1 / total_archives) * archiving_weight
 
-# Edit GPT Prompts
-with dpg.window(modal=True, show=False, tag="gpt_prompts", no_title_bar=True):
-    dpg.add_text("Extra Context", tag="gpt_extra_context_title")
-    dpg.add_input_text(height=200, width=200, multiline=True, tag = "gpt_extra_context")
+        progress = (task_progress + step_progress) * 100 
+        self.progress_bar.setValue(int(progress))
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gpt_prompts", show=False), tag = "gpt_prompts_ok")
+    def on_render_complete(self, rendered_image: np.ndarray):
+        self.set_cv2_image(rendered_image)
+        self.loading.setVisible(False)
+        self.enable_hbutton_group()
 
-# Textblocks
-with dpg.window(modal=True, show=False, tag="adjust_textblocks", no_title_bar=True):
-    dpg.add_text("Width Adjustment Percentage", tag = "width_adjustment_title")
-    dpg.add_input_int(tag = "width_adjustment_number", step=1)
-    dpg.set_value("width_adjustment_number", 0)
-    with dpg.tooltip("width_adjustment_title"):
-        dpg.add_text("Controls how much the width\nshould be expanded or reduced\nby. A value of 100 will double\nthe width while -100 will halve it.\nExpansion and Reduction\noccur equally on both sides.", tag = "width_adjustment_hint")
+    def render_text(self):
+        if self.image_viewer.hasPhoto() and self.blk_list:
+            if not font_selected(self):
+                return
+            self.loading.setVisible(True)
+            self.disable_hbutton_group()
+            inpaint_image = self.image_viewer.get_cv2_image()
+            text_rendering_settings = self.settings_page.get_text_rendering_settings()
+            font = text_rendering_settings['font']
+            font_color = text_rendering_settings['color']
+            upper = text_rendering_settings['upper_case']
+            font_path = font_path = f'fonts/{font}'
+            set_alignment(self.blk_list, self.settings_page)
 
-    dpg.add_text("Height Adjustment Percentage", tag = "height_adjustment_title")
-    dpg.add_input_int(tag = "height_adjustment_number", step=1)
-    dpg.set_value("height_adjustment_number", 0)
-    with dpg.tooltip("height_adjustment_title"):
-        dpg.add_text("Controls how much the height\nshould be expanded or reduced\nby. A value of 100 will double\nthe height while -100 will halve it.\nExpansion and Reduction\noccur equally on both sides.", tag = "height_adjustment_hint")
+            target_lang = self.t_combo.currentText()
+            target_lang_en = self.lang_mapping.get(target_lang, None)
+            trg_lng_cd = get_language_code(target_lang_en)
+            format_translations(self.blk_list, trg_lng_cd, upper_case=upper)
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("adjust_textblocks", show=False), tag = "adjust_textblocks_ok")
+            self.run_threaded(draw_text, self.on_render_complete, self.default_error_handler, 
+                              None, inpaint_image, self.blk_list, font_path, 40, colour=font_color)
+            
+    def handle_rectangle_change(self, new_rect: QtCore.QRectF):
+        # Find the corresponding TextBlock in blk_list
+        for blk in self.blk_list:
+            if do_rectangles_overlap(blk.xyxy, (new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()), 0.2):
+                # Update the TextBlock coordinates
+                blk.xyxy[:] = [new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()]
+                break
 
-# Text Alignment
-current_language = state_manager.lang_settings.get_curr_lang()
-loc = open_lang_file(current_language)
-alignment_mappings = loc["alignment_mappings"]
+    def save_current_image(self, file_path: str):
+        curr_image = self.image_viewer.get_cv2_image()
+        cv2.imwrite(file_path, curr_image)
 
-with dpg.window(modal=True, show=False, tag="text_alignment", no_title_bar=True):
-    dpg.add_text("Text Alignment", tag = "text_alignment_title")
-    dpg.add_combo(items=['center', 'left', 'right'], width=150, tag="text_alignment_dropdown")
-    mapped = get_key(alignment_mappings, 'center')
-    dpg.configure_item("text_alignment_dropdown", default_value=mapped)
+    def save_and_make(self, output_path: str):
+        self.run_threaded(self.save_and_make_worker, None, self.default_error_handler, None, output_path)
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("text_alignment", show=False), tag = "text_alignment_ok")
+    def save_and_make_worker(self, output_path: str):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            # Save images
+            for file_path in self.image_files:
+                bname = os.path.basename(file_path) 
+                cv2_img = self.image_data[file_path]
+                cv2_img_save = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+                sv_pth = os.path.join(temp_dir, bname)
+                cv2.imwrite(sv_pth, cv2_img_save)
+            
+            # Call make function
+            make(temp_dir, output_path)
+        finally:
+            # Clean up temp directory
+            import shutil
+            shutil.rmtree(temp_dir)
 
-# Font
-with dpg.window(show=False, tag="font", no_title_bar=True, width = 320, height = 350):
-    dpg.add_text("Font Color", tag = "font_color_title")
-    dpg.add_color_picker(default_value=(0, 0, 0, 255), tag = "font_color")
-   
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("font", show=False), tag = "font_ok") 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Left:
+            self.navigate_images(-1)
+        elif event.key() == QtCore.Qt.Key_Right:
+            self.navigate_images(1)
+        else:
+            super().keyPressEvent(event)
 
-# GPT-4o Warning
-with dpg.window(label="CAUTION!", modal=True, show=False, tag="gpt_for_ocr_warning", no_title_bar=False):
-    dpg.add_text("The Default OCR for French,\nGerman, Dutch, Spanish, Italian\n and Russian is GPT-4o.\nThis will require an API\nKey and incur costs. Expect\n about $0.04 USD per page.\n Go to Settings > Set Credentials > GPT\nto set one if you haven't already.", tag = "gpt_ocr_caution_message")
-    dpg.add_checkbox(label="Don't tell me next time", tag = "stop_gpt_ocr_warning_checkbox")
+    def navigate_images(self, direction: int):
+        if hasattr(self, 'image_files') and self.image_files:
+            new_index = self.current_image_index + direction
+            if 0 <= new_index < len(self.image_files):
+                self.display_image(new_index)
+                self.highlight_card(new_index)
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("gpt_for_ocr_warning", show=False), tag = "gpt_ocr_warning_ok")
+    def save_main_page_settings(self):
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup("main_page")
+        
+        # Save languages in English
+        settings.setValue("source_language", self.lang_mapping[self.s_combo.currentText()])
+        settings.setValue("target_language", self.lang_mapping[self.t_combo.currentText()])
+        
+        settings.setValue("mode", "manual" if self.manual_radio.isChecked() else "automatic")
+        
+        # Save brush and eraser sizes
+        settings.setValue("brush_size", self.brush_size_slider.value())
+        settings.setValue("eraser_size", self.eraser_size_slider.value())
+        
+        settings.endGroup()
 
-# Error Windows
-# api key for translator
-with dpg.window(label="ERROR!", modal=True, show=False, tag="api_key_translator_error", no_title_bar=False):
-    dpg.add_text("An API Key is required for\nthe selected translator. Go to\nSettings > Set Credentials to set one", tag = "api_key_translator_error_message")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("api_key_translator_error", show=False), tag = "api_key_translator_error_ok")
+        # Save window state
+        settings.beginGroup("MainWindow")
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("state", self.saveState())
+        settings.endGroup()
 
-# api key for ocr
-with dpg.window(label="ERROR!", modal=True, show=False, tag="api_key_ocr_error", no_title_bar=False):
-    dpg.add_text("An API Key is required\nfor the selected OCR. Go to\nSettings > Set Credentials to set one", tag = "api_key_ocr_error_message")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("api_key_ocr_error", show=False), tag = "api_key_ocr_error_ok")
+    def load_main_page_settings(self):
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup("main_page")
 
-# api key for gpt-4v ocr
-with dpg.window(label="ERROR!", modal=True, show=False, tag="api_key_ocr_gpt-4v_error", no_title_bar=False):
-    dpg.add_text("Default Ocr for the selected\nSource Language is GPT-4o\nwhich requires an API Key. Go to\nSettings > Set Credentials > GPT to set one", tag = "api_key_ocr_gpt-4v_error_message")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("api_key_ocr_gpt-4v_error", show=False), tag = "api_key_ocr_gpt-4v_error_ok")
+        # Load languages and convert back to current language
+        source_lang = settings.value("source_language", "Korean")
+        target_lang = settings.value("target_language", "English")
+        
+        # Use reverse mapping to get the translated language names
+        self.s_combo.setCurrentText(self.reverse_lang_mapping.get(source_lang, self.tr("Korean")))
+        self.t_combo.setCurrentText(self.reverse_lang_mapping.get(target_lang, self.tr("English")))
 
-# endpoint url
-with dpg.window(label="ERROR!", modal=True, show=False, tag="endpoint_url_error", no_title_bar=False):
-    dpg.add_text("An Endpoint Url is required for\n Microsoft OCR. Go to Settings >\nSet Credentials > Microsoft to set one", tag = "endpoint_url_error_message")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("endpoint_url_error", show=False), tag = "endpoint_url_error_ok")
+        mode = settings.value("mode", "manual")
+        if mode == "manual":
+            self.manual_radio.setChecked(True)
+            self.manual_mode_selected()
+        else:
+            self.automatic_radio.setChecked(True)
+            self.batch_mode_selected()
+        
+        # Load brush and eraser sizes
+        brush_size = settings.value("brush_size", 10)  # Default value is 10
+        eraser_size = settings.value("eraser_size", 20)  # Default value is 20
+        self.brush_size_slider.setValue(int(brush_size))
+        self.eraser_size_slider.setValue(int(eraser_size))
+        
+        settings.endGroup()
 
-# DeepL for Traditional Chinese
-with dpg.window(label="ERROR!", modal=True, show=False, tag="deepl_ch_error", no_title_bar=False):
-    dpg.add_text("DeepL does not translate\nto Traditional Chinese", tag = "deepl_ch_error_message")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("deepl_ch_error", show=False), tag = "deepl_ch_error_ok")
+        # Load window state
+        settings.beginGroup("MainWindow")
+        geometry = settings.value("geometry")
+        state = settings.value("state")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+        if state is not None:
+            self.restoreState(state)
+        settings.endGroup()
 
-# Translation Complete Window
-with dpg.window(modal=True, show=False, tag="translation_complete", no_title_bar=True):
-    dpg.add_text("Comic has been Translated!", tag = "translation_complete_title")
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("translation_complete", show=False), tag = "translation_complete_ok")
+    def closeEvent(self, event):
+        # Save all settings when the application is closed
+        self.settings_page.save_settings()
+        self.save_main_page_settings()
+        
+        # Delete temp archive folders
+        for archive in self.file_handler.archive_info:
+            shutil.rmtree(archive['temp_dir'])
 
-# Save As
-with dpg.window(show=False, tag = "save_as", no_title_bar=True):
-    with dpg.group(horizontal=True):
-        dpg.add_text("Save PDF as", tag = "save_pdf_as_title")
-        dpg.add_combo(items=['.pdf', '.epub', '.cbz', '.cb7'], width = 70, tag="save_pdf_as_dropdown")
-        dpg.configure_item("save_pdf_as_dropdown", default_value = '.pdf')
+        super().closeEvent(event)
+
+def get_system_language():
+    locale = QLocale.system().name()  # Returns something like "en_US" or "zh_CN"
     
-    with dpg.group(horizontal=True):
-        dpg.add_text("Save CBZ as", tag = "save_cbz_as_title")
-        dpg.add_combo(items=['.cbz', '.cb7', '.pdf', '.epub'], width = 70, tag="save_cbz_as_dropdown")
-        dpg.configure_item("save_cbz_as_dropdown", default_value = '.cbz')
+    # Special handling for Chinese
+    if locale.startswith('zh_'):
+        if locale in ['zh_CN', 'zh_SG']:
+            return '简体中文'
+        elif locale in ['zh_TW', 'zh_HK']:
+            return '繁體中文'
+    
+    # For other languages, we can still use the first part of the locale
+    lang_code = locale.split('_')[0]
+    
+    # Map the system language code to your application's language names
+    lang_map = {
+        'en': 'English',
+        'ko': '한국어',
+        'fr': 'Français',
+        'ja': '日本語',
+        'ru': 'русский',
+        'de': 'Deutsch',
+        'nl': 'Nederlands',
+        'es': 'Español',
+        'it': 'Italiano',
+        'tr': 'Türkçe'
+    }
+    
+    return lang_map.get(lang_code, 'English')  # Default to English if not found
 
-    with dpg.group(horizontal=True):
-        dpg.add_text("Save CBR as", tag = "save_cbr_as_title")
-        dpg.add_combo(items=['.cbz', '.cb7', '.pdf', '.epub'], width = 70, tag="save_cbr_as_dropdown")
-        dpg.configure_item("save_cbr_as_dropdown", default_value = '.cbz')
+def load_translation(app, language: str):
+    translator = QTranslator(app)
+    lang_code = {
+        'English': 'en',
+        '한국어': 'ko',
+        'Français': 'fr',
+        '日本語': 'ja',
+        '简体中文': 'zh_CN',
+        '繁體中文': 'zh_TW',
+        'русский': 'ru',
+        'Deutsch': 'de',
+        'Nederlands': 'nl',
+        'Español': 'es',
+        'Italiano': 'it',
+        'Türkçe': 'tr'
+    }.get(language, 'en')
 
-    with dpg.group(horizontal=True):
-        dpg.add_text("Save CB7 as", tag = "save_cb7_as_title")
-        dpg.add_combo(items=['.cb7', '.cbz', '.pdf', '.epub'], width = 70, tag="save_cb7_as_dropdown")
-        dpg.configure_item("save_cb7_as_dropdown", default_value = '.cb7')
+    # Load the translation file
+    # if translator.load(f"ct_{lang_code}", "app/translations/compiled"):
+    #     print('jff')
+    #     app.installTranslator(translator)
+    # else:
+    #     print(f"Failed to load translation for {language}")
 
-    with dpg.group(horizontal=True):
-        dpg.add_text("Save CBT as", tag = "save_cbt_as_title")
-        dpg.add_combo(items=['.cbz', '.cb7', '.pdf', '.epub'], width = 70, tag="save_cbt_as_dropdown")
-        dpg.configure_item("save_cbt_as_dropdown", default_value = '.cbz')
+    if translator.load(f":/translations/ct_{lang_code}.qm"):
+        app.installTranslator(translator)
+    else:
+        print(f"Failed to load translation for {language}")
 
-    with dpg.group(horizontal=True):
-        dpg.add_text("Save EPUB as", tag = "save_epub_as_title")
-        dpg.add_combo(items=['.epub', '.pdf', '.cbz', '.cb7'], width = 70, tag="save_epub_as_dropdown")
-        dpg.configure_item("save_epub_as_dropdown", default_value = '.epub')
+if __name__ == "__main__":
 
-    dpg.add_button(label="OK", width=75, callback=lambda: dpg.configure_item("save_as", show=False), tag = "save_as_ok") 
+    from app.ui.dayu_widgets.qt import application
+    from app.translations.compiled import rc_translations
 
+    with application() as app:
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        selected_language = settings.value('language', get_system_language())
+        if selected_language != 'English':
+            load_translation(app, selected_language)  
 
-current_language = state_manager.lang_settings.get_curr_lang()
-state_manager.change_font(current_language)
-saved_state = state_manager.load_state()
-state_manager.apply_state(saved_state)
-if current_language != 'en':
-    state_manager.change_language(current_language)
-dpg.set_exit_callback(state_manager.save_state)
-dpg.setup_dearpygui()
-dpg.show_viewport()
-dpg.set_primary_window("primary_window", True)
-dpg.start_dearpygui()
-dpg.destroy_context()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        test = ComicTranslate()
+        test.show()
