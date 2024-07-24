@@ -772,7 +772,7 @@ def load_translation(app, language: str):
 if __name__ == "__main__":
 
     from app.ui.dayu_widgets.qt import application
-    from app.translations.compiled import rc_translations
+    from app.translations import ct_translations
 
     with application() as app:
         settings = QSettings("ComicLabs", "ComicTranslate")
