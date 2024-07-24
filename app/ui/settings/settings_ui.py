@@ -224,7 +224,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         tools_layout = QtWidgets.QVBoxLayout()
 
         translator_widget, self.translator_combo = self._create_title_and_combo(self.tr("Translator"), self.supported_translators)
-        self.translator_combo.setCurrentText(self.tr("GPT-4o mini"))
         self.set_combo_box_width(self.translator_combo, self.supported_translators)
 
         ocr_widget, self.ocr_combo = self._create_title_and_combo(self.tr("OCR"), self.ocr_engines)
