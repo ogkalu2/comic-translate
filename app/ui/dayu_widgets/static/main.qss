@@ -1,0 +1,1274 @@
+/* public*/
+
+*{
+    font-family: @font_family;
+    color: @primary_text_color;
+    background-color: @background_color;
+    font-size: @font_size_base@font_unit;
+    selection-color: @text_color_inverse;
+    selection-background-color: @primary_color;
+}
+MDateTimeEdit::drop-down,
+MDateEdit::drop-down,
+MComboBox::drop-down {
+    subcontrol-origin: content;
+    subcontrol-position: center right;
+    image: url(@icon_down);
+}
+MDateTimeEdit[dayu_size="@huge"]::drop-down,
+MDateEdit[dayu_size="@huge"]::drop-down,
+MComboBox[dayu_size="@huge"]::drop-down{
+    width: @huge@unit;
+    height: @huge_icon@unit;
+}
+MDateTimeEdit[dayu_size="@large"]::drop-down,
+MDateEdit[dayu_size="@large"]::drop-down,
+MComboBox[dayu_size="@large"]::drop-down{
+    width: @large@unit;
+    height: @large_icon@unit;
+}
+MDateTimeEdit[dayu_size="@medium"]::drop-down,
+MDateEdit[dayu_size="@medium"]::drop-down,
+MComboBox[dayu_size="@medium"]::drop-down{
+    width: @medium@unit;
+    height: @medium_icon@unit;
+}
+MDateTimeEdit[dayu_size="@small"]::drop-down,
+MDateEdit[dayu_size="@small"]::drop-down,
+MComboBox[dayu_size="@small"]::drop-down{
+    width: @small@unit;
+    height: @small_icon@unit;
+}
+MDateTimeEdit[dayu_size="@tiny"]::drop-down,
+MDateEdit[dayu_size="@tiny"]::drop-down,
+MComboBox[dayu_size="@tiny"]::drop-down{
+    width: @tiny@unit;
+    height: @tiny_icon@unit;
+}
+
+QAbstractButton[dayu_size="@huge"],
+QAbstractSpinBox[dayu_size="@huge"],
+QComboBox[dayu_size="@huge"],
+QLineEdit[dayu_size="@huge"]{
+    font-size: @font_size_large@font_unit;
+    border-radius: @border_radius_large@unit;
+    min-height: @huge@unit;
+    max-height: @huge@unit;
+}
+
+QAbstractButton[dayu_size="@large"],
+QAbstractSpinBox[dayu_size="@large"],
+QComboBox[dayu_size="@large"],
+QLineEdit[dayu_size="@large"]{
+    font-size: @font_size_large@font_unit;
+    border-radius: @border_radius_large@unit;
+    min-height: @large@unit;
+    max-height: @large@unit;
+}
+
+QAbstractButton[dayu_size="@medium"],
+QAbstractSpinBox[dayu_size="@medium"],
+QComboBox[dayu_size="@medium"],
+QLineEdit[dayu_size="@medium"]{
+    font-size: @font_size_base@font_unit;
+    border-radius: @border_radius_base@unit;
+    min-height: @medium@unit;
+    max-height: @medium@unit;
+}
+
+QAbstractButton[dayu_size="@small"],
+QAbstractSpinBox[dayu_size="@small"],
+QComboBox[dayu_size="@small"],
+QLineEdit[dayu_size="@small"]{
+    font-size: @font_size_base@font_unit;
+    border-radius: @border_radius_base@unit;
+    min-height: @small@unit;
+    max-height: @small@unit;
+}
+QAbstractButton[dayu_size="@tiny"],
+QAbstractSpinBox[dayu_size="@tiny"],
+QComboBox[dayu_size="@tiny"],
+QLineEdit[dayu_size="@tiny"]{
+    font-size: @font_size_small@font_unit;
+    border-radius: @border_radius_small@unit;
+    min-height: @tiny@unit;
+    max-height: @tiny@unit;
+}
+
+
+MComboBox[dayu_size="@huge"]::drop-down{
+    height: @drop_down_huge@unit;
+}
+MComboBox[dayu_size="@large"]::drop-down{
+    height: @drop_down_large@unit;
+}
+MComboBox[dayu_size="@medium"]::drop-down{
+    height: @drop_down_medium@unit;
+}
+MComboBox[dayu_size="@small"]::drop-down{
+    height: @drop_down_small@unit;
+}
+MComboBox[dayu_size="@tiny"]::drop-down{
+    height: @drop_down_tiny@unit;
+}
+
+/* MCalendarWidget*/
+#qt_calendar_calendarview {
+    background: @background_color;
+}
+
+#qt_calendar_navigationbar {
+    background: @background_color;
+}
+
+QCalenderWidget > QToolButton {
+    icon-size: @drop_down_medium@unit, @drop_down_medium@unit;
+    width: @drop_down_large@unit;
+    height: @drop_down_large@unit;
+    background: @background_out_color;
+}
+
+QToolButton#qt_calendar_prevmonth {
+    qproperty-icon: url(@icon_left);
+}
+
+QToolButton#qt_calendar_nextmonth {
+    qproperty-icon: url(@icon_right);
+}
+
+QToolButton#qt_calendar_monthbutton {
+    padding-right: @drop_down_huge@unit;
+}
+
+QToolButton#qt_calendar_yearbutton {
+    padding-right: @drop_down_huge@unit;
+}
+
+QToolButton#qt_calendar_monthbutton::menu-indicator {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    right: @indicator_padding@unit;
+}
+
+QCalendarWidget QWidget {
+  alternate-background-color: @background_out_color;
+}
+
+
+/* QAbstractSpinBox */
+QAbstractSpinBox {
+    spacing: 4px;
+    border: 1px solid @border_color;
+    border-radius: 3px;
+    color: @primary_text_color;
+    background-color:@background_in_color;
+}
+
+QAbstractSpinBox:focus{
+    border: 1px solid @primary_color;
+}
+
+QAbstractSpinBox::up-button {
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    margin-top: 1px;
+    margin-right: 1px;
+    border-left: 1px solid @border_color;
+    background: @background_out_color;
+}
+
+QAbstractSpinBox::down-button {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    margin-bottom: 1px;
+    margin-right: 1px;
+    border-left: 1px solid @border_color;
+    border-top: 1px solid @border_color;
+    background: @background_out_color;
+}
+
+QAbstractSpinBox::up-button:hover,
+QAbstractSpinBox::down-button:hover {
+    border-left: 1px solid @primary_color;
+}
+
+QAbstractSpinBox::up-arrow {
+    image: url(@icon_up);
+}
+QAbstractSpinBox::down-arrow {
+    image: url(@icon_down);
+}
+QAbstractSpinBox::up-arrow:disabled,
+QAbstractSpinBox::up-arrow:off,
+QAbstractSpinBox::down-arrow:disabled,
+QAbstractSpinBox::down-arrow:off {
+    background-color: @disable_color;
+}
+QAbstractSpinBox[dayu_size="@huge"]::up-button{
+    width: @spin_box_huge@unit;
+    border-top-right-radius: @border_radius_large@unit;
+}
+QAbstractSpinBox[dayu_size="@huge"]::down-button{
+    width: @spin_box_huge@unit;
+    border-bottom-right-radius: @border_radius_large@unit;
+}
+QAbstractSpinBox[dayu_size="@large"]::up-button{
+    width: @spin_box_large@unit;
+    border-top-right-radius: @border_radius_large@unit;
+}
+QAbstractSpinBox[dayu_size="@large"]::down-button{
+    width: @spin_box_large@unit;
+    border-bottom-right-radius: @border_radius_large@unit;
+}
+QAbstractSpinBox[dayu_size="@medium"]::up-button{
+    width: @spin_box_medium@unit;
+    border-top-right-radius: @border_radius_base@unit;
+}
+QAbstractSpinBox[dayu_size="@medium"]::down-button{
+    width: @spin_box_medium@unit;
+    border-bottom-right-radius: @border_radius_base@unit;
+}
+QAbstractSpinBox[dayu_size="@small"]::up-button{
+    width: @spin_box_small@unit;
+    border-top-right-radius: @border_radius_small@unit;
+}
+QAbstractSpinBox[dayu_size="@small"]::down-button{
+    width: @spin_box_small@unit;
+    border-bottom-right-radius: @border_radius_small@unit;
+}
+QAbstractSpinBox[dayu_size="@tiny"]::up-button{
+    width: @spin_box_tiny@unit;
+    border-top-right-radius: @border_radius_small@unit;
+}
+QAbstractSpinBox[dayu_size="@tiny"]::down-button{
+    width: @spin_box_tiny@unit;
+    border-bottom-right-radius: @border_radius_small@unit;
+}
+QAbstractSpinBox[dayu_size="@huge"]::up-arrow,
+QAbstractSpinBox[dayu_size="@huge"]::down-arrow {
+    width: @spin_box_icon_huge@unit;
+    height: @spin_box_icon_huge@unit;
+}
+QAbstractSpinBox[dayu_size="@large"]::up-arrow,
+QAbstractSpinBox[dayu_size="@large"]::down-arrow {
+    width: @spin_box_icon_large@unit;
+    height: @spin_box_icon_large@unit;
+}
+QAbstractSpinBox[dayu_size="@medium"]::up-arrow,
+QAbstractSpinBox[dayu_size="@medium"]::down-arrow {
+    width: @spin_box_icon_medium@unit;
+    height: @spin_box_icon_medium@unit;
+}
+QAbstractSpinBox[dayu_size="@small"]::up-arrow,
+QAbstractSpinBox[dayu_size="@small"]::down-arrow {
+    width: @spin_box_icon_small@unit;
+    height: @spin_box_icon_small@unit;
+}
+QAbstractSpinBox[dayu_size="@tiny"]::up-arrow,
+QAbstractSpinBox[dayu_size="@tiny"]::down-arrow {
+    width: @spin_box_icon_tiny@unit;
+    height: @spin_box_icon_tiny@unit;
+}
+MDateTimeEdit::drop-down, MDateEdit::drop-down{
+    subcontrol-origin: border;
+    subcontrol-position: center right;
+    image: url(@icon_calender);
+}
+
+/* MAlert */
+MAlert{
+    border: 1px solid @border_color;
+    border-radius: @border_radius_base@unit;
+}
+MAlert[dayu_type=info]{
+    border-color: @info_3;
+    background-color: @info_1;
+}
+MAlert[dayu_type=success]{
+    border-color: @success_3;
+    background-color: @success_1;
+}
+MAlert[dayu_type=warning]{
+    border-color: @warning_3;
+    background-color: @warning_1;
+}
+MAlert[dayu_type=error]{
+    border-color: @error_3;
+    background-color: @error_1;
+}
+
+/* MAvatar*/
+MAvatar{
+    background-color: transparent;
+}
+
+/*MBadge*/
+MBadge{
+    margin: 0;
+}
+MBadge > QPushButton{
+    font-size:9@font_unit;
+    min-height:@badge_width@unit;
+    max-height:@badge_width@unit;
+    min-width:@badge_width@unit;
+    border-radius: @badge_width_radius@unit;
+    background-color: red;
+    border: none;
+    color: white;
+    font-weight:bold;
+    margin: 0;
+}
+
+MBadge[dayu_dot=true] > QPushButton{
+    min-height:@badge_dot@unit;
+    max-height:@badge_dot@unit;
+    min-width:@badge_dot@unit;
+    max-width:@badge_dot@unit;
+    border-radius: @badge_dot_radius@unit;
+    padding: 0 0;
+}
+
+/* MToolButton*/
+MToolButton {
+    border: none;
+    padding: 0;
+    background-color: transparent;
+}
+MToolButton:hover{
+    color: @primary_5;
+}
+MToolButton:pressed{
+    color: @primary_7;
+}
+MToolButton:disabled{
+    background-color: @disable_color;
+}
+
+MTaobaoButton{
+    border-radius: 2px;
+    border: 1px solid @border_color;
+}
+MTaobaoButton:hover{
+    color: @primary_5;
+    border: 1px solid @primary_5;
+}
+MTaobaoButton:checked{
+    color: @primary_color;
+    border: 2px solid @primary_color;
+}
+
+MBlockButton{
+    border-radius: 0;
+    padding: 1% 10%;
+    border:none;
+}
+MBlockButton:hover{
+    color: @primary_color;
+    background-color:@background_in_color;
+}
+MBlockButton:checked{
+    color: @primary_color;
+    background-color:@background_in_color;
+}
+
+MUnderlineButton{
+    border-radius: 0;
+    padding: 1% 10%;
+    border-color: transparent;
+}
+MUnderlineButton:hover{
+    border-radius: 0;
+    color: @primary_5;
+    border: none;
+}
+MUnderlineButton:checked{
+    border-radius: 0;
+    color: @primary_color;
+    border-style: solid;
+    border-color: @primary_color;
+    border-width: 0 0 2px 0;
+}
+
+
+MToolButton[combine=horizontal]{
+    border-radius: 0;
+}
+MToolButton[combine=vertical]{
+    border-radius: 0;
+}
+
+MToolButton[dayu_size="@huge"], MPushButton[dayu_size="@huge"]{
+    qproperty-iconSize: @huge_icon@unit  @huge_icon@unit;
+}
+MToolButton[dayu_size="@large"], MPushButton[dayu_size="@large"]{
+    qproperty-iconSize: @large_icon@unit  @large_icon@unit;
+}
+MToolButton[dayu_size="@medium"], MPushButton[dayu_size="@medium"]{
+    qproperty-iconSize: @medium_icon@unit @medium_icon@unit;
+}
+MToolButton[dayu_size="@small"], MPushButton[dayu_size="@small"]{
+    qproperty-iconSize: @small_icon@unit @small_icon@unit;
+}
+MToolButton[dayu_size="@tiny"], MPushButton[dayu_size="@tiny"]{
+    qproperty-iconSize: @tiny_icon@unit @tiny_icon@unit;
+}
+
+
+MToolButton::menu-indicator {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    right: @indicator_padding@unit;
+    bottom: @indicator_padding@unit;
+    image: url(@icon_down);
+}
+
+MDragFileButton, MDragFolderButton{
+    color: @primary_text_color;
+    background-color: @background_color;
+    border: @drag_border@unit dashed @border_color;
+    border-radius: @drag_border_radius@unit;
+    padding: @drag_padding_x@unit @drag_padding_y@unit;
+}
+MDragFileButton:hover, MDragFolderButton:hover{
+    color: @primary_color;
+    border-color: @primary_5;
+}
+MDragFileButton:pressed, MDragFolderButton:pressed{
+    color: @primary_color;
+    border-color: @primary_7;
+}
+
+/* MCheckBox */
+MCheckBox {
+    spacing: @check_box_spacing@unit;
+}
+MCheckBox:disabled {
+    color: @disable_color;
+}
+
+
+MMenu::indicator:non-exclusive,
+MBigView::indicator,
+MListView::indicator,
+MTreeView::indicator,
+MColumnView::indicator,
+MTableView::indicator,
+MCheckBox::indicator{
+    width: @check_box_size@unit;
+    height: @check_box_size@unit;
+    border-radius: 2px;
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+MMenu::indicator:non-exclusive:disabled,
+MBigView::indicator:disabled,
+MListView::indicator:disabled,
+MTreeView::indicator:disabled,
+MColumnView::indicator:disabled,
+MTableView::indicator:disabled,
+MCheckBox::indicator:disabled{
+    border: 1px solid @border_color;
+    background-color: @background_selected_color;
+}
+MMenu::indicator:non-exclusive:hover,
+MBigView::indicator:hover,
+MListView::indicator:hover,
+MTreeView::indicator:hover,
+MColumnView::indicator:hover,
+MTableView::indicator:hover,
+MCheckBox::indicator:hover{
+    border: 1px solid @primary_5;
+    background-color: @background_in_color;
+}
+MMenu::indicator:non-exclusive:checked,
+MBigView::indicator:checked,
+MListView::indicator:checked,
+MTreeView::indicator:checked,
+MColumnView::indicator:checked,
+MTableView::indicator:checked,
+MCheckBox::indicator:checked{
+    background-color: @primary_color;
+    image: url(@icon_check);
+}
+MMenu::indicator:non-exclusive:checked:disabled,
+MBigView::indicator:checked:disabled,
+MListView::indicator:checked:disabled,
+MTreeView::indicator:checked:disabled,
+MColumnView::indicator:checked:disabled,
+MTableView::indicator:checked:disabled,
+MCheckBox::indicator:checked:disabled{
+    background-color: @disable_color;
+}
+
+MBigView::indicator:indeterminate,
+MListView::indicator:indeterminate,
+MTreeView::indicator:indeterminate,
+MColumnView::indicator:indeterminate,
+MTableView::indicator:indeterminate,
+MCheckBox::indicator:indeterminate {
+    background-color: @primary_color;
+    image: url(@icon_minus);
+}
+
+MBigView::indicator:indeterminate:disabled,
+MListView::indicator:indeterminate:disabled,
+MTreeView::indicator:indeterminate:disabled,
+MColumnView::indicator:indeterminate:disabled,
+MTableView::indicator:indeterminate:disabled,
+MCheckBox::indicator:indeterminate:disabled {
+    background-color: @disable_color;
+}
+
+
+/* MPushButton */
+MPushButton {
+    font-weight: 400;
+    border-radius: 5%;
+    padding: 1% 10%;
+}
+
+MPushButton[dayu_type=default]{
+    background-color: @background_out_color;
+    border: 1px solid @border_color;
+}
+MPushButton[dayu_type=default]:hover{
+    /*color: @primary_5;*/
+    border-color: @primary_5;
+}
+MPushButton[dayu_type=default]:pressed{
+    /*color: @primary_7;*/
+    border-color: @primary_7;
+}
+
+
+MPushButton[dayu_type=primary]{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @primary_color;
+}
+MPushButton[dayu_type=primary]:hover{
+    background-color: @primary_5;
+}
+MPushButton[dayu_type=primary]:pressed{
+    background-color: @primary_7;
+}
+
+
+MPushButton[dayu_type=success]{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @success_6;
+}
+MPushButton[dayu_type=success]:hover{
+    background-color: @success_5;
+}
+MPushButton[dayu_type=success]:pressed{
+    background-color: @success_7;
+}
+
+
+MPushButton[dayu_type=warning]{
+    border: none;
+    color: @text_color_inverse;
+    background-color: @warning_6;
+}
+MPushButton[dayu_type=warning]:hover{
+    background-color: @warning_5;
+}
+MPushButton[dayu_type=warning]:pressed{
+    background-color: @warning_7;
+}
+
+
+MPushButton[dayu_type=danger]{
+    border: none;
+    color: white;
+    background-color: @error_6;
+}
+MPushButton[dayu_type=danger]:hover{
+    background-color: @error_5;
+}
+MPushButton[dayu_type=danger]:pressed{
+    background-color: @error_7;
+}
+
+MPushButton[combine=horizontal][position=left],
+MComboBox[combine=horizontal][position=left]{
+    margin-left: 1px;
+    border-left: none;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+
+MPushButton[combine=horizontal][position=right],
+MComboBox[combine=horizontal][position=right]{
+    border-right: none;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+MPushButton[combine=horizontal][position=center],
+MComboBox[combine=horizontal][position=center]{
+    /*border: none;*/
+    border-radius: 0;
+}
+MPushButton[combine=vertical][position=top],
+MComboBox[combine=vertical][position=top]{
+    border-top: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+MPushButton[combine=vertical][position=bottom],
+MComboBox[combine=vertical][position=bottom]{
+    border-bottom: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+MPushButton:disabled{
+    color: @disable_color;
+    border: 2px dashed @disable_color;
+    background-color: @background_color;
+}
+
+MPushButton::menu-indicator {
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    right: @indicator_padding@unit;
+    bottom: @indicator_padding@unit;
+    image: url(@icon_down);
+}
+
+/*MRadioButton*/
+MRadioButton {
+    spacing: @radio_spacing@unit;
+}
+MRadioButton:disabled {
+    color: @disable_color;
+}
+
+MMenu::indicator:exclusive,
+MRadioButton::indicator{
+    width: @radio_size@unit;
+    height: @radio_size@unit;
+    border-radius: @radio_radius@unit;
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+MMenu::indicator:exclusive:disabled,
+MRadioButton::indicator:disabled{
+    border: 1px solid @border_color;
+    background-color: @background_selected_color;
+}
+
+MMenu::indicator:exclusive:hover,
+MRadioButton::indicator:hover{
+    border: 1px solid @primary_5;
+}
+MMenu::indicator:exclusive:checked,
+MRadioButton::indicator:checked{
+    background-color: @primary_color;
+    image: url(@icon_circle);
+}
+MMenu::indicator:exclusive:checked:disabled,
+MRadioButton::indicator:checked:disabled{
+    background-color: @disable_color;
+}
+
+
+/*MSwitch*/
+MSwitch::indicator{
+    subcontrol-origin: border;
+    subcontrol-position: center left;
+    image: url(@icon_sphere);
+}
+MSwitch[dayu_size="@huge"]::indicator{
+    width: @switch_width_huge@unit;
+    height: @switch_height_huge@unit;
+    border-radius: @switch_radius_huge@unit;
+}
+MSwitch[dayu_size="@large"]::indicator{
+    width: @switch_width_large@unit;
+    height: @switch_height_large@unit;
+    border-radius: @switch_radius_large@unit;
+}
+MSwitch[dayu_size="@medium"]::indicator{
+    width: @switch_width_medium@unit;
+    height: @switch_height_medium@unit;
+    border-radius: @switch_radius_medium@unit;
+}
+MSwitch[dayu_size="@small"]::indicator{
+    width: @switch_width_small@unit;
+    height: @switch_height_small@unit;
+    border-radius: @switch_radius_small@unit;
+}
+MSwitch[dayu_size="@tiny"]::indicator{
+    width: @switch_width_tiny@unit;
+    height: @switch_height_tiny@unit;
+    border-radius: @switch_radius_tiny@unit;
+}
+MSwitch::indicator:checked{
+    image-position: center right;
+    background-color: @primary_color;
+}
+MSwitch::indicator:unchecked{
+    image-position: center left;
+    background-color: @background_selected_color;
+}
+MSwitch::indicator:disabled{
+    background-color: @disable_color;
+}
+
+MComboBox{
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+QCombBox > QLineEdit{
+    background-color: red;
+}
+
+MComboBox:focus{
+    border: 1px solid @primary_5;
+}
+MComboBox:hover{
+    border: 1px solid @primary_7;
+}
+MComboBox:disabled{
+    color: @disable_color;
+}
+/* MLabel */
+MLabel{
+    padding: 0px;
+    background-color: transparent;
+    font-size: @font_size_base@font_unit;
+    color: @primary_text_color;
+    font-weight: 400;
+}
+MLabel[dayu_level="1"]{
+    font-size: @h1_size@font_unit;
+    font-weight: 500;
+    color: @title_color;
+}
+MLabel[dayu_level="2"]{
+    font-size: @h2_size@font_unit;
+    font-weight: 500;
+    color: @title_color;
+}
+MLabel[dayu_level="3"]{
+    font-size: @h3_size@font_unit;
+    font-weight: 500;
+    color: @title_color;
+}
+MLabel[dayu_level="4"]{
+    font-size: @h4_size@font_unit;
+    font-weight: 500;
+    color: @title_color;
+}
+
+
+MLabel[dayu_underline=true]{
+    text-decoration: underline;
+}
+MLabel[dayu_delete=true]{
+    text-decoration: line-through;
+}
+MLabel[dayu_strong=true]{
+    font-weight: bold;
+}
+MLabel[dayu_code=true]{
+    background-color: @background_out_color;
+    border: 1px solid @border_color;
+}
+MLabel[dayu_border=true]{
+    border: 1px solid @border_color;
+}
+MLabel[dayu_mark=true]{
+    background-color: @warning_1;
+}
+
+MLabel[dayu_type=danger]{
+    color: @error_6;
+}
+MLabel[dayu_type=warning]{
+    color: @warning_6;
+}
+MLabel[dayu_type=secondary]{
+    color: @secondary_text_color;
+}
+
+MLabel:disabled{
+    color:@disable_color;
+}
+
+MMessage,
+MDrawer{
+    padding: 2px;
+    border: 1px solid @border_color;
+    border-radius: 2px;
+    background-color: @background_color;
+}
+
+
+MToast{
+    background-color: @toast_color;
+}
+
+MToast QLabel{
+    color: @text_color_inverse;
+    background-color: transparent;
+}
+
+MSectionItem{
+    border: 1px solid @border_color;
+    border-radius: 2px;
+    background-color: @background_color;
+}
+QWidget#title {
+    background-color: @background_out_color;
+}
+MTextEdit {
+    border-radius: @border_radius_base@unit;
+}
+MLineEdit,
+MTextEdit{
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
+
+MLineEdit:focus,
+MTextEdit:focus{
+    border: 1px solid @primary_color;
+}
+
+MLineEdit[dayu_type=error]{
+    color: @error_5;
+}
+MLineEdit[dayu_type=error]:focus{
+    border: 1px solid @error_5;
+}
+MLineEdit:disabled{
+    color: @disable_color;
+}
+
+MTabWidget::pane { /* The tab widget frame */
+    border: 1px solid @border_color;
+    border-radius: 3px;
+    top: -1px;
+    background-color: @background_color;
+}
+MTabWidget::tab-bar {
+}
+ /* Style the tab using the tab sub-control. Note that
+     it reads QTabBar _not_ QTabWidget */
+MTabBar::tab {
+    border: 1px solid @border_color;
+    border-bottom: none;
+    border-top-left-radius: 5%;
+    border-top-right-radius: 5%;
+    background-color: @background_in_color;
+}
+
+QTabBar::tab:selected{
+    border-bottom: none;
+    color: @primary_color;
+    background-color: @background_color;
+}
+QTabBar::tab:!selected {
+    margin-top: 2px;
+    border-bottom: 1px solid @border_color;
+}
+
+MTabBar::tab:hover {
+    color: @primary_color;
+}
+MTabBar::close-button {
+    subcontrol-origin: content;
+    subcontrol-position: right center;
+    right: @indicator_padding@unit;
+    image: url(@icon_close);
+}
+MTabBar::close-button:hover {
+    border: 1px solid @primary_color;
+}
+
+MTabBar QToolButton {
+    border: 1px solid @border_color;
+}
+MTabBar QToolButton:hover {
+    border: 1px solid @primary_5;
+}
+MTabBar QToolButton:disabled {
+    background-color: @disable_color;
+}
+MTabBar QToolButton::right-arrow {
+    image: url(@icon_right);
+}
+
+MTabBar QToolButton::left-arrow {
+    image: url(@icon_left);
+}
+
+/* MHeaderView */
+MHeaderView {
+    background-color: @background_out_color;
+    color: @title_color;
+}
+MHeaderView::section{
+    background-color: @background_out_color;
+    border: 0 solid @border_color;
+    padding: 1px @indicator_padding@unit;
+}
+
+
+MHeaderView[grid=true][orientation=horizontal]::section{
+    border-right: 1px solid @border_color;
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+}
+
+
+MHeaderView[grid=true][orientation=vertical]::section{
+    border-bottom: 1px solid @border_color;
+    border-right: none;
+    border-left: none;
+    border-top: none;
+}
+
+MHeaderView::section:hover {
+    color: @primary_color;
+}
+
+MHeaderView::up-arrow {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    right: @indicator_padding@unit;
+    image: url(@icon_up);
+}
+
+MHeaderView::down-arrow {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    right: @indicator_padding@unit;
+    image: url(@icon_down);
+}
+MListView[dayu_size="@huge"]::item{
+    min-height: @huge@unit;
+    max-height: @huge@unit;
+}
+MListView[dayu_size="@large"]::item{
+    min-height: @large@unit;
+    max-height: @large@unit;
+}
+MListView[dayu_size="@medium"]::item{
+    min-height: @medium@unit;
+    max-height: @medium@unit;
+}
+MListView[dayu_size="@small"]::item{
+    min-height: @small@unit;
+    max-height: @small@unit;
+}
+
+MBigView,
+MListView,
+MTreeView,
+MColumnView,
+MTableView{
+    background-color: @background_in_color;
+    alternate-background-color: @background_color;
+    border: 1px solid @border_color;
+    padding: 0;
+    gridline-color: @border_color;
+}
+
+MBigView::item:hover,
+MListView::item:hover,
+MTreeView::item:hover,
+MColumnView::item:hover,
+MTableView::item:hover{
+    color: @text_color_inverse;
+    background-color: @primary_5;
+}
+
+MBigView::item:selected,
+MListView::item:selected,
+MTreeView::item:selected,
+MColumnView::item:selected,
+MTableView::item:selected{
+    background-color: @primary_color;
+    color: @text_color_inverse;
+}
+
+MTableView QTableCornerButton::section {
+    background-color: @background_out_color;
+    border: 0px solid @border_color;
+    border-right: 1px solid @border_color;
+    border-bottom: 1px solid @border_color;
+}
+
+QScrollBar:horizontal {
+    border: 0 solid @border_color;
+    height: @indicator_size@unit;
+    margin: 0 @scroll_bar_margin@unit 0 0;
+    background-color: @border_color;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: @background_selected_color;
+    border-radius: @scroll_bar_radius@unit;
+}
+
+QScrollBar::add-line:horizontal {
+    subcontrol-origin: margin;
+    subcontrol-position: right center;
+    background: @border_color;
+    width: @scroll_bar_size@unit;
+}
+
+QScrollBar::sub-line:horizontal {
+    subcontrol-origin: margin;
+    subcontrol-position: right center;
+    background: @border_color;
+    width: @scroll_bar_size@unit;
+    right: @scroll_bar_size@unit;
+}
+
+QScrollBar::left-arrow:horizontal {
+    subcontrol-origin: margin;
+    subcontrol-position: center center;
+    image: url(@icon_left);
+}
+
+QScrollBar::right-arrow:horizontal {
+    subcontrol-origin: margin;
+    subcontrol-position: center center;
+    image: url(@icon_right);
+}
+
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+QScrollBar:vertical {
+    border: 0 solid @border_color;
+    width: @indicator_size@unit;
+    margin: 0 0 @scroll_bar_margin@unit 0 ;
+    background-color: @border_color;
+}
+
+QScrollBar::handle:vertical {
+    background-color: @background_selected_color;
+}
+
+QScrollBar::add-line:vertical {
+    subcontrol-origin: margin;
+    subcontrol-position: center bottom;
+    background: @border_color;
+    height: @scroll_bar_size@unit;
+}
+
+QScrollBar::sub-line:vertical {
+    subcontrol-origin: margin;
+    subcontrol-position: center bottom;
+    background: @border_color;
+    height: @scroll_bar_size@unit;
+    bottom: @scroll_bar_size@unit;
+}
+
+QScrollBar::up-arrow:vertical {
+    position: relative;
+    image: url(@icon_up)
+}
+
+QScrollBar::down-arrow:vertical {
+    position: relative;
+    image: url(@icon_down)
+}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+QSplitter::handle {
+    background-color: @border_color;
+    image: url(@icon_splitter)
+}
+
+QSplitter::handle:horizontal {
+    width: 2px;
+}
+
+QSplitter::handle:vertical {
+    height: 2px;
+}
+MMenuTabWidget QWidget#bar_widget{
+    background: @background_out_color;
+    spacing: 3px;
+    border-radius: 0;
+}
+MMenuTabWidget[dayu_size="@huge"] QWidget#bar_widget{
+    height: @huge@unit;
+}
+MMenuTabWidget[dayu_size="@large"] QWidget#bar_widget{
+    height: @large@unit;
+}
+MSlider::groove:horizontal {
+    border-radius: @slider_radius@unit;
+    height: @slider_height@unit;
+}
+
+MSlider::handle {
+    background: @background_in_color;
+    border: 2px solid @primary_color;
+    width: @slider_handle_size@unit;
+    height: @slider_handle_size@unit;
+    border-radius: @slider_handle_radius@unit;
+}
+MSlider::handle:disabled{
+    border-color: @disable_color;
+}
+
+MSlider::handle:horizontal {
+    margin: -@slider_height@unit 0;
+}
+MSlider::groove:vertical {
+    border-radius: @slider_radius@unit;
+    width: @slider_height@unit;
+}
+
+MSlider::handle:vertical {
+    margin: 0 -@slider_height@unit;
+}
+
+MSlider::add-page:horizontal {
+    background: @border_color;
+}
+
+MSlider::sub-page:horizontal {
+    background: @primary_color;
+}
+MSlider::sub-page:disabled{
+    background: @disable_color;
+}
+MSlider::add-page:vertical {
+    background: @primary_color;
+}
+
+MSlider::sub-page:vertical {
+    background: @border_color;
+}
+MDockWidget {
+    font-size: @h3_size@font_unit;
+    font-weight: 500;
+    color: @title_color;
+    titlebar-close-icon: url(@icon_close);
+    titlebar-normal-icon: url(@icon_float);
+
+}
+MDockWidget::title {
+    background: @background_selected_color;
+    text-align: left;
+    padding-left: @indicator_padding@unit;
+}
+
+MDockWidget::close-button {
+    subcontrol-origin: margin;
+    subcontrol-position: right center;
+    right: @indicator_padding@unit;
+}
+
+MDockWidget::float-button {
+    subcontrol-origin: margin;
+    subcontrol-position: right center;
+    right: @scroll_bar_margin@unit;
+}
+MDockWidget::close-button:hover, MDockWidget::float-button:hover {
+    border: 1px solid @primary_color;
+}
+
+MProgressBar {
+    font-size: @font_size_base@font_unit;
+    color: @primary_text_color;
+    border: 0 solid @border_color;
+    background-color: @border_color;
+    min-height: @progress_bar_size@unit;
+    max-height: @progress_bar_size@unit;
+    border-radius: @progress_bar_radius@unit;
+}
+
+MProgressBar::chunk {
+    min-height: @progress_bar_size@unit;
+    max-height: @progress_bar_size@unit;
+    border-radius: @progress_bar_radius@unit;
+}
+MProgressBar[dayu_status=error]::chunk {
+    background-color: @error_6;
+}
+MProgressBar[dayu_status=success]::chunk {
+    background-color: @success_6;
+}
+MProgressBar[dayu_status=primary]::chunk {
+    background-color: @primary_color;
+}
+
+MMenu {
+    background-color: @background_color;
+    padding: 0;
+    border-radius: 2px;
+    border: 1px solid @border_color;
+}
+MMenu[checked=true]{
+    color: @primary_color;
+    background-color: @background_out_color;
+}
+MMenu::item {
+    padding: 2px 2px;
+}
+MMenu::item {
+    padding: @indicator_padding@unit auto;
+}
+MMenu::item:checked  {
+    color: @primary_color;
+    background-color: @background_out_color;
+}
+MMenu::item:selected  {
+    background-color: @background_out_color;
+}
+
+MMenu::indicator {
+    left: @indicator_padding@unit;
+}
+
+QToolTip {
+    border: none;
+    background-color: @background_selected_color;
+}
+
+MLoading {
+    background-color: transparent;
+}
+
+MLoadingWrapper #mask{
+    background-color: @mask_color;
+}
+
+
+MCard[border=true]{
+    border: 1px solid @border_color;
+    border-radius: @border_radius_small@unit;
+}
+MCard[border=false]{
+    border: 0 solid @border_color;
+    border-radius: @border_radius_small@unit;
+    background-color: @background_in_color;
+}
+
+MMeta {
+    border: 1px solid @border_color;
+    border-radius: @border_radius_small@unit;
+    background-color: @background_in_color;
+}
+
+MSizeGrip {
+    background-color: transparent;
+    image: url(@icon_size_grip);
+}

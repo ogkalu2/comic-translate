@@ -1,0 +1,35 @@
+{
+  "include": "base.json",
+  "color": {
+    "primary": "#f7931e",
+    "primary_light": "#fba137",
+    "primary_dark": "#d08022",
+    "primary_opacity": "#ffd4a1",
+    "text_title": "#17233d",
+    "text_content": "#c8c8c8",
+    "text_select": "#000000",
+    "text_help": "#888",
+    "sub_color": "#808695",
+    "disabled": "#7d7d7d",
+    "border": "#1e1e1e",
+    "divider": "#e8eaec",
+    "background": "#323232",
+    "in_background": "#3a3a3a",
+    "out_background": "#494949",
+    "background_dark": "#262626",
+    "background_light": "#525252",
+    "background_selected": "#292929",
+    "icon": "#a7a7a7",
+    "icon_disabled": "#999"
+  },
+  "icon": {
+    "down": "down_line_dark.svg",
+    "up": "up_line_dark.svg",
+    "left": "left_line_dark.svg",
+    "right": "right_line_dark.svg",
+    "close": "close_line_dark.svg",
+    "calender": "calendar_fill_dark.svg",
+    "float": "float_dark.svg",
+    "splitter": "splitter_dark.svg"
+  }
+}

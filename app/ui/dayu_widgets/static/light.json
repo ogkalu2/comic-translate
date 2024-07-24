@@ -1,0 +1,9 @@
+{
+  "include": "base.json",
+  "color": {
+    "primary": "#f75b47",
+    "primary_light": "#f96f5e",
+    "primary_dark": "#ea4732",
+    "primary_opacity": "#e38e83"
+  }
+}
