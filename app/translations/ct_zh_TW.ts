@@ -284,30 +284,36 @@ Skipping:</source>
     <message>
         <location filename="../ui/messages.py" line="8"/>
         <source>An API Key is required for the selected translator.
-Go to Settings > Credentials to set one</source>
+Go to Settings &gt; Credentials to set one</source>
         <translation>所選翻譯器需要 API 金鑰。
-請前往 設定 > 認證 進行設定</translation>
+請前往 設定 &gt; 認證 進行設定</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="17"/>
         <source>An API Key is required for the selected OCR.
-Go to Settings > Credentials to set one</source>
+Go to Settings &gt; Credentials to set one</source>
         <translation>所選光學字元辨識引擎需要 API 金鑰。
-請前往 設定 > 認證 進行設定</translation>
+請前往 設定 &gt; 認證 進行設定</translation>
+    </message>
+    <message>
+        <source>Default OCR for the selected Source Language is GPT-4o
+which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
+        <translation type="vanished">所選來源語言的預設光學字元辨識引擎為 GPT-4o，
+這需要 API 金鑰。請前往 設定 &gt; 認證 &gt; GPT 進行設定</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="26"/>
-        <source>Default OCR for the selected Source Language is GPT-4o
-which requires an API Key. Go to Settings > Credentials > GPT to set one</source>
-        <translation>所選來源語言的預設光學字元辨識引擎為 GPT-4o，
-這需要 API 金鑰。請前往 設定 > 認證 > GPT 進行設定</translation>
+        <source>Default OCR for one of the selected Source Languages is GPT-4o
+which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
+        <translation>所選來源語言之一的預設 OCR 為 GPT-4o，
+需要 API 金鑰。請前往設定 > 認證 > GPT 進行設定</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
         <source>An Endpoint URL is required for Microsoft OCR.
-Go to Settings > Credentials > Microsoft to set one</source>
+Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
         <translation>Microsoft 光學字元辨識引擎需要端點 URL。
-請前往 設定 > 認證 > Microsoft 進行設定</translation>
+請前往 設定 &gt; 認證 &gt; Microsoft 進行設定</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="44"/>
@@ -327,239 +333,238 @@ Go to Settings > Credentials > Microsoft to set one</source>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>No Font selected.
-Go to Settings > Text Rendering > Font to select or import one </source>
+Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>未選擇字體。
-請前往 設定 > 文字渲染 > 字體 選擇或匯入一個字體</translation>
+請前往 設定 &gt; 文字渲染 &gt; 字體 選擇或匯入一個字體</translation>
     </message>
 </context>
 <context>
     <name>SettingsPageUI</name>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
-        <location filename="../ui/settings/settings_ui.py" line="82"/>
+        <location filename="../ui/settings/settings_ui.py" line="83"/>
         <source>Default</source>
         <translation>預設</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
-        <location filename="../ui/settings/settings_ui.py" line="83"/>
+        <location filename="../ui/settings/settings_ui.py" line="84"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft 光學字元辨識</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="84"/>
+        <location filename="../ui/settings/settings_ui.py" line="85"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="90"/>
+        <location filename="../ui/settings/settings_ui.py" line="91"/>
         <location filename="../ui/settings/settings_ui.py" line="240"/>
-        <location filename="../ui/settings/settings_ui.py" line="558"/>
+        <location filename="../ui/settings/settings_ui.py" line="559"/>
         <source>Resize</source>
         <translation>調整大小</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="91"/>
-        <location filename="../ui/settings/settings_ui.py" line="563"/>
+        <location filename="../ui/settings/settings_ui.py" line="92"/>
+        <location filename="../ui/settings/settings_ui.py" line="564"/>
         <source>Original</source>
         <translation>原始大小</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
-        <location filename="../ui/settings/settings_ui.py" line="92"/>
-        <location filename="../ui/settings/settings_ui.py" line="559"/>
+        <location filename="../ui/settings/settings_ui.py" line="93"/>
+        <location filename="../ui/settings/settings_ui.py" line="560"/>
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
-        <location filename="../ui/settings/settings_ui.py" line="65"/>
+        <location filename="../ui/settings/settings_ui.py" line="66"/>
         <source>Dark</source>
         <translation>深色</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="66"/>
+        <location filename="../ui/settings/settings_ui.py" line="67"/>
         <source>Light</source>
         <translation>淺色</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="95"/>
+        <location filename="../ui/settings/settings_ui.py" line="96"/>
         <source>Left</source>
         <translation>靠左</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="96"/>
-        <location filename="../ui/settings/settings_ui.py" line="451"/>
+        <location filename="../ui/settings/settings_ui.py" line="97"/>
+        <location filename="../ui/settings/settings_ui.py" line="452"/>
         <source>Center</source>
         <translation>置中</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="97"/>
+        <location filename="../ui/settings/settings_ui.py" line="98"/>
         <source>Right</source>
         <translation>靠右</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="100"/>
+        <location filename="../ui/settings/settings_ui.py" line="101"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="101"/>
+        <location filename="../ui/settings/settings_ui.py" line="102"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="102"/>
+        <location filename="../ui/settings/settings_ui.py" line="103"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
-        <location filename="../ui/settings/settings_ui.py" line="103"/>
+        <location filename="../ui/settings/settings_ui.py" line="104"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="71"/>
-        <location filename="../ui/settings/settings_ui.py" line="104"/>
+        <location filename="../ui/settings/settings_ui.py" line="72"/>
+        <location filename="../ui/settings/settings_ui.py" line="105"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
-        <location filename="../ui/settings/settings_ui.py" line="105"/>
+        <location filename="../ui/settings/settings_ui.py" line="106"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="77"/>
-        <location filename="../ui/settings/settings_ui.py" line="106"/>
+        <location filename="../ui/settings/settings_ui.py" line="78"/>
+        <location filename="../ui/settings/settings_ui.py" line="107"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="69"/>
+        <location filename="../ui/settings/settings_ui.py" line="70"/>
         <source>GPT-4o</source>
         <translation>GPT-4o</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="70"/>
-        <location filename="../ui/settings/settings_ui.py" line="226"/>
+        <location filename="../ui/settings/settings_ui.py" line="71"/>
         <source>GPT-4o mini</source>
         <translation>GPT-4o mini</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
-        <location filename="../ui/settings/settings_ui.py" line="72"/>
+        <location filename="../ui/settings/settings_ui.py" line="73"/>
         <source>Claude-3-Opus</source>
         <translation>Claude-3-Opus</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
-        <location filename="../ui/settings/settings_ui.py" line="73"/>
+        <location filename="../ui/settings/settings_ui.py" line="74"/>
         <source>Claude-3.5-Sonnet</source>
         <translation>Claude-3.5-Sonnet</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
-        <location filename="../ui/settings/settings_ui.py" line="74"/>
+        <location filename="../ui/settings/settings_ui.py" line="75"/>
         <source>Claude-3-Haiku</source>
         <translation>Claude-3-Haiku</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
-        <location filename="../ui/settings/settings_ui.py" line="75"/>
+        <location filename="../ui/settings/settings_ui.py" line="76"/>
         <source>Gemini-1.5-Flash</source>
         <translation>Gemini-1.5-Flash</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="76"/>
+        <location filename="../ui/settings/settings_ui.py" line="77"/>
         <source>Gemini-1.5-Pro</source>
         <translation>Gemini-1.5-Pro</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="78"/>
+        <location filename="../ui/settings/settings_ui.py" line="79"/>
         <source>Google Translate</source>
         <translation>Google 翻譯</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="43"/>
-        <location filename="../ui/settings/settings_ui.py" line="79"/>
+        <location filename="../ui/settings/settings_ui.py" line="80"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft 翻譯</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="161"/>
+        <location filename="../ui/settings/settings_ui.py" line="162"/>
         <location filename="../ui/settings/settings_ui.py" line="233"/>
         <source>Inpainter</source>
         <translation>圖像修復器</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="162"/>
+        <location filename="../ui/settings/settings_ui.py" line="163"/>
         <location filename="../ui/settings/settings_ui.py" line="236"/>
         <source>HD Strategy</source>
         <translation>高清策略</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="179"/>
+        <location filename="../ui/settings/settings_ui.py" line="180"/>
         <source>Personalization</source>
         <translation>個人化設定</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="180"/>
+        <location filename="../ui/settings/settings_ui.py" line="181"/>
         <source>Tools</source>
         <translation>工具</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="181"/>
+        <location filename="../ui/settings/settings_ui.py" line="182"/>
         <source>Credentials</source>
         <translation>認證</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="182"/>
+        <location filename="../ui/settings/settings_ui.py" line="183"/>
         <source>LLMs</source>
         <translation>大型語言模型</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="183"/>
+        <location filename="../ui/settings/settings_ui.py" line="184"/>
         <source>Text Rendering</source>
         <translation>文字渲染</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="184"/>
+        <location filename="../ui/settings/settings_ui.py" line="185"/>
         <source>Export</source>
         <translation>匯出</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="211"/>
+        <location filename="../ui/settings/settings_ui.py" line="212"/>
         <source>Language</source>
         <translation>語言</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="213"/>
+        <location filename="../ui/settings/settings_ui.py" line="214"/>
         <source>Theme</source>
         <translation>主題</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="225"/>
+        <location filename="../ui/settings/settings_ui.py" line="226"/>
         <source>Translator</source>
         <translation>翻譯器</translation>
     </message>
@@ -639,52 +644,52 @@ then do inpainting on the resized image.</source>
         <translation>將圖片作為多模態大型語言模型的輸入</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="447"/>
+        <location filename="../ui/settings/settings_ui.py" line="448"/>
         <source>Text Alignment</source>
         <translation>文字對齊</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="460"/>
+        <location filename="../ui/settings/settings_ui.py" line="461"/>
         <source>Font</source>
         <translation>字體</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="469"/>
+        <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Import the Font to use for Rendering Text on Images</source>
         <translation>匯入用於渲染圖片文字的字體</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="483"/>
+        <location filename="../ui/settings/settings_ui.py" line="484"/>
         <source>Color</source>
         <translation>顏色</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="497"/>
+        <location filename="../ui/settings/settings_ui.py" line="498"/>
         <source>Render Text in UpperCase</source>
         <translation>將文字渲染為大寫</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="512"/>
+        <location filename="../ui/settings/settings_ui.py" line="513"/>
         <source>Automatic Mode</source>
         <translation>自動模式</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="514"/>
+        <location filename="../ui/settings/settings_ui.py" line="515"/>
         <source>Export Raw Text</source>
         <translation>匯出原始文字</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="515"/>
+        <location filename="../ui/settings/settings_ui.py" line="516"/>
         <source>Export Translated text</source>
         <translation>匯出翻譯後的文字</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="516"/>
+        <location filename="../ui/settings/settings_ui.py" line="517"/>
         <source>Export Inpainted Image</source>
         <translation>匯出圖像修復後的圖片</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="532"/>
+        <location filename="../ui/settings/settings_ui.py" line="533"/>
         <source>Save {file_type} as:</source>
         <translation>將 {file_type} 儲存為：</translation>
     </message>

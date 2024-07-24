@@ -292,7 +292,7 @@ Go to Settings &gt; Credentials to set one</source>
     </message>
     <message>
         <location filename="../ui/messages.py" line="26"/>
-        <source>Default OCR for the selected Source Language is GPT-4o
+        <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
         <translation type="unfinished"></translation>
     </message>
@@ -328,230 +328,229 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
     <name>SettingsPageUI</name>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
-        <location filename="../ui/settings/settings_ui.py" line="82"/>
+        <location filename="../ui/settings/settings_ui.py" line="83"/>
         <source>Default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
-        <location filename="../ui/settings/settings_ui.py" line="83"/>
+        <location filename="../ui/settings/settings_ui.py" line="84"/>
         <source>Microsoft OCR</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="84"/>
+        <location filename="../ui/settings/settings_ui.py" line="85"/>
         <source>Google Cloud Vision</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="90"/>
+        <location filename="../ui/settings/settings_ui.py" line="91"/>
         <location filename="../ui/settings/settings_ui.py" line="240"/>
-        <location filename="../ui/settings/settings_ui.py" line="558"/>
+        <location filename="../ui/settings/settings_ui.py" line="559"/>
         <source>Resize</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="91"/>
-        <location filename="../ui/settings/settings_ui.py" line="563"/>
+        <location filename="../ui/settings/settings_ui.py" line="92"/>
+        <location filename="../ui/settings/settings_ui.py" line="564"/>
         <source>Original</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
-        <location filename="../ui/settings/settings_ui.py" line="92"/>
-        <location filename="../ui/settings/settings_ui.py" line="559"/>
+        <location filename="../ui/settings/settings_ui.py" line="93"/>
+        <location filename="../ui/settings/settings_ui.py" line="560"/>
         <source>Crop</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
-        <location filename="../ui/settings/settings_ui.py" line="65"/>
+        <location filename="../ui/settings/settings_ui.py" line="66"/>
         <source>Dark</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="66"/>
+        <location filename="../ui/settings/settings_ui.py" line="67"/>
         <source>Light</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="95"/>
+        <location filename="../ui/settings/settings_ui.py" line="96"/>
         <source>Left</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="96"/>
-        <location filename="../ui/settings/settings_ui.py" line="451"/>
+        <location filename="../ui/settings/settings_ui.py" line="97"/>
+        <location filename="../ui/settings/settings_ui.py" line="452"/>
         <source>Center</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="97"/>
+        <location filename="../ui/settings/settings_ui.py" line="98"/>
         <source>Right</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="100"/>
+        <location filename="../ui/settings/settings_ui.py" line="101"/>
         <source>Open AI GPT</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="101"/>
+        <location filename="../ui/settings/settings_ui.py" line="102"/>
         <source>Microsoft Azure</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="102"/>
+        <location filename="../ui/settings/settings_ui.py" line="103"/>
         <source>Google Cloud</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
-        <location filename="../ui/settings/settings_ui.py" line="103"/>
+        <location filename="../ui/settings/settings_ui.py" line="104"/>
         <source>Google Gemini</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="71"/>
-        <location filename="../ui/settings/settings_ui.py" line="104"/>
+        <location filename="../ui/settings/settings_ui.py" line="72"/>
+        <location filename="../ui/settings/settings_ui.py" line="105"/>
         <source>DeepL</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
-        <location filename="../ui/settings/settings_ui.py" line="105"/>
+        <location filename="../ui/settings/settings_ui.py" line="106"/>
         <source>Anthropic Claude</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="77"/>
-        <location filename="../ui/settings/settings_ui.py" line="106"/>
+        <location filename="../ui/settings/settings_ui.py" line="78"/>
+        <location filename="../ui/settings/settings_ui.py" line="107"/>
         <source>Yandex</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="69"/>
+        <location filename="../ui/settings/settings_ui.py" line="70"/>
         <source>GPT-4o</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="70"/>
-        <location filename="../ui/settings/settings_ui.py" line="226"/>
+        <location filename="../ui/settings/settings_ui.py" line="71"/>
         <source>GPT-4o mini</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
-        <location filename="../ui/settings/settings_ui.py" line="72"/>
+        <location filename="../ui/settings/settings_ui.py" line="73"/>
         <source>Claude-3-Opus</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
-        <location filename="../ui/settings/settings_ui.py" line="73"/>
+        <location filename="../ui/settings/settings_ui.py" line="74"/>
         <source>Claude-3.5-Sonnet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
-        <location filename="../ui/settings/settings_ui.py" line="74"/>
+        <location filename="../ui/settings/settings_ui.py" line="75"/>
         <source>Claude-3-Haiku</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
-        <location filename="../ui/settings/settings_ui.py" line="75"/>
+        <location filename="../ui/settings/settings_ui.py" line="76"/>
         <source>Gemini-1.5-Flash</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="76"/>
+        <location filename="../ui/settings/settings_ui.py" line="77"/>
         <source>Gemini-1.5-Pro</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="78"/>
+        <location filename="../ui/settings/settings_ui.py" line="79"/>
         <source>Google Translate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="43"/>
-        <location filename="../ui/settings/settings_ui.py" line="79"/>
+        <location filename="../ui/settings/settings_ui.py" line="80"/>
         <source>Microsoft Translator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="161"/>
+        <location filename="../ui/settings/settings_ui.py" line="162"/>
         <location filename="../ui/settings/settings_ui.py" line="233"/>
         <source>Inpainter</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="162"/>
+        <location filename="../ui/settings/settings_ui.py" line="163"/>
         <location filename="../ui/settings/settings_ui.py" line="236"/>
         <source>HD Strategy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="179"/>
+        <location filename="../ui/settings/settings_ui.py" line="180"/>
         <source>Personalization</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="180"/>
+        <location filename="../ui/settings/settings_ui.py" line="181"/>
         <source>Tools</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="181"/>
+        <location filename="../ui/settings/settings_ui.py" line="182"/>
         <source>Credentials</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="182"/>
+        <location filename="../ui/settings/settings_ui.py" line="183"/>
         <source>LLMs</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="183"/>
+        <location filename="../ui/settings/settings_ui.py" line="184"/>
         <source>Text Rendering</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="184"/>
+        <location filename="../ui/settings/settings_ui.py" line="185"/>
         <source>Export</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="211"/>
+        <location filename="../ui/settings/settings_ui.py" line="212"/>
         <source>Language</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="213"/>
+        <location filename="../ui/settings/settings_ui.py" line="214"/>
         <source>Theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="225"/>
+        <location filename="../ui/settings/settings_ui.py" line="226"/>
         <source>Translator</source>
         <translation type="unfinished"></translation>
     </message>
@@ -630,52 +629,52 @@ then do inpainting on the resized image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="447"/>
+        <location filename="../ui/settings/settings_ui.py" line="448"/>
         <source>Text Alignment</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="460"/>
+        <location filename="../ui/settings/settings_ui.py" line="461"/>
         <source>Font</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="469"/>
+        <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Import the Font to use for Rendering Text on Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="483"/>
+        <location filename="../ui/settings/settings_ui.py" line="484"/>
         <source>Color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="497"/>
+        <location filename="../ui/settings/settings_ui.py" line="498"/>
         <source>Render Text in UpperCase</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="512"/>
+        <location filename="../ui/settings/settings_ui.py" line="513"/>
         <source>Automatic Mode</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="514"/>
+        <location filename="../ui/settings/settings_ui.py" line="515"/>
         <source>Export Raw Text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="515"/>
+        <location filename="../ui/settings/settings_ui.py" line="516"/>
         <source>Export Translated text</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="516"/>
+        <location filename="../ui/settings/settings_ui.py" line="517"/>
         <source>Export Inpainted Image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="532"/>
+        <location filename="../ui/settings/settings_ui.py" line="533"/>
         <source>Save {file_type} as:</source>
         <translation type="unfinished"></translation>
     </message>

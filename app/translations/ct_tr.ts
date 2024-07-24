@@ -95,7 +95,7 @@
         <location filename="../ui/main_window.py" line="106"/>
         <location filename="../ui/main_window.py" line="231"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
-        <translation>Resimleri, PDF'leri, Epub'ları veya Çizgi Roman Arşiv Dosyalarını (cbr, cbz, vb.) içe aktarın</translation>
+        <translation>Resimleri, PDF&apos;leri, Epub&apos;ları veya Çizgi Roman Arşiv Dosyalarını (cbr, cbz, vb.) içe aktarın</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="111"/>
@@ -284,40 +284,46 @@ Atlıyor:</translation>
     <message>
         <location filename="../ui/messages.py" line="8"/>
         <source>An API Key is required for the selected translator.
-Go to Settings > Credentials to set one</source>
+Go to Settings &gt; Credentials to set one</source>
         <translation>Seçilen çevirmen için bir API Anahtarı gereklidir.
-Ayarlamak için Ayarlar > Kimlik Bilgileri'ne gidin</translation>
+Ayarlamak için Ayarlar &gt; Kimlik Bilgileri&apos;ne gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="17"/>
         <source>An API Key is required for the selected OCR.
-Go to Settings > Credentials to set one</source>
+Go to Settings &gt; Credentials to set one</source>
         <translation>Seçilen OCR için bir API Anahtarı gereklidir.
-Ayarlamak için Ayarlar > Kimlik Bilgileri'ne gidin</translation>
+Ayarlamak için Ayarlar &gt; Kimlik Bilgileri&apos;ne gidin</translation>
+    </message>
+    <message>
+        <source>Default OCR for the selected Source Language is GPT-4o
+which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
+        <translation type="vanished">Seçilen Kaynak Dil için varsayılan OCR, bir API Anahtarı gerektiren GPT-4o&apos;dır.
+Bir tane ayarlamak için Ayarlar &gt; Kimlik Bilgileri &gt; GPT&apos;ye gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="26"/>
-        <source>Default OCR for the selected Source Language is GPT-4o
-which requires an API Key. Go to Settings > Credentials > GPT to set one</source>
-        <translation>Seçilen Kaynak Dil için varsayılan OCR, bir API Anahtarı gerektiren GPT-4o'dır.
+        <source>Default OCR for one of the selected Source Languages is GPT-4o
+which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
+        <translation>Seçili Kaynak Dillerinden biri için varsayılan OCR, bir API Anahtarı gerektiren GPT-4o'dur.
 Bir tane ayarlamak için Ayarlar > Kimlik Bilgileri > GPT'ye gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
         <source>An Endpoint URL is required for Microsoft OCR.
-Go to Settings > Credentials > Microsoft to set one</source>
-        <translation>Microsoft OCR için bir Uç Nokta URL'si gereklidir.
-Bir tane ayarlamak için Ayarlar > Kimlik Bilgileri > Microsoft'a gidin</translation>
+Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
+        <translation>Microsoft OCR için bir Uç Nokta URL&apos;si gereklidir.
+Bir tane ayarlamak için Ayarlar &gt; Kimlik Bilgileri &gt; Microsoft&apos;a gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="44"/>
         <source>DeepL does not translate to Traditional Chinese</source>
-        <translation>DeepL, Geleneksel Çince'ye çeviri yapmaz</translation>
+        <translation>DeepL, Geleneksel Çince&apos;ye çeviri yapmaz</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="53"/>
         <source>Google Translate does not support Brazillian Portuguese</source>
-        <translation>Google Translate, Brezilya Portekizcesi'ni desteklemiyor</translation>
+        <translation>Google Translate, Brezilya Portekizcesi&apos;ni desteklemiyor</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="62"/>
@@ -327,239 +333,238 @@ Bir tane ayarlamak için Ayarlar > Kimlik Bilgileri > Microsoft'a gidin</transla
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>No Font selected.
-Go to Settings > Text Rendering > Font to select or import one </source>
+Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>Yazı tipi seçilmedi.
-Seçmek veya içe aktarmak için Ayarlar > Metin İşleme > Yazı Tipi'ne gidin </translation>
+Seçmek veya içe aktarmak için Ayarlar &gt; Metin İşleme &gt; Yazı Tipi&apos;ne gidin </translation>
     </message>
 </context>
 <context>
     <name>SettingsPageUI</name>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
-        <location filename="../ui/settings/settings_ui.py" line="82"/>
+        <location filename="../ui/settings/settings_ui.py" line="83"/>
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="29"/>
-        <location filename="../ui/settings/settings_ui.py" line="83"/>
+        <location filename="../ui/settings/settings_ui.py" line="84"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft OCR</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="84"/>
+        <location filename="../ui/settings/settings_ui.py" line="85"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="90"/>
+        <location filename="../ui/settings/settings_ui.py" line="91"/>
         <location filename="../ui/settings/settings_ui.py" line="240"/>
-        <location filename="../ui/settings/settings_ui.py" line="558"/>
+        <location filename="../ui/settings/settings_ui.py" line="559"/>
         <source>Resize</source>
         <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="30"/>
-        <location filename="../ui/settings/settings_ui.py" line="91"/>
-        <location filename="../ui/settings/settings_ui.py" line="563"/>
+        <location filename="../ui/settings/settings_ui.py" line="92"/>
+        <location filename="../ui/settings/settings_ui.py" line="564"/>
         <source>Original</source>
         <translation>Orijinal</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
-        <location filename="../ui/settings/settings_ui.py" line="92"/>
-        <location filename="../ui/settings/settings_ui.py" line="559"/>
+        <location filename="../ui/settings/settings_ui.py" line="93"/>
+        <location filename="../ui/settings/settings_ui.py" line="560"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="31"/>
-        <location filename="../ui/settings/settings_ui.py" line="65"/>
+        <location filename="../ui/settings/settings_ui.py" line="66"/>
         <source>Dark</source>
         <translation>Koyu</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="66"/>
+        <location filename="../ui/settings/settings_ui.py" line="67"/>
         <source>Light</source>
         <translation>Aydınlık</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="95"/>
+        <location filename="../ui/settings/settings_ui.py" line="96"/>
         <source>Left</source>
         <translation>Sol</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="32"/>
-        <location filename="../ui/settings/settings_ui.py" line="96"/>
-        <location filename="../ui/settings/settings_ui.py" line="451"/>
+        <location filename="../ui/settings/settings_ui.py" line="97"/>
+        <location filename="../ui/settings/settings_ui.py" line="452"/>
         <source>Center</source>
         <translation>Orta</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="97"/>
+        <location filename="../ui/settings/settings_ui.py" line="98"/>
         <source>Right</source>
         <translation>Sağ</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="100"/>
+        <location filename="../ui/settings/settings_ui.py" line="101"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="101"/>
+        <location filename="../ui/settings/settings_ui.py" line="102"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="34"/>
-        <location filename="../ui/settings/settings_ui.py" line="102"/>
+        <location filename="../ui/settings/settings_ui.py" line="103"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
-        <location filename="../ui/settings/settings_ui.py" line="103"/>
+        <location filename="../ui/settings/settings_ui.py" line="104"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="71"/>
-        <location filename="../ui/settings/settings_ui.py" line="104"/>
+        <location filename="../ui/settings/settings_ui.py" line="72"/>
+        <location filename="../ui/settings/settings_ui.py" line="105"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="35"/>
-        <location filename="../ui/settings/settings_ui.py" line="105"/>
+        <location filename="../ui/settings/settings_ui.py" line="106"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="77"/>
-        <location filename="../ui/settings/settings_ui.py" line="106"/>
+        <location filename="../ui/settings/settings_ui.py" line="78"/>
+        <location filename="../ui/settings/settings_ui.py" line="107"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="69"/>
+        <location filename="../ui/settings/settings_ui.py" line="70"/>
         <source>GPT-4o</source>
         <translation>GPT-4o</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="37"/>
-        <location filename="../ui/settings/settings_ui.py" line="70"/>
-        <location filename="../ui/settings/settings_ui.py" line="226"/>
+        <location filename="../ui/settings/settings_ui.py" line="71"/>
         <source>GPT-4o mini</source>
         <translation>GPT-4o mini</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
-        <location filename="../ui/settings/settings_ui.py" line="72"/>
+        <location filename="../ui/settings/settings_ui.py" line="73"/>
         <source>Claude-3-Opus</source>
         <translation>Claude-3-Opus</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="38"/>
-        <location filename="../ui/settings/settings_ui.py" line="73"/>
+        <location filename="../ui/settings/settings_ui.py" line="74"/>
         <source>Claude-3.5-Sonnet</source>
         <translation>Claude-3.5-Sonnet</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
-        <location filename="../ui/settings/settings_ui.py" line="74"/>
+        <location filename="../ui/settings/settings_ui.py" line="75"/>
         <source>Claude-3-Haiku</source>
         <translation>Claude-3-Haiku</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="39"/>
-        <location filename="../ui/settings/settings_ui.py" line="75"/>
+        <location filename="../ui/settings/settings_ui.py" line="76"/>
         <source>Gemini-1.5-Flash</source>
         <translation>Gemini-1.5-Flash</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="76"/>
+        <location filename="../ui/settings/settings_ui.py" line="77"/>
         <source>Gemini-1.5-Pro</source>
         <translation>Gemini-1.5-Pro</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="40"/>
-        <location filename="../ui/settings/settings_ui.py" line="78"/>
+        <location filename="../ui/settings/settings_ui.py" line="79"/>
         <source>Google Translate</source>
         <translation>Google Translate</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="43"/>
-        <location filename="../ui/settings/settings_ui.py" line="79"/>
+        <location filename="../ui/settings/settings_ui.py" line="80"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft Translator</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="161"/>
+        <location filename="../ui/settings/settings_ui.py" line="162"/>
         <location filename="../ui/settings/settings_ui.py" line="233"/>
         <source>Inpainter</source>
         <translation>Görüntü Doldurucu</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="162"/>
+        <location filename="../ui/settings/settings_ui.py" line="163"/>
         <location filename="../ui/settings/settings_ui.py" line="236"/>
         <source>HD Strategy</source>
         <translation>HD Stratejisi</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="179"/>
+        <location filename="../ui/settings/settings_ui.py" line="180"/>
         <source>Personalization</source>
         <translation>Kişiselleştirme</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="180"/>
+        <location filename="../ui/settings/settings_ui.py" line="181"/>
         <source>Tools</source>
         <translation>Araçlar</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="181"/>
+        <location filename="../ui/settings/settings_ui.py" line="182"/>
         <source>Credentials</source>
         <translation>Kimlik Bilgileri</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="182"/>
+        <location filename="../ui/settings/settings_ui.py" line="183"/>
         <source>LLMs</source>
-        <translation>LLM'ler</translation>
+        <translation>LLM&apos;ler</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="183"/>
+        <location filename="../ui/settings/settings_ui.py" line="184"/>
         <source>Text Rendering</source>
         <translation>Metin İşleme</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="184"/>
+        <location filename="../ui/settings/settings_ui.py" line="185"/>
         <source>Export</source>
         <translation>Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="211"/>
+        <location filename="../ui/settings/settings_ui.py" line="212"/>
         <source>Language</source>
         <translation>Dil</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="213"/>
+        <location filename="../ui/settings/settings_ui.py" line="214"/>
         <source>Theme</source>
         <translation>Tema</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="225"/>
+        <location filename="../ui/settings/settings_ui.py" line="226"/>
         <source>Translator</source>
         <translation>Çevirmen</translation>
     </message>
@@ -611,7 +616,7 @@ ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</tr
     <message>
         <location filename="../ui/settings/settings_ui.py" line="357"/>
         <source>Endpoint URL</source>
-        <translation>Uç Nokta URL'si</translation>
+        <translation>Uç Nokta URL&apos;si</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="366"/>
@@ -636,55 +641,55 @@ ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</tr
     <message>
         <location filename="../ui/settings/settings_ui.py" line="432"/>
         <source>Provide Image as input to multimodal LLMs</source>
-        <translation>Çok modlu LLM'lere girdi olarak Görüntü sağlayın</translation>
+        <translation>Çok modlu LLM&apos;lere girdi olarak Görüntü sağlayın</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="447"/>
+        <location filename="../ui/settings/settings_ui.py" line="448"/>
         <source>Text Alignment</source>
         <translation>Metin Hizalama</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="460"/>
+        <location filename="../ui/settings/settings_ui.py" line="461"/>
         <source>Font</source>
         <translation>Yazı Tipi</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="469"/>
+        <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Import the Font to use for Rendering Text on Images</source>
         <translation>Görüntülerde Metin İşleme için kullanılacak Yazı Tipini içe aktarın</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="483"/>
+        <location filename="../ui/settings/settings_ui.py" line="484"/>
         <source>Color</source>
         <translation>Renk</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="497"/>
+        <location filename="../ui/settings/settings_ui.py" line="498"/>
         <source>Render Text in UpperCase</source>
         <translation>Metni Büyük Harfle İşle</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="512"/>
+        <location filename="../ui/settings/settings_ui.py" line="513"/>
         <source>Automatic Mode</source>
         <translation>Otomatik Mod</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="514"/>
+        <location filename="../ui/settings/settings_ui.py" line="515"/>
         <source>Export Raw Text</source>
         <translation>Ham Metni Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="515"/>
+        <location filename="../ui/settings/settings_ui.py" line="516"/>
         <source>Export Translated text</source>
         <translation>Çevrilen Metni Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="516"/>
+        <location filename="../ui/settings/settings_ui.py" line="517"/>
         <source>Export Inpainted Image</source>
         <translation>Doldurulmuş Görüntüyü Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_ui.py" line="532"/>
+        <location filename="../ui/settings/settings_ui.py" line="533"/>
         <source>Save {file_type} as:</source>
         <translation>{file_type} dosyasını farklı kaydet:</translation>
     </message>
