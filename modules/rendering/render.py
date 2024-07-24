@@ -4,8 +4,6 @@ import numpy as np
 from typing import Tuple, List
 from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
-from ..detection import make_bubble_mask, bubble_interior_bounds
-from ..utils.textblock import adjust_blks_size
 
 def cv2_to_pil(cv2_image: np.ndarray):
     # Convert color channels from BGR to RGB
@@ -80,39 +78,9 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, init_
         offsets = [(dx, dy) for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2) if dx != 0 or dy != 0]
         for dx, dy in offsets:
             draw.multiline_text((tbbox_top_left[0] + dx, tbbox_top_left[1] + dy), translation, font=font, fill="#FFF", align=blk.alignment, spacing=1)
+       
         draw.multiline_text(tbbox_top_left, translation, colour, font, align=blk.alignment, spacing=1)
-        
     image = pil_to_cv2(image)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     return image
 
-def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
-    # Using Speech Bubble detection to find best Text Render Area
-    for blk in blk_list:
-        if blk.text_class == 'text_bubble':
-            bx1, by1, bx2, by2 = blk.bubble_xyxy
-            bubble_clean_frame = inpainted_img[by1:by2, bx1:bx2]
-            bubble_mask = make_bubble_mask(bubble_clean_frame)
-            text_draw_bounds = bubble_interior_bounds(bubble_mask)
-
-            bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
-
-            bdx1 += bx1
-            bdy1 += by1
-
-            bdx2 += bx1
-            bdy2 += by1
-
-            if blk.source_lang == 'ja':
-                blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
-                adjust_blks_size(blk_list, img.shape, -5, -5)
-            else:
-                tx1, ty1, tx2, ty2  = blk.xyxy
-
-                nx1 = max(bdx1, tx1)
-                nx2 = min(bdx2, tx2)
-                
-                blk.xyxy[:] = [nx1, ty1, nx2, ty2]
-
-    return blk_list
 

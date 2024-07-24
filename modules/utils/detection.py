@@ -1,30 +1,7 @@
 from ultralytics import YOLO
 import largestinteriorrectangle as lir
-from .utils.textblock import TextBlock
 import numpy as np 
 import cv2
-
-
-class TextBlockDetector:
-    def __init__(self, bubble_model_path: str, text_model_path: str, device: str):
-        self.bubble_detection = YOLO(bubble_model_path)
-        self.text_segmentation = YOLO(text_model_path)
-        self.device = device
-
-    def detect(self, img):
-
-        h, w, _ = img.shape
-        size = (h, w) if h >= w * 5 else 1024
-
-        bble_detec_result = self.bubble_detection(img, device=self.device, imgsz=size, conf=0.1, verbose=False)[0]
-        txt_seg_result = self.text_segmentation(img, device=self.device, imgsz=size, conf=0.1, verbose=False)[0]
-
-        combined = combine_results(bble_detec_result, txt_seg_result)
-
-        blk_list = [TextBlock(txt_bbox, txt_seg_points, bble_bbox, txt_class)
-                for txt_bbox, bble_bbox, txt_seg_points, txt_class in combined]
-        
-        return blk_list
 
 def calculate_iou(rect1, rect2) -> float:
     """
@@ -68,6 +45,23 @@ def do_rectangles_overlap(rect1, rect2, iou_threshold: float = 0.2) -> bool:
     iou = calculate_iou(rect1, rect2)
     overlap = iou >= iou_threshold
     return overlap
+
+# def do_rectangles_overlap(boxA, boxB, tolerance=50):
+#     """
+#     Compares two bounding boxes with some variance tolerance and returns True
+#     if they are considered the same, False otherwise.
+#     """
+#     x1A, y1A, x2A, y2A = boxA
+#     x1B, y1B, x2B, y2B = boxB
+
+#     within_tolerance = (
+#         abs(x1A - x1B) <= tolerance and
+#         abs(y1A - y1B) <= tolerance and
+#         abs(x2A - x2B) <= tolerance and
+#         abs(y2A - y2B) <= tolerance
+#     )
+
+#     return within_tolerance
 
 def does_rectangle_fit(bigger_rect, smaller_rect):
     x1, y1, x2, y2 = bigger_rect
