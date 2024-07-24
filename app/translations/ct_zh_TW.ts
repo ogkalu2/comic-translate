@@ -178,72 +178,82 @@
         <translation>點擊或拖曳檔案到此處</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="281"/>
+        <location filename="../ui/main_window.py" line="253"/>
+        <source>Source Language</source>
+        <translation>來源語言</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="264"/>
+        <source>Target Language</source>
+        <translation>目標語言</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="283"/>
         <source>Set for all</source>
         <translation>設定全部</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="282"/>
+        <location filename="../ui/main_window.py" line="284"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>將當前頁面的來源語言和目標語言設定為所有頁面</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="301"/>
+        <location filename="../ui/main_window.py" line="303"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>移除圖片上的所有方框</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="312"/>
+        <location filename="../ui/main_window.py" line="314"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>繪製筆刷以清理圖片</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="317"/>
+        <location filename="../ui/main_window.py" line="319"/>
         <source>Erase Brush Strokes</source>
         <translation>擦除筆刷</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="323"/>
+        <location filename="../ui/main_window.py" line="325"/>
         <source>Undo Brush Stroke</source>
         <translation>復原筆刷</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="324"/>
+        <location filename="../ui/main_window.py" line="326"/>
         <source>Redo Brush Stroke</source>
         <translation>重做筆刷</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="329"/>
+        <location filename="../ui/main_window.py" line="331"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>移除圖片上的所有筆刷</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="349"/>
+        <location filename="../ui/main_window.py" line="351"/>
         <source>Brush Size Slider</source>
         <translation>筆刷大小滑桿</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="350"/>
+        <location filename="../ui/main_window.py" line="352"/>
         <source>Eraser Size Slider</source>
         <translation>橡皮擦大小滑桿</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="356"/>
+        <location filename="../ui/main_window.py" line="358"/>
         <source>Undo Image</source>
         <translation>復原圖片</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="357"/>
+        <location filename="../ui/main_window.py" line="359"/>
         <source>Redo Image</source>
         <translation>重做圖片</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="365"/>
+        <location filename="../ui/main_window.py" line="367"/>
         <source>Box Drawing</source>
         <translation>方框繪製</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="369"/>
+        <location filename="../ui/main_window.py" line="371"/>
         <source>Inpainting</source>
         <translation>圖像修復</translation>
     </message>
@@ -306,7 +316,7 @@ which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</
         <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
         <translation>所選來源語言之一的預設 OCR 為 GPT-4o，
-需要 API 金鑰。請前往設定 > 認證 > GPT 進行設定</translation>
+需要 API 金鑰。請前往設定 &gt; 認證 &gt; GPT 進行設定</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
@@ -336,6 +346,23 @@ Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>未選擇字體。
 請前往 設定 &gt; 文字渲染 &gt; 字體 選擇或匯入一個字體</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="298"/>
+        <source>Restart Required</source>
+        <translation>需要重新啟動</translation>
+    </message>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="299"/>
+        <source>Please restart the application for the language changes to take effect.</source>
+        <translation>請重新啟動應用程式以使語言更改生效。</translation>
+    </message>
+    <message>
+        <source>Please restart for the changes to take effect.</source>
+        <translation type="obsolete">請重新啟動以使變更生效。</translation>
     </message>
 </context>
 <context>
@@ -697,7 +724,7 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="451"/>
+        <location filename="../ui/main_window.py" line="453"/>
         <source>Light</source>
         <translation>淺色</translation>
     </message>
@@ -715,14 +742,12 @@ then do inpainting on the resized image.</source>
         <translation>裁剪</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation>需要重新啟動</translation>
+        <translation type="vanished">需要重新啟動</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation>請重新啟動以使變更生效。</translation>
+        <translation type="vanished">請重新啟動以使變更生效。</translation>
     </message>
 </context>
 </TS>

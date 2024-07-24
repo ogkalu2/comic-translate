@@ -178,72 +178,82 @@
         <translation>Klik of sleep bestanden hierheen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="281"/>
+        <location filename="../ui/main_window.py" line="253"/>
+        <source>Source Language</source>
+        <translation>Bron taal</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="264"/>
+        <source>Target Language</source>
+        <translation>Doeltaal</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="283"/>
         <source>Set for all</source>
         <translation>Instellen voor alles</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="282"/>
+        <location filename="../ui/main_window.py" line="284"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Stelt de bron- en doeltaal op de huidige pagina in voor alle pagina&apos;s</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="301"/>
+        <location filename="../ui/main_window.py" line="303"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Verwijder alle vakken op de afbeelding</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="312"/>
+        <location filename="../ui/main_window.py" line="314"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Teken penseelstreken voor het reinigen van de afbeelding</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="317"/>
+        <location filename="../ui/main_window.py" line="319"/>
         <source>Erase Brush Strokes</source>
         <translation>Wis penseelstreken</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="323"/>
+        <location filename="../ui/main_window.py" line="325"/>
         <source>Undo Brush Stroke</source>
         <translation>Maak penseelstreek ongedaan</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="324"/>
+        <location filename="../ui/main_window.py" line="326"/>
         <source>Redo Brush Stroke</source>
         <translation>Herstel penseelstreek</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="329"/>
+        <location filename="../ui/main_window.py" line="331"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Verwijder alle penseelstreken op de afbeelding</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="349"/>
+        <location filename="../ui/main_window.py" line="351"/>
         <source>Brush Size Slider</source>
         <translation>Schuifregelaar voor penseelgrootte</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="350"/>
+        <location filename="../ui/main_window.py" line="352"/>
         <source>Eraser Size Slider</source>
         <translation>Schuifregelaar voor gumgrootte</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="356"/>
+        <location filename="../ui/main_window.py" line="358"/>
         <source>Undo Image</source>
         <translation>Afbeelding ongedaan maken</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="357"/>
+        <location filename="../ui/main_window.py" line="359"/>
         <source>Redo Image</source>
         <translation>Afbeelding opnieuw uitvoeren</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="365"/>
+        <location filename="../ui/main_window.py" line="367"/>
         <source>Box Drawing</source>
         <translation>Vak tekenen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="369"/>
+        <location filename="../ui/main_window.py" line="371"/>
         <source>Inpainting</source>
         <translation>Inkleuren</translation>
     </message>
@@ -306,7 +316,7 @@ waarvoor een API-sleutel vereist is. Ga naar Instellingen &gt; Referenties &gt; 
         <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
         <translation>Standaard OCR voor een van de geselecteerde brontalen is GPT-4o
-waarvoor een API-sleutel vereist is. Ga naar Instellingen > Referenties > GPT om er een in te stellen</translation>
+waarvoor een API-sleutel vereist is. Ga naar Instellingen &gt; Referenties &gt; GPT om er een in te stellen</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
@@ -336,6 +346,23 @@ Ga naar Instellingen &gt; Referenties &gt; Microsoft om er een in te stellen</tr
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>Geen lettertype geselecteerd.
 Ga naar Instellingen &gt; Tekstweergave &gt; Lettertype om er een te selecteren of te importeren</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="298"/>
+        <source>Restart Required</source>
+        <translation>Herstart Vereist</translation>
+    </message>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="299"/>
+        <source>Please restart the application for the language changes to take effect.</source>
+        <translation>Herstart de applicatie om de taalwijzigingen door te voeren.</translation>
+    </message>
+    <message>
+        <source>Please restart for the changes to take effect.</source>
+        <translation type="obsolete">Herstart om de wijzigingen door te voeren.</translation>
     </message>
 </context>
 <context>
@@ -697,7 +724,7 @@ en voer vervolgens inkleuring uit op de verkleinde afbeelding.</translation>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="451"/>
+        <location filename="../ui/main_window.py" line="453"/>
         <source>Light</source>
         <translation>Licht</translation>
     </message>
@@ -715,14 +742,12 @@ en voer vervolgens inkleuring uit op de verkleinde afbeelding.</translation>
         <translation>Bijsnijden</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation>Herstart Vereist</translation>
+        <translation type="vanished">Herstart Vereist</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation>Herstart om de wijzigingen door te voeren.</translation>
+        <translation type="vanished">Herstart om de wijzigingen door te voeren.</translation>
     </message>
 </context>
 </TS>

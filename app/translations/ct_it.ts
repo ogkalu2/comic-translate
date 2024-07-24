@@ -178,72 +178,82 @@
         <translation>Clicca o trascina i file qui</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="281"/>
+        <location filename="../ui/main_window.py" line="253"/>
+        <source>Source Language</source>
+        <translation>Lingua di origine</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="264"/>
+        <source>Target Language</source>
+        <translation>Lingua di destinazione</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="283"/>
         <source>Set for all</source>
         <translation>Imposta per tutti</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="282"/>
+        <location filename="../ui/main_window.py" line="284"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Imposta la lingua di origine e di destinazione sulla pagina corrente per tutte le pagine</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="301"/>
+        <location filename="../ui/main_window.py" line="303"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Rimuovi tutte le caselle sull&apos;immagine</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="312"/>
+        <location filename="../ui/main_window.py" line="314"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Disegna tratti di pennello per pulire l&apos;immagine</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="317"/>
+        <location filename="../ui/main_window.py" line="319"/>
         <source>Erase Brush Strokes</source>
         <translation>Cancella tratti di pennello</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="323"/>
+        <location filename="../ui/main_window.py" line="325"/>
         <source>Undo Brush Stroke</source>
         <translation>Annulla tratto di pennello</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="324"/>
+        <location filename="../ui/main_window.py" line="326"/>
         <source>Redo Brush Stroke</source>
         <translation>Ripristina tratto di pennello</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="329"/>
+        <location filename="../ui/main_window.py" line="331"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Rimuovi tutti i tratti di pennello sull&apos;immagine</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="349"/>
+        <location filename="../ui/main_window.py" line="351"/>
         <source>Brush Size Slider</source>
         <translation>Cursore dimensione pennello</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="350"/>
+        <location filename="../ui/main_window.py" line="352"/>
         <source>Eraser Size Slider</source>
         <translation>Cursore dimensione gomma</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="356"/>
+        <location filename="../ui/main_window.py" line="358"/>
         <source>Undo Image</source>
         <translation>Annulla immagine</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="357"/>
+        <location filename="../ui/main_window.py" line="359"/>
         <source>Redo Image</source>
         <translation>Ripristina immagine</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="365"/>
+        <location filename="../ui/main_window.py" line="367"/>
         <source>Box Drawing</source>
         <translation>Disegno casella</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="369"/>
+        <location filename="../ui/main_window.py" line="371"/>
         <source>Inpainting</source>
         <translation>Inpainting</translation>
     </message>
@@ -305,8 +315,8 @@ che richiede una chiave API. Vai a Impostazioni &gt; Credenziali &gt; GPT per im
         <location filename="../ui/messages.py" line="26"/>
         <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
-        <translation>L'OCR predefinito per una delle lingue di origine selezionate è GPT-4o
-che richiede una chiave API. Vai su Impostazioni > Credenziali > GPT per impostarne una</translation>
+        <translation>L&apos;OCR predefinito per una delle lingue di origine selezionate è GPT-4o
+che richiede una chiave API. Vai su Impostazioni &gt; Credenziali &gt; GPT per impostarne una</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
@@ -336,6 +346,23 @@ Vai a Impostazioni &gt; Credenziali &gt; Microsoft per impostarne uno</translati
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>Nessun carattere selezionato.
 Vai a Impostazioni &gt; Rendering testo &gt; Carattere per selezionarne o importarne uno</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="298"/>
+        <source>Restart Required</source>
+        <translation>Riavvio richiesto</translation>
+    </message>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="299"/>
+        <source>Please restart the application for the language changes to take effect.</source>
+        <translation>Si prega di riavviare l'applicazione affinché le modifiche della lingua abbiano effetto.</translation>
+    </message>
+    <message>
+        <source>Please restart for the changes to take effect.</source>
+        <translation type="obsolete">Riavvia per rendere effettive le modifiche.</translation>
     </message>
 </context>
 <context>
@@ -697,7 +724,7 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="451"/>
+        <location filename="../ui/main_window.py" line="453"/>
         <source>Light</source>
         <translation>Chiaro</translation>
     </message>
@@ -715,14 +742,12 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
         <translation>Ritaglia</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation>Riavvio richiesto</translation>
+        <translation type="vanished">Riavvio richiesto</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation>Riavvia per rendere effettive le modifiche.</translation>
+        <translation type="vanished">Riavvia per rendere effettive le modifiche.</translation>
     </message>
 </context>
 </TS>

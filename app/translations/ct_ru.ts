@@ -178,72 +178,82 @@
         <translation>Нажмите или перетащите файлы сюда</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="281"/>
+        <location filename="../ui/main_window.py" line="253"/>
+        <source>Source Language</source>
+        <translation>Исходный язык</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="264"/>
+        <source>Target Language</source>
+        <translation>Целевой язык</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="283"/>
         <source>Set for all</source>
         <translation>Установить для всех</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="282"/>
+        <location filename="../ui/main_window.py" line="284"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Устанавливает исходный и целевой язык на текущей странице для всех страниц</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="301"/>
+        <location filename="../ui/main_window.py" line="303"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Удалить все блоки на изображении</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="312"/>
+        <location filename="../ui/main_window.py" line="314"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Рисовать мазки кистью для очистки изображения</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="317"/>
+        <location filename="../ui/main_window.py" line="319"/>
         <source>Erase Brush Strokes</source>
         <translation>Стереть мазки кистью</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="323"/>
+        <location filename="../ui/main_window.py" line="325"/>
         <source>Undo Brush Stroke</source>
         <translation>Отменить мазок кистью</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="324"/>
+        <location filename="../ui/main_window.py" line="326"/>
         <source>Redo Brush Stroke</source>
         <translation>Повторить мазок кистью</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="329"/>
+        <location filename="../ui/main_window.py" line="331"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Удалить все мазки кистью на изображении</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="349"/>
+        <location filename="../ui/main_window.py" line="351"/>
         <source>Brush Size Slider</source>
         <translation>Ползунок размера кисти</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="350"/>
+        <location filename="../ui/main_window.py" line="352"/>
         <source>Eraser Size Slider</source>
         <translation>Ползунок размера ластика</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="356"/>
+        <location filename="../ui/main_window.py" line="358"/>
         <source>Undo Image</source>
         <translation>Отменить изображение</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="357"/>
+        <location filename="../ui/main_window.py" line="359"/>
         <source>Redo Image</source>
         <translation>Повторить изображение</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="365"/>
+        <location filename="../ui/main_window.py" line="367"/>
         <source>Box Drawing</source>
         <translation>Рисование блоков</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="369"/>
+        <location filename="../ui/main_window.py" line="371"/>
         <source>Inpainting</source>
         <translation>Восстановление изображения</translation>
     </message>
@@ -306,7 +316,7 @@ which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</
         <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
         <translation>OCR по умолчанию для одного из выбранных исходных языков — GPT-4o,
-для которого требуется ключ API. Перейдите в Настройки > Учетные данные > GPT, чтобы установить его</translation>
+для которого требуется ключ API. Перейдите в Настройки &gt; Учетные данные &gt; GPT, чтобы установить его</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
@@ -336,6 +346,23 @@ Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>Шрифт не выбран.
 Перейдите в Настройки &gt; Отображение текста &gt; Шрифт, чтобы выбрать или импортировать его</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="298"/>
+        <source>Restart Required</source>
+        <translation>Необходим перезапуск</translation>
+    </message>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="299"/>
+        <source>Please restart the application for the language changes to take effect.</source>
+        <translation>Пожалуйста, перезапустите приложение, чтобы изменения языка вступили в силу.</translation>
+    </message>
+    <message>
+        <source>Please restart for the changes to take effect.</source>
+        <translation type="obsolete">Пожалуйста, перезапустите программу, чтобы изменения вступили в силу.</translation>
     </message>
 </context>
 <context>
@@ -697,7 +724,7 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="451"/>
+        <location filename="../ui/main_window.py" line="453"/>
         <source>Light</source>
         <translation>Светлая</translation>
     </message>
@@ -715,14 +742,12 @@ then do inpainting on the resized image.</source>
         <translation>Обрезать</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation>Необходим перезапуск</translation>
+        <translation type="vanished">Необходим перезапуск</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation>Пожалуйста, перезапустите программу, чтобы изменения вступили в силу.</translation>
+        <translation type="vanished">Пожалуйста, перезапустите программу, чтобы изменения вступили в силу.</translation>
     </message>
 </context>
 </TS>

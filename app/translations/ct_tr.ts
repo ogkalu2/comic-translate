@@ -178,72 +178,82 @@
         <translation>Dosyaları buraya tıklayın veya sürükleyin</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="281"/>
+        <location filename="../ui/main_window.py" line="253"/>
+        <source>Source Language</source>
+        <translation>Kaynak Dil</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="264"/>
+        <source>Target Language</source>
+        <translation>Hedef Dil</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="283"/>
         <source>Set for all</source>
         <translation>Tümü için ayarla</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="282"/>
+        <location filename="../ui/main_window.py" line="284"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Geçerli sayfadaki Kaynak ve Hedef Dili tüm sayfalar için ayarlar</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="301"/>
+        <location filename="../ui/main_window.py" line="303"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Resimdeki Tüm Kutuları Kaldır</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="312"/>
+        <location filename="../ui/main_window.py" line="314"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Görüntüyü Temizlemek için Fırça Darbeleri Çizin</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="317"/>
+        <location filename="../ui/main_window.py" line="319"/>
         <source>Erase Brush Strokes</source>
         <translation>Fırça Darbelerini Sil</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="323"/>
+        <location filename="../ui/main_window.py" line="325"/>
         <source>Undo Brush Stroke</source>
         <translation>Fırça Darbesini Geri Al</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="324"/>
+        <location filename="../ui/main_window.py" line="326"/>
         <source>Redo Brush Stroke</source>
         <translation>Fırça Darbesini Yinele</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="329"/>
+        <location filename="../ui/main_window.py" line="331"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Resimdeki Tüm Fırça Darbelerini Kaldır</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="349"/>
+        <location filename="../ui/main_window.py" line="351"/>
         <source>Brush Size Slider</source>
         <translation>Fırça Boyutu Kaydırıcısı</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="350"/>
+        <location filename="../ui/main_window.py" line="352"/>
         <source>Eraser Size Slider</source>
         <translation>Silgi Boyutu Kaydırıcısı</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="356"/>
+        <location filename="../ui/main_window.py" line="358"/>
         <source>Undo Image</source>
         <translation>Görüntüyü Geri Al</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="357"/>
+        <location filename="../ui/main_window.py" line="359"/>
         <source>Redo Image</source>
         <translation>Görüntüyü Yinele</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="365"/>
+        <location filename="../ui/main_window.py" line="367"/>
         <source>Box Drawing</source>
         <translation>Kutu Çizimi</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="369"/>
+        <location filename="../ui/main_window.py" line="371"/>
         <source>Inpainting</source>
         <translation>Görüntü Doldurma</translation>
     </message>
@@ -305,8 +315,8 @@ Bir tane ayarlamak için Ayarlar &gt; Kimlik Bilgileri &gt; GPT&apos;ye gidin</t
         <location filename="../ui/messages.py" line="26"/>
         <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
-        <translation>Seçili Kaynak Dillerinden biri için varsayılan OCR, bir API Anahtarı gerektiren GPT-4o'dur.
-Bir tane ayarlamak için Ayarlar > Kimlik Bilgileri > GPT'ye gidin</translation>
+        <translation>Seçili Kaynak Dillerinden biri için varsayılan OCR, bir API Anahtarı gerektiren GPT-4o&apos;dur.
+Bir tane ayarlamak için Ayarlar &gt; Kimlik Bilgileri &gt; GPT&apos;ye gidin</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
@@ -336,6 +346,23 @@ Bir tane ayarlamak için Ayarlar &gt; Kimlik Bilgileri &gt; Microsoft&apos;a gid
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>Yazı tipi seçilmedi.
 Seçmek veya içe aktarmak için Ayarlar &gt; Metin İşleme &gt; Yazı Tipi&apos;ne gidin </translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="298"/>
+        <source>Restart Required</source>
+        <translation>Yeniden Başlatma Gerekiyor</translation>
+    </message>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="299"/>
+        <source>Please restart the application for the language changes to take effect.</source>
+        <translation>Dil değişikliklerinin geçerli olması için lütfen uygulamayı yeniden başlatın.</translation>
+    </message>
+    <message>
+        <source>Please restart for the changes to take effect.</source>
+        <translation type="obsolete">Değişikliklerin etkili olması için lütfen yeniden başlatın.</translation>
     </message>
 </context>
 <context>
@@ -697,7 +724,7 @@ ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</tr
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="451"/>
+        <location filename="../ui/main_window.py" line="453"/>
         <source>Light</source>
         <translation>Aydınlık</translation>
     </message>
@@ -715,14 +742,12 @@ ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</tr
         <translation>Kırp</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation>Yeniden Başlatma Gerekiyor</translation>
+        <translation type="vanished">Yeniden Başlatma Gerekiyor</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation>Değişikliklerin etkili olması için lütfen yeniden başlatın.</translation>
+        <translation type="vanished">Değişikliklerin etkili olması için lütfen yeniden başlatın.</translation>
     </message>
 </context>
 </TS>

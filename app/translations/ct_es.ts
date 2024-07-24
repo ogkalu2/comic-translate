@@ -178,7 +178,17 @@
         <translation>Haga clic o arrastre archivos aquí</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="301"/>
+        <location filename="../ui/main_window.py" line="253"/>
+        <source>Source Language</source>
+        <translation>Idioma de origen</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="264"/>
+        <source>Target Language</source>
+        <translation>Idioma de destino</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="303"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Eliminar todos los recuadros de la imagen</translation>
     </message>
@@ -187,12 +197,12 @@
         <translation type="vanished">Desplazar Imagen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="281"/>
+        <location filename="../ui/main_window.py" line="283"/>
         <source>Set for all</source>
         <translation>Establecer para todos</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="282"/>
+        <location filename="../ui/main_window.py" line="284"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Establece el idioma de origen y destino en la página actual para todas las páginas</translation>
     </message>
@@ -205,57 +215,57 @@
         <translation type="vanished">Eliminar</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="312"/>
+        <location filename="../ui/main_window.py" line="314"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Dibujar pinceladas para limpiar la imagen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="317"/>
+        <location filename="../ui/main_window.py" line="319"/>
         <source>Erase Brush Strokes</source>
         <translation>Borrar pinceladas</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="323"/>
+        <location filename="../ui/main_window.py" line="325"/>
         <source>Undo Brush Stroke</source>
         <translation>Deshacer Trazo de Pincel</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="324"/>
+        <location filename="../ui/main_window.py" line="326"/>
         <source>Redo Brush Stroke</source>
         <translation>Rehacer Trazo de Pincel</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="329"/>
+        <location filename="../ui/main_window.py" line="331"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Eliminar todas las pinceladas de la imagen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="349"/>
+        <location filename="../ui/main_window.py" line="351"/>
         <source>Brush Size Slider</source>
         <translation>Control Deslizante del Tamaño del Pincel</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="350"/>
+        <location filename="../ui/main_window.py" line="352"/>
         <source>Eraser Size Slider</source>
         <translation>Control Deslizante del Tamaño del Borrador</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="356"/>
+        <location filename="../ui/main_window.py" line="358"/>
         <source>Undo Image</source>
         <translation>Deshacer Imagen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="357"/>
+        <location filename="../ui/main_window.py" line="359"/>
         <source>Redo Image</source>
         <translation>Rehacer Imagen</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="365"/>
+        <location filename="../ui/main_window.py" line="367"/>
         <source>Box Drawing</source>
         <translation>Dibujo de Cuadro</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="369"/>
+        <location filename="../ui/main_window.py" line="371"/>
         <source>Inpainting</source>
         <translation>Inpainting</translation>
     </message>
@@ -318,7 +328,7 @@ que requiere una clave API. Vaya a Configuración &gt; Credenciales &gt; GPT par
         <source>Default OCR for one of the selected Source Languages is GPT-4o
 which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
         <translation>El OCR predeterminado para uno de los idiomas de origen seleccionados es GPT-4o,
-que requiere una clave API. Vaya a Configuración > Credenciales > GPT para configurar una</translation>
+que requiere una clave API. Vaya a Configuración &gt; Credenciales &gt; GPT para configurar una</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
@@ -348,6 +358,23 @@ Vaya a Configuración &gt; Credenciales &gt; Microsoft para establecer una</tran
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>No se ha seleccionado ninguna fuente.
 Vaya a Configuración &gt; Renderización de texto &gt; Fuente para seleccionar o importar una</translation>
+    </message>
+</context>
+<context>
+    <name>SettingsPage</name>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="298"/>
+        <source>Restart Required</source>
+        <translation>Reinicio requerido</translation>
+    </message>
+    <message>
+        <location filename="../ui/settings/settings_page.py" line="299"/>
+        <source>Please restart the application for the language changes to take effect.</source>
+        <translation>Por favor, reinicie la aplicación para que los cambios de idioma surtan efecto.</translation>
+    </message>
+    <message>
+        <source>Please restart for the changes to take effect.</source>
+        <translation type="obsolete">Reinicie para que los cambios surtan efecto.</translation>
     </message>
 </context>
 <context>
@@ -716,7 +743,7 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="451"/>
+        <location filename="../ui/main_window.py" line="453"/>
         <source>Light</source>
         <translation>Claro</translation>
     </message>
@@ -738,14 +765,12 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
         <translation type="vanished">Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="298"/>
         <source>Restart Required</source>
-        <translation>Reinicio requerido</translation>
+        <translation type="vanished">Reinicio requerido</translation>
     </message>
     <message>
-        <location filename="../ui/settings/settings_page.py" line="299"/>
         <source>Please restart for the changes to take effect.</source>
-        <translation>Reinicie para que los cambios surtan efecto.</translation>
+        <translation type="vanished">Reinicie para que los cambios surtan efecto.</translation>
     </message>
 </context>
 </TS>
