@@ -1,0 +1,3 @@
+# Ignore Compiled Translations (.qm files)
+compiled/
+
