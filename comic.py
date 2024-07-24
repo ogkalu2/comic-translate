@@ -404,9 +404,9 @@ class ComicTranslate(ComicTranslateUI):
             if segm_pts.size > 0:
                 self.image_viewer.draw_segmentation_lines(segm_pts)
 
-
     def load_segmentation_points(self):
         if self.image_viewer.hasPhoto():
+            self.set_tool('brush')
             self.disable_hbutton_group()
             self.image_viewer.clear_rectangles()
             if self.blk_list:

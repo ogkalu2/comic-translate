@@ -1,7 +1,7 @@
 import os
 import cv2, shutil
 from datetime import datetime
-from typing import List, Any, Callable, Union, Tuple, Set, Dict
+from typing import List
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
 
