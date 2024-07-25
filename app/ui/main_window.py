@@ -57,6 +57,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.main_content_widget = None
         self.tool_buttons = {}  # Dictionary to store mutually exclusive tool names and their corresponding buttons
 
+        self.grabGesture(QtCore.Qt.GestureType.PanGesture)
+        self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
+
         self.lang_mapping = {
             self.tr("English"): "English",
             self.tr("Korean"): "Korean",
@@ -218,6 +221,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         img_selection.setLayout(self.image_card_layout)
         scroll.setWidget(img_selection)
         scroll.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        scroll.setMinimumWidth(60)
 
         left_layout.addWidget(scroll)
         left_widget = QtWidgets.QWidget()
@@ -236,7 +240,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.central_stack.addWidget(self.drag_browser)
         
         # Photo Viewer
-        self.image_viewer.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        #self.image_viewer.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.central_stack.addWidget(self.image_viewer)
         
         central_widget = QtWidgets.QWidget()
@@ -280,7 +284,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Pan Button
         self.pan_button = self.create_tool_button(svg = "pan_tool.svg", checkable = True)
         self.pan_button.setToolTip("Pan Image")
-        self.pan_button.clicked.connect(lambda: self.set_tool('pan'))
+        self.pan_button.clicked.connect(self.toggle_pan_tool)
         self.tool_buttons['pan'] = self.pan_button
 
         # Set Source/Target Button
@@ -463,14 +467,25 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Refresh the UI to apply the new theme
         self.repaint()
 
+    def toggle_pan_tool(self):
+        if self.pan_button.isChecked():
+            self.set_tool('pan')
+        else:
+            self.set_tool(None)
+
     def set_tool(self, tool_name: str):
         self.image_viewer.set_tool(tool_name)
 
         for name, button in self.tool_buttons.items():
             if name != tool_name:
-                button.setChecked(False) 
-            else:
-                button.setChecked(True) 
+                button.setChecked(False)
+            elif tool_name is not None:
+                button.setChecked(True)
+
+        # If tool_name is None, uncheck all buttons
+        if not tool_name:
+            for button in self.tool_buttons.values():
+                button.setChecked(False)
 
     def set_brush_size(self, size: int):
         if self.image_viewer.hasPhoto():
