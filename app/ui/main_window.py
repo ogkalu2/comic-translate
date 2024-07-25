@@ -64,6 +64,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.tr("French"): "French",
             self.tr("Simplified Chinese"): "Simplified Chinese",
             self.tr("Traditional Chinese"): "Traditional Chinese",
+            self.tr("Chinese"): "Chinese",
             self.tr("Russian"): "Russian",
             self.tr("German"): "German",
             self.tr("Dutch"): "Dutch",
@@ -207,7 +208,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         # Left Side (Image Selection)
         left_layout = QtWidgets.QVBoxLayout()
-        left_layout.addWidget(MDivider(self.tr("Loaded Images")))
+        left_layout.addWidget(MDivider())
         self.image_card_layout = QtWidgets.QVBoxLayout()
         self.image_card_layout.addStretch(1)  # Add stretch to keep cards at the top
         scroll = QtWidgets.QScrollArea()
