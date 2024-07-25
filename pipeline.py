@@ -106,6 +106,12 @@ class ComicTranslatePipeline:
             translator = Translator(self.main_page, source_lang, target_lang)
             translator.translate(self.main_page.blk_list, image, extra_context)
 
+            target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
+            trg_lng_cd = get_language_code(target_lang_en)
+            text_rendering_settings = settings_page.get_text_rendering_settings()
+            upper_case = text_rendering_settings['upper_case']
+            format_translations(self.main_page.blk_list, trg_lng_cd, upper_case=upper_case)
+
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
         if not os.path.exists(path):
