@@ -133,6 +133,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             {"svg": "settings.svg", "checkable": True, "tooltip": self.tr("Settings"), "clicked": self.show_settings_page},
         ]
         nav_tool_group.set_button_list(nav_tools)
+        nav_tool_group.get_button_group().buttons()[0].setChecked(True)
 
         nav_rail_layout.addWidget(self.tool_browser)
         nav_rail_layout.addWidget(self.save_browser)
