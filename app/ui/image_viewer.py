@@ -142,7 +142,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
                     self._box_mode = True
                     self._start_point = scene_pos
                     self._current_rect = QtWidgets.QGraphicsRectItem(self._photo.mapRectToItem(self._photo, QtCore.QRectF(self._start_point, self._start_point)))
-                    self._current_rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 100)))  # Transparent pink
+                    self._current_rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))  # Transparent pink
                     self._scene.addItem(self._current_rect)
 
         elif self._current_tool == 'pan':
@@ -432,7 +432,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
     def deselect_all(self):
         for rect in self._rectangles:
-            rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 100)))  # Transparent pink
+            rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))  # Transparent pink
         self._selected_rect = None
 
     def get_rectangle_properties(self):
@@ -637,7 +637,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         
         for rect_data in state['rectangles']:
             rect_item = QtWidgets.QGraphicsRectItem(QtCore.QRectF(*rect_data), self._photo)
-            rect_item.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 100)))  # Transparent pink
+            rect_item.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))  # Transparent pink
             self._rectangles.append(rect_item)
 
     def save_state(self):
