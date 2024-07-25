@@ -317,7 +317,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.brush_button.clicked.connect(lambda: self.set_tool('brush'))
         self.tool_buttons['brush'] = self.brush_button
 
-        self.eraser_button = self.create_tool_button(svg = "eraser.svg", checkable=True)
+        self.eraser_button = self.create_tool_button(svg = "eraser_fill.svg", checkable=True)
         self.eraser_button.setToolTip(self.tr("Erase Brush Strokes"))
         self.eraser_button.clicked.connect(lambda: self.set_tool('eraser'))
         self.tool_buttons['eraser'] = self.eraser_button
