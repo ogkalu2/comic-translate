@@ -326,6 +326,11 @@ class SettingsPageUI(QtWidgets.QWidget):
     def _create_credentials_layout(self):
         credentials_layout = QtWidgets.QVBoxLayout()
 
+        # Add a single "Save Keys" checkbox at the top
+        self.save_keys_checkbox = MCheckBox(self.tr("Save Keys"))
+        credentials_layout.addWidget(self.save_keys_checkbox)
+        credentials_layout.addSpacing(20)
+
         for service in self.credential_services:
             service_layout = QtWidgets.QVBoxLayout()
             
@@ -404,9 +409,6 @@ class SettingsPageUI(QtWidgets.QWidget):
             credentials_layout.addLayout(service_layout)
             credentials_layout.addSpacing(20)  # Add 20 pixels of vertical spacing between services
 
-        # Add a single "Save Keys" checkbox at the bottom
-        self.save_keys_checkbox = MCheckBox(self.tr("Save Keys"))
-        credentials_layout.addWidget(self.save_keys_checkbox)
 
         credentials_layout.addStretch(1)  # Push everything to the top
 
