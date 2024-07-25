@@ -5,7 +5,7 @@ import cv2
 import requests
 from typing import List
 from ..utils.translator_utils import get_llm_client
-from ..utils.textblock import TextBlock, adjust_text_line_coordinates, sort_blk_list
+from ..utils.textblock import TextBlock, adjust_text_line_coordinates
 from ..utils.pipeline_utils import lists_to_blk_list, ensure_within_bounds
 from ..utils.download import get_models, manga_ocr_data, pororo_data
 from ..ocr.manga_ocr.manga_ocr import MangaOcr
@@ -49,11 +49,7 @@ class OCRProcessor:
             blk.source_lang = source_lang_code
 
     def process(self, img: np.ndarray, blk_list: List[TextBlock]):
-
         self.set_source_orientation(blk_list)
-        rtl = True if self.source_lang_english == 'Japanese' else False
-        blk_list = sort_blk_list(blk_list, rtl)
-
         if self.source_lang == self.settings.ui.tr('Chinese') and (not self.microsoft_ocr and not self.google_ocr):
             return self._ocr_paddle(img, blk_list)
         

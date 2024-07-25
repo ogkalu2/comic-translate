@@ -8,7 +8,7 @@ from PySide6 import QtCore, QtGui
 from modules.detection import TextBlockDetector
 from modules.ocr.ocr import OCRProcessor
 from modules.translator import Translator
-from modules.utils.textblock import TextBlock
+from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.rendering.render import get_best_render_area
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import draw_text, get_best_render_area
@@ -40,9 +40,14 @@ class ComicTranslatePipeline:
 
     def on_blk_detect_complete(self, result): 
         blk_list, load_rects = result
+        source_lang = self.main_page.s_combo.currentText()
+        source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
+        rtl = True if source_lang_english == 'Japanese' else False
+        blk_list = sort_blk_list(blk_list, rtl)
         self.main_page.blk_list = blk_list
         if load_rects:
             self.load_box_coords(blk_list)
+
 
     def manual_inpaint(self):
         image_viewer = self.main_page.image_viewer
