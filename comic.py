@@ -10,7 +10,6 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSettings
 from PySide6.QtCore import QThreadPool
 from PySide6.QtCore import QTranslator, QLocale
-from PySide6.QtWidgets import QApplication
 
 from app.ui.dayu_widgets import dayu_theme
 from app.ui.dayu_widgets.clickable_card import ClickMeta
@@ -771,10 +770,23 @@ def load_translation(app, language: str):
 
 if __name__ == "__main__":
 
+    import sys
+    from PySide6.QtGui import QIcon
     from app.ui.dayu_widgets.qt import application
     from app.translations import ct_translations
+    from app import icon_resource
+
+    if sys.platform == "win32":
+        # Necessary Workaround to set to Taskbar Icon on Windows
+        import ctypes
+        myappid = u'ComicLabs.ComicTranslate' # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     with application() as app:
+        # Set the application icon
+        icon = QIcon(":/icons/window_icon.png")  
+        app.setWindowIcon(icon)
+
         settings = QSettings("ComicLabs", "ComicTranslate")
         selected_language = settings.value('language', get_system_language())
         if selected_language != 'English':
