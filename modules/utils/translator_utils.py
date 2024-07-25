@@ -86,4 +86,9 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
             translation = ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result).lstrip()
             blk.translation = translation
         else:
-            blk.translation = translation.upper() if upper_case else translation.capitalize()
+            if upper_case and not translation.isupper():
+                blk.translation = translation.upper() 
+            elif not upper_case and translation.isupper():
+                blk.translation = translation.capitalize()
+            else:
+                blk.translation = translation
