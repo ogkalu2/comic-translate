@@ -26,6 +26,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.setBackgroundBrush(QtGui.QBrush(QtGui.QColor(30, 30, 30)))
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+        self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
         self._current_tool = None
         self._box_mode = False
         self._dragging = False
@@ -53,19 +55,74 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self._current_path = None
         self._current_path_item = None
+   
+        # Initialize last pan position
+        self._last_pan_pos = QtCore.QPoint()
 
     def hasPhoto(self):
         return not self._empty
 
+
+    def viewportEvent(self, event):
+        if event.type() == QtCore.QEvent.Gesture:
+            return self.gestureEvent(event)
+        return super().viewportEvent(event)
+
+    def gestureEvent(self, event):
+        pan = event.gesture(QtCore.Qt.GestureType.PanGesture)
+        pinch = event.gesture(QtCore.Qt.GestureType.PinchGesture)
+        
+        if pan:
+            return self.handlePanGesture(pan)
+        elif pinch:
+            return self.handlePinchGesture(pinch)
+        
+        return False
+
+    def handlePanGesture(self, gesture):
+        delta = gesture.delta()
+        new_pos = self._last_pan_pos + delta
+        
+        self.horizontalScrollBar().setValue(
+            self.horizontalScrollBar().value() - (new_pos.x() - self._last_pan_pos.x())
+        )
+        self.verticalScrollBar().setValue(
+            self.verticalScrollBar().value() - (new_pos.y() - self._last_pan_pos.y())
+        )
+        
+        self._last_pan_pos = new_pos
+        return True
+
+    def handlePinchGesture(self, gesture):
+        scale_factor = gesture.scaleFactor()
+        center = gesture.centerPoint()
+        
+        if gesture.state() == QtCore.Qt.GestureState.GestureStarted:
+            self._pinch_center = self.mapToScene(center.toPoint())
+        
+        if scale_factor != 1:
+            self.scale(scale_factor, scale_factor)
+            self._zoom += (scale_factor - 1)
+        
+        if gesture.state() == QtCore.Qt.GestureState.GestureFinished:
+            self._pinch_center = QtCore.QPointF()
+        
+        return True
+
     def wheelEvent(self, event):
         if self.hasPhoto():
-            factor = 1.25
-            if event.angleDelta().y() > 0:
-                self.scale(factor, factor)
-                self._zoom += 1
+            if event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier:
+                # Zoom with Ctrl + Wheel
+                factor = 1.25
+                if event.angleDelta().y() > 0:
+                    self.scale(factor, factor)
+                    self._zoom += 1
+                else:
+                    self.scale(1 / factor, 1 / factor)
+                    self._zoom -= 1
             else:
-                self.scale(1 / factor, 1 / factor)
-                self._zoom -= 1
+                # Scroll without Ctrl
+                super().wheelEvent(event)
 
     def fitInView(self):
         rect = QtCore.QRectF(self._photo.pixmap().rect())
