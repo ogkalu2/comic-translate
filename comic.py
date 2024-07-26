@@ -341,8 +341,6 @@ class ComicTranslate(ComicTranslateUI):
         self.display_image(index)
 
     def save_image_state(self, file: str):
-        # print('hehe')
-        # print(self.image_viewer._undo_brush_stack)
         self.image_states[file] = {
             'viewer_state': self.image_viewer.save_state(),
             'source_text': self.s_text_edit.toPlainText(),
@@ -515,7 +513,6 @@ class ComicTranslate(ComicTranslateUI):
     def handle_rectangle_selection(self, rect: QtCore.QRectF):
         x1, y1, w, h = rect.getRect()
         rect = (x1, y1, x1 + w, y1 + h)
-        self.update_blk_list()
         self.current_text_block = self.find_corresponding_text_block(rect, 0.5)
         if self.current_text_block:
             self.s_text_edit.textChanged.disconnect(self.update_text_block)
@@ -758,7 +755,6 @@ def load_translation(app, language: str):
 
     # Load the translation file
     # if translator.load(f"ct_{lang_code}", "app/translations/compiled"):
-    #     print('jff')
     #     app.installTranslator(translator)
     # else:
     #     print(f"Failed to load translation for {language}")
