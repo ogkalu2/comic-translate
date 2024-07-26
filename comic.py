@@ -27,7 +27,7 @@ from modules.utils.pipeline_utils import set_alignment, font_selected, validate_
                                          validate_ocr, validate_translator, get_language_code
 from modules.utils.archives import make
 from modules.utils.download import get_models, mandatory_models
-from modules.utils.translator_utils import format_translations
+from modules.utils.translator_utils import format_translations, is_there_text
 from pipeline import ComicTranslatePipeline
 
 
@@ -238,7 +238,7 @@ class ComicTranslate(ComicTranslateUI):
     def translate_image(self):
         source_lang = self.s_combo.currentText()
         target_lang = self.t_combo.currentText()
-        if not validate_translator(self, source_lang, target_lang):
+        if not is_there_text(self.blk_list) or not validate_translator(self, source_lang, target_lang):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()

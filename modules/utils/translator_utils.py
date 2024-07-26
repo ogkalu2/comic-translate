@@ -92,3 +92,6 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
                 blk.translation = translation.capitalize()
             else:
                 blk.translation = translation
+
+def is_there_text(blk_list: List[TextBlock]) -> bool:
+    return any(blk.text for blk in blk_list)
