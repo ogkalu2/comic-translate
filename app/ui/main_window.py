@@ -300,7 +300,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.box_button = self.create_tool_button(svg = "select.svg", checkable=True)
         self.box_button.setToolTip("Draw or Select Text Boxes")
-        self.box_button.clicked.connect(lambda: self.set_tool('box'))
+        self.box_button.clicked.connect(self.toggle_box_tool)
         self.tool_buttons['box'] = self.box_button
 
         self.delete_button = self.create_tool_button(svg = "trash_line.svg", checkable=False)
@@ -320,12 +320,12 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.brush_button = self.create_tool_button(svg = "brush-fill.svg", checkable=True)
         self.brush_button.setToolTip(self.tr("Draw Brush Strokes for Cleaning Image"))
-        self.brush_button.clicked.connect(lambda: self.set_tool('brush'))
+        self.brush_button.clicked.connect(self.toggle_brush_tool)
         self.tool_buttons['brush'] = self.brush_button
 
         self.eraser_button = self.create_tool_button(svg = "eraser_fill.svg", checkable=True)
         self.eraser_button.setToolTip(self.tr("Erase Brush Strokes"))
-        self.eraser_button.clicked.connect(lambda: self.set_tool('eraser'))
+        self.eraser_button.clicked.connect(self.toggle_eraser_tool)
         self.tool_buttons['eraser'] = self.eraser_button
 
         self.chk_inp_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
@@ -473,7 +473,26 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         else:
             self.set_tool(None)
 
+    def toggle_box_tool(self):
+        if self.box_button.isChecked():
+            self.set_tool('box')
+        else:
+            self.set_tool(None)
+
+    def toggle_brush_tool(self):
+        if self.brush_button.isChecked():
+            self.set_tool('brush')
+        else:
+            self.set_tool(None)
+
+    def toggle_eraser_tool(self):
+        if self.eraser_button.isChecked():
+            self.set_tool('eraser')
+        else:
+            self.set_tool(None)
+
     def set_tool(self, tool_name: str):
+        self.image_viewer.unsetCursor()
         self.image_viewer.set_tool(tool_name)
 
         for name, button in self.tool_buttons.items():
