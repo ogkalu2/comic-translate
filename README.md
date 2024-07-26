@@ -1,11 +1,11 @@
 # Comic Translate
 English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md) | [日本語](docs/README_ja.md) 
 
-https://github.com/ogkalu2/comic-translate/assets/115248977/b57360d3-eaad-4a93-bc46-94c01d38927c
+<img src="https://i.imgur.com/aNuwiJb.png">
 
 ## Intro
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
-This project was created to utilize the ability of GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to (but not from) Turkish, Polish, Portuguese and Brazillian Portuguese.
+This project was created to utilize the ability of State of the Art (SOTA) Large Language Models (LLMs) like GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to (but not from) Turkish, Polish, Portuguese and Brazillian Portuguese.
 
 - [The State of Machine Translation](#the-state-of-machine-translation)
 - [Preview](#comic-samples)
@@ -29,13 +29,13 @@ This project was created to utilize the ability of GPT-4 and translate comics fr
 - [Acknowledgements](#acknowledgements)
 
 ## The State of Machine Translation
-For a couple dozen languages, the best Machine Translator is not Google Translate, Papago or even DeepL, but GPT-4, and by far. 
+For a couple dozen languages, the best Machine Translator is not Google Translate, Papago or even DeepL, but a SOTA LLM like GPT-4o, and by far. 
 This is very apparent for distant language pairs (Korean<->English, Japanese<->English etc) where other translators still often devolve into gibberish.
 Excerpt from "The Walking Practice"(보행 연습) by Dolki Min(돌기민)
-![Model](https://i.imgur.com/e1aeLej.png)
+![Model](https://i.imgur.com/72jvLBa.png)
 
 ## Comic Samples
-GPT-4o as Translator.
+GPT-4 as Translator.
 Note: Some of these also have Official English Translations
 
 [The Wretched of the High Seas](https://www.drakoo.fr/bd/drakoo/les_damnes_du_grand_large/les_damnes_du_grand_large_-_histoire_complete/9782382330128)
@@ -72,16 +72,6 @@ Install Python (<=3.10). Tick "Add python.exe to PATH" during the setup.
 ```bash
 https://www.python.org/downloads/
 ```
-Currently, this doesn't work fully on python 3.11 or higher because of issues with PaddleOCR. If you have no intention of translating from Chinese with the Default Option(Paddle), you can use this with 3.11 by replacing
-```bash
-paddleocr==2.7.0.3
-paddlepaddle==2.5.2
-```
-with 
-```bash
-PyMuPDF==1.23.8
-```
-in the requirements.txt file.
 
 Clone the repo (or download the folder), navigate to the folder
 ```bash
@@ -92,6 +82,28 @@ and install the requirements
 ```bash
 pip install -r requirements.txt
 ```
+If you run into any issues, you can try running it in a virtual environment.
+Open the terminal/cmd in whatever directory you want the virtual environment installed (or cd 'path/to/virtual environment/folder').
+Create your virtual environment with:
+```bash
+python -m venv comic-translate-venv
+```
+
+Now activate the virtual environment. On Windows:
+```bash
+comic-translate-venv\Scripts\activate
+```
+
+On Mac and Linux:
+```bash
+source comic-translate-venv/bin/activate
+```
+
+Now you can run the Installation Commands again. When you are finished using the app, you can deactivate the virtul environment with:
+```bash
+deactivate
+```
+To re-activate, use the same commands with the terminal in the folder your virtual environment folder is located in.
 
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
@@ -109,24 +121,27 @@ python comic.py
 This will launch the GUI
 
 ### Tips
-* Import > Images to select a Single or multiple Images. If you have a CBR file, you'll need to install Winrar or 7-Zip then add the folder it's installed to (e.g "C:\Program Files\WinRAR" for Windows) to Path. If it's installed but not to Path, you may get the error, 
+* If you have a CBR file, you'll need to install Winrar or 7-Zip then add the folder it's installed to (e.g "C:\Program Files\WinRAR" for Windows) to Path. If it's installed but not to Path, you may get the error, 
 ```bash
 raise RarCannotExec("Cannot find working tool")
 ```
 In that case, Instructions for [Windows](https://www.windowsdigitals.com/add-folder-to-path-environment-variable-in-windows-11-10/), [Linux](https://linuxize.com/post/how-to-add-directory-to-path-in-linux/), [Mac](https://techpp.com/2021/09/08/set-path-variable-in-macos-guide/)
 
-* Go to Settings > Text Rendering > Adjust Textblocks to adjust the dimensions of the blocks used for rendering. For situations where text is rendered too big/small. 
-It will apply to all detcted blocks on the page
 * Make sure the selected Font supports characters of the target language
+* v2.0 introduces a Manual Mode. When you run into issues with Automatic Mode (No text detected, Incorrect OCR, Insufficient Cleaning etc), you are now able to make corrections. Simply Undo the Image and toggle Manual Mode.
+* In Automatic Mode, Once an Image has been processed, it is loaded in the Viewer or stored to be loaded on switch so you can keep reading in the app as the other Images are being translated.
+* Ctrl + Mouse Wheel to Zoom otherwise Vertical Scrolling
+* The Usual Trackpad Gestures work for viewing the Image
+* Right, Left Keys to Navigate Between Images
 
 ## API Keys
 To following selections will require access to closed resources and subsequently, API Keys:
-* GPT-4o or 3.5 for Translation (Paid, about $0.01 USD/Page for 4o)
+* GPT-4o or 4o-mini for Translation (Paid, about $0.01 USD/Page for 4o)
 * DeepL Translator (Free for 500,000 characters/month)
 * GPT-4o for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.02 USD/Page)
 * Microsoft Azure Vision for OCR (Free for 5000 images/month)
-* Google Cloud Vision for OCR (Free for 1000 images/month).
-You can set your API Keys by going to Settings > Set Credentials
+* Google Cloud Vision for OCR (Free for 1000 images/month)
+You can set your API Keys by going to Settings > Credentials
 
 ### Getting API Keys
 #### Open AI (GPT)
@@ -167,17 +182,17 @@ A [Manga/Anime finetuned](https://huggingface.co/dreMaz/AnimeMangaInpainting) [l
 <img src="https://i.imgur.com/cVVGVXp.jpg" width="49%"> <img src="https://i.imgur.com/bLkPyqG.jpg" width="49%">
 
 ### Translation
-Currently, this supports using GPT-4o, GPT-4, GPT-3.5, DeepL and Google Translate.
-All GPT models are fed the context of the entire page text to aid translations. 
-GPT-4o specifically is also provided the image of the page, the page with the original text for
-languages it is competent at recognizing (French, Russian, German, Dutch, Spanish, Italian) and the Inpainted Image for the rest. 
+Currently, this supports using GPT-4o, GPT-4o mini, DeepL, Claude-3-Opus, Claude-3.5-Sonnet, Claude-3-Haiku, 
+Gemini-1.5-Flash, Gemini-1.5-Pro, Yandex, Google Translate and Microsoft Translator.
+
+All LLMs are fed the entire page text to aid translations. 
+There is also the Option to provide the Image itself for further context. 
 
 ### Text Rendering
 PIL for rendering wrapped text in bounding boxes obtained from bubbles and text.
 
 ## Acknowledgements
 
-* [https://github.com/hoffstadt/DearPyGui](https://github.com/hoffstadt/DearPyGui)
 * [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 * [https://github.com/Sanster/lama-cleaner](https://github.com/Sanster/lama-cleaner)
 * [https://huggingface.co/dreMaz](https://huggingface.co/dreMaz)
@@ -185,6 +200,5 @@ PIL for rendering wrapped text in bounding boxes obtained from bubbles and text.
 * [https://github.com/kha-white/manga-ocr](https://github.com/kha-white/manga-ocr)
 * [https://github.com/JaidedAI/EasyOCR](https://github.com/JaidedAI/EasyOCR)
 * [https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
-
 
 
