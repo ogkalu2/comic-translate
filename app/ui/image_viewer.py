@@ -645,7 +645,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         # Apply dilation only to human-drawn strokes
         kernel = np.ones((5,5), np.uint8)
-        human_mask = cv2.dilate(human_mask, kernel, iterations=1)
+        human_mask = cv2.dilate(human_mask, kernel, iterations=2)
 
         # Combine the masks
         final_mask = cv2.bitwise_or(human_mask, generated_mask)
