@@ -105,7 +105,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.tool_browser = MClickBrowserFileToolButton(multiple=True)
         self.tool_browser.set_dayu_svg("upload-file.svg")
-        self.tool_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"
+        self.tool_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
         self.tool_browser.setToolTip(self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)"))
@@ -122,7 +122,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             ("CB7 files", "cb7"),
             ("PDF files", "pdf"),
             ("EPUB files", "epub"),
-            # ("Documents", ["pdf", "epub"])
         ]
 
         self.save_all_browser = MClickSaveFileToolButton()
@@ -233,7 +232,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # File Loader
         self.drag_browser = MDragFileButton(text=self.tr("Click or drag files here"), multiple=True)
         self.drag_browser.set_dayu_svg("attachment_line.svg")
-        self.drag_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"
+        self.drag_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
         self.drag_browser.setToolTip(self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)"))

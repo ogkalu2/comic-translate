@@ -280,18 +280,21 @@ class MClickSaveFileToolButton(MToolButton):
             self._path = file_name
             self._last_directory = os.path.dirname(file_name)
             
-            # Ensure correct extension
-            selected_extension = selected_filter.split('(*.')[1].split(')')[0]
-            file_base, file_extension = os.path.splitext(file_name)
-            if file_extension.lower() != f".{selected_extension}":
-                file_name = f"{file_base}.{selected_extension}"
+            # Extract the selected file type and its extensions
+            selected_type = next((ft for ft in self._file_types if ft[0] in selected_filter), None)
+            if selected_type:
+                valid_extensions = selected_type[1] if isinstance(selected_type[1], list) else [selected_type[1]]
+                
+                # Ensure correct extension
+                file_base, file_extension = os.path.splitext(file_name)
+                if file_extension[1:].lower() not in valid_extensions:
+                    file_name = f"{file_base}.{valid_extensions[0]}"
             
             self.sig_file_changed.emit(file_name)
         else:
             # Even if the user cancels, update the last directory
             dialog = QtWidgets.QFileDialog()
             self._last_directory = dialog.directory().absolutePath()
-
 
 class MDragFileButton(MToolButton):
     """A Clickable and draggable tool button to upload files"""
