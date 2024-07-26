@@ -343,7 +343,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
             brush = QtGui.QBrush(QtGui.QColor(stroke['brush']))
             brush_color = QtGui.QColor(stroke['brush'])
-            if brush_color == "#80ff0000":
+            if brush_color == "#80ff0000": # generated 
                 path_item = self._scene.addPath(stroke['path'], pen, brush)
             else:
                 path_item = self._scene.addPath(stroke['path'], pen)
@@ -582,12 +582,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._zoom = 0
 
     def has_drawn_elements(self):
-        """
-        Check if any elements (paths) have been drawn on the image.
-        
-        Returns:
-        bool: True if there are drawn elements, False otherwise.
-        """
         for item in self._scene.items():
             if isinstance(item, QtWidgets.QGraphicsPathItem):
                 if item != self._photo:
@@ -603,41 +597,60 @@ class ImageViewer(QtWidgets.QGraphicsView):
         width = int(image_rect.width())
         height = int(image_rect.height())
 
-        # Create a blank mask
-        mask = np.zeros((height, width), dtype=np.uint8)
+        # Create two blank masks
+        human_mask = np.zeros((height, width), dtype=np.uint8)
+        generated_mask = np.zeros((height, width), dtype=np.uint8)
 
-        # Create a QImage to draw all paths
-        qimage = QtGui.QImage(width, height, QtGui.QImage.Format_Grayscale8)
-        qimage.fill(QtGui.QColor(0, 0, 0))  # Fill with black
+        # Create two QImages to draw paths separately
+        human_qimage = QtGui.QImage(width, height, QtGui.QImage.Format_Grayscale8)
+        generated_qimage = QtGui.QImage(width, height, QtGui.QImage.Format_Grayscale8)
+        human_qimage.fill(QtGui.QColor(0, 0, 0))
+        generated_qimage.fill(QtGui.QColor(0, 0, 0))
 
-        # Create a QPainter to draw on the QImage
-        painter = QtGui.QPainter(qimage)
-        painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255), self._brush_size))
-        painter.setBrush(QtGui.QBrush(QtGui.QColor(255, 255, 255)))  # Set brush for filling 
+        # Create QPainters for both QImages
+        human_painter = QtGui.QPainter(human_qimage)
+        generated_painter = QtGui.QPainter(generated_qimage)
+        
+        pen = QtGui.QPen(QtGui.QColor(255, 255, 255), self._brush_size)
+        human_painter.setPen(pen)
+        generated_painter.setPen(pen)
+        
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
+        human_painter.setBrush(brush)
+        generated_painter.setBrush(brush)
 
         # Iterate through all items in the scene
         for item in self._scene.items():
-            # Check if the item is a drawn stroke (path in this case)
             if isinstance(item, QtWidgets.QGraphicsPathItem) and item != self._photo:
-                # Draw the path onto the QImage
-                painter.drawPath(item.path())
+                brush_color = QtGui.QColor(item.brush().color().name(QtGui.QColor.HexArgb))
+                if brush_color == "#80ff0000":  # generated stroke
+                    generated_painter.drawPath(item.path())
+                else:  # human-drawn stroke
+                    human_painter.drawPath(item.path())
 
         # End painting
-        painter.end()
+        human_painter.end()
+        generated_painter.end()
 
-        # Convert the QImage to a numpy array, accounting for padding
-        bytes_per_line = qimage.bytesPerLine()
-        ptr = qimage.constBits()
-        arr = np.array(ptr).reshape(height, bytes_per_line)
+        # Convert the QImages to numpy arrays, accounting for padding
+        bytes_per_line = human_qimage.bytesPerLine()
+        human_ptr = human_qimage.constBits()
+        generated_ptr = generated_qimage.constBits()
+        human_arr = np.array(human_ptr).reshape(height, bytes_per_line)
+        generated_arr = np.array(generated_ptr).reshape(height, bytes_per_line)
         
         # Exclude the padding bytes, keeping only the relevant image data
-        mask = arr[:, :width]
+        human_mask = human_arr[:, :width]
+        generated_mask = generated_arr[:, :width]
 
-        # Apply dilation to thicken the strokes
+        # Apply dilation only to human-drawn strokes
         kernel = np.ones((5,5), np.uint8)
-        mask = cv2.dilate(mask, kernel, iterations=2)
+        human_mask = cv2.dilate(human_mask, kernel, iterations=1)
 
-        return mask
+        # Combine the masks
+        final_mask = cv2.bitwise_or(human_mask, generated_mask)
+
+        return final_mask
 
     def get_mask_for_inpainting(self):
         # Generate the mask
@@ -656,8 +669,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
         mask = cv2.resize(mask, (cv2_image.shape[1], cv2_image.shape[0]))
 
         return mask
-
-    def draw_segmentation_lines(self, segmentation_points: np.ndarray, layers: int = 1):
+    
+    def draw_segmentation_lines(self, segmentation_points: np.ndarray, layers: int = 1, scale_factor: float = 0.95, smoothness: float = 0.35):
         if not self.hasPhoto():
             print("No photo loaded.")
             return
@@ -666,17 +679,44 @@ class ImageViewer(QtWidgets.QGraphicsView):
             print("Not enough points to create a filled area.")
             return
 
-        # Create a QPainterPath from the segmentation points
+        # Calculate the centroid of the segmentation points
+        centroid = np.mean(segmentation_points, axis=0)
+
+        # Scale the segmentation points towards the centroid
+        scaled_points = (segmentation_points - centroid) * scale_factor + centroid
+
+        # Create a QPainterPath for the smooth curve
         path = QtGui.QPainterPath()
-        path.moveTo(segmentation_points[0][0], segmentation_points[0][1])
-        for point in segmentation_points[1:]:
-            path.lineTo(point[0], point[1])
-        path.closeSubpath()
+        
+        # Start the path
+        path.moveTo(scaled_points[0][0], scaled_points[0][1])
+        
+        # Function to calculate control points
+        def get_control_points(p1, p2, p3, smoothness):
+            vec1 = p2 - p1
+            vec2 = p3 - p2
+            d1 = np.linalg.norm(vec1)
+            d2 = np.linalg.norm(vec2)
+            
+            c1 = p2 - vec1 * smoothness
+            c2 = p2 + vec2 * smoothness
+            
+            return c1, c2
+
+        # Draw smooth curves between points
+        for i in range(len(scaled_points)):
+            p1 = scaled_points[i]
+            p2 = scaled_points[(i + 1) % len(scaled_points)]
+            p3 = scaled_points[(i + 2) % len(scaled_points)]
+            
+            c1, c2 = get_control_points(p1, p2, p3, smoothness)
+            
+            path.cubicTo(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
 
         # Create the path item and add it to the scene
         fill_color = QtGui.QColor(255, 0, 0, 128)  # Semi-transparent red
         outline_color = QtGui.QColor(255, 0, 0)  # Solid red for the outline
-        
+
         for _ in range(layers):
             path_item = QtWidgets.QGraphicsPathItem(path)
             path_item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
@@ -717,9 +757,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
         from PySide6.QtCore import Qt
 
         # Ensure size is at least 1 pixel
-        size = max(1, size//2)
+        size = max(1, size)
         
-        pixmap = QPixmap(size//2, size//2)
+        pixmap = QPixmap(size, size)
         pixmap.fill(Qt.transparent)
 
         painter = QPainter(pixmap)
@@ -734,10 +774,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
             painter.setBrush(QBrush(QColor(0, 0, 0, 127)))  # Default to some color if unknown type
             painter.setPen(Qt.PenStyle.NoPen)
 
-        painter.drawEllipse(0, 0, (size - 1)//2, (size - 1)//2)
+        painter.drawEllipse(0, 0, (size - 1), (size - 1))
         painter.end()
 
-        return QCursor(pixmap, size // 4, size // 4)
+        return QCursor(pixmap, size // 2, size // 2)
     
     def set_brush_size(self, size):
         self._brush_size = size
