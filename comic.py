@@ -348,8 +348,6 @@ class ComicTranslate(ComicTranslateUI):
             'target_text': self.t_text_edit.toPlainText(),
             'target_lang': self.t_combo.currentText(),
             'brush_strokes': self.image_viewer.save_brush_strokes(),
-            'undo_brush_stack': self.image_viewer._undo_brush_stack,
-            'redo_brush_stack': self.image_viewer._redo_brush_stack,
             'blk_list': self.blk_list
         }
 
