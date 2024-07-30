@@ -66,7 +66,7 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, init_
     font = ImageFont.truetype(font_pth, size=init_font_size)
 
     for blk in blk_list:
-        x1, y1, width, height = blk.xywh
+        x1, y1, width, height = blk.xywh()
         tbbox_top_left = (x1, y1)
 
         translation = blk.translation
