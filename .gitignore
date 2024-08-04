@@ -6,3 +6,10 @@ __pycache__/
 # Settings File
 **/settings.json
 /app/icons
+
+# Environments
+.env
+.venv
+env/
+venv/
+comic-translate-venv/
