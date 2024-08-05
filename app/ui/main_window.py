@@ -309,9 +309,14 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.clear_rectangles_button = self.create_tool_button(svg = "clear-outlined.svg")
         self.clear_rectangles_button.setToolTip(self.tr("Remove all the Boxes on the Image"))
 
+        self.draw_blklist_blks = self.create_tool_button(svg = "gridicons--create.svg")
+        self.draw_blklist_blks.setToolTip(self.tr("Draws all the Text Blocks in the existing Text Block List\n"
+                                                "back on the Image (for further editing)"))
+
         box_tools_lay.addWidget(self.box_button)
         box_tools_lay.addWidget(self.delete_button)
         box_tools_lay.addWidget(self.clear_rectangles_button)
+        box_tools_lay.addWidget(self.draw_blklist_blks)
         box_tools_lay.addStretch()
 
         # Inpainting Tools

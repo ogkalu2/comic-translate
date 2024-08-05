@@ -98,6 +98,7 @@ class ComicTranslate(ComicTranslateUI):
         self.set_all_button.clicked.connect(self.set_src_trg_all)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
         self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
+        self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
 
         # Connect text edit widgets
         self.s_text_edit.textChanged.connect(self.update_text_block)
@@ -220,6 +221,11 @@ class ComicTranslate(ComicTranslateUI):
         self.disable_hbutton_group()
         self.run_threaded(self.pipeline.detect_blocks, self.pipeline.on_blk_detect_complete, 
                           self.default_error_handler, self.on_manual_finished, load_rects)
+        
+    def clear_text_edits(self):
+        self.current_text_block = None
+        self.s_text_edit.clear()
+        self.t_text_edit.clear()
 
     def finish_ocr_translate(self):
         rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
@@ -246,6 +252,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def inpaint_and_set(self):
         if self.image_viewer.hasPhoto() and self.image_viewer.has_drawn_elements():
+            self.clear_text_edits()
             self.loading.setVisible(True)
             self.disable_hbutton_group()
             self.run_threaded(self.pipeline.inpaint, self.pipeline.inpaint_complete, 
@@ -401,6 +408,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def load_segmentation_points(self):
         if self.image_viewer.hasPhoto():
+            self.clear_text_edits()
             self.set_tool('brush')
             self.disable_hbutton_group()
             self.image_viewer.clear_rectangles()
@@ -568,6 +576,7 @@ class ComicTranslate(ComicTranslateUI):
         if self.image_viewer.hasPhoto() and self.blk_list:
             if not font_selected(self):
                 return
+            self.clear_text_edits()
             self.loading.setVisible(True)
             self.disable_hbutton_group()
             inpaint_image = self.image_viewer.get_cv2_image()

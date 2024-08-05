@@ -21,13 +21,17 @@ class ComicTranslatePipeline:
         self.main_page = main_page
 
     def load_box_coords(self, blk_list: List[TextBlock]):
-        if self.main_page.image_viewer.hasPhoto():
+        if self.main_page.image_viewer.hasPhoto() and blk_list:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
                 rect = QtCore.QRectF(x1, y1, x2 - x1, y2 - y1)
                 rect_item = QtWidgets.QGraphicsRectItem(rect, self.main_page.image_viewer._photo)
                 rect_item.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 100)))  # Transparent pink
                 self.main_page.image_viewer._rectangles.append(rect_item)
+
+            rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
+            self.main_page.image_viewer.select_rectangle(rect)
+            self.main_page.set_tool('box')
 
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
