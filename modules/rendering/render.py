@@ -23,7 +23,7 @@ def pil_to_cv2(pil_image: Image):
     
     return cv2_image
 
-def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_size, text: str, roi_width, roi_height, align: str, spacing, min_font_size=10):
+def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, roi_width, roi_height, align: str, spacing, init_font_size: int = 40, min_font_size=10):
     """Break long text to multiple lines, and reduce point size
     until all text fits within a bounding box."""
     mutable_message = text
