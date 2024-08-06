@@ -79,7 +79,7 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_
 
     return mutable_message, font_size
 
-def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, init_font_size, colour: str = "#000", min_font_size=10):
+def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 40, min_font_size=10):
     image = cv2_to_pil(image)
     draw = ImageDraw.Draw(image)
 
