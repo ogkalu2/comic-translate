@@ -350,7 +350,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.brush_size_slider = MSlider()
         self.eraser_size_slider = MSlider()
-        self.min_font_size_slider = MSlider()
 
         self.brush_size_slider.setMinimum(1)
         self.brush_size_slider.setMaximum(50)
@@ -361,15 +360,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.eraser_size_slider.setMaximum(50)
         self.eraser_size_slider.setValue(20)
         self.eraser_size_slider.valueChanged.connect(self.set_eraser_size)
-
-        self.min_font_size_slider.setMinimum(1)
-        self.min_font_size_slider.setMaximum(50)
-        self.min_font_size_slider.setValue(10)
-        self.min_font_size_slider.valueChanged.connect(self.set_min_font_size)
-
         b_slider_label = MLabel(self.tr("Brush Size Slider"))
         e_slider_label = MLabel(self.tr("Eraser Size Slider"))
-        f_slider_label = MLabel(self.tr("Min Font Size Slider"))
 
         # For returning an Image
         return_buttons_lay = QtWidgets.QHBoxLayout()
@@ -395,8 +387,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_layout.addWidget(self.brush_size_slider)
         tools_layout.addWidget(e_slider_label)
         tools_layout.addWidget(self.eraser_size_slider)
-        tools_layout.addWidget(f_slider_label)
-        tools_layout.addWidget(self.min_font_size_slider)
         tools_layout.addLayout(return_buttons_lay)
 
         tools_scroll = QtWidgets.QScrollArea()
@@ -405,7 +395,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         tools_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         tools_scroll.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        tools_scroll.setMinimumHeight(400)
+        tools_scroll.setMinimumHeight(300)
 
         right_layout.addLayout(input_layout)
         right_layout.addWidget(tools_scroll)
@@ -533,10 +523,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             h, w, c = image.shape
             scaled_size = self.scale_size(size, w, h)
             self.image_viewer.set_eraser_size(scaled_size)
-
-    def set_min_font_size(self, size: int):
-        None
-        
 
     def scale_size(self, base_size, image_width, image_height):
         # Calculate the diagonal of the image
