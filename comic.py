@@ -658,8 +658,8 @@ class ComicTranslate(ComicTranslateUI):
         # Save brush and eraser sizes
         settings.setValue("brush_size", self.brush_size_slider.value())
         settings.setValue("eraser_size", self.eraser_size_slider.value())
-        settings.setValue("min_font_size", self.settings_page.ui.min_font_spinbox.value())
-        settings.setValue("max_font_size", self.settings_page.ui.max_font_spinbox.value())
+        settings.setValue("min_font_size", self.settings_page.get_min_font_size())
+        settings.setValue("max_font_size", self.settings_page.get_max_font_size())
         
         settings.endGroup()
 
