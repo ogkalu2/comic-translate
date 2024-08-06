@@ -294,7 +294,7 @@ class ComicTranslatePipeline:
             max_font_size = self.main_page.settings_page.get_max_font_size()
             min_font_size = self.main_page.settings_page.get_min_font_size()
 
-            rendered_image = draw_text(inpaint_input_img, blk_list, font_path, max_font_size, colour=font_color, min_font_size=min_font_size)
+            rendered_image = draw_text(inpaint_input_img, blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size)
 
             self.main_page.progress_update.emit(index, total_images, 9, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
