@@ -405,11 +405,11 @@ class ComicTranslate(ComicTranslateUI):
         if self.image_viewer.hasPhoto():
             self.set_tool('brush')
             self.disable_hbutton_group()
-            self.image_viewer.clear_rectangles()
+            # self.image_viewer.clear_rectangles()
             if self.blk_list:
                 for blk in self.blk_list:
                     segm_pts = blk.segm_pts
-                    if segm_pts.size > 0:
+                    if segm_pts is not None and segm_pts.size > 0:
                         self.image_viewer.draw_segmentation_lines(segm_pts)
                 
                 self.enable_hbutton_group()
@@ -453,6 +453,7 @@ class ComicTranslate(ComicTranslateUI):
                     self.current_history_index[file_path] = current_index
                     self.image_data[file_path] = cv2_img
                     self.image_viewer.display_cv2_image(cv2_img)
+                    self.pipeline.load_box_coords(self.blk_list)
                     break
 
     def redo_image(self):
@@ -466,6 +467,7 @@ class ComicTranslate(ComicTranslateUI):
                     self.current_history_index[file_path] = current_index
                     self.image_data[file_path] = cv2_img
                     self.image_viewer.display_cv2_image(cv2_img)
+                    self.pipeline.load_box_coords(self.blk_list)
                     break
 
     def update_blk_list(self):
@@ -563,6 +565,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def on_render_complete(self, rendered_image: np.ndarray):
         self.set_cv2_image(rendered_image)
+        self.pipeline.load_box_coords(self.blk_list)
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 
@@ -586,7 +589,7 @@ class ComicTranslate(ComicTranslateUI):
             format_translations(self.blk_list, trg_lng_cd, upper_case=upper)
 
             self.run_threaded(draw_text, self.on_render_complete, self.default_error_handler, 
-                              None, inpaint_image, self.blk_list, font_path, 40, colour=font_color)
+                              None, inpaint_image, self.blk_list, font_path, 40, colour=font_color, min_font_size=self.min_font_size_slider.value())
             
     def handle_rectangle_change(self, new_rect: QtCore.QRectF):
         # Find the corresponding TextBlock in blk_list
@@ -649,6 +652,7 @@ class ComicTranslate(ComicTranslateUI):
         # Save brush and eraser sizes
         settings.setValue("brush_size", self.brush_size_slider.value())
         settings.setValue("eraser_size", self.eraser_size_slider.value())
+        settings.setValue("min_font_size", self.min_font_size_slider.value())
         
         settings.endGroup()
 
@@ -681,9 +685,11 @@ class ComicTranslate(ComicTranslateUI):
         # Load brush and eraser sizes
         brush_size = settings.value("brush_size", 10)  # Default value is 10
         eraser_size = settings.value("eraser_size", 20)  # Default value is 20
+        min_font_size = settings.value("min_font_size", 10)  # Default value is 10
         self.brush_size_slider.setValue(int(brush_size))
         self.eraser_size_slider.setValue(int(eraser_size))
-        
+        self.min_font_size_slider.setValue(int(min_font_size))
+
         settings.endGroup()
 
         # Load window state

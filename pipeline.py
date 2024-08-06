@@ -19,8 +19,12 @@ from modules.utils.archives import make
 class ComicTranslatePipeline:
     def __init__(self, main_page):
         self.main_page = main_page
+        self.block_detector_cache = None
+        self.inpainter_cache = None
+        self.cached_inpainter_key = None
 
     def load_box_coords(self, blk_list: List[TextBlock]):
+        self.main_page.image_viewer.clear_rectangles()
         if self.main_page.image_viewer.hasPhoto():
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
@@ -31,11 +35,13 @@ class ComicTranslatePipeline:
 
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
-            device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
-            block_detector = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
-                                               'models/detection/comic-text-segmenter.pt', device)
+            if self.block_detector_cache is None:
+                device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+                self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
+                                                'models/detection/comic-text-segmenter.pt', device)
             image = self.main_page.image_viewer.get_cv2_image()
-            blk_list = block_detector.detect(image)
+            blk_list = self.block_detector_cache.detect(image)
+
             return blk_list, load_rects
 
     def on_blk_detect_complete(self, result): 
@@ -55,13 +61,15 @@ class ComicTranslatePipeline:
         mask = image_viewer.get_mask_for_inpainting()
         image = image_viewer.get_cv2_image()
 
-        device = 'cuda' if settings_page.is_gpu_enabled() else 'cpu'
-        inpainter_key = settings_page.get_tool_selection('inpainter')
-        InpainterClass = inpaint_map[inpainter_key]
-        config = get_config(settings_page)
-        inpainter = InpainterClass(device)
+        if self.inpainter_cache is None or self.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
+            device = 'cuda' if settings_page.is_gpu_enabled() else 'cpu'
+            inpainter_key = settings_page.get_tool_selection('inpainter')
+            InpainterClass = inpaint_map[inpainter_key]
+            self.inpainter_cache = InpainterClass(device)
+            self.cached_inpainter_key = inpainter_key
 
-        inpaint_input_img = inpainter(image, mask, config)
+        config = get_config(settings_page)
+        inpaint_input_img = self.inpainter_cache(image, mask, config)
         inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img) 
 
         return inpaint_input_img
@@ -69,7 +77,7 @@ class ComicTranslatePipeline:
     def inpaint_complete(self, result):
         inpainted, original_image = result
         self.main_page.set_cv2_image(inpainted)
-        get_best_render_area(self.main_page.blk_list, original_image, inpainted)
+        # get_best_render_area(self.main_page.blk_list, original_image, inpainted)
         self.load_box_coords(self.main_page.blk_list)
     
     def inpaint(self):
@@ -92,6 +100,8 @@ class ComicTranslatePipeline:
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer._rectangles:
             image = self.main_page.image_viewer.get_cv2_image()
             self.main_page.update_blk_list()
+            # Print block length
+            print("Block Length: ", len(self.main_page.blk_list))
             ocr = OCRProcessor(self.main_page, source_lang)
             ocr.process(image, self.main_page.blk_list)
 

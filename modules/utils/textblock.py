@@ -37,17 +37,17 @@ class TextBlock(object):
         self.source_lang = source_lang
         self.target_lang = target_lang
 
-    @cached_property
+    @property
     def xywh(self):
         x1, y1, x2, y2 = self.xyxy
         return np.array([x1, y1, x2-x1, y2-y1]).astype(np.int32)
 
-    @cached_property
+    @property
     def center(self) -> np.ndarray:
         xyxy = np.array(self.xyxy)
         return (xyxy[:2] + xyxy[2:]) / 2
     
-    @cached_property
+    @property
     def source_lang_direction(self):
         if self.source_lang == 'ja':
             return 'ver_rtl'
