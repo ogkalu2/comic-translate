@@ -37,6 +37,7 @@ class TextBlock(object):
         self.source_lang = source_lang
         self.target_lang = target_lang
 
+    @property
     def xywh(self):
         x1, y1, x2, y2 = self.xyxy
         return np.array([x1, y1, x2-x1, y2-y1]).astype(np.int32)
