@@ -345,7 +345,8 @@ class ComicTranslate(ComicTranslateUI):
         self.disable_hbutton_group()
         self.run_threaded(self.pipeline.detect_blocks, self.pipeline.on_blk_detect_complete, 
                           self.default_error_handler, self.on_manual_finished, load_rects)
-        
+        self.menu_highlight(0)
+
     def clear_text_edits(self):
         self.current_text_block = None
         self.current_text_block_item = None
@@ -366,6 +367,7 @@ class ComicTranslate(ComicTranslateUI):
         self.loading.setVisible(True)
         self.disable_hbutton_group()
         self.run_threaded(self.pipeline.OCR_image, None, self.default_error_handler, self.finish_ocr_translate)
+        self.menu_highlight(1)
 
     def translate_image(self):
         source_lang = self.s_combo.currentText()
@@ -375,6 +377,7 @@ class ComicTranslate(ComicTranslateUI):
         self.loading.setVisible(True)
         self.disable_hbutton_group()
         self.run_threaded(self.pipeline.translate_image, None, self.default_error_handler, self.finish_ocr_translate)
+        self.menu_highlight(2)
 
     def inpaint_and_set(self):
         if self.image_viewer.hasPhoto() and self.image_viewer.has_drawn_elements():
@@ -383,6 +386,7 @@ class ComicTranslate(ComicTranslateUI):
             self.disable_hbutton_group()
             self.run_threaded(self.pipeline.inpaint, self.pipeline.inpaint_complete, 
                               self.default_error_handler, self.on_manual_finished)
+        self.menu_highlight(4)
 
     def load_images_threaded(self, file_paths: List[str]):
         self.file_handler.file_paths = file_paths
@@ -437,6 +441,12 @@ class ComicTranslate(ComicTranslateUI):
         # Reset the image viewer's transformation
         self.image_viewer.resetTransform()
         self.image_viewer.fitInView()
+
+        for button in self.hbutton_group.get_button_group().buttons():
+            button.default()
+
+    def menu_highlight(self, button_index: int):
+        self.hbutton_group.get_button_group().buttons()[button_index].success()
 
     def update_image_cards(self):
         # Clear existing cards
@@ -549,7 +559,7 @@ class ComicTranslate(ComicTranslateUI):
                         self.image_viewer.draw_segmentation_lines(bboxes)
                 
                 self.enable_hbutton_group()
-
+                self.menu_highlight(3)
             else:
                 self.loading.setVisible(True)
                 self.disable_hbutton_group()
@@ -732,6 +742,7 @@ class ComicTranslate(ComicTranslateUI):
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
                               bold, italic, underline, max_font_size, min_font_size)
+            self.menu_highlight(5)
 
     def handle_rectangle_change(self, new_rect: QtCore.QRectF):
         # Find the corresponding TextBlock in blk_list
