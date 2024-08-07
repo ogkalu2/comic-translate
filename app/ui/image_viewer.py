@@ -81,7 +81,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
     def handlePanGesture(self, gesture):
         delta = gesture.delta()
-        new_pos = self._last_pan_pos + delta
+        # Supported signatures:
+        # PySide6.QtCore.QPoint.__add__(PySide6.QtCore.QPoint)
+        new_pos = self._last_pan_pos + delta.toPoint()
         
         self.horizontalScrollBar().setValue(
             self.horizontalScrollBar().value() - (new_pos.x() - self._last_pan_pos.x())

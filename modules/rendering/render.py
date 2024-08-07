@@ -23,7 +23,8 @@ def pil_to_cv2(pil_image: Image):
     
     return cv2_image
 
-def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_size, text: str, roi_width, roi_height, align: str, spacing):
+def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
+                  roi_width, roi_height, align: str, spacing, init_font_size: int, min_font_size: int = 10):
     """Break long text to multiple lines, and reduce point size
     until all text fits within a bounding box."""
     mutable_message = text
@@ -35,7 +36,7 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_
         (left, top, right, bottom) = ImageDraw.Draw(image).multiline_textbbox(xy=tbbox_top_left, text=txt, font=font, align=align, spacing=spacing)
         return (right-left, bottom-top)
 
-    while font_size > 1:
+    while font_size > min_font_size:
         font = font.font_variant(size=font_size)
         width, height = eval_metrics(mutable_message, font)
         if height > roi_height:
@@ -57,23 +58,44 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_
         else:
             break
 
+    if font_size <= min_font_size:
+        font_size = min_font_size
+        mutable_message = text
+        font = font.font_variant(size=font_size)
+
+        # Wrap text to fit within as much as possible
+        # Minimize cost function: (width - roi_width)^2 + (height - roi_height)^2
+        # This is a brute force approach, but it works well enough
+        min_cost = 1e9
+        min_text = text
+        for columns in range(1, len(text)):
+            wrapped_text = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True))
+            wrapped_width, wrapped_height = eval_metrics(wrapped_text, font)
+            cost = (wrapped_width - roi_width)**2 + (wrapped_height - roi_height)**2
+            if cost < min_cost:
+                min_cost = cost
+                min_text = wrapped_text
+
+        mutable_message = min_text
+
     return mutable_message, font_size
 
-def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, init_font_size, colour: str = "#000"):
+def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 40, min_font_size=10):
     image = cv2_to_pil(image)
     draw = ImageDraw.Draw(image)
 
     font = ImageFont.truetype(font_pth, size=init_font_size)
 
     for blk in blk_list:
-        x1, y1, width, height = blk.xywh()
+        x1, y1, width, height = blk.xywh
         tbbox_top_left = (x1, y1)
 
         translation = blk.translation
         if not translation or len(translation) == 1:
             continue
 
-        translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, init_font_size, translation, width, height, align=blk.alignment, spacing=blk.line_spacing)
+        translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height, 
+                                               align=blk.alignment, spacing=blk.line_spacing, init_font_size=init_font_size, min_font_size=min_font_size)
         font = font.font_variant(size=font_size)
 
         # Font Detection Workaround. Draws white color offset around text

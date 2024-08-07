@@ -22,6 +22,10 @@ from azure.core.credentials import AzureKeyCredential
 manga_ocr_path = 'models/ocr/manga-ocr-base'
         
 class OCRProcessor:
+    manga_ocr_cache = None
+    easyocr_cache = None
+    pororo_cache = None
+
     def __init__(self, main_page, source_lang: str):
         self.main_page = main_page
         self.settings = main_page.settings_page
@@ -180,13 +184,16 @@ class OCRProcessor:
             # Check if the coordinates are valid and the bounding box does not extend outside the image
             if x1 < x2 and y1 < y2:
                 if source_language == self.main_page.tr('Japanese'):
-                    get_models(manga_ocr_data)
-                    manga_ocr = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
-                    blk.text = manga_ocr(img[y1:y2, x1:x2])
+                    if self.manga_ocr_cache is None:
+                        get_models(manga_ocr_data)
+                        self.manga_ocr_cache = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
+                    blk.text = self.manga_ocr_cache(img[y1:y2, x1:x2])
 
                 elif source_language == self.main_page.tr('English'):
-                    reader = easyocr.Reader(['en'], gpu = gpu_state)
-                    result = reader.readtext(img[y1:y2, x1:x2], paragraph=True)
+                    if self.easyocr_cache is None:
+                        self.easyocr_cache = easyocr.Reader(['en'], gpu = gpu_state)
+
+                    result = self.easyocr_cache.readtext(img[y1:y2, x1:x2], paragraph=True)
                     texts = []
                     for r in result:
                         if r is None:
@@ -196,10 +203,12 @@ class OCRProcessor:
                     blk.text = text
                 
                 elif source_language == self.main_page.tr('Korean'):
-                    get_models(pororo_data)
-                    kor_ocr = PororoOcr()
-                    kor_ocr.run_ocr(img[y1:y2, x1:x2])
-                    result = kor_ocr.get_ocr_result()
+                    if self.pororo_cache is None:
+                        get_models(pororo_data)
+                        self.pororo_cache = PororoOcr()
+                    
+                    self.pororo_cache.run_ocr(img[y1:y2, x1:x2])
+                    result = self.pororo_cache.get_ocr_result()
                     descriptions = result['description']
                     all_descriptions = ' '.join(descriptions)
                     blk.text = all_descriptions     

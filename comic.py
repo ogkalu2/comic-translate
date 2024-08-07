@@ -415,7 +415,7 @@ class ComicTranslate(ComicTranslateUI):
             if self.blk_list:
                 for blk in self.blk_list:
                     segm_pts = blk.segm_pts
-                    if segm_pts.size > 0:
+                    if segm_pts is not None and segm_pts.size > 0:
                         self.image_viewer.draw_segmentation_lines(segm_pts)
                 
                 self.enable_hbutton_group()
@@ -591,9 +591,11 @@ class ComicTranslate(ComicTranslateUI):
             target_lang_en = self.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
             format_translations(self.blk_list, trg_lng_cd, upper_case=upper)
+            min_font_size = self.settings_page.get_min_font_size() 
+            max_font_size = self.settings_page.get_max_font_size()
 
             self.run_threaded(draw_text, self.on_render_complete, self.default_error_handler, 
-                              None, inpaint_image, self.blk_list, font_path, 40, colour=font_color)
+                              None, inpaint_image, self.blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size)
             
     def handle_rectangle_change(self, new_rect: QtCore.QRectF):
         # Find the corresponding TextBlock in blk_list
@@ -656,6 +658,8 @@ class ComicTranslate(ComicTranslateUI):
         # Save brush and eraser sizes
         settings.setValue("brush_size", self.brush_size_slider.value())
         settings.setValue("eraser_size", self.eraser_size_slider.value())
+        settings.setValue("min_font_size", self.settings_page.get_min_font_size())
+        settings.setValue("max_font_size", self.settings_page.get_max_font_size())
         
         settings.endGroup()
 
@@ -688,9 +692,13 @@ class ComicTranslate(ComicTranslateUI):
         # Load brush and eraser sizes
         brush_size = settings.value("brush_size", 10)  # Default value is 10
         eraser_size = settings.value("eraser_size", 20)  # Default value is 20
+        min_font_size = settings.value("min_font_size", 10)  # Default value is 10
+        max_font_size = settings.value("max_font_size", 40) # Default value is 40
         self.brush_size_slider.setValue(int(brush_size))
         self.eraser_size_slider.setValue(int(eraser_size))
-        
+        self.settings_page.ui.min_font_spinbox.setValue(int(min_font_size))
+        self.settings_page.ui.max_font_spinbox.setValue(int(max_font_size))
+
         settings.endGroup()
 
         # Load window state

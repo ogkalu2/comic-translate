@@ -301,5 +301,11 @@ class SettingsPage(QtWidgets.QWidget):
         msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
         msg_box.exec()
 
+    def get_min_font_size(self):
+        return int(self.ui.min_font_spinbox.value())
+    
+    def get_max_font_size(self):
+        return int(self.ui.max_font_spinbox.value())
+
 
 

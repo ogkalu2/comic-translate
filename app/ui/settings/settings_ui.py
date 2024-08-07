@@ -460,6 +460,29 @@ class SettingsPageUI(QtWidgets.QWidget):
         font_layout = QtWidgets.QVBoxLayout()
         combo_layout = QtWidgets.QHBoxLayout()
 
+        min_font_layout = QtWidgets.QHBoxLayout()
+        max_font_layout = QtWidgets.QHBoxLayout()
+        min_font_label = MLabel(self.tr("Minimum Font Size:"))
+        max_font_label = MLabel(self.tr("Maximum Font Size:"))
+
+        self.min_font_spinbox = MSpinBox().small()
+        self.min_font_spinbox.setFixedWidth(60)
+        self.min_font_spinbox.setMaximum(100)
+        self.min_font_spinbox.setValue(10)
+
+        self.max_font_spinbox = MSpinBox().small()
+        self.max_font_spinbox.setFixedWidth(60)
+        self.max_font_spinbox.setMaximum(100)
+        self.max_font_spinbox.setValue(40)
+
+        min_font_layout.addWidget(min_font_label)
+        min_font_layout.addWidget(self.min_font_spinbox)
+        min_font_layout.addStretch()
+
+        max_font_layout.addWidget(max_font_label)
+        max_font_layout.addWidget(self.max_font_spinbox)
+        max_font_layout.addStretch()
+
         font_label = MLabel(self.tr("Font")).h4()
         self.font_combo = MComboBox().small()
         font_folder_path = os.path.join(os.getcwd(), "fonts")
@@ -477,6 +500,8 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         font_layout.addWidget(font_label)
         font_layout.addLayout(combo_layout)
+        font_layout.addLayout(min_font_layout)
+        font_layout.addLayout(max_font_layout)
 
         text_rendering_layout.addSpacing(10)
         text_rendering_layout.addLayout(font_layout)
