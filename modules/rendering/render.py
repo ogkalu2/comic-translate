@@ -23,7 +23,8 @@ def pil_to_cv2(pil_image: Image):
     
     return cv2_image
 
-def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, init_font_size, text: str, roi_width, roi_height, align: str, spacing, min_font_size=10):
+def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
+                  roi_width, roi_height, align: str, spacing, init_font_size: int, min_font_size: int = 10):
     """Break long text to multiple lines, and reduce point size
     until all text fits within a bounding box."""
     mutable_message = text
@@ -93,7 +94,8 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
         if not translation or len(translation) == 1:
             continue
 
-        translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, init_font_size, translation, width, height, align=blk.alignment, spacing=blk.line_spacing, min_font_size=min_font_size)
+        translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height, 
+                                               align=blk.alignment, spacing=blk.line_spacing, init_font_size=init_font_size, min_font_size=min_font_size)
         font = font.font_variant(size=font_size)
 
         # Font Detection Workaround. Draws white color offset around text
