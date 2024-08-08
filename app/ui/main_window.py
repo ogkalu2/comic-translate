@@ -275,6 +275,23 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         t_combo_text_layout.addWidget(self.t_text_edit)
         input_layout.addLayout(t_combo_text_layout)
 
+        self.import_translations_button = MClickBrowserFileToolButton(multiple=False)
+        self.import_translations_button.set_dayu_svg("folder_fill.svg")
+        self.import_translations_button.set_dayu_filters([".txt"])
+        self.import_translations_button.setToolTip(self.tr("Import text file with translations"))
+        self.import_translations_button.sig_file_changed.connect(self.import_texts)
+
+        blocks_layout = QtWidgets.QHBoxLayout()
+        self.blocks_checker_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=False)
+        blocks_checker_buttons = [
+            {"text": self.tr("Previous"), "svg": "left_fill.svg", "checkable": False, "tooltip": self.tr("Previous block"), "clicked": self.select_prev_text},
+            {"text": self.tr("Next"), "svg": "right_fill.svg", "checkable": False, "tooltip": self.tr("Next block"), "clicked": self.select_next_text},
+            {"text": self.tr("Export"), "svg": "save_fill.svg", "checkable": False, "tooltip": self.tr("Export texts"), "clicked": self.export_texts},
+            {"text": self.tr("Import"), "svg": "folder_fill.svg", "checkable": False, "tooltip": self.tr("Import texts"), "clicked": self.import_button},
+        ]
+        self.blocks_checker_group.set_button_list(blocks_checker_buttons)
+        blocks_layout.addWidget(self.blocks_checker_group)
+
         # Tools Layout
         tools_layout = QtWidgets.QVBoxLayout()
 
@@ -398,6 +415,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_scroll.setMinimumHeight(300)
 
         right_layout.addLayout(input_layout)
+        right_layout.addLayout(blocks_layout)
         right_layout.addWidget(tools_scroll)
         right_layout.addStretch()
 
