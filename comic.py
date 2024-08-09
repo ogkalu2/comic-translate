@@ -585,6 +585,7 @@ class ComicTranslate(ComicTranslateUI):
             font = text_rendering_settings['font']
             font_color = text_rendering_settings['color']
             upper = text_rendering_settings['upper_case']
+            outline = text_rendering_settings['outline']
             font_path = font_path = f'fonts/{font}'
             set_alignment(self.blk_list, self.settings_page)
 
@@ -596,7 +597,7 @@ class ComicTranslate(ComicTranslateUI):
             max_font_size = self.settings_page.get_max_font_size()
 
             self.run_threaded(draw_text, self.on_render_complete, self.default_error_handler, 
-                              None, inpaint_image, self.blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size)
+                              None, inpaint_image, self.blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size, outline=outline)
             
     def handle_rectangle_change(self, new_rect: QtCore.QRectF):
         # Find the corresponding TextBlock in blk_list
