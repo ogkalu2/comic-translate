@@ -80,7 +80,7 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str,
 
     return mutable_message, font_size
 
-def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 40, min_font_size=10):
+def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 40, min_font_size=10, outline: bool = True):
     image = cv2_to_pil(image)
     draw = ImageDraw.Draw(image)
 
@@ -99,9 +99,10 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
         font = font.font_variant(size=font_size)
 
         # Font Detection Workaround. Draws white color offset around text
-        offsets = [(dx, dy) for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2) if dx != 0 or dy != 0]
-        for dx, dy in offsets:
-            draw.multiline_text((tbbox_top_left[0] + dx, tbbox_top_left[1] + dy), translation, font=font, fill="#FFF", align=blk.alignment, spacing=1)
+        if outline:
+            offsets = [(dx, dy) for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2) if dx != 0 or dy != 0]
+            for dx, dy in offsets:
+                draw.multiline_text((tbbox_top_left[0] + dx, tbbox_top_left[1] + dy), translation, font=font, fill="#FFF", align=blk.alignment, spacing=1)
         draw.multiline_text(tbbox_top_left, translation, colour, font, align=blk.alignment, spacing=1)
         
     image = pil_to_cv2(image)
