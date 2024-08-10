@@ -289,6 +289,7 @@ class ComicTranslatePipeline:
             # Text Rendering
             text_rendering_settings = settings_page.get_text_rendering_settings()
             upper_case = text_rendering_settings['upper_case']
+            outline = text_rendering_settings['outline']
             format_translations(blk_list, trg_lng_cd, upper_case=upper_case)
             get_best_render_area(blk_list, image, inpaint_input_img)
 
@@ -300,7 +301,7 @@ class ComicTranslatePipeline:
             max_font_size = self.main_page.settings_page.get_max_font_size()
             min_font_size = self.main_page.settings_page.get_min_font_size()
 
-            rendered_image = draw_text(inpaint_input_img, blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size)
+            rendered_image = draw_text(inpaint_input_img, blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size, outline=outline)
 
             self.main_page.progress_update.emit(index, total_images, 9, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:

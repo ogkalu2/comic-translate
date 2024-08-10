@@ -54,7 +54,8 @@ class SettingsPage(QtWidgets.QWidget):
             'min_font_size': self.get_min_font_size(),
             'max_font_size': self.get_max_font_size(),
             'color': self.ui.text_rendering_widgets['color_button'].property('selected_color'),
-            'upper_case': self.ui.text_rendering_widgets['upper_case'].isChecked()
+            'upper_case': self.ui.text_rendering_widgets['upper_case'].isChecked(),
+            'outline': self.ui.text_rendering_widgets['outline'].isChecked(),
         }
 
     def get_llm_settings(self):
@@ -260,6 +261,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.text_rendering_widgets['color_button'].setStyleSheet(f"background-color: {color}; border: none; border-radius: 5px;")
         self.ui.text_rendering_widgets['color_button'].setProperty('selected_color', color)
         self.ui.text_rendering_widgets['upper_case'].setChecked(settings.value('upper_case', False, type=bool))
+        self.ui.text_rendering_widgets['outline'].setChecked(settings.value('outline', True, type=bool))
         settings.endGroup()
 
         # Load LLM settings
