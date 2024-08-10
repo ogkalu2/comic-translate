@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 import largestinteriorrectangle as lir
-from .utils.textblock import TextBlock
+from .utils.textblock import TextBlock, adjust_text_line_coordinates
 import numpy as np 
 import cv2
 
@@ -41,7 +41,8 @@ class TextBlockDetector:
         text_blocks_bboxes = []
         # Process each text bounding box
         for bbox in text_bounding_boxes:
-            x1, y1, x2, y2 = bbox
+
+            x1, y1, x2, y2 = adjust_text_line_coordinates(bbox, 0, 10, self.image)
             
             # Crop the image to the text bounding box
             crop = self.image[y1:y2, x1:x2]

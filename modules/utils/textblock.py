@@ -193,8 +193,10 @@ def visualize_speech_bubbles(canvas, blk_list: List[TextBlock]):
 
     return canvas
 
-def adjust_text_line_coordinates(coords, width_expansion_percentage: int, height_expansion_percentage: int):
+def adjust_text_line_coordinates(coords, width_expansion_percentage: int, height_expansion_percentage: int, img: np.ndarray):
     top_left_x, top_left_y, bottom_right_x, bottom_right_y = coords
+    im_h, im_w, _ = img.shape
+    
     # Calculate width, height, and respective expansion offsets
     width = bottom_right_x - top_left_x
     height = bottom_right_y - top_left_y
@@ -202,27 +204,15 @@ def adjust_text_line_coordinates(coords, width_expansion_percentage: int, height
     height_expansion_offset = int(((height * height_expansion_percentage) / 100) / 2)
 
     # Define the rectangle origin points (bottom left, top right) with expansion/contraction
-    pt1_expanded = (
-        top_left_x - width_expansion_offset,
-        top_left_y - height_expansion_offset,
-    )
-    pt2_expanded = (
-        bottom_right_x + width_expansion_offset,
-        bottom_right_y + height_expansion_offset,
-    )
+    new_x1 = max(top_left_x - width_expansion_offset, 0)
+    new_y1 = max(top_left_y - height_expansion_offset, 0)
+    new_x2 = min(bottom_right_x + width_expansion_offset, im_w)
+    new_y2 = min(bottom_right_y + height_expansion_offset, im_h)
 
-    return pt1_expanded[0], pt1_expanded[1], pt2_expanded[0], pt2_expanded[1]
+    return new_x1, new_y1, new_x2, new_y2
 
-def adjust_blks_size(blk_list: List[TextBlock], img_shape: Tuple[int, int, int], w_expan: int = 0, h_expan: int = 0):
-    im_h, im_w = img_shape[:2]
+def adjust_blks_size(blk_list: List[TextBlock], img: np.ndarray, w_expan: int = 0, h_expan: int = 0):
     for blk in blk_list:
         coords = blk.xyxy
-        expanded_coords = adjust_text_line_coordinates(coords, w_expan, h_expan)
-
-        # Ensuring that the box does not exceed image boundaries
-        new_x1 = max(expanded_coords[0], 0)
-        new_y1 = max(expanded_coords[1], 0)
-        new_x2 = min(expanded_coords[2], im_w)
-        new_y2 = min(expanded_coords[3], im_h)
-
-        blk.xyxy[:] = [new_x1, new_y1, new_x2, new_y2]
+        expanded_coords = adjust_text_line_coordinates(coords, w_expan, h_expan, img)
+        blk.xyxy[:] = expanded_coords

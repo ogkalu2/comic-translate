@@ -83,21 +83,6 @@ def lists_to_blk_list(blk_list: List[TextBlock], texts_bboxes: List, texts_strin
 
     return blk_list
 
-def ensure_within_bounds(coords, im_width, im_height, width_expansion_percentage: int, height_expansion_percentage: int):
-    x1, y1, x2, y2 = coords
-
-    width = x2 - x1
-    height = y2 - y1
-    width_expansion_offset = int((width * width_expansion_percentage) / 100)
-    height_expansion_offset = int((height * height_expansion_percentage) / 100)
-
-    x1 = max(x1 - width_expansion_offset, 0)
-    x2 = min(x2 + width_expansion_offset, im_width)
-    y1 = max(y1 - height_expansion_offset, 0)
-    y2 = min(y2 + height_expansion_offset, im_height)
-
-    return x1, y1, x2, y2
-
 def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: int = 5) -> np.ndarray:
     h, w, c = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
@@ -109,6 +94,8 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: i
             
             # Determine kernel size for dilation
             kernel_size = default_padding
+            if hasattr(blk, 'source_lang') and blk.source_lang not in ['ja', 'ko']:
+                kernel_size = 3
             if hasattr(blk, 'text_class') and blk.text_class == 'text_bubble':
                 # Calculate the minimal distance from the mask to the bounding box edges
                 min_distance_to_bbox = min(
@@ -129,7 +116,7 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: i
             kernel = np.ones((kernel_size, kernel_size), np.uint8)
             
             # Dilate the temporary mask
-            dilated_mask = cv2.dilate(temp_mask, kernel, iterations=3)
+            dilated_mask = cv2.dilate(temp_mask, kernel, iterations=4)
             
             # Add the dilated mask to the main mask
             mask = cv2.bitwise_or(mask, dilated_mask)

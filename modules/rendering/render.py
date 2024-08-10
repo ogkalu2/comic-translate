@@ -127,7 +127,7 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
 
             if blk.source_lang == 'ja':
                 blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
-                adjust_blks_size(blk_list, img.shape, -5, -5)
+                adjust_blks_size(blk_list, img, -5, -5)
             else:
                 tx1, ty1, tx2, ty2  = blk.xyxy
 

@@ -6,7 +6,7 @@ import requests
 from typing import List
 from ..utils.translator_utils import get_llm_client
 from ..utils.textblock import TextBlock, adjust_text_line_coordinates
-from ..utils.pipeline_utils import lists_to_blk_list, ensure_within_bounds
+from ..utils.pipeline_utils import lists_to_blk_list
 from ..utils.download import get_models, manga_ocr_data, pororo_data
 from ..ocr.manga_ocr.manga_ocr import MangaOcr
 from ..ocr.pororo.main import PororoOcr
@@ -156,13 +156,11 @@ class OCRProcessor:
         return blk_list
 
     def _ocr_gpt(self, img: np.ndarray, blk_list: List[TextBlock], client, expansion_percentage: int = 0):
-        im_h, im_w = img.shape[:2]
         for blk in blk_list:
             if blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             else:
-                x1, y1, x2, y2 = adjust_text_line_coordinates(blk.xyxy, expansion_percentage, expansion_percentage)
-                x1, y1, x2, y2 = ensure_within_bounds((x1, y1, x2, y2), im_w, im_h, expansion_percentage, expansion_percentage)
+                x1, y1, x2, y2 = adjust_text_line_coordinates(blk.xyxy, expansion_percentage, expansion_percentage, img)
 
             # Check if the coordinates are valid and the bounding box does not extend outside the image
             if x1 < x2 and y1 < y2:
@@ -176,13 +174,11 @@ class OCRProcessor:
     def _ocr_default(self, img: np.ndarray, blk_list: List[TextBlock], source_language: str, device: str, expansion_percentage: int = 5):
         gpu_state = False if device == 'cpu' else True
 
-        im_h, im_w = img.shape[:2]
         for blk in blk_list:
             if blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             else:
-                x1, y1, x2, y2 = adjust_text_line_coordinates(blk.xyxy, expansion_percentage, expansion_percentage)
-                x1, y1, x2, y2 = ensure_within_bounds((x1, y1, x2, y2), im_w, im_h, expansion_percentage, expansion_percentage)
+                x1, y1, x2, y2 = adjust_text_line_coordinates(blk.xyxy, expansion_percentage, expansion_percentage, img)
 
             # Check if the coordinates are valid and the bounding box does not extend outside the image
             if x1 < x2 and y1 < y2:
