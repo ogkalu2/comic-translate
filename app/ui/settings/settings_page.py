@@ -51,6 +51,8 @@ class SettingsPage(QtWidgets.QWidget):
         return {
             'alignment': self.ui.text_rendering_widgets['alignment'].currentText(),
             'font': self.ui.text_rendering_widgets['font'].currentText(),
+            'min_font_size': self.get_min_font_size(),
+            'max_font_size': self.get_max_font_size(),
             'color': self.ui.text_rendering_widgets['color_button'].property('selected_color'),
             'upper_case': self.ui.text_rendering_widgets['upper_case'].isChecked()
         }
@@ -235,7 +237,7 @@ class SettingsPage(QtWidgets.QWidget):
         translated_strategy = self.ui.reverse_mappings.get(strategy, strategy)
         self.ui.inpaint_strategy_combo.setCurrentText(translated_strategy)
         if strategy == 'Resize':
-            self.ui.resize_spinbox.setValue(settings.value('resize_limit', 640, type=int))
+            self.ui.resize_spinbox.setValue(settings.value('resize_limit', 960, type=int))
         elif strategy == 'Crop':
             self.ui.crop_margin_spinbox.setValue(settings.value('crop_margin', 512, type=int))
             self.ui.crop_trigger_spinbox.setValue(settings.value('crop_trigger_size', 512, type=int))
@@ -247,8 +249,14 @@ class SettingsPage(QtWidgets.QWidget):
         alignment = settings.value('alignment', 'Center')
         translated_alignment = self.ui.reverse_mappings.get(alignment, alignment)
         self.ui.text_rendering_widgets['alignment'].setCurrentText(translated_alignment)
+
         self.ui.text_rendering_widgets['font'].setCurrentText(settings.value('font', ''))
+        min_font_size = settings.value('min_font_size', 10)  # Default value is 10
+        max_font_size = settings.value('max_font_size', 40) # Default value is 40
+        self.ui.min_font_spinbox.setValue(int(min_font_size))
+        self.ui.max_font_spinbox.setValue(int(max_font_size))
         color = settings.value('color', '#000000')
+        
         self.ui.text_rendering_widgets['color_button'].setStyleSheet(f"background-color: {color}; border: none; border-radius: 5px;")
         self.ui.text_rendering_widgets['color_button'].setProperty('selected_color', color)
         self.ui.text_rendering_widgets['upper_case'].setChecked(settings.value('upper_case', False, type=bool))

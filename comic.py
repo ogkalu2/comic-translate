@@ -228,8 +228,9 @@ class ComicTranslate(ComicTranslateUI):
         self.t_text_edit.clear()
 
     def finish_ocr_translate(self):
-        rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
-        self.image_viewer.select_rectangle(rect)
+        if self.blk_list:
+            rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
+            self.image_viewer.select_rectangle(rect)
         self.set_tool('box')
         self.on_manual_finished()
 
@@ -402,9 +403,9 @@ class ComicTranslate(ComicTranslateUI):
         blk_list, load_rects = result
         self.blk_list = blk_list
         for blk in self.blk_list:
-            segm_pts = blk.segm_pts
-            if segm_pts.size > 0:
-                self.image_viewer.draw_segmentation_lines(segm_pts)
+            bboxes = blk.inpaint_bboxes
+            if bboxes is not None or len(bboxes) > 0:
+                self.image_viewer.draw_segmentation_lines(bboxes)
 
     def load_segmentation_points(self):
         if self.image_viewer.hasPhoto():
@@ -414,9 +415,9 @@ class ComicTranslate(ComicTranslateUI):
             self.image_viewer.clear_rectangles()
             if self.blk_list:
                 for blk in self.blk_list:
-                    segm_pts = blk.segm_pts
-                    if segm_pts is not None and segm_pts.size > 0:
-                        self.image_viewer.draw_segmentation_lines(segm_pts)
+                    bboxes = blk.inpaint_bboxes
+                    if bboxes is not None or len(bboxes) > 0:
+                        self.image_viewer.draw_segmentation_lines(bboxes)
                 
                 self.enable_hbutton_group()
 
@@ -658,9 +659,7 @@ class ComicTranslate(ComicTranslateUI):
         # Save brush and eraser sizes
         settings.setValue("brush_size", self.brush_size_slider.value())
         settings.setValue("eraser_size", self.eraser_size_slider.value())
-        settings.setValue("min_font_size", self.settings_page.get_min_font_size())
-        settings.setValue("max_font_size", self.settings_page.get_max_font_size())
-        
+
         settings.endGroup()
 
         # Save window state
@@ -692,12 +691,8 @@ class ComicTranslate(ComicTranslateUI):
         # Load brush and eraser sizes
         brush_size = settings.value("brush_size", 10)  # Default value is 10
         eraser_size = settings.value("eraser_size", 20)  # Default value is 20
-        min_font_size = settings.value("min_font_size", 10)  # Default value is 10
-        max_font_size = settings.value("max_font_size", 40) # Default value is 40
         self.brush_size_slider.setValue(int(brush_size))
         self.eraser_size_slider.setValue(int(eraser_size))
-        self.settings_page.ui.min_font_spinbox.setValue(int(min_font_size))
-        self.settings_page.ui.max_font_spinbox.setValue(int(max_font_size))
 
         settings.endGroup()
 
