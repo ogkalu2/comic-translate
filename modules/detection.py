@@ -36,7 +36,7 @@ class TextBlockDetector:
         seg_text_bounding_boxes = np.array(text_seg_results.boxes.xyxy.cpu(), dtype="int")
         detect_text_bounding_boxes = np.array(text_detect_results.boxes.xyxy.cpu(), dtype="int")
 
-        text_bounding_boxes = merge_bounding_boxes(seg_text_bounding_boxes, detect_text_bounding_boxes, 0.1, 0.6)
+        text_bounding_boxes = merge_bounding_boxes(seg_text_bounding_boxes, detect_text_bounding_boxes)
 
         text_blocks_bboxes = []
         # Process each text bounding box
@@ -150,16 +150,18 @@ def merge_boxes(box1, box2):
 
 import numpy as np
 
-def merge_bounding_boxes(seg_boxes, detect_boxes, merge_threshold, duplicate_threshold):
+def merge_bounding_boxes(seg_boxes, detect_boxes):
     merged_boxes = []
 
     # First step: Merge seg_boxes with detect_boxes
+    # When the text has no bubbles, The Segmentatio Model tends to predict large boxes that aim to cover most of the text,
+    # but the detection model tends to predict each line as a separate box
     for seg_box in seg_boxes:
         running_box = seg_box
         for detect_box in detect_boxes:
             if does_rectangle_fit(running_box, detect_box):
                 continue  # Detect box fits entirely within the running box
-            if do_rectangles_overlap(running_box, detect_box, merge_threshold):
+            if do_rectangles_overlap(running_box, detect_box, 0.02):
                 # Merge running_box with the detect_box and update the running_box
                 running_box = merge_boxes(running_box, detect_box)
         
@@ -169,7 +171,7 @@ def merge_bounding_boxes(seg_boxes, detect_boxes, merge_threshold, duplicate_thr
     for detect_box in detect_boxes:
         add_box = True
         for merged_box in merged_boxes:
-            if do_rectangles_overlap(detect_box, merged_box, merge_threshold) or does_rectangle_fit(merged_box, detect_box):
+            if do_rectangles_overlap(detect_box, merged_box, 0.1) or does_rectangle_fit(merged_box, detect_box):
                 add_box = False
                 break
         if add_box:
@@ -182,7 +184,7 @@ def merge_bounding_boxes(seg_boxes, detect_boxes, merge_threshold, duplicate_thr
         for j, other_box in enumerate(merged_boxes):
             if i == j:
                 continue  # Skip comparing the box with itself
-            if do_rectangles_overlap(running_box, other_box, merge_threshold) and not does_rectangle_fit(running_box, other_box):
+            if do_rectangles_overlap(running_box, other_box, 0.1) and not does_rectangle_fit(running_box, other_box):
                 # Re-merge running_box with the overlapping other_box
                 running_box = merge_boxes(running_box, other_box)
         
@@ -194,7 +196,7 @@ def merge_bounding_boxes(seg_boxes, detect_boxes, merge_threshold, duplicate_thr
     for box in final_boxes:
         duplicate = False
         for seen_box in seen_boxes:
-            if (np.array_equal(box, seen_box) or do_rectangles_overlap(box, seen_box, duplicate_threshold)):
+            if (np.array_equal(box, seen_box) or do_rectangles_overlap(box, seen_box, 0.6)):
                 duplicate = True
                 break
         if not duplicate:
