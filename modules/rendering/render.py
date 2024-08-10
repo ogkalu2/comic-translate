@@ -86,6 +86,10 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
 
     font = ImageFont.truetype(font_pth, size=init_font_size)
 
+    default_init_font_size = init_font_size
+    default_min_font_size = min_font_size
+    default_colour = colour
+
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
         tbbox_top_left = (x1, y1)
@@ -94,7 +98,20 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
         if not translation or len(translation) == 1:
             continue
 
-        translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height, 
+        if blk.min_font_size > 0:
+           min_font_size = blk.min_font_size
+        else:
+           min_font_size = default_min_font_size
+        if blk.max_font_size > 0:
+           init_font_size = blk.max_font_size
+        else:
+           init_font_size = default_init_font_size
+        if blk.font_color:
+           colour = blk.font_color
+        else:
+           colour = default_colour
+
+        translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height,
                                                align=blk.alignment, spacing=blk.line_spacing, init_font_size=init_font_size, min_font_size=min_font_size)
         font = font.font_variant(size=font_size)
 
