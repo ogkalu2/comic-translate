@@ -26,7 +26,10 @@ class OCRProcessor:
     easyocr_cache = None
     pororo_cache = None
 
-    def __init__(self, main_page, source_lang: str):
+    def __init__(self):
+        pass
+
+    def initialize(self, main_page, source_lang: str):
         self.main_page = main_page
         self.settings = main_page.settings_page
         self.source_lang = source_lang

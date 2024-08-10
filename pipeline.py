@@ -22,6 +22,7 @@ class ComicTranslatePipeline:
         self.block_detector_cache = None
         self.inpainter_cache = None
         self.cached_inpainter_key = None
+        self.ocr = OCRProcessor()
 
     def load_box_coords(self, blk_list: List[TextBlock]):
         self.main_page.image_viewer.clear_rectangles()
@@ -42,7 +43,8 @@ class ComicTranslatePipeline:
             if self.block_detector_cache is None:
                 device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
                 self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
-                                                'models/detection/comic-text-segmenter.pt', device)
+                                                'models/detection/comic-text-segmenter.pt','models/detection/manga-text-detector.pt',
+                                                 device)
             image = self.main_page.image_viewer.get_cv2_image()
             blk_list = self.block_detector_cache.detect(image)
 
@@ -106,8 +108,8 @@ class ComicTranslatePipeline:
             self.main_page.update_blk_list()
             # Print block length
             print("Block Length: ", len(self.main_page.blk_list))
-            ocr = OCRProcessor(self.main_page, source_lang)
-            ocr.process(image, self.main_page.blk_list)
+            self.ocr.initialize(self.main_page, source_lang)
+            self.ocr.process(image, self.main_page.blk_list)
 
     def translate_image(self):
         source_lang = self.main_page.s_combo.currentText()
@@ -167,7 +169,7 @@ class ComicTranslatePipeline:
                         directory = os.path.dirname(archive_path)
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
 
-            image = self.main_page.image_data[image_path]
+            image = cv2.imread(image_path)
 
             # Text Block Detection
             self.main_page.progress_update.emit(index, total_images, 1, 10, False)
@@ -175,12 +177,13 @@ class ComicTranslatePipeline:
                 self.main_page.current_worker = None
                 break
 
-            bdetect_device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
-            block_detector = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
-                                                        'models/detection/comic-text-segmenter.pt', bdetect_device)
+            if self.block_detector_cache is None:
+                bdetect_device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+                self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
+                                                            'models/detection/comic-text-segmenter.pt', 'models/detection/manga-text-detector.pt', 
+                                                            bdetect_device)
             
-            blk_list = self.main_page.image_states[image_path]['blk_list'] 
-            blk_list = block_detector.detect(image)
+            blk_list = self.block_detector_cache.detect(image)
 
             self.main_page.progress_update.emit(index, total_images, 2, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
@@ -188,9 +191,9 @@ class ComicTranslatePipeline:
                 break
 
             if blk_list:
-                ocr = OCRProcessor(self.main_page, source_lang)
+                self.ocr.initialize(self.main_page, source_lang)
                 try:
-                    ocr.process(image, blk_list)
+                    self.ocr.process(image, blk_list)
                 except Exception as e:
                     error_message = str(e)
                     print(error_message)
@@ -212,12 +215,14 @@ class ComicTranslatePipeline:
             # Clean Image of text
             export_settings = settings_page.get_export_settings()
 
-            device = 'cuda' if settings_page.is_gpu_enabled() else 'cpu'
-            inpainter_key = settings_page.get_tool_selection('inpainter')
-            InpainterClass = inpaint_map[inpainter_key]
+            if self.inpainter_cache is None or self.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
+                device = 'cuda' if settings_page.is_gpu_enabled() else 'cpu'
+                inpainter_key = settings_page.get_tool_selection('inpainter')
+                InpainterClass = inpaint_map[inpainter_key]
+                self.inpainter_cache = InpainterClass(device)
+                self.cached_inpainter_key = inpainter_key
 
             config = get_config(settings_page)
-            inpainter = InpainterClass(device)
             mask = generate_mask(image, blk_list)
 
             self.main_page.progress_update.emit(index, total_images, 4, 10, False)
@@ -225,8 +230,9 @@ class ComicTranslatePipeline:
                 self.main_page.current_worker = None
                 break
 
-            inpaint_input_img = inpainter(image, mask, config)
+            inpaint_input_img = self.inpainter_cache(image, mask, config)
             inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img) 
+            inpaint_input_img = cv2.cvtColor(inpaint_input_img, cv2.COLOR_BGR2RGB)
 
             if export_settings['export_inpainted_image']:
                 path = os.path.join(directory, f"comic_translate_{timestamp}", "cleaned_images", archive_bname)
