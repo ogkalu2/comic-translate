@@ -2,6 +2,15 @@ import os, sys, hashlib
 from torch.hub import download_url_to_file
 from loguru import logger
 
+# Get the directory of the current file
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Navigate up two levels to reach the project root
+project_root = os.path.dirname(os.path.dirname(current_file_dir))
+
+# Define the base directory for all models
+models_base_dir = os.path.join(project_root, 'models')
+
 def calculate_sha256_checksum(file_path):
     sha256_hash = hashlib.sha256()
     with open(file_path, "rb") as f:
@@ -69,52 +78,55 @@ manga_ocr_data = {
         'd775ad1deac162dc56b84e9b8638f95ed8a1f263d0f56f4f40834e26e205e266', 
         '344fbb6b8bf18c57839e924e2c9365434697e0227fac00b88bb4899b78aa594d'
     ],
-    'save_dir': 'models/ocr/manga-ocr-base'
+    'save_dir': os.path.join(models_base_dir, 'ocr', 'manga-ocr-base')
 }
 
 comic_text_segmenter_data = {
     'url': 'https://huggingface.co/ogkalu/comic-text-segmenter-yolov8m/resolve/main/',
-    'files': [
-        'comic-text-segmenter.pt'],
+    'files': ['comic-text-segmenter.pt'],
     'sha256_pre_calculated': [
         'f2dded0d2f5aaa25eed49f1c34a4720f1c1cd40da8bc3138fde1abb202de625e', 
-        ],
-    'save_dir': 'models/detection'
+    ],
+    'save_dir': os.path.join(models_base_dir, 'detection')
 }
 
 inpaint_lama_finetuned_data = {
     'url': 'https://huggingface.co/dreMaz/AnimeMangaInpainting/resolve/main/',
-    'files': [
-        'lama_large_512px.ckpt'
-    ],
+    'files': ['lama_large_512px.ckpt'],
     'sha256_pre_calculated': [
         "11d30fbb3000fb2eceae318b75d9ced9229d99ae990a7f8b3ac35c8d31f2c935"
     ],
-    'save_dir': 'models/inpainting'
+    'save_dir': os.path.join(models_base_dir, 'inpainting')
 }
 
 comic_bubble_detector_data = {
     'url': 'https://huggingface.co/ogkalu/comic-speech-bubble-detector-yolov8m/resolve/main/',
-    'files': [
-        'comic-speech-bubble-detector.pt'
-    ],
+    'files': ['comic-speech-bubble-detector.pt'],
     'sha256_pre_calculated': [
         '10bc9f702698148e079fb4462a6b910fcd69753e04838b54087ef91d5633097b'
     ],
-    'save_dir': 'models/detection'  
+    'save_dir': os.path.join(models_base_dir, 'detection')
 }
 
 pororo_data = {
     'url': 'https://twg.kakaocdn.net/pororo/ko/models/misc/',
-    'files': [
-        'craft.pt', 'brainocr.pt', 'ocr-opt.txt'
-    ],
+    'files': ['craft.pt', 'brainocr.pt', 'ocr-opt.txt'],
     'sha256_pre_calculated': [
         '4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17',
         '125820ba8ae4fa5d9fd8b8a2d4d4a7afe96a70c32b1aa01d4129001a6f61baec',
         'dd471474e91d78e54b179333439fea58158ad1a605df010ea0936dcf4387a8c2'
     ],
-    'save_dir': 'models/ocr/pororo'  
+    'save_dir': os.path.join(models_base_dir, 'ocr', 'pororo')
 }
 
-mandatory_models = [comic_text_segmenter_data, inpaint_lama_finetuned_data, comic_bubble_detector_data]
+manga_text_detector_data = {
+    'url': 'https://huggingface.co/ogkalu/manga-text-detector-yolov8s/resolve/main/',
+    'files': ['manga-text-detector.pt'],
+    'sha256_pre_calculated': [
+        '297447cc99c47f15ffced11bebebd88034e56f0fac6c96d9a27cd725314909a1'
+    ],
+    'save_dir': os.path.join(models_base_dir, 'detection')
+}
+
+mandatory_models = [comic_text_segmenter_data, inpaint_lama_finetuned_data,
+                    comic_bubble_detector_data, manga_text_detector_data]
