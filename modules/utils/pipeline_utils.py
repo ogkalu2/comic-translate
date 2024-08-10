@@ -101,16 +101,14 @@ def ensure_within_bounds(coords, im_width, im_height, width_expansion_percentage
 def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: int = 5) -> np.ndarray:
     h, w, c = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
-
+    
     for blk in blk_list:
         bboxes = blk.inpaint_bboxes
         for bbox in bboxes:
             x1, y1, x2, y2 = bbox
-
-            # Determine padding
-            padding = default_padding
-            if hasattr(blk, 'source_lang') and blk.source_lang == 'en':
-                padding = 2
+            
+            # Determine kernel size for dilation
+            kernel_size = default_padding
             if hasattr(blk, 'text_class') and blk.text_class == 'text_bubble':
                 # Calculate the minimal distance from the mask to the bounding box edges
                 min_distance_to_bbox = min(
@@ -119,21 +117,23 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: i
                     y1 - blk.bubble_xyxy[1],  # top side
                     blk.bubble_xyxy[3] - y2   # bottom side
                 )
-                # Adjust padding if necessary
-                if padding >= min_distance_to_bbox:
-                    padding = max(1, int(min_distance_to_bbox - (0.2 * min_distance_to_bbox)))
-
-            # Apply padding
-            x1 = max(0, x1 - padding)
-            y1 = max(0, y1 - padding)
-            x2 = min(w, x2 + padding)
-            y2 = min(h, y2 + padding)
-
-            # Create a polygon from the padded bounding box coordinates
-            polygon = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], np.int32)
-            polygon = polygon.reshape((-1, 1, 2))
-            cv2.fillPoly(mask, [polygon], 255)
-
+                # Adjust kernel size if necessary
+                if kernel_size >= min_distance_to_bbox:
+                    kernel_size = max(1, int(min_distance_to_bbox - (0.2 * min_distance_to_bbox)))
+            
+            # Create a temporary mask for this bbox
+            temp_mask = np.zeros((h, w), dtype=np.uint8)
+            cv2.rectangle(temp_mask, (x1, y1), (x2, y2), 255, -1)
+            
+            # Create kernel for dilation
+            kernel = np.ones((kernel_size, kernel_size), np.uint8)
+            
+            # Dilate the temporary mask
+            dilated_mask = cv2.dilate(temp_mask, kernel, iterations=4)
+            
+            # Add the dilated mask to the main mask
+            mask = cv2.bitwise_or(mask, dilated_mask)
+    
     return mask
 
 def validate_ocr(main_page, source_lang):
