@@ -1,7 +1,6 @@
 from typing import List, Tuple
 import numpy as np
 import cv2
-from functools import cached_property
 
 class TextBlock(object):
     """
@@ -9,10 +8,11 @@ class TextBlock(object):
     """
     def __init__(self, 
                  text_bbox: np.ndarray,
-                 text_segm_points: np.ndarray = None, 
                  bubble_bbox: np.ndarray = None,
                  text_class: str = "",
+                 inpaint_bboxes: List = None,
                  lines: List = None,
+                 text_segm_points: np.ndarray = None, 
                  texts: List[str] = None,
                  translation: str = "",
                  line_spacing = 1,
@@ -26,7 +26,8 @@ class TextBlock(object):
         self.bubble_xyxy = bubble_bbox
         self.text_class = text_class
  
-        self.lines = np.array(lines, dtype=np.int32) if lines else []
+        self.lines = lines
+        self.inpaint_bboxes = inpaint_bboxes
         self.texts = texts if texts is not None else []
         self.text = ' '.join(self.texts) 
         self.translation = translation
@@ -76,31 +77,57 @@ def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlo
             sorted_blk_list.append(blk)
     return sorted_blk_list
 
-def sort_textblock_rectangles(coords_text_list: List[Tuple[Tuple[int, int, int, int], str]], direction: str = 'ver_rtl', threshold: int = 5):
+def sort_textblock_rectangles(coords_text_list: List[Tuple[Tuple[int, int, int, int], str]], direction: str = 'ver_rtl', threshold: int = 10):
     
-    def in_same_line(coor_a, coor_b):
-        # For horizontal text, check if word boxes are in the same horizontal band
+    def in_same_line(bbox_a, bbox_b, direction, threshold):
+        """
+        Checks if two bounding boxes are on the same line based on their relative positions.
+
+        Args:
+            bbox_a (tuple): Bounding box coordinates for the first object (x1, y1, x2, y2).
+            bbox_b (tuple): Bounding box coordinates for the second object (x1, y1, x2, y2).
+            direction (str): The predominant text direction, either 'horizontal' or 'vertical'.
+            threshold (float): Maximum distance between the centers of the bounding boxes to be considered on the same line.
+
+        Returns:
+            bool: True if the bounding boxes are on the same line, False otherwise.
+        """
+        # Calculate the center points of the bounding boxes
+        center_a = ((bbox_a[0] + bbox_a[2]) / 2, (bbox_a[1] + bbox_a[3]) / 2)
+        center_b = ((bbox_b[0] + bbox_b[2]) / 2, (bbox_b[1] + bbox_b[3]) / 2)
+
+        # For horizontal text, check if the centers are within the same horizontal band
         if 'hor' in direction:
-            return abs(coor_a[1] - coor_b[1]) <= threshold
-        # For vertical text, check if word boxes are in the same vertical band
+            return abs(center_a[1] - center_b[1]) <= threshold
+        # For vertical text, check if the centers are within the same vertical band
         elif 'ver' in direction:
-            return abs(coor_a[0] - coor_b[0]) <= threshold
+            return abs(center_a[0] - center_b[0]) <= threshold
 
     # Group word bounding boxes into lines
     lines = []
     remaining_boxes = coords_text_list[:]  # create a shallow copy
 
     while remaining_boxes:
-        box = remaining_boxes.pop(0)  # Start with the first bounding box
+        box = remaining_boxes.pop(0)
         current_line = [box]
+        closest_line = None
+        closest_distance = float('inf')
 
-        boxes_to_check_against = remaining_boxes[:]
-        for comparison_box in boxes_to_check_against:
-            if in_same_line(box[0], comparison_box[0]):
-                remaining_boxes.remove(comparison_box)
-                current_line.append(comparison_box)
+        # Find the closest existing line to the current bounding box
+        for line in lines:
+            for line_box in line:
+                if in_same_line(box[0], line_box[0], direction, threshold):
+                    distance = abs(box[0][0] - line_box[0][0]) + abs(box[0][1] - line_box[0][1])
+                    if distance < closest_distance:
+                        closest_line = line
+                        closest_distance = distance
 
-        lines.append(current_line)
+        # If a close line was found, add the bounding box to that line
+        if closest_line is not None:
+            closest_line.append(box)
+        # Otherwise, create a new line with the current bounding box
+        else:
+            lines.append(current_line)
 
     # Sort the boxes in each line based on the reading direction
     for i, line in enumerate(lines):
