@@ -129,7 +129,7 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: i
             kernel = np.ones((kernel_size, kernel_size), np.uint8)
             
             # Dilate the temporary mask
-            dilated_mask = cv2.dilate(temp_mask, kernel, iterations=4)
+            dilated_mask = cv2.dilate(temp_mask, kernel, iterations=3)
             
             # Add the dilated mask to the main mask
             mask = cv2.bitwise_or(mask, dilated_mask)
