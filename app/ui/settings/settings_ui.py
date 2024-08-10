@@ -253,7 +253,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.resize_spinbox = MSpinBox().small()
         self.resize_spinbox.setFixedWidth(70)
         self.resize_spinbox.setMaximum(3000)
-        self.resize_spinbox.setValue(640)
+        self.resize_spinbox.setValue(960)
         resize_layout.addWidget(resize_label)
         resize_layout.addWidget(self.resize_spinbox)
         resize_layout.addStretch()
@@ -468,7 +468,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.min_font_spinbox = MSpinBox().small()
         self.min_font_spinbox.setFixedWidth(60)
         self.min_font_spinbox.setMaximum(100)
-        self.min_font_spinbox.setValue(10)
+        self.min_font_spinbox.setValue(12)
 
         self.max_font_spinbox = MSpinBox().small()
         self.max_font_spinbox.setFixedWidth(60)

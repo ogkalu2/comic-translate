@@ -251,7 +251,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.text_rendering_widgets['alignment'].setCurrentText(translated_alignment)
 
         self.ui.text_rendering_widgets['font'].setCurrentText(settings.value('font', ''))
-        min_font_size = settings.value('min_font_size', 10)  # Default value is 10
+        min_font_size = settings.value('min_font_size', 12)  # Default value is 12
         max_font_size = settings.value('max_font_size', 40) # Default value is 40
         self.ui.min_font_spinbox.setValue(int(min_font_size))
         self.ui.max_font_spinbox.setValue(int(max_font_size))
