@@ -98,44 +98,41 @@ def ensure_within_bounds(coords, im_width, im_height, width_expansion_percentage
 
     return x1, y1, x2, y2
 
-def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_kernel_size=5):
+def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: int = 5) -> np.ndarray:
     h, w, c = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
 
     for blk in blk_list:
-        seg = blk.segm_pts
+        bboxes = blk.inpaint_bboxes
+        for bbox in bboxes:
+            x1, y1, x2, y2 = bbox
 
-        if seg.size == 0:
-            continue  # Skip if the segment is empty
-        
-        if blk.source_lang == 'en':
-            default_kernel_size = 1
-        kernel_size = default_kernel_size # Default kernel size
-        if blk.text_class == 'text_bubble':
-            # Access the bounding box coordinates
-            bbox = blk.bubble_xyxy
-            # Calculate the minimal distance from the mask to the bounding box edges
-            min_distance_to_bbox = min(
-                np.min(seg[:, 0]) - bbox[0],  # left side
-                bbox[2] - np.max(seg[:, 0]),  # right side
-                np.min(seg[:, 1]) - bbox[1],  # top side
-                bbox[3] - np.max(seg[:, 1])   # bottom side
-            )
-            # adjust kernel size if necessary
-            if default_kernel_size >= min_distance_to_bbox:
-                kernel_size = max(1, int(min_distance_to_bbox-(0.2*min_distance_to_bbox)))
+            # Determine padding
+            padding = default_padding
+            if hasattr(blk, 'source_lang') and blk.source_lang == 'en':
+                padding = 2
+            if hasattr(blk, 'text_class') and blk.text_class == 'text_bubble':
+                # Calculate the minimal distance from the mask to the bounding box edges
+                min_distance_to_bbox = min(
+                    x1 - blk.bubble_xyxy[0],  # left side
+                    blk.bubble_xyxy[2] - x2,  # right side
+                    y1 - blk.bubble_xyxy[1],  # top side
+                    blk.bubble_xyxy[3] - y2   # bottom side
+                )
+                # Adjust padding if necessary
+                if padding >= min_distance_to_bbox:
+                    padding = max(1, int(min_distance_to_bbox - (0.2 * min_distance_to_bbox)))
 
-        # Create a kernel for dilation based on the kernel size
-        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+            # Apply padding
+            x1 = max(0, x1 - padding)
+            y1 = max(0, y1 - padding)
+            x2 = min(w, x2 + padding)
+            y2 = min(h, y2 + padding)
 
-        # Draw the individual mask and dilate it
-        single_mask = np.zeros((h, w), dtype=np.uint8)
-        cv2.fillPoly(single_mask, [seg], 255)
-        single_mask = cv2.dilate(single_mask, kernel, iterations=1)
-
-        # Merge the dilated mask with the global mask
-        mask = cv2.bitwise_or(mask, single_mask)
-        np.expand_dims(mask, axis=-1)
+            # Create a polygon from the padded bounding box coordinates
+            polygon = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], np.int32)
+            polygon = polygon.reshape((-1, 1, 2))
+            cv2.fillPoly(mask, [polygon], 255)
 
     return mask
 

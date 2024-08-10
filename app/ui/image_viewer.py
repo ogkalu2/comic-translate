@@ -613,9 +613,11 @@ class ImageViewer(QtWidgets.QGraphicsView):
         human_painter = QtGui.QPainter(human_qimage)
         generated_painter = QtGui.QPainter(generated_qimage)
         
-        pen = QtGui.QPen(QtGui.QColor(255, 255, 255), self._brush_size)
-        human_painter.setPen(pen)
-        generated_painter.setPen(pen)
+        hum_pen = QtGui.QPen(QtGui.QColor(255, 255, 255), self._brush_size)
+        gen_pen = QtGui.QPen(QtGui.QColor(255, 255, 255), 2, QtCore.Qt.SolidLine)
+
+        human_painter.setPen(hum_pen)
+        generated_painter.setPen(gen_pen)
         
         brush = QtGui.QBrush(QtGui.QColor(255, 255, 255))
         human_painter.setBrush(brush)
@@ -671,62 +673,43 @@ class ImageViewer(QtWidgets.QGraphicsView):
         mask = cv2.resize(mask, (cv2_image.shape[1], cv2_image.shape[0]))
 
         return mask
-    
-    def draw_segmentation_lines(self, segmentation_points: np.ndarray, layers: int = 1, scale_factor: float = 0.95, smoothness: float = 0.35):
+
+    def draw_segmentation_lines(self, bboxes, layers: int = 1, scale_factor: float = 1.0):
         if not self.hasPhoto():
             print("No photo loaded.")
             return
 
-        if len(segmentation_points) < 3:
-            print("Not enough points to create a filled area.")
+        if len(bboxes) < 1:
+            print("Not enough line segments to draw rectangles.")
             return
 
-        # Calculate the centroid of the segmentation points
-        centroid = np.mean(segmentation_points, axis=0)
+        # Calculate the centroid of all points
+        all_points = np.array(bboxes).reshape(-1, 2)
+        centroid = np.mean(all_points, axis=0)
 
-        # Scale the segmentation points towards the centroid
-        scaled_points = (segmentation_points - centroid) * scale_factor + centroid
+        # Scale the line segments towards the centroid
+        scaled_segments = []
+        for x1, y1, x2, y2 in bboxes:
+            scaled_p1 = (np.array([x1, y1]) - centroid) * scale_factor + centroid
+            scaled_p2 = (np.array([x2, y2]) - centroid) * scale_factor + centroid
+            scaled_segments.append((scaled_p1[0], scaled_p1[1], scaled_p2[0], scaled_p2[1]))
 
-        # Create a QPainterPath for the smooth curve
-        path = QtGui.QPainterPath()
-        
-        # Start the path
-        path.moveTo(scaled_points[0][0], scaled_points[0][1])
-        
-        # Function to calculate control points
-        def get_control_points(p1, p2, p3, smoothness):
-            vec1 = p2 - p1
-            vec2 = p3 - p2
-            d1 = np.linalg.norm(vec1)
-            d2 = np.linalg.norm(vec2)
-            
-            c1 = p2 - vec1 * smoothness
-            c2 = p2 + vec2 * smoothness
-            
-            return c1, c2
-
-        # Draw smooth curves between points
-        for i in range(len(scaled_points)):
-            p1 = scaled_points[i]
-            p2 = scaled_points[(i + 1) % len(scaled_points)]
-            p3 = scaled_points[(i + 2) % len(scaled_points)]
-            
-            c1, c2 = get_control_points(p1, p2, p3, smoothness)
-            
-            path.cubicTo(c1[0], c1[1], c2[0], c2[1], p2[0], p2[1])
-
-        # Create the path item and add it to the scene
+        # Create rectangles for each line segment
         fill_color = QtGui.QColor(255, 0, 0, 128)  # Semi-transparent red
         outline_color = QtGui.QColor(255, 0, 0)  # Solid red for the outline
 
         for _ in range(layers):
-            path_item = QtWidgets.QGraphicsPathItem(path)
-            path_item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
-            path_item.setBrush(QtGui.QBrush(fill_color))
-            self._scene.addItem(path_item)
-            self._drawing_items.append(path_item)  # Add to drawing items for saving
+            for x1, y1, x2, y2 in scaled_segments:
+                path = QtGui.QPainterPath()
+                path.addRect(QtCore.QRectF(x1, y1, x2 - x1, y2 - y1))
+                
+                path_item = QtWidgets.QGraphicsPathItem(path)
+                path_item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
+                path_item.setBrush(QtGui.QBrush(fill_color))
+                self._scene.addItem(path_item)
+                self._drawing_items.append(path_item)  # Add to drawing items for saving
 
-        # Ensure the filled area is visible
+        # Ensure the rectangles are visible
         self._scene.update()
 
     def load_state(self, state: Dict):

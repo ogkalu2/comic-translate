@@ -6,25 +6,78 @@ import cv2
 
 
 class TextBlockDetector:
-    def __init__(self, bubble_model_path: str, text_model_path: str, device: str):
+    def __init__(self, bubble_model_path: str, text_seg_model_path: str, text_detect_model_path: str, device: str):
         self.bubble_detection = YOLO(bubble_model_path)
-        self.text_segmentation = YOLO(text_model_path)
+        self.text_segmentation = YOLO(text_seg_model_path)
+        self.text_detection = YOLO(text_detect_model_path)
         self.device = device
 
     def detect(self, img):
+        self.image = img
 
         h, w, _ = img.shape
         size = (h, w) if h >= w * 5 else 1024
+        det_size = (h, w) if h >= w * 5 else 640
 
         bble_detec_result = self.bubble_detection(img, device=self.device, imgsz=size, conf=0.1, verbose=False)[0]
         txt_seg_result = self.text_segmentation(img, device=self.device, imgsz=size, conf=0.1, verbose=False)[0]
+        txt_detect_result = self.text_detection(img, device=self.device, imgsz=det_size, conf=0.2, verbose=False)[0]
 
-        combined = combine_results(bble_detec_result, txt_seg_result)
+        combined = self.combine_results(bble_detec_result, txt_seg_result, txt_detect_result)
 
-        blk_list = [TextBlock(txt_bbox, txt_seg_points, bble_bbox, txt_class)
-                for txt_bbox, bble_bbox, txt_seg_points, txt_class in combined]
+        blk_list = [TextBlock(txt_bbox, bble_bbox, txt_class, inp_bboxes)
+                for txt_bbox, bble_bbox, inp_bboxes, txt_class in combined]
         
         return blk_list
+    
+    def combine_results(self, bubble_detec_results: YOLO, text_seg_results: YOLO, text_detect_results: YOLO):
+        bubble_bounding_boxes = np.array(bubble_detec_results.boxes.xyxy.cpu(), dtype="int")
+        
+        seg_text_bounding_boxes = np.array(text_seg_results.boxes.xyxy.cpu(), dtype="int")
+        detect_text_bounding_boxes = np.array(text_detect_results.boxes.xyxy.cpu(), dtype="int")
+
+        text_bounding_boxes = merge_bounding_boxes(seg_text_bounding_boxes, detect_text_bounding_boxes, 0.1, 0.6)
+
+        text_blocks_bboxes = []
+        # Process each text bounding box
+        for bbox in text_bounding_boxes:
+            x1, y1, x2, y2 = bbox
+            
+            # Crop the image to the text bounding box
+            crop = self.image[y1:y2, x1:x2]
+            
+            # Detect content in the cropped bubble
+            content_bboxes = detect_content_in_bbox(crop)
+
+            # Adjusting coordinates to the full image
+            adjusted_bboxes = []
+            for bbox in content_bboxes:
+                lx1, ly1, lx2, ly2 = bbox
+                adjusted_bbox = (x1 + lx1, y1 + ly1, x1 + lx2, y1 + ly2)
+                adjusted_bboxes.append(adjusted_bbox)
+            
+            text_blocks_bboxes.append(adjusted_bboxes)
+
+        raw_results = []
+        text_matched = [False] * len(text_bounding_boxes)
+
+        if text_bounding_boxes is not None or len(text_bounding_boxes) > 0:
+            for txt_idx, txt_box in enumerate(text_bounding_boxes):
+                for bble_box in bubble_bounding_boxes:
+
+                    if does_rectangle_fit(bble_box, txt_box):
+                        raw_results.append((txt_box, bble_box, text_blocks_bboxes[txt_idx], 'text_bubble'))
+                        text_matched[txt_idx] = True
+                        break
+                    elif do_rectangles_overlap(bble_box, txt_box):
+                        raw_results.append((txt_box, bble_box, text_blocks_bboxes[txt_idx], 'text_free'))
+                        text_matched[txt_idx] = True
+                        break
+
+                if not text_matched[txt_idx]:
+                    raw_results.append((txt_box, None, text_blocks_bboxes[txt_idx], 'text_free'))
+
+        return raw_results
 
 def calculate_iou(rect1, rect2) -> float:
     """
@@ -85,33 +138,119 @@ def does_rectangle_fit(bigger_rect, smaller_rect):
     
     return fits_horizontally and fits_vertically
 
-def combine_results(bubble_detec_results: YOLO, text_seg_results: YOLO):
-    bubble_bounding_boxes = np.array(bubble_detec_results.boxes.xyxy.cpu(), dtype="int")
-    text_bounding_boxes = np.array(text_seg_results.boxes.xyxy.cpu(), dtype="int")
+def merge_boxes(box1, box2):
+    """Merge two bounding boxes"""
+    return [
+        min(box1[0], box2[0]),
+        min(box1[1], box2[1]),
+        max(box1[2], box2[2]),
+        max(box1[3], box2[3])
+    ]
 
-    segment_points = []
-    if text_seg_results.masks is not None:
-        segment_points = list(map(lambda a: a.astype("int"), text_seg_results.masks.xy))
+import numpy as np
 
-    raw_results = []
-    text_matched = [False] * len(text_bounding_boxes)
-    
-    if segment_points:
-        for txt_idx, txt_box in enumerate(text_bounding_boxes):
-            for bble_box in bubble_bounding_boxes:
-                if does_rectangle_fit(bble_box, txt_box):
-                    raw_results.append((txt_box, bble_box, segment_points[txt_idx], 'text_bubble'))
-                    text_matched[txt_idx] = True
-                    break
-                elif do_rectangles_overlap(bble_box, txt_box):
-                    raw_results.append((txt_box, bble_box, segment_points[txt_idx], 'text_free'))
-                    text_matched[txt_idx] = True
-                    break
+def merge_bounding_boxes(seg_boxes, detect_boxes, merge_threshold, duplicate_threshold):
+    merged_boxes = []
+
+    # First step: Merge seg_boxes with detect_boxes
+    for seg_box in seg_boxes:
+        running_box = seg_box
+        for detect_box in detect_boxes:
+            if does_rectangle_fit(running_box, detect_box):
+                continue  # Detect box fits entirely within the running box
+            if do_rectangles_overlap(running_box, detect_box, merge_threshold):
+                # Merge running_box with the detect_box and update the running_box
+                running_box = merge_boxes(running_box, detect_box)
         
-        # if not text_matched[txt_idx]:
-        #     raw_results.append((txt_box, None, segment_points[txt_idx], 'text_free'))
+        merged_boxes.append(running_box)  # Add the final running box for this seg box
 
-    return raw_results
+    # Now add any detect boxes that weren't merged
+    for detect_box in detect_boxes:
+        add_box = True
+        for merged_box in merged_boxes:
+            if do_rectangles_overlap(detect_box, merged_box, merge_threshold) or does_rectangle_fit(merged_box, detect_box):
+                add_box = False
+                break
+        if add_box:
+            merged_boxes.append(detect_box)
+
+    # Second step: Re-process merged_boxes to handle overlaps that should be merged into a bigger box
+    final_boxes = []
+    for i, box in enumerate(merged_boxes):
+        running_box = box
+        for j, other_box in enumerate(merged_boxes):
+            if i == j:
+                continue  # Skip comparing the box with itself
+            if do_rectangles_overlap(running_box, other_box, merge_threshold) and not does_rectangle_fit(running_box, other_box):
+                # Re-merge running_box with the overlapping other_box
+                running_box = merge_boxes(running_box, other_box)
+        
+        final_boxes.append(running_box)  # Add the final running box after second pass
+
+    # Remove duplicates and high-overlap boxes
+    unique_boxes = []
+    seen_boxes = []
+    for box in final_boxes:
+        duplicate = False
+        for seen_box in seen_boxes:
+            if (np.array_equal(box, seen_box) or do_rectangles_overlap(box, seen_box, duplicate_threshold)):
+                duplicate = True
+                break
+        if not duplicate:
+            unique_boxes.append(box)
+            seen_boxes.append(box)  # Track the box that we've added to the final list
+
+    return np.array(unique_boxes)
+
+def detect_content_in_bbox(image):
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Threshold the image to create binary images for both cases
+    _, binary_white_text = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+    _, binary_black_text = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+    
+    # Perform connected component labeling for both cases
+    num_labels_white, labels_white, stats_white, centroids_white = cv2.connectedComponentsWithStats(binary_white_text, connectivity=8)
+    num_labels_black, labels_black, stats_black, centroids_black = cv2.connectedComponentsWithStats(binary_black_text, connectivity=8)
+    
+    # Filter out small components (likely to be noise)
+    min_area = 5 
+    content_bboxes = []
+    
+    height, width = image.shape[:2]
+    
+    # Process white text on black background
+    for i in range(1, num_labels_white):  # Start from 1 to skip the background
+        area = stats_white[i, cv2.CC_STAT_AREA]
+        if area > min_area:
+            x1 = stats_white[i, cv2.CC_STAT_LEFT]
+            y1 = stats_white[i, cv2.CC_STAT_TOP]
+            w = stats_white[i, cv2.CC_STAT_WIDTH]
+            h = stats_white[i, cv2.CC_STAT_HEIGHT]
+            x2 = x1 + w
+            y2 = y1 + h
+            
+            # Check if the bounding box touches the edges of the image
+            if x1 > 0 and y1 > 0 and x1 + w < width and y1 + h < height:
+                content_bboxes.append((x1, y1, x2, y2))
+    
+    # Process black text on white background
+    for i in range(1, num_labels_black):  # Start from 1 to skip the background
+        area = stats_black[i, cv2.CC_STAT_AREA]
+        if area > min_area:
+            x1 = stats_black[i, cv2.CC_STAT_LEFT]
+            y1 = stats_black[i, cv2.CC_STAT_TOP]
+            w = stats_black[i, cv2.CC_STAT_WIDTH]
+            h = stats_black[i, cv2.CC_STAT_HEIGHT]
+            x2 = x1 + w
+            y2 = y1 + h
+            
+            # Check if the bounding box touches the edges of the image
+            if x1 > 0 and y1 > 0 and x1 + w < width and y1 + h < height:
+                content_bboxes.append((x1, y1, x2, y2))
+    
+    return content_bboxes
 
 # From https://github.com/TareHimself/manga-translator/blob/master/translator/utils.py
 
@@ -160,16 +299,20 @@ def make_bubble_mask(frame: np.ndarray):
 
     return adjust_contrast_brightness(mask, 100)
 
-def bubble_interior_bounds(frame_mask: np.ndarray):
+def bubble_contour(frame_mask: np.ndarray):
     gray = ensure_gray(frame_mask)
     # Threshold the image
     ret, thresh = cv2.threshold(gray, 200, 255, 0)
     
     # Find contours
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    largest_contour = max(contours, key=cv2.contourArea) 
+    return largest_contour
 
-    largest_contour = max(contours, key=cv2.contourArea)
-    polygon = np.array([largest_contour[:, 0, :]])
+def bubble_interior_bounds(frame_mask: np.ndarray):
+    bble_contour = bubble_contour(frame_mask)
+
+    polygon = np.array([bble_contour[:, 0, :]])
     rect = lir.lir(polygon)
 
     x1, y1 = lir.pt1(rect)
