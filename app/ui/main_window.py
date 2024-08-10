@@ -6,6 +6,7 @@ from .dayu_widgets import dayu_theme
 from .dayu_widgets.divider import MDivider
 from .dayu_widgets.combo_box import MComboBox
 from .dayu_widgets.text_edit import MTextEdit
+from .dayu_widgets.line_edit import MLineEdit
 from .dayu_widgets.browser import MDragFileButton, MClickBrowserFileToolButton, MClickSaveFileToolButton
 from .dayu_widgets.push_button import MPushButton
 from .dayu_widgets.tool_button import MToolButton
@@ -317,6 +318,18 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         box_tools_lay.addWidget(self.delete_button)
         box_tools_lay.addWidget(self.clear_rectangles_button)
         box_tools_lay.addWidget(self.draw_blklist_blks)
+
+        self.change_all_blocks_size_dec = self.create_tool_button(svg = "minus_line.svg")
+        self.change_all_blocks_size_dec.setToolTip(self.tr("Reduce the size of all blocks"))
+        self.change_all_blocks_size_diff = MLineEdit()
+        self.change_all_blocks_size_diff.setFixedWidth(30)
+        self.change_all_blocks_size_diff.setText("3")
+        self.change_all_blocks_size_inc = self.create_tool_button(svg = "add_line.svg")
+        self.change_all_blocks_size_inc.setToolTip(self.tr("Increase the size of all blocks"))
+        box_tools_lay.addStretch()
+        box_tools_lay.addWidget(self.change_all_blocks_size_dec)
+        box_tools_lay.addWidget(self.change_all_blocks_size_diff)
+        box_tools_lay.addWidget(self.change_all_blocks_size_inc)
         box_tools_lay.addStretch()
 
         # Inpainting Tools
