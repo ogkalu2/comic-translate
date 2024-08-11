@@ -326,6 +326,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         input_layout.addLayout(t_combo_text_layout)
 
         # Tools Layout
+        tools_widget = QtWidgets.QWidget() 
         tools_layout = QtWidgets.QVBoxLayout()
 
         misc_lay = QtWidgets.QHBoxLayout()
@@ -373,7 +374,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         
         self.change_all_blocks_size_diff = MLineEdit()
         self.change_all_blocks_size_diff.setFixedWidth(30)
-        self.change_all_blocks_size_diff.setText("3")
+        self.change_all_blocks_size_diff.setText("0")
         
         # Set up integer validator
         int_validator = QIntValidator()
@@ -460,14 +461,15 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_layout.addWidget(e_slider_label)
         tools_layout.addWidget(self.eraser_size_slider)
         tools_layout.addLayout(return_buttons_lay)
+        tools_widget.setLayout(tools_layout)
 
         tools_scroll = QtWidgets.QScrollArea()
         tools_scroll.setWidgetResizable(True)
-        tools_scroll.setLayout(tools_layout)
+        tools_scroll.setWidget(tools_widget)
         tools_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         tools_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         tools_scroll.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        tools_scroll.setMinimumHeight(300)
+        #tools_scroll.setMinimumHeight(300)
 
         right_layout.addLayout(input_layout)
         right_layout.addLayout(font_panel_layout)
