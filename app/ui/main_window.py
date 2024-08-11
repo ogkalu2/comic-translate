@@ -1,6 +1,7 @@
 import os
 from PySide6 import QtWidgets
 from PySide6 import QtCore
+from PySide6.QtGui import QIntValidator
 
 from .dayu_widgets import dayu_theme
 from .dayu_widgets.divider import MDivider
@@ -319,13 +320,23 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         box_tools_lay.addWidget(self.clear_rectangles_button)
         box_tools_lay.addWidget(self.draw_blklist_blks)
 
-        self.change_all_blocks_size_dec = self.create_tool_button(svg = "minus_line.svg")
+        self.change_all_blocks_size_dec = self.create_tool_button(svg="minus_line.svg")
         self.change_all_blocks_size_dec.setToolTip(self.tr("Reduce the size of all blocks"))
+        
         self.change_all_blocks_size_diff = MLineEdit()
         self.change_all_blocks_size_diff.setFixedWidth(30)
         self.change_all_blocks_size_diff.setText("3")
-        self.change_all_blocks_size_inc = self.create_tool_button(svg = "add_line.svg")
+        
+        # Set up integer validator
+        int_validator = QIntValidator()
+        self.change_all_blocks_size_diff.setValidator(int_validator)
+        
+        # Optional: Ensure the text is center-aligned
+        self.change_all_blocks_size_diff.setAlignment(QtCore.Qt.AlignCenter)
+        
+        self.change_all_blocks_size_inc = self.create_tool_button(svg="add_line.svg")
         self.change_all_blocks_size_inc.setToolTip(self.tr("Increase the size of all blocks"))
+        
         box_tools_lay.addStretch()
         box_tools_lay.addWidget(self.change_all_blocks_size_dec)
         box_tools_lay.addWidget(self.change_all_blocks_size_diff)
