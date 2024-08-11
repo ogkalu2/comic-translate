@@ -374,7 +374,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         
         self.change_all_blocks_size_diff = MLineEdit()
         self.change_all_blocks_size_diff.setFixedWidth(30)
-        self.change_all_blocks_size_diff.setText("0")
+        self.change_all_blocks_size_diff.setText("3")
         
         # Set up integer validator
         int_validator = QIntValidator()
