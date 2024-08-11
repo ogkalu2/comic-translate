@@ -99,6 +99,8 @@ class ComicTranslate(ComicTranslateUI):
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
         self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
         self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
+        self.change_all_blocks_size_dec.clicked.connect(lambda: self.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
+        self.change_all_blocks_size_inc.clicked.connect(lambda: self.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
 
         # Connect text edit widgets
         self.s_text_edit.textChanged.connect(self.update_text_block)
@@ -125,6 +127,17 @@ class ComicTranslate(ComicTranslateUI):
         for image_path in self.image_files:
             self.image_states[image_path]['source_lang'] = source_lang
             self.image_states[image_path]['target_lang'] = target_lang
+
+    def change_all_blocks_size(self, diff: int):
+        if len(self.blk_list) == 0:
+            return
+        updated_blk_list = []
+        for blk in self.blk_list:
+            blk_rect = tuple(blk.xyxy)
+            blk.xyxy[:] = [blk_rect[0] - diff, blk_rect[1] - diff, blk_rect[2] + diff, blk_rect[3] + diff]
+            updated_blk_list.append(blk)
+        self.blk_list = updated_blk_list
+        self.pipeline.load_box_coords(self.blk_list)
 
     def set_block_font_settings(self):
         self.min_font_spinbox.setValue(self.settings_page.get_min_font_size())
