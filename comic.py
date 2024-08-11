@@ -164,11 +164,13 @@ class ComicTranslate(ComicTranslateUI):
         self.disable_hbutton_group()
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
+        self.set_manual_font_settings_enabled(False)
 
     def manual_mode_selected(self):
         self.enable_hbutton_group()
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
+        self.set_manual_font_settings_enabled(True)
     
     def on_image_processed(self, index: int, rendered_image: np.ndarray, image_path: str):
         if index == self.current_image_index:

@@ -502,7 +502,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         return content_widget
 
-    def set_font_settings_enabled(self, enabled: bool):
+    def set_manual_font_settings_enabled(self, enabled: bool):
         self.min_font_spinbox.setEnabled(enabled)
         self.max_font_spinbox.setEnabled(enabled)
         self.block_font_color_button.setEnabled(enabled)
@@ -651,3 +651,4 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
     def delete_selected_box(self):
         self.image_viewer.delete_selected_rectangle()
+
