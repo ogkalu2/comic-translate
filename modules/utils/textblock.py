@@ -19,6 +19,9 @@ class TextBlock(object):
                  alignment: str = '',
                  source_lang: str = "",
                  target_lang: str = "",
+                 min_font_size: int = 0,
+                 max_font_size: int = 0,
+                 font_color: str = "",
                  **kwargs) -> None:
         
         self.xyxy = text_bbox
@@ -37,6 +40,10 @@ class TextBlock(object):
         
         self.source_lang = source_lang
         self.target_lang = target_lang
+
+        self.min_font_size = min_font_size
+        self.max_font_size = max_font_size
+        self.font_color = font_color
 
     @property
     def xywh(self):
