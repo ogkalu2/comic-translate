@@ -41,22 +41,7 @@ class TextBlockDetector:
         text_blocks_bboxes = []
         # Process each text bounding box
         for bbox in text_bounding_boxes:
-
-            x1, y1, x2, y2 = adjust_text_line_coordinates(bbox, 0, 10, self.image)
-            
-            # Crop the image to the text bounding box
-            crop = self.image[y1:y2, x1:x2]
-            
-            # Detect content in the cropped bubble
-            content_bboxes = detect_content_in_bbox(crop)
-
-            # Adjusting coordinates to the full image
-            adjusted_bboxes = []
-            for bbox in content_bboxes:
-                lx1, ly1, lx2, ly2 = bbox
-                adjusted_bbox = (x1 + lx1, y1 + ly1, x1 + lx2, y1 + ly2)
-                adjusted_bboxes.append(adjusted_bbox)
-            
+            adjusted_bboxes = get_inpaint_bboxes(bbox, self.image)
             text_blocks_bboxes.append(adjusted_bboxes)
 
         raw_results = []
@@ -79,6 +64,24 @@ class TextBlockDetector:
                     raw_results.append((txt_box, None, text_blocks_bboxes[txt_idx], 'text_free'))
 
         return raw_results
+    
+def get_inpaint_bboxes(text_bbox, image):
+    x1, y1, x2, y2 = adjust_text_line_coordinates(text_bbox, 0, 10, image)
+        
+    # Crop the image to the text bounding box
+    crop = image[y1:y2, x1:x2]
+        
+    # Detect content in the cropped bubble
+    content_bboxes = detect_content_in_bbox(crop)
+
+    # Adjusting coordinates to the full image
+    adjusted_bboxes = []
+    for bbox in content_bboxes:
+        lx1, ly1, lx2, ly2 = bbox
+        adjusted_bbox = (x1 + lx1, y1 + ly1, x1 + lx2, y1 + ly2)
+        adjusted_bboxes.append(adjusted_bbox)
+
+    return adjusted_bboxes
 
 def calculate_iou(rect1, rect2) -> float:
     """

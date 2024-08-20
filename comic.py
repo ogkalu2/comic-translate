@@ -19,7 +19,7 @@ from app.ui.messages import Messages
 from app.thread_worker import GenericWorker
 from app.ui.dayu_widgets.message import MMessage
 
-from modules.detection import do_rectangles_overlap
+from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import draw_text
 from modules.utils.file_handler import FileHandler
@@ -112,6 +112,8 @@ class ComicTranslate(ComicTranslateUI):
         # Connect image viewer signals
         self.image_viewer.rectangle_selected.connect(self.handle_rectangle_selection)
         self.image_viewer.rectangle_changed.connect(self.handle_rectangle_change)
+        self.image_viewer.rectangle_created.connect(self.handle_rectangle_creation)
+        self.image_viewer.rectangle_deleted.connect(self.handle_rectangle_deletion)
 
     def save_src_trg(self):
         source_lang = self.s_combo.currentText()
@@ -512,34 +514,6 @@ class ComicTranslate(ComicTranslateUI):
                     self.image_viewer.display_cv2_image(cv2_img)
                     break
 
-    def update_blk_list(self):
-        # Get the current rectangles from the image viewer
-        current_rectangles = self.image_viewer.get_rectangle_coordinates()
-        
-        # Create a new list to store updated TextBlocks
-        updated_blk_list = []
-        
-        # Check existing blocks against current rectangles
-        for blk in self.blk_list:
-            blk_rect = tuple(blk.xyxy)
-            
-            # Check if this block still exists or has been slightly modified
-            for i, curr_rect in enumerate(current_rectangles):
-                if do_rectangles_overlap(blk_rect, curr_rect, iou_threshold=0.5):
-                    # Update the block's coordinates
-                    blk.xyxy[:] = list(curr_rect)
-                    updated_blk_list.append(blk)
-                    current_rectangles.pop(i)
-                    break
-        
-        # Add new TextBlocks for any remaining rectangles
-        for new_rect in current_rectangles:
-            new_blk = TextBlock(np.array(new_rect))
-            updated_blk_list.append(new_blk)
-        
-        # Update self.blk_list with the new configuration
-        self.blk_list = updated_blk_list
-
     def find_corresponding_text_block(self, rect: Tuple[float], iou_threshold: int):
         for blk in self.blk_list:
             if do_rectangles_overlap(rect, blk.xyxy, iou_threshold):
@@ -570,6 +544,21 @@ class ComicTranslate(ComicTranslateUI):
             self.t_text_edit.clear()
             self.current_text_block = None
         self.set_block_font_settings()
+
+    def handle_rectangle_creation(self, new_rect: QtCore.QRectF):
+        x1, y1, w, h = new_rect.getRect()
+        x1, y1, w, h = int(x1), int(y1), int(w), int(h)
+        new_rect_coords = (x1, y1, x1 + w, y1 + h)
+        image = self.image_viewer.get_cv2_image()
+        inpaint_boxes = get_inpaint_bboxes(new_rect_coords, image)
+        new_blk = TextBlock(text_bbox=np.array(new_rect_coords), inpaint_bboxes=inpaint_boxes)
+        self.blk_list.append(new_blk)
+
+    def handle_rectangle_deletion(self, rect: QtCore.QRectF):
+        x1, y1, w, h = rect.getRect()
+        rect_coords = (x1, y1, x1 + w, y1 + h)
+        current_text_block = self.find_corresponding_text_block(rect_coords, 0.5)
+        self.blk_list.remove(current_text_block)
 
     def update_text_block(self):
         if self.current_text_block:

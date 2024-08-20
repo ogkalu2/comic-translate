@@ -8,8 +8,10 @@ import math
 from typing import List, Dict
 
 class ImageViewer(QtWidgets.QGraphicsView):
+    rectangle_created = QtCore.Signal(QtCore.QRectF)
     rectangle_selected = QtCore.Signal(QtCore.QRectF)
     rectangle_changed = QtCore.Signal(QtCore.QRectF)
+    rectangle_deleted = QtCore.Signal(QtCore.QRectF)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -157,6 +159,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
     def delete_selected_rectangle(self):
         if self._selected_rect:
+            self.rectangle_deleted.emit(self._selected_rect.rect())
             self._scene.removeItem(self._selected_rect)
             self._rectangles.remove(self._selected_rect)
             self._selected_rect = None
@@ -277,6 +280,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 self._box_mode = False
                 if self._current_rect and self._current_rect.rect().width() > 0 and self._current_rect.rect().height() > 0:
                     self._rectangles.append(self._current_rect)
+                    self.rectangle_created.emit(self._current_rect.rect())
                 else:
                     self._scene.removeItem(self._current_rect)
                 self._current_rect = None

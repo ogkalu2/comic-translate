@@ -105,7 +105,6 @@ class ComicTranslatePipeline:
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer._rectangles:
             image = self.main_page.image_viewer.get_cv2_image()
-            self.main_page.update_blk_list()
             # Print block length
             print("Block Length: ", len(self.main_page.blk_list))
             self.ocr.initialize(self.main_page, source_lang)
