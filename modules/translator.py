@@ -203,17 +203,20 @@ class Translator:
         api_key = ""
 
         if 'GPT' in translator_key:
-            api_key = credentials['Open AI GPT']['api_key']
+            api_key = credentials.get(self.settings.ui.tr('Open AI GPT'), {}).get('api_key', "")
         elif 'Claude' in translator_key:
-            api_key = credentials['Anthropic Claude']['api_key']
+            api_key = credentials.get(self.settings.ui.tr('Anthropic Claude'), {}).get('api_key', "")
         elif 'Gemini' in translator_key:
-            api_key = credentials['Google Gemini']['api_key']
+            api_key = credentials.get(self.settings.ui.tr('Google Gemini'), {}).get('api_key', "")
         else:
-            map = {
-                "Microsoft Translator": credentials['Microsoft Azure']['api_key_translator'],
-                "DeepL": credentials['DeepL']['api_key'],
-                "Yandex": credentials['Yandex']['api_key'],
+            api_key_map = {
+                "Microsoft Translator": credentials.get(self.settings.ui.tr('Microsoft Azure'), {}).get('api_key_translator', ""),
+                "DeepL": credentials.get(self.settings.ui.tr('DeepL'), {}).get('api_key', ""),
+                "Yandex": credentials.get(self.settings.ui.tr('Yandex'), {}).get('api_key', ""),
             }
-            api_key = map.get(translator_key)
+            api_key = api_key_map.get(translator_key, "")
+
+        if not api_key:
+            raise ValueError(f"API key not found for translator: {translator_key}")
 
         return api_key
