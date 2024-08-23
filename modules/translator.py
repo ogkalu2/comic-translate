@@ -216,7 +216,7 @@ class Translator:
             }
             api_key = api_key_map.get(translator_key, "")
 
-        if not api_key:
+        if not api_key and translator_key!= 'Google Translate':
             raise ValueError(f"API key not found for translator: {translator_key}")
 
         return api_key
