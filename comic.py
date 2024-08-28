@@ -90,7 +90,7 @@ class ComicTranslate(ComicTranslateUI):
         alignment = self.button_to_alignment[id]
         line_spacing = float(self.line_spacing_dropdown.currentText())
         outline_color_str = self.outline_font_color_button.property('selected_color')
-        outline_color = QColor(outline_color_str)
+        outline_color = QColor(outline_color_str) if self.outline_checkbox.isChecked() else None
         outline_width = float(self.outline_width_dropdown.currentText())
         bold = self.bold_button.isChecked()
         italic = self.italic_button.isChecked()
@@ -198,7 +198,7 @@ class ComicTranslate(ComicTranslateUI):
         self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
         self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
         self.bold_button.clicked.connect(self.bold)
-        self.italic_button.clicked.connect(self.italics)
+        self.italic_button.clicked.connect(self.italic)
         self.underline_button.clicked.connect(self.underline)
         self.outline_font_color_button.clicked.connect(self.on_outline_color_change)
         self.outline_width_dropdown.currentTextChanged.connect(self.on_outline_width_change)
@@ -560,6 +560,11 @@ class ComicTranslate(ComicTranslateUI):
 
     def undo_image(self):
         if self.current_image_index >= 0:
+            if any(isinstance(item, TextBlockItem) for item in self.image_viewer._scene.items()):
+                self.image_viewer.clear_text_items()
+                self.current_text_block_item = None
+                return
+
             file_path = self.image_files[self.current_image_index]
             current_index = self.current_history_index[file_path]
             while current_index > 0:
@@ -679,6 +684,11 @@ class ComicTranslate(ComicTranslateUI):
             self.loading.setVisible(True)
             self.disable_hbutton_group()
 
+            self.image_viewer.clear_rectangles()
+            self.image_viewer.clear_text_items()
+            self.current_text_block = None
+            self.current_text_block_item = None
+
             text_rendering_settings = self.settings_page.get_text_rendering_settings()
             upper = text_rendering_settings['upper_case']
 
@@ -751,7 +761,7 @@ class ComicTranslate(ComicTranslateUI):
             state = self.bold_button.isChecked()
             self.current_text_block_item.set_bold(state)
 
-    def italics(self):
+    def italic(self):
         if self.current_text_block_item:
             state = self.italic_button.isChecked()
             self.current_text_block_item.set_italic(state)
@@ -803,22 +813,26 @@ class ComicTranslate(ComicTranslateUI):
             self.block_font_color_button,
             self.outline_font_color_button,
             self.outline_width_dropdown,
-            self.bold_button,
-            self.italic_button,
-            self.underline_button,
-            self.alignment_tool_group.get_button_group().buttons()[0],
-            self.alignment_tool_group.get_button_group().buttons()[1],
-            self.alignment_tool_group.get_button_group().buttons()[2],
         ]
 
         # Block signals
         for widget in widgets_to_block:
             widget.blockSignals(True)
 
+        # Block Signals is buggy for these, so use disconnect/connect
+        self.bold_button.clicked.disconnect(self.bold)   
+        self.italic_button.clicked.disconnect(self.italic)
+        self.underline_button.clicked.disconnect(self.underline)
+
+        self.alignment_tool_group.get_button_group().buttons()[0].clicked.disconnect(self.left_align)
+        self.alignment_tool_group.get_button_group().buttons()[1].clicked.disconnect(self.center_align)
+        self.alignment_tool_group.get_button_group().buttons()[2].clicked.disconnect(self.right_align)
+
         try:
             # Set values
             self.font_dropdown.setCurrentText(text_item.font_family)
             self.font_size_dropdown.setCurrentText(str(int(text_item.font_size)))
+
             self.line_spacing_dropdown.setCurrentText(str(text_item.line_spacing))
 
             self.block_font_color_button.setStyleSheet(
@@ -833,8 +847,8 @@ class ComicTranslate(ComicTranslateUI):
                 self.outline_font_color_button.setProperty('selected_color', text_item.outline_color.name())
 
             self.outline_width_dropdown.setCurrentText(str(text_item.outline_width))
-            self.outline_checkbox.setChecked(text_item.outline)
-            
+            self.outline_checkbox.setChecked(text_item.outline)      
+
             self.bold_button.setChecked(text_item.bold)
             self.italic_button.setChecked(text_item.italic)
             self.underline_button.setChecked(text_item.underline)
@@ -856,6 +870,14 @@ class ComicTranslate(ComicTranslateUI):
             # Unblock signals
             for widget in widgets_to_block:
                 widget.blockSignals(False)
+
+            self.bold_button.clicked.connect(self.bold)
+            self.italic_button.clicked.connect(self.italic)
+            self.underline_button.clicked.connect(self.underline)
+
+            self.alignment_tool_group.get_button_group().buttons()[0].clicked.connect(self.left_align)
+            self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
+            self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
 
 
     def save_current_image(self, file_path: str):

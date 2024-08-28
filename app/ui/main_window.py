@@ -2,6 +2,7 @@ import os
 from PySide6 import QtWidgets, QtGui
 from PySide6 import QtCore
 from PySide6.QtGui import QIntValidator
+from PySide6.QtCore import QSettings
 from PySide6.QtGui import QFont, QFontDatabase
 
 from .dayu_widgets import dayu_theme
@@ -318,17 +319,21 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         # Main Text Settings Layout
         main_text_settings_layout = QtWidgets.QHBoxLayout()
+
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup('text_rendering')
+        dflt_clr = settings.value('color', '#000000')
+        dflt_outline_check = settings.value('outline', True, type=bool)
+        settings.endGroup()
         
         self.block_font_color_button = QtWidgets.QPushButton()
         self.block_font_color_button.setToolTip(self.tr("Font Color"))
         self.block_font_color_button.setFixedSize(30, 30)
-        dflt_clr = self.settings_page.ui.color_button.property('selected_color')
+
         self.block_font_color_button.setStyleSheet(
             f"background-color: {dflt_clr}; border: none; border-radius: 5px;"
         )
         self.block_font_color_button.setProperty('selected_color', dflt_clr)
-
-        # self.left_align = self.create_tool_button(svg = "tabler--align-left.svg")
 
         self.alignment_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
         alignment_tools = [
@@ -357,8 +362,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         outline_settings_layout = QtWidgets.QHBoxLayout()
         
         self.outline_checkbox = MCheckBox(self.tr("Outline"))
-        dflt_outline = self.settings_page.ui.outline_checkbox.isChecked()
-        self.outline_checkbox.setChecked(dflt_outline)
+        self.outline_checkbox.setChecked(dflt_outline_check)
         
         self.outline_font_color_button = QtWidgets.QPushButton()
         self.outline_font_color_button.setToolTip(self.tr("Outline Color"))

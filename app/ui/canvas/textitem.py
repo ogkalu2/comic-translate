@@ -28,7 +28,6 @@ class TextBlockItem(QGraphicsTextItem):
         self.parent_item = parent_item
         if text_block:
             self.setPos(text_block.xyxy[0], text_block.xyxy[1]) 
-
         self.text_color = render_color
         self.outline = True if outline_color else False
         self.outline_color = outline_color
@@ -41,8 +40,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.alignment = alignment
         self.line_spacing = line_spacing
 
-        if text:
-            self.apply_all_attributes()
+        # if text:
+        self.apply_all_attributes()
             
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setAcceptHoverEvents(True)
@@ -151,6 +150,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.update()
 
     def set_line_spacing(self, spacing):
+        self.line_spacing = spacing
         doc = self.document()
         cursor = QTextCursor(doc)
         cursor.select(QTextCursor.SelectionType.Document)
