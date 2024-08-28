@@ -400,6 +400,12 @@ class TextBlockItem(QGraphicsTextItem):
         new_font_size = self.font_size * height_ratio
         self.set_font_size(new_font_size)
 
+        x1 = new_pos.x()
+        y1 = new_pos.y()
+        x2 = x1 + new_rect.width()
+        y2 = y1 + self.boundingRect().height()
+        self.text_block.xyxy[:] = [x1, y1, x2, y2]
+
         # Update the resize start position
         self._resize_start = scene_pos
 
