@@ -46,6 +46,44 @@ MComboBox[dayu_size="@tiny"]::drop-down{
     height: @tiny_icon@unit;
 }
 
+MDateTimeEdit::drop-down,
+MDateEdit::drop-down,
+MFontComboBox::drop-down {
+    subcontrol-origin: content;
+    subcontrol-position: center right;
+    image: url(@icon_down);
+}
+MDateTimeEdit[dayu_size="@huge"]::drop-down,
+MDateEdit[dayu_size="@huge"]::drop-down,
+MFontComboBox[dayu_size="@huge"]::drop-down{
+    width: @huge@unit;
+    height: @huge_icon@unit;
+}
+MDateTimeEdit[dayu_size="@large"]::drop-down,
+MDateEdit[dayu_size="@large"]::drop-down,
+MFontComboBox[dayu_size="@large"]::drop-down{
+    width: @large@unit;
+    height: @large_icon@unit;
+}
+MDateTimeEdit[dayu_size="@medium"]::drop-down,
+MDateEdit[dayu_size="@medium"]::drop-down,
+MFontComboBox[dayu_size="@medium"]::drop-down{
+    width: @medium@unit;
+    height: @medium_icon@unit;
+}
+MDateTimeEdit[dayu_size="@small"]::drop-down,
+MDateEdit[dayu_size="@small"]::drop-down,
+MFontComboBox[dayu_size="@small"]::drop-down{
+    width: @small@unit;
+    height: @small_icon@unit;
+}
+MDateTimeEdit[dayu_size="@tiny"]::drop-down,
+MDateEdit[dayu_size="@tiny"]::drop-down,
+MFontComboBox[dayu_size="@tiny"]::drop-down{
+    width: @tiny@unit;
+    height: @tiny_icon@unit;
+}
+
 QAbstractButton[dayu_size="@huge"],
 QAbstractSpinBox[dayu_size="@huge"],
 QComboBox[dayu_size="@huge"],
@@ -109,6 +147,22 @@ MComboBox[dayu_size="@small"]::drop-down{
     height: @drop_down_small@unit;
 }
 MComboBox[dayu_size="@tiny"]::drop-down{
+    height: @drop_down_tiny@unit;
+}
+
+MFontComboBox[dayu_size="@huge"]::drop-down{
+    height: @drop_down_huge@unit;
+}
+MFontComboBox[dayu_size="@large"]::drop-down{
+    height: @drop_down_large@unit;
+}
+MFontComboBox[dayu_size="@medium"]::drop-down{
+    height: @drop_down_medium@unit;
+}
+MFontComboBox[dayu_size="@small"]::drop-down{
+    height: @drop_down_small@unit;
+}
+MFontComboBox[dayu_size="@tiny"]::drop-down{
     height: @drop_down_tiny@unit;
 }
 
@@ -624,6 +678,37 @@ MComboBox[combine=vertical][position=bottom]{
     border-top-right-radius: 0;
 }
 
+MFontComboBox[combine=horizontal][position=left]{
+    margin-left: 1px;
+    border-left: none;
+    border-bottom-right-radius: 0;
+    border-top-right-radius: 0;
+}
+
+MPushButton[combine=horizontal][position=right],
+MFontComboBox[combine=horizontal][position=right]{
+    border-right: none;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 0;
+}
+MPushButton[combine=horizontal][position=center],
+MFontComboBox[combine=horizontal][position=center]{
+    /*border: none;*/
+    border-radius: 0;
+}
+MPushButton[combine=vertical][position=top],
+MFontComboBox[combine=vertical][position=top]{
+    border-top: none;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+MPushButton[combine=vertical][position=bottom],
+MFontComboBox[combine=vertical][position=bottom]{
+    border-bottom: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
 MPushButton:disabled{
     color: @disable_color;
     border: 2px dashed @disable_color;
@@ -722,6 +807,10 @@ MComboBox{
     border: 1px solid @border_color;
     background-color: @background_in_color;
 }
+MFontComboBox{
+    border: 1px solid @border_color;
+    background-color: @background_in_color;
+}
 QCombBox > QLineEdit{
     background-color: red;
 }
@@ -735,6 +824,17 @@ MComboBox:hover{
 MComboBox:disabled{
     color: @disable_color;
 }
+
+MFontComboBox:focus{
+    border: 1px solid @primary_5;
+}
+MFontComboBox:hover{
+    border: 1px solid @primary_7;
+}
+MFontComboBox:disabled{
+    color: @disable_color;
+}
+
 /* MLabel */
 MLabel{
     padding: 0px;
