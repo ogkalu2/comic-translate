@@ -525,16 +525,16 @@ class SettingsPageUI(QtWidgets.QWidget):
         uppercase_checkbox = MCheckBox(self.tr("Render Text in UpperCase"))
         text_rendering_layout.addWidget(uppercase_checkbox)
 
-        outline_checkbox = MCheckBox(self.tr("Render Text With White Outline"))
-        outline_checkbox.setToolTip(self.tr("When checked, black bubbles with white text will be rendered automatically without changing color"))
-        text_rendering_layout.addWidget(outline_checkbox)
+        self.outline_checkbox = MCheckBox(self.tr("Render Text With White Outline"))
+        self.outline_checkbox.setToolTip(self.tr("When checked, black bubbles with white text will be rendered automatically without changing color"))
+        text_rendering_layout.addWidget(self.outline_checkbox)
 
         # Store widgets for later access
         self.text_rendering_widgets['alignment'] = alignment_combo
         self.text_rendering_widgets['font'] = self.font_combo
         self.text_rendering_widgets['color_button'] = self.color_button
         self.text_rendering_widgets['upper_case'] = uppercase_checkbox
-        self.text_rendering_widgets['outline'] = outline_checkbox
+        self.text_rendering_widgets['outline'] = self.outline_checkbox
 
         text_rendering_layout.addStretch(1)
         return text_rendering_layout

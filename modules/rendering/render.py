@@ -1,7 +1,10 @@
-from PIL import Image, ImageFont, ImageDraw
 import cv2
 import numpy as np
 from typing import Tuple, List
+
+from PIL import Image, ImageFont, ImageDraw
+from PySide6.QtGui import QFontMetrics, QFont
+
 from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
 from ..detection import make_bubble_mask, bubble_interior_bounds
@@ -86,10 +89,6 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
 
     font = ImageFont.truetype(font_pth, size=init_font_size)
 
-    default_init_font_size = init_font_size
-    default_min_font_size = min_font_size
-    default_colour = colour
-
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
         tbbox_top_left = (x1, y1)
@@ -99,17 +98,11 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
             continue
 
         if blk.min_font_size > 0:
-           min_font_size = blk.min_font_size
-        else:
-           min_font_size = default_min_font_size
+            min_font_size = blk.min_font_size
         if blk.max_font_size > 0:
-           init_font_size = blk.max_font_size
-        else:
-           init_font_size = default_init_font_size
+            init_font_size = blk.max_font_size
         if blk.font_color:
-           colour = blk.font_color
-        else:
-           colour = default_colour
+            colour = blk.font_color
 
         translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height,
                                                align=blk.alignment, spacing=blk.line_spacing, init_font_size=init_font_size, min_font_size=min_font_size)
@@ -156,3 +149,107 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
 
     return blk_list
 
+
+def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int,
+                    line_spacing, outline_width, bold, italic, underline,
+                    init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
+    """Break long text to multiple lines, and reduce point size
+    until all text fits within a bounding box."""
+    
+    def get_text_height(text, font, line_spacing):
+        font_metrics = QFontMetrics(font)
+        lines = text.split('\n')
+        single_line_height = font_metrics.height()
+        single_line_height += outline_width * 2
+        total_height = single_line_height * len(lines)
+        extra_spacing = single_line_height * (line_spacing - 1) * (len(lines) - 1)
+        
+        return total_height + extra_spacing
+    
+    def get_text_width(txt, font):
+        fm = QFontMetrics(font)
+        max_width = max(fm.horizontalAdvance(line) for line in txt.split('\n'))
+
+        return max_width
+    
+    def prepare_font(font_size):
+        font = QFont(font_input, font_size)
+        font.setBold(bold)
+        font.setItalic(italic)
+        font.setUnderline(underline)
+
+        return font
+    
+    def eval_metrics(txt: str, font_sz) -> Tuple[float, float]:
+        """Quick helper function to calculate width/height of text."""
+
+        font = prepare_font(font_sz)
+        width = get_text_width(txt, font)
+        height = get_text_height(txt, font, line_spacing)
+
+        return width, height
+
+    mutable_message = text
+    font_size = init_font_size
+    
+    while font_size > min_font_size:
+        width, height = eval_metrics(mutable_message, font_size)
+        if height > roi_height:
+            font_size -= 1  # Reduce pointsize
+            mutable_message = text  # Restore original text
+        elif width > roi_width:
+            columns = len(mutable_message)
+            while columns > 0:
+                columns -= 1
+                if columns == 0:
+                    break
+                mutable_message = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True)) 
+                wrapped_width, _ = eval_metrics(mutable_message, font_size)
+                if wrapped_width <= roi_width:
+                    break
+            if columns < 1:
+                font_size -= 1  # Reduce pointsize
+                mutable_message = text  # Restore original text
+        else:
+            break
+
+    if font_size <= min_font_size:
+        font_size = min_font_size
+        mutable_message = text
+
+        # Wrap text to fit within as much as possible
+        # Minimize cost function: (width - roi_width)^2 + (height - roi_height)^2
+        min_cost = 1e9
+        min_text = text
+        for columns in range(1, len(text)):
+            wrapped_text = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True))
+            wrapped_width, wrapped_height = eval_metrics(wrapped_text, font_size)
+            cost = (wrapped_width - roi_width)**2 + (wrapped_height - roi_height)**2
+            if cost < min_cost:
+                min_cost = cost
+                min_text = wrapped_text
+
+        mutable_message = min_text
+
+    return mutable_message, font_size
+
+def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
+                outline_width, bold, italic, underline, init_font_size: int = 40, 
+         min_font_size: int = 10):
+    
+    for blk in blk_list:
+        x1, y1, width, height = blk.xywh
+
+        translation = blk.translation
+        if not translation or len(translation) == 1:
+            continue
+
+        translation, font_size = pyside_word_wrap(translation, font_family, width, height,
+                                                 line_spacing, outline_width, bold, italic, underline,
+                                                 init_font_size, min_font_size)
+ 
+        main_page.blk_rendered.emit(translation, font_size, blk)
+
+
+
+        

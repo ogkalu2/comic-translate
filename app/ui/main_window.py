@@ -2,10 +2,12 @@ import os
 from PySide6 import QtWidgets, QtGui
 from PySide6 import QtCore
 from PySide6.QtGui import QIntValidator
+from PySide6.QtGui import QFont, QFontDatabase
 
 from .dayu_widgets import dayu_theme
 from .dayu_widgets.divider import MDivider
 from .dayu_widgets.combo_box import MComboBox
+from .dayu_widgets.check_box import MCheckBox
 from .dayu_widgets.text_edit import MTextEdit
 from .dayu_widgets.line_edit import MLineEdit
 from .dayu_widgets.browser import MDragFileButton, MClickBrowserFileToolButton, MClickSaveFileToolButton
@@ -19,9 +21,8 @@ from .dayu_widgets.qt import MPixmap
 from .dayu_widgets.progress_bar import MProgressBar
 from .dayu_widgets.loading import MLoading
 from .dayu_widgets.theme import MTheme
-from .dayu_widgets.spin_box import MSpinBox
 
-from .image_viewer import ImageViewer
+from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
 
 
@@ -83,6 +84,12 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         }
         # Create reverse mapping
         self.reverse_lang_mapping = {v: k for k, v in self.lang_mapping.items()}
+
+        self.button_to_alignment = {
+            0: QtCore.Qt.AlignmentFlag.AlignLeft,
+            1: QtCore.Qt.AlignmentFlag.AlignCenter,
+            -1: QtCore.Qt.AlignmentFlag.AlignRight,
+        }
 
         self._init_ui()
 
@@ -173,7 +180,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             {"text": self.tr("Get Translations"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Segment Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Clean Image"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Paste Translations"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Rendering"), "dayu_type": MPushButton.DefaultType, "enabled": False},
         ]
 
         self.hbutton_group = MPushButtonGroup()
@@ -258,72 +265,126 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
        
         # Source Language
         s_combo_text_layout = QtWidgets.QVBoxLayout()
-        self.s_combo = MComboBox()
+        self.s_combo = MComboBox().medium()
         self.s_combo.addItems([self.tr(lang) for lang in supported_source_languages])
         self.s_combo.setToolTip(self.tr("Source Language"))
         s_combo_text_layout.addWidget(self.s_combo)
         self.s_text_edit = MTextEdit()
-        self.s_text_edit.setFixedHeight(200)
+        self.s_text_edit.setFixedHeight(150)
         s_combo_text_layout.addWidget(self.s_text_edit)
         input_layout.addLayout(s_combo_text_layout)
 
         # Target Language
         t_combo_text_layout = QtWidgets.QVBoxLayout()
-        self.t_combo = MComboBox()
+        self.t_combo = MComboBox().medium()
         self.t_combo.addItems([self.tr(lang) for lang in supported_target_languages])
         self.t_combo.setToolTip(self.tr("Target Language"))
         t_combo_text_layout.addWidget(self.t_combo)
         self.t_text_edit = MTextEdit()
-        self.t_text_edit.setFixedHeight(200)
+        self.t_text_edit.setFixedHeight(150)
         t_combo_text_layout.addWidget(self.t_text_edit)
 
-        # Font Settings
-        self.font_settings_layout = QtWidgets.QHBoxLayout()
-        min_font_layout = QtWidgets.QHBoxLayout()
-        max_font_layout = QtWidgets.QHBoxLayout()
-        min_font_label = MLabel(self.tr("Min Size:"))
-        max_font_label = MLabel(self.tr("Max Size:"))
-        self.min_font_spinbox = MSpinBox().small()
-        self.min_font_spinbox.setFixedWidth(60)
-        self.min_font_spinbox.setMaximum(100)
-        self.min_font_spinbox.setValue(self.settings_page.get_min_font_size())
-        self.max_font_spinbox = MSpinBox().small()
-        self.max_font_spinbox.setFixedWidth(60)
-        self.max_font_spinbox.setMaximum(100)
-        self.max_font_spinbox.setValue(self.settings_page.get_max_font_size())
-        min_font_layout.addWidget(min_font_label)
-        min_font_layout.addWidget(self.min_font_spinbox)
-        min_font_layout.addStretch()
-        max_font_layout.addWidget(max_font_label)
-        max_font_layout.addWidget(self.max_font_spinbox)
-        max_font_layout.addStretch()
-        self.font_settings_layout.addLayout(min_font_layout)
-        self.font_settings_layout.addLayout(max_font_layout)
-        self.min_font_spinbox.textChanged.connect(self.update_text_block_font_min)
-        self.max_font_spinbox.textChanged.connect(self.update_text_block_font_max)
-
-        # Font Color
-        color_layout = QtWidgets.QHBoxLayout()
-        color_label = MLabel(self.tr("Color"))
-        self.block_font_color_button = QtWidgets.QPushButton()
-        self.block_font_color_button.setFixedSize(30, 30)  # Set a fixed size for the button
-        self.block_font_color_button.setStyleSheet(
-            "background-color: black; border: none; border-radius: 5px;"
-        )
-        self.block_font_color_button.setProperty('selected_color', "#000000")
-        color_layout.addWidget(color_label)
-        color_layout.addWidget(self.block_font_color_button)
-        self.font_settings_layout.addLayout(color_layout)
-        self.block_font_color_button.clicked.connect(self.select_color)
-
-        font_panel_layout = QtWidgets.QVBoxLayout()
-        font_panel_header = MDivider(self.tr('Custom font settings for the block'))
-        font_panel_layout.addSpacing(20)
-        font_panel_layout.addWidget(font_panel_header)
-        font_panel_layout.addLayout(self.font_settings_layout)
-        font_panel_layout.addSpacing(20)
-
         input_layout.addLayout(t_combo_text_layout)
+
+        # Text Render Settings
+        text_render_layout = QtWidgets.QVBoxLayout()
+        text_render_layout.addSpacing(20)
+
+        font_settings_layout = QtWidgets.QHBoxLayout()
+
+        self.font_dropdown = MComboBox().small()
+        self.font_dropdown.setToolTip(self.tr("Font"))
+        font_folder_path = os.path.join(os.getcwd(), "fonts")
+        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path)
+                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+        font_families = [self.get_font_family(f) for f in font_files]
+        self.font_dropdown.addItems(font_families)
+
+        self.font_size_dropdown = MComboBox().small()
+        self.font_size_dropdown.setToolTip(self.tr("Font Size"))
+        self.font_size_dropdown.addItems(['4', '8', '9', '10', '11', '12', '14', '16', '18', 
+                                          '20', '22', '24', '28', '32', '36', '48', '72'])
+        self.font_size_dropdown.setCurrentText('12')
+        self.font_size_dropdown.setFixedWidth(60)
+        self.line_spacing_dropdown = MComboBox().small()
+        self.line_spacing_dropdown.setToolTip(self.tr("Line Spacing"))
+        self.line_spacing_dropdown.addItems(['1.0', '1.1', '1.2', '1.3', '1.4', '1.5'])
+        self.line_spacing_dropdown.setFixedWidth(60)
+
+        font_settings_layout.addWidget(self.font_dropdown)
+        font_settings_layout.addWidget(self.font_size_dropdown)
+        font_settings_layout.addWidget(self.line_spacing_dropdown)
+        font_settings_layout.addStretch()
+
+        # Main Text Settings Layout
+        main_text_settings_layout = QtWidgets.QHBoxLayout()
+        
+        self.block_font_color_button = QtWidgets.QPushButton()
+        self.block_font_color_button.setToolTip(self.tr("Font Color"))
+        self.block_font_color_button.setFixedSize(30, 30)
+        dflt_clr = self.settings_page.ui.color_button.property('selected_color')
+        self.block_font_color_button.setStyleSheet(
+            f"background-color: {dflt_clr}; border: none; border-radius: 5px;"
+        )
+        self.block_font_color_button.setProperty('selected_color', dflt_clr)
+
+        # self.left_align = self.create_tool_button(svg = "tabler--align-left.svg")
+
+        self.alignment_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
+        alignment_tools = [
+            {"svg": "tabler--align-left.svg", "checkable": True, "tooltip": "Align Left"},
+            {"svg": "tabler--align-center.svg", "checkable": True, "tooltip": "Align Center"},
+            {"svg": "tabler--align-right.svg", "checkable": True, "tooltip": "Align Right"},
+        ]
+        self.alignment_tool_group.set_button_list(alignment_tools)
+        self.alignment_tool_group.get_button_group().buttons()[1].setChecked(True)
+
+        self.bold_button = self.create_tool_button(svg = "bold.svg", checkable=True)
+        self.bold_button.setToolTip(self.tr("Bold"))
+        self.italic_button = self.create_tool_button(svg = "italic.svg", checkable=True)
+        self.italic_button.setToolTip(self.tr("Italic"))
+        self.underline_button = self.create_tool_button(svg = "underline.svg", checkable=True)
+        self.underline_button.setToolTip(self.tr("Underline"))
+
+        main_text_settings_layout.addWidget(self.block_font_color_button)
+        main_text_settings_layout.addWidget(self.alignment_tool_group)
+        main_text_settings_layout.addWidget(self.bold_button)
+        main_text_settings_layout.addWidget(self.italic_button)
+        main_text_settings_layout.addWidget(self.underline_button)
+        main_text_settings_layout.addStretch()
+
+        # Outline Settings Layout
+        outline_settings_layout = QtWidgets.QHBoxLayout()
+        
+        self.outline_checkbox = MCheckBox(self.tr("Outline"))
+        dflt_outline = self.settings_page.ui.outline_checkbox.isChecked()
+        self.outline_checkbox.setChecked(dflt_outline)
+        
+        self.outline_font_color_button = QtWidgets.QPushButton()
+        self.outline_font_color_button.setToolTip(self.tr("Outline Color"))
+        self.outline_font_color_button.setFixedSize(30, 30)
+        self.outline_font_color_button.setStyleSheet(
+            "background-color: white; border: none; border-radius: 5px;"
+        )
+        self.outline_font_color_button.setProperty('selected_color', "#ffffff")
+
+        self.outline_width_dropdown = MComboBox().small()
+        self.outline_width_dropdown.setFixedWidth(60)
+        self.outline_width_dropdown.setToolTip(self.tr("Outline Width"))
+        self.outline_width_dropdown.addItems(['1.0', '1.15', '1.3', '1.4' '1.5'])
+
+        outline_settings_layout.addWidget(self.outline_checkbox)
+        outline_settings_layout.addWidget(self.outline_font_color_button)
+        outline_settings_layout.addWidget(self.outline_width_dropdown)
+        outline_settings_layout.addStretch()
+
+        rendering_divider_top = MDivider(self.tr('Custom font settings for the block'))
+        rendering_divider_bottom = MDivider()
+        text_render_layout.addWidget(rendering_divider_top)
+        text_render_layout.addLayout(font_settings_layout)
+        text_render_layout.addLayout(main_text_settings_layout)
+        text_render_layout.addLayout(outline_settings_layout)
+        text_render_layout.addWidget(rendering_divider_bottom)
 
         # Tools Layout
         tools_widget = QtWidgets.QWidget() 
@@ -472,7 +533,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         #tools_scroll.setMinimumHeight(300)
 
         right_layout.addLayout(input_layout)
-        right_layout.addLayout(font_panel_layout)
+        right_layout.addLayout(text_render_layout)
         right_layout.addWidget(tools_scroll)
         right_layout.addStretch()
 
@@ -501,37 +562,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         content_widget.setLayout(content_layout)
 
         return content_widget
-
-    def set_manual_font_settings_enabled(self, enabled: bool):
-        self.min_font_spinbox.setEnabled(enabled)
-        self.max_font_spinbox.setEnabled(enabled)
-        self.block_font_color_button.setEnabled(enabled)
-
-    def update_text_block_font_min(self):
-        if self.current_text_block:
-            index = self.blk_list.index(self.current_text_block)
-            self.blk_list[index].min_font_size = int(self.min_font_spinbox.text())
-
-    def update_text_block_font_max(self):
-        if self.current_text_block:
-            index = self.blk_list.index(self.current_text_block)
-            self.blk_list[index].max_font_size = int(self.max_font_spinbox.text())
-
-    def select_color(self):
-        default_color = QtGui.QColor('#000000')
-        color_dialog = QtWidgets.QColorDialog()
-        color_dialog.setCurrentColor(default_color)
-        if color_dialog.exec() == QtWidgets.QDialog.Accepted:
-            color = color_dialog.selectedColor()
-            if color.isValid():
-                self.block_font_color_button.setStyleSheet(
-                    f"background-color: {color.name()}; border: none; border-radius: 5px;"
-                )
-                self.block_font_color_button.setProperty('selected_color', color.name())
-                if self.current_text_block:
-                    index = self.blk_list.index(self.current_text_block)
-                    self.blk_list[index].font_color = color.name()
-
 
     def create_tool_button(self, text: str = "", svg: str = "", checkable: bool = False):
         if text:
@@ -651,4 +681,25 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
     def delete_selected_box(self):
         self.image_viewer.delete_selected_rectangle()
+
+    def get_font_family(self, font_input: str) -> QFont:
+        # Check if font_input is a file path
+        if os.path.splitext(font_input)[1].lower() in ['.ttf', '.otf', '.ttc']:
+            font_id = QFontDatabase.addApplicationFont(font_input)
+            if font_id != -1:
+                font_families = QFontDatabase.applicationFontFamilies(font_id)
+                if font_families:
+                    return font_families[0]
+        
+        # If not a file path or loading failed, treat as font family name
+        return font_input
+    
+    def get_color(self):
+        default_color = QtGui.QColor('#000000')
+        color_dialog = QtWidgets.QColorDialog()
+        color_dialog.setCurrentColor(default_color)
+        if color_dialog.exec() == QtWidgets.QDialog.Accepted:
+            color = color_dialog.selectedColor()
+            return color
+        
 

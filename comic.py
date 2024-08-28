@@ -10,8 +10,8 @@ from PySide6.QtCore import QCoreApplication
 from PySide6.QtCore import QSettings
 from PySide6.QtCore import QThreadPool
 from PySide6.QtCore import QTranslator, QLocale
+from PySide6.QtGui import QColor
 
-from app.ui.dayu_widgets import dayu_theme
 from app.ui.dayu_widgets.clickable_card import ClickMeta
 from app.ui.dayu_widgets.qt import MPixmap
 from app.ui.main_window import ComicTranslateUI
@@ -19,11 +19,13 @@ from app.ui.messages import Messages
 from app.thread_worker import GenericWorker
 from app.ui.dayu_widgets.message import MMessage
 
+from app.ui.canvas.textitem import TextBlockItem
+
 from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
-from modules.rendering.render import draw_text
+from modules.rendering.render import manual_wrap
 from modules.utils.file_handler import FileHandler
-from modules.utils.pipeline_utils import set_alignment, font_selected, validate_settings, \
+from modules.utils.pipeline_utils import font_selected, validate_settings, \
                                          validate_ocr, validate_translator, get_language_code
 from modules.utils.archives import make
 from modules.utils.download import get_models, mandatory_models
@@ -38,6 +40,7 @@ class ComicTranslate(ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)
     progress_update = QtCore.Signal(int, int, int, int, bool)
     image_skipped = QtCore.Signal(str, str, str)
+    blk_rendered = QtCore.Signal(str, int, object)
 
     def __init__(self, parent=None):
         super(ComicTranslate, self).__init__(parent)
@@ -52,6 +55,7 @@ class ComicTranslate(ComicTranslateUI):
         self.current_history_index = {}  # Current position in the undo/redo history for each image
         self.displayed_images = set()  # New set to track displayed images
         self.current_text_block = None
+        self.current_text_block_item = None
 
         self.pipeline = ComicTranslatePipeline(self)
         self.file_handler = FileHandler()
@@ -62,6 +66,8 @@ class ComicTranslate(ComicTranslateUI):
         self.image_processed.connect(self.on_image_processed)
         self.progress_update.connect(self.update_progress)
 
+        self.blk_rendered.connect(self.on_blk_rendered)
+
         self.image_cards = []
         self.current_highlighted_card = None
 
@@ -70,6 +76,75 @@ class ComicTranslate(ComicTranslateUI):
 
         self.load_main_page_settings()
         self.settings_page.load_settings()
+
+    def on_blk_rendered(self, text, font_size, blk):
+        if not self.image_viewer.hasPhoto():
+            print("No main image to add to.")
+            return
+        
+        font_family = self.font_dropdown.currentText()
+        text_color_str = self.block_font_color_button.property('selected_color')
+        text_color = QColor(text_color_str)
+        
+        id = self.alignment_tool_group.get_dayu_checked()
+        alignment = self.button_to_alignment[id]
+        line_spacing = float(self.line_spacing_dropdown.currentText())
+        outline_color_str = self.outline_font_color_button.property('selected_color')
+        outline_color = QColor(outline_color_str)
+        outline_width = float(self.outline_width_dropdown.currentText())
+        bold = self.bold_button.isChecked()
+        italic = self.italic_button.isChecked()
+        underline = self.underline_button.isChecked()
+
+        text_item = TextBlockItem(text, self.image_viewer._photo, blk, font_family, 
+                                  font_size, text_color, alignment, line_spacing, 
+                                  outline_color, outline_width, bold, italic, underline)
+        
+        self.image_viewer._scene.addItem(text_item)
+        self.image_viewer._text_items.append(text_item)  
+
+        text_item.itemSelected.connect(self.on_text_item_selected)
+        text_item.itemDeselected.connect(self.on_text_item_deselcted)
+        text_item.textChanged.connect(self.update_text_block_from_item)
+
+    def on_text_item_deselcted(self):
+        self.clear_text_edits()
+
+    def update_text_block_from_item(self, new_text):
+        if self.current_text_block:
+            self.current_text_block.translation = new_text
+            self.t_text_edit.blockSignals(True)
+            self.t_text_edit.setPlainText(new_text)
+            self.t_text_edit.blockSignals(False)
+    
+    def on_text_item_selected(self, text_item):
+        self.current_text_block_item = text_item
+        self.current_text_block = text_item.text_block
+        
+        # Update both s_text_edit and t_text_edit
+        self.s_text_edit.blockSignals(True)
+        self.s_text_edit.setPlainText(self.current_text_block.text)
+        self.s_text_edit.blockSignals(False)
+
+        self.t_text_edit.blockSignals(True)
+        self.t_text_edit.setPlainText(text_item.toPlainText())
+        self.t_text_edit.blockSignals(False)
+
+        self.set_values_for_blk_item(text_item)
+            
+    def update_text_block_from_edit(self):
+        new_text = self.t_text_edit.toPlainText()
+        if self.current_text_block:
+            self.current_text_block.translation = new_text
+        
+        if self.current_text_block_item and self.current_text_block_item in self.image_viewer._scene.items():
+            cursor_position = self.t_text_edit.textCursor().position()
+            self.current_text_block_item.setPlainText(new_text)
+            
+            # Restore cursor position
+            cursor = self.t_text_edit.textCursor()
+            cursor.setPosition(cursor_position)
+            self.t_text_edit.setTextCursor(cursor)
 
     def connect_ui_elements(self):
         # Browsers
@@ -104,16 +179,30 @@ class ComicTranslate(ComicTranslateUI):
 
         # Connect text edit widgets
         self.s_text_edit.textChanged.connect(self.update_text_block)
-        self.t_text_edit.textChanged.connect(self.update_text_block)
+        self.t_text_edit.textChanged.connect(self.update_text_block_from_edit)
 
         self.s_combo.currentTextChanged.connect(self.save_src_trg)
         self.t_combo.currentTextChanged.connect(self.save_src_trg)
 
         # Connect image viewer signals
         self.image_viewer.rectangle_selected.connect(self.handle_rectangle_selection)
-        self.image_viewer.rectangle_changed.connect(self.handle_rectangle_change)
         self.image_viewer.rectangle_created.connect(self.handle_rectangle_creation)
         self.image_viewer.rectangle_deleted.connect(self.handle_rectangle_deletion)
+
+        # Rendering
+        self.font_dropdown.currentTextChanged.connect(self.on_font_dropdown_change)
+        self.font_size_dropdown.currentTextChanged.connect(self.on_font_size_change)
+        self.line_spacing_dropdown.currentTextChanged.connect(self.on_line_spacing_change)
+        self.block_font_color_button.clicked.connect(self.on_font_color_change)
+        self.alignment_tool_group.get_button_group().buttons()[0].clicked.connect(self.left_align)
+        self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
+        self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
+        self.bold_button.clicked.connect(self.bold)
+        self.italic_button.clicked.connect(self.italics)
+        self.underline_button.clicked.connect(self.underline)
+        self.outline_font_color_button.clicked.connect(self.on_outline_color_change)
+        self.outline_width_dropdown.currentTextChanged.connect(self.on_outline_width_change)
+        self.outline_checkbox.stateChanged.connect(self.toggle_outline_settings)
 
     def save_src_trg(self):
         source_lang = self.s_combo.currentText()
@@ -141,38 +230,15 @@ class ComicTranslate(ComicTranslateUI):
         self.blk_list = updated_blk_list
         self.pipeline.load_box_coords(self.blk_list)
 
-    def set_block_font_settings(self):
-        self.min_font_spinbox.setValue(self.settings_page.get_min_font_size())
-        self.max_font_spinbox.setValue(self.settings_page.get_max_font_size())
-        text_rendering_settings = self.settings_page.get_text_rendering_settings()
-        self.block_font_color_button.setStyleSheet(
-            f"background-color: {text_rendering_settings['color']}; border: none; border-radius: 5px;"
-        )
-        self.block_font_color_button.setProperty('selected_color', settings.value('color', text_rendering_settings['color']))
-        if self.current_text_block:
-            index = self.blk_list.index(self.current_text_block)
-            blk = self.blk_list[index]
-            if blk.font_color:
-                self.block_font_color_button.setStyleSheet(
-                    f"background-color: {blk.font_color}; border: none; border-radius: 5px;"
-                )
-                self.block_font_color_button.setProperty('selected_color', settings.value('color', blk.font_color))
-            if blk.min_font_size > 0:
-                self.min_font_spinbox.setValue(blk.min_font_size)
-            if blk.max_font_size > 0:
-                self.max_font_spinbox.setValue(blk.max_font_size)
-
     def batch_mode_selected(self):
         self.disable_hbutton_group()
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
-        self.set_manual_font_settings_enabled(False)
 
     def manual_mode_selected(self):
         self.enable_hbutton_group()
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
-        self.set_manual_font_settings_enabled(True)
     
     def on_image_processed(self, index: int, rendered_image: np.ndarray, image_path: str):
         if index == self.current_image_index:
@@ -262,9 +328,9 @@ class ComicTranslate(ComicTranslateUI):
         
     def clear_text_edits(self):
         self.current_text_block = None
+        self.current_text_block_item = None
         self.s_text_edit.clear()
         self.t_text_edit.clear()
-        self.set_block_font_settings()
 
     def finish_ocr_translate(self):
         if self.blk_list:
@@ -327,6 +393,7 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.clear_brush_strokes()
         self.s_text_edit.clear()
         self.t_text_edit.clear()
+        self.image_viewer.clear_text_items()
 
         # Reset current_image_index
         self.current_image_index = -1
@@ -384,15 +451,14 @@ class ComicTranslate(ComicTranslateUI):
             self.current_highlighted_card = self.image_cards[index]
 
     def on_card_clicked(self, index: int):
+        self.current_text_block_item = None
         self.highlight_card(index)
         self.display_image(index)
 
     def save_image_state(self, file: str):
         self.image_states[file] = {
             'viewer_state': self.image_viewer.save_state(),
-            'source_text': self.s_text_edit.toPlainText(),
             'source_lang': self.s_combo.currentText(),
-            'target_text': self.t_text_edit.toPlainText(),
             'target_lang': self.t_combo.currentText(),
             'brush_strokes': self.image_viewer.save_brush_strokes(),
             'blk_list': self.blk_list
@@ -409,16 +475,19 @@ class ComicTranslate(ComicTranslateUI):
         self.set_cv2_image(cv2_image)
         if file_path in self.image_states:
             state = self.image_states[file_path]
+
+            self.blk_list = state['blk_list']
             self.image_viewer.load_state(state['viewer_state'])
-            self.s_text_edit.setPlainText(state['source_text'])
             self.s_combo.setCurrentText(state['source_lang'])
-            self.t_text_edit.setPlainText(state['target_text'])
             self.t_combo.setCurrentText(state['target_lang'])
             self.image_viewer.load_brush_strokes(state['brush_strokes'])
-            self.blk_list = state['blk_list']
-        else:
-            self.s_text_edit.clear()
-            self.t_text_edit.clear()
+
+            for text_item in self.image_viewer._text_items:
+                text_item.itemSelected.connect(self.on_text_item_selected)
+                text_item.itemDeselected.connect(self.on_text_item_deselcted)
+                text_item.textChanged.connect(self.update_text_block_from_item)
+
+        self.clear_text_edits()
 
     def display_image(self, index: int):
         if 0 <= index < len(self.image_files):
@@ -452,6 +521,7 @@ class ComicTranslate(ComicTranslateUI):
             self.set_tool('brush')
             self.disable_hbutton_group()
             self.image_viewer.clear_rectangles()
+            self.image_viewer.clear_text_items()
             if self.blk_list:
                 for blk in self.blk_list:
                     bboxes = blk.inpaint_bboxes
@@ -533,17 +603,16 @@ class ComicTranslate(ComicTranslateUI):
         rect = (x1, y1, x1 + w, y1 + h)
         self.current_text_block = self.find_corresponding_text_block(rect, 0.5)
         if self.current_text_block:
-            self.s_text_edit.textChanged.disconnect(self.update_text_block)
-            self.t_text_edit.textChanged.disconnect(self.update_text_block)
+            self.s_text_edit.blockSignals(True)
+            self.t_text_edit.blockSignals(True)
             self.s_text_edit.setPlainText(self.current_text_block.text)
             self.t_text_edit.setPlainText(self.current_text_block.translation)
-            self.s_text_edit.textChanged.connect(self.update_text_block)
-            self.t_text_edit.textChanged.connect(self.update_text_block)
+            self.s_text_edit.blockSignals(False)
+            self.t_text_edit.blockSignals(False)
         else:
             self.s_text_edit.clear()
             self.t_text_edit.clear()
             self.current_text_block = None
-        self.set_block_font_settings()
 
     def handle_rectangle_creation(self, new_rect: QtCore.QRectF):
         x1, y1, w, h = new_rect.getRect()
@@ -596,25 +665,30 @@ class ComicTranslate(ComicTranslateUI):
         self.progress_bar.setValue(int(progress))
 
     def on_render_complete(self, rendered_image: np.ndarray):
-        self.set_cv2_image(rendered_image)
+        # self.set_cv2_image(rendered_image)
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 
     def render_text(self):
+
         if self.image_viewer.hasPhoto() and self.blk_list:
+            self.set_tool(None)
             if not font_selected(self):
                 return
             self.clear_text_edits()
             self.loading.setVisible(True)
             self.disable_hbutton_group()
-            inpaint_image = self.image_viewer.get_cv2_image()
+
             text_rendering_settings = self.settings_page.get_text_rendering_settings()
-            font = text_rendering_settings['font']
-            font_color = text_rendering_settings['color']
             upper = text_rendering_settings['upper_case']
-            outline = text_rendering_settings['outline']
-            font_path = font_path = f'fonts/{font}'
-            set_alignment(self.blk_list, self.settings_page)
+
+            line_spacing = float(self.line_spacing_dropdown.currentText())
+            font_family = self.font_dropdown.currentText()
+            outline_width = float(self.outline_width_dropdown.currentText())
+
+            bold = self.bold_button.isChecked()
+            italic = self.italic_button.isChecked()
+            underline = self.underline_button.isChecked()
 
             target_lang = self.t_combo.currentText()
             target_lang_en = self.lang_mapping.get(target_lang, None)
@@ -623,9 +697,10 @@ class ComicTranslate(ComicTranslateUI):
             min_font_size = self.settings_page.get_min_font_size() 
             max_font_size = self.settings_page.get_max_font_size()
 
-            self.run_threaded(draw_text, self.on_render_complete, self.default_error_handler, 
-                              None, inpaint_image, self.blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size, outline=outline)
-            
+            self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
+                              None, self, self.blk_list, font_family, line_spacing, outline_width, 
+                              bold, italic, underline, max_font_size, min_font_size)
+
     def handle_rectangle_change(self, new_rect: QtCore.QRectF):
         # Find the corresponding TextBlock in blk_list
         for blk in self.blk_list:
@@ -634,8 +709,157 @@ class ComicTranslate(ComicTranslateUI):
                 blk.xyxy[:] = [new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()]
                 break
 
+    def on_font_dropdown_change(self, font_family):
+        if self.current_text_block_item:
+            font_size = int(self.font_size_dropdown.currentText())
+            self.current_text_block_item.set_font(font_family, font_size)
+
+    def on_font_size_change(self, font_size):
+        if self.current_text_block_item:
+            font_size = float(font_size)
+            self.current_text_block_item.set_font_size(font_size)
+
+    def on_line_spacing_change(self, line_spacing):
+        if self.current_text_block_item:
+            spacing = float(line_spacing)
+            self.current_text_block_item.set_line_spacing(spacing)
+
+    def on_font_color_change(self):
+        font_color = self.get_color()
+        if font_color and font_color.isValid():
+            self.block_font_color_button.setStyleSheet(
+                f"background-color: {font_color.name()}; border: none; border-radius: 5px;"
+            )
+            self.block_font_color_button.setProperty('selected_color', font_color.name())
+            if self.current_text_block_item:
+                self.current_text_block_item.set_color(font_color)
+
+    def left_align(self):
+        if self.current_text_block_item:
+            self.current_text_block_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+
+    def center_align(self):
+        if self.current_text_block_item:
+            self.current_text_block_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+
+    def right_align(self):
+        if self.current_text_block_item:
+            self.current_text_block_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignRight)
+
+    def bold(self):
+        if self.current_text_block_item:
+            state = self.bold_button.isChecked()
+            self.current_text_block_item.set_bold(state)
+
+    def italics(self):
+        if self.current_text_block_item:
+            state = self.italic_button.isChecked()
+            self.current_text_block_item.set_italic(state)
+
+    def underline(self):
+        if self.current_text_block_item:
+            state = self.underline_button.isChecked()
+            self.current_text_block_item.set_underline(state)
+
+    def on_outline_color_change(self):
+        outline_color = self.get_color()
+        if outline_color and outline_color.isValid():
+            self.outline_font_color_button.setStyleSheet(
+                f"background-color: {outline_color.name()}; border: none; border-radius: 5px;"
+            )
+            self.outline_font_color_button.setProperty('selected_color', outline_color.name())
+            outline_width = float(self.outline_width_dropdown.currentText())
+
+            if self.current_text_block_item:
+                self.current_text_block_item.set_outline(outline_color, outline_width)
+
+    def on_outline_width_change(self, outline_width):
+        if self.current_text_block_item:
+            outline_width = float(self.outline_width_dropdown.currentText())
+            color_str = self.outline_font_color_button.property('selected_color')
+            color = QColor(color_str)
+            self.current_text_block_item.set_outline(color, outline_width)
+
+    def toggle_outline_settings(self, state): 
+        enabled = True if state == 2 else False
+        self.outline_font_color_button.setEnabled(enabled)
+        self.outline_width_dropdown.setEnabled(enabled)
+
+        if self.current_text_block_item:
+            outline_width = float(self.outline_width_dropdown.currentText())
+            if not enabled:
+                self.current_text_block_item.set_outline(None, outline_width)
+            else:
+                color_str = self.outline_font_color_button.property('selected_color')
+                color = QColor(color_str)
+                self.current_text_block_item.set_outline(color, outline_width)
+
+    def set_values_for_blk_item(self, text_item):
+        # List of widgets to block signals
+        widgets_to_block = [
+            self.font_dropdown,
+            self.font_size_dropdown,
+            self.line_spacing_dropdown,
+            self.block_font_color_button,
+            self.outline_font_color_button,
+            self.outline_width_dropdown,
+            self.bold_button,
+            self.italic_button,
+            self.underline_button,
+            self.alignment_tool_group.get_button_group().buttons()[0],
+            self.alignment_tool_group.get_button_group().buttons()[1],
+            self.alignment_tool_group.get_button_group().buttons()[2],
+        ]
+
+        # Block signals
+        for widget in widgets_to_block:
+            widget.blockSignals(True)
+
+        try:
+            # Set values
+            self.font_dropdown.setCurrentText(text_item.font_family)
+            self.font_size_dropdown.setCurrentText(str(int(text_item.font_size)))
+            self.line_spacing_dropdown.setCurrentText(str(text_item.line_spacing))
+
+            self.block_font_color_button.setStyleSheet(
+                f"background-color: {text_item.text_color.name()}; border: none; border-radius: 5px;"
+            )
+            self.block_font_color_button.setProperty('selected_color', text_item.text_color.name())
+
+            if text_item.outline_color is not None:
+                self.outline_font_color_button.setStyleSheet(
+                    f"background-color: {text_item.outline_color.name()}; border: none; border-radius: 5px;"
+                )
+                self.outline_font_color_button.setProperty('selected_color', text_item.outline_color.name())
+
+            self.outline_width_dropdown.setCurrentText(str(text_item.outline_width))
+            self.outline_checkbox.setChecked(text_item.outline)
+            
+            self.bold_button.setChecked(text_item.bold)
+            self.italic_button.setChecked(text_item.italic)
+            self.underline_button.setChecked(text_item.underline)
+
+            alignment_to_button = {
+                QtCore.Qt.AlignmentFlag.AlignLeft: 0,
+                QtCore.Qt.AlignmentFlag.AlignCenter: 1,
+                QtCore.Qt.AlignmentFlag.AlignRight: 2,
+            }
+
+            alignment = text_item.alignment
+            button_group = self.alignment_tool_group.get_button_group()
+
+            if alignment in alignment_to_button:
+                button_index = alignment_to_button[alignment]
+                button_group.buttons()[button_index].setChecked(True)
+
+        finally:
+            # Unblock signals
+            for widget in widgets_to_block:
+                widget.blockSignals(False)
+
+
     def save_current_image(self, file_path: str):
-        curr_image = self.image_viewer.get_cv2_image()
+        curr_image = self.image_viewer.get_cv2_image(paint_all=True)
         cv2.imwrite(file_path, curr_image)
 
     def save_and_make(self, output_path: str):
@@ -811,7 +1035,7 @@ if __name__ == "__main__":
     from app import icon_resource
 
     if sys.platform == "win32":
-        # Necessary Workaround to set to Taskbar Icon on Windows
+        # Necessary Workaround to set Taskbar Icon on Windows
         import ctypes
         myappid = u'ComicLabs.ComicTranslate' # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)

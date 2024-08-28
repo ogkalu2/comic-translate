@@ -2,8 +2,7 @@ import os
 import cv2, shutil
 from datetime import datetime
 from typing import List
-from PySide6 import QtWidgets
-from PySide6 import QtCore, QtGui
+from PySide6 import QtCore
 
 from modules.detection import TextBlockDetector
 from modules.ocr.ocr import OCRProcessor
@@ -15,6 +14,8 @@ from modules.rendering.render import draw_text, get_best_render_area
 from modules.utils.pipeline_utils import generate_mask, get_language_code, set_alignment, is_directory_empty
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
+
+from app.ui.canvas.rectangle import MovableRectItem
 
 class ComicTranslatePipeline:
     def __init__(self, main_page):
@@ -30,8 +31,8 @@ class ComicTranslatePipeline:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
                 rect = QtCore.QRectF(x1, y1, x2 - x1, y2 - y1)
-                rect_item = QtWidgets.QGraphicsRectItem(rect, self.main_page.image_viewer._photo)
-                rect_item.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 100)))  # Transparent pink
+                rect_item = MovableRectItem(rect, self.main_page.image_viewer._photo)
+                rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
                 self.main_page.image_viewer._rectangles.append(rect_item)
 
             rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
@@ -84,7 +85,6 @@ class ComicTranslatePipeline:
         inpainted, original_image = result
         self.main_page.set_cv2_image(inpainted)
         # get_best_render_area(self.main_page.blk_list, original_image, inpainted)
-        self.load_box_coords(self.main_page.blk_list)
     
     def inpaint(self):
         image = self.main_page.image_viewer.get_cv2_image()
