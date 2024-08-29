@@ -418,15 +418,30 @@ class ImageViewer(QtWidgets.QGraphicsView):
             return None
         
         if paint_all:
-            # Create a QImage with the same size as the scene
+            # Create a high-resolution QImage
+            scale_factor = 2  # Increase this for higher resolution
             scene_rect = self._scene.sceneRect()
-            qimage = QtGui.QImage(scene_rect.size().toSize(), QtGui.QImage.Format.Format_ARGB32)
+            qimage = QtGui.QImage(scene_rect.size().toSize() * scale_factor, 
+                                QtGui.QImage.Format_ARGB32)
             qimage.fill(QtCore.Qt.transparent)
 
-            # Create a QPainter to render the scene onto the QImage
+            # Create a QPainter with antialiasing
             painter = QtGui.QPainter(qimage)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing, True)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing, True)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
+
+            # Scale the painter to match the high-resolution image
+            painter.scale(scale_factor, scale_factor)
+
+            # Render the scene
             self._scene.render(painter)
             painter.end()
+
+            # Optionally, scale down the image to the original size
+            qimage = qimage.scaled(scene_rect.size().toSize(), 
+                                QtCore.Qt.AspectRatioMode.KeepAspectRatio, 
+                               QtCore.Qt.TransformationMode.SmoothTransformation)
         else:
             qimage = self._photo.pixmap().toImage()
 
