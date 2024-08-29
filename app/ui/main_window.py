@@ -375,7 +375,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.outline_width_dropdown = MComboBox().small()
         self.outline_width_dropdown.setFixedWidth(60)
         self.outline_width_dropdown.setToolTip(self.tr("Outline Width"))
-        self.outline_width_dropdown.addItems(['1.0', '1.15', '1.3', '1.4' '1.5'])
+        self.outline_width_dropdown.addItems(['1.0', '1.15', '1.3', '1.4', '1.5'])
 
         outline_settings_layout.addWidget(self.outline_checkbox)
         outline_settings_layout.addWidget(self.outline_font_color_button)

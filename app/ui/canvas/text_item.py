@@ -40,8 +40,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.alignment = alignment
         self.line_spacing = line_spacing
 
-        # if text:
-        self.apply_all_attributes()
+        if text:
+            self.set_text(text)
             
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setAcceptHoverEvents(True)
@@ -59,6 +59,21 @@ class TextBlockItem(QGraphicsTextItem):
 
         self.text_block = text_block
         self.document().contentsChanged.connect(self._on_text_changed)
+
+    def set_text(self, text):
+        if self.is_html(text):
+            self.setHtml(text)
+            self.setTextWidth(self.boundingRect().width())
+            self.set_outline(self.outline_color, self.outline_width)
+
+        else:
+            self.setPlainText(text)
+            self.apply_all_attributes()
+
+    def is_html(self, text):
+        import re
+        # Simple check for HTML tags
+        return bool(re.search(r'<[^>]+>', text))
 
     def set_font(self, font_family, font_size):
         if not self.textCursor().hasSelection():

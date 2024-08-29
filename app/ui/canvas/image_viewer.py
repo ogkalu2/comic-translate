@@ -649,15 +649,27 @@ class ImageViewer(QtWidgets.QGraphicsView):
         
         # Recreate text block items
         for text_block in state.get('text_items_state', []):
-            text_item = self.add_movable_txtitem(
-                text_block['text'],
-                text_block['font_input'],
-                text_block['font_size'],
-                text_block['block']
+            text_item = TextBlockItem(
+                text=text_block['text'],
+                parent_item= self._photo,
+                font_family=text_block['font_family'],
+                font_size=text_block['font_size'],
+                render_color=text_block['text_color'],
+                alignment=text_block['alignment'],
+                line_spacing=text_block['line_spacing'],
+                outline_color=text_block['outline_color'],
+                outline_width=text_block['outline_width'],
+                bold=text_block['bold'],
+                italic=text_block['italic'],
+                underline=text_block['underline'],
+                text_block=text_block['block']
             )
             text_item.setPos(QtCore.QPointF(*text_block['position']))
             text_item.setRotation(text_block['rotation'])
             text_item.setScale(text_block['scale'])
+
+            self._scene.addItem(text_item)
+            self._text_items.append(text_item)  
 
     def save_state(self):
         transform = self.transform()
@@ -666,9 +678,17 @@ class ImageViewer(QtWidgets.QGraphicsView):
         text_items_state = []
         for item in self._text_items:
             text_items_state.append({
-                'text': item.toPlainText(),
-                'font_input': item.font_input,
+                'text': item.toHtml(),
+                'font_family': item.font_family,
                 'font_size': item.font_size,
+                'text_color': item.text_color,
+                'alignment': item.alignment,
+                'line_spacing': item.line_spacing,
+                'outline_color': item.outline_color,
+                'outline_width': item.outline_width,
+                'bold': item.bold,
+                'italic': item.italic,
+                'underline': item.underline,
                 'position': (item.pos().x(), item.pos().y()),
                 'rotation': item.rotation(),
                 'scale': item.scale(),
