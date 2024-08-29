@@ -684,8 +684,10 @@ class ComicTranslate(ComicTranslateUI):
             self.loading.setVisible(True)
             self.disable_hbutton_group()
 
+            existing_text_items = {item.text_block: item for item in self.image_viewer._text_items}
+            new_blocks = [blk for blk in self.blk_list if blk not in existing_text_items]
+
             self.image_viewer.clear_rectangles()
-            self.image_viewer.clear_text_items()
             self.current_text_block = None
             self.current_text_block_item = None
 
@@ -708,7 +710,7 @@ class ComicTranslate(ComicTranslateUI):
             max_font_size = self.settings_page.get_max_font_size()
 
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
-                              None, self, self.blk_list, font_family, line_spacing, outline_width, 
+                              None, self, new_blocks, font_family, line_spacing, outline_width, 
                               bold, italic, underline, max_font_size, min_font_size)
 
     def handle_rectangle_change(self, new_rect: QtCore.QRectF):
