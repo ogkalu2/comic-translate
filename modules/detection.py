@@ -151,8 +151,6 @@ def merge_boxes(box1, box2):
         max(box1[3], box2[3])
     ]
 
-import numpy as np
-
 def merge_bounding_boxes(seg_boxes, detect_boxes):
     merged_boxes = []
 
@@ -208,20 +206,25 @@ def merge_bounding_boxes(seg_boxes, detect_boxes):
 
     return np.array(unique_boxes)
 
+
 def detect_content_in_bbox(image):
     # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    # Threshold the image to create binary images for both cases
-    _, binary_white_text = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
-    _, binary_black_text = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY_INV)
+    # Adaptive Thresholding to handle varying illumination
+    binary_white_text = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+    )
+    binary_black_text = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
+    )
     
     # Perform connected component labeling for both cases
     num_labels_white, labels_white, stats_white, centroids_white = cv2.connectedComponentsWithStats(binary_white_text, connectivity=8)
     num_labels_black, labels_black, stats_black, centroids_black = cv2.connectedComponentsWithStats(binary_black_text, connectivity=8)
     
     # Filter out small components (likely to be noise)
-    min_area = 5 
+    min_area = 10 
     content_bboxes = []
     
     height, width = image.shape[:2]
@@ -257,6 +260,7 @@ def detect_content_in_bbox(image):
                 content_bboxes.append((x1, y1, x2, y2))
     
     return content_bboxes
+
 
 # From https://github.com/TareHimself/manga-translator/blob/master/translator/utils.py
 

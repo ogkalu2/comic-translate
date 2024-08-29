@@ -19,7 +19,7 @@ from app.ui.messages import Messages
 from app.thread_worker import GenericWorker
 from app.ui.dayu_widgets.message import MMessage
 
-from app.ui.canvas.textitem import TextBlockItem
+from app.ui.canvas.text_item import TextBlockItem
 
 from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock

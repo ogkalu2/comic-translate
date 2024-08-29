@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtGui
 
 from PySide6.QtGui import QFont, QFontDatabase
 
-from .textitem import TextBlockItem
+from .text_item import TextBlockItem
 from .rectangle import MovableRectItem
 
 import cv2, os
