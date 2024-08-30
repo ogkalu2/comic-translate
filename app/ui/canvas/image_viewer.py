@@ -416,11 +416,15 @@ class ImageViewer(QtWidgets.QGraphicsView):
         """Get the currently loaded image as a cv2 image, including text blocks and all scene items."""
         if self._photo.pixmap() is None:
             return None
-        
+
         if paint_all:
-            scene_rect = self._scene.sceneRect()
-            qimage = QtGui.QImage(scene_rect.size().toSize(), 
-                                QtGui.QImage.Format.Format_ARGB32)
+            # Create a high-resolution QImage
+            scale_factor = 2  # Increase this for higher resolution
+            pixmap = self._photo.pixmap()
+            original_size = pixmap.size()
+            scaled_size = original_size * scale_factor
+            
+            qimage = QtGui.QImage(scaled_size, QtGui.QImage.Format_ARGB32)
             qimage.fill(QtCore.Qt.transparent)
 
             # Create a QPainter with antialiasing
@@ -429,9 +433,26 @@ class ImageViewer(QtWidgets.QGraphicsView):
             painter.setRenderHint(QtGui.QPainter.RenderHint.TextAntialiasing, True)
             painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
 
+            # Save the current view's transformation
+            original_transform = self._scene.views()[0].transform()
+
+            # Reset the transformation to identity (no zoom, no pan)
+            self._scene.views()[0].resetTransform()
+
+            # Set the sceneRect to cover the entire image
+            self._scene.setSceneRect(0, 0, original_size.width(), original_size.height())
+
             # Render the scene
             self._scene.render(painter)
             painter.end()
+
+            # Scale down the image to the original size
+            qimage = qimage.scaled(original_size, 
+                                QtCore.Qt.AspectRatioMode.KeepAspectRatio, 
+                                QtCore.Qt.TransformationMode.SmoothTransformation)
+
+            # Restore the original transformation
+            self._scene.views()[0].setTransform(original_transform)
         else:
             qimage = self._photo.pixmap().toImage()
 
@@ -443,7 +464,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         byte_count = qimage.sizeInBytes()
         expected_size = height * bytes_per_line  # bytes per line can include padding
-
 
         if byte_count != expected_size:
             print(f"QImage sizeInBytes: {byte_count}, Expected size: {expected_size}")
