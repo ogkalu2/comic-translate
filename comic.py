@@ -176,6 +176,7 @@ class ComicTranslate(ComicTranslateUI):
         self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
         self.change_all_blocks_size_dec.clicked.connect(lambda: self.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
         self.change_all_blocks_size_inc.clicked.connect(lambda: self.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
+        self.delete_button.clicked.connect(self.delete_selected_box)
 
         # Connect text edit widgets
         self.s_text_edit.textChanged.connect(self.update_text_block)
@@ -203,6 +204,25 @@ class ComicTranslate(ComicTranslateUI):
         self.outline_font_color_button.clicked.connect(self.on_outline_color_change)
         self.outline_width_dropdown.currentTextChanged.connect(self.on_outline_width_change)
         self.outline_checkbox.stateChanged.connect(self.toggle_outline_settings)
+
+    def delete_selected_box(self):
+        self.image_viewer.delete_selected_rectangle()
+        if self.current_text_block_item:
+            self.image_viewer._scene.removeItem(self.current_text_block_item)
+            self.image_viewer._text_items.remove(self.current_text_block_item)
+
+            block_x, block_y, block_w, block_h = self.current_text_block.xywh
+
+            # Find and remove the corresponding QRectF
+            for rect in self.image_viewer._rectangles:
+                if (rect.x(), rect.y(), rect.width(), rect.height()) == (block_x, block_y, block_w, block_h):
+                    self.image_viewer._rectangles.remove(rect)
+                    self.image_viewer._scene.removeItem(rect)
+                    break
+                
+            self.blk_list.remove(self.current_text_block)
+            self.current_text_block_item = None
+            self.current_text_block = None
 
     def save_src_trg(self):
         source_lang = self.s_combo.currentText()
