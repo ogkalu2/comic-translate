@@ -503,10 +503,11 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._rectangles.clear()
         self._selected_rect = None
 
-    def clear_text_items(self):
+    def clear_text_items(self, delete=True):
         for item in self._text_items:
             self._scene.removeItem(item)
-        self._text_items.clear()
+        if delete:
+            self._text_items.clear()
 
     def setPhoto(self, pixmap: QtGui.QPixmap =None):
         self.clear_scene()

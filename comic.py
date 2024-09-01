@@ -581,8 +581,9 @@ class ComicTranslate(ComicTranslateUI):
     def undo_image(self):
         if self.current_image_index >= 0:
             if any(isinstance(item, TextBlockItem) for item in self.image_viewer._scene.items()):
-                self.image_viewer.clear_text_items()
+                self.image_viewer.clear_text_items(delete=False)
                 self.current_text_block_item = None
+                self.current_text_block = None
                 return
 
             file_path = self.image_files[self.current_image_index]
@@ -695,7 +696,6 @@ class ComicTranslate(ComicTranslateUI):
         self.enable_hbutton_group()
 
     def render_text(self):
-
         if self.image_viewer.hasPhoto() and self.blk_list:
             self.set_tool(None)
             if not font_selected(self):
@@ -703,6 +703,11 @@ class ComicTranslate(ComicTranslateUI):
             self.clear_text_edits()
             self.loading.setVisible(True)
             self.disable_hbutton_group()
+
+            # Add items to the scene if they're not already present
+            for item in self.image_viewer._text_items:
+                if item not in self.image_viewer._scene.items():
+                    self.image_viewer._scene.addItem(item)
 
             existing_text_items = {item.text_block: item for item in self.image_viewer._text_items}
             new_blocks = [blk for blk in self.blk_list if blk not in existing_text_items]
