@@ -2,8 +2,8 @@ import os
 import zipfile, tarfile, py7zr, rarfile
 import math
 import img2pdf
-import ebooklib
 from ebooklib import epub
+import pymupdf
 
 def is_image_file(filename):
     image_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.webp')
@@ -36,8 +36,7 @@ def extract_archive(file_path, extract_to):
             image_paths = [os.path.join(extract_to, entry) for entry in archive.getnames() if is_image_file(entry)]
 
     elif file_path.lower().endswith('.pdf'):
-        import fitz
-        pdf_file = fitz.open(file_path)
+        pdf_file = pymupdf.open(file_path)
         total_images = sum(len(page.get_images(full=True)) for page in pdf_file)
         digits = math.floor(math.log10(total_images)) + 1
         
