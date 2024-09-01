@@ -36,16 +36,11 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
         self._current_tool = None
         self._box_mode = False
-        self._dragging = False
         self._start_point = None
         self._current_rect = None
         self._rectangles = []
         self._text_items = []
         self._selected_rect = None
-        self._drag_start = None
-        self._drag_offset = None
-        self._resize_handle = None
-        self._resize_start = None
         self._panning = False
         self._pan_start_pos = None
 
@@ -615,8 +610,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             print("No photo loaded.")
             return
 
-        if len(bboxes) < 1:
-            print("Not enough line segments to draw rectangles.")
+        if not bboxes:
             return
 
         # Calculate the centroid of all points
@@ -757,15 +751,3 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._eraser_cursor = self.create_inpaint_cursor("eraser", size)
         if self._current_tool == "eraser":
             self.setCursor(self._eraser_cursor)
-    
-    def get_font_family(self, font_input: str, font_size: int) -> QFont:
-        # Check if font_input is a file path
-        if os.path.splitext(font_input)[1].lower() in ['.ttf', '.otf', '.ttc']:
-            font_id = QFontDatabase.addApplicationFont(font_input)
-            if font_id != -1:
-                font_families = QFontDatabase.applicationFontFamilies(font_id)
-                if font_families:
-                    return font_families[0]
-        
-        # If not a file path or loading failed, treat as font family name
-        return font_input
