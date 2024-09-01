@@ -684,7 +684,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
     def get_font_family(self, font_input: str) -> QFont:
         # Check if font_input is a file path
-        if os.path.splitext(font_input)[1].lower() in ['.ttf', '.otf', '.ttc']:
+        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
             font_id = QFontDatabase.addApplicationFont(font_input)
             if font_id != -1:
                 font_families = QFontDatabase.applicationFontFamilies(font_id)
