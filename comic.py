@@ -744,6 +744,9 @@ class ComicTranslate(ComicTranslateUI):
             if do_rectangles_overlap(blk.xyxy, (new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()), 0.2):
                 # Update the TextBlock coordinates
                 blk.xyxy[:] = [new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()]
+                image = self.image_viewer.get_cv2_image()
+                inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
+                blk.inpaint_bboxes = inpaint_bboxes
                 break
 
     def on_font_dropdown_change(self, font_family):
