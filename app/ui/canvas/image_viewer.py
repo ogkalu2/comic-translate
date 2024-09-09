@@ -648,8 +648,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.setSceneRect(QtCore.QRectF(*state['scene_rect']))
         
         for rect_data in state['rectangles']:
-            rect_item = QtWidgets.QGraphicsRectItem(QtCore.QRectF(*rect_data), self._photo)
-            rect_item.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))  # Transparent pink
+            rect_item = MovableRectItem(QtCore.QRectF(*rect_data), self._photo)
             self._rectangles.append(rect_item)
         
         # Recreate text block items

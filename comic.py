@@ -507,6 +507,9 @@ class ComicTranslate(ComicTranslateUI):
                 text_item.itemDeselected.connect(self.on_text_item_deselcted)
                 text_item.textChanged.connect(self.update_text_block_from_item)
 
+            for rect_item in self.image_viewer._rectangles:
+                rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
+
         self.clear_text_edits()
 
     def display_image(self, index: int):
