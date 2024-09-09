@@ -511,8 +511,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def display_image(self, index: int):
         if 0 <= index < len(self.image_files):
-            if self.manual_radio.isChecked():
-                self.save_current_image_state()
+            self.save_current_image_state()
             self.current_image_index = index
             file_path = self.image_files[index]
             
