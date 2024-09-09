@@ -230,7 +230,11 @@ class ComicTranslatePipeline:
                 break
 
             inpaint_input_img = self.inpainter_cache(image, mask, config)
-            inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img) 
+            inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img)
+
+            # Saving cleaned image
+            self.main_page.update_image_history(image_path, inpaint_input_img)
+
             inpaint_input_img = cv2.cvtColor(inpaint_input_img, cv2.COLOR_BGR2RGB)
 
             if export_settings['export_inpainted_image']:
@@ -309,7 +313,15 @@ class ComicTranslatePipeline:
 
             # Display or set the rendered Image on the viewer once it's done
             self.main_page.image_processed.emit(index, rendered_image, image_path)
-            
+
+            # Saving blocks with texts to history
+            self.main_page.image_states[image_path].update({
+                'blk_list': blk_list                   
+            })
+
+            if index == self.main_page.current_image_index:
+                self.main_page.blk_list = blk_list
+                
             render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
             if not os.path.exists(render_save_dir):
                 os.makedirs(render_save_dir, exist_ok=True)
