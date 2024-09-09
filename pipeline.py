@@ -315,9 +315,13 @@ class ComicTranslatePipeline:
             self.main_page.image_processed.emit(index, rendered_image, image_path)
 
             # Saving blocks with texts to history
-            self.main_page.blk_list = blk_list
-            self.main_page.save_image_state(image_path)
+            self.main_page.image_states[image_path].update({
+                'blk_list': blk_list                   
+            })
 
+            if index == self.main_page.current_image_index:
+                self.main_page.blk_list = blk_list
+                
             render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
             if not os.path.exists(render_save_dir):
                 os.makedirs(render_save_dir, exist_ok=True)
