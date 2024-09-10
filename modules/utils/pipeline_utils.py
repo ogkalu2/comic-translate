@@ -3,7 +3,7 @@ import numpy as np
 import os
 import base64
 from .textblock import TextBlock, sort_textblock_rectangles
-from ..detection import does_rectangle_fit, do_rectangles_overlap
+from ..detection import does_rectangle_fit, do_rectangles_overlap, is_mostly_contained
 from typing import List
 from ..inpainting.lama import LaMa
 from ..inpainting.schema import Config
@@ -59,20 +59,22 @@ def encode_image_array(img_array: np.ndarray):
     return base64.b64encode(img_bytes).decode('utf-8')
 
 def lists_to_blk_list(blk_list: List[TextBlock], texts_bboxes: List, texts_string: List):
+    group = list(zip(texts_bboxes, texts_string))  
 
     for blk in blk_list:
         blk_entries = []
-        group = list(zip(texts_bboxes, texts_string))  
         
         for line, text in group:
             if blk.bubble_xyxy is not None:
                 if does_rectangle_fit(blk.bubble_xyxy, line):
                     blk_entries.append((line, text))  
-                elif do_rectangles_overlap(blk.bubble_xyxy, line):
+                elif is_mostly_contained(blk.bubble_xyxy, line, 0.5):
                     blk_entries.append((line, text)) 
-            elif do_rectangles_overlap(blk.xyxy, line):
-                blk_entries.append((line, text)) 
 
+            elif does_rectangle_fit(blk.xyxy, line):
+                blk_entries.append((line, text)) 
+            elif is_mostly_contained(blk.xyxy, line, 0.5):
+                blk_entries.append((line, text)) 
 
         # Sort and join text entries
         sorted_entries = sort_textblock_rectangles(blk_entries, blk.source_lang_direction)

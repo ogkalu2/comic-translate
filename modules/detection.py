@@ -142,6 +142,32 @@ def does_rectangle_fit(bigger_rect, smaller_rect):
     
     return fits_horizontally and fits_vertically
 
+def is_mostly_contained(outer_box, inner_box, threshold):
+    """
+    Check if inner_box is mostly contained within outer_box.
+    
+    :param outer_box: The larger bounding box (x1, y1, x2, y2)
+    :param inner_box: The smaller bounding box (x1, y1, x2, y2)
+    :param threshold: The proportion of inner_box that must be inside outer_box
+    :return: Boolean indicating if inner_box is mostly contained in outer_box
+    """
+    ix1, iy1, ix2, iy2 = inner_box
+    ox1, oy1, ox2, oy2 = outer_box
+    
+    # Calculate the area of the inner and outer boxes
+    inner_area = (ix2 - ix1) * (iy2 - iy1)
+    outer_area = (ox2 - ox1) * (oy2 - oy1)
+    
+    # Return False if the outer box is smaller than the inner box
+    if outer_area < inner_area:
+        return False
+    
+    # Calculate the area of intersection
+    intersection_area = max(0, min(ix2, ox2) - max(ix1, ox1)) * max(0, min(iy2, oy2) - max(iy1, oy1))
+    
+    # Check if the proportion of intersection to inner area is greater than the threshold
+    return intersection_area / inner_area >= threshold
+
 def merge_boxes(box1, box2):
     """Merge two bounding boxes"""
     return [
