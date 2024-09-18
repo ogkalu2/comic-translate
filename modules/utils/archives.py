@@ -9,31 +9,37 @@ def is_image_file(filename):
     image_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.webp')
     return filename.lower().endswith(image_extensions)
 
-def extract_archive(file_path, extract_to):
+def extract_archive(file_path: str, extract_to: str):
     image_paths = []
+    file_lower = file_path.lower()
 
-    if file_path.lower().endswith(('.cbz', '.zip', '.epub')):
-        archive = zipfile.ZipFile(file_path, 'r')
-        archive.extractall(extract_to)
-        image_paths = [os.path.join(extract_to, file) for file in archive.namelist() if is_image_file(file) and 'cover' not in file.lower()]
-        archive.close()
-
-    elif file_path.lower().endswith('.cbr'):
-        archive = rarfile.RarFile(file_path, 'r')
-        archive.extractall(extract_to)
-        image_paths = [os.path.join(extract_to, file) for file in archive.namelist() if is_image_file(file)]
-        archive.close()
-
-    elif file_path.lower().endswith('.cbt'):
-        archive = tarfile.open(file_path, 'r')
-        archive.extractall(extract_to)
-        image_paths = [os.path.join(extract_to, file.name) for file in archive.getmembers() if file.isfile() and is_image_file(file.name)]
-        archive.close()
-
-    elif file_path.lower().endswith('.cb7'):
+    if file_lower.endswith(('.cbz', '.zip', '.epub')):
+        with zipfile.ZipFile(file_path, 'r') as archive:
+            for file in archive.namelist():
+                if is_image_file(file) and 'cover' not in file.lower():
+                    archive.extract(file, extract_to)
+                    image_paths.append(os.path.join(extract_to, file))
+    
+    elif file_lower.endswith(('.cbr', '.rar')):
+        with rarfile.RarFile(file_path, 'r') as archive:
+            for file in archive.namelist():
+                if is_image_file(file):
+                    archive.extract(file, extract_to)
+                    image_paths.append(os.path.join(extract_to, file))
+    
+    elif file_lower.endswith(('.cbt', '.tar')):
+        with tarfile.open(file_path, 'r') as archive:
+            for member in archive:
+                if member.isfile() and is_image_file(member.name):
+                    archive.extract(member, extract_to)
+                    image_paths.append(os.path.join(extract_to, member.name))
+    
+    elif file_lower.endswith(('.cb7', '.7z')):
         with py7zr.SevenZipFile(file_path, 'r') as archive:
-            archive.extractall(extract_to)
-            image_paths = [os.path.join(extract_to, entry) for entry in archive.getnames() if is_image_file(entry)]
+            for entry in archive.getnames():
+                if is_image_file(entry):
+                    archive.extract(targets=[entry], path=extract_to)
+                    image_paths.append(os.path.join(extract_to, entry))
 
     elif file_path.lower().endswith('.pdf'):
         pdf_file = pymupdf.open(file_path)
