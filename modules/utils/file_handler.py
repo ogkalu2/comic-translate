@@ -15,7 +15,9 @@ class FileHandler:
         all_image_paths = []
         
         for path in self.file_paths:
-            if path.lower().endswith(('.cbr', '.cbz', '.zip', '.cbt', '.cb7', '.pdf', '.epub')):
+            if path.lower().endswith(('.cbr', '.cbz', '.cbt', '.cb7', 
+                                      '.zip', '.rar', '.7z', '.tar',
+                                      '.pdf', '.epub')):
                 print('Extracting archive:', path)
                 archive_dir = os.path.dirname(path)
                 temp_dir = tempfile.mkdtemp(dir=archive_dir)
