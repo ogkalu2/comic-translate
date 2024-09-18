@@ -2,14 +2,11 @@
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
 
-from PySide6.QtGui import QFont, QFontDatabase
-
 from .text_item import TextBlockItem
 from .rectangle import MovableRectItem
 
-import cv2, os
+import cv2
 import numpy as np
-import math
 from typing import List, Dict
 
 class ImageViewer(QtWidgets.QGraphicsView):
@@ -63,7 +60,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
     def hasPhoto(self):
         return not self._empty
-
 
     def viewportEvent(self, event):
         if event.type() == QtCore.QEvent.Gesture:
@@ -266,36 +262,57 @@ class ImageViewer(QtWidgets.QGraphicsView):
                     self._scene.removeItem(self._current_rect)
                 self._current_rect = None
             super().mouseReleaseEvent(event)
-            
+
     def erase_at(self, pos: QtCore.QPointF):
         erase_path = QtGui.QPainterPath()
         erase_path.addEllipse(pos, self._eraser_size, self._eraser_size)
-        
-        # Increase precision of eraser path
-        precise_erase_path = QtGui.QPainterPath()
-        for i in range(36):
-            angle = i * 10 * 3.14159 / 180
-            point = QtCore.QPointF(pos.x() + self._eraser_size * math.cos(angle),
-                                pos.y() + self._eraser_size * math.sin(angle))
-            if i == 0:
-                precise_erase_path.moveTo(point)
-            else:
-                precise_erase_path.lineTo(point)
-        precise_erase_path.closeSubpath()
 
         items = self._scene.items(erase_path)
         for item in items:
             if isinstance(item, QtWidgets.QGraphicsPathItem) and item != self._photo:
                 path = item.path()
-                intersected_path = path.intersected(precise_erase_path)
-                if not intersected_path.isEmpty():
-                    new_path = QtGui.QPainterPath(path)
-                    new_path = new_path.subtracted(intersected_path)
+                new_path = QtGui.QPainterPath()
+                element_count = path.elementCount()
+
+                i = 0
+                while i < element_count:
+                    e = path.elementAt(i)
+                    point = QtCore.QPointF(e.x, e.y)
+                    element_type = e.type
+
+                    # Check if the point is outside the erase area
+                    if not erase_path.contains(point):
+                        if element_type == QtGui.QPainterPath.ElementType.MoveToElement:
+                            new_path.moveTo(point)
+                        elif element_type == QtGui.QPainterPath.ElementType.LineToElement:
+                            new_path.lineTo(point)
+                        elif element_type == QtGui.QPainterPath.ElementType.CurveToElement:
+                            # Handle curves by adding the next two control points
+                            if i + 2 < element_count:
+                                c1 = path.elementAt(i + 1)
+                                c2 = path.elementAt(i + 2)
+                                c1_point = QtCore.QPointF(c1.x, c1.y)
+                                c2_point = QtCore.QPointF(c2.x, c2.y)
+                                if not (erase_path.contains(c1_point) or erase_path.contains(c2_point)):
+                                    new_path.cubicTo(point, c1_point, c2_point)
+                            i += 2  # Skip the control points
+                    else:
+                        # If the point is within the erase area, start a new subpath if the next point is outside
+                        if (i + 1) < element_count:
+                            next_element = path.elementAt(i + 1)
+                            next_point = QtCore.QPointF(next_element.x, next_element.y)
+                            if not erase_path.contains(next_point):
+                                new_path.moveTo(next_point)
+                                if next_element.type == QtGui.QPainterPath.ElementType.CurveToDataElement:
+                                    i += 2  # Skip control points
+                    i += 1
+
+                if new_path.isEmpty():
+                    self._scene.removeItem(item)
+                    if item in self._drawing_items:
+                        self._drawing_items.remove(item)
+                else:
                     item.setPath(new_path)
-                    if new_path.isEmpty():
-                        self._scene.removeItem(item)
-                        if item in self._drawing_items:
-                            self._drawing_items.remove(item)
 
     def save_brush_strokes(self):
         brush_strokes = []
@@ -476,10 +493,14 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         return cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
     
-    def display_cv2_image(self, cv2_img: np.ndarray):
+    def qimage_from_cv2(self, cv2_img: np.ndarray):
         height, width, channel = cv2_img.shape
         bytes_per_line = 3 * width
         qimage = QtGui.QImage(cv2_img.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
+        return qimage
+    
+    def display_cv2_image(self, cv2_img: np.ndarray):
+        qimage = self.qimage_from_cv2(cv2_img)
         pixmap = QtGui.QPixmap.fromImage(qimage)
         self.setPhoto(pixmap)
 
@@ -610,7 +631,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             print("No photo loaded.")
             return
 
-        if not bboxes:
+        if bboxes is None or len(bboxes) == 0:
             return
 
         # Calculate the centroid of all points
