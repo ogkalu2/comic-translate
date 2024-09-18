@@ -91,16 +91,6 @@ class ComicTranslatePipeline:
         inpainted = self.manual_inpaint()
         return inpainted, image
 
-    def inpaint_and_set(self):
-        if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.has_drawn_elements():
-            image = self.main_page.image_viewer.get_cv2_image()
-
-            inpainted = self.manual_inpaint()
-            self.main_page.set_cv2_image(inpainted)
-
-            get_best_render_area(self.main_page.blk_list, image, inpainted)
-            self.load_box_coords(self.main_page.blk_list)
-
     def OCR_image(self):
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer._rectangles:
