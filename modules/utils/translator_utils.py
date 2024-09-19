@@ -67,7 +67,7 @@ def set_texts_from_json(blk_list: List[TextBlock], json_string: str):
 def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: bool =True):
     for blk in blk_list:
         translation = blk.translation
-        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja']):
+        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
 
             if trg_lng_cd == 'zh-TW':
                 trg_lng_cd = 'zh-Hant'
