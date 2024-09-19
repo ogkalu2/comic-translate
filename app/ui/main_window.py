@@ -339,8 +339,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         # Text Render Settings
         text_render_layout = QtWidgets.QVBoxLayout()
-        text_render_layout.addSpacing(20)
-
         font_settings_layout = QtWidgets.QHBoxLayout()
 
         self.font_dropdown = MComboBox().small()
@@ -432,7 +430,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         outline_settings_layout.addWidget(self.outline_width_dropdown)
         outline_settings_layout.addStretch()
 
-        rendering_divider_top = MDivider(self.tr('Custom font settings for the block'))
+        rendering_divider_top = MDivider()
         rendering_divider_bottom = MDivider()
         text_render_layout.addWidget(rendering_divider_top)
         text_render_layout.addLayout(font_settings_layout)
