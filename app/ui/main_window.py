@@ -37,7 +37,7 @@ supported_target_languages = [
 "English", "Korean", "Japanese", "French", "Simplified Chinese",
 "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", 
 "Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese",
-"Thai"
+"Thai", "Vietnamese"
 ]
 
 
@@ -84,7 +84,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.tr("Polish"): "Polish",
             self.tr("Portuguese"): "Portuguese",
             self.tr("Brazilian Portuguese"): "Brazilian Portuguese",
-            self.tr("Thai"): "Thai"
+            self.tr("Thai"): "Thai",
+            self.tr("Vietnamese"): "Vietnamese"
         }
         # Create reverse mapping
         self.reverse_lang_mapping = {v: k for k, v in self.lang_mapping.items()}
@@ -679,7 +680,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.set_tool(None)
 
     def toggle_eraser_tool(self):
-        if self.eraser_button.isChecked():
+        if self.eraser_button.isChecked()):
             self.set_tool('eraser')
         else:
             self.set_tool(None)

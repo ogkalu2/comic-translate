@@ -27,7 +27,8 @@ language_codes = {
     "Polish": "pl",
     "Portuguese": "pt",
     "Brazilian Portuguese": "pt-br",
-    "Thai": "th"
+    "Thai": "th",
+    "Vietnamese": "vi"
     }
 
 
@@ -200,6 +201,11 @@ def validate_translator(main_page, source_lang, target_lang):
     # Check DeepL and Thai incompatibility
     if translator_tool == 'DeepL' and target_lang == main_page.tr('Thai'):
         Messages.show_deepl_th_error(main_page)
+        return False
+
+    # Check DeepL and Vietnamese incompatibility
+    if translator_tool == 'DeepL' and target_lang == main_page.tr('Vietnamese'):
+        Messages.show_deepl_vi_error(main_page)
         return False
         
     return True  
