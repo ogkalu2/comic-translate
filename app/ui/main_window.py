@@ -36,7 +36,8 @@ supported_source_languages = [
 supported_target_languages = [
 "English", "Korean", "Japanese", "French", "Simplified Chinese",
 "Traditional Chinese", "Russian", "German", "Dutch", "Spanish", 
-"Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese"
+"Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese",
+"Thai"
 ]
 
 
@@ -82,7 +83,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.tr("Turkish"): "Turkish",
             self.tr("Polish"): "Polish",
             self.tr("Portuguese"): "Portuguese",
-            self.tr("Brazilian Portuguese"): "Brazilian Portuguese"
+            self.tr("Brazilian Portuguese"): "Brazilian Portuguese",
+            self.tr("Thai"): "Thai"
         }
         # Create reverse mapping
         self.reverse_lang_mapping = {v: k for k, v in self.lang_mapping.items()}

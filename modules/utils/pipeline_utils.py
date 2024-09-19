@@ -27,6 +27,7 @@ language_codes = {
     "Polish": "pl",
     "Portuguese": "pt",
     "Brazilian Portuguese": "pt-br",
+    "Thai": "th"
     }
 
 
@@ -195,6 +196,11 @@ def validate_translator(main_page, source_lang, target_lang):
         if source_lang == main_page.tr('Brazilian Portuguese') or target_lang == main_page.tr('Brazilian Portuguese'):
             Messages.show_googlet_ptbr_error(main_page)
             return False
+
+    # Check DeepL and Thai incompatibility
+    if translator_tool == 'DeepL' and target_lang == main_page.tr('Thai'):
+        Messages.show_deepl_th_error(main_page)
+        return False
         
     return True  
 
@@ -239,19 +245,3 @@ def is_directory_empty(directory):
                 if not is_directory_empty(os.path.join(root, dir)):
                     return False
     return True
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
