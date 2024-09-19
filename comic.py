@@ -3,12 +3,11 @@ import cv2, shutil
 import tempfile
 import numpy as np
 from typing import Callable, Tuple, List
+from PIL import Image
 
 from PySide6 import QtWidgets
 from PySide6 import QtCore
-from PySide6.QtCore import QCoreApplication
-from PySide6.QtCore import QSettings
-from PySide6.QtCore import QThreadPool
+from PySide6.QtCore import QCoreApplication, QSettings, QThreadPool
 from PySide6.QtCore import QTranslator, QLocale
 from PySide6.QtGui import QColor
 
@@ -20,6 +19,7 @@ from app.thread_worker import GenericWorker
 from app.ui.dayu_widgets.message import MMessage
 
 from app.ui.canvas.text_item import TextBlockItem
+from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
 
 from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
@@ -51,11 +51,15 @@ class ComicTranslate(ComicTranslateUI):
 
         self.blk_list = []
         self.image_data = {}  # Store the latest version of each image
-        self.image_history = {}  # Store undo/redo history for each image
-        self.current_history_index = {}  # Current position in the undo/redo history for each image
-        self.displayed_images = set()  # New set to track displayed images
+        self.image_history = {}  # Store file path history for all images
+        self.in_memory_history = {}  # Store cv2 image history for recent images
+        self.current_history_index = {}  # Current position in the history for each image
+        self.displayed_images = set()  # Set to track displayed images
+
         self.current_text_block = None
         self.current_text_block_item = None
+
+        self.project_file = None
 
         self.pipeline = ComicTranslatePipeline(self)
         self.file_handler = FileHandler()
@@ -76,6 +80,77 @@ class ComicTranslate(ComicTranslateUI):
 
         self.load_main_page_settings()
         self.settings_page.load_settings()
+
+        self.temp_dir = tempfile.mkdtemp()
+        self.max_images_in_memory = 10
+        self.loaded_images = []
+
+    def connect_ui_elements(self):
+        # Browsers
+        self.image_browser_button.sig_files_changed.connect(self.thread_load_images)
+        self.document_browser_button.sig_files_changed.connect(self.thread_load_images)
+        self.archive_browser_button.sig_files_changed.connect(self.thread_load_images)
+        self.comic_browser_button.sig_files_changed.connect(self.thread_load_images)
+        self.project_browser_button.sig_file_changed.connect(self.thread_load_project)
+
+        self.save_browser.sig_file_changed.connect(self.save_current_image)
+        self.save_all_browser.sig_file_changed.connect(self.save_and_make)
+        self.save_project_button.clicked.connect(self.thread_save_project)
+        self.save_as_project_button.clicked.connect(self.thread_save_as_project)
+
+        self.drag_browser.sig_files_changed.connect(self.thread_load_images)
+       
+        self.manual_radio.clicked.connect(self.manual_mode_selected)
+        self.automatic_radio.clicked.connect(self.batch_mode_selected)
+
+        # Connect buttons from button_groups
+        self.hbutton_group.get_button_group().buttons()[0].clicked.connect(lambda: self.block_detect())
+        self.hbutton_group.get_button_group().buttons()[1].clicked.connect(self.ocr)
+        self.hbutton_group.get_button_group().buttons()[2].clicked.connect(self.translate_image)
+        self.hbutton_group.get_button_group().buttons()[3].clicked.connect(self.load_segmentation_points)
+        self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
+        self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.render_text)
+
+        self.return_buttons_group.get_button_group().buttons()[0].clicked.connect(self.undo_image)
+        self.return_buttons_group.get_button_group().buttons()[1].clicked.connect(self.redo_image)
+
+        # Connect other buttons and widgets
+        self.translate_button.clicked.connect(self.start_batch_process)
+        self.cancel_button.clicked.connect(self.cancel_current_task)
+        self.set_all_button.clicked.connect(self.set_src_trg_all)
+        self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
+        self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
+        self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
+        self.change_all_blocks_size_dec.clicked.connect(lambda: self.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
+        self.change_all_blocks_size_inc.clicked.connect(lambda: self.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
+        self.delete_button.clicked.connect(self.delete_selected_box)
+
+        # Connect text edit widgets
+        self.s_text_edit.textChanged.connect(self.update_text_block)
+        self.t_text_edit.textChanged.connect(self.update_text_block_from_edit)
+
+        self.s_combo.currentTextChanged.connect(self.save_src_trg)
+        self.t_combo.currentTextChanged.connect(self.save_src_trg)
+
+        # Connect image viewer signals
+        self.image_viewer.rectangle_selected.connect(self.handle_rectangle_selection)
+        self.image_viewer.rectangle_created.connect(self.handle_rectangle_creation)
+        self.image_viewer.rectangle_deleted.connect(self.handle_rectangle_deletion)
+
+        # Rendering
+        self.font_dropdown.currentTextChanged.connect(self.on_font_dropdown_change)
+        self.font_size_dropdown.currentTextChanged.connect(self.on_font_size_change)
+        self.line_spacing_dropdown.currentTextChanged.connect(self.on_line_spacing_change)
+        self.block_font_color_button.clicked.connect(self.on_font_color_change)
+        self.alignment_tool_group.get_button_group().buttons()[0].clicked.connect(self.left_align)
+        self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
+        self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
+        self.bold_button.clicked.connect(self.bold)
+        self.italic_button.clicked.connect(self.italic)
+        self.underline_button.clicked.connect(self.underline)
+        self.outline_font_color_button.clicked.connect(self.on_outline_color_change)
+        self.outline_width_dropdown.currentTextChanged.connect(self.on_outline_width_change)
+        self.outline_checkbox.stateChanged.connect(self.toggle_outline_settings)
 
     def on_blk_rendered(self, text, font_size, blk):
         if not self.image_viewer.hasPhoto():
@@ -145,65 +220,6 @@ class ComicTranslate(ComicTranslateUI):
             cursor = self.t_text_edit.textCursor()
             cursor.setPosition(cursor_position)
             self.t_text_edit.setTextCursor(cursor)
-
-    def connect_ui_elements(self):
-        # Browsers
-        self.tool_browser.sig_files_changed.connect(self.thread_load_images)
-        self.save_browser.sig_file_changed.connect(self.save_current_image)
-        self.save_all_browser.sig_file_changed.connect(self.save_and_make)
-        self.drag_browser.sig_files_changed.connect(self.thread_load_images)
-       
-        self.manual_radio.clicked.connect(self.manual_mode_selected)
-        self.automatic_radio.clicked.connect(self.batch_mode_selected)
-
-        # Connect buttons from button_groups
-        self.hbutton_group.get_button_group().buttons()[0].clicked.connect(lambda: self.block_detect())
-        self.hbutton_group.get_button_group().buttons()[1].clicked.connect(self.ocr)
-        self.hbutton_group.get_button_group().buttons()[2].clicked.connect(self.translate_image)
-        self.hbutton_group.get_button_group().buttons()[3].clicked.connect(self.load_segmentation_points)
-        self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
-        self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.render_text)
-
-        self.return_buttons_group.get_button_group().buttons()[0].clicked.connect(self.undo_image)
-        self.return_buttons_group.get_button_group().buttons()[1].clicked.connect(self.redo_image)
-
-        # Connect other buttons and widgets
-        self.translate_button.clicked.connect(self.start_batch_process)
-        self.cancel_button.clicked.connect(self.cancel_current_task)
-        self.set_all_button.clicked.connect(self.set_src_trg_all)
-        self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
-        self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
-        self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
-        self.change_all_blocks_size_dec.clicked.connect(lambda: self.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
-        self.change_all_blocks_size_inc.clicked.connect(lambda: self.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
-        self.delete_button.clicked.connect(self.delete_selected_box)
-
-        # Connect text edit widgets
-        self.s_text_edit.textChanged.connect(self.update_text_block)
-        self.t_text_edit.textChanged.connect(self.update_text_block_from_edit)
-
-        self.s_combo.currentTextChanged.connect(self.save_src_trg)
-        self.t_combo.currentTextChanged.connect(self.save_src_trg)
-
-        # Connect image viewer signals
-        self.image_viewer.rectangle_selected.connect(self.handle_rectangle_selection)
-        self.image_viewer.rectangle_created.connect(self.handle_rectangle_creation)
-        self.image_viewer.rectangle_deleted.connect(self.handle_rectangle_deletion)
-
-        # Rendering
-        self.font_dropdown.currentTextChanged.connect(self.on_font_dropdown_change)
-        self.font_size_dropdown.currentTextChanged.connect(self.on_font_size_change)
-        self.line_spacing_dropdown.currentTextChanged.connect(self.on_line_spacing_change)
-        self.block_font_color_button.clicked.connect(self.on_font_color_change)
-        self.alignment_tool_group.get_button_group().buttons()[0].clicked.connect(self.left_align)
-        self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
-        self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
-        self.bold_button.clicked.connect(self.bold)
-        self.italic_button.clicked.connect(self.italic)
-        self.underline_button.clicked.connect(self.underline)
-        self.outline_font_color_button.clicked.connect(self.on_outline_color_change)
-        self.outline_width_dropdown.currentTextChanged.connect(self.on_outline_width_change)
-        self.outline_checkbox.stateChanged.connect(self.toggle_outline_settings)
 
     def delete_selected_box(self):
         self.image_viewer.delete_selected_rectangle()
@@ -384,23 +400,52 @@ class ComicTranslate(ComicTranslateUI):
             self.run_threaded(self.pipeline.inpaint, self.pipeline.inpaint_complete, 
                               self.default_error_handler, self.on_manual_finished)
 
-    def load_images_threaded(self, file_paths: List[str]):
+    def load_initial_image(self, file_paths: List[str]):
         self.file_handler.file_paths = file_paths
         file_paths = self.file_handler.prepare_files()
+        self.image_files = file_paths
 
-        loaded_images = []
-        for file_path in file_paths:
-            cv2_image = cv2.imread(file_path)
+        if file_paths:
+            return self.load_image(file_paths[0])
+        return None
+    
+    def load_image(self, file_path: str):
+        if file_path in self.image_data:
+            return self.image_data[file_path]
+
+        # Check if the image has been displayed before
+        if file_path in self.image_history:
+            # Get the current index from the history
+            current_index = self.current_history_index[file_path]
+            
+            # Get the temp file path at the current index
+            current_temp_path = self.image_history[file_path][current_index]
+            
+            # Load the image from the temp file
+            cv2_image = cv2.imread(current_temp_path)
+            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+            
             if cv2_image is not None:
-                cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
-                loaded_images.append((file_path, cv2_image))
+                return cv2_image
 
-        return loaded_images
+        # If not in memory and not in history (or failed to load from temp),
+        # load from the original file path
+        try:
+            cv2_image = cv2.imread(file_path)
+            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+            return cv2_image
+        except Exception as e:
+            print(f"Error loading image {file_path}: {str(e)}")
+            return None
 
     def thread_load_images(self, file_paths: List[str]):
-        self.run_threaded(self.load_images_threaded, self.on_images_loaded, self.default_error_handler, None, file_paths)
+        if file_paths and file_paths[0].lower().endswith('.ctpr'):
+            self.thread_load_project(file_paths[0])
+            return
+        self.clear_state()
+        self.run_threaded(self.load_initial_image, self.on_initial_image_loaded, self.default_error_handler, None, file_paths)
 
-    def on_images_loaded(self, loaded_images: List[Tuple[str, np.ndarray]]):
+    def clear_state(self):
         # Clear existing image data
         self.image_files = []
         self.image_states.clear()
@@ -414,27 +459,30 @@ class ComicTranslate(ComicTranslateUI):
         self.s_text_edit.clear()
         self.t_text_edit.clear()
         self.image_viewer.clear_text_items()
+        self.loaded_images = []
+        self.in_memory_history.clear()
+        self.project_file = None
 
         # Reset current_image_index
         self.current_image_index = -1
 
-        for file_path, cv2_image in loaded_images:
-            self.image_files.append(file_path)
-            self.image_data[file_path] = cv2_image
-            self.image_history[file_path] = [cv2_image.copy()]
-            self.current_history_index[file_path] = 0
-            self.save_image_state(file_path)
+    def on_initial_image_loaded(self, cv2_image):
+
+        if cv2_image is not None:
+            self.image_data[self.image_files[0]] = cv2_image
+            self.image_history[self.image_files[0]] = [self.image_files[0]]
+            self.in_memory_history[self.image_files[0]] = [cv2_image.copy()]
+            self.current_history_index[self.image_files[0]] = 0
+            self.save_image_state(self.image_files[0])
 
         self.update_image_cards()
 
-        # If we have loaded images, display the first one
         if self.image_files:
             self.display_image(0)
+            self.loaded_images.append(self.image_files[0])
         else:
-            # If no images were successfully loaded, clear the viewer
             self.image_viewer.clear_scene()
 
-        # Reset the image viewer's transformation
         self.image_viewer.resetTransform()
         self.image_viewer.fitInView()
 
@@ -451,14 +499,14 @@ class ComicTranslate(ComicTranslateUI):
         for index, file_path in enumerate(self.image_files):
             file_name = os.path.basename(file_path)
             card = ClickMeta(extra=False, avatar_size=(35, 50))
+
             card.setup_data({
                 "title": file_name,
-                "avatar": MPixmap(file_path)
+                #"avatar": MPixmap(file_path)
             })
             card.connect_clicked(lambda idx=index: self.on_card_clicked(idx))
             self.image_card_layout.insertWidget(self.image_card_layout.count() - 1, card)
             self.image_cards.append(card)
-
 
     def highlight_card(self, index: int):
         if 0 <= index < len(self.image_cards):
@@ -469,11 +517,127 @@ class ComicTranslate(ComicTranslateUI):
             # Highlight the new card
             self.image_cards[index].set_highlight(True)
             self.current_highlighted_card = self.image_cards[index]
-
+            
     def on_card_clicked(self, index: int):
         self.current_text_block_item = None
         self.highlight_card(index)
-        self.display_image(index)
+        self.run_threaded(
+            lambda: self.load_image(self.image_files[index]),
+            lambda result: self.display_image_from_loaded(result, index),
+            self.default_error_handler,
+            None
+        )
+
+    def navigate_images(self, direction: int):
+        if hasattr(self, 'image_files') and self.image_files:
+            new_index = self.current_image_index + direction
+            if 0 <= new_index < len(self.image_files):
+                self.run_threaded(
+                    lambda: self.load_image(self.image_files[new_index]),
+                    lambda result: self.display_image_from_loaded(result, new_index),
+                    self.default_error_handler,
+                    lambda: self.highlight_card(new_index),
+                )
+
+    def display_image_from_loaded(self, cv2_image, index, switch_page=True):
+        file_path = self.image_files[index]
+        self.image_data[file_path] = cv2_image
+        
+        # Initialize history for new images
+        if file_path not in self.image_history:
+            self.image_history[file_path] = [file_path]
+            self.in_memory_history[file_path] = [cv2_image.copy()]
+            self.current_history_index[file_path] = 0
+
+        self.display_image(index, switch_page)
+
+        # Manage loaded images
+        if file_path not in self.loaded_images:
+            self.loaded_images.append(file_path)
+            if len(self.loaded_images) > self.max_images_in_memory:
+                oldest_image = self.loaded_images.pop(0)
+                del self.image_data[oldest_image]
+                self.in_memory_history[oldest_image] = []
+                
+    def update_image_history(self, file_path: str, cv2_img: np.ndarray):
+        im = cv2.imread(file_path)
+        cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+        im_chk = self.image_data[file_path] if file_path in self.image_data else im
+
+        if not np.array_equal(im_chk, cv2_img):
+            self.image_data[file_path] = cv2_img
+            
+            # Update file path history
+            history = self.image_history[file_path]
+            current_index = self.current_history_index[file_path]
+            
+            # Remove any future history if we're not at the end
+            del history[current_index + 1:]
+            
+            # # Save new image to temp file and add to history
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', dir=self.temp_dir)
+            pil_image = Image.fromarray(cv2_img)
+            pil_image.save(temp_file.name)
+
+            history.append(temp_file.name)
+
+            # Update in-memory history if this image is loaded
+            if self.in_memory_history.get(file_path, []):
+                in_mem_history = self.in_memory_history[file_path]
+                del in_mem_history[current_index + 1:]
+                in_mem_history.append(cv2_img.copy())
+
+            self.current_history_index[file_path] = len(history) - 1
+
+    def set_cv2_image(self, cv2_img: np.ndarray):
+        if self.current_image_index >= 0:
+            file_path = self.image_files[self.current_image_index]
+
+            self.update_image_history(file_path, cv2_img)
+            self.image_viewer.display_cv2_image(cv2_img)
+
+    def undo_image(self):
+        if self.current_image_index >= 0:
+            if any(isinstance(item, TextBlockItem) for item in self.image_viewer._scene.items()):
+                self.image_viewer.clear_text_items(delete=False)
+                self.current_text_block_item = None
+                self.current_text_block = None
+                return
+
+            file_path = self.image_files[self.current_image_index]
+            current_index = self.current_history_index[file_path]
+            
+            if current_index > 0:
+                current_index -= 1
+                self.current_history_index[file_path] = current_index
+
+                if self.in_memory_history.get(file_path, []):
+                    cv2_img = self.in_memory_history[file_path][current_index]
+                else:
+                    cv2_img = cv2.imread(self.image_history[file_path][current_index])
+                    cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+
+                self.image_data[file_path] = cv2_img
+                self.image_viewer.display_cv2_image(cv2_img)
+
+    def redo_image(self):
+        if self.current_image_index >= 0:
+            file_path = self.image_files[self.current_image_index]
+            current_index = self.current_history_index[file_path]
+            
+            if current_index < len(self.image_history[file_path]) - 1:
+                current_index += 1
+                self.current_history_index[file_path] = current_index
+
+                if self.in_memory_history.get(file_path, []):
+                    cv2_img = self.in_memory_history[file_path][current_index]
+                else:
+                    cv2_img = cv2.imread(self.image_history[file_path][current_index])
+                    cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+
+                self.image_data[file_path] = cv2_img
+                self.image_viewer.display_cv2_image(cv2_img)
 
     def save_image_state(self, file: str):
         self.image_states[file] = {
@@ -512,9 +676,10 @@ class ComicTranslate(ComicTranslateUI):
 
         self.clear_text_edits()
 
-    def display_image(self, index: int):
+    def display_image(self, index: int, switch_page=True):
         if 0 <= index < len(self.image_files):
-            self.save_current_image_state()
+            if switch_page:
+                self.save_current_image_state()
             self.current_image_index = index
             file_path = self.image_files[index]
             
@@ -558,60 +723,6 @@ class ComicTranslate(ComicTranslateUI):
                 self.disable_hbutton_group()
                 self.run_threaded(self.pipeline.detect_blocks, self.blk_detect_segment, 
                           self.default_error_handler, self.on_manual_finished)
-                
-    def update_image_history(self, file_path: str, cv2_img: np.ndarray):
-         # Check if the new image is different from the current one
-        if not np.array_equal(self.image_data[file_path], cv2_img):
-            self.image_data[file_path] = cv2_img
-                
-            # Add to history
-            history = self.image_history[file_path]
-            current_index = self.current_history_index[file_path]
-                
-            # Remove any future history if we're not at the end
-            del history[current_index + 1:]
-                
-            history.append(cv2_img.copy())
-            self.current_history_index[file_path] = len(history) - 1
-
-    def set_cv2_image(self, cv2_img: np.ndarray):
-        if self.current_image_index >= 0:
-            file_path = self.image_files[self.current_image_index]
-
-            self.update_image_history(file_path, cv2_img)
-            self.image_viewer.display_cv2_image(cv2_img)
-
-    def undo_image(self):
-        if self.current_image_index >= 0:
-            if any(isinstance(item, TextBlockItem) for item in self.image_viewer._scene.items()):
-                self.image_viewer.clear_text_items(delete=False)
-                self.current_text_block_item = None
-                self.current_text_block = None
-                return
-
-            file_path = self.image_files[self.current_image_index]
-            current_index = self.current_history_index[file_path]
-            while current_index > 0:
-                current_index -= 1
-                cv2_img = self.image_history[file_path][current_index]
-                if not np.array_equal(self.image_data[file_path], cv2_img):
-                    self.current_history_index[file_path] = current_index
-                    self.image_data[file_path] = cv2_img
-                    self.image_viewer.display_cv2_image(cv2_img)
-                    break
-
-    def redo_image(self):
-        if self.current_image_index >= 0:
-            file_path = self.image_files[self.current_image_index]
-            current_index = self.current_history_index[file_path]
-            while current_index < len(self.image_history[file_path]) - 1:
-                current_index += 1
-                cv2_img = self.image_history[file_path][current_index]
-                if not np.array_equal(self.image_data[file_path], cv2_img):
-                    self.current_history_index[file_path] = current_index
-                    self.image_data[file_path] = cv2_img
-                    self.image_viewer.display_cv2_image(cv2_img)
-                    break
 
     def find_corresponding_text_block(self, rect: Tuple[float], iou_threshold: int):
         for blk in self.blk_list:
@@ -926,7 +1037,7 @@ class ComicTranslate(ComicTranslateUI):
             # Save images
             for file_path in self.image_files:
                 bname = os.path.basename(file_path) 
-                cv2_img = self.image_data[file_path]
+                cv2_img = self.load_image(file_path)  
                 cv2_img_save = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
                 sv_pth = os.path.join(temp_dir, bname)
                 cv2.imwrite(sv_pth, cv2_img_save)
@@ -938,6 +1049,62 @@ class ComicTranslate(ComicTranslateUI):
             import shutil
             shutil.rmtree(temp_dir)
 
+    def launch_save_proj_dialog(self):
+        file_dialog = QtWidgets.QFileDialog()
+        file_name, _ = file_dialog.getSaveFileName(
+            self, 
+            "Save Project As", 
+            "untitled", 
+            "Project Files (*.ctpr);;All Files (*)"
+        )
+
+        return file_name
+    
+    def run_save_proj(self, file_name):
+        self.project_file = file_name
+        self.loading.setVisible(True)
+        self.disable_hbutton_group()
+        self.run_threaded(self.save_project, None, 
+                                self.default_error_handler, self.on_manual_finished, file_name)
+
+    def thread_save_project(self):
+        file_name = ""
+        self.save_current_image_state()
+        if self.project_file:
+            file_name = self.project_file
+        else:
+            file_name = self.launch_save_proj_dialog()
+
+        if file_name:
+            self.run_save_proj(file_name)
+            
+    def thread_save_as_project(self):
+        file_name = self.launch_save_proj_dialog()
+        if file_name:
+            self.run_save_proj(file_name)
+
+    def save_project(self, file_name):
+        save_state_to_proj_file(self, file_name)
+
+    def update_ui_from_project(self):
+        index = self.current_image_index
+        self.update_image_cards()
+        self.run_threaded(
+            lambda: self.load_image(self.image_files[index]),
+            lambda result: self.display_image_from_loaded(result, index, switch_page=False),
+            self.default_error_handler,
+            None
+        )
+
+    def thread_load_project(self, file_name):
+        self.clear_state()
+        self.run_threaded(self.load_project, None, 
+                          self.default_error_handler, self.update_ui_from_project, file_name)
+
+    def load_project(self, file_name):
+        self.project_file = file_name
+        load_state_from_proj_file(self, file_name)
+
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Left:
             self.navigate_images(-1)
@@ -945,13 +1112,6 @@ class ComicTranslate(ComicTranslateUI):
             self.navigate_images(1)
         else:
             super().keyPressEvent(event)
-
-    def navigate_images(self, direction: int):
-        if hasattr(self, 'image_files') and self.image_files:
-            new_index = self.current_image_index + direction
-            if 0 <= new_index < len(self.image_files):
-                self.display_image(new_index)
-                self.highlight_card(new_index)
 
     def save_main_page_settings(self):
         settings = QSettings("ComicLabs", "ComicTranslate")
@@ -1021,6 +1181,13 @@ class ComicTranslate(ComicTranslateUI):
         # Delete temp archive folders
         for archive in self.file_handler.archive_info:
             shutil.rmtree(archive['temp_dir'])
+
+        for root, dirs, files in os.walk(self.temp_dir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+        os.rmdir(self.temp_dir)
 
         super().closeEvent(event)
 
