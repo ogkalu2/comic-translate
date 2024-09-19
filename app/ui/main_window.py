@@ -18,10 +18,11 @@ from .dayu_widgets.radio_button import MRadioButton
 from .dayu_widgets.button_group import MPushButtonGroup, MToolButtonGroup
 from .dayu_widgets.slider import MSlider
 from .dayu_widgets.label import MLabel
-from .dayu_widgets.qt import MPixmap
+from .dayu_widgets.qt import MPixmap, MIcon
 from .dayu_widgets.progress_bar import MProgressBar
 from .dayu_widgets.loading import MLoading
 from .dayu_widgets.theme import MTheme
+from .dayu_widgets.menu import MMenu
 
 from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
@@ -114,18 +115,59 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         nav_divider = MDivider()
         nav_divider.setFixedWidth(30)
 
-        self.tool_browser = MClickBrowserFileToolButton(multiple=True)
+        # Create the tool browser button
+        self.tool_browser = MToolButton()
         self.tool_browser.set_dayu_svg("upload-file.svg")
-        self.tool_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
-                                            ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
-                                            ".pdf", ".epub"])
         self.tool_browser.setToolTip(self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)"))
+        self.tool_browser.clicked.connect(self.show_tool_menu)
 
+        self.image_browser_button = MClickBrowserFileToolButton(multiple=True)
+        self.image_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"])
+        
+        self.document_browser_button = MClickBrowserFileToolButton(multiple=True)
+        self.document_browser_button.set_dayu_filters([".pdf", ".epub"])
+        
+        self.archive_browser_button = MClickBrowserFileToolButton(multiple=True)
+        self.archive_browser_button.set_dayu_filters([".zip", ".rar", ".7z", ".tar"])
+        
+        self.comic_browser_button = MClickBrowserFileToolButton(multiple=True)
+        self.comic_browser_button.set_dayu_filters([".cbz", ".cbr", ".cb7", ".cbt"])
+
+        self.project_browser_button = MClickBrowserFileToolButton(multiple=False)
+        self.project_browser_button.set_dayu_filters([".ctpr"])
+
+        self.tool_menu = MMenu(parent=self)
+        
+        # Add actions to the menu and connect them to the browser buttons
+        image_action = self.tool_menu.addAction(MIcon("ion--image-outline.svg"), self.tr("Images"))
+        image_action.triggered.connect(self.image_browser_button.clicked)
+        
+        document_action = self.tool_menu.addAction(MIcon("mingcute--document-line.svg"), self.tr("Document"))
+        document_action.triggered.connect(self.document_browser_button.clicked)
+        
+        archive_action = self.tool_menu.addAction(MIcon("flowbite--file-zip-outline.svg"), self.tr("Archive"))
+        archive_action.triggered.connect(self.archive_browser_button.clicked)
+        
+        comic_action = self.tool_menu.addAction(MIcon("mdi--comic-thought-bubble-outline.svg"), self.tr("Comic Book Archive"))
+        comic_action.triggered.connect(self.comic_browser_button.clicked)
+
+        project_action = self.tool_menu.addAction(MIcon("ct-file-icon.svg"), self.tr("Project File"))
+        project_action.triggered.connect(self.project_browser_button.clicked)
+
+        # Rest of the code remains the same
         self.save_browser = MClickSaveFileToolButton()
         save_file_types = [("Images", ["png", "jpg", "jpeg", "webp", "bmp"])]
         self.save_browser.set_file_types(save_file_types)
         self.save_browser.set_dayu_svg("save.svg")
         self.save_browser.setToolTip(self.tr("Save Currently Loaded Image"))
+
+        self.save_project_button = MToolButton()
+        self.save_project_button.set_dayu_svg("fluent--save-16-regular.svg")
+        self.save_project_button.setToolTip(self.tr("Save Project"))
+
+        self.save_as_project_button = MToolButton()
+        self.save_as_project_button.set_dayu_svg("fluent--save-as-24-regular.svg")
+        self.save_as_project_button.setToolTip(self.tr("Save as"))
 
         save_all_file_types = [
             ("ZIP files", "zip"),
@@ -136,9 +178,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         ]
 
         self.save_all_browser = MClickSaveFileToolButton()
-        self.save_all_browser.set_dayu_svg("save-all.svg")
+        self.save_all_browser.set_dayu_svg("tabler--file-export.svg")
         self.save_all_browser.set_file_types(save_all_file_types)
-        self.save_all_browser.setToolTip(self.tr("Save all Images"))
+        self.save_all_browser.setToolTip(self.tr("Export all Images"))
 
         nav_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Vertical, exclusive=True)
         nav_tools = [
@@ -149,6 +191,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         nav_tool_group.get_button_group().buttons()[0].setChecked(True)
 
         nav_rail_layout.addWidget(self.tool_browser)
+        nav_rail_layout.addWidget(self.save_project_button)
+        nav_rail_layout.addWidget(self.save_as_project_button)
         nav_rail_layout.addWidget(self.save_browser)
         nav_rail_layout.addWidget(self.save_all_browser)
         nav_rail_layout.addWidget(nav_divider)
@@ -158,6 +202,10 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         nav_rail_layout.setContentsMargins(0, 0, 0, 0)
 
         return nav_rail_layout
+
+    def show_tool_menu(self):
+        # Show the tool menu at the appropriate position
+        self.tool_menu.exec_(self.tool_browser.mapToGlobal(self.tool_browser.rect().bottomLeft()))
     
     def create_push_button(self, text: str, clicked = None):
         button = MPushButton(text)
@@ -223,8 +271,10 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Left Side (Image Selection)
         left_layout = QtWidgets.QVBoxLayout()
         left_layout.addWidget(MDivider())
+
         self.image_card_layout = QtWidgets.QVBoxLayout()
         self.image_card_layout.addStretch(1)  # Add stretch to keep cards at the top
+
         scroll = QtWidgets.QScrollArea()
         scroll.setWidgetResizable(True)
         img_selection = QtWidgets.QWidget()
@@ -245,7 +295,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.drag_browser.set_dayu_svg("attachment_line.svg")
         self.drag_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
-                                            ".pdf", ".epub"])
+                                            ".pdf", ".epub", ".ctpr"])
         self.drag_browser.setToolTip(self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)"))
         self.central_stack.addWidget(self.drag_browser)
         

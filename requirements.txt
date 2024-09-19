@@ -1,6 +1,7 @@
 opencv_python
 PySide6>=6.7.2
 dayu-path>=0.5.2
+msgpack>=1.1.0
 requests>=2.31.0
 matplotlib>=3.8.2
 pymupdf>=1.24.9

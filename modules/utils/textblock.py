@@ -10,9 +10,10 @@ class TextBlock(object):
                  text_bbox: np.ndarray,
                  bubble_bbox: np.ndarray = None,
                  text_class: str = "",
-                 inpaint_bboxes: List = None,
+                 inpaint_bboxes = None,
                  lines: List = None,
                  text_segm_points: np.ndarray = None, 
+                 text: str = "",
                  texts: List[str] = None,
                  translation: str = "",
                  line_spacing = 1,
@@ -30,9 +31,12 @@ class TextBlock(object):
         self.text_class = text_class
  
         self.lines = lines
-        self.inpaint_bboxes = inpaint_bboxes
+        if isinstance(inpaint_bboxes, np.ndarray):
+            self.inpaint_bboxes = inpaint_bboxes
+        else:
+            self.inpaint_bboxes = np.array(inpaint_bboxes, dtype=np.int32) if inpaint_bboxes else None
         self.texts = texts if texts is not None else []
-        self.text = ' '.join(self.texts) 
+        self.text = ' '.join(self.texts) if self.texts else text
         self.translation = translation
 
         self.line_spacing = line_spacing
