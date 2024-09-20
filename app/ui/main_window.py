@@ -680,7 +680,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.set_tool(None)
 
     def toggle_eraser_tool(self):
-        if self.eraser_button.isChecked()):
+        if self.eraser_button.isChecked():
             self.set_tool('eraser')
         else:
             self.set_tool(None)
