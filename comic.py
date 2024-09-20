@@ -475,6 +475,9 @@ class ComicTranslate(ComicTranslateUI):
             self.current_history_index[self.image_files[0]] = 0
             self.save_image_state(self.image_files[0])
 
+        for file in self.image_files:
+            self.save_image_state(file)
+
         self.update_image_cards()
 
         if self.image_files:
