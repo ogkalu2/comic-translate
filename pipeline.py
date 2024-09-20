@@ -223,6 +223,8 @@ class ComicTranslatePipeline:
             inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img)
 
             # Saving cleaned image
+            self.main_page.image_history[image_path] = [image_path]
+            self.main_page.current_history_index[image_path] = 0
             self.main_page.update_image_history(image_path, inpaint_input_img)
 
             inpaint_input_img = cv2.cvtColor(inpaint_input_img, cv2.COLOR_BGR2RGB)
