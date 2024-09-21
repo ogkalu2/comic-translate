@@ -1301,13 +1301,13 @@ MProgressBar::chunk {
     border-radius: @progress_bar_radius@unit;
 }
 MProgressBar[dayu_status=error]::chunk {
-    background-color: @error_6;
+    background-color: @error_8;
 }
 MProgressBar[dayu_status=success]::chunk {
-    background-color: @success_6;
+    background-color: @success_8;
 }
 MProgressBar[dayu_status=primary]::chunk {
-    background-color: @primary_color;
+    background-color: @info_8; 
 }
 
 MMenu {
