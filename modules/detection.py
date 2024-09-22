@@ -159,7 +159,7 @@ def is_mostly_contained(outer_box, inner_box, threshold):
     outer_area = (ox2 - ox1) * (oy2 - oy1)
     
     # Return False if the outer box is smaller than the inner box
-    if outer_area < inner_area:
+    if outer_area < inner_area or inner_area == 0:
         return False
     
     # Calculate the area of intersection
