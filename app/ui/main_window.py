@@ -232,7 +232,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             {"text": self.tr("Get Translations"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Segment Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Clean Image"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Rendering"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Render"), "dayu_type": MPushButton.DefaultType, "enabled": False},
         ]
 
         self.hbutton_group = MPushButtonGroup()

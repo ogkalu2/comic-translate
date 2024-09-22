@@ -93,6 +93,8 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: i
     
     for blk in blk_list:
         bboxes = blk.inpaint_bboxes
+        if bboxes is None or len(bboxes) == 0:
+            continue
         for bbox in bboxes:
             x1, y1, x2, y2 = bbox
             

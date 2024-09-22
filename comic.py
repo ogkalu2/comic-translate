@@ -703,7 +703,7 @@ class ComicTranslate(ComicTranslateUI):
         self.blk_list = blk_list
         for blk in self.blk_list:
             bboxes = blk.inpaint_bboxes
-            if bboxes is not None or len(bboxes) > 0:
+            if bboxes is not None and len(bboxes) > 0:
                 self.image_viewer.draw_segmentation_lines(bboxes)
 
     def load_segmentation_points(self):
@@ -716,7 +716,7 @@ class ComicTranslate(ComicTranslateUI):
             if self.blk_list:
                 for blk in self.blk_list:
                     bboxes = blk.inpaint_bboxes
-                    if bboxes is not None or len(bboxes) > 0:
+                    if bboxes is not None and len(bboxes) > 0:
                         self.image_viewer.draw_segmentation_lines(bboxes)
                 
                 self.enable_hbutton_group()
@@ -951,7 +951,7 @@ class ComicTranslate(ComicTranslateUI):
                 color = QColor(color_str)
                 self.current_text_block_item.set_outline(color, outline_width)
 
-    def set_values_for_blk_item(self, text_item):
+    def set_values_for_blk_item(self, text_item: TextBlockItem=None):
         # List of widgets to block signals
         widgets_to_block = [
             self.font_dropdown,
