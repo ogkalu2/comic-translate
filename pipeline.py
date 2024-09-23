@@ -84,6 +84,7 @@ class ComicTranslatePipeline:
     def inpaint_complete(self, result):
         inpainted, original_image = result
         self.main_page.set_cv2_image(inpainted)
+        self.main_page.cleaned_image = inpainted
         # get_best_render_area(self.main_page.blk_list, original_image, inpainted)
     
     def inpaint(self):
