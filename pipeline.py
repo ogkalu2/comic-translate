@@ -183,6 +183,9 @@ class ComicTranslatePipeline:
                 self.ocr.initialize(self.main_page, source_lang)
                 try:
                     self.ocr.process(image, blk_list)
+                    source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
+                    rtl = True if source_lang_english == 'Japanese' else False
+                    blk_list = sort_blk_list(blk_list, rtl)
                 except Exception as e:
                     error_message = str(e)
                     print(error_message)
