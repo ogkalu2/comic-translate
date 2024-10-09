@@ -1039,8 +1039,14 @@ class ComicTranslate(ComicTranslateUI):
         try:
             # Save images
             for file_path in self.image_files:
-                bname = os.path.basename(file_path) 
-                cv2_img = self.load_image(file_path)  
+                if file_path in self.image_history:
+                    curr_index = self.current_history_index.get(file_path, 0)
+                    pth = self.image_history[file_path][curr_index]
+                else:
+                    pth = file_path
+
+                bname = os.path.basename(pth) 
+                cv2_img = self.load_image(pth)  
                 cv2_img_save = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
                 sv_pth = os.path.join(temp_dir, bname)
                 cv2.imwrite(sv_pth, cv2_img_save)
