@@ -385,7 +385,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             max(0, min(point.y(), self._photo.pixmap().height()))
         )
 
-    def select_rectangle(self, rect: QtWidgets.QGraphicsRectItem):
+    def select_rectangle(self, rect: MovableRectItem):
         self.deselect_all()
         rect.selected = True
         rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 0, 0, 100)))  # Transparent red

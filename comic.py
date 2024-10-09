@@ -19,6 +19,7 @@ from app.thread_worker import GenericWorker
 from app.ui.dayu_widgets.message import MMessage
 
 from app.ui.canvas.text_item import TextBlockItem
+from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
 
 from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
@@ -648,7 +649,7 @@ class ComicTranslate(ComicTranslateUI):
             'source_lang': self.s_combo.currentText(),
             'target_lang': self.t_combo.currentText(),
             'brush_strokes': self.image_viewer.save_brush_strokes(),
-            'blk_list': self.blk_list
+            'blk_list': self.blk_list.copy()  # Store a copy of the list, not a reference
         }
 
     def save_current_image_state(self):
@@ -1035,21 +1036,19 @@ class ComicTranslate(ComicTranslateUI):
         self.run_threaded(self.save_and_make_worker, None, self.default_error_handler, None, output_path)
 
     def save_and_make_worker(self, output_path: str):
+        self.save_current_image_state()
         temp_dir = tempfile.mkdtemp()
         try:
             # Save images
             for file_path in self.image_files:
-                if file_path in self.image_history:
-                    curr_index = self.current_history_index.get(file_path, 0)
-                    pth = self.image_history[file_path][curr_index]
-                else:
-                    pth = file_path
+                bname = os.path.basename(file_path) 
+                cv2_img = self.load_image(file_path)  
 
-                bname = os.path.basename(pth) 
-                cv2_img = self.load_image(pth)  
-                cv2_img_save = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+                renderer = ImageSaveRenderer(cv2_img)
+                viewer_state = self.image_states[file_path]['viewer_state']
+                renderer.add_state_to_image(viewer_state)
                 sv_pth = os.path.join(temp_dir, bname)
-                cv2.imwrite(sv_pth, cv2_img_save)
+                renderer.save_image(sv_pth)
             
             # Call make function
             make(temp_dir, output_path)
