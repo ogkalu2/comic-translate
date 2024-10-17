@@ -1089,6 +1089,7 @@ class ComicTranslate(ComicTranslateUI):
     def thread_save_as_project(self):
         file_name = self.launch_save_proj_dialog()
         if file_name:
+            self.save_current_image_state()
             self.run_save_proj(file_name)
 
     def save_project(self, file_name):
