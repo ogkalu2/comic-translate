@@ -38,7 +38,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                                     self.tr("Claude-3-Opus"), self.tr("Claude-3.5-Sonnet"), 
                                     self.tr("Claude-3-Haiku"), self.tr("Gemini-1.5-Flash"), 
                                     self.tr("Gemini-1.5-Pro"), self.tr("Yandex"), self.tr("Google Translate"),
-                                    self.tr("Microsoft Translator")]
+                                    self.tr("Microsoft Translator"), self.tr("Local OpenAI Server")]
         
         self.languages = ['English', '한국어', 'Français', '日本語', 
          '简体中文', '繁體中文', 'русский', 'Deutsch', 
@@ -78,6 +78,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Yandex"): "Yandex",
             self.tr("Google Translate"): "Google Translate",
             self.tr("Microsoft Translator"): "Microsoft Translator",
+            self.tr("Local OpenAI Server"): "Local OpenAI Server",
 
             # OCR mappings
             self.tr("Default"): "Default",
@@ -435,9 +436,39 @@ class SettingsPageUI(QtWidgets.QWidget):
         image_checkbox.setChecked(True)
         self.llm_widgets['image_input'] = image_checkbox
 
+        # Local OpenAI
+        local_oai_label = MLabel(self.tr("Local OpenAI Server")).strong()
+
+        local_oai_url_input = MLineEdit()
+        local_oai_url_input.setFixedWidth(400)
+        local_oai_url_input.setPlaceholderText("http://localhost:1337/v1/")
+        local_oai_url_prefix = MLabel(self.tr("Base API URL")).border()
+
+        self.set_label_width(local_oai_url_prefix)
+        local_oai_url_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        local_oai_url_input.set_prefix_widget(local_oai_url_prefix)
+
+        self.llm_widgets["local_oai_url_input"] = local_oai_url_input
+
+        local_oai_model_input = MLineEdit()
+        local_oai_model_input.setFixedWidth(400)
+        local_oai_model_input.setPlaceholderText("llama3.1-8b-instruct")
+        local_oai_model_prefix = MLabel(self.tr("Model ID")).border()
+
+        self.set_label_width(local_oai_model_prefix)
+        local_oai_model_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        local_oai_model_input.set_prefix_widget(local_oai_model_prefix)
+
+        self.llm_widgets["local_oai_model_input"] = local_oai_model_input
+
+        
         llms_layout.addWidget(prompt_label)
         llms_layout.addWidget(self.llm_widgets['extra_context'])
         llms_layout.addWidget(image_checkbox)
+        llms_layout.addSpacing(20)  # Add 20 pixels of vertical spacing
+        llms_layout.addWidget(local_oai_label)
+        llms_layout.addWidget(local_oai_url_input)
+        llms_layout.addWidget(local_oai_model_input)
         llms_layout.addStretch(1)
 
         return llms_layout
