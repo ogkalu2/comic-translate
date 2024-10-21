@@ -15,7 +15,7 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def get_llm_client(translator: str, api_key: str):
+def get_llm_client(translator: str, api_key: str, base_url: str):
     if 'GPT' in translator:
         client  = OpenAI(api_key = api_key)
     elif 'Claude' in translator:
@@ -23,6 +23,11 @@ def get_llm_client(translator: str, api_key: str):
     elif 'Gemini' in translator:
         client = genai
         client.configure(api_key = api_key)
+    elif 'Local OpenAI' in translator:
+        client  = OpenAI(
+            api_key = "none", # Must be set, but not checked
+            base_url = base_url
+        )
     else:
         client = None
 

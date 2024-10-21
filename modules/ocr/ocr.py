@@ -74,7 +74,7 @@ class OCRProcessor:
         elif self.gpt_ocr:
             credentials = self.settings.get_credentials(self.settings.ui.tr("Open AI GPT"))
             api_key = credentials['api_key']
-            gpt_client = get_llm_client('GPT', api_key)
+            gpt_client = get_llm_client('GPT', api_key, None)
             return self._ocr_gpt(img, blk_list, gpt_client)
 
         else:

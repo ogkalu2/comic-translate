@@ -21,7 +21,8 @@ class Translator:
         self.target_lang_en = self.get_english_lang(main_page, self.target_lang)
 
         self.api_key = self.get_api_key(self.translator_key)
-        self.client = get_llm_client(self.translator_key, self.api_key)
+        self.base_url = self.get_base_url(self.translator_key)
+        self.client = get_llm_client(self.translator_key, self.api_key, self.base_url)
 
         self.img_as_llm_input = self.settings.get_llm_settings()['image_input_enabled']
 
@@ -38,7 +39,8 @@ class Translator:
             self.settings.ui.tr("Google Translate"): "Google Translate",
             self.settings.ui.tr("Microsoft Translator"): "Microsoft Translator",
             self.settings.ui.tr("DeepL"): "DeepL",
-            self.settings.ui.tr("Yandex"): "Yandex"
+            self.settings.ui.tr("Yandex"): "Yandex",
+            self.settings.ui.tr("Local OpenAI Server"): "Local OpenAI Server",
         }
         return translator_map.get(localized_translator, localized_translator)
 
@@ -53,9 +55,16 @@ class Translator:
             "Claude-3.5-Sonnet": "claude-3-5-sonnet-20240620",
             "Claude-3-Haiku": "claude-3-haiku-20240307",
             "Gemini-1.5-Flash": "gemini-1.5-flash-latest",
-            "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
+            "Gemini-1.5-Pro": "gemini-1.5-pro-latest",
+            "Local OpenAI Server": self.settings.ui.llm_widgets['local_oai_model_input'].text()
         }
-        return model_map.get(translator_key)
+
+        model = model_map.get(translator_key)
+
+        if not model and translator_key == "Local OpenAI Server":
+            raise ValueError(f"Model not found for translator: {translator_key}")
+
+        return model
     
     def get_system_prompt(self, source_lang: str, target_lang: str):
         return f"""You are an expert translator who translates {source_lang} to {target_lang}. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a {target_lang} speaker would understand.
@@ -89,7 +98,31 @@ class Translator:
 
         translated = response.choices[0].message.content
         return translated
-    
+
+    def get_local_gpt_translation(self, user_prompt: str, model: str, system_prompt: str, image: np.ndarray):
+        encoded_image = encode_image_array(image)
+
+        if self.img_as_llm_input:
+            message = [
+                    {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
+                    {"role": "user", "content": [{"type": "text", "text": user_prompt}, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{encoded_image}"}}]}
+                ]
+        else:
+            message = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+
+        response = self.client.chat.completions.create(
+            model=model,
+            messages=message,
+            temperature=1,
+            max_tokens=1000,
+        )
+
+        translated = response.choices[0].message.content
+        return translated
+
     def get_claude_translation(self, user_prompt: str, model: str, system_prompt: str, image: np.ndarray):
         encoded_image = encode_image_array(image)
         media_type = "image/png"
@@ -192,6 +225,8 @@ class Translator:
             elif 'Gemini' in self.translator_key:
                 image = cv2_to_pil(image)
                 entire_translated_text = self.get_gemini_translation(user_prompt, model, system_prompt, image)
+            elif 'Local OpenAI' in self.translator_key:
+                entire_translated_text = self.get_local_gpt_translation(user_prompt, model, system_prompt, image)
 
             set_texts_from_json(blk_list, entire_translated_text)
 
@@ -216,7 +251,18 @@ class Translator:
             }
             api_key = api_key_map.get(translator_key, "")
 
-        if not api_key and translator_key!= 'Google Translate':
+        if not api_key and translator_key not in ['Google Translate', 'Local OpenAI Server']:
             raise ValueError(f"API key not found for translator: {translator_key}")
 
         return api_key
+    
+    def get_base_url(self, translator_key: str):
+        base_url = None
+
+        if 'Local OpenAI' in translator_key:
+            base_url = self.settings.ui.llm_widgets['local_oai_url_input'].text()
+
+        if not base_url and translator_key == "Local OpenAI Server":
+            raise ValueError(f"Base URL not found for translator: {translator_key}")
+
+        return base_url
