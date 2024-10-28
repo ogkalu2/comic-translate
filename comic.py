@@ -564,9 +564,7 @@ class ComicTranslate(ComicTranslateUI):
                 self.in_memory_history[oldest_image] = []
                 
     def update_image_history(self, file_path: str, cv2_img: np.ndarray):
-        im = cv2.imread(file_path)
-        cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-
+        im = self.load_image(file_path)
         im_chk = self.image_data[file_path] if file_path in self.image_data else im
 
         if not np.array_equal(im_chk, cv2_img):
