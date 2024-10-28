@@ -50,7 +50,7 @@ class Translator:
             "GPT-4o": "gpt-4o",
             "GPT-4o mini": "gpt-4o-mini",
             "Claude-3-Opus": "claude-3-opus-20240229",
-            "Claude-3.5-Sonnet": "claude-3-5-sonnet-20240620",
+            "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
             "Claude-3-Haiku": "claude-3-haiku-20240307",
             "Gemini-1.5-Flash": "gemini-1.5-flash-latest",
             "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
