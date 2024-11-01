@@ -39,6 +39,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.font_size = font_size
         self.alignment = alignment
         self.line_spacing = line_spacing
+        self.text_block = text_block
 
         if text:
             self.set_text(text)
@@ -57,13 +58,13 @@ class TextBlockItem(QGraphicsTextItem):
 
         self.editing_mode = False
 
-        self.text_block = text_block
         self.document().contentsChanged.connect(self._on_text_changed)
 
     def set_text(self, text):
         if self.is_html(text):
             self.setHtml(text)
-            self.setTextWidth(self.boundingRect().width())
+            x, y, w, h = self.text_block.xywh
+            self.setTextWidth(w)
             self.set_outline(self.outline_color, self.outline_width)
 
         else:
