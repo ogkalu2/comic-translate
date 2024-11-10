@@ -13,6 +13,7 @@ class TextBlock(object):
                  inpaint_bboxes = None,
                  lines: List = None,
                  text_segm_points: np.ndarray = None, 
+                 angle = 0,
                  text: str = "",
                  texts: List[str] = None,
                  translation: str = "",
@@ -29,6 +30,8 @@ class TextBlock(object):
         self.segm_pts = text_segm_points
         self.bubble_xyxy = bubble_bbox
         self.text_class = text_class
+        self.angle = angle
+        self.tr_origin_point = ()
  
         self.lines = lines
         if isinstance(inpaint_bboxes, np.ndarray):

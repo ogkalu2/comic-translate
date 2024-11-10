@@ -4,6 +4,7 @@ from PySide6 import QtCore, QtGui
 
 from .text_item import TextBlockItem
 from .rectangle import MovableRectItem
+from .rotate_cursor import RotateHandleCursors
 
 import cv2
 import numpy as np
@@ -11,7 +12,7 @@ from typing import List, Dict
 import math
 
 class ImageViewer(QtWidgets.QGraphicsView):
-    rectangle_created = QtCore.Signal(QtCore.QRectF)
+    rectangle_created = QtCore.Signal(MovableRectItem)
     rectangle_selected = QtCore.Signal(QtCore.QRectF)
     rectangle_deleted = QtCore.Signal(QtCore.QRectF)
 
@@ -21,6 +22,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._empty = True
         self._scene = QtWidgets.QGraphicsScene(self)
         self._photo = QtWidgets.QGraphicsPixmapItem()
+        self._rotate_cursors = RotateHandleCursors()
         self._photo.setShapeMode(QtWidgets.QGraphicsPixmapItem.BoundingRectShape)
         self._scene.addItem(self._photo)
         self.setScene(self._scene)
@@ -155,58 +157,105 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
     def delete_selected_rectangle(self):
         if self._selected_rect:
-            self.rectangle_deleted.emit(self._selected_rect.rect())
+            rect = self._selected_rect.mapRectToScene(self._selected_rect.rect())
+            self.rectangle_deleted.emit(rect)
             self._scene.removeItem(self._selected_rect)
             self._rectangles.remove(self._selected_rect)
             self._selected_rect = None
 
     def mousePressEvent(self, event):
-
         clicked_item = self.itemAt(event.pos())
+        scene_pos = self.mapToScene(event.position().toPoint())
 
-        for item in self._scene.items():
-            if isinstance(item, TextBlockItem) and item != clicked_item:
-                item.handleDeselection()
+        # Handle rotation and selection for existing items
+        if event.button() == QtCore.Qt.LeftButton:
+            blk_item, rect_item = self.sel_rot_item()
+            if blk_item or rect_item:
+                sel_item = blk_item if blk_item else rect_item
+                local_pos = sel_item.mapFromScene(scene_pos)
+                buffer = 25     
+                angle = sel_item.rotation()
+                inner_rect = sel_item.boundingRect()
+                outer_rect = inner_rect.adjusted(-buffer, -buffer, buffer, buffer)
+                sel_item.rot_handle = self.get_rotate_handle(outer_rect, local_pos, angle)
 
-        if self._current_tool == 'pan' or isinstance(clicked_item, TextBlockItem):
-            super().mousePressEvent(event)
+                if sel_item.rot_handle: 
+                    sel_item.init_rotation(scene_pos, local_pos)
+                    event.accept()
+                    return  # Exit early if handling rotation
 
+        # Handle deselection
+        if clicked_item is None:
+            self.deselect_all()
+        else:
+            for item in self._scene.items():
+                if isinstance(item, (TextBlockItem, MovableRectItem)) and item != clicked_item:
+                    if isinstance(item, TextBlockItem):
+                        item.handleDeselection()
+                    else:
+                        self.deselect_rect(item)
+
+        # Handle panning
         if event.button() == QtCore.Qt.MiddleButton:
             self._panning = True
             self._pan_start_pos = event.position()
             self.viewport().setCursor(QtCore.Qt.CursorShape.ClosedHandCursor)
             event.accept()
             return
-        
+
+        # Handle drawing tools
         if self._current_tool in ['brush', 'eraser'] and self.hasPhoto():
-            self._drawing_path = QtGui.QPainterPath()
-            scene_pos = self.mapToScene(event.position().toPoint())
             if self._photo.contains(scene_pos):
+                self._drawing_path = QtGui.QPainterPath()
                 self._drawing_path.moveTo(scene_pos)
                 self._current_path = QtGui.QPainterPath()
                 self._current_path.moveTo(scene_pos)
-                self._current_path_item = self._scene.addPath(self._current_path, 
-                                                              QtGui.QPen(self._brush_color, self._brush_size, 
-                                                                         QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, 
-                                                                         QtCore.Qt.RoundJoin))
+                self._current_path_item = self._scene.addPath(
+                    self._current_path, 
+                    QtGui.QPen(self._brush_color, self._brush_size, 
+                            QtCore.Qt.SolidLine, QtCore.Qt.RoundCap, 
+                            QtCore.Qt.RoundJoin)
+                )
 
+        # Handle box tool
         if self._current_tool == 'box' and self.hasPhoto():
-            scene_pos = self.mapToScene(event.position().toPoint())
             if self._photo.contains(scene_pos):
-                item = self.itemAt(event.position().toPoint())
-                if isinstance(item, MovableRectItem):
-                    self.select_rectangle(item)
+                if isinstance(clicked_item, MovableRectItem):
+                    self.select_rectangle(clicked_item)
                     super().mousePressEvent(event)
                 else:
-                    self.deselect_all()
                     self._box_mode = True
                     self._start_point = scene_pos
-                    self._current_rect = MovableRectItem(QtCore.QRectF(scene_pos, scene_pos), self._photo)
+                    rect = QtCore.QRectF(0, 0, 0, 0)
+                    self._current_rect = MovableRectItem(rect, self._photo)
+                    self._current_rect.setPos(scene_pos)
                     self._current_rect.setZValue(1)
+
+        # Handle pan tool and text block interaction
+        if self._current_tool == 'pan' or isinstance(clicked_item, TextBlockItem):
+            super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
 
+        scene_pos = self.mapToScene(event.position().toPoint())
+        blk_item, rect_item = self.sel_rot_item()
+
+        if blk_item or rect_item:
+            sel_item = blk_item if blk_item else rect_item
+            local_pos = sel_item.mapFromScene(scene_pos)
+            if sel_item.rotating and sel_item.center_scene_pos:
+                sel_item.rotate_item(scene_pos)
+                event.accept()
+            else:
+                buffer = 25
+                angle = sel_item.rotation()
+                inner_rect = sel_item.boundingRect()
+                outer_rect = inner_rect.adjusted(-buffer, -buffer, buffer, buffer)
+                cursor = self.get_rotation_cursor(outer_rect, local_pos, angle)
+                if cursor:
+                    self.viewport().setCursor(cursor)
+            
         if self._panning:
             new_pos = event.position()
             delta = new_pos - self._pan_start_pos
@@ -225,15 +274,24 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 elif self._current_tool == 'eraser':
                     self.erase_at(scene_pos)
 
-
         if self._current_tool == 'box':
             scene_pos = self.mapToScene(event.position().toPoint())
             if self._box_mode:
                 end_point = self.constrain_point(scene_pos)
-                rect = QtCore.QRectF(self._start_point, end_point).normalized()
-                self._current_rect.setRect(rect)
+                width = end_point.x() - self._start_point.x()
+                height = end_point.y() - self._start_point.y()
+                self._current_rect.setRect(QtCore.QRectF(0, 0, width, height))
 
     def mouseReleaseEvent(self, event):
+
+        if event.button() == QtCore.Qt.LeftButton:
+            blk_item, rect_item = self.sel_rot_item()
+            sel_item = blk_item if blk_item else rect_item
+            if sel_item:
+                sel_item.rotating = False
+                sel_item.center_scene_pos = None  
+                sel_item.rot_handle = None
+
         item = self.itemAt(event.pos())
         if self._current_tool == 'pan' or isinstance(item, TextBlockItem):
             super().mouseReleaseEvent(event)
@@ -258,11 +316,45 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 self._box_mode = False
                 if self._current_rect and self._current_rect.rect().width() > 0 and self._current_rect.rect().height() > 0:
                     self._rectangles.append(self._current_rect)
-                    self.rectangle_created.emit(self._current_rect.rect())
+                    self.rectangle_created.emit(self._current_rect)
                 else:
                     self._scene.removeItem(self._current_rect)
                 self._current_rect = None
             super().mouseReleaseEvent(event)
+
+    def get_rotate_handle(self, rect, pos: QtCore.QPointF, angle):
+        handle_size = 30
+
+        # Rotate all four corners
+        top_left = rect.topLeft()
+        top_right = rect.topRight()
+        bottom_left = rect.bottomLeft()
+        bottom_right = rect.bottomRight()
+
+        handles = {
+            'top_left': QtCore.QRectF(top_left.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
+            'top_right': QtCore.QRectF(top_right.x() - handle_size/2, top_right.y() - handle_size/2, handle_size, handle_size),
+            'bottom_left': QtCore.QRectF(bottom_left.x() - handle_size/2, bottom_left.y() - handle_size/2, handle_size, handle_size),
+            'bottom_right': QtCore.QRectF(bottom_right.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
+            'top': QtCore.QRectF(top_left.x(), top_left.y() - handle_size/2, rect.width(), handle_size),
+            'bottom': QtCore.QRectF(bottom_left.x(), bottom_left.y() - handle_size/2, rect.width(), handle_size),
+            'left': QtCore.QRectF(top_left.x() - handle_size/2, top_left.y(), handle_size, rect.height()),
+            'right': QtCore.QRectF(top_right.x() - handle_size/2, top_right.y(), handle_size, rect.height()),
+        }
+
+        # Check if the pos is within any of the handle rectangles
+        for handle, handle_rect in handles.items():
+            if handle_rect.contains(pos):
+                return handle
+        return None
+
+    def get_rotation_cursor(self, outer_rect: QtWidgets.QGraphicsRectItem, pos: QtCore.QPointF, angle):
+        handle = self.get_rotate_handle(outer_rect, pos, angle)
+        if handle:
+            return self._rotate_cursors.get_cursor(handle)
+        elif outer_rect.contains(pos):
+            return None
+        return QtGui.QCursor(QtCore.Qt.ArrowCursor)
 
     def erase_at(self, pos: QtCore.QPointF):
         erase_path = QtGui.QPainterPath()
@@ -417,42 +509,25 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
     def select_rectangle(self, rect: MovableRectItem):
         self.deselect_all()
-        rect.selected = True
-        rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 0, 0, 100)))  # Transparent red
-        self._selected_rect = rect
+        if rect:
+            rect.selected = True
+            rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 0, 0, 100)))  # Transparent red
+            self._selected_rect = rect
+            srect = rect.mapRectToScene(rect.rect())
+            self.rectangle_selected.emit(srect)
 
-        self.rectangle_selected.emit(rect.rect())
+    def deselect_rect(self, rect):
+        rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))  # Transparent pink
+        rect.selected = False
 
     def deselect_all(self):
         for rect in self._rectangles:
             rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))  # Transparent pink
             rect.selected = False
             self.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+        for txt_item in self._text_items:
+            txt_item.handleDeselection()
         self._selected_rect = None
-
-    def get_rectangle_properties(self):
-        return [
-            {
-                'x': rect.rect().x(),
-                'y': rect.rect().y(),
-                'width': rect.rect().width(),
-                'height': rect.rect().height(),
-                'selected': rect == self._selected_rect
-            }
-            for rect in self._rectangles
-        ]
-
-    def get_rectangle_coordinates(self):
-        return [
-            (
-                int(rect.rect().x()),
-                int(rect.rect().y()),
-                int(rect.rect().x() + rect.rect().width()),
-                int(rect.rect().y() + rect.rect().height())
-            )
-            for rect in self._rectangles
-        ]
-
 
     def get_cv2_image(self, paint_all=False):
         """Get the currently loaded image as a cv2 image, including text blocks and all scene items."""
@@ -699,7 +774,21 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.setSceneRect(QtCore.QRectF(*state['scene_rect']))
         
         for rect_data in state['rectangles']:
-            rect_item = MovableRectItem(QtCore.QRectF(*rect_data), self._photo)
+            x1, y1, width, height = rect_data['rect']
+            rect = QtCore.QRectF(0, 0, width, height)
+            rect_item = MovableRectItem(rect, self._photo)
+            
+            # Set transform origin point first
+            if 'transform_origin' in rect_data:
+                rect_item.setTransformOriginPoint(
+                    QtCore.QPointF(*rect_data['transform_origin'])
+                )
+            
+            # Set position and rotation
+            rect_item.setPos(x1, y1)
+            rect_item.setRotation(rect_data['rotation'])
+            rect_item.text_block = rect_data['block']
+            
             self._rectangles.append(rect_item)
         
         # Recreate text block items
@@ -719,6 +808,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 italic=text_block['italic'],
                 underline=text_block['underline'],
             )
+            if 'transform_origin' in text_block:
+                text_item.setTransformOriginPoint(QtCore.QPointF(*text_block['transform_origin']))
             text_item.setPos(QtCore.QPointF(*text_block['position']))
             text_item.setRotation(text_block['rotation'])
             text_item.setScale(text_block['scale'])
@@ -729,6 +820,21 @@ class ImageViewer(QtWidgets.QGraphicsView):
     def save_state(self):
         transform = self.transform()
         center = self.mapToScene(self.viewport().rect().center())
+
+        rectangles_state = []
+        for rect in self._rectangles:
+            # Get the rectangle's scene coordinates
+            x1, y1, width, height = rect.text_block.xywh
+            
+            rectangles_state.append({
+                'block': rect.text_block,
+                'rect': (x1, y1, width, height),
+                'rotation': rect.rotation(),
+                'transform_origin': (
+                    rect.transformOriginPoint().x(),
+                    rect.transformOriginPoint().y()
+                )
+            })
 
         text_items_state = []
         for item in self._text_items:
@@ -748,10 +854,11 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 'position': (item.pos().x(), item.pos().y()),
                 'rotation': item.rotation(),
                 'scale': item.scale(),
+                'transform_origin': (item.transformOriginPoint().x(), item.transformOriginPoint().y())
             })
 
         return {
-            'rectangles': [rect.rect().getRect() for rect in self._rectangles],
+            'rectangles': rectangles_state,
             'transform': (
                 transform.m11(), transform.m12(), transform.m13(),
                 transform.m21(), transform.m22(), transform.m23(),
@@ -801,3 +908,15 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self._eraser_cursor = self.create_inpaint_cursor("eraser", size)
         if self._current_tool == "eraser":
             self.setCursor(self._eraser_cursor)
+
+    def sel_rot_item(self):
+        blk_item = next(
+            (item for item in self._scene.items() if (
+                isinstance(item, TextBlockItem) and item.selected)
+            ), None )
+
+        rect_item = next(
+            (item for item in self._scene.items() if (
+                isinstance(item, MovableRectItem) and item.selected)
+            ),  None )
+        return blk_item, rect_item

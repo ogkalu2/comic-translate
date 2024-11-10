@@ -8,7 +8,7 @@ from PIL import Image
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 from PySide6.QtCore import QCoreApplication, QSettings, QThreadPool
-from PySide6.QtCore import QTranslator, QLocale
+from PySide6.QtCore import QTranslator, QLocale, QRectF
 from PySide6.QtGui import QColor
 
 from app.ui.dayu_widgets.clickable_card import ClickMeta
@@ -19,6 +19,7 @@ from app.thread_worker import GenericWorker
 from app.ui.dayu_widgets.message import MMessage
 
 from app.ui.canvas.text_item import TextBlockItem
+from app.ui.canvas.rectangle import MovableRectItem
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
 
@@ -734,13 +735,14 @@ class ComicTranslate(ComicTranslateUI):
 
     def find_corresponding_rect(self, tblock: TextBlock, iou_threshold: int):
         for rect in self.image_viewer._rectangles:
-            x1, y1, w, h = rect.rect().getRect()
+            mp_rect = rect.mapRectToScene(rect.rect())
+            x1, y1, w, h = mp_rect.getRect()
             rect_coord = (x1, y1, x1 + w, y1 + h)
             if do_rectangles_overlap(rect_coord, tblock.xyxy, iou_threshold):
                 return rect
         return None
     
-    def handle_rectangle_selection(self, rect: QtCore.QRectF):
+    def handle_rectangle_selection(self, rect: QRectF):
         x1, y1, w, h = rect.getRect()
         rect = (x1, y1, x1 + w, y1 + h)
         self.current_text_block = self.find_corresponding_text_block(rect, 0.5)
@@ -756,7 +758,9 @@ class ComicTranslate(ComicTranslateUI):
             self.t_text_edit.clear()
             self.current_text_block = None
 
-    def handle_rectangle_creation(self, new_rect: QtCore.QRectF):
+    def handle_rectangle_creation(self, rect_item: MovableRectItem):
+        rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
+        new_rect = rect_item.mapRectToScene(rect_item.rect())
         x1, y1, w, h = new_rect.getRect()
         x1, y1, w, h = int(x1), int(y1), int(w), int(h)
         new_rect_coords = (x1, y1, x1 + w, y1 + h)
@@ -764,8 +768,9 @@ class ComicTranslate(ComicTranslateUI):
         inpaint_boxes = get_inpaint_bboxes(new_rect_coords, image)
         new_blk = TextBlock(text_bbox=np.array(new_rect_coords), inpaint_bboxes=inpaint_boxes)
         self.blk_list.append(new_blk)
+        rect_item.text_block = new_blk
 
-    def handle_rectangle_deletion(self, rect: QtCore.QRectF):
+    def handle_rectangle_deletion(self, rect: QRectF):
         x1, y1, w, h = rect.getRect()
         rect_coords = (x1, y1, x1 + w, y1 + h)
         current_text_block = self.find_corresponding_text_block(rect_coords, 0.5)
@@ -854,12 +859,14 @@ class ComicTranslate(ComicTranslateUI):
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
                               bold, italic, underline, max_font_size, min_font_size)
 
-    def handle_rectangle_change(self, new_rect: QtCore.QRectF):
+    def handle_rectangle_change(self, new_rect: QRectF, angle: float, tr_origin: Tuple):
         # Find the corresponding TextBlock in blk_list
         for blk in self.blk_list:
             if do_rectangles_overlap(blk.xyxy, (new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()), 0.2):
                 # Update the TextBlock coordinates
-                blk.xyxy[:] = [new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()]
+                blk.xyxy[:] = [new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()] 
+                blk.angle = angle if angle else 0
+                blk.tr_origin_point = (tr_origin.x(), tr_origin.y()) if tr_origin else ()
                 image = self.image_viewer.get_cv2_image()
                 inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
                 blk.inpaint_bboxes = inpaint_bboxes

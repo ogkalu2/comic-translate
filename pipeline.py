@@ -30,8 +30,13 @@ class ComicTranslatePipeline:
         if self.main_page.image_viewer.hasPhoto() and blk_list:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
-                rect = QtCore.QRectF(x1, y1, x2 - x1, y2 - y1)
+                rect = QtCore.QRectF(0, 0, x2 - x1, y2 - y1)
                 rect_item = MovableRectItem(rect, self.main_page.image_viewer._photo)
+                if blk.tr_origin_point:
+                    rect_item.setTransformOriginPoint(QtCore.QPointF(*blk.tr_origin_point))
+                rect_item.setPos(x1,y1)
+                rect_item.setRotation(blk.angle)
+                rect_item.text_block = blk
                 rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
                 self.main_page.image_viewer._rectangles.append(rect_item)
 

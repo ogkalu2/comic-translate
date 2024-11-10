@@ -1,14 +1,14 @@
-from PySide6.QtWidgets import QGraphicsTextItem
+from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QFont, QCursor, QColor, \
-     QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics
-from PySide6.QtCore import Qt, QRectF, Signal
-
+     QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics, QPainter
+from PySide6.QtCore import Qt, QRectF, Signal, QPointF
+import math
 
 class TextBlockItem(QGraphicsTextItem):
     textChanged = Signal(str)
     itemSelected = Signal(object)
     itemDeselected = Signal()
-
+    
     def __init__(self, 
              text = "", 
              parent_item = None, 
@@ -41,24 +41,30 @@ class TextBlockItem(QGraphicsTextItem):
         self.line_spacing = line_spacing
         self.text_block = text_block
 
+        self.handle_size = 30
+        self.selected = False
+        self.resizing = False
+        self.resize_handle = None
+        self._resize_start = None
+        self.editing_mode = False
+
+        # Rotation properties
+        self.rot_handle = None
+        self.rotating = False
+        self.last_rotation_angle = 0
+        self.rotation_smoothing = 1.0  # rotation sensitivity
+        self.center_scene_pos = None  
+
         if text:
             self.set_text(text)
-            
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.handle_size = 30
-        self.selected = False
-
-        self.resizing = False
-        self.resize_handle = None
-        self._resize_start = None
-
-        self.editing_mode = False
-
         self.document().contentsChanged.connect(self._on_text_changed)
+        self.setTransformOriginPoint(self.boundingRect().center())
+        self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
 
     def set_text(self, text):
         if self.is_html(text):
@@ -239,7 +245,7 @@ class TextBlockItem(QGraphicsTextItem):
 
     def mousePressEvent(self, event):
         if not self.editing_mode:
-            scene_pos = self.mapToScene(event.pos().toPoint())
+            scene_pos = event.scenePos()
             local_pos = self.mapFromScene(scene_pos)
             self.selected = self.boundingRect().contains(local_pos)
             
@@ -253,36 +259,32 @@ class TextBlockItem(QGraphicsTextItem):
                     self._resize_start = scene_pos
                 else:
                     self.setCursor(QCursor(Qt.ClosedHandCursor))
+
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if not self.editing_mode:
             if event.button() == Qt.LeftButton:
                 self.resizing = False
+                self.rotating = False
                 self.resize_handle = None
                 self._resize_start = None
+                self.center_scene_pos = None  # Clear the stored center position
                 self.update_cursor(event.pos())
         super().mouseReleaseEvent(event)
 
     def mouseMoveEvent(self, event):
         if not self.editing_mode:
+            scene_pos = event.scenePos()
+            local_pos = self.mapFromScene(scene_pos)
+                
             if self.resizing and self.resize_handle:
-                self.resize_item(event.pos())
+                self.resize_item(local_pos)
             else:
-                self.update_cursor(event.pos())
+                self.update_cursor(local_pos)
                 if self.parent_item:
-                    # Calculate the difference between the current mouse position and the previous one
-                    delta = event.pos() - event.lastPos()
-                    
-                    # Update the position based on the delta
-                    new_pos = self.pos() + delta
-                    
-                    # Ensure the new position is within the parent's bounds
-                    parent_rect = self.parent_item.boundingRect()
-                    new_pos.setX(max(0, min(new_pos.x(), parent_rect.width() - self.boundingRect().width())))
-                    new_pos.setY(max(0, min(new_pos.y(), parent_rect.height() - self.boundingRect().height())))
-                    
-                    self.setPos(new_pos)
+                    local_last_scene = self.mapFromScene(event.lastScenePos())
+                    self.move_item(local_pos, local_last_scene)
                 else:
                     super().mouseMoveEvent(event)
         else:
@@ -309,6 +311,67 @@ class TextBlockItem(QGraphicsTextItem):
             self.handleDeselection()
         super().focusOutEvent(event)
 
+    def init_rotation(self, scene_pos, local_pos):
+        self.rotating = True
+        center = self.boundingRect().center()
+        self.center_scene_pos = self.mapToScene(center)
+        self.last_rotation_angle = math.degrees(math.atan2(
+            scene_pos.y() - self.center_scene_pos.y(),
+            scene_pos.x() - self.center_scene_pos.x()
+        ))
+
+    def move_item(self, local_pos: QPointF, last_scene_pos: QPointF):
+        delta = self.mapToParent(local_pos) - self.mapToParent(last_scene_pos)
+        new_pos = self.pos() + delta
+        
+        # Calculate the bounding rect of the rotated rectangle in scene coordinates
+        scene_rect = self.mapToScene(self.boundingRect())
+        bounding_rect = scene_rect.boundingRect()
+        
+        parent_rect = self.parent_item.boundingRect()
+        
+        # Constrain the movement
+        if bounding_rect.left() + delta.x() < 0:
+            new_pos.setX(self.pos().x() - bounding_rect.left())
+        elif bounding_rect.right() + delta.x() > parent_rect.width():
+            new_pos.setX(self.pos().x() + parent_rect.width() - bounding_rect.right())
+        
+        if bounding_rect.top() + delta.y() < 0:
+            new_pos.setY(self.pos().y() - bounding_rect.top())
+        elif bounding_rect.bottom() + delta.y() > parent_rect.height():
+            new_pos.setY(self.pos().y() + parent_rect.height() - bounding_rect.bottom())
+        
+        self.setPos(new_pos)
+        # Update Textblock
+        x, y, w, h = self.text_block.xywh
+        x1 = new_pos.x()
+        y1 = new_pos.y()
+        self.text_block.xyxy[:] = [x1, y1, x1+w, y1+h]
+
+    def rotate_item(self, scene_pos):
+        self.setTransformOriginPoint(self.boundingRect().center())
+        current_angle = math.degrees(math.atan2(
+            scene_pos.y() - self.center_scene_pos.y(),
+            scene_pos.x() - self.center_scene_pos.x()
+        ))
+        
+        angle_diff = current_angle - self.last_rotation_angle
+        
+        if angle_diff > 180:
+            angle_diff -= 360
+        elif angle_diff < -180:
+            angle_diff += 360
+        
+        smoothed_angle = angle_diff / self.rotation_smoothing
+        
+        new_rotation = self.rotation() + smoothed_angle
+        self.setRotation(new_rotation)
+
+        # Update the text_block's angle parameter
+        if self.text_block:
+            self.text_block.angle = new_rotation  
+        self.last_rotation_angle = current_angle
+    
     def update_cursor(self, pos):
         if not self.editing_mode:
             cursor = self.get_cursor_for_position(pos)
@@ -332,11 +395,37 @@ class TextBlockItem(QGraphicsTextItem):
         }
         
         if handle:
-            return cursors.get(handle, Qt.CursorShape.ArrowCursor)
+            cursor = cursors.get(handle, Qt.CursorShape.ArrowCursor)
+            # Adjust cursor based on rotation
+            rotation = self.rotation() % 360
+            if 22.5 <= rotation < 67.5:
+                cursor = self.rotate_cursor(cursor, 1)
+            elif 67.5 <= rotation < 112.5:
+                cursor = self.rotate_cursor(cursor, 2)
+            elif 112.5 <= rotation < 157.5:
+                cursor = self.rotate_cursor(cursor, 3)
+            elif 157.5 <= rotation < 202.5:
+                cursor = self.rotate_cursor(cursor, 4)
+            elif 202.5 <= rotation < 247.5:
+                cursor = self.rotate_cursor(cursor, 5)
+            elif 247.5 <= rotation < 292.5:
+                cursor = self.rotate_cursor(cursor, 6)
+            elif 292.5 <= rotation < 337.5:
+                cursor = self.rotate_cursor(cursor, 7)
+            return cursor
         elif rect.contains(pos):
             return Qt.CursorShape.SizeAllCursor
         else:
             return Qt.CursorShape.PointingHandCursor
+            
+    def rotate_cursor(self, cursor, steps):
+        cursor_map = {
+            Qt.SizeVerCursor: [Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor] * 2,
+            Qt.SizeHorCursor: [Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor] * 2,
+            Qt.SizeFDiagCursor: [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor] * 2,
+            Qt.SizeBDiagCursor: [Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor] * 2
+        }
+        return cursor_map.get(cursor, [cursor] * 8)[steps]
 
     def get_handle_at_position(self, pos, rect):
         handle_size = self.handle_size
@@ -365,20 +454,35 @@ class TextBlockItem(QGraphicsTextItem):
         if not self._resize_start:
             return
 
-        scene_pos = self.mapToScene(pos.toPoint())
-        delta = scene_pos - self._resize_start
+        # Convert positions to scene coordinates
+        scene_pos = self.mapToScene(pos)
+        scene_start = self._resize_start
+
+        # Calculate delta in scene coordinates
+        scene_delta = scene_pos - scene_start
+
+        # Get current rotation in radians
+        angle_rad = math.radians(-self.rotation())  # Negative because we want to counter-rotate
+
+        # Rotate delta back to item's original coordinate system
+        rotated_delta_x = scene_delta.x() * math.cos(angle_rad) - scene_delta.y() * math.sin(angle_rad)
+        rotated_delta_y = scene_delta.x() * math.sin(angle_rad) + scene_delta.y() * math.cos(angle_rad)
+        rotated_delta = QPointF(rotated_delta_x, rotated_delta_y)
+
+        # Get the current rect in item coordinates
         rect = self.boundingRect()
         new_rect = QRectF(rect)
         original_height = rect.height()
 
+        # Apply the changes based on which handle is being dragged
         if self.resize_handle in ['left', 'top_left', 'bottom_left']:
-            new_rect.setLeft(rect.left() + delta.x())
+            new_rect.setLeft(rect.left() + rotated_delta.x())
         if self.resize_handle in ['right', 'top_right', 'bottom_right']:
-            new_rect.setRight(rect.right() + delta.x())
+            new_rect.setRight(rect.right() + rotated_delta.x())
         if self.resize_handle in ['top', 'top_left', 'top_right']:
-            new_rect.setTop(rect.top() + delta.y())
+            new_rect.setTop(rect.top() + rotated_delta.y())
         if self.resize_handle in ['bottom', 'bottom_left', 'bottom_right']:
-            new_rect.setBottom(rect.bottom() + delta.y())
+            new_rect.setBottom(rect.bottom() + rotated_delta.y())
 
         # Ensure minimum size
         min_size = 10
@@ -393,39 +497,68 @@ class TextBlockItem(QGraphicsTextItem):
             else:
                 new_rect.setBottom(new_rect.top() + min_size)
 
-        # Constrain to parent item
-        if self.parent_item:
-            parent_rect = self.parent_item.boundingRect()
-            new_pos = self.mapToParent(new_rect.topLeft() - rect.topLeft())
-            
-            # Constrain position
-            new_pos.setX(max(0, min(new_pos.x(), parent_rect.width() - new_rect.width())))
-            new_pos.setY(max(0, min(new_pos.y(), parent_rect.height() - new_rect.height())))
-            
-            # Constrain size
-            new_rect.setWidth(min(new_rect.width(), parent_rect.width() - new_pos.x()))
-            new_rect.setHeight(min(new_rect.height(), parent_rect.height() - new_pos.y()))
-            
-            self.setPos(new_pos)
-        else:
-            self.setPos(self.mapToParent(new_rect.topLeft() - rect.topLeft()))
+        # Calculate the change in position in scene coordinates
+        old_pos = self.mapToScene(rect.topLeft())
+        new_pos = self.mapToScene(new_rect.topLeft())
+        pos_delta = new_pos - old_pos
+        act_pos = self.pos() + pos_delta
 
-        # Update size and font
-        self.setTextWidth(new_rect.width())
-        height_ratio = new_rect.height() / original_height
-        new_font_size = self.font_size * height_ratio
-        self.set_font_size(new_font_size)
+        # Convert the new rectangle to scene coordinates to check bounds
+        scene_rect = self.mapRectToScene(new_rect)
+        parent_rect = self.parent_item.boundingRect()
+        
+        # Ensure the rectangle stays within parent bounds
+        if (scene_rect.left() >= 0 and 
+            scene_rect.right() <= parent_rect.right() and
+            scene_rect.top() >= 0 and 
+            scene_rect.bottom() <= parent_rect.bottom()):
 
-        x1 = new_pos.x()
-        y1 = new_pos.y()
-        x2 = x1 + new_rect.width()
-        y2 = y1 + self.boundingRect().height()
-        self.text_block.xyxy[:] = [x1, y1, x2, y2]
+            # Update position
+            self.setPos(act_pos)
 
-        # Update the resize start position
-        self._resize_start = scene_pos
+            # Update size and font
+            self.setTextWidth(new_rect.width())
+            height_ratio = new_rect.height() / original_height
+            new_font_size = self.font_size * height_ratio
+            self.set_font_size(new_font_size)
 
-        self.update()
+            # Update the resize start position
+            self._resize_start = scene_pos
+            self.update()
+
+            self.text_block.xyxy[:] = [
+                self.pos().x(),
+                self.pos().y(),
+                self.pos().x() + new_rect.width(),
+                self.pos().y() + self.boundingRect().height()
+            ]
+            self.text_block.tr_origin_point = (self.transformOriginPoint().x(), self.transformOriginPoint().y())
+
+    def paint(self, painter, option, widget):
+        super().paint(painter, option, widget)
+        rect = self.boundingRect()
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+        if self.selected:
+            # Draw resize handles
+            painter.setPen(QPen(Qt.blue, 1))
+            painter.setBrush(Qt.white)
+
+            handle_size = self.handle_size
+            # Draw corner and edge handles for resizing
+            handles = {
+                'top_left': QRectF(rect.left() - handle_size/2, rect.top() - handle_size/2, handle_size, handle_size),
+                'top_right': QRectF(rect.right() - handle_size/2, rect.top() - handle_size/2, handle_size, handle_size),
+                'bottom_left': QRectF(rect.left() - handle_size/2, rect.bottom() - handle_size/2, handle_size, handle_size),
+                'bottom_right': QRectF(rect.right() - handle_size/2, rect.bottom() - handle_size/2, handle_size, handle_size),
+            }
+
+            for handle_rect in handles.values():
+                painter.drawRect(handle_rect)
+
+        painter.restore()
+        option.state = QStyle.State_None
 
 
 
