@@ -12,12 +12,9 @@ from ..ocr.manga_ocr.manga_ocr import MangaOcr
 from ..ocr.pororo.main import PororoOcr
 from ..utils.pipeline_utils import language_codes
 
-
 from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
-
-
 
 manga_ocr_path = 'models/ocr/manga-ocr-base'
         
@@ -76,7 +73,6 @@ class OCRProcessor:
             api_key = credentials['api_key']
             gpt_client = get_llm_client('GPT', api_key)
             return self._ocr_gpt(img, blk_list, gpt_client)
-
         else:
             return self._ocr_default(img, blk_list, self.source_lang, self.device)
 
