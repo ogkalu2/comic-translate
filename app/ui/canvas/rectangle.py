@@ -102,11 +102,37 @@ class MovableRectItem(QGraphicsRectItem):
         }
         
         if handle:
-            return cursors.get(handle, Qt.CursorShape.ArrowCursor)
+            cursor = cursors.get(handle, Qt.CursorShape.ArrowCursor)
+            # Adjust cursor based on rotation
+            rotation = self.rotation() % 360
+            if 22.5 <= rotation < 67.5:
+                cursor = self.rotate_cursor(cursor, 1)
+            elif 67.5 <= rotation < 112.5:
+                cursor = self.rotate_cursor(cursor, 2)
+            elif 112.5 <= rotation < 157.5:
+                cursor = self.rotate_cursor(cursor, 3)
+            elif 157.5 <= rotation < 202.5:
+                cursor = self.rotate_cursor(cursor, 4)
+            elif 202.5 <= rotation < 247.5:
+                cursor = self.rotate_cursor(cursor, 5)
+            elif 247.5 <= rotation < 292.5:
+                cursor = self.rotate_cursor(cursor, 6)
+            elif 292.5 <= rotation < 337.5:
+                cursor = self.rotate_cursor(cursor, 7)
+            return cursor
         elif rect.contains(pos):
             return Qt.CursorShape.SizeAllCursor
         else:
             return Qt.CursorShape.PointingHandCursor
+            
+    def rotate_cursor(self, cursor, steps):
+        cursor_map = {
+            Qt.SizeVerCursor: [Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor] * 2,
+            Qt.SizeHorCursor: [Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor] * 2,
+            Qt.SizeFDiagCursor: [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor] * 2,
+            Qt.SizeBDiagCursor: [Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor] * 2
+        }
+        return cursor_map.get(cursor, [cursor] * 8)[steps]
 
     def get_handle_at_position(self, pos, rect):
         handle_size = self.handle_size
