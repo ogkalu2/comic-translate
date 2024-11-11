@@ -50,9 +50,11 @@ class ProjectEncoder:
 
     @staticmethod
     def encode_textblock(obj):
+        data = obj.__dict__
+        data['tr_origin_point'] = obj.tr_origin_point
         return {
             'type': 'textblock',
-            'data': obj.__dict__
+            'data': data
         }
 
     @staticmethod
@@ -135,7 +137,7 @@ class ProjectDecoder:
 
     @staticmethod
     def decode_textblock(obj):
-        return TextBlock(
+        text_block = TextBlock(
             text_bbox=obj['data'].get('xyxy'),
             bubble_bbox=obj['data'].get('bubble_xyxy'),
             text_class=obj['data'].get('text_class', ""),
@@ -150,8 +152,12 @@ class ProjectDecoder:
             target_lang=obj['data'].get('target_lang', ""),
             min_font_size=obj['data'].get('min_font_size', 0),
             max_font_size=obj['data'].get('max_font_size', 0),
-            font_color=obj['data'].get('font_color', "")
-        )
+            font_color=obj['data'].get('font_color', ""),
+            angle = obj['data'].get('angle', 0)
+            )
+        text_block.tr_origin_point = obj['data'].get('tr_origin_point', ())
+
+        return text_block
 
     @staticmethod
     def decode_qcolor(obj):
