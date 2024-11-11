@@ -180,7 +180,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 sel_item.rot_handle = self.get_rotate_handle(outer_rect, local_pos, angle)
 
                 if sel_item.rot_handle: 
-                    sel_item.init_rotation(scene_pos, local_pos)
+                    sel_item.init_rotation(scene_pos)
                     event.accept()
                     return  # Exit early if handling rotation
 
@@ -787,7 +787,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
             # Set position and rotation
             rect_item.setPos(x1, y1)
             rect_item.setRotation(rect_data['rotation'])
-            rect_item.text_block = rect_data['block']
             
             self._rectangles.append(rect_item)
         
@@ -796,7 +795,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
             text_item = TextBlockItem(
                 text=text_block['text'],
                 parent_item= self._photo,
-                text_block=text_block['block'],
                 font_family=text_block['font_family'],
                 font_size=text_block['font_size'],
                 render_color=text_block['text_color'],
@@ -808,6 +806,12 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 italic=text_block['italic'],
                 underline=text_block['underline'],
             )
+            if 'width' in text_block:
+                text_item.set_text(text_block['text'], text_block['width'])
+            elif 'block' in text_block:
+                x, y, w, h = text_block['block'].xywh
+                text_item.set_text(text_block['text'], w)
+
             if 'transform_origin' in text_block:
                 text_item.setTransformOriginPoint(QtCore.QPointF(*text_block['transform_origin']))
             text_item.setPos(QtCore.QPointF(*text_block['position']))
@@ -824,10 +828,12 @@ class ImageViewer(QtWidgets.QGraphicsView):
         rectangles_state = []
         for rect in self._rectangles:
             # Get the rectangle's scene coordinates
-            x1, y1, width, height = rect.text_block.xywh
+            x1 = rect.pos().x()
+            y1 = rect.pos().y()
+            width = rect.boundingRect().width() 
+            height = rect.boundingRect().height() 
             
             rectangles_state.append({
-                'block': rect.text_block,
                 'rect': (x1, y1, width, height),
                 'rotation': rect.rotation(),
                 'transform_origin': (
@@ -840,7 +846,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
         for item in self._text_items:
             text_items_state.append({
                 'text': item.toHtml(),
-                'block': item.text_block,
                 'font_family': item.font_family,
                 'font_size': item.font_size,
                 'text_color': item.text_color,
@@ -854,7 +859,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 'position': (item.pos().x(), item.pos().y()),
                 'rotation': item.rotation(),
                 'scale': item.scale(),
-                'transform_origin': (item.transformOriginPoint().x(), item.transformOriginPoint().y())
+                'transform_origin': (item.transformOriginPoint().x(), 
+                                     item.transformOriginPoint().y()),
+                'width': item.boundingRect().width()
             })
 
         return {

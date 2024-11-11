@@ -24,7 +24,6 @@ class MovableRectItem(QGraphicsRectItem):
         self.drag_start = None
         self.drag_offset = None
         self.selected = False
-        self.text_block = None
 
         # Rotation properties
         self.rot_handle = None
@@ -179,12 +178,12 @@ class MovableRectItem(QGraphicsRectItem):
             new_pos.setY(self.pos().y() + parent_rect.height() - bounding_rect.bottom())
         
         self.setPos(new_pos)
+        
         # Update Textblock
-        self.text_block.angle = self.rotation()
         new_rect = QRectF(new_pos, self.boundingRect().size())
         self.signals.rectangle_changed.emit(new_rect, self.rotation(), self.transformOriginPoint())
 
-    def init_rotation(self, scene_pos, local_pos):
+    def init_rotation(self, scene_pos):
         self.rotating = True
         center = self.boundingRect().center()
         self.center_scene_pos = self.mapToScene(center)
@@ -213,7 +212,9 @@ class MovableRectItem(QGraphicsRectItem):
         self.setRotation(new_rotation)
         self.last_rotation_angle = current_angle
 
-        self.text_block.angle = self.rotation()
+        # Emit signal for rectangle change
+        rect = QRectF(self.pos(), self.boundingRect().size())
+        self.signals.rectangle_changed.emit(rect, self.rotation(), self.transformOriginPoint())
 
     def resize_rectangle(self, pos: QtCore.QPointF):
         if not self.resize_start:

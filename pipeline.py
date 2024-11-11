@@ -36,7 +36,6 @@ class ComicTranslatePipeline:
                     rect_item.setTransformOriginPoint(QtCore.QPointF(*blk.tr_origin_point))
                 rect_item.setPos(x1,y1)
                 rect_item.setRotation(blk.angle)
-                rect_item.text_block = blk
                 rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
                 self.main_page.image_viewer._rectangles.append(rect_item)
 

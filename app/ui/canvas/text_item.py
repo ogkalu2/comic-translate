@@ -8,11 +8,11 @@ class TextBlockItem(QGraphicsTextItem):
     textChanged = Signal(str)
     itemSelected = Signal(object)
     itemDeselected = Signal()
+    itemChanged = Signal(QRectF, float, QPointF)
     
     def __init__(self, 
              text = "", 
              parent_item = None, 
-             text_block = None, 
              font_family = "", 
              font_size = 20, 
              render_color = QColor(0, 0, 0), 
@@ -26,8 +26,6 @@ class TextBlockItem(QGraphicsTextItem):
 
         super().__init__(text)
         self.parent_item = parent_item
-        if text_block:
-            self.setPos(text_block.xyxy[0], text_block.xyxy[1]) 
         self.text_color = render_color
         self.outline = True if outline_color else False
         self.outline_color = outline_color
@@ -39,7 +37,6 @@ class TextBlockItem(QGraphicsTextItem):
         self.font_size = font_size
         self.alignment = alignment
         self.line_spacing = line_spacing
-        self.text_block = text_block
 
         self.handle_size = 30
         self.selected = False
@@ -55,8 +52,6 @@ class TextBlockItem(QGraphicsTextItem):
         self.rotation_smoothing = 1.0  # rotation sensitivity
         self.center_scene_pos = None  
 
-        if text:
-            self.set_text(text)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setAcceptHoverEvents(True)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsMovable, True)
@@ -66,16 +61,17 @@ class TextBlockItem(QGraphicsTextItem):
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
 
-    def set_text(self, text):
+    def set_text(self, text, width):
         if self.is_html(text):
             self.setHtml(text)
-            x, y, w, h = self.text_block.xywh
-            self.setTextWidth(w)
+            self.setTextWidth(width)
             self.set_outline(self.outline_color, self.outline_width)
-
         else:
-            self.setPlainText(text)
-            self.apply_all_attributes()
+            self.set_plain_text(text)
+
+    def set_plain_text(self, text):
+        self.setPlainText(text)
+        self.apply_all_attributes()
 
     def is_html(self, text):
         import re
@@ -311,7 +307,7 @@ class TextBlockItem(QGraphicsTextItem):
             self.handleDeselection()
         super().focusOutEvent(event)
 
-    def init_rotation(self, scene_pos, local_pos):
+    def init_rotation(self, scene_pos):
         self.rotating = True
         center = self.boundingRect().center()
         self.center_scene_pos = self.mapToScene(center)
@@ -342,11 +338,10 @@ class TextBlockItem(QGraphicsTextItem):
             new_pos.setY(self.pos().y() + parent_rect.height() - bounding_rect.bottom())
         
         self.setPos(new_pos)
+
         # Update Textblock
-        x, y, w, h = self.text_block.xywh
-        x1 = new_pos.x()
-        y1 = new_pos.y()
-        self.text_block.xyxy[:] = [x1, y1, x1+w, y1+h]
+        new_rect = QRectF(new_pos, self.boundingRect().size())
+        self.itemChanged.emit(new_rect, self.rotation(), self.transformOriginPoint())
 
     def rotate_item(self, scene_pos):
         self.setTransformOriginPoint(self.boundingRect().center())
@@ -366,11 +361,11 @@ class TextBlockItem(QGraphicsTextItem):
         
         new_rotation = self.rotation() + smoothed_angle
         self.setRotation(new_rotation)
-
-        # Update the text_block's angle parameter
-        if self.text_block:
-            self.text_block.angle = new_rotation  
         self.last_rotation_angle = current_angle
+
+        # Update Textblock
+        rect = QRectF(self.pos(), self.boundingRect().size())
+        self.itemChanged.emit(rect, self.rotation(), self.transformOriginPoint())
     
     def update_cursor(self, pos):
         if not self.editing_mode:
@@ -524,43 +519,7 @@ class TextBlockItem(QGraphicsTextItem):
 
             # Update the resize start position
             self._resize_start = scene_pos
-            self.update()
 
-            self.text_block.xyxy[:] = [
-                self.pos().x(),
-                self.pos().y(),
-                self.pos().x() + new_rect.width(),
-                self.pos().y() + self.boundingRect().height()
-            ]
-            self.text_block.tr_origin_point = (self.transformOriginPoint().x(), self.transformOriginPoint().y())
-
-    def paint(self, painter, option, widget):
-        super().paint(painter, option, widget)
-        rect = self.boundingRect()
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-
-        if self.selected:
-            # Draw resize handles
-            painter.setPen(QPen(Qt.blue, 1))
-            painter.setBrush(Qt.white)
-
-            handle_size = self.handle_size
-            # Draw corner and edge handles for resizing
-            handles = {
-                'top_left': QRectF(rect.left() - handle_size/2, rect.top() - handle_size/2, handle_size, handle_size),
-                'top_right': QRectF(rect.right() - handle_size/2, rect.top() - handle_size/2, handle_size, handle_size),
-                'bottom_left': QRectF(rect.left() - handle_size/2, rect.bottom() - handle_size/2, handle_size, handle_size),
-                'bottom_right': QRectF(rect.right() - handle_size/2, rect.bottom() - handle_size/2, handle_size, handle_size),
-            }
-
-            for handle_rect in handles.values():
-                painter.drawRect(handle_rect)
-
-        painter.restore()
-        option.state = QStyle.State_None
-
-
-
-
-
+            # Update Textblock
+            nrect = QRectF(act_pos, self.boundingRect().size())
+            self.itemChanged.emit(nrect, self.rotation(), self.transformOriginPoint())
