@@ -58,8 +58,8 @@ class ComicTranslate(ComicTranslateUI):
         self.current_history_index = {}  # Current position in the history for each image
         self.displayed_images = set()  # Set to track displayed images
 
-        self.current_text_block = None
-        self.current_text_block_item = None
+        self.curr_tblock = None
+        self.curr_tblock_item = None
 
         self.project_file = None
 
@@ -177,30 +177,41 @@ class ComicTranslate(ComicTranslateUI):
                                   font_size, text_color, alignment, line_spacing, 
                                   outline_color, outline_width, bold, italic, underline)
         
+        text_item.setPos(blk.xyxy[0], blk.xyxy[1])
+        text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer._text_items.append(text_item)  
 
         text_item.itemSelected.connect(self.on_text_item_selected)
         text_item.itemDeselected.connect(self.on_text_item_deselcted)
         text_item.textChanged.connect(self.update_text_block_from_item)
+        text_item.itemChanged.connect(self.handle_rectangle_change)
 
     def on_text_item_deselcted(self):
         self.clear_text_edits()
 
     def update_text_block_from_item(self, new_text):
-        if self.current_text_block:
-            self.current_text_block.translation = new_text
+        if self.curr_tblock:
+            self.curr_tblock.translation = new_text
             self.t_text_edit.blockSignals(True)
             self.t_text_edit.setPlainText(new_text)
             self.t_text_edit.blockSignals(False)
     
     def on_text_item_selected(self, text_item):
-        self.current_text_block_item = text_item
-        self.current_text_block = text_item.text_block
+        self.curr_tblock_item = text_item
+            
+        x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
+        rotation = text_item.rotation()
+
+        self.curr_tblock = next(
+                (blk for blk in self.blk_list if (int(blk.xyxy[0]), int(blk.xyxy[1])) == (x1, y1) 
+                 and blk.angle == rotation),
+                None
+            )
         
         # Update both s_text_edit and t_text_edit
         self.s_text_edit.blockSignals(True)
-        self.s_text_edit.setPlainText(self.current_text_block.text)
+        self.s_text_edit.setPlainText(self.curr_tblock.text)
         self.s_text_edit.blockSignals(False)
 
         self.t_text_edit.blockSignals(True)
@@ -211,12 +222,12 @@ class ComicTranslate(ComicTranslateUI):
             
     def update_text_block_from_edit(self):
         new_text = self.t_text_edit.toPlainText()
-        if self.current_text_block:
-            self.current_text_block.translation = new_text
+        if self.curr_tblock:
+            self.curr_tblock.translation = new_text
         
-        if self.current_text_block_item and self.current_text_block_item in self.image_viewer._scene.items():
+        if self.curr_tblock_item and self.curr_tblock_item in self.image_viewer._scene.items():
             cursor_position = self.t_text_edit.textCursor().position()
-            self.current_text_block_item.setPlainText(new_text)
+            self.curr_tblock_item.setPlainText(new_text)
             
             # Restore cursor position
             cursor = self.t_text_edit.textCursor()
@@ -225,11 +236,11 @@ class ComicTranslate(ComicTranslateUI):
 
     def delete_selected_box(self):
         self.image_viewer.delete_selected_rectangle()
-        if self.current_text_block_item:
-            self.image_viewer._scene.removeItem(self.current_text_block_item)
-            self.image_viewer._text_items.remove(self.current_text_block_item)
+        if self.curr_tblock_item:
+            self.image_viewer._scene.removeItem(self.curr_tblock_item)
+            self.image_viewer._text_items.remove(self.curr_tblock_item)
 
-            block_x, block_y, block_w, block_h = self.current_text_block.xywh
+            block_x, block_y, block_w, block_h = self.curr_tblock.xywh
 
             # Find and remove the corresponding QRectF
             for rect in self.image_viewer._rectangles:
@@ -238,9 +249,9 @@ class ComicTranslate(ComicTranslateUI):
                     self.image_viewer._scene.removeItem(rect)
                     break
                 
-            self.blk_list.remove(self.current_text_block)
-            self.current_text_block_item = None
-            self.current_text_block = None
+            self.blk_list.remove(self.curr_tblock)
+            self.curr_tblock_item = None
+            self.curr_tblock = None
 
     def save_src_trg(self):
         source_lang = self.s_combo.currentText()
@@ -365,8 +376,8 @@ class ComicTranslate(ComicTranslateUI):
                           self.default_error_handler, self.on_manual_finished, load_rects)
         
     def clear_text_edits(self):
-        self.current_text_block = None
-        self.current_text_block_item = None
+        self.curr_tblock = None
+        self.curr_tblock_item = None
         self.s_text_edit.clear()
         self.t_text_edit.clear()
 
@@ -524,7 +535,7 @@ class ComicTranslate(ComicTranslateUI):
             self.current_highlighted_card = self.image_cards[index]
             
     def on_card_clicked(self, index: int):
-        self.current_text_block_item = None
+        self.curr_tblock_item = None
         self.highlight_card(index)
         self.run_threaded(
             lambda: self.load_image(self.image_files[index]),
@@ -604,8 +615,8 @@ class ComicTranslate(ComicTranslateUI):
         if self.current_image_index >= 0:
             if any(isinstance(item, TextBlockItem) for item in self.image_viewer._scene.items()):
                 self.image_viewer.clear_text_items(delete=False)
-                self.current_text_block_item = None
-                self.current_text_block = None
+                self.curr_tblock_item = None
+                self.curr_tblock = None
                 return
 
             file_path = self.image_files[self.current_image_index]
@@ -673,6 +684,7 @@ class ComicTranslate(ComicTranslateUI):
                 text_item.itemSelected.connect(self.on_text_item_selected)
                 text_item.itemDeselected.connect(self.on_text_item_deselcted)
                 text_item.textChanged.connect(self.update_text_block_from_item)
+                text_item.itemChanged.connect(self.handle_rectangle_change)
 
             for rect_item in self.image_viewer._rectangles:
                 rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
@@ -745,18 +757,18 @@ class ComicTranslate(ComicTranslateUI):
     def handle_rectangle_selection(self, rect: QRectF):
         x1, y1, w, h = rect.getRect()
         rect = (x1, y1, x1 + w, y1 + h)
-        self.current_text_block = self.find_corresponding_text_block(rect, 0.5)
-        if self.current_text_block:
+        self.curr_tblock = self.find_corresponding_text_block(rect, 0.5)
+        if self.curr_tblock:
             self.s_text_edit.blockSignals(True)
             self.t_text_edit.blockSignals(True)
-            self.s_text_edit.setPlainText(self.current_text_block.text)
-            self.t_text_edit.setPlainText(self.current_text_block.translation)
+            self.s_text_edit.setPlainText(self.curr_tblock.text)
+            self.t_text_edit.setPlainText(self.curr_tblock.translation)
             self.s_text_edit.blockSignals(False)
             self.t_text_edit.blockSignals(False)
         else:
             self.s_text_edit.clear()
             self.t_text_edit.clear()
-            self.current_text_block = None
+            self.curr_tblock = None
 
     def handle_rectangle_creation(self, rect_item: MovableRectItem):
         rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
@@ -768,7 +780,6 @@ class ComicTranslate(ComicTranslateUI):
         inpaint_boxes = get_inpaint_bboxes(new_rect_coords, image)
         new_blk = TextBlock(text_bbox=np.array(new_rect_coords), inpaint_bboxes=inpaint_boxes)
         self.blk_list.append(new_blk)
-        rect_item.text_block = new_blk
 
     def handle_rectangle_deletion(self, rect: QRectF):
         x1, y1, w, h = rect.getRect()
@@ -777,9 +788,9 @@ class ComicTranslate(ComicTranslateUI):
         self.blk_list.remove(current_text_block)
 
     def update_text_block(self):
-        if self.current_text_block:
-            self.current_text_block.text = self.s_text_edit.toPlainText()
-            self.current_text_block.translation = self.t_text_edit.toPlainText()
+        if self.curr_tblock:
+            self.curr_tblock.text = self.s_text_edit.toPlainText()
+            self.curr_tblock.translation = self.t_text_edit.toPlainText()
 
     def update_progress(self, index: int, total_images: int, step: int, total_steps: int, change_name: bool):
         # Assign weights to image processing and archiving (adjust as needed)
@@ -830,12 +841,18 @@ class ComicTranslate(ComicTranslateUI):
                 if item not in self.image_viewer._scene.items():
                     self.image_viewer._scene.addItem(item)
 
-            existing_text_items = {item.text_block: item for item in self.image_viewer._text_items}
-            new_blocks = [blk for blk in self.blk_list if blk not in existing_text_items]
+            # Create a dictionary to map text items to their positions and rotations
+            existing_text_items = {item: (int(item.pos().x()), int(item.pos().y()), item.rotation()) for item in self.image_viewer._text_items}
+
+            # Identify new blocks based on position and rotation
+            new_blocks = [
+                blk for blk in self.blk_list
+                if (int(blk.xyxy[0]), int(blk.xyxy[1]), blk.angle) not in existing_text_items.values()
+            ]
 
             self.image_viewer.clear_rectangles()
-            self.current_text_block = None
-            self.current_text_block_item = None
+            self.curr_tblock = None
+            self.curr_tblock_item = None
 
             text_rendering_settings = self.settings_page.get_text_rendering_settings()
             upper = text_rendering_settings['upper_case']
@@ -864,7 +881,7 @@ class ComicTranslate(ComicTranslateUI):
         for blk in self.blk_list:
             if do_rectangles_overlap(blk.xyxy, (new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()), 0.2):
                 # Update the TextBlock coordinates
-                blk.xyxy[:] = [new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()] 
+                blk.xyxy[:] = [int(new_rect.left()), int(new_rect.top()), int(new_rect.right()), int(new_rect.bottom())] 
                 blk.angle = angle if angle else 0
                 blk.tr_origin_point = (tr_origin.x(), tr_origin.y()) if tr_origin else ()
                 image = self.image_viewer.get_cv2_image()
@@ -873,19 +890,19 @@ class ComicTranslate(ComicTranslateUI):
                 break
 
     def on_font_dropdown_change(self, font_family):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             font_size = int(self.font_size_dropdown.currentText())
-            self.current_text_block_item.set_font(font_family, font_size)
+            self.curr_tblock_item.set_font(font_family, font_size)
 
     def on_font_size_change(self, font_size):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             font_size = float(font_size)
-            self.current_text_block_item.set_font_size(font_size)
+            self.curr_tblock_item.set_font_size(font_size)
 
     def on_line_spacing_change(self, line_spacing):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             spacing = float(line_spacing)
-            self.current_text_block_item.set_line_spacing(spacing)
+            self.curr_tblock_item.set_line_spacing(spacing)
 
     def on_font_color_change(self):
         font_color = self.get_color()
@@ -894,35 +911,35 @@ class ComicTranslate(ComicTranslateUI):
                 f"background-color: {font_color.name()}; border: none; border-radius: 5px;"
             )
             self.block_font_color_button.setProperty('selected_color', font_color.name())
-            if self.current_text_block_item:
-                self.current_text_block_item.set_color(font_color)
+            if self.curr_tblock_item:
+                self.curr_tblock_item.set_color(font_color)
 
     def left_align(self):
-        if self.current_text_block_item:
-            self.current_text_block_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+        if self.curr_tblock_item:
+            self.curr_tblock_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignLeft)
 
     def center_align(self):
-        if self.current_text_block_item:
-            self.current_text_block_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        if self.curr_tblock_item:
+            self.curr_tblock_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
     def right_align(self):
-        if self.current_text_block_item:
-            self.current_text_block_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignRight)
+        if self.curr_tblock_item:
+            self.curr_tblock_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignRight)
 
     def bold(self):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             state = self.bold_button.isChecked()
-            self.current_text_block_item.set_bold(state)
+            self.curr_tblock_item.set_bold(state)
 
     def italic(self):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             state = self.italic_button.isChecked()
-            self.current_text_block_item.set_italic(state)
+            self.curr_tblock_item.set_italic(state)
 
     def underline(self):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             state = self.underline_button.isChecked()
-            self.current_text_block_item.set_underline(state)
+            self.curr_tblock_item.set_underline(state)
 
     def on_outline_color_change(self):
         outline_color = self.get_color()
@@ -933,29 +950,29 @@ class ComicTranslate(ComicTranslateUI):
             self.outline_font_color_button.setProperty('selected_color', outline_color.name())
             outline_width = float(self.outline_width_dropdown.currentText())
 
-            if self.current_text_block_item:
-                self.current_text_block_item.set_outline(outline_color, outline_width)
+            if self.curr_tblock_item:
+                self.curr_tblock_item.set_outline(outline_color, outline_width)
 
     def on_outline_width_change(self, outline_width):
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             outline_width = float(self.outline_width_dropdown.currentText())
             color_str = self.outline_font_color_button.property('selected_color')
             color = QColor(color_str)
-            self.current_text_block_item.set_outline(color, outline_width)
+            self.curr_tblock_item.set_outline(color, outline_width)
 
     def toggle_outline_settings(self, state): 
         enabled = True if state == 2 else False
         self.outline_font_color_button.setEnabled(enabled)
         self.outline_width_dropdown.setEnabled(enabled)
 
-        if self.current_text_block_item:
+        if self.curr_tblock_item:
             outline_width = float(self.outline_width_dropdown.currentText())
             if not enabled:
-                self.current_text_block_item.set_outline(None, outline_width)
+                self.curr_tblock_item.set_outline(None, outline_width)
             else:
                 color_str = self.outline_font_color_button.property('selected_color')
                 color = QColor(color_str)
-                self.current_text_block_item.set_outline(color, outline_width)
+                self.curr_tblock_item.set_outline(color, outline_width)
 
     def set_values_for_blk_item(self, text_item: TextBlockItem=None):
         # List of widgets to block signals
