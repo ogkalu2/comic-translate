@@ -173,7 +173,7 @@ class ComicTranslate(ComicTranslateUI):
         italic = self.italic_button.isChecked()
         underline = self.underline_button.isChecked()
 
-        text_item = TextBlockItem(text, self.image_viewer._photo, blk, font_family, 
+        text_item = TextBlockItem(text, self.image_viewer._photo, font_family, 
                                   font_size, text_color, alignment, line_spacing, 
                                   outline_color, outline_width, bold, italic, underline)
         
