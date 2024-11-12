@@ -87,6 +87,17 @@ class ComicTranslate(ComicTranslateUI):
         self.max_images_in_memory = 10
         self.loaded_images = []
 
+        # List of widgets to block signals for during manual rendering
+        self.widgets_to_block = [
+            self.font_dropdown,
+            self.font_size_dropdown,
+            self.line_spacing_dropdown,
+            self.block_font_color_button,
+            self.outline_font_color_button,
+            self.outline_width_dropdown,
+            self.outline_checkbox
+        ]
+
     def connect_ui_elements(self):
         # Browsers
         self.image_browser_button.sig_files_changed.connect(self.thread_load_images)
@@ -182,10 +193,11 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer._text_items.append(text_item)  
 
-        text_item.itemSelected.connect(self.on_text_item_selected)
-        text_item.itemDeselected.connect(self.on_text_item_deselcted)
-        text_item.textChanged.connect(self.update_text_block_from_item)
-        text_item.itemChanged.connect(self.handle_rectangle_change)
+        text_item.item_selected.connect(self.on_text_item_selected)
+        text_item.item_deselected.connect(self.on_text_item_deselcted)
+        text_item.text_changed.connect(self.update_text_block_from_item)
+        text_item.item_changed.connect(self.handle_rectangle_change)
+        text_item.text_highlighted.connect(self.set_values_from_highlight)
 
     def on_text_item_deselcted(self):
         self.clear_text_edits()
@@ -681,10 +693,11 @@ class ComicTranslate(ComicTranslateUI):
             self.image_viewer.load_brush_strokes(state['brush_strokes'])
 
             for text_item in self.image_viewer._text_items:
-                text_item.itemSelected.connect(self.on_text_item_selected)
-                text_item.itemDeselected.connect(self.on_text_item_deselcted)
-                text_item.textChanged.connect(self.update_text_block_from_item)
-                text_item.itemChanged.connect(self.handle_rectangle_change)
+                text_item.item_selected.connect(self.on_text_item_selected)
+                text_item.item_deselected.connect(self.on_text_item_deselcted)
+                text_item.text_changed.connect(self.update_text_block_from_item)
+                text_item.item_changed.connect(self.handle_rectangle_change)
+                text_item.text_highlighted.connect(self.set_values_from_highlight)
 
             for rect_item in self.image_viewer._rectangles:
                 rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
@@ -950,11 +963,11 @@ class ComicTranslate(ComicTranslateUI):
             self.outline_font_color_button.setProperty('selected_color', outline_color.name())
             outline_width = float(self.outline_width_dropdown.currentText())
 
-            if self.curr_tblock_item:
+            if self.curr_tblock_item and self.outline_checkbox.isChecked():
                 self.curr_tblock_item.set_outline(outline_color, outline_width)
 
     def on_outline_width_change(self, outline_width):
-        if self.curr_tblock_item:
+        if self.curr_tblock_item and self.outline_checkbox.isChecked():
             outline_width = float(self.outline_width_dropdown.currentText())
             color_str = self.outline_font_color_button.property('selected_color')
             color = QColor(color_str)
@@ -962,31 +975,18 @@ class ComicTranslate(ComicTranslateUI):
 
     def toggle_outline_settings(self, state): 
         enabled = True if state == 2 else False
-        self.outline_font_color_button.setEnabled(enabled)
-        self.outline_width_dropdown.setEnabled(enabled)
-
         if self.curr_tblock_item:
-            outline_width = float(self.outline_width_dropdown.currentText())
             if not enabled:
-                self.curr_tblock_item.set_outline(None, outline_width)
+                self.curr_tblock_item.set_outline(None, None)
             else:
+                outline_width = float(self.outline_width_dropdown.currentText())
                 color_str = self.outline_font_color_button.property('selected_color')
                 color = QColor(color_str)
                 self.curr_tblock_item.set_outline(color, outline_width)
 
-    def set_values_for_blk_item(self, text_item: TextBlockItem=None):
-        # List of widgets to block signals
-        widgets_to_block = [
-            self.font_dropdown,
-            self.font_size_dropdown,
-            self.line_spacing_dropdown,
-            self.block_font_color_button,
-            self.outline_font_color_button,
-            self.outline_width_dropdown,
-        ]
-
+    def block_text_item_widgets(self, widgets):
         # Block signals
-        for widget in widgets_to_block:
+        for widget in widgets:
             widget.blockSignals(True)
 
         # Block Signals is buggy for these, so use disconnect/connect
@@ -997,6 +997,23 @@ class ComicTranslate(ComicTranslateUI):
         self.alignment_tool_group.get_button_group().buttons()[0].clicked.disconnect(self.left_align)
         self.alignment_tool_group.get_button_group().buttons()[1].clicked.disconnect(self.center_align)
         self.alignment_tool_group.get_button_group().buttons()[2].clicked.disconnect(self.right_align)
+
+    def unblock_text_item_widgets(self, widgets):
+        # Unblock signals
+        for widget in widgets:
+            widget.blockSignals(False)
+
+        self.bold_button.clicked.connect(self.bold)
+        self.italic_button.clicked.connect(self.italic)
+        self.underline_button.clicked.connect(self.underline)
+
+        self.alignment_tool_group.get_button_group().buttons()[0].clicked.connect(self.left_align)
+        self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
+        self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
+
+    def set_values_for_blk_item(self, text_item: TextBlockItem):
+
+        self.block_text_item_widgets(self.widgets_to_block)
 
         try:
             # Set values
@@ -1015,6 +1032,11 @@ class ComicTranslate(ComicTranslateUI):
                     f"background-color: {text_item.outline_color.name()}; border: none; border-radius: 5px;"
                 )
                 self.outline_font_color_button.setProperty('selected_color', text_item.outline_color.name())
+            else:
+                self.outline_font_color_button.setStyleSheet(
+                    "background-color: white; border: none; border-radius: 5px;"
+                )
+                self.outline_font_color_button.setProperty('selected_color', '#ffffff')
 
             self.outline_width_dropdown.setCurrentText(str(text_item.outline_width))
             self.outline_checkbox.setChecked(text_item.outline)      
@@ -1037,18 +1059,70 @@ class ComicTranslate(ComicTranslateUI):
                 button_group.buttons()[button_index].setChecked(True)
 
         finally:
-            # Unblock signals
-            for widget in widgets_to_block:
-                widget.blockSignals(False)
+            self.unblock_text_item_widgets(self.widgets_to_block)
 
-            self.bold_button.clicked.connect(self.bold)
-            self.italic_button.clicked.connect(self.italic)
-            self.underline_button.clicked.connect(self.underline)
+    def set_values_from_highlight(self, item_highlighted = None):
 
-            self.alignment_tool_group.get_button_group().buttons()[0].clicked.connect(self.left_align)
-            self.alignment_tool_group.get_button_group().buttons()[1].clicked.connect(self.center_align)
-            self.alignment_tool_group.get_button_group().buttons()[2].clicked.connect(self.right_align)
+        self.block_text_item_widgets(self.widgets_to_block)
 
+        # Attributes
+        font_family = item_highlighted['font_family']
+        font_size = item_highlighted['font_size']
+        text_color =  item_highlighted['text_color']
+
+        outline_color = item_highlighted['outline_color']
+        outline_width =  item_highlighted['outline_width']
+        outline = item_highlighted['outline'] 
+
+        bold = item_highlighted['bold']
+        italic =  item_highlighted['italic']
+        underline = item_highlighted['underline']
+
+        alignment = item_highlighted['alignment']
+
+        try:
+            # Set values
+            self.font_dropdown.setCurrentText(font_family) if font_family else None
+            self.font_size_dropdown.setCurrentText(str(int(font_size))) if font_size else None
+ 
+            if text_color is not None:
+                self.block_font_color_button.setStyleSheet(
+                    f"background-color: {text_color}; border: none; border-radius: 5px;"
+                )
+                self.block_font_color_button.setProperty('selected_color', text_color)
+
+            if outline_color is not None:
+                self.outline_font_color_button.setStyleSheet(
+                    f"background-color: {outline_color}; border: none; border-radius: 5px;"
+                )
+                self.outline_font_color_button.setProperty('selected_color', outline_color)
+            else:
+                self.outline_font_color_button.setStyleSheet(
+                    "background-color: white; border: none; border-radius: 5px;"
+                )
+                self.outline_font_color_button.setProperty('selected_color', '#ffffff')
+
+            self.outline_width_dropdown.setCurrentText(str(outline_width)) if outline_width else None
+            self.outline_checkbox.setChecked(outline) 
+
+            self.bold_button.setChecked(bold) 
+            self.italic_button.setChecked(italic) 
+            self.underline_button.setChecked(underline) 
+
+            alignment_to_button = {
+                QtCore.Qt.AlignmentFlag.AlignLeft: 0,
+                QtCore.Qt.AlignmentFlag.AlignCenter: 1,
+                QtCore.Qt.AlignmentFlag.AlignRight: 2,
+            }
+
+            button_group = self.alignment_tool_group.get_button_group()
+
+            if alignment in alignment_to_button:
+                button_index = alignment_to_button[alignment]
+                button_group.buttons()[button_index].setChecked(True)
+
+        finally:
+            self.unblock_text_item_widgets(self.widgets_to_block)
 
     def save_current_image(self, file_path: str):
         curr_image = self.image_viewer.get_cv2_image(paint_all=True)

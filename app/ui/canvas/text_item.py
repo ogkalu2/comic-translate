@@ -5,10 +5,11 @@ from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math
 
 class TextBlockItem(QGraphicsTextItem):
-    textChanged = Signal(str)
-    itemSelected = Signal(object)
-    itemDeselected = Signal()
-    itemChanged = Signal(QRectF, float, QPointF)
+    text_changed = Signal(str)
+    item_selected = Signal(object)
+    item_deselected = Signal()
+    item_changed = Signal(QRectF, float, QPointF)
+    text_highlighted = Signal(dict)
     
     def __init__(self, 
              text = "", 
@@ -44,6 +45,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.resize_handle = None
         self._resize_start = None
         self.editing_mode = False
+        self.last_selection = None 
 
         # Rotation properties
         self.rot_handle = None
@@ -52,8 +54,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.rotation_smoothing = 1.0  # rotation sensitivity
         self.center_scene_pos = None  
 
-        self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setAcceptHoverEvents(True)
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsSelectable, True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -185,9 +187,10 @@ class TextBlockItem(QGraphicsTextItem):
 
     def set_outline(self, outline_color, outline_width):
         if not self.textCursor().hasSelection():
-            self.outline_color = outline_color
             self.outline = True if outline_color else False
-            self.outline_width = outline_width
+            if outline_color:
+                self.outline_color = outline_color
+                self.outline_width = outline_width
         self.update_text_format('outline', (outline_color, outline_width))
 
     def set_bold(self, state):
@@ -237,7 +240,7 @@ class TextBlockItem(QGraphicsTextItem):
 
     def _on_text_changed(self):
         new_text = self.toPlainText()
-        self.textChanged.emit(new_text)
+        self.text_changed.emit(new_text)
 
     def mousePressEvent(self, event):
         if not self.editing_mode:
@@ -246,7 +249,7 @@ class TextBlockItem(QGraphicsTextItem):
             self.selected = self.boundingRect().contains(local_pos)
             
             if self.selected:
-                self.itemSelected.emit(self)  
+                self.item_selected.emit(self)  
             
             if event.button() == Qt.LeftButton:
                 self.resize_handle = self.get_handle_at_position(local_pos, self.boundingRect())
@@ -257,6 +260,7 @@ class TextBlockItem(QGraphicsTextItem):
                     self.setCursor(QCursor(Qt.ClosedHandCursor))
 
         super().mousePressEvent(event)
+        self.last_selection = self.textCursor().selection()
 
     def mouseReleaseEvent(self, event):
         if not self.editing_mode:
@@ -268,6 +272,11 @@ class TextBlockItem(QGraphicsTextItem):
                 self.center_scene_pos = None  # Clear the stored center position
                 self.update_cursor(event.pos())
         super().mouseReleaseEvent(event)
+
+        current_selection = self.textCursor().selection()
+        if current_selection != self.last_selection:
+            self.on_selection_changed()
+        self.last_selection = current_selection
 
     def mouseMoveEvent(self, event):
         if not self.editing_mode:
@@ -295,7 +304,7 @@ class TextBlockItem(QGraphicsTextItem):
         if self.selected:
             self.setSelected(False)
             self.selected = False
-            self.itemDeselected.emit()
+            self.item_deselected.emit()
             self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
             if self.editing_mode:
                 self.exit_editing_mode()
@@ -341,7 +350,7 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Update Textblock
         new_rect = QRectF(new_pos, self.boundingRect().size())
-        self.itemChanged.emit(new_rect, self.rotation(), self.transformOriginPoint())
+        self.item_changed.emit(new_rect, self.rotation(), self.transformOriginPoint())
 
     def rotate_item(self, scene_pos):
         self.setTransformOriginPoint(self.boundingRect().center())
@@ -365,7 +374,7 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Update Textblock
         rect = QRectF(self.pos(), self.boundingRect().size())
-        self.itemChanged.emit(rect, self.rotation(), self.transformOriginPoint())
+        self.item_changed.emit(rect, self.rotation(), self.transformOriginPoint())
     
     def update_cursor(self, pos):
         if not self.editing_mode:
@@ -522,4 +531,79 @@ class TextBlockItem(QGraphicsTextItem):
 
             # Update Textblock
             nrect = QRectF(act_pos, self.boundingRect().size())
-            self.itemChanged.emit(nrect, self.rotation(), self.transformOriginPoint())
+            self.item_changed.emit(nrect, self.rotation(), self.transformOriginPoint())
+
+    def on_selection_changed(self):
+        cursor = self.textCursor()
+        properties = self.get_selected_text_properties(cursor)
+        if self.editing_mode:
+            self.text_highlighted.emit(properties)
+
+    def get_selected_text_properties(self, cursor: QTextCursor):
+        if not cursor.hasSelection():
+            return {
+                'font_family': self.font_family,
+                'font_size': self.font_size,
+                'bold': False,
+                'italic': False,
+                'underline': False,
+                'text_color': self.text_color.name(),
+                'alignment': self.alignment,
+                'outline': False,
+                'outline_color': self.outline_color.name() if self.outline_color else None,
+                'outline_width': self.outline_width,
+            }
+
+        start = cursor.selectionStart()
+        end = cursor.selectionEnd()
+
+        # Create a new cursor for traversing the selection
+        format_cursor = QTextCursor(cursor)
+
+        # Initialize properties with default values
+        properties = {
+            'font_family': set(),
+            'font_size': set(),
+            'bold': True,
+            'italic': True,
+            'underline': True,
+            'text_color': set(),
+            'alignment': None,
+            'outline': True,
+            'outline_color': set(),
+            'outline_width': set(),
+        }
+
+        # Get initial block format for alignment
+        format_cursor.setPosition(start)
+        properties['alignment'] = format_cursor.blockFormat().alignment()
+
+        # Iterate through the selection one character at a time
+        for pos in range(start, end):
+            # Select each character individually to ensure proper format capture
+            format_cursor.setPosition(pos)
+            format_cursor.setPosition(pos + 1, QTextCursor.KeepAnchor)
+            char_format = format_cursor.charFormat()
+
+            # Update properties
+            properties['font_family'].add(char_format.font().family())
+            properties['font_size'].add(char_format.fontPointSize())
+            properties['bold'] &= char_format.font().bold()
+            properties['italic'] &= char_format.font().italic()
+            properties['underline'] &= char_format.font().underline()
+            properties['text_color'].add(char_format.foreground().color().name())
+
+            # Check for outline
+            text_outline = char_format.textOutline()
+            if text_outline.style() == Qt.NoPen:
+                properties['outline'] = False
+            else:
+                properties['outline_color'].add(text_outline.color().name())
+                properties['outline_width'].add(text_outline.widthF())
+
+        # Convert sets to single values if all elements are the same, otherwise set to None
+        for key, value in properties.items():
+            if isinstance(value, set):
+                properties[key] = list(value)[0] if len(value) == 1 else None
+
+        return properties
