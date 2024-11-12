@@ -6,7 +6,7 @@ from loguru import logger
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Navigate up two levels to reach the project root
-project_root = os.path.dirname(os.path.dirname(current_file_dir))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 # Define the base directory for all models
 models_base_dir = os.path.join(project_root, 'models')

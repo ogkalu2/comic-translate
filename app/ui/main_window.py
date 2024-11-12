@@ -28,6 +28,10 @@ from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
 
 
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
+font_folder_path = os.path.join(project_root, 'fonts')
+
 supported_source_languages = [
 "Korean", "Japanese", "French", "Chinese", "English",
 "Russian", "German", "Dutch", "Spanish", "Italian"
@@ -346,7 +350,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.font_dropdown = MComboBox().small()
         self.font_dropdown.setToolTip(self.tr("Font"))
-        font_folder_path = os.path.join(os.getcwd(), "fonts")
         font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path)
                        if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
         font_families = [self.get_font_family(f) for f in font_files]

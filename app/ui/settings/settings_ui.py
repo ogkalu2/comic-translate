@@ -16,6 +16,10 @@ from ..dayu_widgets.spin_box import MSpinBox
 from ..dayu_widgets.browser import MClickBrowserFileToolButton
 
 
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
+font_folder_path = os.path.join(project_root, 'fonts')
+
 class SettingsPageUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(SettingsPageUI, self).__init__(parent)
@@ -485,7 +489,6 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         font_label = MLabel(self.tr("Font")).h4()
         self.font_combo = MComboBox().small()
-        font_folder_path = os.path.join(os.getcwd(), "fonts")
         font_files = [f for f in os.listdir(font_folder_path) if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
         self.font_combo.addItems(font_files)
         self.set_combo_box_width(self.font_combo, font_files)
