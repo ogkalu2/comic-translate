@@ -7,7 +7,7 @@ class TextBlock(object):
     Object that stores a block of text. Optionally stores the list of lines
     """
     def __init__(self, 
-                 text_bbox: np.ndarray,
+                 text_bbox: np.ndarray = None,
                  bubble_bbox: np.ndarray = None,
                  text_class: str = "",
                  inpaint_bboxes = None,
@@ -230,3 +230,4 @@ def adjust_blks_size(blk_list: List[TextBlock], img: np.ndarray, w_expan: int = 
         coords = blk.xyxy
         expanded_coords = adjust_text_line_coordinates(coords, w_expan, h_expan, img)
         blk.xyxy[:] = expanded_coords
+
