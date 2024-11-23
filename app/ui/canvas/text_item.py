@@ -2,7 +2,24 @@ from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QStyle
 from PySide6.QtGui import QPen, QFont, QCursor, QColor, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics, QPainter
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
-import math
+import math, copy
+from dataclasses import dataclass
+
+@dataclass
+class TextBlockState:
+    rect: tuple  # (x1, y1, x2, y2)
+    rotation: float
+    transform_origin: QPointF
+
+    @classmethod
+    def from_item(cls, item):
+        """Create TextBlockState from a TextBlockItem"""
+        rect = QRectF(item.pos(), item.boundingRect().size()).getCoords()
+        return cls(
+            rect=rect,
+            rotation=item.rotation(),
+            transform_origin=item.transformOriginPoint()
+        )
 
 class TextBlockItem(QGraphicsTextItem):
     text_changed = Signal(str)
@@ -10,6 +27,7 @@ class TextBlockItem(QGraphicsTextItem):
     item_deselected = Signal()
     item_changed = Signal(QRectF, float, QPointF)
     text_highlighted = Signal(dict)
+    change_undo = Signal(TextBlockState, TextBlockState)
     
     def __init__(self, 
              text = "", 
@@ -53,6 +71,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.last_rotation_angle = 0
         self.rotation_smoothing = 1.0  # rotation sensitivity
         self.center_scene_pos = None  
+
+        self.old_state = None
 
         self.setAcceptHoverEvents(True)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
@@ -252,6 +272,7 @@ class TextBlockItem(QGraphicsTextItem):
                 self.item_selected.emit(self)  
             
             if event.button() == Qt.LeftButton:
+                self.old_state = TextBlockState.from_item(self)
                 self.resize_handle = self.get_handle_at_position(local_pos, self.boundingRect())
                 if self.resize_handle:
                     self.resizing = True
@@ -263,6 +284,11 @@ class TextBlockItem(QGraphicsTextItem):
         self.last_selection = self.textCursor().selection()
 
     def mouseReleaseEvent(self, event):
+        if self.old_state:
+            new_state = TextBlockState.from_item(self)
+            if self.old_state.rect != new_state.rect:
+                self.change_undo.emit(self.old_state, new_state)
+        
         if not self.editing_mode:
             if event.button() == Qt.LeftButton:
                 self.resizing = False
@@ -607,3 +633,28 @@ class TextBlockItem(QGraphicsTextItem):
                 properties[key] = list(value)[0] if len(value) == 1 else None
 
         return properties
+    
+    def __copy__(self):
+        cls = self.__class__
+        new_instance = cls(
+            text=self.toHtml(),
+            parent_item=self.parent_item,
+            font_family=self.font_family,
+            font_size=self.font_size,
+            render_color=self.text_color,
+            alignment=self.alignment,
+            line_spacing=self.line_spacing,
+            outline_color=self.outline_color,
+            outline_width=self.outline_width,
+            bold=self.bold,
+            italic=self.italic,
+            underline=self.underline
+        )
+        
+        new_instance.set_text(self.toHtml(), self.boundingRect().width())
+        new_instance.setTransformOriginPoint(self.transformOriginPoint())
+        new_instance.setPos(self.pos())
+        new_instance.setRotation(self.rotation())
+        new_instance.setScale(self.scale())
+        new_instance.__dict__.update(copy.copy(self.__dict__))
+        return new_instance

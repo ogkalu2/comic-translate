@@ -2,12 +2,30 @@ from PySide6.QtWidgets import QGraphicsRectItem
 from PySide6.QtCore import Signal, QObject, QRectF, Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QCursor
 from PySide6 import QtCore
+from dataclasses import dataclass
 import math
+
+@dataclass
+class RectState:
+    rect: tuple  # (x1, y1, x2, y2)
+    rotation: float
+    transform_origin: QPointF
+
+    @classmethod
+    def from_item(cls, item):
+        """Create TextBlockState from a TextBlockItem"""
+        rect = QRectF(item.pos(), item.boundingRect().size()).getCoords()
+        return cls(
+            rect=rect,
+            rotation=item.rotation(),
+            transform_origin=item.transformOriginPoint()
+        )
 
 class RectSignals(QObject):
     rectangle_changed = Signal(QRectF, float, QPointF)
+    change_undo = Signal(RectState, RectState)
 
-class MovableRectItem(QGraphicsRectItem):
+class MoveableRectItem(QGraphicsRectItem):
     signals = RectSignals()
 
     def __init__(self, rect=None, parent=None):
@@ -32,6 +50,8 @@ class MovableRectItem(QGraphicsRectItem):
         self.rotation_smoothing = 1.0 # rotation sensitivity
         self.center_scene_pos = None
 
+        self.old_state = None
+
     def hoverMoveEvent(self, event):
         if self.selected:
             self.update_cursor(event.pos())
@@ -50,6 +70,7 @@ class MovableRectItem(QGraphicsRectItem):
         self.selected = self.boundingRect().contains(local_pos)
 
         if event.button() == Qt.MouseButton.LeftButton:
+            self.old_state = RectState.from_item(self)
             rect = self.boundingRect()
             handle = self.get_handle_at_position(local_pos, rect)
             if handle:
@@ -71,6 +92,11 @@ class MovableRectItem(QGraphicsRectItem):
             self.move_rectangle(local_pos, local_last_scene)
 
     def mouseReleaseEvent(self, event):
+        if self.old_state:
+            new_state = RectState.from_item(self)
+            if self.old_state.rect != new_state.rect:
+                self.signals.change_undo.emit(self.old_state, new_state)
+
         self.dragging = False
         self.drag_offset = None
         self.resize_handle = None
@@ -79,6 +105,7 @@ class MovableRectItem(QGraphicsRectItem):
         self.center_scene_pos = None
         self.update_cursor(event.pos())
         #self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
+
         super().mouseReleaseEvent(event)
 
     def update_cursor(self, pos):
@@ -181,7 +208,8 @@ class MovableRectItem(QGraphicsRectItem):
         
         # Update Textblock
         new_rect = QRectF(new_pos, self.boundingRect().size())
-        self.signals.rectangle_changed.emit(new_rect, self.rotation(), self.transformOriginPoint())
+        self.signals.rectangle_changed.emit(new_rect, self.rotation(),
+                                             self.transformOriginPoint())
 
     def init_rotation(self, scene_pos):
         self.rotating = True
@@ -214,7 +242,8 @@ class MovableRectItem(QGraphicsRectItem):
 
         # Emit signal for rectangle change
         rect = QRectF(self.pos(), self.boundingRect().size())
-        self.signals.rectangle_changed.emit(rect, self.rotation(), self.transformOriginPoint())
+        self.signals.rectangle_changed.emit(rect, self.rotation(), 
+                                            self.transformOriginPoint())
 
     def resize_rectangle(self, pos: QtCore.QPointF):
         if not self.resize_start:
@@ -285,5 +314,6 @@ class MovableRectItem(QGraphicsRectItem):
 
             # Emit signal for rectangle change
             rect = QRectF(act_pos, self.boundingRect().size())
-            self.signals.rectangle_changed.emit(rect, self.rotation(), self.transformOriginPoint())
+            self.signals.rectangle_changed.emit(rect, self.rotation(),
+                                                 self.transformOriginPoint())
         

@@ -230,6 +230,13 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         header_layout = QtWidgets.QHBoxLayout()
 
+        self.undo_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
+        undo_tools = [
+            {"svg": "undo.svg", "checkable": False, "tooltip": self.tr("Undo")},
+            {"svg": "redo.svg", "checkable": False, "tooltip": self.tr("Redo")},
+        ]
+        self.undo_tool_group.set_button_list(undo_tools)
+
         button_config_list = [
             {"text": self.tr("Detect Text Boxes"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("OCR"), "dayu_type": MPushButton.DefaultType, "enabled": False},
@@ -266,8 +273,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.cancel_button.setEnabled(True)
         self.cancel_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
+        header_layout.addWidget(self.undo_tool_group)
         header_layout.addWidget(self.hbutton_group)
-
         header_layout.addWidget(self.loading)
         header_layout.addStretch()
         header_layout.addWidget(self.manual_radio)
@@ -523,19 +530,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.eraser_button.clicked.connect(self.toggle_eraser_tool)
         self.tool_buttons['eraser'] = self.eraser_button
 
-        self.chk_inp_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
-        chk_inp_tools = [
-            {"svg": "undo.svg", "checkable": False, "tooltip": self.tr("Undo Brush Stroke"), "clicked": self.brush_undo},
-            {"svg": "redo.svg", "checkable": False, "tooltip": self.tr("Redo Brush Stroke"), "clicked": self.brush_redo},
-        ]
-        self.chk_inp_tool_group.set_button_list(chk_inp_tools)
-
         self.clear_brush_strokes_button = self.create_tool_button(svg = "clear-outlined.svg")
         self.clear_brush_strokes_button.setToolTip(self.tr("Remove all the brush strokes on the Image"))
 
         inp_tools_lay.addWidget(self.brush_button)
         inp_tools_lay.addWidget(self.eraser_button)
-        inp_tools_lay.addWidget(self.chk_inp_tool_group)
         inp_tools_lay.addWidget(self.clear_brush_strokes_button)
         inp_tools_lay.addStretch()
 
@@ -554,17 +553,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         b_slider_label = MLabel(self.tr("Brush Size Slider"))
         e_slider_label = MLabel(self.tr("Eraser Size Slider"))
 
-        # For returning an Image
-        return_buttons_lay = QtWidgets.QHBoxLayout()
-        self.return_buttons_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=False)
-        return_buttons = [
-            {"text": self.tr("Undo Image"), "svg": "arrow-left.svg", "checkable": False, "tooltip": self.tr("Undo Image")},
-            {"text": self.tr("Redo Image"), "svg": "arrow-right.svg", "checkable": False, "tooltip": self.tr("Redo Image")},
-        ]
-
-        self.return_buttons_group.set_button_list(return_buttons)
-        return_buttons_lay.addWidget(self.return_buttons_group)
-
 
         tools_layout.addLayout(misc_lay)
         box_div = MDivider(self.tr('Box Drawing'))
@@ -578,7 +566,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_layout.addWidget(self.brush_size_slider)
         tools_layout.addWidget(e_slider_label)
         tools_layout.addWidget(self.eraser_size_slider)
-        tools_layout.addLayout(return_buttons_lay)
         tools_widget.setLayout(tools_layout)
 
         tools_scroll = QtWidgets.QScrollArea()
@@ -729,12 +716,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         scaled_size = base_size * scaling_factor
         
         return scaled_size
-
-    def brush_undo(self):
-        self.image_viewer.undo_brush_stroke()
-
-    def brush_redo(self):
-        self.image_viewer.redo_brush_stroke()
 
     def get_font_family(self, font_input: str) -> QFont:
         # Check if font_input is a file path
