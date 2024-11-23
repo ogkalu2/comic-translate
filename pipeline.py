@@ -15,7 +15,7 @@ from modules.utils.pipeline_utils import generate_mask, get_language_code, set_a
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 
-from app.ui.canvas.rectangle import MovableRectItem
+from app.ui.canvas.rectangle import MoveableRectItem
 
 class ComicTranslatePipeline:
     def __init__(self, main_page):
@@ -31,12 +31,13 @@ class ComicTranslatePipeline:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
                 rect = QtCore.QRectF(0, 0, x2 - x1, y2 - y1)
-                rect_item = MovableRectItem(rect, self.main_page.image_viewer._photo)
+                rect_item = MoveableRectItem(rect, self.main_page.image_viewer._photo)
                 if blk.tr_origin_point:
                     rect_item.setTransformOriginPoint(QtCore.QPointF(*blk.tr_origin_point))
                 rect_item.setPos(x1,y1)
                 rect_item.setRotation(blk.angle)
                 rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
+                rect_item.signals.change_undo.connect(self.main_page.rect_change_undo)
                 self.main_page.image_viewer._rectangles.append(rect_item)
 
             rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
