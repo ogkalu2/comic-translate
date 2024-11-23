@@ -11,7 +11,7 @@ class ProjectEncoder:
             (QtGui.QColor, self.encode_qcolor),
             (QtGui.QPainterPath, self.encode_qpainterpath),
             (Qt.AlignmentFlag, self.encode_alignment_flag),
-            (tuple, self.encode_tuple),  
+            (tuple, self.encode_tuple), 
         ]
 
     def encode(self, obj):
@@ -51,11 +51,7 @@ class ProjectEncoder:
     @staticmethod
     def encode_textblock(obj):
         data = obj.__dict__
-        data['tr_origin_point'] = obj.tr_origin_point
-        return {
-            'type': 'textblock',
-            'data': data
-        }
+        return data
 
     @staticmethod
     def encode_qcolor(obj):
@@ -137,26 +133,8 @@ class ProjectDecoder:
 
     @staticmethod
     def decode_textblock(obj):
-        text_block = TextBlock(
-            text_bbox=obj['data'].get('xyxy'),
-            bubble_bbox=obj['data'].get('bubble_xyxy'),
-            text_class=obj['data'].get('text_class', ""),
-            inpaint_bboxes=obj['data'].get('inpaint_bboxes'),
-            lines=obj['data'].get('lines'),
-            text_segm_points=obj['data'].get('segm_pts'),
-            text=obj['data'].get('text'),
-            translation=obj['data'].get('translation', ""),
-            line_spacing=obj['data'].get('line_spacing', 1),
-            alignment=obj['data'].get('alignment', ''),
-            source_lang=obj['data'].get('source_lang', ""),
-            target_lang=obj['data'].get('target_lang', ""),
-            min_font_size=obj['data'].get('min_font_size', 0),
-            max_font_size=obj['data'].get('max_font_size', 0),
-            font_color=obj['data'].get('font_color', ""),
-            angle = obj['data'].get('angle', 0)
-            )
-        text_block.tr_origin_point = obj['data'].get('tr_origin_point', ())
-
+        text_block = TextBlock()
+        text_block.__dict__.update(obj)
         return text_block
 
     @staticmethod
