@@ -22,8 +22,8 @@ from app.ui.dayu_widgets.message import MMessage
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.rectangle import MoveableRectItem
 from app.ui.canvas.save_renderer import ImageSaveRenderer
-from app.ui.commands.box import AddRectangleCommand, DeleteRectangleCommand, \
-                                      RectangleChangeCommand, AddTextItemCommand 
+from app.ui.commands.box import AddRectangleCommand, DeleteBoxesCommand, \
+                                      BoxesChangeCommand, AddTextItemCommand 
 from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.image import SetImageCommand
 from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
@@ -266,7 +266,7 @@ class ComicTranslate(ComicTranslateUI):
     def delete_selected_box(self):
         if self.curr_tblock:
             # Create and push the delete command
-            command = DeleteRectangleCommand(
+            command = DeleteBoxesCommand(
                 self,
                 self.image_viewer._selected_rect,
                 self.curr_tblock_item,
@@ -857,7 +857,7 @@ class ComicTranslate(ComicTranslateUI):
                 break
                 
     def rect_change_undo(self, old_state, new_state):
-        command = RectangleChangeCommand(self.image_viewer, old_state,
+        command = BoxesChangeCommand(self.image_viewer, old_state,
                                          new_state, self.blk_list)
         self.undo_group.activeStack().push(command)
 
