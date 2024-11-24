@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QStyle
+from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QStyle, QStyleOptionGraphicsItem, QWidget
 from PySide6.QtGui import QPen, QFont, QCursor, QColor, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics, QPainter
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
@@ -246,6 +246,7 @@ class TextBlockItem(QGraphicsTextItem):
 
     def enter_editing_mode(self):
         self.editing_mode = True
+        self.setCacheMode(QGraphicsItem.CacheMode.NoCache)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.TextEditorInteraction)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsMovable, False)
         self.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
@@ -253,6 +254,7 @@ class TextBlockItem(QGraphicsTextItem):
 
     def exit_editing_mode(self):
         self.editing_mode = False
+        self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -658,3 +660,4 @@ class TextBlockItem(QGraphicsTextItem):
         new_instance.setScale(self.scale())
         new_instance.__dict__.update(copy.copy(self.__dict__))
         return new_instance
+
