@@ -12,6 +12,11 @@ import wget
 
 from ....pororo.tasks.utils.config import CONFIGS
 
+# Get the directory of the current file
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..', '..', '..', '..'))
+models_base_dir = os.path.join(project_root, 'models/ocr/pororo/')
+
 DEFAULT_PREFIX = {
     "model": "https://twg.kakaocdn.net/pororo/{lang}/models",
     "dict": "https://twg.kakaocdn.net/pororo/{lang}/dicts",
@@ -53,7 +58,7 @@ def get_save_dir(save_dir: str = None) -> str:
         os.makedirs(save_dir, exist_ok=True)
         return save_dir
 
-    #pf = platform.system()
+    # pf = platform.system()
 
     # if pf == "Windows":
     #     save_dir = "C:\\pororo"
@@ -61,13 +66,11 @@ def get_save_dir(save_dir: str = None) -> str:
     #     home_dir = os.path.expanduser("~")
     #     save_dir = os.path.join(home_dir, ".pororo")
 
-    save_dir = "models/ocr/pororo"
-
+    save_dir = models_base_dir
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
 
     return save_dir
-
 
 def get_download_url(n_model: str, key: str, lang: str) -> str:
     """
@@ -83,7 +86,7 @@ def get_download_url(n_model: str, key: str, lang: str) -> str:
 
     """
     default_prefix = DEFAULT_PREFIX[key].format(lang=lang)
-    return f"{default_prefix}/{n_model}"
+    return f"{default_prefix}/misc/{n_model}"
 
 
 def download_or_load_bert(info: DownloadInfo) -> str:
