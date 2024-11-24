@@ -23,7 +23,7 @@ def get_models(data):
     # Check if the save directory exists; if not, create it
     save_dir = data['save_dir']
     if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+        os.makedirs(save_dir, exist_ok=True)
         print(f"Created directory: {save_dir}")
 
     for i, file_name in enumerate(data['files']):
