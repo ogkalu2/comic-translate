@@ -231,7 +231,7 @@ class TextWrapper:
                 cur_line.append(chunk[:end])
                 # Now adds a hyphen whenever a long word is split to the next line 
                 # unless certain chracters already exists at the split
-                if self.hyphenate_broken_words and chunk[:end][-1] not in ['-',' ','.',',']:
+                if self.hyphenate_broken_words and chunk[:end][-1] not in ['-','.',',']:
                     cur_line.append('-')
             reversed_chunks[-1] = chunk[end:]
 
