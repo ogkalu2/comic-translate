@@ -1,7 +1,7 @@
 import numpy as np
 import base64, json
 import easyocr
-import cv2
+import cv2, os
 import requests
 from typing import List
 from ..utils.translator_utils import get_llm_client
@@ -16,7 +16,9 @@ from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
 
-manga_ocr_path = 'models/ocr/manga-ocr-base'
+
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
         
 class OCRProcessor:
     manga_ocr_cache = None
@@ -181,6 +183,7 @@ class OCRProcessor:
                 if source_language == self.main_page.tr('Japanese'):
                     if self.manga_ocr_cache is None:
                         get_models(manga_ocr_data)
+                        manga_ocr_path = os.path.join(project_root, 'models/ocr/manga-ocr-base')
                         self.manga_ocr_cache = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
                     blk.text = self.manga_ocr_cache(img[y1:y2, x1:x2])
 
