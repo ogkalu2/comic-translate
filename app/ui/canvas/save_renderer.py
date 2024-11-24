@@ -33,7 +33,6 @@ class ImageSaveRenderer:
             text_item = TextBlockItem(
                 text=text_block['text'],
                 parent_item = self.pixmap_item,
-                text_block=text_block['block'],
                 font_family=text_block['font_family'],
                 font_size=text_block['font_size'],
                 render_color=text_block['text_color'],
