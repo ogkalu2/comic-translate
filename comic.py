@@ -1205,6 +1205,12 @@ class ComicTranslate(ComicTranslateUI):
     def update_ui_from_project(self):
         index = self.current_image_index
         self.update_image_cards()
+
+        for file in self.image_files:
+            stack = QUndoStack(self)
+            self.undo_stacks[file] = stack
+            self.undo_group.addStack(stack)
+            
         self.run_threaded(
             lambda: self.load_image(self.image_files[index]),
             lambda result: self.display_image_from_loaded(result, index, switch_page=False),
@@ -1389,4 +1395,11 @@ if __name__ == "__main__":
             load_translation(app, selected_language)  
 
         test = ComicTranslate()
+
+        # Check for file arguments
+        if len(sys.argv) > 1:
+            project_file = sys.argv[1]
+            if os.path.exists(project_file) and project_file.endswith(".ctpr"):
+                test.thread_load_project(project_file)
+
         test.show()
