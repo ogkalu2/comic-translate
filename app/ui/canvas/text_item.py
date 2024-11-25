@@ -1,13 +1,13 @@
-from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QStyle, QStyleOptionGraphicsItem, QWidget
+from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem
 from PySide6.QtGui import QPen, QFont, QCursor, QColor, \
-     QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics, QPainter
+     QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math, copy
 from dataclasses import dataclass
 
 @dataclass
 class TextBlockState:
-    rect: tuple  # (x1, y1, x2, y2)
+    rect: tuple  
     rotation: float
     transform_origin: QPointF
 
