@@ -1279,10 +1279,13 @@ class ComicTranslate(ComicTranslateUI):
             self.batch_mode_selected()
         
         # Load brush and eraser sizes
-        brush_size = settings.value("brush_size", 10)  # Default value is 10
-        eraser_size = settings.value("eraser_size", 20)  # Default value is 20
-        self.brush_size_slider.setValue(int(brush_size))
-        self.eraser_size_slider.setValue(int(eraser_size))
+        brush_size = int(settings.value("brush_size", 10))  # Default value is 10
+        eraser_size = int(settings.value("eraser_size", 20))  # Default value is 20
+        self.brush_size_slider.setValue(brush_size)
+        self.eraser_size_slider.setValue(eraser_size)
+
+        self.image_viewer.set_brush_size(brush_size)
+        self.image_viewer.set_eraser_size(eraser_size)
 
         settings.endGroup()
 
