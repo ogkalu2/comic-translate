@@ -311,12 +311,13 @@ class ComicTranslate(ComicTranslateUI):
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
     
-    def on_image_processed(self, index: int, rendered_image: np.ndarray, image_path: str):
+    def on_image_processed(self, index: int, image: np.ndarray, image_path: str):
         if index == self.current_image_index:
-            self.set_cv2_image(rendered_image)
+            self.set_cv2_image(image)
         else:
-            self.update_image_history(image_path, rendered_image)
-            self.image_data[image_path] = rendered_image
+            command = SetImageCommand(self, image_path, image, False)
+            self.undo_group.activeStack().push(command)
+            self.image_data[image_path] = image
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
         message = { 

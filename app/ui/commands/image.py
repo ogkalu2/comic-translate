@@ -6,14 +6,18 @@ from PySide6.QtGui import QUndoCommand
 
 
 class SetImageCommand(QUndoCommand):
-    def __init__(self, parent, file_path: str, cv2_img: np.ndarray):
+    def __init__(self, parent, file_path: str, cv2_img: np.ndarray, display: bool = True):
         super().__init__()
         self.ct = parent
         self.update_image_history(file_path, cv2_img)
         self.first = True
+        self.display_first_time = display
 
     def redo(self):
         if self.first:
+            if not self.display_first_time:
+                return
+            
             file_path = self.ct.image_files[self.ct.current_image_index]
             current_index = self.ct.current_history_index[file_path]
             cv2_img = self.get_img(file_path, current_index)
