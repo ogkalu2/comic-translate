@@ -411,10 +411,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                             if not intersected_path.isEmpty():
                                 new_path = QtGui.QPainterPath(path)
                                 new_path = new_path.subtracted(intersected_path)
-                                self.modified_items.append((item, path))
                                 item.setPath(new_path)
                                 if new_path.isEmpty():
-                                    self.removed_items.append(item)
                                     self._scene.removeItem(item)
                 else:
                     # Handle other paths as before
@@ -452,10 +450,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                         i += 1
 
                     if new_path.isEmpty():
-                        self.removed_items.append(item)
                         self._scene.removeItem(item)
                     else:
-                        self.modified_items.append((item, path))
                         item.setPath(new_path)
 
     def save_brush_strokes(self):
