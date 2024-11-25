@@ -1,5 +1,6 @@
 import numpy as np
-from PySide6.QtGui import QColor, QBrush, QPen
+from typing import TypedDict
+from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, Qt
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import QRectF, QPointF
 
@@ -7,11 +8,26 @@ from modules.utils.textblock import TextBlock
 from ..canvas.rectangle import MoveableRectItem
 from ..canvas.text_item import TextBlockItem
 
+
+class PenSettings(TypedDict):
+    color: QColor
+    width: int
+    style: Qt.PenStyle
+    cap: Qt.PenCapStyle
+    join: Qt.PenJoinStyle
+
+class PathProperties(TypedDict):
+    path: QPainterPath
+    pen: str  # HexArgb color string
+    brush: str  # HexArgb color string
+    width: int
+    pen_settings: PenSettings
+
 class PathCommandBase:
     """Base class with shared functionality for path-related commands"""
     
     @staticmethod
-    def save_path_properties(path_item):
+    def save_path_properties(path_item) -> PathProperties:
         """Save properties of a path item"""
         return {
             'path': path_item.path(),

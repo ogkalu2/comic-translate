@@ -5,13 +5,15 @@ import math
 
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
+from PySide6.QtWidgets import QGraphicsPathItem
 
 from .text_item import TextBlockItem, TextBlockState
 from .rectangle import MoveableRectItem, RectState
 from .rotate_cursor import RotateHandleCursors
 from ..commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, \
-                            SegmentBoxesCommand
+                            SegmentBoxesCommand, EraseUndoCommand
 from ..commands.box import ClearRectsCommand
+from ..commands.base import PathCommandBase as pcb
 
 class ImageViewer(QtWidgets.QGraphicsView):
     rectangle_created = QtCore.Signal(MoveableRectItem)
@@ -57,6 +59,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self._current_path = None
         self._current_path_item = None
+
+        self.before_erase = []
+        self.after_erase = []
 
         # Initialize last pan position
         self._last_pan_pos = QtCore.QPoint()
@@ -217,6 +222,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
                             QtCore.Qt.RoundJoin)
                 )
 
+                if self._current_tool == 'eraser':
+                    self.before_erase = [pcb.save_path_properties(item) for item in 
+                                         self._scene.items() if isinstance(item, QGraphicsPathItem)]
+
         # Handle box tool
         if self._current_tool == 'box' and self.hasPhoto():
             if self._photo.contains(scene_pos):
@@ -332,6 +341,14 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 self.command_emitted.emit(command)
             self._current_path = None
             self._current_path_item = None
+
+            if self._current_tool == 'eraser':
+                self.after_erase = [pcb.save_path_properties(item) for item in 
+                                         self._scene.items() if isinstance(item, QGraphicsPathItem)]
+                command = EraseUndoCommand(self, self.before_erase, self.after_erase)
+                self.command_emitted.emit(command)
+                self.after_erase = []
+                self.before_erase = []
 
         if self._current_tool == 'box':
             if self._box_mode:
