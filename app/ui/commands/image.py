@@ -85,7 +85,7 @@ class SetImageCommand(QUndoCommand):
         if self.ct.in_memory_history.get(file_path, []):
             cv2_img = self.ct.in_memory_history[file_path][current_index]
         else:
-            cv2_img = cv2.imread(self.image_history[file_path][current_index])
+            cv2_img = cv2.imread(self.ct.image_history[file_path][current_index])
             cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
 
         return cv2_img
