@@ -51,7 +51,10 @@ class ProjectEncoder:
     @staticmethod
     def encode_textblock(obj):
         data = obj.__dict__
-        return data
+        return {
+            'type': 'textblock',
+            'data': data
+        }
 
     @staticmethod
     def encode_qcolor(obj):
@@ -130,11 +133,11 @@ class ProjectDecoder:
             return array.reshape(shape)
         else:
             return array.reshape(-1, 4)
-
+        
     @staticmethod
     def decode_textblock(obj):
         text_block = TextBlock()
-        text_block.__dict__.update(obj)
+        text_block.__dict__.update(obj['data'])  
         return text_block
 
     @staticmethod
