@@ -37,6 +37,7 @@ class TextBlockDetector:
         detect_text_bounding_boxes = np.array(text_detect_results.boxes.xyxy.cpu(), dtype="int")
 
         text_bounding_boxes = merge_bounding_boxes(seg_text_bounding_boxes, detect_text_bounding_boxes)
+        text_bounding_boxes = [bbox for bbox in text_bounding_boxes if not is_close(bbox[0], bbox[2], 5)]
 
         text_blocks_bboxes = []
         # Process each text bounding box
@@ -287,6 +288,8 @@ def detect_content_in_bbox(image):
     
     return content_bboxes
 
+def is_close(value1, value2, tolerance=2):
+    return abs(value1 - value2) <= tolerance
 
 # From https://github.com/TareHimself/manga-translator/blob/master/translator/utils.py
 
