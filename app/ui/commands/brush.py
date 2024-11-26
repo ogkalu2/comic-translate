@@ -54,7 +54,7 @@ class ClearBrushStrokesCommand(QUndoCommand, PathCommandBase):
     def redo(self):
         self.properties_list = []
         for item in self.scene.items():
-            if isinstance(item, QGraphicsPathItem) and item != self.viewer._photo:
+            if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:
                 self.properties_list.append(self.save_path_properties(item))
                 self.scene.removeItem(item)
         self.scene.update()
@@ -86,7 +86,7 @@ class EraseUndoCommand(QUndoCommand, PathCommandBase):
     def update_scene(self, properties_list):
         items_to_remove = [
             item for item in self.scene.items() 
-            if isinstance(item, QGraphicsPathItem) and item != self.viewer._photo
+            if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo
         ]
         for item in items_to_remove:
             self.scene.removeItem(item)

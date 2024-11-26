@@ -538,21 +538,13 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         inp_tools_lay.addWidget(self.clear_brush_strokes_button)
         inp_tools_lay.addStretch()
 
-        self.brush_size_slider = MSlider()
-        self.eraser_size_slider = MSlider()
+        self.brush_eraser_slider = MSlider()
 
-        self.brush_size_slider.setMinimum(1)
-        self.brush_size_slider.setMaximum(50)
-        self.brush_size_slider.setValue(10)
-        self.brush_size_slider.valueChanged.connect(self.set_brush_size)
-
-        self.eraser_size_slider.setMinimum(1)
-        self.eraser_size_slider.setMaximum(50)
-        self.eraser_size_slider.setValue(20)
-        self.eraser_size_slider.valueChanged.connect(self.set_eraser_size)
-        b_slider_label = MLabel(self.tr("Brush Size Slider"))
-        e_slider_label = MLabel(self.tr("Eraser Size Slider"))
-
+        self.brush_eraser_slider.setMinimum(1)
+        self.brush_eraser_slider.setMaximum(50)
+        self.brush_eraser_slider.setValue(10)
+        self.brush_eraser_slider.setToolTip(self.tr("Brush/Eraser Size Slider"))
+        self.brush_eraser_slider.valueChanged.connect(self.set_brush_eraser_size)
 
         tools_layout.addLayout(misc_lay)
         box_div = MDivider(self.tr('Box Drawing'))
@@ -562,10 +554,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         inp_div = MDivider(self.tr('Inpainting'))
         tools_layout.addWidget(inp_div)
         tools_layout.addLayout(inp_tools_lay)
-        tools_layout.addWidget(b_slider_label)
-        tools_layout.addWidget(self.brush_size_slider)
-        tools_layout.addWidget(e_slider_label)
-        tools_layout.addWidget(self.eraser_size_slider)
+        tools_layout.addWidget(self.brush_eraser_slider)
         tools_widget.setLayout(tools_layout)
 
         tools_scroll = QtWidgets.QScrollArea()
@@ -666,14 +655,23 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
     def toggle_brush_tool(self):
         if self.brush_button.isChecked():
             self.set_tool('brush')
+            size = self.image_viewer.brush_size
+            self.set_slider_size(size)
         else:
             self.set_tool(None)
 
     def toggle_eraser_tool(self):
         if self.eraser_button.isChecked():
             self.set_tool('eraser')
+            size = self.image_viewer.eraser_size
+            self.set_slider_size(size)
         else:
             self.set_tool(None)
+
+    def set_slider_size(self, size: int):
+        self.brush_eraser_slider.blockSignals(True)
+        self.brush_eraser_slider.setValue(size)
+        self.brush_eraser_slider.blockSignals(False)
 
     def set_tool(self, tool_name: str):
         self.image_viewer.unsetCursor()
@@ -690,19 +688,12 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             for button in self.tool_buttons.values():
                 button.setChecked(False)
 
-    def set_brush_size(self, size: int):
+    def set_brush_eraser_size(self, size: int):
         if self.image_viewer.hasPhoto():
             image = self.image_viewer.get_cv2_image()
             h, w, c = image.shape
             scaled_size = self.scale_size(size, w, h)
-            self.image_viewer.set_brush_size(scaled_size)
-
-    def set_eraser_size(self, size: int):
-        if self.image_viewer.hasPhoto():
-            image = self.image_viewer.get_cv2_image()
-            h, w, c = image.shape
-            scaled_size = self.scale_size(size, w, h)
-            self.image_viewer.set_eraser_size(scaled_size)
+            self.image_viewer.set_br_er_size(size, scaled_size)
 
     def scale_size(self, base_size, image_width, image_height):
         # Calculate the diagonal of the image

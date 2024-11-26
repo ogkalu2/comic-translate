@@ -197,14 +197,14 @@ class ComicTranslate(ComicTranslateUI):
         italic = self.italic_button.isChecked()
         underline = self.underline_button.isChecked()
 
-        text_item = TextBlockItem(text, self.image_viewer._photo, font_family, 
+        text_item = TextBlockItem(text, self.image_viewer.photo, font_family, 
                                   font_size, text_color, alignment, line_spacing, 
                                   outline_color, outline_width, bold, italic, underline)
         
         text_item.setPos(blk.xyxy[0], blk.xyxy[1])
         text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
-        self.image_viewer._text_items.append(text_item)  
+        self.image_viewer.text_items.append(text_item)  
 
         text_item.item_selected.connect(self.on_text_item_selected)
         text_item.item_deselected.connect(self.on_text_item_deselcted)
@@ -268,7 +268,7 @@ class ComicTranslate(ComicTranslateUI):
             # Create and push the delete command
             command = DeleteBoxesCommand(
                 self,
-                self.image_viewer._selected_rect,
+                self.image_viewer.selected_rect,
                 self.curr_tblock_item,
                 self.curr_tblock,
                 self.blk_list,
@@ -637,7 +637,7 @@ class ComicTranslate(ComicTranslateUI):
             self.t_combo.setCurrentText(state['target_lang'])
             self.image_viewer.load_brush_strokes(state['brush_strokes'])
 
-            for text_item in self.image_viewer._text_items:
+            for text_item in self.image_viewer.text_items:
                 text_item.item_selected.connect(self.on_text_item_selected)
                 text_item.item_deselected.connect(self.on_text_item_deselcted)
                 text_item.text_changed.connect(self.update_text_block_from_item)
@@ -645,7 +645,7 @@ class ComicTranslate(ComicTranslateUI):
                 text_item.text_highlighted.connect(self.set_values_from_highlight)
                 text_item.change_undo.connect(self.rect_change_undo)
 
-            for rect_item in self.image_viewer._rectangles:
+            for rect_item in self.image_viewer.rectangles:
                 rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
                 rect_item.signals.change_undo.connect(self.rect_change_undo)
 
@@ -711,7 +711,7 @@ class ComicTranslate(ComicTranslateUI):
         return None
 
     def find_corresponding_rect(self, tblock: TextBlock, iou_threshold: int):
-        for rect in self.image_viewer._rectangles:
+        for rect in self.image_viewer.rectangles:
             mp_rect = rect.mapRectToScene(rect.rect())
             x1, y1, w, h = mp_rect.getRect()
             rect_coord = (x1, y1, x1 + w, y1 + h)
@@ -805,12 +805,12 @@ class ComicTranslate(ComicTranslateUI):
             self.disable_hbutton_group()
 
             # Add items to the scene if they're not already present
-            for item in self.image_viewer._text_items:
+            for item in self.image_viewer.text_items:
                 if item not in self.image_viewer._scene.items():
                     self.image_viewer._scene.addItem(item)
 
             # Create a dictionary to map text items to their positions and rotations
-            existing_text_items = {item: (int(item.pos().x()), int(item.pos().y()), item.rotation()) for item in self.image_viewer._text_items}
+            existing_text_items = {item: (int(item.pos().x()), int(item.pos().y()), item.rotation()) for item in self.image_viewer.text_items}
 
             # Identify new blocks based on position and rotation
             new_blocks = [
@@ -1247,8 +1247,8 @@ class ComicTranslate(ComicTranslateUI):
         settings.setValue("mode", "manual" if self.manual_radio.isChecked() else "automatic")
         
         # Save brush and eraser sizes
-        settings.setValue("brush_size", self.brush_size_slider.value())
-        settings.setValue("eraser_size", self.eraser_size_slider.value())
+        settings.setValue("brush_size", self.image_viewer.brush_size)
+        settings.setValue("eraser_size", self.image_viewer.eraser_size)
 
         settings.endGroup()
 
@@ -1281,11 +1281,8 @@ class ComicTranslate(ComicTranslateUI):
         # Load brush and eraser sizes
         brush_size = int(settings.value("brush_size", 10))  # Default value is 10
         eraser_size = int(settings.value("eraser_size", 20))  # Default value is 20
-        self.brush_size_slider.setValue(brush_size)
-        self.eraser_size_slider.setValue(eraser_size)
-
-        self.image_viewer.set_brush_size(brush_size)
-        self.image_viewer.set_eraser_size(eraser_size)
+        self.image_viewer.brush_size = brush_size
+        self.image_viewer.eraser_size = eraser_size
 
         settings.endGroup()
 

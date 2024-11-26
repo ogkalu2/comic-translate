@@ -31,14 +31,14 @@ class ComicTranslatePipeline:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
                 rect = QtCore.QRectF(0, 0, x2 - x1, y2 - y1)
-                rect_item = MoveableRectItem(rect, self.main_page.image_viewer._photo)
+                rect_item = MoveableRectItem(rect, self.main_page.image_viewer.photo)
                 if blk.tr_origin_point:
                     rect_item.setTransformOriginPoint(QtCore.QPointF(*blk.tr_origin_point))
                 rect_item.setPos(x1,y1)
                 rect_item.setRotation(blk.angle)
                 rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
                 rect_item.signals.change_undo.connect(self.main_page.rect_change_undo)
-                self.main_page.image_viewer._rectangles.append(rect_item)
+                self.main_page.image_viewer.rectangles.append(rect_item)
 
             rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
             self.main_page.image_viewer.select_rectangle(rect)
@@ -98,7 +98,7 @@ class ComicTranslatePipeline:
 
     def OCR_image(self):
         source_lang = self.main_page.s_combo.currentText()
-        if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer._rectangles:
+        if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
             image = self.main_page.image_viewer.get_cv2_image()
             # Print block length
             print("Block Length: ", len(self.main_page.blk_list))
