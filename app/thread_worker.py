@@ -1,4 +1,4 @@
-from PySide6.QtCore import QRunnable, Slot, Signal, QObject, QThreadPool
+from PySide6.QtCore import QRunnable, Signal, QObject
 import traceback, sys
 import types
 
