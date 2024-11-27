@@ -107,59 +107,74 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="128"/>
-        <location filename="../ui/main_window.py" line="313"/>
+        <location filename="../ui/main_window.py" line="93"/>
+        <source>Indonesian</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="94"/>
+        <source>Hungarian</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="95"/>
+        <source>Finnish</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="131"/>
+        <location filename="../ui/main_window.py" line="316"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>Importer des images, des PDF, des fichiers Epub ou des archives de bandes dessinées (cbr, cbz, etc.)</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="149"/>
+        <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="152"/>
+        <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="155"/>
+        <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="158"/>
+        <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="161"/>
+        <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="169"/>
+        <location filename="../ui/main_window.py" line="172"/>
         <source>Save Currently Loaded Image</source>
         <translation>Enregistrer l&apos;image actuellement chargée</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="490"/>
+        <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="498"/>
+        <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="512"/>
+        <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="546"/>
+        <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
         <translation type="unfinished"></translation>
     </message>
@@ -168,47 +183,47 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Enregistrer toutes les images</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="194"/>
+        <location filename="../ui/main_window.py" line="197"/>
         <source>Home</source>
         <translation>Accueil</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="195"/>
+        <location filename="../ui/main_window.py" line="198"/>
         <source>Settings</source>
         <translation>Paramètres</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="235"/>
+        <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="236"/>
+        <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="241"/>
+        <location filename="../ui/main_window.py" line="244"/>
         <source>Detect Text Boxes</source>
         <translation>Détecter les zones de texte</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="242"/>
+        <location filename="../ui/main_window.py" line="245"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="243"/>
+        <location filename="../ui/main_window.py" line="246"/>
         <source>Get Translations</source>
         <translation>Obtenir des traductions</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="244"/>
+        <location filename="../ui/main_window.py" line="247"/>
         <source>Segment Text</source>
         <translation>Segmenter le texte</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="245"/>
+        <location filename="../ui/main_window.py" line="248"/>
         <source>Clean Image</source>
         <translation>Nettoyer l&apos;image</translation>
     </message>
@@ -217,22 +232,22 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Coller les traductions</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="262"/>
+        <location filename="../ui/main_window.py" line="265"/>
         <source>Manual</source>
         <translation>Manuel</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="265"/>
+        <location filename="../ui/main_window.py" line="268"/>
         <source>Automatic</source>
         <translation>Automatique</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="269"/>
+        <location filename="../ui/main_window.py" line="272"/>
         <source>Translate</source>
         <translation>Traduire</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="272"/>
+        <location filename="../ui/main_window.py" line="275"/>
         <source>Cancel</source>
         <translation>Annuler</translation>
     </message>
@@ -241,117 +256,117 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Images chargées</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="308"/>
+        <location filename="../ui/main_window.py" line="311"/>
         <source>Click or drag files here</source>
         <translation>Cliquez ou faites glisser les fichiers ici</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="335"/>
+        <location filename="../ui/main_window.py" line="338"/>
         <source>Source Language</source>
         <translation>Langue source</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="346"/>
+        <location filename="../ui/main_window.py" line="349"/>
         <source>Target Language</source>
         <translation>Langue cible</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="478"/>
+        <location filename="../ui/main_window.py" line="481"/>
         <source>Draw or Select Text Boxes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="483"/>
+        <location filename="../ui/main_window.py" line="486"/>
         <source>Delete Selected Box</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="486"/>
+        <location filename="../ui/main_window.py" line="489"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Supprimer toutes les boîtes sur l&apos;image</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="462"/>
+        <location filename="../ui/main_window.py" line="465"/>
         <source>Pan Image</source>
         <translation>Déplacer l&apos;image</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="173"/>
+        <location filename="../ui/main_window.py" line="176"/>
         <source>Save Project</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="177"/>
+        <location filename="../ui/main_window.py" line="180"/>
         <source>Save as</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="190"/>
+        <location filename="../ui/main_window.py" line="193"/>
         <source>Export all Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="246"/>
+        <location filename="../ui/main_window.py" line="249"/>
         <source>Render</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="359"/>
+        <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
         <translation type="unfinished">Police</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="366"/>
+        <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="372"/>
+        <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="391"/>
+        <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="409"/>
+        <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="411"/>
+        <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="413"/>
+        <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="425"/>
+        <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="429"/>
+        <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="438"/>
+        <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="467"/>
+        <location filename="../ui/main_window.py" line="470"/>
         <source>Set for all</source>
         <translation>Définir pour tous</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="468"/>
+        <location filename="../ui/main_window.py" line="471"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Définit la langue source et la langue cible sur la page actuelle pour toutes les pages</translation>
     </message>
@@ -364,12 +379,12 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Supprimer</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="524"/>
+        <location filename="../ui/main_window.py" line="527"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Tracer des coups de pinceau pour nettoyer l&apos;image</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="529"/>
+        <location filename="../ui/main_window.py" line="532"/>
         <source>Erase Brush Strokes</source>
         <translation>Effacer les coups de pinceau</translation>
     </message>
@@ -382,7 +397,7 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Rétablir le coup de pinceau</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="534"/>
+        <location filename="../ui/main_window.py" line="537"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Supprimer tous les coups de pinceau sur l&apos;image</translation>
     </message>
@@ -403,12 +418,12 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Rétablir l&apos;image</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="550"/>
+        <location filename="../ui/main_window.py" line="553"/>
         <source>Box Drawing</source>
         <translation>Dessin de boîte</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="554"/>
+        <location filename="../ui/main_window.py" line="557"/>
         <source>Inpainting</source>
         <translation>Inpainting</translation>
     </message>
@@ -921,7 +936,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="634"/>
+        <location filename="../ui/main_window.py" line="637"/>
         <source>Light</source>
         <translation>Clair</translation>
     </message>

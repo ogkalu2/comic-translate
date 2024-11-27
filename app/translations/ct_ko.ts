@@ -107,63 +107,78 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="128"/>
-        <location filename="../ui/main_window.py" line="313"/>
+        <location filename="../ui/main_window.py" line="93"/>
+        <source>Indonesian</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="94"/>
+        <source>Hungarian</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="95"/>
+        <source>Finnish</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="131"/>
+        <location filename="../ui/main_window.py" line="316"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>이미지, PDF, Epub 또는 만화책 아카이브 파일(cbr, cbz 등) 가져오기</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="149"/>
+        <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="152"/>
+        <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="155"/>
+        <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="158"/>
+        <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="161"/>
+        <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="169"/>
+        <location filename="../ui/main_window.py" line="172"/>
         <source>Save Currently Loaded Image</source>
         <translation>현재 로드된 이미지 저장</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="173"/>
+        <location filename="../ui/main_window.py" line="176"/>
         <source>Save Project</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="177"/>
+        <location filename="../ui/main_window.py" line="180"/>
         <source>Save as</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="190"/>
+        <location filename="../ui/main_window.py" line="193"/>
         <source>Export all Images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="246"/>
+        <location filename="../ui/main_window.py" line="249"/>
         <source>Render</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="546"/>
+        <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
         <translation type="unfinished"></translation>
     </message>
@@ -172,47 +187,47 @@
         <translation type="vanished">모든 이미지 저장</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="194"/>
+        <location filename="../ui/main_window.py" line="197"/>
         <source>Home</source>
         <translation>홈</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="195"/>
+        <location filename="../ui/main_window.py" line="198"/>
         <source>Settings</source>
         <translation>설정</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="235"/>
+        <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="236"/>
+        <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="241"/>
+        <location filename="../ui/main_window.py" line="244"/>
         <source>Detect Text Boxes</source>
         <translation>텍스트 상자 감지</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="242"/>
+        <location filename="../ui/main_window.py" line="245"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="243"/>
+        <location filename="../ui/main_window.py" line="246"/>
         <source>Get Translations</source>
         <translation>번역 가져오기</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="244"/>
+        <location filename="../ui/main_window.py" line="247"/>
         <source>Segment Text</source>
         <translation>텍스트 분할</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="245"/>
+        <location filename="../ui/main_window.py" line="248"/>
         <source>Clean Image</source>
         <translation>이미지 정리</translation>
     </message>
@@ -221,22 +236,22 @@
         <translation type="vanished">번역 붙여넣기</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="262"/>
+        <location filename="../ui/main_window.py" line="265"/>
         <source>Manual</source>
         <translation>수동</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="265"/>
+        <location filename="../ui/main_window.py" line="268"/>
         <source>Automatic</source>
         <translation>자동</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="269"/>
+        <location filename="../ui/main_window.py" line="272"/>
         <source>Translate</source>
         <translation>번역하기</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="272"/>
+        <location filename="../ui/main_window.py" line="275"/>
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
@@ -245,123 +260,123 @@
         <translation type="vanished">로드된 이미지</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="308"/>
+        <location filename="../ui/main_window.py" line="311"/>
         <source>Click or drag files here</source>
         <translation>여기에 파일을 클릭하거나 드래그하세요.</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="335"/>
+        <location filename="../ui/main_window.py" line="338"/>
         <source>Source Language</source>
         <translation>소스 언어</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="346"/>
+        <location filename="../ui/main_window.py" line="349"/>
         <source>Target Language</source>
         <translation>대상 언어</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="359"/>
+        <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
         <translation type="unfinished">글꼴</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="366"/>
+        <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="372"/>
+        <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="391"/>
+        <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="409"/>
+        <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="411"/>
+        <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="413"/>
+        <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="425"/>
+        <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="429"/>
+        <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="438"/>
+        <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="462"/>
+        <location filename="../ui/main_window.py" line="465"/>
         <source>Pan Image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="467"/>
+        <location filename="../ui/main_window.py" line="470"/>
         <source>Set for all</source>
         <translation>모두 설정</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="468"/>
+        <location filename="../ui/main_window.py" line="471"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>현재 페이지의 출발어 및 대상 언어를 모든 페이지에 설정합니다.</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="478"/>
+        <location filename="../ui/main_window.py" line="481"/>
         <source>Draw or Select Text Boxes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="483"/>
+        <location filename="../ui/main_window.py" line="486"/>
         <source>Delete Selected Box</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="486"/>
+        <location filename="../ui/main_window.py" line="489"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>이미지에서 모든 상자 제거</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="490"/>
+        <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="498"/>
+        <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="512"/>
+        <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="524"/>
+        <location filename="../ui/main_window.py" line="527"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>이미지 정리를 위한 브러시 스트로크 그리기</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="529"/>
+        <location filename="../ui/main_window.py" line="532"/>
         <source>Erase Brush Strokes</source>
         <translation>브러시 스트로크 지우기</translation>
     </message>
@@ -374,7 +389,7 @@ back on the Image (for further editing)</source>
         <translation type="vanished">브러시 스트로크 다시 실행</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="534"/>
+        <location filename="../ui/main_window.py" line="537"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>이미지에서 모든 브러시 스트로크 제거</translation>
     </message>
@@ -395,12 +410,12 @@ back on the Image (for further editing)</source>
         <translation type="vanished">이미지 다시 실행</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="550"/>
+        <location filename="../ui/main_window.py" line="553"/>
         <source>Box Drawing</source>
         <translation>상자 그리기</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="554"/>
+        <location filename="../ui/main_window.py" line="557"/>
         <source>Inpainting</source>
         <translation>인페인팅</translation>
     </message>
@@ -906,7 +921,7 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../ui/main_window.py" line="634"/>
+        <location filename="../ui/main_window.py" line="637"/>
         <source>Light</source>
         <translation>밝게</translation>
     </message>
