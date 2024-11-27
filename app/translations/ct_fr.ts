@@ -99,27 +99,27 @@
     <message>
         <location filename="../ui/main_window.py" line="91"/>
         <source>Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>Thaï</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="92"/>
         <source>Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>Vietnamien</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="93"/>
         <source>Indonesian</source>
-        <translation type="unfinished"></translation>
+        <translation>Indonésien</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="94"/>
         <source>Hungarian</source>
-        <translation type="unfinished"></translation>
+        <translation>Hongrois</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="95"/>
         <source>Finnish</source>
-        <translation type="unfinished"></translation>
+        <translation>Finnois</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="131"/>
@@ -130,58 +130,55 @@
     <message>
         <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Images</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
-        <translation type="unfinished"></translation>
+        <translation>Document</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Archive</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Archive de bandes dessinées</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
-        <translation type="unfinished"></translation>
+        <translation>Fichier de projet</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="172"/>
         <source>Save Currently Loaded Image</source>
-        <translation>Enregistrer l&apos;image actuellement chargée</translation>
+        <translation>Enregistrer l'image actuellement chargée</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation type="unfinished"></translation>
+        <translation>Redessine tous les blocs de texte de la liste existante sur l'image (pour une édition ultérieure)</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Réduire la taille de tous les blocs</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Augmenter la taille de tous les blocs</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>Curseur de taille du pinceau/gomme</translation>
     </message>
-    <message>
-        <source>Save all Images</source>
-        <translation type="vanished">Enregistrer toutes les images</translation>
-    </message>
+
     <message>
         <location filename="../ui/main_window.py" line="197"/>
         <source>Home</source>
@@ -195,12 +192,12 @@ back on the Image (for further editing)</source>
     <message>
         <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
-        <translation type="unfinished"></translation>
+        <translation>Annuler</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
-        <translation type="unfinished"></translation>
+        <translation>Rétablir</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="244"/>
@@ -225,11 +222,12 @@ back on the Image (for further editing)</source>
     <message>
         <location filename="../ui/main_window.py" line="248"/>
         <source>Clean Image</source>
-        <translation>Nettoyer l&apos;image</translation>
+        <translation>Nettoyer l'image</translation>
     </message>
     <message>
-        <source>Paste Translations</source>
-        <translation type="vanished">Coller les traductions</translation>
+        <location filename="../ui/main_window.py" line="249"/>
+        <source>Render</source>
+        <translation>Rendre</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="265"/>
@@ -252,10 +250,6 @@ back on the Image (for further editing)</source>
         <translation>Annuler</translation>
     </message>
     <message>
-        <source>Loaded Images</source>
-        <translation type="vanished">Images chargées</translation>
-    </message>
-    <message>
         <location filename="../ui/main_window.py" line="311"/>
         <source>Click or drag files here</source>
         <translation>Cliquez ou faites glisser les fichiers ici</translation>
@@ -271,95 +265,76 @@ back on the Image (for further editing)</source>
         <translation>Langue cible</translation>
     </message>
     <message>
-        <location filename="../ui/main_window.py" line="481"/>
-        <source>Draw or Select Text Boxes</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="486"/>
-        <source>Delete Selected Box</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="489"/>
-        <source>Remove all the Boxes on the Image</source>
-        <translation>Supprimer toutes les boîtes sur l&apos;image</translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="465"/>
-        <source>Pan Image</source>
-        <translation>Déplacer l&apos;image</translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="176"/>
-        <source>Save Project</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="180"/>
-        <source>Save as</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="193"/>
-        <source>Export all Images</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/main_window.py" line="249"/>
-        <source>Render</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
-        <translation type="unfinished">Police</translation>
+        <translation>Police</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
-        <translation type="unfinished"></translation>
+        <translation>Taille de la police</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
-        <translation type="unfinished"></translation>
+        <translation>Interligne</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Couleur de la police</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>Gras</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>Italique</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>Souligné</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Contour</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Couleur du contour</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
-        <translation type="unfinished"></translation>
+        <translation>Largeur du contour</translation>
     </message>
+    <message>
+        <location filename="../ui/main_window.py" line="465"/>
+        <source>Pan Image</source>
+        <translation>Déplacer l'image</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="176"/>
+        <source>Save Project</source>
+        <translation>Enregistrer le projet</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="180"/>
+        <source>Save as</source>
+        <translation>Enregistrer sous</translation>
+    </message>
+    <message>
+        <location filename="../ui/main_window.py" line="193"/>
+        <source>Export all Images</source>
+        <translation>Exporter toutes les images</translation>
+    </message>
+
     <message>
         <location filename="../ui/main_window.py" line="470"/>
         <source>Set for all</source>
@@ -371,17 +346,25 @@ back on the Image (for further editing)</source>
         <translation>Définit la langue source et la langue cible sur la page actuelle pour toutes les pages</translation>
     </message>
     <message>
-        <source>Draw/Select Box</source>
-        <translation type="vanished">Dessiner/Sélectionner une zone</translation>
+        <location filename="../ui/main_window.py" line="481"/>
+        <source>Draw or Select Text Boxes</source>
+        <translation>Dessiner ou sélectionner des zones de texte</translation>
     </message>
     <message>
-        <source>Delete</source>
-        <translation type="vanished">Supprimer</translation>
+        <location filename="../ui/main_window.py" line="486"/>
+        <source>Delete Selected Box</source>
+        <translation>Supprimer la zone sélectionnée</translation>
     </message>
+    <message>
+        <location filename="../ui/main_window.py" line="489"/>
+        <source>Remove all the Boxes on the Image</source>
+        <translation>Supprimer toutes les boîtes sur l'image</translation>
+    </message>
+
     <message>
         <location filename="../ui/main_window.py" line="527"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
-        <translation>Tracer des coups de pinceau pour nettoyer l&apos;image</translation>
+        <translation>Tracer des coups de pinceau pour nettoyer l'image</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="532"/>
@@ -389,34 +372,11 @@ back on the Image (for further editing)</source>
         <translation>Effacer les coups de pinceau</translation>
     </message>
     <message>
-        <source>Undo Brush Stroke</source>
-        <translation type="vanished">Annuler le coup de pinceau</translation>
-    </message>
-    <message>
-        <source>Redo Brush Stroke</source>
-        <translation type="vanished">Rétablir le coup de pinceau</translation>
-    </message>
-    <message>
         <location filename="../ui/main_window.py" line="537"/>
         <source>Remove all the brush strokes on the Image</source>
-        <translation>Supprimer tous les coups de pinceau sur l&apos;image</translation>
+        <translation>Supprimer tous les coups de pinceau sur l'image</translation>
     </message>
-    <message>
-        <source>Brush Size Slider</source>
-        <translation type="vanished">Curseur de taille de pinceau</translation>
-    </message>
-    <message>
-        <source>Eraser Size Slider</source>
-        <translation type="vanished">Curseur de taille de gomme</translation>
-    </message>
-    <message>
-        <source>Undo Image</source>
-        <translation type="vanished">Annuler l&apos;image</translation>
-    </message>
-    <message>
-        <source>Redo Image</source>
-        <translation type="vanished">Rétablir l&apos;image</translation>
-    </message>
+
     <message>
         <location filename="../ui/main_window.py" line="553"/>
         <source>Box Drawing</source>
@@ -435,65 +395,59 @@ back on the Image (for further editing)</source>
         <source>No Text Blocks Detected.
 Skipping:</source>
         <translation>Aucune zone de texte détectée.
-Passage à la suite&#xa0;:</translation>
+Passage à la suite :</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="325"/>
         <source>Could not OCR detected text.
 Skipping:</source>
-        <translation>Impossible d&apos;effectuer l&apos;OCR du texte détecté.
-Passage à la suite&#xa0;:</translation>
+        <translation>Impossible d'effectuer l'OCR du texte détecté.
+Passage à la suite :</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="326"/>
         <source>Could not get translations.
 Skipping:</source>
-        <translation>Impossible d&apos;obtenir les traductions.
-Passage à la suite&#xa0;:</translation>
+        <translation>Impossible d'obtenir les traductions.
+Passage à la suite :</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="775"/>
         <source>Processing:</source>
-        <translation>Traitement en cours&#xa0;:</translation>
+        <translation>Traitement en cours :</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="778"/>
         <source>Archiving:</source>
-        <translation>Archivage en cours&#xa0;:</translation>
+        <translation>Archivage en cours :</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="8"/>
         <source>An API Key is required for the selected translator.
-Go to Settings &gt; Credentials to set one</source>
+Go to Settings > Credentials to set one</source>
         <translation>Une clé API est requise pour le traducteur sélectionné.
-Allez dans Paramètres &gt; Identifiants pour en définir une</translation>
+Allez dans Paramètres > Identifiants pour en définir une</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="17"/>
         <source>An API Key is required for the selected OCR.
-Go to Settings &gt; Credentials to set one</source>
-        <translation>Une clé API est requise pour l&apos;OCR sélectionné.
-Allez dans Paramètres &gt; Identifiants pour en définir une</translation>
-    </message>
-    <message>
-        <source>Default OCR for the selected Source Language is GPT-4o
-which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
-        <translation type="vanished">L&apos;OCR par défaut pour la langue source sélectionnée est GPT-4o,
-ce qui nécessite une clé API. Allez dans Paramètres &gt; Identifiants &gt; GPT pour en définir une</translation>
+Go to Settings > Credentials to set one</source>
+        <translation>Une clé API est requise pour l'OCR sélectionné.
+Allez dans Paramètres > Identifiants pour en définir une</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="26"/>
         <source>Default OCR for one of the selected Source Languages is GPT-4o
-which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
-        <translation>L&apos;OCR par défaut pour l&apos;une des langues sources sélectionnées est GPT-4o,
-qui nécessite une clé API. Allez dans Paramètres &gt; Identifiants &gt; GPT pour en définir une</translation>
+which requires an API Key. Go to Settings > Credentials > GPT to set one</source>
+        <translation>L'OCR par défaut pour l'une des langues sources sélectionnées est GPT-4o,
+qui nécessite une clé API. Allez dans Paramètres > Identifiants > GPT pour en définir une</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
         <source>An Endpoint URL is required for Microsoft OCR.
-Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
+Go to Settings > Credentials > Microsoft to set one</source>
         <translation>Une URL de point de terminaison est requise pour Microsoft OCR.
-Allez dans Paramètres &gt; Identifiants &gt; Microsoft pour en définir une</translation>
+Allez dans Paramètres > Identifiants > Microsoft pour en définir une</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="44"/>
@@ -508,24 +462,24 @@ Allez dans Paramètres &gt; Identifiants &gt; Microsoft pour en définir une</tr
     <message>
         <location filename="../ui/messages.py" line="62"/>
         <source>DeepL does not translate to Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL ne traduit pas en thaï</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>DeepL does not translate to Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL ne traduit pas en vietnamien</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="80"/>
         <source>Comic has been Translated!</source>
-        <translation>La bande dessinée a été traduite&#xa0;!</translation>
+        <translation>La bande dessinée a été traduite !</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="89"/>
         <source>No Font selected.
-Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
+Go to Settings > Text Rendering > Font to select or import one </source>
         <translation>Aucune police sélectionnée.
-Allez dans Paramètres &gt; Rendu du texte &gt; Police pour en sélectionner ou en importer une</translation>
+Allez dans Paramètres > Rendu du texte > Police pour en sélectionner ou en importer une</translation>
     </message>
 </context>
 <context>
@@ -538,11 +492,7 @@ Allez dans Paramètres &gt; Rendu du texte &gt; Police pour en sélectionner ou 
     <message>
         <location filename="../ui/settings/settings_page.py" line="309"/>
         <source>Please restart the application for the language changes to take effect.</source>
-        <translation>Veuillez redémarrer l&apos;application pour que les modifications de langue prennent effet.</translation>
-    </message>
-    <message>
-        <source>Please restart for the changes to take effect.</source>
-        <translation type="obsolete">Veuillez redémarrer pour que les changements prennent effet.</translation>
+        <translation>Veuillez redémarrer l'application pour que les modifications de langue prennent effet.</translation>
     </message>
 </context>
 <context>
@@ -784,7 +734,7 @@ Allez dans Paramètres &gt; Rendu du texte &gt; Police pour en sélectionner ou 
     <message>
         <location filename="../ui/settings/settings_ui.py" line="236"/>
         <source>Inpainting</source>
-        <translation type="unfinished">Inpainting</translation>
+        <translation>Inpainting</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="255"/>
@@ -863,12 +813,12 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="469"/>
         <source>Minimum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Taille minimale de la police :</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Maximum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Taille maximale de la police :</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="490"/>
@@ -893,12 +843,12 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="531"/>
         <source>Render Text With White Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Afficher le texte avec un contour blanc</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="532"/>
         <source>When checked, black bubbles with white text will be rendered automatically without changing color</source>
-        <translation type="unfinished"></translation>
+        <translation>Lorsque cette option est cochée, des bulles noires avec du texte blanc seront rendues automatiquement sans changer la couleur</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="548"/>

@@ -99,27 +99,27 @@
     <message>
         <location filename="../ui/main_window.py" line="91"/>
         <source>Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>Thailändisch</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="92"/>
         <source>Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>Vietnamesisch</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="93"/>
         <source>Indonesian</source>
-        <translation type="unfinished"></translation>
+        <translation>Indonesisch</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="94"/>
         <source>Hungarian</source>
-        <translation type="unfinished"></translation>
+        <translation>Ungarisch</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="95"/>
         <source>Finnish</source>
-        <translation type="unfinished"></translation>
+        <translation>Finnisch</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="131"/>
@@ -130,27 +130,27 @@
     <message>
         <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Bilder</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
-        <translation type="unfinished"></translation>
+        <translation>Dokument</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Archiv</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Comic-Archiv</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
-        <translation type="unfinished"></translation>
+        <translation>Projektdatei</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="172"/>
@@ -160,31 +160,27 @@
     <message>
         <location filename="../ui/main_window.py" line="176"/>
         <source>Save Project</source>
-        <translation type="unfinished"></translation>
+        <translation>Projekt speichern</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="180"/>
         <source>Save as</source>
-        <translation type="unfinished"></translation>
+        <translation>Speichern unter</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="193"/>
         <source>Export all Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Alle Bilder exportieren</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="249"/>
         <source>Render</source>
-        <translation type="unfinished"></translation>
+        <translation>Rendern</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Save all Images</source>
-        <translation type="vanished">Alle Bilder speichern</translation>
+        <translation>Schieberegler für Pinsel-/Radiergummigröße</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="197"/>
@@ -199,12 +195,12 @@
     <message>
         <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
-        <translation type="unfinished"></translation>
+        <translation>Rückgängig</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
-        <translation type="unfinished"></translation>
+        <translation>Wiederholen</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="244"/>
@@ -231,10 +227,7 @@
         <source>Clean Image</source>
         <translation>Bild bereinigen</translation>
     </message>
-    <message>
-        <source>Paste Translations</source>
-        <translation type="vanished">Übersetzungen einfügen</translation>
-    </message>
+
     <message>
         <location filename="../ui/main_window.py" line="265"/>
         <source>Manual</source>
@@ -256,10 +249,6 @@
         <translation>Abbrechen</translation>
     </message>
     <message>
-        <source>Loaded Images</source>
-        <translation type="vanished">Geladene Bilder</translation>
-    </message>
-    <message>
         <location filename="../ui/main_window.py" line="311"/>
         <source>Click or drag files here</source>
         <translation>Klicken oder ziehen Sie Dateien hierher</translation>
@@ -277,57 +266,57 @@
     <message>
         <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
-        <translation type="unfinished">Schriftart</translation>
+        <translation>Schriftart</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
-        <translation type="unfinished"></translation>
+        <translation>Schriftgröße</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
-        <translation type="unfinished"></translation>
+        <translation>Zeilenabstand</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Schriftfarbe</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>Fett</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>Kursiv</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>Unterstrichen</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Umriss</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Umrissfarbe</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
-        <translation type="unfinished"></translation>
+        <translation>Umrissbreite</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="465"/>
         <source>Pan Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Bild schwenken</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="470"/>
@@ -342,12 +331,12 @@
     <message>
         <location filename="../ui/main_window.py" line="481"/>
         <source>Draw or Select Text Boxes</source>
-        <translation type="unfinished"></translation>
+        <translation>Textfelder zeichnen oder auswählen</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="486"/>
         <source>Delete Selected Box</source>
-        <translation type="unfinished"></translation>
+        <translation>Ausgewähltes Feld löschen</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="489"/>
@@ -358,17 +347,18 @@
         <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation type="unfinished"></translation>
+        <translation>Zeichnet alle Textblöcke in der vorhandenen Textblockliste
+zurück auf das Bild (zur weiteren Bearbeitung)</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Größe aller Blöcke reduzieren</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Größe aller Blöcke erhöhen</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="527"/>
@@ -381,33 +371,9 @@ back on the Image (for further editing)</source>
         <translation>Pinselstriche löschen</translation>
     </message>
     <message>
-        <source>Undo Brush Stroke</source>
-        <translation type="vanished">Pinselstrich rückgängig machen</translation>
-    </message>
-    <message>
-        <source>Redo Brush Stroke</source>
-        <translation type="vanished">Pinselstrich wiederholen</translation>
-    </message>
-    <message>
         <location filename="../ui/main_window.py" line="537"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Alle Pinselstriche auf dem Bild entfernen</translation>
-    </message>
-    <message>
-        <source>Brush Size Slider</source>
-        <translation type="vanished">Pinselgrößenregler</translation>
-    </message>
-    <message>
-        <source>Eraser Size Slider</source>
-        <translation type="vanished">Radiergummigrößenregler</translation>
-    </message>
-    <message>
-        <source>Undo Image</source>
-        <translation type="vanished">Bild rückgängig machen</translation>
-    </message>
-    <message>
-        <source>Redo Image</source>
-        <translation type="vanished">Bild wiederholen</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="553"/>
@@ -456,36 +422,30 @@ Skipping:</source>
     <message>
         <location filename="../ui/messages.py" line="8"/>
         <source>An API Key is required for the selected translator.
-Go to Settings &gt; Credentials to set one</source>
+Go to Settings > Credentials to set one</source>
         <translation>Für den ausgewählten Übersetzer wird ein API-Schlüssel benötigt.
-Gehen Sie zu Einstellungen &gt; Anmeldedaten, um einen festzulegen</translation>
+Gehen Sie zu Einstellungen > Anmeldedaten, um einen festzulegen</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="17"/>
         <source>An API Key is required for the selected OCR.
-Go to Settings &gt; Credentials to set one</source>
+Go to Settings > Credentials to set one</source>
         <translation>Für die ausgewählte OCR wird ein API-Schlüssel benötigt.
-Gehen Sie zu Einstellungen &gt; Anmeldedaten, um einen festzulegen</translation>
-    </message>
-    <message>
-        <source>Default OCR for the selected Source Language is GPT-4o
-which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
-        <translation type="vanished">Die Standard-OCR für die ausgewählte Ausgangssprache ist GPT-4o.
-Dafür wird ein API-Schlüssel benötigt. Gehen Sie zu Einstellungen &gt; Anmeldedaten &gt; GPT, um einen festzulegen</translation>
+Gehen Sie zu Einstellungen > Anmeldedaten, um einen festzulegen</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="26"/>
         <source>Default OCR for one of the selected Source Languages is GPT-4o
-which requires an API Key. Go to Settings &gt; Credentials &gt; GPT to set one</source>
+which requires an API Key. Go to Settings > Credentials > GPT to set one</source>
         <translation>Die Standard-OCR für eine der ausgewählten Ausgangssprachen ist GPT-4o,
-wofür ein API-Schlüssel erforderlich ist. Gehen Sie zu Einstellungen &gt; Anmeldedaten &gt; GPT, um einen festzulegen</translation>
+wofür ein API-Schlüssel erforderlich ist. Gehen Sie zu Einstellungen > Anmeldedaten > GPT, um einen festzulegen</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="35"/>
         <source>An Endpoint URL is required for Microsoft OCR.
-Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
+Go to Settings > Credentials > Microsoft to set one</source>
         <translation>Für Microsoft OCR wird eine Endpunkt-URL benötigt.
-Gehen Sie zu Einstellungen &gt; Anmeldedaten &gt; Microsoft, um eine festzulegen</translation>
+Gehen Sie zu Einstellungen > Anmeldedaten > Microsoft, um eine festzulegen</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="44"/>
@@ -500,12 +460,12 @@ Gehen Sie zu Einstellungen &gt; Anmeldedaten &gt; Microsoft, um eine festzulegen
     <message>
         <location filename="../ui/messages.py" line="62"/>
         <source>DeepL does not translate to Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL übersetzt nicht ins Thailändische</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>DeepL does not translate to Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL übersetzt nicht ins Vietnamesische</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="80"/>
@@ -515,9 +475,9 @@ Gehen Sie zu Einstellungen &gt; Anmeldedaten &gt; Microsoft, um eine festzulegen
     <message>
         <location filename="../ui/messages.py" line="89"/>
         <source>No Font selected.
-Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
+Go to Settings > Text Rendering > Font to select or import one </source>
         <translation>Keine Schriftart ausgewählt.
-Gehen Sie zu Einstellungen &gt; Textwiedergabe &gt; Schriftart, um eine auszuwählen oder zu importieren</translation>
+Gehen Sie zu Einstellungen > Textwiedergabe > Schriftart, um eine auszuwählen oder zu importieren</translation>
     </message>
 </context>
 <context>
@@ -531,10 +491,6 @@ Gehen Sie zu Einstellungen &gt; Textwiedergabe &gt; Schriftart, um eine auszuwä
         <location filename="../ui/settings/settings_page.py" line="309"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>Bitte starten Sie die Anwendung neu, damit die Sprachänderungen wirksam werden.</translation>
-    </message>
-    <message>
-        <source>Please restart for the changes to take effect.</source>
-        <translation type="obsolete">Bitte starten Sie die Anwendung neu, damit die Änderungen wirksam werden.</translation>
     </message>
 </context>
 <context>
@@ -714,7 +670,7 @@ Gehen Sie zu Einstellungen &gt; Textwiedergabe &gt; Schriftart, um eine auszuwä
         <location filename="../ui/settings/settings_ui.py" line="166"/>
         <location filename="../ui/settings/settings_ui.py" line="237"/>
         <source>Inpainter</source>
-        <translation>Inpainter</translation>
+        <translation>Inpainting-Modell</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="167"/>
@@ -776,7 +732,7 @@ Gehen Sie zu Einstellungen &gt; Textwiedergabe &gt; Schriftart, um eine auszuwä
     <message>
         <location filename="../ui/settings/settings_ui.py" line="236"/>
         <source>Inpainting</source>
-        <translation type="unfinished">Inpainting</translation>
+        <translation>Inpainting</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="255"/>
@@ -854,12 +810,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="469"/>
         <source>Minimum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Minimale Schriftgröße:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Maximum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Maximale Schriftgröße:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="490"/>
@@ -884,12 +840,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="531"/>
         <source>Render Text With White Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Text mit weißem Umriss darstellen</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="532"/>
         <source>When checked, black bubbles with white text will be rendered automatically without changing color</source>
-        <translation type="unfinished"></translation>
+        <translation>Wenn aktiviert, werden schwarze Blasen mit weißem Text automatisch gerendert, ohne die Farbe zu ändern</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="548"/>
