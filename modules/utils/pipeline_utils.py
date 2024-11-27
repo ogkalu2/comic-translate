@@ -28,7 +28,10 @@ language_codes = {
     "Portuguese": "pt",
     "Brazilian Portuguese": "pt-br",
     "Thai": "th",
-    "Vietnamese": "vi"
+    "Vietnamese": "vi",
+    "Indonesian": "id",
+    "Hungarian": "hu",
+    "Finnish": "fi",
     }
 
 
