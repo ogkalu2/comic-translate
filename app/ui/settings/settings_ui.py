@@ -233,7 +233,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         ocr_widget, self.ocr_combo = self._create_title_and_combo(self.tr("OCR"), self.ocr_engines)
         self.set_combo_box_width(self.ocr_combo, self.ocr_engines)
 
-        inpainting_label = MLabel("Inpainting").h4() 
+        inpainting_label = MLabel(self.tr("Inpainting")).h4() 
         inpainter_widget, self.inpainter_combo = self._create_title_and_combo(self.tr("Inpainter"), self.inpainters)
         self.set_combo_box_width(self.inpainter_combo, self.inpainters)
 
