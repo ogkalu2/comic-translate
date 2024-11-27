@@ -3,6 +3,7 @@ import base64, json
 import easyocr
 import cv2, os
 import requests
+from paddleocr import PaddleOCR
 from typing import List
 from ..utils.translator_utils import get_llm_client
 from ..utils.textblock import TextBlock, adjust_text_line_coordinates
@@ -79,7 +80,6 @@ class OCRProcessor:
             return self._ocr_default(img, blk_list, self.source_lang, self.device)
 
     def _ocr_paddle(self, img: np.ndarray, blk_list: List[TextBlock]):
-        from paddleocr import PaddleOCR
         
         ch_ocr = PaddleOCR(lang='ch')
         result = ch_ocr.ocr(img)
