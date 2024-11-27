@@ -99,27 +99,27 @@
     <message>
         <location filename="../ui/main_window.py" line="91"/>
         <source>Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>タイ語</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="92"/>
         <source>Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>ベトナム語</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="93"/>
         <source>Indonesian</source>
-        <translation type="unfinished"></translation>
+        <translation>インドネシア語</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="94"/>
         <source>Hungarian</source>
-        <translation type="unfinished"></translation>
+        <translation>ハンガリー語</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="95"/>
         <source>Finnish</source>
-        <translation type="unfinished"></translation>
+        <translation>フィンランド語</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="131"/>
@@ -130,27 +130,27 @@
     <message>
         <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
-        <translation type="unfinished"></translation>
+        <translation>画像</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
-        <translation type="unfinished"></translation>
+        <translation>ドキュメント</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>アーカイブ</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>コミックブックアーカイブ</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
-        <translation type="unfinished"></translation>
+        <translation>プロジェクトファイル</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="172"/>
@@ -160,27 +160,27 @@
     <message>
         <location filename="../ui/main_window.py" line="176"/>
         <source>Save Project</source>
-        <translation type="unfinished"></translation>
+        <translation>プロジェクトを保存する</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="180"/>
         <source>Save as</source>
-        <translation type="unfinished"></translation>
+        <translation>名前を付けて保存</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="193"/>
         <source>Export all Images</source>
-        <translation type="unfinished"></translation>
+        <translation>すべての画像をエクスポートする</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="249"/>
         <source>Render</source>
-        <translation type="unfinished"></translation>
+        <translation>レンダリング</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>ブラシ/消しゴムサイズスライダー</translation>
     </message>
     <message>
         <source>Save all Images</source>
@@ -199,12 +199,12 @@
     <message>
         <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
-        <translation type="unfinished"></translation>
+        <translation>元に戻す</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
-        <translation type="unfinished"></translation>
+        <translation>やり直す</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="244"/>
@@ -277,57 +277,57 @@
     <message>
         <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
-        <translation type="unfinished">フォント</translation>
+        <translation>フォント</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
-        <translation type="unfinished"></translation>
+        <translation>フォントサイズ</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
-        <translation type="unfinished"></translation>
+        <translation>行間</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
-        <translation type="unfinished"></translation>
+        <translation>フォントカラー</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>太字</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>斜体</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>下線</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>アウトライン</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
-        <translation type="unfinished"></translation>
+        <translation>アウトラインカラー</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
-        <translation type="unfinished"></translation>
+        <translation>アウトライン幅</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="465"/>
         <source>Pan Image</source>
-        <translation type="unfinished"></translation>
+        <translation>画像をパンする</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="470"/>
@@ -342,12 +342,12 @@
     <message>
         <location filename="../ui/main_window.py" line="481"/>
         <source>Draw or Select Text Boxes</source>
-        <translation type="unfinished"></translation>
+        <translation>テキストボックスを描画または選択する</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="486"/>
         <source>Delete Selected Box</source>
-        <translation type="unfinished"></translation>
+        <translation>選択したボックスを削除する</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="489"/>
@@ -358,17 +358,18 @@
         <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation type="unfinished"></translation>
+        <translation>既存のテキストブロックリストのすべてのテキストブロックを
+画像上に再描画します（さらに編集するため）</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>すべてのブロックのサイズを縮小する</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>すべてのブロックのサイズを拡大する</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="527"/>
@@ -500,12 +501,12 @@ Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
     <message>
         <location filename="../ui/messages.py" line="62"/>
         <source>DeepL does not translate to Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepLはタイ語に翻訳できません</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>DeepL does not translate to Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepLはベトナム語に翻訳できません</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="80"/>
@@ -855,12 +856,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="469"/>
         <source>Minimum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>最小フォントサイズ:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Maximum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>最大フォントサイズ:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="490"/>
@@ -885,12 +886,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="531"/>
         <source>Render Text With White Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>白いアウトラインでテキストをレンダリングする</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="532"/>
         <source>When checked, black bubbles with white text will be rendered automatically without changing color</source>
-        <translation type="unfinished"></translation>
+        <translation>チェックすると、白いテキストの黒いバブルが色を変更せずに自動的にレンダリングされます</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="548"/>

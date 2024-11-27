@@ -99,27 +99,27 @@
     <message>
         <location filename="../ui/main_window.py" line="91"/>
         <source>Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>Thailandese</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="92"/>
         <source>Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>Vietnamita</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="93"/>
         <source>Indonesian</source>
-        <translation type="unfinished"></translation>
+        <translation>Indonesiano</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="94"/>
         <source>Hungarian</source>
-        <translation type="unfinished"></translation>
+        <translation>Ungherese</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="95"/>
         <source>Finnish</source>
-        <translation type="unfinished"></translation>
+        <translation>Finlandese</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="131"/>
@@ -130,27 +130,27 @@
     <message>
         <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Immagini</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
-        <translation type="unfinished"></translation>
+        <translation>Documento</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Archivio</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Archivio di fumetti</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
-        <translation type="unfinished"></translation>
+        <translation>File di progetto</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="172"/>
@@ -160,27 +160,27 @@
     <message>
         <location filename="../ui/main_window.py" line="176"/>
         <source>Save Project</source>
-        <translation type="unfinished"></translation>
+        <translation>Salva progetto</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="180"/>
         <source>Save as</source>
-        <translation type="unfinished"></translation>
+        <translation>Salva come</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="193"/>
         <source>Export all Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Esporta tutte le immagini</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="249"/>
         <source>Render</source>
-        <translation type="unfinished"></translation>
+        <translation>Renderizza</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>Cursore dimensione pennello/gomma</translation>
     </message>
     <message>
         <source>Save all Images</source>
@@ -199,12 +199,12 @@
     <message>
         <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
-        <translation type="unfinished"></translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
-        <translation type="unfinished"></translation>
+        <translation>Ripristina</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="244"/>
@@ -277,57 +277,57 @@
     <message>
         <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
-        <translation type="unfinished">Carattere</translation>
+        <translation>Carattere</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
-        <translation type="unfinished"></translation>
+        <translation>Dimensione carattere</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
-        <translation type="unfinished"></translation>
+        <translation>Interlinea</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Colore carattere</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>Grassetto</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>Corsivo</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>Sottolineato</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Contorno</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Colore contorno</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
-        <translation type="unfinished"></translation>
+        <translation>Larghezza contorno</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="465"/>
         <source>Pan Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Sposta immagine</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="470"/>
@@ -342,12 +342,12 @@
     <message>
         <location filename="../ui/main_window.py" line="481"/>
         <source>Draw or Select Text Boxes</source>
-        <translation type="unfinished"></translation>
+        <translation>Disegna o seleziona caselle di testo</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="486"/>
         <source>Delete Selected Box</source>
-        <translation type="unfinished"></translation>
+        <translation>Elimina casella selezionata</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="489"/>
@@ -358,17 +358,18 @@
         <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation type="unfinished"></translation>
+        <translation>Disegna tutti i blocchi di testo nella lista dei blocchi di testo esistenti
+sull&apos;immagine (per ulteriori modifiche)</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Riduci la dimensione di tutti i blocchi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Aumenta la dimensione di tutti i blocchi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="527"/>
@@ -500,12 +501,12 @@ Vai a Impostazioni &gt; Credenziali &gt; Microsoft per impostarne uno</translati
     <message>
         <location filename="../ui/messages.py" line="62"/>
         <source>DeepL does not translate to Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL non traduce in thailandese</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>DeepL does not translate to Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL non traduce in vietnamita</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="80"/>
@@ -855,12 +856,12 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="469"/>
         <source>Minimum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Dimensione minima del carattere:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Maximum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Dimensione massima del carattere:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="490"/>
@@ -885,12 +886,12 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="531"/>
         <source>Render Text With White Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Rendering del testo con contorno bianco</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="532"/>
         <source>When checked, black bubbles with white text will be rendered automatically without changing color</source>
-        <translation type="unfinished"></translation>
+        <translation>Quando selezionato, le bolle nere con testo bianco verranno renderizzate automaticamente senza cambiare colore</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="548"/>

@@ -99,27 +99,27 @@
     <message>
         <location filename="../ui/main_window.py" line="91"/>
         <source>Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>Tayca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="92"/>
         <source>Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>Vietnamca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="93"/>
         <source>Indonesian</source>
-        <translation type="unfinished"></translation>
+        <translation>Endonezce</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="94"/>
         <source>Hungarian</source>
-        <translation type="unfinished"></translation>
+        <translation>Macarca</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="95"/>
         <source>Finnish</source>
-        <translation type="unfinished"></translation>
+        <translation>Fince</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="131"/>
@@ -130,27 +130,27 @@
     <message>
         <location filename="../ui/main_window.py" line="152"/>
         <source>Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntüler</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="155"/>
         <source>Document</source>
-        <translation type="unfinished"></translation>
+        <translation>Belge</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="158"/>
         <source>Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Arşiv</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="161"/>
         <source>Comic Book Archive</source>
-        <translation type="unfinished"></translation>
+        <translation>Çizgi Roman Arşivi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="164"/>
         <source>Project File</source>
-        <translation type="unfinished"></translation>
+        <translation>Proje Dosyası</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="172"/>
@@ -160,27 +160,27 @@
     <message>
         <location filename="../ui/main_window.py" line="176"/>
         <source>Save Project</source>
-        <translation type="unfinished"></translation>
+        <translation>Projeyi Kaydet</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="180"/>
         <source>Save as</source>
-        <translation type="unfinished"></translation>
+        <translation>Farklı kaydet</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="193"/>
         <source>Export all Images</source>
-        <translation type="unfinished"></translation>
+        <translation>Tüm Görüntüleri Dışa Aktar</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="249"/>
         <source>Render</source>
-        <translation type="unfinished"></translation>
+        <translation>İşle</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="549"/>
         <source>Brush/Eraser Size Slider</source>
-        <translation type="unfinished"></translation>
+        <translation>Fırça/Silgi Boyutu Kaydırıcısı</translation>
     </message>
     <message>
         <source>Save all Images</source>
@@ -199,12 +199,12 @@
     <message>
         <location filename="../ui/main_window.py" line="238"/>
         <source>Undo</source>
-        <translation type="unfinished"></translation>
+        <translation>Geri al</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="239"/>
         <source>Redo</source>
-        <translation type="unfinished"></translation>
+        <translation>Yinele</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="244"/>
@@ -277,57 +277,57 @@
     <message>
         <location filename="../ui/main_window.py" line="362"/>
         <source>Font</source>
-        <translation type="unfinished">Yazı Tipi</translation>
+        <translation>Yazı Tipi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="369"/>
         <source>Font Size</source>
-        <translation type="unfinished"></translation>
+        <translation>Yazı Tipi Boyutu</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="375"/>
         <source>Line Spacing</source>
-        <translation type="unfinished"></translation>
+        <translation>Satır Aralığı</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="394"/>
         <source>Font Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Yazı Tipi Rengi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="412"/>
         <source>Bold</source>
-        <translation type="unfinished"></translation>
+        <translation>Kalın</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="414"/>
         <source>Italic</source>
-        <translation type="unfinished"></translation>
+        <translation>İtalik</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="416"/>
         <source>Underline</source>
-        <translation type="unfinished"></translation>
+        <translation>Altı Çizili</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="428"/>
         <source>Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Anahat</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="432"/>
         <source>Outline Color</source>
-        <translation type="unfinished"></translation>
+        <translation>Anahat Rengi</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="441"/>
         <source>Outline Width</source>
-        <translation type="unfinished"></translation>
+        <translation>Anahat Genişliği</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="465"/>
         <source>Pan Image</source>
-        <translation type="unfinished"></translation>
+        <translation>Görüntüyü Kaydır</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="470"/>
@@ -342,12 +342,12 @@
     <message>
         <location filename="../ui/main_window.py" line="481"/>
         <source>Draw or Select Text Boxes</source>
-        <translation type="unfinished"></translation>
+        <translation>Metin Kutularını Çizin veya Seçin</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="486"/>
         <source>Delete Selected Box</source>
-        <translation type="unfinished"></translation>
+        <translation>Seçili Kutuyu Sil</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="489"/>
@@ -358,17 +358,18 @@
         <location filename="../ui/main_window.py" line="493"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation type="unfinished"></translation>
+        <translation>Mevcut Metin Bloğu Listesindeki tüm Metin Bloklarını
+Görüntüye geri çizer (daha fazla düzenleme için)</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="501"/>
         <source>Reduce the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Tüm blokların boyutunu küçült</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="515"/>
         <source>Increase the size of all blocks</source>
-        <translation type="unfinished"></translation>
+        <translation>Tüm blokların boyutunu artır</translation>
     </message>
     <message>
         <location filename="../ui/main_window.py" line="527"/>
@@ -450,8 +451,7 @@ Atlıyor:</translation>
     </message>
     <message>
         <location filename="../../comic.py" line="778"/>
-        <source>Archiving:</source>
-        <translation>Arşivleniyor:</translation>
+        <source>Archiving:</</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="8"/>
@@ -500,12 +500,12 @@ Bir tane ayarlamak için Ayarlar &gt; Kimlik Bilgileri &gt; Microsoft&apos;a gid
     <message>
         <location filename="../ui/messages.py" line="62"/>
         <source>DeepL does not translate to Thai</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL, Tayca&apos;ya çeviri yapmaz</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="71"/>
         <source>DeepL does not translate to Vietnamese</source>
-        <translation type="unfinished"></translation>
+        <translation>DeepL, Vietnamca&apos;ya çeviri yapmaz</translation>
     </message>
     <message>
         <location filename="../ui/messages.py" line="80"/>
@@ -855,12 +855,12 @@ ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</tr
     <message>
         <location filename="../ui/settings/settings_ui.py" line="469"/>
         <source>Minimum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Minimum Yazı Tipi Boyutu:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="470"/>
         <source>Maximum Font Size:</source>
-        <translation type="unfinished"></translation>
+        <translation>Maksimum Yazı Tipi Boyutu:</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="490"/>
@@ -885,12 +885,12 @@ ardından yeniden boyutlandırılan görüntüde görüntü doldurma yapın.</tr
     <message>
         <location filename="../ui/settings/settings_ui.py" line="531"/>
         <source>Render Text With White Outline</source>
-        <translation type="unfinished"></translation>
+        <translation>Metni Beyaz Anahat ile İşle</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="532"/>
         <source>When checked, black bubbles with white text will be rendered automatically without changing color</source>
-        <translation type="unfinished"></translation>
+        <translation>İşaretlendiğinde, beyaz metinli siyah baloncuklar renk değiştirmeden otomatik olarak işlenecektir</translation>
     </message>
     <message>
         <location filename="../ui/settings/settings_ui.py" line="548"/>
