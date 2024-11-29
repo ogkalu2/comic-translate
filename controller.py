@@ -783,6 +783,7 @@ class ComicTranslate(ComicTranslateUI):
         # self.set_cv2_image(rendered_image)
         self.loading.setVisible(False)
         self.enable_hbutton_group()
+        self.undo_group.activeStack().endMacro()
 
     def render_text(self):
         if self.image_viewer.hasPhoto() and self.blk_list:
@@ -828,7 +829,8 @@ class ComicTranslate(ComicTranslateUI):
             format_translations(self.blk_list, trg_lng_cd, upper_case=upper)
             min_font_size = self.settings_page.get_min_font_size() 
             max_font_size = self.settings_page.get_max_font_size()
-            
+
+            self.undo_group.activeStack().beginMacro('text_items_rendered')
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
                               bold, italic, underline, max_font_size, min_font_size)
