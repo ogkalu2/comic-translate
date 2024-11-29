@@ -53,7 +53,7 @@ class ComicTranslate(ComicTranslateUI):
         super(ComicTranslate, self).__init__(parent)
 
         self.image_files = []
-        self.current_image_index = -1
+        self.curr_img_idx = -1
         self.image_states = {}
 
         self.blk_list = []
@@ -174,6 +174,10 @@ class ComicTranslate(ComicTranslateUI):
         self.outline_width_dropdown.currentTextChanged.connect(self.on_outline_width_change)
         self.outline_checkbox.stateChanged.connect(self.toggle_outline_settings)
 
+        # Page List
+        self.page_list.currentItemChanged.connect(self.on_card_selected)
+
+
     def push_command(self, command):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
@@ -278,8 +282,8 @@ class ComicTranslate(ComicTranslateUI):
     def save_src_trg(self):
         source_lang = self.s_combo.currentText()
         target_lang = self.t_combo.currentText()
-        if self.current_image_index >= 0:
-            current_file = self.image_files[self.current_image_index]
+        if self.curr_img_idx >= 0:
+            current_file = self.image_files[self.curr_img_idx]
             self.image_states[current_file]['source_lang'] = source_lang
             self.image_states[current_file]['target_lang'] = target_lang
 
@@ -312,7 +316,7 @@ class ComicTranslate(ComicTranslateUI):
         self.cancel_button.setEnabled(False)
     
     def on_image_processed(self, index: int, image: np.ndarray, image_path: str):
-        if index == self.current_image_index:
+        if index == self.curr_img_idx:
             self.set_cv2_image(image)
         else:
             command = SetImageCommand(self, image_path, image, False)
@@ -497,10 +501,11 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.clear_text_items()
         self.loaded_images = []
         self.in_memory_history.clear()
+        self.undo_stacks.clear()
         self.project_file = None
 
         # Reset current_image_index
-        self.current_image_index = -1
+        self.curr_img_idx = -1
 
     def on_initial_image_loaded(self, cv2_image):
 
@@ -529,58 +534,39 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.fitInView()
 
     def update_image_cards(self):
-        # Clear existing cards
-        for i in reversed(range(self.image_card_layout.count())):
-            widget = self.image_card_layout.itemAt(i).widget()
-            if widget is not None:
-                widget.setParent(None)
-        
-        self.image_cards = []  # Reset the list of cards
+        # Clear existing items
+        self.page_list.clear()
 
-        # Add new cards
+        # Add new items
         for index, file_path in enumerate(self.image_files):
             file_name = os.path.basename(file_path)
+            list_item = QtWidgets.QListWidgetItem(file_name)
             card = ClickMeta(extra=False, avatar_size=(35, 50))
-
             card.setup_data({
                 "title": file_name,
                 #"avatar": MPixmap(file_path)
             })
-            card.connect_clicked(lambda idx=index: self.on_card_clicked(idx))
-            self.image_card_layout.insertWidget(self.image_card_layout.count() - 1, card)
-            self.image_cards.append(card)
+            self.page_list.addItem(list_item)
+            self.page_list.setItemWidget(list_item, card)
 
-    def highlight_card(self, index: int):
-        if 0 <= index < len(self.image_cards):
-            # Remove highlight from the previously highlighted card
-            if self.current_highlighted_card:
-                self.current_highlighted_card.set_highlight(False)
+    def on_card_selected(self, current, previous):
+        if current:  
+            index = self.page_list.row(current)
+            self.curr_tblock_item = None
             
-            # Highlight the new card
-            self.image_cards[index].set_highlight(True)
-            self.current_highlighted_card = self.image_cards[index]
-            
-    def on_card_clicked(self, index: int):
-        self.curr_tblock_item = None
-        self.highlight_card(index)
-
-        self.run_threaded(
-            lambda: self.load_image(self.image_files[index]),
-            lambda result: self.display_image_from_loaded(result, index),
-            self.default_error_handler,
-            None
-        )
+            self.run_threaded(
+                lambda: self.load_image(self.image_files[index]),
+                lambda result: self.display_image_from_loaded(result, index),
+                self.default_error_handler,
+                None
+            )
 
     def navigate_images(self, direction: int):
-        if hasattr(self, 'image_files') and self.image_files:
-            new_index = self.current_image_index + direction
+        if self.image_files:
+            new_index = self.curr_img_idx + direction
             if 0 <= new_index < len(self.image_files):
-                self.run_threaded(
-                    lambda: self.load_image(self.image_files[new_index]),
-                    lambda result: self.display_image_from_loaded(result, new_index),
-                    self.default_error_handler,
-                    lambda: self.highlight_card(new_index),
-                )
+                item = self.page_list.item(new_index)
+                self.page_list.setCurrentItem(item)
 
     def display_image_from_loaded(self, cv2_image, index, switch_page=True):
         file_path = self.image_files[index]
@@ -603,8 +589,8 @@ class ComicTranslate(ComicTranslateUI):
                 self.in_memory_history[oldest_image] = []
 
     def set_cv2_image(self, cv2_img: np.ndarray):
-        if self.current_image_index >= 0:
-            file_path = self.image_files[self.current_image_index]
+        if self.curr_img_idx >= 0:
+            file_path = self.image_files[self.curr_img_idx]
             
             # Push the command to the appropriate stack
             command = SetImageCommand(self, file_path, cv2_img)
@@ -620,8 +606,8 @@ class ComicTranslate(ComicTranslateUI):
         }
 
     def save_current_image_state(self):
-        if self.current_image_index >= 0:
-            current_file = self.image_files[self.current_image_index]
+        if self.curr_img_idx >= 0:
+            current_file = self.image_files[self.curr_img_idx]
             self.save_image_state(current_file)
 
     def load_image_state(self, file_path: str):
@@ -653,9 +639,9 @@ class ComicTranslate(ComicTranslateUI):
 
     def display_image(self, index: int, switch_page=True):
         if 0 <= index < len(self.image_files):
-            if switch_page:
+            if switch_page and 0 <= self.curr_img_idx < len(self.image_files):
                 self.save_current_image_state()
-            self.current_image_index = index
+            self.curr_img_idx = index
             file_path = self.image_files[index]
 
             # Set the active stack for the current image
@@ -1204,7 +1190,7 @@ class ComicTranslate(ComicTranslateUI):
         save_state_to_proj_file(self, file_name)
 
     def update_ui_from_project(self):
-        index = self.current_image_index
+        index = self.curr_img_idx
         self.update_image_cards()
 
         for file in self.image_files:
