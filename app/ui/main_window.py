@@ -17,7 +17,6 @@ from .dayu_widgets.tool_button import MToolButton
 from .dayu_widgets.radio_button import MRadioButton
 from .dayu_widgets.button_group import MPushButtonGroup, MToolButtonGroup
 from .dayu_widgets.slider import MSlider
-from .dayu_widgets.label import MLabel
 from .dayu_widgets.qt import MPixmap, MIcon
 from .dayu_widgets.progress_bar import MProgressBar
 from .dayu_widgets.loading import MLoading
@@ -26,6 +25,7 @@ from .dayu_widgets.menu import MMenu
 
 from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
+from .list_view import PageListView
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +67,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.settings_page.theme_changed.connect(self.apply_theme)
         self.main_content_widget = None
         self.tool_buttons = {}  # Dictionary to store mutually exclusive tool names and their corresponding buttons
+        self.page_list = PageListView()
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
@@ -292,15 +293,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.image_card_layout = QtWidgets.QVBoxLayout()
         self.image_card_layout.addStretch(1)  # Add stretch to keep cards at the top
 
-        scroll = QtWidgets.QScrollArea()
-        scroll.setWidgetResizable(True)
-        img_selection = QtWidgets.QWidget()
-        img_selection.setLayout(self.image_card_layout)
-        scroll.setWidget(img_selection)
-        scroll.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        scroll.setMinimumWidth(60)
-
-        left_layout.addWidget(scroll)
+        self.page_list.setLayout(self.image_card_layout)
+        left_layout.addWidget(self.page_list)
         left_widget = QtWidgets.QWidget()
         left_widget.setLayout(left_layout)
 
