@@ -18,14 +18,14 @@ class SetImageCommand(QUndoCommand):
             if not self.display_first_time:
                 return
             
-            file_path = self.ct.image_files[self.ct.current_image_index]
+            file_path = self.ct.image_files[self.ct.curr_img_idx]
             current_index = self.ct.current_history_index[file_path]
             cv2_img = self.get_img(file_path, current_index)
             self.ct.image_viewer.display_cv2_image(cv2_img)
             self.first = False
 
-        if self.ct.current_image_index >= 0:
-            file_path = self.ct.image_files[self.ct.current_image_index]
+        if self.ct.curr_img_idx >= 0:
+            file_path = self.ct.image_files[self.ct.curr_img_idx]
             current_index = self.ct.current_history_index[file_path]
             
             if current_index < len(self.ct.image_history[file_path]) - 1:
@@ -38,9 +38,9 @@ class SetImageCommand(QUndoCommand):
                 self.ct.image_viewer.display_cv2_image(cv2_img)
 
     def undo(self):
-        if self.ct.current_image_index >= 0:
+        if self.ct.curr_img_idx >= 0:
 
-            file_path = self.ct.image_files[self.ct.current_image_index]
+            file_path = self.ct.image_files[self.ct.curr_img_idx]
             current_index = self.ct.current_history_index[file_path]
             
             if current_index > 0:

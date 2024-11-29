@@ -24,7 +24,7 @@ def save_state_to_proj_file(comic_translate, file_name):
 
         # Initialize the state dictionary
         state = {
-            'current_image_index': comic_translate.current_image_index,
+            'current_image_index': comic_translate.curr_img_idx,
             'image_states': comic_translate.image_states,
             'unique_images': {},  # Will store id to file_name mapping
             'image_data_references': {},
@@ -218,7 +218,7 @@ def load_state_from_proj_file(comic_translate, file_name):
                 print(f'Image ID {img_id} generated an exception: {exc}')
 
     # Finalize loading by updating comic_translate attributes
-    comic_translate.current_image_index = state.get('current_image_index', 0)
+    comic_translate.curr_img_idx = state.get('current_image_index', 0)
 
     original_image_files = state.get('original_image_files', [])
     comic_translate.image_files = [

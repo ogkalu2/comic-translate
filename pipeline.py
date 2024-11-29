@@ -319,7 +319,7 @@ class ComicTranslatePipeline:
                 'blk_list': blk_list                   
             })
 
-            if index == self.main_page.current_image_index:
+            if index == self.main_page.curr_img_idx:
                 self.main_page.blk_list = blk_list
                 
             render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
