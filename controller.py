@@ -177,7 +177,6 @@ class ComicTranslate(ComicTranslateUI):
         # Page List
         self.page_list.currentItemChanged.connect(self.on_card_selected)
 
-
     def push_command(self, command):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
@@ -664,10 +663,12 @@ class ComicTranslate(ComicTranslateUI):
     def blk_detect_segment(self, result): 
         blk_list, load_rects = result
         self.blk_list = blk_list
+        self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
         for blk in self.blk_list:
             bboxes = blk.inpaint_bboxes
             if bboxes is not None and len(bboxes) > 0:
                 self.image_viewer.draw_segmentation_lines(bboxes)
+        self.undo_group.activeStack().endMacro()
 
     def load_segmentation_points(self):
         if self.image_viewer.hasPhoto():
@@ -677,12 +678,14 @@ class ComicTranslate(ComicTranslateUI):
             self.image_viewer.clear_rectangles()
             self.image_viewer.clear_text_items()
             if self.blk_list:
+                self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
                 for blk in self.blk_list:
                     bboxes = blk.inpaint_bboxes
                     if bboxes is not None and len(bboxes) > 0:
                         self.image_viewer.draw_segmentation_lines(bboxes)
                 
                 self.enable_hbutton_group()
+                self.undo_group.activeStack().endMacro()
 
             else:
                 self.loading.setVisible(True)
@@ -825,7 +828,7 @@ class ComicTranslate(ComicTranslateUI):
             format_translations(self.blk_list, trg_lng_cd, upper_case=upper)
             min_font_size = self.settings_page.get_min_font_size() 
             max_font_size = self.settings_page.get_max_font_size()
-
+            
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
                               bold, italic, underline, max_font_size, min_font_size)
