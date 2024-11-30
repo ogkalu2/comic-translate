@@ -176,6 +176,7 @@ class ComicTranslate(ComicTranslateUI):
 
         # Page List
         self.page_list.currentItemChanged.connect(self.on_card_selected)
+        self.page_list.del_img.connect(self.handle_image_deletion)
 
     def push_command(self, command):
         if self.undo_group.activeStack():
@@ -567,6 +568,55 @@ class ComicTranslate(ComicTranslateUI):
                 item = self.page_list.item(new_index)
                 self.page_list.setCurrentItem(item)
 
+    def handle_image_deletion(self, file_names):
+        """Handles the deletion of images based on the provided file names."""
+
+        self.save_current_image_state()
+        
+        # Delete the files first.
+        for file_name in file_names:
+            # Find the full file path based on the file name
+            file_path = next((f for f in self.image_files if os.path.basename(f) == file_name), None)
+            
+            if file_path:
+                # Remove from the image_files list
+                self.image_files.remove(file_path)
+                
+                # Remove associated data
+                self.image_data.pop(file_path, None)
+                self.image_history.pop(file_path, None)
+                self.in_memory_history.pop(file_path, None)
+                self.current_history_index.pop(file_path, None)
+
+                if file_path in self.undo_stacks:
+                    stack = self.undo_stacks[file_path]
+                    self.undo_group.removeStack(stack)
+                    self.undo_stacks.pop(file_path, None)
+                    
+                if file_path in self.displayed_images:
+                    self.displayed_images.remove(file_path)
+                    
+                if file_path in self.loaded_images:
+                    self.loaded_images.remove(file_path)
+
+        if self.image_files:
+            if self.curr_img_idx >= len(self.image_files):
+                self.curr_img_idx = len(self.image_files) - 1
+
+            new_index = max(0, self.curr_img_idx - 1)
+            file = self.image_files[new_index]
+            im = self.load_image(file)
+            self.display_image_from_loaded(im, new_index, False)
+            self.page_list.blockSignals(True)
+            self.update_image_cards()
+            self.page_list.setCurrentRow(new_index)
+            self.page_list.blockSignals(False)
+        else:
+            # If no images remain, reset the view to the drag browser.
+            self.curr_img_idx = -1
+            self.central_stack.setCurrentWidget(self.drag_browser)
+            self.update_image_cards()
+
     def display_image_from_loaded(self, cv2_image, index, switch_page=True):
         file_path = self.image_files[index]
         self.image_data[file_path] = cv2_image
@@ -638,7 +688,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def display_image(self, index: int, switch_page=True):
         if 0 <= index < len(self.image_files):
-            if switch_page and 0 <= self.curr_img_idx < len(self.image_files):
+            if switch_page:
                 self.save_current_image_state()
             self.curr_img_idx = index
             file_path = self.image_files[index]
