@@ -177,6 +177,7 @@ class ComicTranslate(ComicTranslateUI):
         # Page List
         self.page_list.currentItemChanged.connect(self.on_card_selected)
         self.page_list.del_img.connect(self.handle_image_deletion)
+        self.page_list.insert_browser.sig_files_changed.connect(self.thread_insert)
 
     def push_command(self, command):
         if self.undo_group.activeStack():
@@ -441,8 +442,7 @@ class ComicTranslate(ComicTranslateUI):
                               self.default_error_handler, self.on_manual_finished)
 
     def load_initial_image(self, file_paths: List[str]):
-        self.file_handler.file_paths = file_paths
-        file_paths = self.file_handler.prepare_files()
+        file_paths = self.file_handler.prepare_files(file_paths)
         self.image_files = file_paths
 
         if file_paths:
@@ -485,6 +485,22 @@ class ComicTranslate(ComicTranslateUI):
         self.clear_state()
         self.run_threaded(self.load_initial_image, self.on_initial_image_loaded, self.default_error_handler, None, file_paths)
 
+    def thread_insert(self, file_paths: list[str]):
+        if self.image_files:
+            def on_files_prepared(prepared_files):
+                self.image_files.extend(prepared_files)
+                path = prepared_files[0]
+                new_index = self.image_files.index(path)
+                self.update_image_cards()
+                self.page_list.setCurrentRow(new_index)
+
+            self.run_threaded(
+                lambda: self.file_handler.prepare_files(file_paths),
+                on_files_prepared,
+                self.default_error_handler)
+        else:
+            self.thread_load_images(file_paths)
+
     def clear_state(self):
         # Clear existing image data
         self.image_files = []
@@ -522,13 +538,16 @@ class ComicTranslate(ComicTranslateUI):
             self.undo_stacks[file] = stack
             self.undo_group.addStack(stack)
 
-        self.update_image_cards()
-
         if self.image_files:
             self.display_image(0)
             self.loaded_images.append(self.image_files[0])
         else:
             self.image_viewer.clear_scene()
+
+        self.update_image_cards()
+        self.page_list.blockSignals(True)
+        self.page_list.setCurrentRow(0)
+        self.page_list.blockSignals(False)
 
         self.image_viewer.resetTransform()
         self.image_viewer.fitInView()
@@ -568,7 +587,7 @@ class ComicTranslate(ComicTranslateUI):
                 item = self.page_list.item(new_index)
                 self.page_list.setCurrentItem(item)
 
-    def handle_image_deletion(self, file_names):
+    def handle_image_deletion(self, file_names: list[str]):
         """Handles the deletion of images based on the provided file names."""
 
         self.save_current_image_state()
@@ -607,8 +626,8 @@ class ComicTranslate(ComicTranslateUI):
             file = self.image_files[new_index]
             im = self.load_image(file)
             self.display_image_from_loaded(im, new_index, False)
-            self.page_list.blockSignals(True)
             self.update_image_cards()
+            self.page_list.blockSignals(True)
             self.page_list.setCurrentRow(new_index)
             self.page_list.blockSignals(False)
         else:

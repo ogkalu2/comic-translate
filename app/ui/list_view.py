@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QSizePolicy, QAbstractItemView
 from PySide6.QtCore import Signal, Qt, QSize
 from PySide6.QtGui import QContextMenuEvent
 from .dayu_widgets.menu import MMenu
+from .dayu_widgets.browser import MClickBrowserFilePushButton
 
 
 class PageListView(QListWidget):
@@ -16,16 +17,24 @@ class PageListView(QListWidget):
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) 
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        self.ui_elements()
+
+    def ui_elements(self):
+        self.insert_browser = MClickBrowserFilePushButton(multiple=True)
+        self.insert_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
+                                            ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
+                                            ".pdf", ".epub"])
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         # Create the context menu
         menu = MMenu(parent=self)
+        insert = menu.addAction(self.tr('Insert'))
         delete_act = menu.addAction(self.tr('Delete'))
-        result = menu.exec_(event.globalPos())
 
-        # Handle the delete action
-        if result == delete_act:
-            self.delete_selected_items()
+        insert.triggered.connect(self.insert_browser.clicked)
+        delete_act.triggered.connect(self.delete_selected_items)
+
+        menu.exec_(event.globalPos())
 
         super().contextMenuEvent(event)
 
