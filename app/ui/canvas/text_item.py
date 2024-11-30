@@ -327,6 +327,11 @@ class TextBlockItem(QGraphicsTextItem):
         if self.selected:
             self.update_cursor(event.pos())
             super().hoverMoveEvent(event)
+
+    def contextMenuEvent(self, event):
+        super().contextMenuEvent(event)
+        if self.editing_mode:
+            self.enter_editing_mode()
     
     def handleDeselection(self):
         if self.selected:
@@ -337,12 +342,6 @@ class TextBlockItem(QGraphicsTextItem):
             if self.editing_mode:
                 self.exit_editing_mode()
             self.update()
-
-    def focusOutEvent(self, event):
-        # Only exit editing mode if we're not in a text selection
-        if not self.textCursor().hasSelection():
-            self.handleDeselection()
-        super().focusOutEvent(event)
 
     def init_rotation(self, scene_pos):
         self.rotating = True
