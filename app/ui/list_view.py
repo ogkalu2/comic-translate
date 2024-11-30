@@ -26,7 +26,6 @@ class PageListView(QListWidget):
                                             ".pdf", ".epub"])
 
     def contextMenuEvent(self, event: QContextMenuEvent):
-        # Create the context menu
         menu = MMenu(parent=self)
         insert = menu.addAction(self.tr('Insert'))
         delete_act = menu.addAction(self.tr('Delete'))
@@ -43,10 +42,7 @@ class PageListView(QListWidget):
         if not selected_items:
             return
 
-        # Collect the file names of selected items
         selected_file_names = [item.text() for item in selected_items]
-
-        # Emit the signal with file names of deleted images
         self.del_img.emit(selected_file_names)
     
     def sizeHint(self) -> QSize:
