@@ -68,7 +68,7 @@ Note: Some of these also have Official English Translations
 
 ## Installation
 ### Python
-Install Python (<=3.10). Tick "Add python.exe to PATH" during the setup.
+Install Python (>=3.10). Tick "Add python.exe to PATH" during the setup.
 ```bash
 https://www.python.org/downloads/
 ```
@@ -200,5 +200,6 @@ PIL for rendering wrapped text in bounding boxes obtained from bubbles and text.
 * [https://github.com/kha-white/manga-ocr](https://github.com/kha-white/manga-ocr)
 * [https://github.com/JaidedAI/EasyOCR](https://github.com/JaidedAI/EasyOCR)
 * [https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
+* [https://github.com/phenom-films/dayu_widgets](https://github.com/phenom-films/dayu_widgets)
 
 
