@@ -133,31 +133,34 @@ def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: i
     return mask
 
 def validate_ocr(main_page, source_lang):
-
     settings_page = main_page.settings_page
+    tr = settings_page.ui.tr
     settings = settings_page.get_all_settings()
-
+    credentials = settings.get('credentials', {})
     source_lang_en = main_page.lang_mapping.get(source_lang, source_lang)
-
     ocr_tool = settings['tools']['ocr']
-
+    
     # Validate OCR API keys
-    if ocr_tool == settings_page.ui.tr("Microsoft OCR") and not settings["credentials"]["Microsoft Azure"]["api_key_ocr"]:
+    if (ocr_tool == tr("Microsoft OCR") and 
+        not credentials.get(tr("Microsoft Azure"), {}).get("api_key_ocr")):
         Messages.show_api_key_ocr_error(main_page)
         return False
     
-    if ocr_tool == settings_page.ui.tr("Google Cloud Vision") and not settings["credentials"]["Google Cloud"]["api_key"]:
+    if (ocr_tool == tr("Google Cloud Vision") and 
+        not credentials.get(tr("Google Cloud"), {}).get("api_key")):
         Messages.show_api_key_ocr_error(main_page)
         return False
-
+        
     # Validate Microsoft Endpoint
-    if ocr_tool == settings_page.ui.tr('Microsoft OCR') and not settings['credentials']['Microsoft Azure']['endpoint']:
+    if (ocr_tool == tr('Microsoft OCR') and 
+        not credentials.get(tr('Microsoft Azure'), {}).get('endpoint')):
         Messages.show_endpoint_url_error(main_page)
         return False
-
+        
     # Validate GPT OCR
     if source_lang_en in ["French", "German", "Dutch", "Russian", "Spanish", "Italian"]:
-        if ocr_tool == settings_page.ui.tr('Default') and not settings['credentials']['Open AI GPT']['api_key']:
+        if (ocr_tool == tr('Default') and 
+            not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
             Messages.show_api_key_ocr_gpt4v_error(main_page)
             return False
     
@@ -165,55 +168,61 @@ def validate_ocr(main_page, source_lang):
 
 def validate_translator(main_page, source_lang, target_lang):
     settings_page = main_page.settings_page
+    tr = settings_page.ui.tr
     settings = settings_page.get_all_settings()
-
+    credentials = settings.get('credentials', {})
     translator_tool = settings['tools']['translator']
-
+    
     # Validate translator API keys
-    if translator_tool == settings_page.ui.tr("DeepL") and not settings["credentials"]["DeepL"]["api_key"]:
+    if (translator_tool == tr("DeepL") and 
+        not credentials.get(tr("DeepL"), {}).get("api_key")):
         Messages.show_api_key_translator_error(main_page)
         return False
     
-    if translator_tool == settings_page.ui.tr("Microsoft Translator") and not settings["credentials"]["Microsoft Azure"]["api_key_translator"]:
+    if (translator_tool == tr("Microsoft Translator") and 
+        not credentials.get(tr("Microsoft Azure"), {}).get("api_key_translator")):
         Messages.show_api_key_translator_error(main_page)
-        return False
-
-    if translator_tool == settings_page.ui.tr("Yandex") and not settings["credentials"]["Yandex"]["api_key"]:
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    
-    if 'GPT' in translator_tool and not settings['credentials']['Open AI GPT']['api_key']:
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    if 'Gemini' in translator_tool and not settings['credentials']['Google Gemini']['api_key']:
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    if 'Claude' in translator_tool and not settings['credentials']['Anthropic Claude']['api_key']:
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    
-    # Check DeepL and Traditional Chinese incompatibility
-    if translator_tool == 'DeepL' and target_lang == main_page.tr('Traditional Chinese'):
-        Messages.show_deepl_ch_error(main_page)
-        return False
-
-    # Add Google Translate and Brazilian Portuguese incompatibility check
-    if translator_tool == 'Google Translate':
-        if source_lang == main_page.tr('Brazilian Portuguese') or target_lang == main_page.tr('Brazilian Portuguese'):
-            Messages.show_googlet_ptbr_error(main_page)
-            return False
-
-    # Check DeepL and Thai incompatibility
-    if translator_tool == 'DeepL' and target_lang == main_page.tr('Thai'):
-        Messages.show_deepl_th_error(main_page)
-        return False
-
-    # Check DeepL and Vietnamese incompatibility
-    if translator_tool == 'DeepL' and target_lang == main_page.tr('Vietnamese'):
-        Messages.show_deepl_vi_error(main_page)
         return False
         
-    return True  
+    if (translator_tool == tr("Yandex") and 
+        not credentials.get(tr("Yandex"), {}).get("api_key")):
+        Messages.show_api_key_translator_error(main_page)
+        return False
+    
+    if ('GPT' in translator_tool and 
+        not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
+        Messages.show_api_key_translator_error(main_page)
+        return False
+        
+    if ('Gemini' in translator_tool and 
+        not credentials.get(tr('Google Gemini'), {}).get('api_key')):
+        Messages.show_api_key_translator_error(main_page)
+        return False
+        
+    if ('Claude' in translator_tool and 
+        not credentials.get(tr('Anthropic Claude'), {}).get('api_key')):
+        Messages.show_api_key_translator_error(main_page)
+        return False
+    
+    # Check service-specific incompatibilities
+    if translator_tool == tr('DeepL'):
+        if target_lang == main_page.tr('Traditional Chinese'):
+            Messages.show_deepl_ch_error(main_page)
+            return False
+        if target_lang == main_page.tr('Thai'):
+            Messages.show_deepl_th_error(main_page)
+            return False
+        if target_lang == main_page.tr('Vietnamese'):
+            Messages.show_deepl_vi_error(main_page)
+            return False
+            
+    if  translator_tool == tr('Google Translate'):
+            if (source_lang == main_page.tr('Brazilian Portuguese') or 
+                target_lang == main_page.tr('Brazilian Portuguese')):
+                Messages.show_googlet_ptbr_error(main_page)
+                return False
+    
+    return True
 
 def font_selected(main_page):
     if not main_page.settings_page.get_text_rendering_settings()['font']:
