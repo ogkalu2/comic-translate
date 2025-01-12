@@ -1,7 +1,7 @@
 import os, sys
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QSettings, QTranslator, QLocale
-from app.ui.dayu_widgets.qt import application
+from PySide6.QtWidgets import QApplication  
 from controller import ComicTranslate
 from app.translations import ct_translations
 from app import icon_resource
@@ -13,25 +13,30 @@ def main():
         myappid = u'ComicLabs.ComicTranslate' # arbitrary string
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-    with application() as app:
-        # Set the application icon
-        icon = QIcon(":/icons/window_icon.png")  
-        app.setWindowIcon(icon)
+    # Create QApplication directly instead of using the context manager
+    app = QApplication(sys.argv)
+    
+    # Set the application icon
+    icon = QIcon(":/icons/window_icon.png")  
+    app.setWindowIcon(icon)
 
-        settings = QSettings("ComicLabs", "ComicTranslate")
-        selected_language = settings.value('language', get_system_language())
-        if selected_language != 'English':
-            load_translation(app, selected_language)  
+    settings = QSettings("ComicLabs", "ComicTranslate")
+    selected_language = settings.value('language', get_system_language())
+    if selected_language != 'English':
+        load_translation(app, selected_language)  
 
-        test = ComicTranslate()
+    ct = ComicTranslate()
 
-        # Check for file arguments
-        if len(sys.argv) > 1:
-            project_file = sys.argv[1]
-            if os.path.exists(project_file) and project_file.endswith(".ctpr"):
-                test.thread_load_project(project_file)
+    # Check for file arguments
+    if len(sys.argv) > 1:
+        project_file = sys.argv[1]
+        if os.path.exists(project_file) and project_file.endswith(".ctpr"):
+            ct.thread_load_project(project_file)
 
-        test.show()
+    ct.show()
+    
+    # Start the event loop
+    sys.exit(app.exec())
 
 
 def get_system_language():
