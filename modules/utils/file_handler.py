@@ -39,7 +39,7 @@ class FileHandler:
 
     def sanitize_and_copy_files(self, file_paths: list[str]):
         sanitized_paths = []
-        for index, image_path in enumerate(file_paths):
+        for image_path in file_paths:
             if not image_path.isascii():
                 name = ''.join(c for c in image_path if c in string.printable)
                 dir_name = ''.join(c for c in os.path.dirname(image_path) if c in string.printable)
@@ -50,7 +50,7 @@ class FileHandler:
                 else:
                     basename = os.path.splitext(os.path.basename(name))[0]
                     ext = os.path.splitext(os.path.basename(name))[1]
-                sanitized_path = os.path.join(dir_name, basename + str(index) + ext)
+                sanitized_path = os.path.join(dir_name, basename + ext)
                 try:
                     shutil.copy(image_path, sanitized_path)
                     image_path = sanitized_path
