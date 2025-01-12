@@ -61,7 +61,9 @@ class SettingsPage(QtWidgets.QWidget):
     def get_llm_settings(self):
         return {
             'extra_context': self.ui.llm_widgets['extra_context'].toPlainText(),
-            'image_input_enabled': self.ui.llm_widgets['image_input'].isChecked()
+            'image_input_enabled': self.ui.llm_widgets['image_input'].isChecked(),
+            'local_oai_url_input': self.ui.llm_widgets['local_oai_url_input'].text(),
+            'local_oai_model_input': self.ui.llm_widgets['local_oai_model_input'].text()
         }
 
     def get_export_settings(self):
@@ -268,6 +270,8 @@ class SettingsPage(QtWidgets.QWidget):
         settings.beginGroup('llm')
         self.ui.llm_widgets['extra_context'].setPlainText(settings.value('extra_context', ''))
         self.ui.llm_widgets['image_input'].setChecked(settings.value('image_input_enabled', True, type=bool))
+        self.ui.llm_widgets['local_oai_url_input'].setText(settings.value('local_oai_url_input', ''))
+        self.ui.llm_widgets['local_oai_model_input'].setText(settings.value('local_oai_model_input', ''))
         settings.endGroup()
 
         # Load export settings
