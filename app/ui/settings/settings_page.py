@@ -218,10 +218,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        # select GPT-4o as default
         translator = settings.value('translator', 'GPT-4o')
-        # select Deepseek as default
-        # translator = settings.value('translator', 'Deepseek-v3')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         self.ui.translator_combo.setCurrentText(translated_translator)
 
