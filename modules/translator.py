@@ -28,6 +28,7 @@ class Translator:
     def get_translator_key(self, localized_translator: str) -> str:
         # Map localized translator names to keys
         translator_map = {
+            self.settings.ui.tr("Deepseek-v3"): "Deepseek-v3", # add Deepseek
             self.settings.ui.tr("GPT-4o"): "GPT-4o",
             self.settings.ui.tr("GPT-4o mini"): "GPT-4o mini",
             self.settings.ui.tr("Claude-3-Opus"): "Claude-3-Opus",
@@ -47,6 +48,7 @@ class Translator:
 
     def get_llm_model(self, translator_key: str):
         model_map = {
+            "Deepseek-v3": "deepseek-v3", # add Deepseek
             "GPT-4o": "gpt-4o",
             "GPT-4o mini": "gpt-4o-mini",
             "Claude-3-Opus": "claude-3-opus-20240229",
@@ -65,7 +67,25 @@ class Translator:
         - If it's already in {target_lang} or looks like gibberish, OUTPUT IT AS IT IS instead
         - DO NOT give explanations
         Do Your Best! I'm really counting on you."""
+    
+    # deepseek 
+    def get_deepseek_translation(self, user_prompt: str, system_prompt: str):
+       
+        message = [
+            {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
+            {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
+        ]
 
+        response = self.client.chat.completions.create(
+            model="deepseek-chat",
+            messages=message,
+            temperature=0.7,
+            max_tokens=1000,
+        )
+
+        translated = response.choices[0].message.content
+        return translated
+    
     def get_gpt_translation(self, user_prompt: str, model: str, system_prompt: str, image: np.ndarray):
         encoded_image = encode_image_array(image)
 
@@ -185,7 +205,9 @@ class Translator:
             system_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
 
-            if 'GPT' in self.translator_key:
+            if 'Deepseek' in self.translator_key:  # Add Deepseek v3 translation
+                entire_translated_text = self.get_deepseek_translation(user_prompt, system_prompt)
+            elif 'GPT' in self.translator_key:
                 entire_translated_text = self.get_gpt_translation(user_prompt, model, system_prompt, image)
             elif 'Claude' in self.translator_key:
                 entire_translated_text = self.get_claude_translation(user_prompt, model, system_prompt, image)
@@ -202,7 +224,9 @@ class Translator:
 
         api_key = ""
 
-        if 'GPT' in translator_key:
+        if 'Deepseek' in translator_key:  # Add Deepseek v3 API key
+            api_key = credentials.get(self.settings.ui.tr('Deepseek v3'), {}).get('api_key', "")
+        elif 'GPT' in translator_key:
             api_key = credentials.get(self.settings.ui.tr('Open AI GPT'), {}).get('api_key', "")
         elif 'Claude' in translator_key:
             api_key = credentials.get(self.settings.ui.tr('Anthropic Claude'), {}).get('api_key', "")
