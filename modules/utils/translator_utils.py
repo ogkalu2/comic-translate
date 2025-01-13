@@ -16,7 +16,9 @@ def encode_image_array(img_array: np.ndarray):
     return base64.b64encode(img_bytes).decode('utf-8')
 
 def get_llm_client(translator: str, api_key: str):
-    if 'GPT' in translator:
+    if 'Deepseek' in translator:  # Add Deepseek client
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
+    elif 'GPT' in translator:
         client  = OpenAI(api_key = api_key)
     elif 'Claude' in translator:
         client = anthropic.Anthropic(api_key = api_key)
