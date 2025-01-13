@@ -28,7 +28,7 @@ class Translator:
     def get_translator_key(self, localized_translator: str) -> str:
         # Map localized translator names to keys
         translator_map = {
-            self.settings.ui.tr("Deepseek-v3"): "Deepseek-v3", # add Deepseek
+            self.settings.ui.tr("Deepseek-v3"): "Deepseek-v3",
             self.settings.ui.tr("GPT-4o"): "GPT-4o",
             self.settings.ui.tr("GPT-4o mini"): "GPT-4o mini",
             self.settings.ui.tr("Claude-3-Opus"): "Claude-3-Opus",
@@ -48,7 +48,7 @@ class Translator:
 
     def get_llm_model(self, translator_key: str):
         model_map = {
-            "Deepseek-v3": "deepseek-v3", # add Deepseek
+            "Deepseek-v3": "deepseek-v3", 
             "GPT-4o": "gpt-4o",
             "GPT-4o mini": "gpt-4o-mini",
             "Claude-3-Opus": "claude-3-opus-20240229",
@@ -68,7 +68,6 @@ class Translator:
         - DO NOT give explanations
         Do Your Best! I'm really counting on you."""
     
-    # deepseek 
     def get_deepseek_translation(self, user_prompt: str, system_prompt: str):
        
         message = [
@@ -225,7 +224,7 @@ class Translator:
         api_key = ""
 
         if 'Deepseek' in translator_key:  # Add Deepseek v3 API key
-            api_key = credentials.get(self.settings.ui.tr('Deepseek v3'), {}).get('api_key', "")
+            api_key = credentials.get(self.settings.ui.tr('Deepseek'), {}).get('api_key', "")
         elif 'GPT' in translator_key:
             api_key = credentials.get(self.settings.ui.tr('Open AI GPT'), {}).get('api_key', "")
         elif 'Claude' in translator_key:
