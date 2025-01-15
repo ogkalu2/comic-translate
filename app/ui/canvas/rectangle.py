@@ -1,9 +1,10 @@
+import math
 from PySide6.QtWidgets import QGraphicsRectItem
 from PySide6.QtCore import Signal, QObject, QRectF, Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QCursor
 from PySide6 import QtCore
 from dataclasses import dataclass
-import math
+from ..dayu_widgets.menu import MMenu
 
 @dataclass
 class RectState:
@@ -24,6 +25,8 @@ class RectState:
 class RectSignals(QObject):
     rectangle_changed = Signal(QRectF, float, QPointF)
     change_undo = Signal(RectState, RectState)
+    ocr_block = Signal()
+    translate_block = Signal()
 
 class MoveableRectItem(QGraphicsRectItem):
     signals = RectSignals()
@@ -107,6 +110,26 @@ class MoveableRectItem(QGraphicsRectItem):
         #self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
 
         super().mouseReleaseEvent(event)
+
+    def contextMenuEvent(self, event):
+        # Get the global position for the context menu
+        scene_pos = event.scenePos()  # Position in the scene
+        views = self.scene().views()  # Get all views associated with the scene
+
+        if views:
+            view = views[0]
+            global_pos = view.mapToGlobal(view.mapFromScene(scene_pos))
+
+            menu = MMenu(parent=view)
+            ocr = menu.addAction(view.tr('OCR'))
+            translate = menu.addAction(view.tr('Translate'))
+
+            ocr.triggered.connect(self.signals.ocr_block.emit)
+            translate.triggered.connect(self.signals.translate_block.emit)
+
+            menu.exec_(global_pos)
+
+            super().contextMenuEvent(event)
 
     def update_cursor(self, pos):
         cursor = self.get_cursor_for_position(pos)

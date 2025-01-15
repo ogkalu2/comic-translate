@@ -409,29 +409,42 @@ class ComicTranslate(ComicTranslateUI):
         self.s_text_edit.clear()
         self.t_text_edit.clear()
 
-    def finish_ocr_translate(self):
+    def finish_ocr_translate(self, single_block=False):
         if self.blk_list:
-            rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
-            self.image_viewer.select_rectangle(rect)
+            if single_block:
+                rect = self.image_viewer.selected_rect
+            else:
+                rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
+            self.image_viewer.select_rectangle(rect) 
         self.set_tool('box')
         self.on_manual_finished()
 
-    def ocr(self):
+    def ocr(self, single_block=False):
         source_lang = self.s_combo.currentText()
         if not validate_ocr(self, source_lang):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()
-        self.run_threaded(self.pipeline.OCR_image, None, self.default_error_handler, self.finish_ocr_translate)
+        self.run_threaded(
+                lambda: self.pipeline.OCR_image(single_block),
+                None,
+                self.default_error_handler,
+                lambda: self.finish_ocr_translate(single_block)
+            )
 
-    def translate_image(self):
+    def translate_image(self, single_block=False):
         source_lang = self.s_combo.currentText()
         target_lang = self.t_combo.currentText()
         if not is_there_text(self.blk_list) or not validate_translator(self, source_lang, target_lang):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()
-        self.run_threaded(self.pipeline.translate_image, None, self.default_error_handler, self.finish_ocr_translate)
+        self.run_threaded(
+                lambda: self.pipeline.translate_image(single_block),
+                None,
+                self.default_error_handler,
+                lambda: self.finish_ocr_translate(single_block)
+            )
 
     def inpaint_and_set(self):
         if self.image_viewer.hasPhoto() and self.image_viewer.has_drawn_elements():
@@ -702,6 +715,8 @@ class ComicTranslate(ComicTranslateUI):
             for rect_item in self.image_viewer.rectangles:
                 rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
                 rect_item.signals.change_undo.connect(self.rect_change_undo)
+                rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
+                rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
 
         self.clear_text_edits()
 
@@ -762,7 +777,7 @@ class ComicTranslate(ComicTranslateUI):
                 self.run_threaded(self.pipeline.detect_blocks, self.blk_detect_segment, 
                           self.default_error_handler, self.on_manual_finished)
 
-    def find_corresponding_text_block(self, rect: Tuple[float], iou_threshold: int):
+    def find_corresponding_text_block(self, rect: Tuple[float], iou_threshold: int = 0.5):
         for blk in self.blk_list:
             if do_rectangles_overlap(rect, blk.xyxy, iou_threshold):
                 return blk
@@ -795,6 +810,9 @@ class ComicTranslate(ComicTranslateUI):
     def handle_rectangle_creation(self, rect_item: MoveableRectItem):
         rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
         rect_item.signals.change_undo.connect(self.rect_change_undo)
+        rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
+        rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
+
         new_rect = rect_item.mapRectToScene(rect_item.rect())
         x1, y1, w, h = new_rect.getRect()
         x1, y1, w, h = int(x1), int(y1), int(w), int(h)

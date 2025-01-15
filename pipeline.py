@@ -38,6 +38,8 @@ class ComicTranslatePipeline:
                 rect_item.setRotation(blk.angle)
                 rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
                 rect_item.signals.change_undo.connect(self.main_page.rect_change_undo)
+                rect_item.signals.ocr_block.connect(lambda: self.main_page.ocr(True))
+                rect_item.signals.translate_block.connect(lambda: self.main_page.translate_image(True))
                 self.main_page.image_viewer.rectangles.append(rect_item)
 
             rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
@@ -95,16 +97,27 @@ class ComicTranslatePipeline:
         image = self.main_page.image_viewer.get_cv2_image()
         inpainted = self.manual_inpaint()
         return inpainted, image
+    
+    def get_selected_block(self):
+        rect = self.main_page.image_viewer.selected_rect
+        srect = rect.mapRectToScene(rect.rect())
+        srect_coords = srect.getCoords()
+        blk = self.main_page.find_corresponding_text_block(srect_coords)
+        return blk
 
-    def OCR_image(self):
+    def OCR_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
             image = self.main_page.image_viewer.get_cv2_image()
-            print("Block Length: ", len(self.main_page.blk_list))
             self.ocr.initialize(self.main_page, source_lang)
-            self.ocr.process(image, self.main_page.blk_list)
+            if single_block:
+                blk = self.get_selected_block()
+                self.ocr.process(image, [blk])
+            else:
+                self.ocr.process(image, self.main_page.blk_list)
+                print("Block Length: ", len(self.main_page.blk_list))
 
-    def translate_image(self):
+    def translate_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
         target_lang = self.main_page.t_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.blk_list:
@@ -112,14 +125,19 @@ class ComicTranslatePipeline:
             image = self.main_page.image_viewer.get_cv2_image()
             extra_context = settings_page.get_llm_settings()['extra_context']
 
-            translator = Translator(self.main_page, source_lang, target_lang)
-            translator.translate(self.main_page.blk_list, image, extra_context)
-
             target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
             text_rendering_settings = settings_page.get_text_rendering_settings()
             upper_case = text_rendering_settings['upper_case']
-            format_translations(self.main_page.blk_list, trg_lng_cd, upper_case=upper_case)
+
+            translator = Translator(self.main_page, source_lang, target_lang)
+            if single_block:
+                blk = self.get_selected_block()
+                translator.translate([blk], image, extra_context)
+                format_translations([blk], trg_lng_cd, upper_case=upper_case)
+            else:
+                translator.translate(self.main_page.blk_list, image, extra_context)
+                format_translations(self.main_page.blk_list, trg_lng_cd, upper_case=upper_case)
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
