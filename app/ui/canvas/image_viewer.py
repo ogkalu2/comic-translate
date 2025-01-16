@@ -39,6 +39,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
+        self.viewport().grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.current_tool = None
         self.box_mode = False
         self.start_point = None
@@ -70,8 +71,33 @@ class ImageViewer(QtWidgets.QGraphicsView):
         return not self.empty
 
     def viewportEvent(self, event):
-        if event.type() == QtCore.QEvent.Gesture:
+        # Check for a single-finger QTouchEvent
+        if event.type() == QtCore.QEvent.Type.TouchBegin or \
+        event.type() == QtCore.QEvent.Type.TouchUpdate:
+            if not self.current_tool:
+                touch_points = event.points()
+                if len(touch_points) == 1:
+                    # Single-finger touch: implement panning logic here
+                    tp = touch_points[0]
+                    if tp.state() == QtGui.QEventPoint.State.Pressed:
+                        self.last_pan_pos = tp.pos().toPoint()
+                    elif tp.state() == QtGui.QEventPoint.State.Updated:
+                        curr_pos = tp.pos().toPoint()
+                        delta = curr_pos - self.last_pan_pos
+                        self.last_pan_pos = curr_pos
+                        self.horizontalScrollBar().setValue(
+                            self.horizontalScrollBar().value() - delta.x()
+                        )
+                        self.verticalScrollBar().setValue(
+                            self.verticalScrollBar().value() - delta.y()
+                        )
+                    event.accept()
+                    return True
+
+        # Fall back to gesture events (for two-finger pan, pinch, etc.)
+        if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
+
         return super().viewportEvent(event)
 
     def gestureEvent(self, event):
@@ -82,7 +108,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
             return self.handlePanGesture(pan)
         elif pinch:
             return self.handlePinchGesture(pinch)
-        
         return False
 
     def handlePanGesture(self, gesture):
