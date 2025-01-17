@@ -1,4 +1,4 @@
-import os
+import os, json
 import cv2, shutil
 from datetime import datetime
 from typing import List
@@ -143,8 +143,7 @@ class ComicTranslatePipeline:
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
-        image_save = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        cv2.imwrite(os.path.join(path, f"{base_name}_translated{extension}"), image_save)
+        cv2.imwrite(os.path.join(path, f"{base_name}_translated{extension}"), image)
 
     def log_skipped_image(self, directory, timestamp, image_path):
         with open(os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt"), 'a', encoding='UTF-8') as file:
@@ -281,9 +280,21 @@ class ComicTranslatePipeline:
             entire_raw_text = get_raw_text(blk_list)
             entire_translated_text = get_raw_translation(blk_list)
 
-            if (not entire_raw_text) or (not entire_translated_text):
+            # Parse JSON strings and check if they're empty objects or invalid
+            try:
+                raw_text_obj = json.loads(entire_raw_text)
+                translated_text_obj = json.loads(entire_translated_text)
+                
+                if (not raw_text_obj) or (not translated_text_obj):
+                    self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
+                    self.main_page.image_skipped.emit(image_path, "Translator", "")
+                    self.log_skipped_image(directory, timestamp, image_path)
+                    continue
+            except json.JSONDecodeError as e:
+                # Handle invalid JSON
+                error_message = str(e)
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
-                self.main_page.image_skipped.emit(image_path, "Translator", "")
+                self.main_page.image_skipped.emit(image_path, "Translator", error_message)
                 self.log_skipped_image(directory, timestamp, image_path)
                 continue
 
