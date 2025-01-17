@@ -42,6 +42,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
         self.viewport().setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
         self.viewport().grabGesture(QtCore.Qt.GestureType.PanGesture)
+        self.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
         self.current_tool = None
         self.box_mode = False
         self.start_point = None
@@ -75,25 +76,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
     def viewportEvent(self, event):
         if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate, QEvent.TouchEnd):
             touch_points = event.points()
-            if len(touch_points) == 1 and not self.current_tool:
-                # Single-finger touch: implement panning logic
-                tp = touch_points[0]
-                if tp.state() == QEventPoint.State.Pressed:
-                    self.last_pan_pos = tp.position().toPoint()
-                elif tp.state() == QEventPoint.State.Updated:
-                    curr_pos = tp.position().toPoint()
-                    delta = curr_pos - self.last_pan_pos
-                    self.last_pan_pos = curr_pos
-                    self.horizontalScrollBar().setValue(
-                        self.horizontalScrollBar().value() - delta.x()
-                    )
-                    self.verticalScrollBar().setValue(
-                        self.verticalScrollBar().value() - delta.y()
-                    )
-                event.accept()
-                return True
 
-            elif len(touch_points) == 2:
+            if len(touch_points) == 2:
                 # Multi-finger touch: implement scaling logic
                 touchPoint0 = touch_points[0]
                 touchPoint1 = touch_points[1]
@@ -279,7 +263,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                     self.current_rect.setZValue(1)
 
         # Handle pan tool and text block interaction
-        if self.current_tool == 'pan' or isinstance(clicked_item, TextBlockItem):
+        scroll = self.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
+        if self.current_tool == 'pan' or isinstance(clicked_item, TextBlockItem) or scroll:
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
@@ -364,7 +349,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                     sel_item.change_undo.emit(old_state, new_state)
 
         item = self.itemAt(event.pos())
-        if self.current_tool == 'pan' or isinstance(item, TextBlockItem):
+        scroll = self.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
+        if self.current_tool == 'pan' or isinstance(item, TextBlockItem) or scroll:
             super().mouseReleaseEvent(event)
 
         if event.button() == QtCore.Qt.MouseButton.MiddleButton:

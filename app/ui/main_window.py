@@ -684,6 +684,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         if not tool_name:
             for button in self.tool_buttons.values():
                 button.setChecked(False)
+            self.image_viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
 
     def set_brush_eraser_size(self, size: int):
         if self.image_viewer.hasPhoto():
