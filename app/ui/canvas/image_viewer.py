@@ -68,7 +68,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.after_erase = []
 
         self.last_pan_pos = QtCore.QPoint()
-        self.totalScaleFactor = 0.2
+        self.total_scale_factor = 0.2
 
     def hasPhoto(self):
         return not self.empty
@@ -81,15 +81,15 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 # Multi-finger touch: implement scaling logic
                 touchPoint0 = touch_points[0]
                 touchPoint1 = touch_points[1]
-                currentScaleFactor = (
+                current_scale_factor = (
                     QLineF(touchPoint0.pos(), touchPoint1.pos()).length() /
                     QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length()
                 )
                 if any(tp.state() == QEventPoint.State.Released for tp in touch_points):
-                    self.totalScaleFactor *= currentScaleFactor
-                    currentScaleFactor = 1.0
-                scaleFactor = self.totalScaleFactor * currentScaleFactor
-                self.setTransform(QTransform.fromScale(scaleFactor, scaleFactor))
+                    self.total_scale_factor *= current_scale_factor
+                    current_scale_factor = 1.0
+                scale_factor = self.total_scale_factor * current_scale_factor
+                self.setTransform(QTransform.fromScale(scale_factor, scale_factor))
                 return True
 
         if event.type() == QtCore.QEvent.Type.Gesture:
