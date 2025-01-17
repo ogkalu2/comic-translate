@@ -74,7 +74,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         return not self.empty
 
     def viewportEvent(self, event):
-        if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate, QEvent.TouchEnd):
+        if event.type() in (QEvent.Type.TouchBegin, QEvent.Type.TouchUpdate, QEvent.Type.TouchEnd):
             touch_points = event.points()
 
             if len(touch_points) == 2:
@@ -92,7 +92,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 self.setTransform(QTransform.fromScale(scaleFactor, scaleFactor))
                 return True
 
-        if event.type() == QEvent.Gesture:
+        if event.type() == QtCore.QEvent.Type.Gesture:
             return self.gestureEvent(event)
 
         return super().viewportEvent(event)
