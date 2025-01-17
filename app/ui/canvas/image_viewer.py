@@ -6,6 +6,8 @@ import math
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QGraphicsPathItem
+from PySide6.QtCore import QEvent, QLineF
+from PySide6.QtGui import QTransform, QEventPoint
 
 from .text_item import TextBlockItem, TextBlockState
 from .rectangle import MoveableRectItem, RectState
@@ -64,38 +66,49 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.before_erase = []
         self.after_erase = []
 
-        # Initialize last pan position
         self.last_pan_pos = QtCore.QPoint()
+        self.totalScaleFactor = 1.0
 
     def hasPhoto(self):
         return not self.empty
 
     def viewportEvent(self, event):
-        # Check for a single-finger QTouchEvent
-        if event.type() == QtCore.QEvent.Type.TouchBegin or \
-        event.type() == QtCore.QEvent.Type.TouchUpdate:
-            if not self.current_tool:
-                touch_points = event.points()
-                if len(touch_points) == 1:
-                    # Single-finger touch: implement panning logic here
-                    tp = touch_points[0]
-                    if tp.state() == QtGui.QEventPoint.State.Pressed:
-                        self.last_pan_pos = tp.pos().toPoint()
-                    elif tp.state() == QtGui.QEventPoint.State.Updated:
-                        curr_pos = tp.pos().toPoint()
-                        delta = curr_pos - self.last_pan_pos
-                        self.last_pan_pos = curr_pos
-                        self.horizontalScrollBar().setValue(
-                            self.horizontalScrollBar().value() - delta.x()
-                        )
-                        self.verticalScrollBar().setValue(
-                            self.verticalScrollBar().value() - delta.y()
-                        )
-                    event.accept()
-                    return True
+        if event.type() in (QEvent.TouchBegin, QEvent.TouchUpdate, QEvent.TouchEnd):
+            touch_points = event.points()
+            if len(touch_points) == 1 and not self.current_tool:
+                # Single-finger touch: implement panning logic
+                tp = touch_points[0]
+                if tp.state() == QEventPoint.State.Pressed:
+                    self.last_pan_pos = tp.position().toPoint()
+                elif tp.state() == QEventPoint.State.Updated:
+                    curr_pos = tp.position().toPoint()
+                    delta = curr_pos - self.last_pan_pos
+                    self.last_pan_pos = curr_pos
+                    self.horizontalScrollBar().setValue(
+                        self.horizontalScrollBar().value() - delta.x()
+                    )
+                    self.verticalScrollBar().setValue(
+                        self.verticalScrollBar().value() - delta.y()
+                    )
+                event.accept()
+                return True
 
-        # Fall back to gesture events (for two-finger pan, pinch, etc.)
-        if event.type() == QtCore.QEvent.Type.Gesture:
+            elif len(touch_points) == 2:
+                # Multi-finger touch: implement scaling logic
+                touchPoint0 = touch_points[0]
+                touchPoint1 = touch_points[1]
+                currentScaleFactor = (
+                    QLineF(touchPoint0.pos(), touchPoint1.pos()).length() /
+                    QLineF(touchPoint0.startPos(), touchPoint1.startPos()).length()
+                )
+                if any(tp.state() == QEventPoint.State.Released for tp in touch_points):
+                    self.totalScaleFactor *= currentScaleFactor
+                    currentScaleFactor = 1.0
+                scaleFactor = self.totalScaleFactor * currentScaleFactor
+                self.setTransform(QTransform.fromScale(scaleFactor, scaleFactor))
+                return True
+
+        if event.type() == QEvent.Gesture:
             return self.gestureEvent(event)
 
         return super().viewportEvent(event)
