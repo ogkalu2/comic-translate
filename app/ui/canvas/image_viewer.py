@@ -68,7 +68,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.after_erase = []
 
         self.last_pan_pos = QtCore.QPoint()
-        self.totalScaleFactor = 1.0
+        self.totalScaleFactor = 0.2
 
     def hasPhoto(self):
         return not self.empty
