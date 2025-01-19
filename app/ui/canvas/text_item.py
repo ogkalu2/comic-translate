@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem
-from PySide6.QtGui import QPen, QFont, QCursor, QColor, \
+from PySide6.QtGui import QFont, QCursor, QColor, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math, copy
@@ -20,6 +20,13 @@ class TextBlockState:
             rotation=item.rotation(),
             transform_origin=item.transformOriginPoint()
         )
+    
+class SelectionOutlineInfo:
+    def __init__(self, start, end, color, width):
+        self.start = start
+        self.end = end
+        self.color = color
+        self.width = width
 
 class TextBlockItem(QGraphicsTextItem):
     text_changed = Signal(str)
@@ -73,6 +80,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.center_scene_pos = None  
 
         self.old_state = None
+
+        self.selection_outlines = []
 
         self.setAcceptHoverEvents(True)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
@@ -155,7 +164,6 @@ class TextBlockItem(QGraphicsTextItem):
             'bold': lambda cf, v: cf.setFontWeight(QFont.Bold if v else QFont.Normal),
             'italic': lambda cf, v: cf.setFontItalic(v),
             'underline': lambda cf, v: cf.setFontUnderline(v),
-            'outline': lambda cf, v: cf.setTextOutline(QPen(v[0], v[1]) if v[0] else Qt.NoPen)
         }
 
         if attribute not in format_operations:
@@ -206,12 +214,77 @@ class TextBlockItem(QGraphicsTextItem):
         self.update_text_format('color', color)
 
     def set_outline(self, outline_color, outline_width):
-        if not self.textCursor().hasSelection():
+        # Initialize start and end variables
+        start = 0
+        end = 0
+
+        if self.textCursor().hasSelection():
+            # Store outline properties for the current selection
+            start = self.textCursor().selectionStart()
+            end = self.textCursor().selectionEnd()
+        else:
+            # Set global outline properties only when there's no selection
             self.outline = True if outline_color else False
-            if outline_color:
-                self.outline_color = outline_color
-                self.outline_width = outline_width
-        self.update_text_format('outline', (outline_color, outline_width))
+            self.outline_color = outline_color
+            self.outline_width = outline_width
+
+            if self.outline:
+                start = 0
+                end = len(self.toPlainText())
+
+        # Remove any existing outline for this selection range
+        self.selection_outlines = [
+            outline for outline in self.selection_outlines 
+            if not (outline.start == start and outline.end == end)
+        ]
+        
+        # Add new outline info if color is provided
+        if outline_color:
+            self.selection_outlines.append(
+                SelectionOutlineInfo(start, end, outline_color, outline_width)
+            )
+        
+        self.update()
+
+    def paint(self, painter, option, widget=None):
+
+        # Then handle any selection outlines
+        if self.selection_outlines:
+            doc = self.document().clone()
+            painter.save()
+            
+            # Clear the document first to only show outlined parts
+            cursor = QTextCursor(doc)
+            cursor.select(QTextCursor.SelectionType.Document)
+            fmt = cursor.charFormat()
+            fmt.setForeground(QColor(0, 0, 0, 0))  # Transparent
+            cursor.mergeCharFormat(fmt)
+
+            # Apply outline colors only to selected regions
+            for outline_info in self.selection_outlines:
+                cursor.setPosition(outline_info.start)
+                cursor.setPosition(outline_info.end, QTextCursor.KeepAnchor)
+                fmt = cursor.charFormat()
+                fmt.setForeground(outline_info.color)
+                cursor.mergeCharFormat(fmt)
+
+                # Draw the outline for this selection
+                offsets = [(dx, dy) 
+                    for dx in (-outline_info.width, 0, outline_info.width)
+                    for dy in (-outline_info.width, 0, outline_info.width)
+                    if dx != 0 or dy != 0
+                ]
+                
+                for dx, dy in offsets:
+                    painter.save()
+                    painter.translate(dx, dy)
+                    doc.drawContents(painter)
+                    painter.restore()
+
+            painter.restore()
+
+        # Draw the normal text on top
+        super().paint(painter, option, widget)
 
     def set_bold(self, state):
         if not self.textCursor().hasSelection():
@@ -584,6 +657,28 @@ class TextBlockItem(QGraphicsTextItem):
         start = cursor.selectionStart()
         end = cursor.selectionEnd()
 
+        # Find all selections that completely contain the current selection
+        containing_outlines = [
+            outline for outline in self.selection_outlines
+            if outline.start <= start and outline.end >= end
+        ]
+
+        # Get outline properties from the last (most recent) containing selection
+        outline_properties = None
+        if containing_outlines:
+            latest_outline = containing_outlines[-1]  # Get the last one from the list
+            outline_properties = {
+                'outline': True,
+                'outline_color': latest_outline.color.name(),
+                'outline_width': latest_outline.width
+            }
+        else:
+            outline_properties = {
+                'outline': False,
+                'outline_color': None,
+                'outline_width': None
+            }
+
         # Create a new cursor for traversing the selection
         format_cursor = QTextCursor(cursor)
 
@@ -596,9 +691,6 @@ class TextBlockItem(QGraphicsTextItem):
             'underline': True,
             'text_color': set(),
             'alignment': None,
-            'outline': True,
-            'outline_color': set(),
-            'outline_width': set(),
         }
 
         # Get initial block format for alignment
@@ -607,7 +699,6 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Iterate through the selection one character at a time
         for pos in range(start, end):
-            # Select each character individually to ensure proper format capture
             format_cursor.setPosition(pos)
             format_cursor.setPosition(pos + 1, QTextCursor.KeepAnchor)
             char_format = format_cursor.charFormat()
@@ -620,18 +711,13 @@ class TextBlockItem(QGraphicsTextItem):
             properties['underline'] &= char_format.font().underline()
             properties['text_color'].add(char_format.foreground().color().name())
 
-            # Check for outline
-            text_outline = char_format.textOutline()
-            if text_outline.style() == Qt.NoPen:
-                properties['outline'] = False
-            else:
-                properties['outline_color'].add(text_outline.color().name())
-                properties['outline_width'].add(text_outline.widthF())
-
         # Convert sets to single values if all elements are the same, otherwise set to None
         for key, value in properties.items():
             if isinstance(value, set):
                 properties[key] = list(value)[0] if len(value) == 1 else None
+
+        # Merge outline properties with other properties
+        properties.update(outline_properties)
 
         return properties
     

@@ -644,16 +644,14 @@ class ImageViewer(QtWidgets.QGraphicsView):
     def display_cv2_image(self, cv2_img: np.ndarray):
         qimage = self.qimage_from_cv2(cv2_img)
         pixmap = QtGui.QPixmap.fromImage(qimage)
+        self.clear_scene()
         self.setPhoto(pixmap)
 
     def clear_scene(self):
         self._scene.clear()
-        self.photo = QtWidgets.QGraphicsPixmapItem()
-        self.photo.setShapeMode(QtWidgets.QGraphicsPixmapItem.BoundingRectShape)
-        self._scene.addItem(self.photo)
+        self.selected_rect = None
         self.rectangles = []
         self.text_items = []
-        self.selected_rect = None
 
     def clear_rectangles(self, page_switch=False):
         if page_switch:
@@ -672,8 +670,11 @@ class ImageViewer(QtWidgets.QGraphicsView):
             self.text_items.clear()
 
     def setPhoto(self, pixmap: QtGui.QPixmap = None):
-        self.clear_scene()
         if pixmap and not pixmap.isNull():
+            self.photo = QtWidgets.QGraphicsPixmapItem()
+            self.photo.setShapeMode(QtWidgets.QGraphicsPixmapItem.BoundingRectShape)
+            self._scene.addItem(self.photo)
+
             self.empty = False
             self.photo.setPixmap(pixmap)
             self.fitInView()
@@ -861,6 +862,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
             text_item.setPos(QtCore.QPointF(*text_block['position']))
             text_item.setRotation(text_block['rotation'])
             text_item.setScale(text_block['scale'])
+            text_item.selection_outlines = text_block['selection_outlines']
+            text_item.update()
 
             self._scene.addItem(text_item)
             self.text_items.append(text_item)  
@@ -905,7 +908,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 'scale': item.scale(),
                 'transform_origin': (item.transformOriginPoint().x(), 
                                      item.transformOriginPoint().y()),
-                'width': item.boundingRect().width()
+                'width': item.boundingRect().width(),
+                'selection_outlines': item.selection_outlines
             })
 
         return {
