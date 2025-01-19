@@ -50,6 +50,8 @@ class ImageSaveRenderer:
             text_item.setPos(QtCore.QPointF(*text_block['position']))
             text_item.setRotation(text_block['rotation'])
             text_item.setScale(text_block['scale'])
+            text_item.selection_outlines = text_block['selection_outlines']
+            text_item.update()
 
             self.scene.addItem(text_item)
 
