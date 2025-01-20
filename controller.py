@@ -917,10 +917,18 @@ class ComicTranslate(ComicTranslateUI):
             min_font_size = self.settings_page.get_min_font_size() 
             max_font_size = self.settings_page.get_max_font_size()
 
+            align_id = self.alignment_tool_group.get_dayu_checked()
+            button_to_alignment = {
+                0: QtCore.Qt.AlignmentFlag.AlignLeft,
+                1: QtCore.Qt.AlignmentFlag.AlignCenter,
+                2: QtCore.Qt.AlignmentFlag.AlignRight,
+            }
+            alignment = button_to_alignment[align_id]
+
             self.undo_group.activeStack().beginMacro('text_items_rendered')
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
-                              bold, italic, underline, max_font_size, min_font_size)
+                              bold, italic, underline, alignment, max_font_size, min_font_size)
 
     def handle_rectangle_change(self, new_rect: QRectF, angle: float, tr_origin: Tuple):
         # Find the corresponding TextBlock in blk_list

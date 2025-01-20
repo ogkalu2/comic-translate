@@ -3,7 +3,7 @@ import numpy as np
 from typing import Tuple, List
 
 from PIL import Image, ImageFont, ImageDraw
-from PySide6.QtGui import QFontMetrics, QFont
+from PySide6.QtGui import QFont, QTextDocument, QTextCursor, QTextBlockFormat
 
 from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
@@ -152,25 +152,9 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
 
 def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int,
                     line_spacing, outline_width, bold, italic, underline,
-                    init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
+                    alignment, init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
     """Break long text to multiple lines, and reduce point size
     until all text fits within a bounding box."""
-    
-    def get_text_height(text, font, line_spacing):
-        font_metrics = QFontMetrics(font)
-        lines = text.split('\n')
-        single_line_height = font_metrics.height()
-        single_line_height += outline_width * 2
-        total_height = single_line_height * len(lines)
-        extra_spacing = single_line_height * (line_spacing - 1) * (len(lines) - 1)
-        
-        return total_height + extra_spacing
-    
-    def get_text_width(txt, font):
-        fm = QFontMetrics(font)
-        max_width = max(fm.horizontalAdvance(line) for line in txt.split('\n'))
-
-        return max_width
     
     def prepare_font(font_size):
         font = QFont(font_input, font_size)
@@ -180,13 +164,32 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
 
         return font
     
-    def eval_metrics(txt: str, font_sz) -> Tuple[float, float]:
-        """Quick helper function to calculate width/height of text."""
-
-        font = prepare_font(font_sz)
-        width = get_text_width(txt, font)
-        height = get_text_height(txt, font, line_spacing)
-
+    def eval_metrics(txt: str, font_sz: float) -> Tuple[float, float]:
+        """Quick helper function to calculate width/height of text using QTextDocument."""
+        
+        # Create a QTextDocument
+        doc = QTextDocument()
+        doc.setDefaultFont(prepare_font(font_sz))
+        doc.setPlainText(txt)
+        
+        # Apply line spacing
+        cursor = QTextCursor(doc)
+        cursor.select(QTextCursor.SelectionType.Document)
+        block_format = QTextBlockFormat()
+        spacing = line_spacing * 100
+        block_format.setLineHeight(spacing, QTextBlockFormat.LineHeightTypes.ProportionalHeight.value)
+        block_format.setAlignment(alignment)
+        cursor.mergeBlockFormat(block_format)
+        
+        # Get the size of the document
+        size = doc.size()
+        width, height = size.width(), size.height()
+        
+        # Add outline width to the size
+        if outline_width > 0:
+            width += 2 * outline_width
+            height += 2 * outline_width
+        
         return width, height
 
     mutable_message = text
@@ -234,8 +237,8 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
     return mutable_message, font_size
 
 def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
-                outline_width, bold, italic, underline, init_font_size: int = 40, 
-         min_font_size: int = 10):
+                outline_width, bold, italic, underline, alignment, init_font_size: int = 40, 
+                min_font_size: int = 10):
     
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
@@ -246,7 +249,7 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
 
         translation, font_size = pyside_word_wrap(translation, font_family, width, height,
                                                  line_spacing, outline_width, bold, italic, underline,
-                                                 init_font_size, min_font_size)
+                                                 alignment, init_font_size, min_font_size)
  
         main_page.blk_rendered.emit(translation, font_size, blk)
 
