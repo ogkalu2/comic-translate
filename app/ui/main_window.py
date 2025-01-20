@@ -7,7 +7,7 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 from .dayu_widgets import dayu_theme
 from .dayu_widgets.divider import MDivider
-from .dayu_widgets.combo_box import MComboBox
+from .dayu_widgets.combo_box import MComboBox, MFontComboBox
 from .dayu_widgets.check_box import MCheckBox
 from .dayu_widgets.text_edit import MTextEdit
 from .dayu_widgets.line_edit import MLineEdit
@@ -352,12 +352,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         text_render_layout = QtWidgets.QVBoxLayout()
         font_settings_layout = QtWidgets.QHBoxLayout()
 
-        self.font_dropdown = MComboBox().small()
+        self.font_dropdown = MFontComboBox().small()
         self.font_dropdown.setToolTip(self.tr("Font"))
-        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path)
-                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
-        font_families = [self.get_font_family(f) for f in font_files]
-        self.font_dropdown.addItems(font_families)
 
         self.font_size_dropdown = MComboBox().small()
         self.font_size_dropdown.setToolTip(self.tr("Font Size"))
@@ -718,6 +714,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # If not a file path or loading failed, treat as font family name
         return font_input
     
+    def add_custom_font(self, font_input: str):
+        # Check if font_input is a file path
+        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
+            QFontDatabase.addApplicationFont(font_input)
+
     def get_color(self):
         default_color = QtGui.QColor('#000000')
         color_dialog = QtWidgets.QColorDialog()

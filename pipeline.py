@@ -3,19 +3,21 @@ import cv2, shutil
 from datetime import datetime
 from typing import List
 from PySide6 import QtCore
+from PySide6.QtGui import QColor
 
 from modules.detection import TextBlockDetector
 from modules.ocr.ocr import OCRProcessor
 from modules.translator import Translator
 from modules.utils.textblock import TextBlock, sort_blk_list
-from modules.rendering.render import get_best_render_area
 from modules.utils.pipeline_utils import inpaint_map, get_config
-from modules.rendering.render import draw_text, get_best_render_area
-from modules.utils.pipeline_utils import generate_mask, get_language_code, set_alignment, is_directory_empty
+from modules.rendering.render import get_best_render_area, pyside_word_wrap
+from modules.utils.pipeline_utils import generate_mask, get_language_code, is_directory_empty
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 
 from app.ui.canvas.rectangle import MoveableRectItem
+from app.ui.canvas.text_item import SelectionOutlineInfo
+from app.ui.canvas.save_renderer import ImageSaveRenderer
 
 class ComicTranslatePipeline:
     def __init__(self, main_page):
@@ -127,8 +129,8 @@ class ComicTranslatePipeline:
 
             target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
-            text_rendering_settings = settings_page.get_text_rendering_settings()
-            upper_case = text_rendering_settings['upper_case']
+            render_settings = settings_page.get_text_rendering_settings()
+            upper_case = render_settings.upper_case
 
             translator = Translator(self.main_page, source_lang, target_lang)
             if single_block:
@@ -318,29 +320,71 @@ class ComicTranslatePipeline:
                 break
 
             # Text Rendering
-            text_rendering_settings = settings_page.get_text_rendering_settings()
-            upper_case = text_rendering_settings['upper_case']
-            outline = text_rendering_settings['outline']
+            render_settings = settings_page.get_text_rendering_settings()
+            upper_case = render_settings.upper_case
+            outline = render_settings.outline
             format_translations(blk_list, trg_lng_cd, upper_case=upper_case)
             get_best_render_area(blk_list, image, inpaint_input_img)
 
-            font = text_rendering_settings['font']
-            font_color = text_rendering_settings['color']
-            font_path = f'fonts/{font}'
-            set_alignment(blk_list, settings_page)
+            font = render_settings.font_family
+            font_color = QColor(render_settings.color)
 
-            max_font_size = self.main_page.settings_page.get_max_font_size()
-            min_font_size = self.main_page.settings_page.get_min_font_size()
+            max_font_size = render_settings.max_font_size
+            min_font_size = render_settings.min_font_size
+            line_spacing = float(render_settings.line_spacing) 
+            outline_width = float(render_settings.outline_width)
+            outline_color = QColor(render_settings.outline_color) 
+            bold = render_settings.bold
+            italic = render_settings.italic
+            underline = render_settings.underline
+            alignment_id = render_settings.alignment_id
+            alignment = self.main_page.button_to_alignment[alignment_id]
+                
+            text_items_state = []
+            for blk in blk_list:
+                x1, y1, width, height = blk.xywh
 
-            rendered_image = draw_text(inpaint_input_img, blk_list, font_path, colour=font_color, init_font_size=max_font_size, min_font_size=min_font_size, outline=outline)
+                translation = blk.translation
+                if not translation or len(translation) == 1:
+                    continue
 
+                translation, font_size = pyside_word_wrap(translation, font, width, height,
+                                                        line_spacing, outline_width, bold, italic, underline,
+                                                        alignment, max_font_size, min_font_size)
+                
+                # Display text if on current page
+                if index == self.main_page.curr_img_idx:
+                    self.main_page.blk_rendered.emit(translation, font_size, blk, False)
+
+                text_items_state.append({
+                'text': translation,
+                'font_family': font,
+                'font_size': font_size,
+                'text_color': font_color,
+                'alignment': alignment,
+                'line_spacing': line_spacing,
+                'outline_color': outline_color,
+                'outline_width': outline_width,
+                'bold': bold,
+                'italic': italic,
+                'underline': underline,
+                'position': (x1, y1),
+                'rotation': blk.angle,
+                'scale': 1.0,
+                'transform_origin': blk.tr_origin_point,
+                'width': width,
+                'selection_outlines': [SelectionOutlineInfo(0, len(translation), 
+                                                            outline_color, outline_width)] if outline else []
+                })
+
+            self.main_page.image_states[image_path]['viewer_state'].update({
+                'text_items_state': text_items_state
+                })
+            
             self.main_page.progress_update.emit(index, total_images, 9, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
-
-            # Display or set the rendered Image on the viewer once it's done
-            self.main_page.image_processed.emit(index, rendered_image, image_path)
 
             # Saving blocks with texts to history
             self.main_page.image_states[image_path].update({
@@ -353,8 +397,13 @@ class ComicTranslatePipeline:
             render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
             if not os.path.exists(render_save_dir):
                 os.makedirs(render_save_dir, exist_ok=True)
-            rendered_image_save = cv2.cvtColor(rendered_image, cv2.COLOR_BGR2RGB)
-            cv2.imwrite(os.path.join(render_save_dir, f"{base_name}_translated{extension}"), rendered_image_save)
+            sv_pth = os.path.join(render_save_dir, f"{base_name}_translated{extension}")
+
+            im = cv2.cvtColor(inpaint_input_img, cv2.COLOR_RGB2BGR)
+            renderer = ImageSaveRenderer(im)
+            viewer_state = self.main_page.image_states[image_path]['viewer_state']
+            renderer.add_state_to_image(viewer_state)
+            renderer.save_image(sv_pth)
 
             self.main_page.progress_update.emit(index, total_images, 10, 10, False)
 

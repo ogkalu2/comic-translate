@@ -250,8 +250,8 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
         translation, font_size = pyside_word_wrap(translation, font_family, width, height,
                                                  line_spacing, outline_width, bold, italic, underline,
                                                  alignment, init_font_size, min_font_size)
- 
-        main_page.blk_rendered.emit(translation, font_size, blk)
+        
+        main_page.blk_rendered.emit(translation, font_size, blk, True)
 
 
 

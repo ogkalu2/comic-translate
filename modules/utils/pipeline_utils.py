@@ -3,7 +3,7 @@ import numpy as np
 import os
 import base64
 from .textblock import TextBlock, sort_textblock_rectangles
-from ..detection import does_rectangle_fit, do_rectangles_overlap, is_mostly_contained
+from ..detection import does_rectangle_fit, is_mostly_contained
 from typing import List
 from ..inpainting.lama import LaMa
 from ..inpainting.schema import Config
@@ -225,7 +225,7 @@ def validate_translator(main_page, source_lang, target_lang):
     return True
 
 def font_selected(main_page):
-    if not main_page.settings_page.get_text_rendering_settings()['font']:
+    if not main_page.settings_page.get_text_rendering_settings().font_family:
         Messages.select_font_error(main_page)
         return False
     return True
@@ -239,17 +239,6 @@ def validate_settings(main_page, source_lang, target_lang):
         return False
     
     return True
-
-def set_alignment(blk_list, settings_page):
-    text_render_settings = settings_page.get_text_rendering_settings()
-    for blk in blk_list:
-        alignment = text_render_settings['alignment']
-        if alignment == settings_page.ui.tr("Center"):
-            blk.alignment = "center"
-        elif alignment == settings_page.ui.tr("Left"):
-            blk.alignment = "left"
-        elif alignment == settings_page.ui.tr("Right"):
-            blk.alignment = "right"
 
 def is_directory_empty(directory):
     # Walk through the directory

@@ -2,7 +2,7 @@ import os
 from typing import List
 from PySide6 import QtWidgets
 from PySide6 import QtCore
-from PySide6.QtGui import QFontMetrics
+from PySide6.QtGui import QFontMetrics, QFontDatabase
 
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.line_edit import MLineEdit
@@ -11,9 +11,10 @@ from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.clickable_card import ClickMeta
 from ..dayu_widgets.divider import MDivider
 from ..dayu_widgets.qt import MPixmap
-from ..dayu_widgets.combo_box import MComboBox
+from ..dayu_widgets.combo_box import MComboBox, MFontComboBox
 from ..dayu_widgets.spin_box import MSpinBox
 from ..dayu_widgets.browser import MClickBrowserFileToolButton
+from ..dayu_widgets.button_group import MToolButtonGroup
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,9 +26,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         super(SettingsPageUI, self).__init__(parent)
 
         self.credential_widgets = {}
-        self.llm_widgets = {}
         self.export_widgets = {}
-        self.text_rendering_widgets = {}  
 
         self.inpainters = ['LaMa']
         self.ocr_engines = [self.tr("Default"), self.tr("Microsoft OCR"), self.tr("Google Cloud Vision")]
@@ -435,32 +434,20 @@ class SettingsPageUI(QtWidgets.QWidget):
         llms_layout = QtWidgets.QVBoxLayout()
 
         prompt_label = MLabel(self.tr("Extra Context:"))
-        self.llm_widgets['extra_context'] = MTextEdit()
+        self.extra_context = MTextEdit()
 
-        image_checkbox = MCheckBox(self.tr("Provide Image as input to multimodal LLMs"))
-        image_checkbox.setChecked(True)
-        self.llm_widgets['image_input'] = image_checkbox
+        self.image_checkbox = MCheckBox(self.tr("Provide Image as input to multimodal LLMs"))
+        self.image_checkbox.setChecked(True)
 
         llms_layout.addWidget(prompt_label)
-        llms_layout.addWidget(self.llm_widgets['extra_context'])
-        llms_layout.addWidget(image_checkbox)
+        llms_layout.addWidget(self.extra_context)
+        llms_layout.addWidget(self.image_checkbox)
         llms_layout.addStretch(1)
 
         return llms_layout
 
     def _create_text_rendering_layout(self):
         text_rendering_layout = QtWidgets.QVBoxLayout()
-
-        # Text Alignment
-        alignment_layout = QtWidgets.QVBoxLayout()
-        alignment_label = MLabel(self.tr("Text Alignment")).h4()
-        alignment_combo = MComboBox().small()
-        alignment_combo.addItems(self.alignment)
-        self.set_combo_box_width(alignment_combo, self.alignment)
-        alignment_combo.setCurrentText(self.tr("Center"))
-        alignment_layout.addWidget(alignment_label)
-        alignment_layout.addWidget(alignment_combo)
-        text_rendering_layout.addLayout(alignment_layout)
 
         # Font Selection
         font_layout = QtWidgets.QVBoxLayout()
@@ -474,7 +461,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.min_font_spinbox = MSpinBox().small()
         self.min_font_spinbox.setFixedWidth(60)
         self.min_font_spinbox.setMaximum(100)
-        self.min_font_spinbox.setValue(12)
+        self.min_font_spinbox.setValue(9)
 
         self.max_font_spinbox = MSpinBox().small()
         self.max_font_spinbox.setFixedWidth(60)
@@ -490,10 +477,14 @@ class SettingsPageUI(QtWidgets.QWidget):
         max_font_layout.addStretch()
 
         font_label = MLabel(self.tr("Font")).h4()
-        self.font_combo = MComboBox().small()
-        font_files = [f for f in os.listdir(font_folder_path) if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
-        self.font_combo.addItems(font_files)
-        self.set_combo_box_width(self.font_combo, font_files)
+        self.font_combo = MFontComboBox().small()
+        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
+                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+        for font in font_files:
+            self.add_custom_font(font)
+        font_database = QFontDatabase()
+        font_families = font_database.families()
+        self.set_combo_box_width(self.font_combo, font_families)
 
         self.font_browser = MClickBrowserFileToolButton(multiple=True)
         self.font_browser.set_dayu_filters([".ttf", ".ttc", ".otf", ".woff", ".woff2"])
@@ -508,38 +499,102 @@ class SettingsPageUI(QtWidgets.QWidget):
         font_layout.addLayout(min_font_layout)
         font_layout.addLayout(max_font_layout)
 
+        # Uppercase checkbox 
+        self.uppercase_checkbox = MCheckBox(self.tr("Render Text in UpperCase"))
+        text_rendering_layout.addWidget(self.uppercase_checkbox)
+
         text_rendering_layout.addSpacing(10)
         text_rendering_layout.addLayout(font_layout)
 
-        # Font Color
-        color_layout = QtWidgets.QVBoxLayout()
-        color_label = MLabel(self.tr("Color"))
+        # Text Formatting Controls Layout
+        formatting_layout = QtWidgets.QVBoxLayout()  # Changed to QVBoxLayout
+        
+        # Top row with color button and line spacing
+        top_row = QtWidgets.QHBoxLayout()
+        
+        # Color Button
         self.color_button = QtWidgets.QPushButton()
-        self.color_button.setFixedSize(30, 30)  # Set a fixed size for the button
+        self.color_button.setFixedSize(30, 30)
         self.color_button.setStyleSheet(
             "background-color: black; border: none; border-radius: 5px;"
         )
         self.color_button.setProperty('selected_color', "#000000")
+
+        # Line Spacing Dropdown
+        self.line_spacing = MComboBox().small()
+        self.line_spacing.addItems(['1.0', '1.1', '1.2', '1.3', '1.4', '1.5'])
+        self.line_spacing.setCurrentText('1.0')
+        self.line_spacing.setFixedWidth(60)
+        self.line_spacing.setEditable(True)
         
-        color_layout.addWidget(color_label)
-        color_layout.addWidget(self.color_button)
-        color_layout.addStretch()
-        text_rendering_layout.addLayout(color_layout)
+        top_row.addWidget(self.color_button)
+        top_row.addWidget(self.line_spacing)
+        top_row.addStretch()
+
+        # Bottom row for alignment and style tools
+        bottom_row = QtWidgets.QHBoxLayout()
+        
+        # Alignment Tools
+        self.alignment_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
+        alignment_tools = [
+            {"svg": "tabler--align-left.svg", "checkable": True, "tooltip": "Align Left"},
+            {"svg": "tabler--align-center.svg", "checkable": True, "tooltip": "Align Center"},
+            {"svg": "tabler--align-right.svg", "checkable": True, "tooltip": "Align Right"},
+        ]
+        self.alignment_tool_group.set_button_list(alignment_tools)
+        self.alignment_tool_group.get_button_group().buttons()[1].setChecked(True)
+
+        # Style Tools
+        self.style_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=False)
+        style_tools = [
+            {"svg": "bold.svg", "checkable": True, "tooltip": "Bold"},
+            {"svg": "italic.svg", "checkable": True, "tooltip": "Italic"},
+            {"svg": "underline.svg", "checkable": True, "tooltip": "Underline"},
+        ]
+        self.style_tool_group.set_button_list(style_tools)
+
+        bottom_row.addWidget(self.alignment_tool_group)
+        bottom_row.addWidget(self.style_tool_group)
+        bottom_row.addStretch()
+
+        # Add rows to formatting layout
+        formatting_layout.addLayout(top_row)
+        formatting_layout.addLayout(bottom_row)
+        formatting_layout.addStretch()
+
+        text_rendering_layout.addLayout(formatting_layout)
         text_rendering_layout.addSpacing(10)
 
-        uppercase_checkbox = MCheckBox(self.tr("Render Text in UpperCase"))
-        text_rendering_layout.addWidget(uppercase_checkbox)
+        # Outline Section
+        outline_layout = QtWidgets.QVBoxLayout()
+        outline_label = MLabel(self.tr("Outline")).h4()
+        outline_layout.addWidget(outline_label)
 
-        self.outline_checkbox = MCheckBox(self.tr("Render Text With White Outline"))
+        outline_controls = QtWidgets.QHBoxLayout()
+        self.outline_checkbox = MCheckBox(self.tr("Outline"))
         self.outline_checkbox.setToolTip(self.tr("When checked, black bubbles with white text will be rendered automatically without changing color"))
-        text_rendering_layout.addWidget(self.outline_checkbox)
+        
+        # Color box for outline
+        self.outline_color_button = QtWidgets.QPushButton()
+        self.outline_color_button.setFixedSize(30, 30)
+        self.outline_color_button.setStyleSheet(
+            "background-color: white; border: none; border-radius: 5px;"
+        )
+        self.outline_color_button.setProperty('selected_color', "#FFFFFF")
 
-        # Store widgets for later access
-        self.text_rendering_widgets['alignment'] = alignment_combo
-        self.text_rendering_widgets['font'] = self.font_combo
-        self.text_rendering_widgets['color_button'] = self.color_button
-        self.text_rendering_widgets['upper_case'] = uppercase_checkbox
-        self.text_rendering_widgets['outline'] = self.outline_checkbox
+        # Dropdown for outline thickness
+        self.outline_width = MComboBox().small()
+        self.outline_width.addItems(['1.0', '1.15', '1.3', '1.4', '1.5'])
+        self.outline_width.setCurrentText('1.0')
+        self.outline_width.setFixedWidth(60)
+
+        outline_controls.addWidget(self.outline_checkbox)
+        outline_controls.addWidget(self.outline_color_button)
+        outline_controls.addWidget(self.outline_width)
+        outline_controls.addStretch()
+        
+        outline_layout.addLayout(outline_controls)
+        text_rendering_layout.addLayout(outline_layout)
 
         text_rendering_layout.addStretch(1)
         return text_rendering_layout
@@ -549,18 +604,14 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         batch_label = MLabel(self.tr("Automatic Mode")).h4()
 
-        raw_text_checkbox = MCheckBox(self.tr("Export Raw Text"))
-        translated_text_checkbox = MCheckBox(self.tr("Export Translated text"))
-        inpainted_image_checkbox = MCheckBox(self.tr("Export Inpainted Image"))
-
-        self.export_widgets['raw_text'] = raw_text_checkbox
-        self.export_widgets['translated_text'] = translated_text_checkbox
-        self.export_widgets['inpainted_image'] = inpainted_image_checkbox
+        self.raw_text_checkbox = MCheckBox(self.tr("Export Raw Text"))
+        self.translated_text_checkbox = MCheckBox(self.tr("Export Translated text"))
+        self.inpainted_image_checkbox = MCheckBox(self.tr("Export Inpainted Image"))
 
         export_layout.addWidget(batch_label)
-        export_layout.addWidget(raw_text_checkbox)
-        export_layout.addWidget(translated_text_checkbox)
-        export_layout.addWidget(inpainted_image_checkbox)
+        export_layout.addWidget(self.raw_text_checkbox)
+        export_layout.addWidget(self.translated_text_checkbox)
+        export_layout.addWidget(self.inpainted_image_checkbox)
 
         file_types = ['pdf', 'epub', 'cbr', 'cbz', 'cb7', 'cbt']
         available_file_types = ['pdf', 'epub', 'cbz', 'cb7']  # Exclude 'CBR' and add other types
@@ -611,6 +662,11 @@ class SettingsPageUI(QtWidgets.QWidget):
         font_metrics = QFontMetrics(label.font())
         text_width = font_metrics.horizontalAdvance(label.text())
         label.setFixedWidth(text_width + padding)
+
+    def add_custom_font(self, font_input: str):
+        # Check if font_input is a file path
+        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
+            QFontDatabase.addApplicationFont(font_input)
 
 
 

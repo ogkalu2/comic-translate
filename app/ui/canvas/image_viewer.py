@@ -857,7 +857,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 x, y, w, h = text_block['block'].xywh
                 text_item.set_text(text_block['text'], w)
 
-            if 'transform_origin' in text_block:
+            if 'transform_origin' in text_block and text_block['transform_origin']:
                 text_item.setTransformOriginPoint(QtCore.QPointF(*text_block['transform_origin']))
             text_item.setPos(QtCore.QPointF(*text_block['position']))
             text_item.setRotation(text_block['rotation'])

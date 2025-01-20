@@ -47,7 +47,7 @@ class ComicTranslate(ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)
     progress_update = QtCore.Signal(int, int, int, int, bool)
     image_skipped = QtCore.Signal(str, str, str)
-    blk_rendered = QtCore.Signal(str, int, object)
+    blk_rendered = QtCore.Signal(str, int, object, bool)
 
     def __init__(self, parent=None):
         super(ComicTranslate, self).__init__(parent)
@@ -183,24 +183,26 @@ class ComicTranslate(ComicTranslateUI):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
 
-    def on_blk_rendered(self, text, font_size, blk):
+    def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock, manual: bool):
         if not self.image_viewer.hasPhoto():
             print("No main image to add to.")
             return
         
-        font_family = self.font_dropdown.currentText()
-        text_color_str = self.block_font_color_button.property('selected_color')
+        auto_settings = self.settings_page.get_text_rendering_settings()
+        
+        font_family = self.font_dropdown.currentText() if manual else auto_settings.font_family
+        text_color_str = self.block_font_color_button.property('selected_color') if manual else auto_settings.color
         text_color = QColor(text_color_str)
         
-        id = self.alignment_tool_group.get_dayu_checked()
+        id = self.alignment_tool_group.get_dayu_checked() if manual else auto_settings.alignment_id
         alignment = self.button_to_alignment[id]
-        line_spacing = float(self.line_spacing_dropdown.currentText())
-        outline_color_str = self.outline_font_color_button.property('selected_color')
+        line_spacing = float(self.line_spacing_dropdown.currentText()) if manual else float(auto_settings.line_spacing)
+        outline_color_str = self.outline_font_color_button.property('selected_color') if manual else auto_settings.outline_color
         outline_color = QColor(outline_color_str) if self.outline_checkbox.isChecked() else None
-        outline_width = float(self.outline_width_dropdown.currentText())
-        bold = self.bold_button.isChecked()
-        italic = self.italic_button.isChecked()
-        underline = self.underline_button.isChecked()
+        outline_width = float(self.outline_width_dropdown.currentText()) if manual else float(auto_settings.outline_width)
+        bold = self.bold_button.isChecked() if manual else auto_settings.bold
+        italic = self.italic_button.isChecked() if manual else auto_settings.italic
+        underline = self.underline_button.isChecked() if manual else auto_settings.underline
 
         text_item = TextBlockItem(text, self.image_viewer.photo, font_family, 
                                   font_size, text_color, alignment, line_spacing, 
@@ -899,8 +901,8 @@ class ComicTranslate(ComicTranslateUI):
             self.curr_tblock = None
             self.curr_tblock_item = None
 
-            text_rendering_settings = self.settings_page.get_text_rendering_settings()
-            upper = text_rendering_settings['upper_case']
+            render_settings = self.settings_page.get_text_rendering_settings()
+            upper = render_settings.upper_case
 
             line_spacing = float(self.line_spacing_dropdown.currentText())
             font_family = self.font_dropdown.currentText()
@@ -918,12 +920,7 @@ class ComicTranslate(ComicTranslateUI):
             max_font_size = self.settings_page.get_max_font_size()
 
             align_id = self.alignment_tool_group.get_dayu_checked()
-            button_to_alignment = {
-                0: QtCore.Qt.AlignmentFlag.AlignLeft,
-                1: QtCore.Qt.AlignmentFlag.AlignCenter,
-                2: QtCore.Qt.AlignmentFlag.AlignRight,
-            }
-            alignment = button_to_alignment[align_id]
+            alignment = self.button_to_alignment[align_id]
 
             self.undo_group.activeStack().beginMacro('text_items_rendered')
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
