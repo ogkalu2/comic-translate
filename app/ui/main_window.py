@@ -357,14 +357,17 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.font_size_dropdown = MComboBox().small()
         self.font_size_dropdown.setToolTip(self.tr("Font Size"))
-        self.font_size_dropdown.addItems(['4', '8', '9', '10', '11', '12', '14', '16', '18', 
+        self.font_size_dropdown.addItems(['4', '6', '8', '9', '10', '11', '12', '14', '16', '18', 
                                           '20', '22', '24', '28', '32', '36', '48', '72'])
         self.font_size_dropdown.setCurrentText('12')
         self.font_size_dropdown.setFixedWidth(60)
+        self.font_size_dropdown.set_editable(True)
+
         self.line_spacing_dropdown = MComboBox().small()
         self.line_spacing_dropdown.setToolTip(self.tr("Line Spacing"))
         self.line_spacing_dropdown.addItems(['1.0', '1.1', '1.2', '1.3', '1.4', '1.5'])
         self.line_spacing_dropdown.setFixedWidth(60)
+        self.line_spacing_dropdown.set_editable(True)
 
         font_settings_layout.addWidget(self.font_dropdown)
         font_settings_layout.addWidget(self.font_size_dropdown)
@@ -396,7 +399,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             {"svg": "tabler--align-right.svg", "checkable": True, "tooltip": "Align Right"},
         ]
         self.alignment_tool_group.set_button_list(alignment_tools)
-        self.alignment_tool_group.get_button_group().buttons()[1].setChecked(True)
+        self.alignment_tool_group.set_dayu_checked(1)
 
         self.bold_button = self.create_tool_button(svg = "bold.svg", checkable=True)
         self.bold_button.setToolTip(self.tr("Bold"))
@@ -430,6 +433,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.outline_width_dropdown.setFixedWidth(60)
         self.outline_width_dropdown.setToolTip(self.tr("Outline Width"))
         self.outline_width_dropdown.addItems(['1.0', '1.15', '1.3', '1.4', '1.5'])
+        self.outline_width_dropdown.set_editable(True)
 
         outline_settings_layout.addWidget(self.outline_checkbox)
         outline_settings_layout.addWidget(self.outline_font_color_button)
