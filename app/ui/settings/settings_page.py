@@ -3,7 +3,7 @@ from typing import List
 
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Signal, QSettings
-from PySide6.QtGui import QFontDatabase
+from PySide6.QtGui import QFont, QFontDatabase
 
 from .settings_ui import SettingsPageUI
 
@@ -11,6 +11,7 @@ from dataclasses import dataclass, asdict, is_dataclass
 
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
+    font_imported = Signal(str)
 
     def __init__(self, parent=None):
         super(SettingsPage, self).__init__(parent)
@@ -135,8 +136,14 @@ class SettingsPage(QtWidgets.QWidget):
                 
             font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+            
+            font_families = []
             for font in font_files:
-                self.add_custom_font(font)
+                font_family = self.add_font_family(font)
+                font_families.append(font_family)
+            
+            if font_families:
+                self.font_imported.emit(font_families[0])
 
     def select_color(self, outline = False):
         default_color = QtGui.QColor('#000000') if not outline else QtGui.QColor('#FFFFFF')
@@ -289,11 +296,18 @@ class SettingsPage(QtWidgets.QWidget):
     
     def get_max_font_size(self):
         return int(self.ui.max_font_spinbox.value())
-    
-    def add_custom_font(self, font_input: str):
+
+    def add_font_family(self, font_input: str) -> QFont:
         # Check if font_input is a file path
         if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
-            QFontDatabase.addApplicationFont(font_input)
+            font_id = QFontDatabase.addApplicationFont(font_input)
+            if font_id != -1:
+                font_families = QFontDatabase.applicationFontFamilies(font_id)
+                if font_families:
+                    return font_families[0]
+        
+        # If not a file path or loading failed, treat as font family name
+        return font_input
 
 
 

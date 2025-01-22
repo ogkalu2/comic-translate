@@ -65,6 +65,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.image_viewer = ImageViewer(self)
         self.settings_page = SettingsPage(self)
         self.settings_page.theme_changed.connect(self.apply_theme)
+        self.settings_page.font_imported.connect(self.set_font)
         self.main_content_widget = None
         self.tool_buttons = {}  # Dictionary to store mutually exclusive tool names and their corresponding buttons
         self.page_list = PageListView()
@@ -734,5 +735,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         if color_dialog.exec() == QtWidgets.QDialog.Accepted:
             color = color_dialog.selectedColor()
             return color
+        
+    def set_font(self, font_family: str):
+        self.font_dropdown.setCurrentFont(font_family)
         
 
