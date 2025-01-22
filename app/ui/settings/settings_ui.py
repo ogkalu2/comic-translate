@@ -451,7 +451,6 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         # Font Selection
         font_layout = QtWidgets.QVBoxLayout()
-        combo_layout = QtWidgets.QHBoxLayout()
 
         min_font_layout = QtWidgets.QHBoxLayout()
         max_font_layout = QtWidgets.QHBoxLayout()
@@ -476,26 +475,22 @@ class SettingsPageUI(QtWidgets.QWidget):
         max_font_layout.addWidget(self.max_font_spinbox)
         max_font_layout.addStretch()
 
-        font_label = MLabel(self.tr("Font")).h4()
-        self.font_combo = MFontComboBox().small()
-        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
-                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
-        for font in font_files:
-            self.add_custom_font(font)
-        font_database = QFontDatabase()
-        font_families = font_database.families()
-        self.set_combo_box_width(self.font_combo, font_families)
-
+        font_label = MLabel(self.tr("Font:")).h4()
+        
+        # Create a horizontal layout for the font browser and its label
+        font_browser_layout = QtWidgets.QHBoxLayout()
+        import_font_label = MLabel(self.tr("Import Font:"))
         self.font_browser = MClickBrowserFileToolButton(multiple=True)
         self.font_browser.set_dayu_filters([".ttf", ".ttc", ".otf", ".woff", ".woff2"])
         self.font_browser.setToolTip(self.tr("Import the Font to use for Rendering Text on Images"))
-
-        combo_layout.addWidget(self.font_combo)
-        combo_layout.addWidget(self.font_browser)
-        combo_layout.addStretch()
+        
+        # Add the browser and label to the horizontal layout
+        font_browser_layout.addWidget(import_font_label)
+        font_browser_layout.addWidget(self.font_browser)
+        font_browser_layout.addStretch()
 
         font_layout.addWidget(font_label)
-        font_layout.addLayout(combo_layout)
+        font_layout.addLayout(font_browser_layout)  # Add the horizontal layout instead of just the browser
         font_layout.addLayout(min_font_layout)
         font_layout.addLayout(max_font_layout)
 
@@ -505,96 +500,7 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         text_rendering_layout.addSpacing(10)
         text_rendering_layout.addLayout(font_layout)
-
-        # Text Formatting Controls Layout
-        formatting_layout = QtWidgets.QVBoxLayout()  # Changed to QVBoxLayout
-        
-        # Top row with color button and line spacing
-        top_row = QtWidgets.QHBoxLayout()
-        
-        # Color Button
-        self.color_button = QtWidgets.QPushButton()
-        self.color_button.setFixedSize(30, 30)
-        self.color_button.setStyleSheet(
-            "background-color: black; border: none; border-radius: 5px;"
-        )
-        self.color_button.setProperty('selected_color', "#000000")
-
-        # Line Spacing Dropdown
-        self.line_spacing = MComboBox().small()
-        self.line_spacing.addItems(['1.0', '1.1', '1.2', '1.3', '1.4', '1.5'])
-        self.line_spacing.setCurrentText('1.0')
-        self.line_spacing.setFixedWidth(60)
-        self.line_spacing.setEditable(True)
-        
-        top_row.addWidget(self.color_button)
-        top_row.addWidget(self.line_spacing)
-        top_row.addStretch()
-
-        # Bottom row for alignment and style tools
-        bottom_row = QtWidgets.QHBoxLayout()
-        
-        # Alignment Tools
-        self.alignment_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=True)
-        alignment_tools = [
-            {"svg": "tabler--align-left.svg", "checkable": True, "tooltip": "Align Left"},
-            {"svg": "tabler--align-center.svg", "checkable": True, "tooltip": "Align Center"},
-            {"svg": "tabler--align-right.svg", "checkable": True, "tooltip": "Align Right"},
-        ]
-        self.alignment_tool_group.set_button_list(alignment_tools)
-        self.alignment_tool_group.get_button_group().buttons()[1].setChecked(True)
-
-        # Style Tools
-        self.style_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Horizontal, exclusive=False)
-        style_tools = [
-            {"svg": "bold.svg", "checkable": True, "tooltip": "Bold"},
-            {"svg": "italic.svg", "checkable": True, "tooltip": "Italic"},
-            {"svg": "underline.svg", "checkable": True, "tooltip": "Underline"},
-        ]
-        self.style_tool_group.set_button_list(style_tools)
-
-        bottom_row.addWidget(self.alignment_tool_group)
-        bottom_row.addWidget(self.style_tool_group)
-        bottom_row.addStretch()
-
-        # Add rows to formatting layout
-        formatting_layout.addLayout(top_row)
-        formatting_layout.addLayout(bottom_row)
-        formatting_layout.addStretch()
-
-        text_rendering_layout.addLayout(formatting_layout)
         text_rendering_layout.addSpacing(10)
-
-        # Outline Section
-        outline_layout = QtWidgets.QVBoxLayout()
-        outline_label = MLabel(self.tr("Outline")).h4()
-        outline_layout.addWidget(outline_label)
-
-        outline_controls = QtWidgets.QHBoxLayout()
-        self.outline_checkbox = MCheckBox(self.tr("Outline"))
-        self.outline_checkbox.setToolTip(self.tr("When checked, black bubbles with white text will be rendered automatically without changing color"))
-        
-        # Color box for outline
-        self.outline_color_button = QtWidgets.QPushButton()
-        self.outline_color_button.setFixedSize(30, 30)
-        self.outline_color_button.setStyleSheet(
-            "background-color: white; border: none; border-radius: 5px;"
-        )
-        self.outline_color_button.setProperty('selected_color', "#FFFFFF")
-
-        # Dropdown for outline thickness
-        self.outline_width = MComboBox().small()
-        self.outline_width.addItems(['1.0', '1.15', '1.3', '1.4', '1.5'])
-        self.outline_width.setCurrentText('1.0')
-        self.outline_width.setFixedWidth(60)
-
-        outline_controls.addWidget(self.outline_checkbox)
-        outline_controls.addWidget(self.outline_color_button)
-        outline_controls.addWidget(self.outline_width)
-        outline_controls.addStretch()
-        
-        outline_layout.addLayout(outline_controls)
-        text_rendering_layout.addLayout(outline_layout)
 
         text_rendering_layout.addStretch(1)
         return text_rendering_layout
@@ -662,11 +568,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         font_metrics = QFontMetrics(label.font())
         text_width = font_metrics.horizontalAdvance(label.text())
         label.setFixedWidth(text_width + padding)
-
-    def add_custom_font(self, font_input: str):
-        # Check if font_input is a file path
-        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
-            QFontDatabase.addApplicationFont(font_input)
 
 
 

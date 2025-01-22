@@ -225,7 +225,7 @@ def validate_translator(main_page, source_lang, target_lang):
     return True
 
 def font_selected(main_page):
-    if not main_page.settings_page.get_text_rendering_settings().font_family:
+    if not main_page.render_settings().font_family:
         Messages.select_font_error(main_page)
         return False
     return True

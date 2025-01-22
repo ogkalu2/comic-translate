@@ -8,22 +8,6 @@ from .settings_ui import SettingsPageUI
 
 from dataclasses import dataclass, asdict, is_dataclass
 
-@dataclass
-class TextRenderingSettings:
-    alignment_id: int
-    font_family: str
-    min_font_size: int
-    max_font_size: int
-    color: str
-    upper_case: bool
-    outline: bool
-    outline_color: str
-    outline_width: str
-    bold: bool
-    italic: bool
-    underline: bool
-    line_spacing: str
-
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
 
@@ -43,8 +27,6 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         self.ui.lang_combo.currentTextChanged.connect(self.on_language_changed)
         self.ui.font_browser.sig_files_changed.connect(self.import_font)
-        self.ui.color_button.clicked.connect(self.select_color)
-        self.ui.outline_color_button.clicked.connect(lambda: self.select_color(True))
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
@@ -65,24 +47,6 @@ class SettingsPage(QtWidgets.QWidget):
 
     def is_gpu_enabled(self):
         return self.ui.use_gpu_checkbox.isChecked()
-
-    def get_text_rendering_settings(self) -> TextRenderingSettings:
-        style_buttons = self.ui.style_tool_group.get_button_group().buttons()
-        return TextRenderingSettings(
-            alignment_id = self.ui.alignment_tool_group.get_dayu_checked(),
-            font_family = self.ui.font_combo.currentText(),
-            min_font_size = int(self.ui.min_font_spinbox.value()),
-            max_font_size = int(self.ui.max_font_spinbox.value()),
-            color = self.ui.color_button.property('selected_color'),
-            upper_case = self.ui.uppercase_checkbox.isChecked(),
-            outline = self.ui.outline_checkbox.isChecked(),
-            outline_color = self.ui.outline_color_button.property('selected_color'),
-            outline_width = self.ui.outline_width.currentText(),
-            bold = style_buttons[0].isChecked(),
-            italic = style_buttons[1].isChecked(),
-            underline = style_buttons[2].isChecked(),
-            line_spacing = self.ui.line_spacing.currentText()
-        )
 
     def get_llm_settings(self):
         return {
@@ -146,7 +110,6 @@ class SettingsPage(QtWidgets.QWidget):
                 'use_gpu': self.is_gpu_enabled(),
                 'hd_strategy': self.get_hd_strategy_settings()
             },
-            'text_rendering': self.get_text_rendering_settings(),
             'llm': self.get_llm_settings(),
             'export': self.get_export_settings(),
             'credentials': self.get_credentials(),
@@ -272,35 +235,6 @@ class SettingsPage(QtWidgets.QWidget):
             self.ui.crop_trigger_spinbox.setValue(settings.value('crop_trigger_size', 512, type=int))
         settings.endGroup()  # hd_strategy
         settings.endGroup()  # tools
-
-        # Load text rendering settings
-        settings.beginGroup('text_rendering')
-        alignment = settings.value('alignment_id', 1, type=int) # Default value is 1 which is Center
-        self.ui.alignment_tool_group.set_dayu_checked(alignment)  
-
-        self.ui.font_combo.setCurrentText(settings.value('font_family', ''))
-        min_font_size = settings.value('min_font_size', 12)  # Default value is 12
-        max_font_size = settings.value('max_font_size', 40) # Default value is 40
-        self.ui.min_font_spinbox.setValue(int(min_font_size))
-        self.ui.max_font_spinbox.setValue(int(max_font_size))
-
-        color = settings.value('color', '#000000')
-        self.ui.color_button.setStyleSheet(f"background-color: {color}; border: none; border-radius: 5px;")
-        self.ui.color_button.setProperty('selected_color', color)
-        self.ui.uppercase_checkbox.setChecked(settings.value('upper_case', False, type=bool))
-        self.ui.outline_checkbox.setChecked(settings.value('outline', True, type=bool))
-
-        self.ui.line_spacing.setCurrentText(settings.value('line_spacing', '1.0'))
-        self.ui.outline_width.setCurrentText(settings.value('outline_width', '1.0'))
-        outline_color = settings.value('outline_color', '#FFFFFF')
-        self.ui.outline_color_button.setStyleSheet(f"background-color: {outline_color}; border: none; border-radius: 5px;")
-        self.ui.outline_color_button.setProperty('selected_color', outline_color)
-
-        self.ui.style_tool_group.get_button_group().buttons()[0].setChecked(settings.value('bold', False, type=bool))
-        self.ui.style_tool_group.get_button_group().buttons()[1].setChecked(settings.value('italic', False, type=bool))
-        self.ui.style_tool_group.get_button_group().buttons()[2].setChecked(settings.value('underline', False, type=bool))
-
-        settings.endGroup()
 
         # Load LLM settings
         settings.beginGroup('llm')

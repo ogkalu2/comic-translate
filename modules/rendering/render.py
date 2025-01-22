@@ -10,6 +10,24 @@ from ..utils.textblock import TextBlock
 from ..detection import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 
+from dataclasses import dataclass, asdict, is_dataclass
+
+@dataclass
+class TextRenderingSettings:
+    alignment_id: int
+    font_family: str
+    min_font_size: int
+    max_font_size: int
+    color: str
+    upper_case: bool
+    outline: bool
+    outline_color: str
+    outline_width: str
+    bold: bool
+    italic: bool
+    underline: bool
+    line_spacing: str
+
 def cv2_to_pil(cv2_image: np.ndarray):
     # Convert color channels from BGR to RGB
     rgb_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
@@ -251,7 +269,7 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
                                                  line_spacing, outline_width, bold, italic, underline,
                                                  alignment, init_font_size, min_font_size)
         
-        main_page.blk_rendered.emit(translation, font_size, blk, True)
+        main_page.blk_rendered.emit(translation, font_size, blk)
 
 
 

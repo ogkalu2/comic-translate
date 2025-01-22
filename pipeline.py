@@ -129,8 +129,7 @@ class ComicTranslatePipeline:
 
             target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
-            render_settings = settings_page.get_text_rendering_settings()
-            upper_case = render_settings.upper_case
+            upper_case = settings_page.ui.uppercase_checkbox.isChecked()
 
             translator = Translator(self.main_page, source_lang, target_lang)
             if single_block:
@@ -320,7 +319,7 @@ class ComicTranslatePipeline:
                 break
 
             # Text Rendering
-            render_settings = settings_page.get_text_rendering_settings()
+            render_settings = self.main_page.render_settings()
             upper_case = render_settings.upper_case
             outline = render_settings.outline
             format_translations(blk_list, trg_lng_cd, upper_case=upper_case)
@@ -354,7 +353,7 @@ class ComicTranslatePipeline:
                 
                 # Display text if on current page
                 if index == self.main_page.curr_img_idx:
-                    self.main_page.blk_rendered.emit(translation, font_size, blk, False)
+                    self.main_page.blk_rendered.emit(translation, font_size, blk)
 
                 text_items_state.append({
                 'text': translation,

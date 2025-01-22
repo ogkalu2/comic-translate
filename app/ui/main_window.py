@@ -354,6 +354,10 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.font_dropdown = MFontComboBox().small()
         self.font_dropdown.setToolTip(self.tr("Font"))
+        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
+                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+        for font in font_files:
+            self.add_custom_font(font)
 
         self.font_size_dropdown = MComboBox().small()
         self.font_size_dropdown.setToolTip(self.tr("Font Size"))
