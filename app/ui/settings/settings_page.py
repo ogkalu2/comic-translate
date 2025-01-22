@@ -3,6 +3,7 @@ from typing import List
 
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Signal, QSettings
+from PySide6.QtGui import QFontDatabase
 
 from .settings_ui import SettingsPageUI
 
@@ -135,7 +136,7 @@ class SettingsPage(QtWidgets.QWidget):
             font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
             for font in font_files:
-                self.ui.add_custom_font(font)
+                self.add_custom_font(font)
 
     def select_color(self, outline = False):
         default_color = QtGui.QColor('#000000') if not outline else QtGui.QColor('#FFFFFF')
@@ -288,6 +289,11 @@ class SettingsPage(QtWidgets.QWidget):
     
     def get_max_font_size(self):
         return int(self.ui.max_font_spinbox.value())
+    
+    def add_custom_font(self, font_input: str):
+        # Check if font_input is a file path
+        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
+            QFontDatabase.addApplicationFont(font_input)
 
 
 
