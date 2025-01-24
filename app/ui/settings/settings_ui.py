@@ -519,10 +519,10 @@ class SettingsPageUI(QtWidgets.QWidget):
         export_layout.addWidget(self.translated_text_checkbox)
         export_layout.addWidget(self.inpainted_image_checkbox)
 
-        file_types = ['pdf', 'epub', 'cbr', 'cbz', 'cb7', 'cbt']
-        available_file_types = ['pdf', 'epub', 'cbz', 'cb7']  # Exclude 'CBR' and add other types
+        self.from_file_types = ['pdf', 'epub', 'cbr', 'cbz', 'cb7', 'cbt', 'zip', 'rar']
+        available_file_types = ['pdf', 'epub', 'cbz', 'cb7', 'zip']  # Exclude 'CBR' and add other types
 
-        for file_type in file_types:
+        for file_type in self.from_file_types:
             save_layout = QtWidgets.QHBoxLayout()
             save_label = MLabel(self.tr("Save {file_type} as:").format(file_type=file_type))
             save_combo = MComboBox().small()
@@ -531,8 +531,10 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.set_combo_box_width(save_combo, save_items)
 
             # Set the default selection to the file type, or 'cbz' if file type is 'cbr'
-            if file_type == 'cbr':
+            if file_type in ['cbr', 'cbt']:
                 save_combo.setCurrentText('cbz')
+            elif file_type == 'rar':
+                save_combo.setCurrentText('zip')
             elif file_type in available_file_types:
                 save_combo.setCurrentText(file_type)
 
