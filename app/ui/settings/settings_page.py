@@ -64,7 +64,7 @@ class SettingsPage(QtWidgets.QWidget):
             'save_as': {}
         }
         for file_type in self.ui.from_file_types:
-            settings['save_as'][file_type] = self.ui.export_widgets[f'{file_type}_save_as'].currentText()
+            settings['save_as'][file_type] = self.ui.export_widgets[f'.{file_type}_save_as'].currentText()
         return settings
 
     def get_credentials(self, service: str = ""):
