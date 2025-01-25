@@ -1,5 +1,5 @@
 opencv_python
-PySide6>=6.7.2
+PySide6==6.8.0
 dayu-path>=0.5.2
 msgpack>=1.1.0
 requests>=2.31.0
@@ -26,3 +26,6 @@ paddlepaddle>=2.6.1
 loguru>=0.7.2
 google-generativeai>=0.5.2
 anthropic>=0.25.6
+fugashi==1.4.0
+pyperclip==1.9.0
+unidic-lite==1.0.8
