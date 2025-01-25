@@ -91,6 +91,7 @@ class SettingsPage(QtWidgets.QWidget):
                 return {
                     'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
                     'api_url': self.ui.credential_widgets[f"{service}_api_url"].text(),
+                    'model': self.ui.credential_widgets[f"{service}_model"].text(),
                     'save_key': save_keys
                 }
             else:
@@ -204,6 +205,7 @@ class SettingsPage(QtWidgets.QWidget):
                 elif translated_service == "Custom":
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
                     settings.setValue(f"{translated_service}_api_url", cred['api_url'])
+                    settings.setValue(f"{translated_service}_model", cred['model'])
                 else:
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
         else:
@@ -305,6 +307,7 @@ class SettingsPage(QtWidgets.QWidget):
                 elif translated_service == "Custom":
                     self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
                     self.ui.credential_widgets[f"{service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
+                    self.ui.credential_widgets[f"{service}_model"].setText(settings.value(f"{translated_service}_model", ''))
                 else:
                     self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()

@@ -50,19 +50,23 @@ class Translator:
         return main_page.lang_mapping.get(translated_lang, translated_lang)
 
     def get_llm_model(self, translator_key: str):
-        model_map = {
-            "Custom": "Custom",
-            "Deepseek-v3": "deepseek-v3", 
-            "GPT-4o": "gpt-4o",
-            "GPT-4o mini": "gpt-4o-mini",
-            "Claude-3-Opus": "claude-3-opus-20240229",
-            "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
-            "Claude-3-Haiku": "claude-3-haiku-20240307",
-            "Gemini-1.5-Flash": "gemini-1.5-flash-latest",
-            "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
-        }
-        return model_map.get(translator_key)
-    
+        if translator_key == "Custom":
+            credentials = self.settings.get_credentials()
+            return credentials.get(self.settings.ui.tr('Custom'), {}).get('model', "")
+        else:
+            model_map = {
+                "Custom": "Custom",
+                "Deepseek-v3": "deepseek-v3", 
+                "GPT-4o": "gpt-4o",
+                "GPT-4o mini": "gpt-4o-mini",
+                "Claude-3-Opus": "claude-3-opus-20240229",
+                "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
+                "Claude-3-Haiku": "claude-3-haiku-20240307",
+                "Gemini-1.5-Flash": "gemini-1.5-flash-latest",
+                "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
+            }
+            return model_map.get(translator_key)
+        
     def get_system_prompt(self, source_lang: str, target_lang: str):
         return f"""You are an expert translator who translates {source_lang} to {target_lang}. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a {target_lang} speaker would understand.
         BE MORE NATURAL. NEVER USE 당신, 그녀, 그 or its Japanese equivalents.
@@ -211,7 +215,6 @@ class Translator:
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
 
             if 'Custom' in self.translator_key:
-                model = 'llava:7b'
                 entire_translated_text = self.get_gpt_translation(user_prompt, model, system_prompt, image)
             elif 'Deepseek' in self.translator_key:
                 entire_translated_text = self.get_deepseek_translation(user_prompt, system_prompt)

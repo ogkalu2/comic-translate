@@ -424,6 +424,17 @@ class SettingsPageUI(QtWidgets.QWidget):
                 service_layout.addWidget(endpoint_input)
                 
                 self.credential_widgets[f"{service}_api_url"] = endpoint_input
+
+                # Model Name
+                model_input = MLineEdit()
+                model_input.setFixedWidth(400)
+                model_prefix = MLabel(self.tr("Model")).border()
+                self.set_label_width(model_prefix)
+                model_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                model_input.set_prefix_widget(model_prefix)
+                service_layout.addWidget(model_input)
+                
+                self.credential_widgets[f"{service}_model"] = model_input
             else:
                 # API Key for other services
                 api_key_input = MLineEdit()
