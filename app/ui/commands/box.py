@@ -59,7 +59,6 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
         self.new_xyxy = [int(c) for c in new_state.rect]
         self.new_angle = new_state.rotation
         self.new_tr_origin = (new_state.transform_origin.x(), new_state.transform_origin.y())
-        self.new_text = self.get_text(self.scene, self.new_xyxy, self.new_angle)
 
     def redo(self):
         for blk in self.blk_list:
@@ -74,7 +73,7 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
                 blk.inpaint_bboxes = inpaint_bboxes
 
                 self.find_and_update_item(self.scene, self.old_xyxy, self.old_angle, 
-                                                self.new_xyxy, self.new_angle, self.new_tr_origin, self.new_text)
+                                                self.new_xyxy, self.new_angle, self.new_tr_origin)
                 self.scene.update()
 
     def undo(self):
@@ -90,11 +89,11 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
                 blk.inpaint_bboxes = inpaint_bboxes
 
                 self.find_and_update_item(self.scene, self.new_xyxy, self.new_angle, 
-                                        self.old_xyxy, self.old_angle, self.old_tr_origin, self.new_text)
+                                        self.old_xyxy, self.old_angle, self.old_tr_origin)
                 self.scene.update()
 
     @staticmethod
-    def find_and_update_item(scene, old_xyxy, old_angle, new_xyxy, new_angle, new_tr_origin, text):
+    def find_and_update_item(scene, old_xyxy, old_angle, new_xyxy, new_angle, new_tr_origin):
         for item in scene.items():
             # Check if item position and properties match
             if (isinstance(item, (MoveableRectItem, TextBlockItem)) and
@@ -105,25 +104,13 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
                 new_width = new_xyxy[2] - new_xyxy[0]
                 new_height = new_xyxy[3] - new_xyxy[1]
 
-                item.setTransformOriginPoint(QPointF(*new_tr_origin))
-                item.setPos(new_xyxy[0], new_xyxy[1])
                 if isinstance(item, MoveableRectItem):
                     rect = QRectF(0, 0, new_width, new_height)
                     item.setRect(rect)
-                else:
-                    item.set_text(text, new_width)
-                item.setRotation(new_angle)
-    
-    @staticmethod
-    def get_text(scene, xyxy, angle):
-        for item in scene.items():
-            if (isinstance(item, TextBlockItem) and
-                int(item.pos().x()) == int(xyxy[0]) and 
-                int(item.pos().y()) == int(xyxy[1]) and
-                int(item.rotation()) == int(angle)):
 
-                text = item.toHtml()
-                return text
+                item.setTransformOriginPoint(QPointF(*new_tr_origin))
+                item.setPos(new_xyxy[0], new_xyxy[1])
+                item.setRotation(new_angle)
             
 class ClearRectsCommand(QUndoCommand, RectCommandBase):
     def __init__(self, viewer):

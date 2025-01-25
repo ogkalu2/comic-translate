@@ -7,7 +7,7 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 from .dayu_widgets import dayu_theme
 from .dayu_widgets.divider import MDivider
-from .dayu_widgets.combo_box import MComboBox
+from .dayu_widgets.combo_box import MComboBox, MFontComboBox
 from .dayu_widgets.check_box import MCheckBox
 from .dayu_widgets.text_edit import MTextEdit
 from .dayu_widgets.line_edit import MLineEdit
@@ -65,6 +65,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.image_viewer = ImageViewer(self)
         self.settings_page = SettingsPage(self)
         self.settings_page.theme_changed.connect(self.apply_theme)
+        self.settings_page.font_imported.connect(self.set_font)
         self.main_content_widget = None
         self.tool_buttons = {}  # Dictionary to store mutually exclusive tool names and their corresponding buttons
         self.page_list = PageListView()
@@ -352,23 +353,26 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         text_render_layout = QtWidgets.QVBoxLayout()
         font_settings_layout = QtWidgets.QHBoxLayout()
 
-        self.font_dropdown = MComboBox().small()
+        self.font_dropdown = MFontComboBox().small()
         self.font_dropdown.setToolTip(self.tr("Font"))
-        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path)
-                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
-        font_families = [self.get_font_family(f) for f in font_files]
-        self.font_dropdown.addItems(font_families)
+        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
+                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+        for font in font_files:
+            self.add_custom_font(font)
 
         self.font_size_dropdown = MComboBox().small()
         self.font_size_dropdown.setToolTip(self.tr("Font Size"))
-        self.font_size_dropdown.addItems(['4', '8', '9', '10', '11', '12', '14', '16', '18', 
+        self.font_size_dropdown.addItems(['4', '6', '8', '9', '10', '11', '12', '14', '16', '18', 
                                           '20', '22', '24', '28', '32', '36', '48', '72'])
         self.font_size_dropdown.setCurrentText('12')
         self.font_size_dropdown.setFixedWidth(60)
+        self.font_size_dropdown.set_editable(True)
+
         self.line_spacing_dropdown = MComboBox().small()
         self.line_spacing_dropdown.setToolTip(self.tr("Line Spacing"))
         self.line_spacing_dropdown.addItems(['1.0', '1.1', '1.2', '1.3', '1.4', '1.5'])
         self.line_spacing_dropdown.setFixedWidth(60)
+        self.line_spacing_dropdown.set_editable(True)
 
         font_settings_layout.addWidget(self.font_dropdown)
         font_settings_layout.addWidget(self.font_size_dropdown)
@@ -400,7 +404,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             {"svg": "tabler--align-right.svg", "checkable": True, "tooltip": "Align Right"},
         ]
         self.alignment_tool_group.set_button_list(alignment_tools)
-        self.alignment_tool_group.get_button_group().buttons()[1].setChecked(True)
+        self.alignment_tool_group.set_dayu_checked(1)
 
         self.bold_button = self.create_tool_button(svg = "bold.svg", checkable=True)
         self.bold_button.setToolTip(self.tr("Bold"))
@@ -434,6 +438,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.outline_width_dropdown.setFixedWidth(60)
         self.outline_width_dropdown.setToolTip(self.tr("Outline Width"))
         self.outline_width_dropdown.addItems(['1.0', '1.15', '1.3', '1.4', '1.5'])
+        self.outline_width_dropdown.set_editable(True)
 
         outline_settings_layout.addWidget(self.outline_checkbox)
         outline_settings_layout.addWidget(self.outline_font_color_button)
@@ -684,6 +689,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         if not tool_name:
             for button in self.tool_buttons.values():
                 button.setChecked(False)
+            self.image_viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
 
     def set_brush_eraser_size(self, size: int):
         if self.image_viewer.hasPhoto():
@@ -717,6 +723,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # If not a file path or loading failed, treat as font family name
         return font_input
     
+    def add_custom_font(self, font_input: str):
+        # Check if font_input is a file path
+        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
+            QFontDatabase.addApplicationFont(font_input)
+
     def get_color(self):
         default_color = QtGui.QColor('#000000')
         color_dialog = QtWidgets.QColorDialog()
@@ -724,5 +735,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         if color_dialog.exec() == QtWidgets.QDialog.Accepted:
             color = color_dialog.selectedColor()
             return color
+        
+    def set_font(self, font_family: str):
+        self.font_dropdown.setCurrentFont(font_family)
         
 

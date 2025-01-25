@@ -68,9 +68,9 @@ def extract_archive(file_path: str, extract_to: str):
     
     return image_paths
 
-def make_cbz(input_dir, output_path="", output_dir="", output_base_name=""):
+def make_cbz(input_dir, output_path='', output_dir='', output_base_name='', save_as_ext='.cbz'):
     if not output_path:
-        output_path = os.path.join(output_dir, f"{output_base_name}_translated.cbz")
+        output_path = os.path.join(output_dir, f"{output_base_name}_translated{save_as_ext}")
     
     with zipfile.ZipFile(output_path, 'w') as archive:
         for root, dirs, files in os.walk(input_dir):
@@ -183,7 +183,7 @@ def make(input_dir, output_path="", save_as_ext="", output_dir="", output_base_n
         save_as_ext = os.path.splitext(output_path)[1]
 
     if save_as_ext in ['.cbz', '.zip']:
-        make_cbz(input_dir, output_path, output_dir, output_base_name)
+        make_cbz(input_dir, output_path, output_dir, output_base_name, save_as_ext)
     elif save_as_ext == '.cb7':
         make_cb7(input_dir, output_path, output_dir, output_base_name)
     elif save_as_ext == '.pdf':

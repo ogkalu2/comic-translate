@@ -4,6 +4,7 @@ import tempfile
 import numpy as np
 import copy
 from typing import Callable, Tuple, List
+from dataclasses import asdict, is_dataclass
 
 from PySide6 import QtWidgets
 from PySide6 import QtCore
@@ -37,6 +38,7 @@ from modules.utils.pipeline_utils import font_selected, validate_settings, \
 from modules.utils.archives import make
 from modules.utils.download import get_models, mandatory_models
 from modules.utils.translator_utils import format_translations, is_there_text
+from modules.rendering.render import TextRenderingSettings
 from pipeline import ComicTranslatePipeline
 
 
@@ -183,24 +185,25 @@ class ComicTranslate(ComicTranslateUI):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
 
-    def on_blk_rendered(self, text, font_size, blk):
+    def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock):
         if not self.image_viewer.hasPhoto():
             print("No main image to add to.")
             return
         
-        font_family = self.font_dropdown.currentText()
-        text_color_str = self.block_font_color_button.property('selected_color')
+        render_settings = self.render_settings()
+        font_family = render_settings.font_family
+        text_color_str = render_settings.color
         text_color = QColor(text_color_str)
         
-        id = self.alignment_tool_group.get_dayu_checked()
+        id = render_settings.alignment_id
         alignment = self.button_to_alignment[id]
-        line_spacing = float(self.line_spacing_dropdown.currentText())
-        outline_color_str = self.outline_font_color_button.property('selected_color')
+        line_spacing = float(render_settings.line_spacing)
+        outline_color_str = render_settings.outline_color
         outline_color = QColor(outline_color_str) if self.outline_checkbox.isChecked() else None
-        outline_width = float(self.outline_width_dropdown.currentText())
-        bold = self.bold_button.isChecked()
-        italic = self.italic_button.isChecked()
-        underline = self.underline_button.isChecked()
+        outline_width = float(render_settings.outline_width)
+        bold = render_settings.bold
+        italic = render_settings.italic
+        underline = render_settings.underline
 
         text_item = TextBlockItem(text, self.image_viewer.photo, font_family, 
                                   font_size, text_color, alignment, line_spacing, 
@@ -899,8 +902,8 @@ class ComicTranslate(ComicTranslateUI):
             self.curr_tblock = None
             self.curr_tblock_item = None
 
-            text_rendering_settings = self.settings_page.get_text_rendering_settings()
-            upper = text_rendering_settings['upper_case']
+            render_settings = self.render_settings()
+            upper = render_settings.upper_case
 
             line_spacing = float(self.line_spacing_dropdown.currentText())
             font_family = self.font_dropdown.currentText()
@@ -917,10 +920,13 @@ class ComicTranslate(ComicTranslateUI):
             min_font_size = self.settings_page.get_min_font_size() 
             max_font_size = self.settings_page.get_max_font_size()
 
+            align_id = self.alignment_tool_group.get_dayu_checked()
+            alignment = self.button_to_alignment[align_id]
+
             self.undo_group.activeStack().beginMacro('text_items_rendered')
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
-                              bold, italic, underline, max_font_size, min_font_size)
+                              bold, italic, underline, alignment, max_font_size, min_font_size)
 
     def handle_rectangle_change(self, new_rect: QRectF, angle: float, tr_origin: Tuple):
         # Find the corresponding TextBlock in blk_list
@@ -1314,10 +1320,43 @@ class ComicTranslate(ComicTranslateUI):
         else:
             super().keyPressEvent(event)
 
+    def process_group(self, group_key, group_value, settings_obj: QSettings):
+        """Helper function to process a group and its nested values."""
+        if is_dataclass(group_value):
+            group_value = asdict(group_value)
+        if isinstance(group_value, dict):
+            settings_obj.beginGroup(group_key)
+            for sub_key, sub_value in group_value.items():
+                self.process_group(sub_key, sub_value, settings_obj)
+            settings_obj.endGroup()
+        else:
+            # Convert value to English using mappings if available
+            mapped_value = self.settings_page.ui.value_mappings.get(group_value, group_value)
+            settings_obj.setValue(group_key, mapped_value)
+
+    def render_settings(self) -> TextRenderingSettings:
+        return TextRenderingSettings(
+            alignment_id = self.alignment_tool_group.get_dayu_checked(),
+            font_family = self.font_dropdown.currentText(),
+            min_font_size = int(self.settings_page.ui.min_font_spinbox.value()),
+            max_font_size = int(self.settings_page.ui.max_font_spinbox.value()),
+            color = self.block_font_color_button.property('selected_color'),
+            upper_case = self.settings_page.ui.uppercase_checkbox.isChecked(),
+            outline = self.outline_checkbox.isChecked(),
+            outline_color = self.outline_font_color_button.property('selected_color'),
+            outline_width = self.outline_width_dropdown.currentText(),
+            bold = self.bold_button.isChecked(),
+            italic = self.italic_button.isChecked(),
+            underline = self.underline_button.isChecked(),
+            line_spacing = self.line_spacing_dropdown.currentText()
+        )
+
     def save_main_page_settings(self):
         settings = QSettings("ComicLabs", "ComicTranslate")
-        settings.beginGroup("main_page")
         
+        self.process_group('text_rendering', self.render_settings(), settings)
+
+        settings.beginGroup("main_page")
         # Save languages in English
         settings.setValue("source_language", self.lang_mapping[self.s_combo.currentText()])
         settings.setValue("target_language", self.lang_mapping[self.t_combo.currentText()])
@@ -1372,6 +1411,34 @@ class ComicTranslate(ComicTranslateUI):
             self.restoreGeometry(geometry)
         if state is not None:
             self.restoreState(state)
+        settings.endGroup()
+
+        # Load text rendering settings
+        settings.beginGroup('text_rendering')
+        alignment = settings.value('alignment_id', 1, type=int) # Default value is 1 which is Center
+        self.alignment_tool_group.set_dayu_checked(alignment)  
+
+        self.font_dropdown.setCurrentText(settings.value('font_family', ''))
+        min_font_size = settings.value('min_font_size', 12)  # Default value is 12
+        max_font_size = settings.value('max_font_size', 40) # Default value is 40
+        self.settings_page.ui.min_font_spinbox.setValue(int(min_font_size))
+        self.settings_page.ui.max_font_spinbox.setValue(int(max_font_size))
+
+        color = settings.value('color', '#000000')
+        self.block_font_color_button.setStyleSheet(f"background-color: {color}; border: none; border-radius: 5px;")
+        self.block_font_color_button.setProperty('selected_color', color)
+        self.settings_page.ui.uppercase_checkbox.setChecked(settings.value('upper_case', False, type=bool))
+        self.outline_checkbox.setChecked(settings.value('outline', True, type=bool))
+
+        self.line_spacing_dropdown.setCurrentText(settings.value('line_spacing', '1.0'))
+        self.outline_width_dropdown.setCurrentText(settings.value('outline_width', '1.0'))
+        outline_color = settings.value('outline_color', '#FFFFFF')
+        self.outline_font_color_button.setStyleSheet(f"background-color: {outline_color}; border: none; border-radius: 5px;")
+        self.outline_font_color_button.setProperty('selected_color', outline_color)
+
+        self.bold_button.setChecked(settings.value('bold', False, type=bool))
+        self.italic_button.setChecked(settings.value('italic', False, type=bool))
+        self.underline_button.setChecked(settings.value('underline', False, type=bool))
         settings.endGroup()
 
     def closeEvent(self, event):

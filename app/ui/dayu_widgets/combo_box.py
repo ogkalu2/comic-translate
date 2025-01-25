@@ -85,6 +85,11 @@ class MComboBox(MComboBoxSearchMixin, QtWidgets.QComboBox):
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self._dayu_size = dayu_theme.default_size
 
+    # Add this new method to toggle editability
+    def set_editable(self, editable: bool):
+        """Set whether the combo box is editable."""
+        self.lineEdit().setReadOnly(not editable) 
+
     def get_dayu_size(self):
         """
         Get the push button height
@@ -185,7 +190,7 @@ class MFontComboBox(MComboBoxSearchMixin, QtWidgets.QFontComboBox):
         self._display_formatter = utils.display_formatter
         self.setEditable(True)
         line_edit = self.lineEdit()
-        line_edit.setReadOnly(True)
+        #line_edit.setReadOnly(True)
         line_edit.setTextMargins(4, 0, 4, 0)
         line_edit.setStyleSheet("background-color:transparent")
         line_edit.setCursor(QtCore.Qt.PointingHandCursor)
