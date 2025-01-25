@@ -12,7 +12,7 @@ from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
 from modules.utils.pipeline_utils import generate_mask, get_language_code, is_directory_empty
-from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
+from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations, set_upper_case
 from modules.utils.archives import make
 
 from app.ui.canvas.rectangle import MoveableRectItem
@@ -135,10 +135,10 @@ class ComicTranslatePipeline:
             if single_block:
                 blk = self.get_selected_block()
                 translator.translate([blk], image, extra_context)
-                format_translations([blk], trg_lng_cd, upper_case=upper_case)
+                set_upper_case([blk], upper_case)
             else:
                 translator.translate(self.main_page.blk_list, image, extra_context)
-                format_translations(self.main_page.blk_list, trg_lng_cd, upper_case=upper_case)
+                set_upper_case(self.main_page.blk_list, upper_case)
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
@@ -354,6 +354,9 @@ class ComicTranslatePipeline:
                 # Display text if on current page
                 if index == self.main_page.curr_img_idx:
                     self.main_page.blk_rendered.emit(translation, font_size, blk)
+
+                if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+                    translation = translation.replace(' ', '')
 
                 text_items_state.append({
                 'text': translation,

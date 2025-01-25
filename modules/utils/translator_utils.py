@@ -66,6 +66,16 @@ def set_texts_from_json(blk_list: List[TextBlock], json_string: str):
     else:
         print("No JSON found in the input string.")
 
+def set_upper_case(blk_list: List[TextBlock], upper_case: bool):
+    for blk in blk_list:
+        translation = blk.translation
+        if upper_case and not translation.isupper():
+            blk.translation = translation.upper() 
+        elif not upper_case and translation.isupper():
+            blk.translation = translation.capitalize()
+        else:
+            blk.translation = translation
+
 def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: bool =True):
     for blk in blk_list:
         translation = blk.translation
@@ -88,12 +98,7 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
             translation = ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result).lstrip()
             blk.translation = translation
         else:
-            if upper_case and not translation.isupper():
-                blk.translation = translation.upper() 
-            elif not upper_case and translation.isupper():
-                blk.translation = translation.capitalize()
-            else:
-                blk.translation = translation
+            set_upper_case(blk_list, upper_case)
 
 def is_there_text(blk_list: List[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)

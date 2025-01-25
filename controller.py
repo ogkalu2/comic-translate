@@ -190,6 +190,11 @@ class ComicTranslate(ComicTranslateUI):
             print("No main image to add to.")
             return
         
+        target_lang = self.lang_mapping.get(self.t_combo.currentText(), None)
+        trg_lng_cd = get_language_code(target_lang)
+        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+            text = text.replace(' ', '')
+        
         render_settings = self.render_settings()
         font_family = render_settings.font_family
         text_color_str = render_settings.color
