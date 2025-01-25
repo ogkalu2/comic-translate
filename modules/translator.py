@@ -21,13 +21,16 @@ class Translator:
         self.target_lang_en = self.get_english_lang(main_page, self.target_lang)
 
         self.api_key = self.get_api_key(self.translator_key)
-        self.client = get_llm_client(self.translator_key, self.api_key)
+        self.api_url = self.get_api_url(self.translator_key)
+        print(self.translator_key, self.api_key, self.api_url)
+        self.client = get_llm_client(self.translator_key, self.api_key, self.api_url)
 
         self.img_as_llm_input = self.settings.get_llm_settings()['image_input_enabled']
 
     def get_translator_key(self, localized_translator: str) -> str:
         # Map localized translator names to keys
         translator_map = {
+            self.settings.ui.tr("Custom"): "Custom",
             self.settings.ui.tr("Deepseek-v3"): "Deepseek-v3",
             self.settings.ui.tr("GPT-4o"): "GPT-4o",
             self.settings.ui.tr("GPT-4o mini"): "GPT-4o mini",
@@ -48,6 +51,7 @@ class Translator:
 
     def get_llm_model(self, translator_key: str):
         model_map = {
+            "Custom": "Custom",
             "Deepseek-v3": "deepseek-v3", 
             "GPT-4o": "gpt-4o",
             "GPT-4o mini": "gpt-4o-mini",
@@ -98,6 +102,8 @@ class Translator:
                     {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
                     {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
                 ]
+
+        print(f'The model is set to: {model}')
 
         response = self.client.chat.completions.create(
             model=model,
@@ -204,7 +210,10 @@ class Translator:
             system_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
 
-            if 'Deepseek' in self.translator_key:  # Add Deepseek v3 translation
+            if 'Custom' in self.translator_key:
+                model = 'llava:7b'
+                entire_translated_text = self.get_gpt_translation(user_prompt, model, system_prompt, image)
+            elif 'Deepseek' in self.translator_key:
                 entire_translated_text = self.get_deepseek_translation(user_prompt, system_prompt)
             elif 'GPT' in self.translator_key:
                 entire_translated_text = self.get_gpt_translation(user_prompt, model, system_prompt, image)
@@ -214,6 +223,7 @@ class Translator:
                 image = cv2_to_pil(image)
                 entire_translated_text = self.get_gemini_translation(user_prompt, model, system_prompt, image)
 
+            print(blk_list, entire_translated_text)
             set_texts_from_json(blk_list, entire_translated_text)
 
         return blk_list
@@ -223,7 +233,9 @@ class Translator:
 
         api_key = ""
 
-        if 'Deepseek' in translator_key:  # Add Deepseek v3 API key
+        if 'Custom' in translator_key:
+            api_key = credentials.get(self.settings.ui.tr('Custom'), {}).get('api_key', "")
+        elif 'Deepseek' in translator_key:
             api_key = credentials.get(self.settings.ui.tr('Deepseek'), {}).get('api_key', "")
         elif 'GPT' in translator_key:
             api_key = credentials.get(self.settings.ui.tr('Open AI GPT'), {}).get('api_key', "")
@@ -239,7 +251,18 @@ class Translator:
             }
             api_key = api_key_map.get(translator_key, "")
 
-        if not api_key and translator_key!= 'Google Translate':
+        if translator_key == 'Google Translate' or translator_key == 'Custom':
+            pass
+        elif not api_key:
             raise ValueError(f"API key not found for translator: {translator_key}")
 
         return api_key
+
+    def get_api_url(self, translator_key: str):
+        credentials = self.settings.get_credentials()
+        api_url = ""
+
+        if 'Custom' in translator_key:
+            api_url = credentials.get(self.settings.ui.tr('Custom'), {}).get('api_url', "")
+
+        return api_url

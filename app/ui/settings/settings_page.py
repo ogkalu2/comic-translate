@@ -87,6 +87,12 @@ class SettingsPage(QtWidgets.QWidget):
                     'save_key': save_keys,
                     'endpoint': self.ui.credential_widgets["Microsoft Azure_endpoint"].text()
                 }
+            elif service == "Custom":
+                return {
+                    'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
+                    'api_url': self.ui.credential_widgets[f"{service}_api_url"].text(),
+                    'save_key': save_keys
+                }
             else:
                 return {
                     'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
@@ -195,6 +201,9 @@ class SettingsPage(QtWidgets.QWidget):
                     settings.setValue(f"{translated_service}_api_key_translator", cred['api_key_translator'])
                     settings.setValue(f"{translated_service}_region_translator", cred['region_translator'])
                     settings.setValue(f"{translated_service}_endpoint", cred['endpoint'])
+                elif translated_service == "Custom":
+                    settings.setValue(f"{translated_service}_api_key", cred['api_key'])
+                    settings.setValue(f"{translated_service}_api_url", cred['api_url'])
                 else:
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
         else:
@@ -293,6 +302,9 @@ class SettingsPage(QtWidgets.QWidget):
                     self.ui.credential_widgets["Microsoft Azure_api_key_translator"].setText(settings.value(f"{translated_service}_api_key_translator", ''))
                     self.ui.credential_widgets["Microsoft Azure_region"].setText(settings.value(f"{translated_service}_region_translator", ''))
                     self.ui.credential_widgets["Microsoft Azure_endpoint"].setText(settings.value(f"{translated_service}_endpoint", ''))
+                elif translated_service == "Custom":
+                    self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
+                    self.ui.credential_widgets[f"{service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
                 else:
                     self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()
