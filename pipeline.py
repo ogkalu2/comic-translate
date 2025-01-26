@@ -447,7 +447,7 @@ class ComicTranslatePipeline:
 
                 # Clean up temporary directories
                 shutil.rmtree(save_dir)
-                shutil.rmtree(archive['temp_dir'])
+                # The temp dir is removed when closing the app
 
                 if is_directory_empty(check_from):
                     shutil.rmtree(check_from)
