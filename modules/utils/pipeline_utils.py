@@ -6,6 +6,7 @@ from .textblock import TextBlock, sort_textblock_rectangles
 from ..detection import does_rectangle_fit, is_mostly_contained
 from typing import List
 from ..inpainting.lama import LaMa
+from ..inpainting.mi_gan import MIGAN
 from ..inpainting.schema import Config
 from app.ui.messages import Messages
 
@@ -36,7 +37,8 @@ language_codes = {
 
 
 inpaint_map = {
-    "LaMa": LaMa
+    "LaMa": LaMa,
+    "MI-GAN": MIGAN
 }
 
 def get_config(settings_page):
