@@ -38,10 +38,7 @@ class ComicTranslatePipeline:
                     rect_item.setTransformOriginPoint(QtCore.QPointF(*blk.tr_origin_point))
                 rect_item.setPos(x1,y1)
                 rect_item.setRotation(blk.angle)
-                rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
-                rect_item.signals.change_undo.connect(self.main_page.rect_change_undo)
-                rect_item.signals.ocr_block.connect(lambda: self.main_page.ocr(True))
-                rect_item.signals.translate_block.connect(lambda: self.main_page.translate_image(True))
+                self.main_page.connect_rect_item_signals(rect_item)
                 self.main_page.image_viewer.rectangles.append(rect_item)
 
             rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
