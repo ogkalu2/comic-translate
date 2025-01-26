@@ -123,9 +123,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.update_text_format('size', font_size)
 
     def update_text_width(self):
-        fm = QFontMetrics(self.font())
-        max_width = max(fm.horizontalAdvance(line) for line in self.toPlainText().split('\n'))
-        self.setTextWidth(max_width)
+        width = self.document().size().width()
+        self.setTextWidth(width)
 
     def set_alignment(self, alignment):
         if not self.textCursor().hasSelection():
