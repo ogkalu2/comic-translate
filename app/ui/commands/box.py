@@ -11,7 +11,6 @@ from ..canvas.text_item import TextBlockItem
 class AddRectangleCommand(QUndoCommand, RectCommandBase):
     def __init__(self, main_page, rect_item, blk, blk_list):
         super().__init__()
-        self.ct = main_page
         self.viewer = main_page.image_viewer
         self.scene = self.viewer._scene
         self.photo = self.viewer.photo
@@ -22,12 +21,7 @@ class AddRectangleCommand(QUndoCommand, RectCommandBase):
     def redo(self):
         if not self.find_matching_rect(self.scene, self.rect_properties):
             rect_item = self.create_rect_item(self.rect_properties, self.photo)
-
-            rect_item.signals.rectangle_changed.connect(self.ct.handle_rectangle_change)
-            rect_item.signals.change_undo.connect(self.ct.rect_change_undo)
-            rect_item.signals.ocr_block.connect(lambda: self.ct.ocr(True))
-            rect_item.signals.translate_block.connect(lambda: self.ct.translate_image(True))
-
+            self.viewer.connect_rect_item.emit(rect_item)
             self.viewer.rectangles.append(rect_item)
 
         if not self.find_matching_blk(self.blk_list, self.blk_properties):
@@ -123,12 +117,7 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
     def undo(self):
         for properties in self.properties_list:
             rect_item = self.create_rect_item(properties, self.photo)
-
-            rect_item.signals.rectangle_changed.connect(self.ct.handle_rectangle_change)
-            rect_item.signals.change_undo.connect(self.ct.rect_change_undo)
-            rect_item.signals.ocr_block.connect(lambda: self.ct.ocr(True))
-            rect_item.signals.translate_block.connect(lambda: self.ct.translate_image(True))
-            
+            self.viewer.connect_rect_item.emit(rect_item)
             self.viewer.rectangles.append(rect_item)
         self.scene.update()
         
@@ -177,12 +166,7 @@ class DeleteBoxesCommand(QUndoCommand, RectCommandBase):
     def undo(self):
         if self.rect_properties and not self.find_matching_rect(self.scene, self.rect_properties):
             rect_item = self.create_rect_item(self.rect_properties, self.photo)
-
-            rect_item.signals.rectangle_changed.connect(self.ct.handle_rectangle_change)
-            rect_item.signals.change_undo.connect(self.ct.rect_change_undo)
-            rect_item.signals.ocr_block.connect(lambda: self.ct.ocr(True))
-            rect_item.signals.translate_block.connect(lambda: self.ct.translate_image(True))
-
+            self.viewer.connect_rect_item.emit(rect_item)
             self.viewer.rectangles.append(rect_item)
             self.scene.update()
 
@@ -192,21 +176,13 @@ class DeleteBoxesCommand(QUndoCommand, RectCommandBase):
 
         if self.txt_item_prp and not self.find_matching_txt_item(self.scene, self.txt_item_prp):
             text_item = self.create_new_txt_item(self.txt_item_prp, self.photo)
-
-            text_item.item_selected.connect(self.ct.on_text_item_selected)
-            text_item.item_deselected.connect(self.ct.on_text_item_deselcted)
-            text_item.text_changed.connect(self.ct.update_text_block_from_item)
-            text_item.item_changed.connect(self.ct.handle_rectangle_change)
-            text_item.text_highlighted.connect(self.ct.set_values_from_highlight)
-            text_item.change_undo.connect(self.ct.rect_change_undo)
-
+            self.viewer.connect_text_item.emit(text_item)
             self.scene.addItem(text_item)
             self.viewer.text_items.append(text_item)
 
 class AddTextItemCommand(QUndoCommand, RectCommandBase):
     def __init__(self, main_page, text_item):
         super().__init__()
-        self.ct = main_page
         self.viewer = main_page.image_viewer
         self.photo = self.viewer.photo
         self.scene = self.viewer._scene
@@ -215,14 +191,7 @@ class AddTextItemCommand(QUndoCommand, RectCommandBase):
     def redo(self):
         if not self.find_matching_txt_item(self.scene, self.txt_item_prp):
             text_item = self.create_new_txt_item(self.txt_item_prp, self.photo)
-
-            text_item.item_selected.connect(self.ct.on_text_item_selected)
-            text_item.item_deselected.connect(self.ct.on_text_item_deselcted)
-            text_item.text_changed.connect(self.ct.update_text_block_from_item)
-            text_item.item_changed.connect(self.ct.handle_rectangle_change)
-            text_item.text_highlighted.connect(self.ct.set_values_from_highlight)
-            text_item.change_undo.connect(self.ct.rect_change_undo)
-
+            self.viewer.connect_text_item.emit(text_item)
             self.scene.addItem(text_item)
             self.viewer.text_items.append(text_item)
 

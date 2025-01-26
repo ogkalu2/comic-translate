@@ -10,7 +10,7 @@ from ..utils.textblock import TextBlock
 from ..detection import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import dataclass
 
 @dataclass
 class TextRenderingSettings:

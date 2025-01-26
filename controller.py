@@ -160,6 +160,8 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.rectangle_created.connect(self.handle_rectangle_creation)
         self.image_viewer.rectangle_deleted.connect(self.handle_rectangle_deletion)
         self.image_viewer.command_emitted.connect(self.push_command)
+        self.image_viewer.connect_rect_item.connect(self.connect_rect_item_signals)
+        self.image_viewer.connect_text_item.connect(self.connect_text_item_signals)
 
         # Rendering
         self.font_dropdown.currentTextChanged.connect(self.on_font_dropdown_change)
@@ -184,6 +186,20 @@ class ComicTranslate(ComicTranslateUI):
     def push_command(self, command):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
+
+    def connect_rect_item_signals(self, rect_item: MoveableRectItem):
+        rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
+        rect_item.signals.change_undo.connect(self.rect_change_undo)
+        rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
+        rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
+    
+    def connect_text_item_signals(self, text_item: TextBlockItem):
+        text_item.item_selected.connect(self.on_text_item_selected)
+        text_item.item_deselected.connect(self.on_text_item_deselcted)
+        text_item.text_changed.connect(self.update_text_block_from_item)
+        text_item.item_changed.connect(self.handle_rectangle_change)
+        text_item.text_highlighted.connect(self.set_values_from_highlight)
+        text_item.change_undo.connect(self.rect_change_undo)
 
     def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock):
         if not self.image_viewer.hasPhoto():
@@ -218,13 +234,7 @@ class ComicTranslate(ComicTranslateUI):
         text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer.text_items.append(text_item)  
-
-        text_item.item_selected.connect(self.on_text_item_selected)
-        text_item.item_deselected.connect(self.on_text_item_deselcted)
-        text_item.text_changed.connect(self.update_text_block_from_item)
-        text_item.item_changed.connect(self.handle_rectangle_change)
-        text_item.text_highlighted.connect(self.set_values_from_highlight)
-        text_item.change_undo.connect(self.rect_change_undo)
+        self.connect_text_item_signals(text_item)
 
         command = AddTextItemCommand(self, text_item)
         self.undo_group.activeStack().push(command)
@@ -713,18 +723,10 @@ class ComicTranslate(ComicTranslateUI):
             self.image_viewer.load_brush_strokes(state['brush_strokes'])
 
             for text_item in self.image_viewer.text_items:
-                text_item.item_selected.connect(self.on_text_item_selected)
-                text_item.item_deselected.connect(self.on_text_item_deselcted)
-                text_item.text_changed.connect(self.update_text_block_from_item)
-                text_item.item_changed.connect(self.handle_rectangle_change)
-                text_item.text_highlighted.connect(self.set_values_from_highlight)
-                text_item.change_undo.connect(self.rect_change_undo)
+                self.connect_text_item_signals(text_item)
 
             for rect_item in self.image_viewer.rectangles:
-                rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
-                rect_item.signals.change_undo.connect(self.rect_change_undo)
-                rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
-                rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
+                self.connect_rect_item_signals(rect_item)
 
         self.clear_text_edits()
 
@@ -816,11 +818,7 @@ class ComicTranslate(ComicTranslateUI):
             self.curr_tblock = None
 
     def handle_rectangle_creation(self, rect_item: MoveableRectItem):
-        rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
-        rect_item.signals.change_undo.connect(self.rect_change_undo)
-        rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
-        rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
-
+        self.connect_rect_item_signals(rect_item)
         new_rect = rect_item.mapRectToScene(rect_item.rect())
         x1, y1, w, h = new_rect.getRect()
         x1, y1, w, h = int(x1), int(y1), int(w), int(h)
