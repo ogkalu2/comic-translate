@@ -176,6 +176,7 @@ class ComicTranslatePipeline:
                     if img_pth == image_path:
                         directory = os.path.dirname(archive_path)
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+                        archive['target_lang'] = target_lang_en
 
             image = cv2.imread(image_path)
 
@@ -433,8 +434,7 @@ class ComicTranslatePipeline:
 
                 # Create the new archive
                 output_base_name = f"{archive_bname}"
-                target_lang = self.main_page.image_states[archive['extracted_images'][0]]['target_lang']
-                target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
+                target_lang_en = archive['target_lang'] 
                 trg_lng_code = get_language_code(target_lang_en)
                 make(save_as_ext=save_as_ext, input_dir=save_dir, 
                     output_dir=archive_directory, output_base_name=output_base_name, 
