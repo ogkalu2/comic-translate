@@ -34,7 +34,7 @@ class FileHandler:
                 path = self.sanitize_and_copy_files([path])[0]
                 all_image_paths.append(path)
         
-        self.file_paths.extend(all_image_paths) if extend else self.file_paths = all_image_paths
+        self.file_paths = self.file_paths + all_image_paths if extend else all_image_paths
         return all_image_paths
 
     def sanitize_and_copy_files(self, file_paths: list[str]):
