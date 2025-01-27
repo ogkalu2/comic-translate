@@ -570,15 +570,14 @@ class ComicTranslate(ComicTranslateUI):
             self.undo_group.addStack(stack)
 
         if self.image_files:
-            self.display_image(0)
+            self.page_list.blockSignals(True)
+            self.update_image_cards()
+            self.page_list.blockSignals(False)
+            self.page_list.setCurrentRow(0)
+            #self.display_image(0)
             self.loaded_images.append(self.image_files[0])
         else:
             self.image_viewer.clear_scene()
-
-        self.update_image_cards()
-        self.page_list.blockSignals(True)
-        self.page_list.setCurrentRow(0)
-        self.page_list.blockSignals(False)
 
         self.image_viewer.resetTransform()
         self.image_viewer.fitInView()
