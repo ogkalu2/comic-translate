@@ -11,7 +11,12 @@ class FileHandler:
     
     def prepare_files(self, file_paths: list[str], extend: bool = False):
         all_image_paths = []
-        self.archive_info = [] if not extend else self.archive_info
+        if not extend:
+            for archive in self.archive_info:
+                temp_dir = archive['temp_dir']
+                if os.path.exists(temp_dir): 
+                    shutil.rmtree(temp_dir)  
+            self.archive_info = []
         
         for path in file_paths:
             if path.lower().endswith(('.cbr', '.cbz', '.cbt', '.cb7', 
