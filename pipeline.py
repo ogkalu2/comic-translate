@@ -176,7 +176,6 @@ class ComicTranslatePipeline:
                     if img_pth == image_path:
                         directory = os.path.dirname(archive_path)
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
-                        archive['target_lang'] = target_lang_en
 
             image = cv2.imread(image_path)
 
@@ -434,7 +433,8 @@ class ComicTranslatePipeline:
 
                 # Create the new archive
                 output_base_name = f"{archive_bname}"
-                target_lang_en = archive['target_lang'] 
+                target_lang = self.main_page.image_states[archive['extracted_images'][0]]['target_lang']
+                target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
                 trg_lng_code = get_language_code(target_lang_en)
                 make(save_as_ext=save_as_ext, input_dir=save_dir, 
                     output_dir=archive_directory, output_base_name=output_base_name, 
@@ -445,8 +445,9 @@ class ComicTranslatePipeline:
                     self.main_page.current_worker = None
                     break
 
-                # Clean up temporary directories
-                shutil.rmtree(save_dir)
+                # Clean up temporary 
+                if os.path.exists(save_dir):
+                    shutil.rmtree(save_dir)
                 # The temp dir is removed when closing the app
 
                 if is_directory_empty(check_from):

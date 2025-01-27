@@ -526,7 +526,7 @@ class ComicTranslate(ComicTranslateUI):
                 self.page_list.setCurrentRow(new_index)
 
             self.run_threaded(
-                lambda: self.file_handler.prepare_files(file_paths),
+                lambda: self.file_handler.prepare_files(file_paths, True),
                 on_files_prepared,
                 self.default_error_handler)
         else:
