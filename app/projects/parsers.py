@@ -192,7 +192,7 @@ class ProjectDecoder:
         return SelectionOutlineInfo(
             start=data['start'],
             end=data['end'],
-            color=ProjectDecoder.decode_qcolor(data['color']),
+            color=data['color'],  
             width=data['width']
         )
     
