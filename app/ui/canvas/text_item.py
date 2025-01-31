@@ -648,7 +648,7 @@ class TextBlockItem(QGraphicsTextItem):
                 'underline': False,
                 'text_color': self.text_color.name(),
                 'alignment': self.alignment,
-                'outline': False,
+                'outline': self.outline,
                 'outline_color': self.outline_color.name() if self.outline_color else None,
                 'outline_width': self.outline_width,
             }
