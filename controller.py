@@ -33,7 +33,7 @@ from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import manual_wrap
 from modules.utils.file_handler import FileHandler
-from modules.utils.pipeline_utils import font_selected, validate_settings, \
+from modules.utils.pipeline_utils import font_selected, validate_settings, get_layout_direction, \
                                          validate_ocr, validate_translator, get_language_code
 from modules.utils.archives import make
 from modules.utils.download import get_models, mandatory_models
@@ -306,6 +306,12 @@ class ComicTranslate(ComicTranslateUI):
             current_file = self.image_files[self.curr_img_idx]
             self.image_states[current_file]['source_lang'] = source_lang
             self.image_states[current_file]['target_lang'] = target_lang
+
+        target_en = self.lang_mapping.get(target_lang, None)
+        t_direction = get_layout_direction(target_en)
+        t_text_option = self.t_text_edit.document().defaultTextOption()
+        t_text_option.setTextDirection(t_direction)
+        self.t_text_edit.document().setDefaultTextOption(t_text_option)
 
     def set_src_trg_all(self):
         source_lang = self.s_combo.currentText()
@@ -1341,10 +1347,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def render_settings(self) -> TextRenderingSettings:
         target_lang = self.lang_mapping.get(self.t_combo.currentText(), None)
-        if target_lang == 'Arabic':
-            direction = Qt.LayoutDirection.RightToLeft 
-        else:
-            direction = Qt.LayoutDirection.LeftToRight
+        direction = get_layout_direction(target_lang)
 
         return TextRenderingSettings(
             alignment_id = self.alignment_tool_group.get_dayu_checked(),

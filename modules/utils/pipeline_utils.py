@@ -9,6 +9,7 @@ from ..inpainting.lama import LaMa
 from ..inpainting.mi_gan import MIGAN
 from ..inpainting.schema import Config
 from app.ui.messages import Messages
+from PySide6.QtCore import Qt
 
 
 language_codes = {
@@ -35,6 +36,9 @@ language_codes = {
     "Finnish": "fi",
     "Arabic": "ar",
     }
+
+def get_layout_direction(language: str) -> Qt.LayoutDirection:
+    return Qt.LayoutDirection.RightToLeft if language == 'Arabic' else Qt.LayoutDirection.LeftToRight
 
 
 inpaint_map = {
