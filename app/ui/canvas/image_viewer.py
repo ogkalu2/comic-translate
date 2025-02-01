@@ -859,6 +859,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 x, y, w, h = text_block['block'].xywh
                 text_item.set_text(text_block['text'], w)
 
+            if 'direction' in text_block:
+                text_item.set_direction(text_block['direction'])
+
             if 'transform_origin' in text_block and text_block['transform_origin']:
                 text_item.setTransformOriginPoint(QtCore.QPointF(*text_block['transform_origin']))
             text_item.setPos(QtCore.QPointF(*text_block['position']))
@@ -911,7 +914,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 'transform_origin': (item.transformOriginPoint().x(), 
                                      item.transformOriginPoint().y()),
                 'width': item.boundingRect().width(),
-                'selection_outlines': item.selection_outlines
+                'selection_outlines': item.selection_outlines,
+                'direction': item.direction
             })
 
         return {

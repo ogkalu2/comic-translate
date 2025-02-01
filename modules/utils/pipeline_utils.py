@@ -33,6 +33,7 @@ language_codes = {
     "Indonesian": "id",
     "Hungarian": "hu",
     "Finnish": "fi",
+    "Arabic": "ar",
     }
 
 

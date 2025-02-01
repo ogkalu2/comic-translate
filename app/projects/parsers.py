@@ -14,6 +14,7 @@ class ProjectEncoder:
             (Qt.AlignmentFlag, self.encode_alignment_flag),
             (tuple, self.encode_tuple), 
             (OutlineInfo, self.encode_outline_info),
+            (Qt.LayoutDirection, self.encode_layout_flag)
         ]
 
     def encode(self, obj):
@@ -107,6 +108,14 @@ class ProjectEncoder:
         }
     
 
+    @staticmethod
+    def encode_layout_flag(obj):
+        return {
+            'type': 'layoutflag',
+            'data': obj.value
+        }
+    
+
 class ProjectDecoder:
     def __init__(self):
         self.decoders = {
@@ -117,7 +126,8 @@ class ProjectDecoder:
             'qpainterpath': self.decode_qpainterpath,
             'alignmentflag': self.decode_alignment_flag,
             'tuple': self.decode_tuple,  
-            'selection_outline_info': self.decode_outline_info
+            'selection_outline_info': self.decode_outline_info,
+            'layoutflag': self.decode_layout_flag,
         }
 
     def decode(self, obj):
@@ -197,6 +207,10 @@ class ProjectDecoder:
             width=data['width'],
             type=OutlineType(data['type']) if 'type' in data else OutlineType.Selection
         )
+    
+    @staticmethod
+    def decode_layout_flag(obj):
+        return Qt.LayoutDirection(obj['data'])
     
 def ensure_string_keys(d):
     """ Recursively ensures that all dictionary keys are strings. """

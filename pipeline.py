@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
 
 from modules.detection import TextBlockDetector
 from modules.ocr.ocr import OCRProcessor
@@ -355,6 +356,8 @@ class ComicTranslatePipeline:
                 if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                     translation = translation.replace(' ', '')
 
+                direction = render_settings.direction
+
                 text_items_state.append({
                 'text': translation,
                 'font_family': font,
@@ -372,6 +375,7 @@ class ComicTranslatePipeline:
                 'scale': 1.0,
                 'transform_origin': blk.tr_origin_point,
                 'width': width,
+                'direction': direction,
                 'selection_outlines': [OutlineInfo(0, len(translation), 
                                                             outline_color, outline_width, 
                                                             OutlineType.Full_Document)] if outline else []

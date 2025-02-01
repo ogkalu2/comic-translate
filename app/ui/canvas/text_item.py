@@ -54,7 +54,8 @@ class TextBlockItem(QGraphicsTextItem):
              outline_width = 1,
              bold=False, 
              italic=False, 
-             underline=False):
+             underline=False,
+             direction=Qt.LayoutDirection.LeftToRight):
 
         super().__init__(text)
         self.parent_item = parent_item
@@ -69,6 +70,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.font_size = font_size
         self.alignment = alignment
         self.line_spacing = line_spacing
+        self.direction = direction
 
         self.handle_size = 30
         self.selected = False
@@ -97,6 +99,20 @@ class TextBlockItem(QGraphicsTextItem):
         self.document().contentsChanged.connect(self._on_text_changed)
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
+
+        # Set the initial text direction
+        self._apply_text_direction()
+
+    def _apply_text_direction(self):
+        text_option = self.document().defaultTextOption()
+        text_option.setTextDirection(self.direction)
+        self.document().setDefaultTextOption(text_option)
+
+    def set_direction(self, direction):
+        if self.direction != direction:
+            self.direction = direction
+            self._apply_text_direction()
+            self.update()
 
     def set_text(self, text, width):
         if self.is_html(text):
