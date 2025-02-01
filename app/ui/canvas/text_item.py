@@ -1,9 +1,10 @@
 from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem
 from PySide6.QtGui import QFont, QCursor, QColor, \
-     QTextCharFormat, QTextBlockFormat, QTextCursor, QFontMetrics
+     QTextCharFormat, QTextBlockFormat, QTextCursor
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math, copy
 from dataclasses import dataclass
+from enum import Enum
 
 @dataclass
 class TextBlockState:
@@ -21,12 +22,17 @@ class TextBlockState:
             transform_origin=item.transformOriginPoint()
         )
     
-class SelectionOutlineInfo:
-    def __init__(self, start, end, color, width):
-        self.start = start
-        self.end = end
-        self.color = color
-        self.width = width
+class OutlineType(Enum):
+    Full_Document = 'full_document'
+    Selection = 'selection'
+    
+@dataclass
+class OutlineInfo:
+    start: int
+    end: int
+    color: QColor
+    width: float
+    type: OutlineType
 
 class TextBlockItem(QGraphicsTextItem):
     text_changed = Signal(str)
@@ -212,6 +218,34 @@ class TextBlockItem(QGraphicsTextItem):
             self.text_color = color
         self.update_text_format('color', color)
 
+    def update_outlines(self):
+        """Update the selection outlines when text changes"""
+        if self.outline:
+            # Create an outline for the entire document
+            doc = self.document()
+            char_count = doc.characterCount()
+            
+            # Create an outline info for the entire document
+            new_outline = OutlineInfo(  
+                start = 0,
+                end = max(0, char_count - 1),
+                color = self.outline_color,  
+                width = self.outline_width,
+                type = OutlineType.Full_Document
+            )
+            
+            # Remove any existing full document outline
+            self.selection_outlines = [outline for outline in self.selection_outlines 
+                                     if outline.type != OutlineType.Full_Document]
+            # Add the new one
+            self.selection_outlines.append(new_outline)
+        else:
+            # Remove only the full document outline
+            self.selection_outlines = [outline for outline in self.selection_outlines 
+                                     if outline.type != OutlineType.Full_Document]
+
+        self.update() 
+
     def set_outline(self, outline_color, outline_width):
         # Initialize start and end variables
         start = 0
@@ -228,8 +262,11 @@ class TextBlockItem(QGraphicsTextItem):
             self.outline_width = outline_width
 
             if self.outline:
+                char_count = self.document().characterCount()
                 start = 0
-                end = len(self.toPlainText())
+                end =  max(0, char_count - 1)
+
+        type = OutlineType.Full_Document if self.outline else OutlineType.Selection
 
         # Remove any existing outline for this selection range
         self.selection_outlines = [
@@ -240,7 +277,7 @@ class TextBlockItem(QGraphicsTextItem):
         # Add new outline info if color is provided
         if outline_color:
             self.selection_outlines.append(
-                SelectionOutlineInfo(start, end, outline_color, outline_width)
+                OutlineInfo(start, end, outline_color, outline_width, type)
             )
         
         self.update()
@@ -335,6 +372,7 @@ class TextBlockItem(QGraphicsTextItem):
     def _on_text_changed(self):
         new_text = self.toPlainText()
         self.text_changed.emit(new_text)
+        self.update_outlines()
 
     def mousePressEvent(self, event):
         if not self.editing_mode:

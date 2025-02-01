@@ -16,7 +16,7 @@ from modules.utils.translator_utils import get_raw_translation, get_raw_text, fo
 from modules.utils.archives import make
 
 from app.ui.canvas.rectangle import MoveableRectItem
-from app.ui.canvas.text_item import SelectionOutlineInfo
+from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 
 class ComicTranslatePipeline:
@@ -372,8 +372,9 @@ class ComicTranslatePipeline:
                 'scale': 1.0,
                 'transform_origin': blk.tr_origin_point,
                 'width': width,
-                'selection_outlines': [SelectionOutlineInfo(0, len(translation), 
-                                                            outline_color, outline_width)] if outline else []
+                'selection_outlines': [OutlineInfo(0, len(translation), 
+                                                            outline_color, outline_width, 
+                                                            OutlineType.Full_Document)] if outline else []
                 })
 
             self.main_page.image_states[image_path]['viewer_state'].update({
