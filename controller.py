@@ -932,7 +932,7 @@ class ComicTranslate(ComicTranslateUI):
             align_id = self.alignment_tool_group.get_dayu_checked()
             alignment = self.button_to_alignment[align_id]
             direction = render_settings.direction
-
+            
             self.undo_group.activeStack().beginMacro('text_items_rendered')
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 

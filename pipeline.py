@@ -336,6 +336,7 @@ class ComicTranslatePipeline:
             underline = render_settings.underline
             alignment_id = render_settings.alignment_id
             alignment = self.main_page.button_to_alignment[alignment_id]
+            direction = render_settings.direction
                 
             text_items_state = []
             for blk in blk_list:
@@ -347,7 +348,7 @@ class ComicTranslatePipeline:
 
                 translation, font_size = pyside_word_wrap(translation, font, width, height,
                                                         line_spacing, outline_width, bold, italic, underline,
-                                                        alignment, max_font_size, min_font_size)
+                                                        alignment, direction, max_font_size, min_font_size)
                 
                 # Display text if on current page
                 if index == self.main_page.curr_img_idx:
@@ -355,8 +356,6 @@ class ComicTranslatePipeline:
 
                 if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                     translation = translation.replace(' ', '')
-
-                direction = render_settings.direction
 
                 text_items_state.append({
                 'text': translation,
