@@ -102,7 +102,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.button_to_alignment = {
             0: QtCore.Qt.AlignmentFlag.AlignLeft,
             1: QtCore.Qt.AlignmentFlag.AlignCenter,
-            -1: QtCore.Qt.AlignmentFlag.AlignRight,
+            2: QtCore.Qt.AlignmentFlag.AlignRight,
         }
 
         self._init_ui()
