@@ -2,7 +2,7 @@ import numpy as np
 from PySide6 import QtGui
 from PySide6.QtCore import Qt
 from modules.utils.textblock import TextBlock
-from ..ui.canvas.text_item import SelectionOutlineInfo
+from ..ui.canvas.text_item import OutlineInfo, OutlineType
 
 class ProjectEncoder:
     def __init__(self):
@@ -13,7 +13,8 @@ class ProjectEncoder:
             (QtGui.QPainterPath, self.encode_qpainterpath),
             (Qt.AlignmentFlag, self.encode_alignment_flag),
             (tuple, self.encode_tuple), 
-            (SelectionOutlineInfo, self.encode_selection_outline_info),
+            (OutlineInfo, self.encode_outline_info),
+            (Qt.LayoutDirection, self.encode_layout_flag)
         ]
 
     def encode(self, obj):
@@ -94,15 +95,24 @@ class ProjectEncoder:
         }
     
     @staticmethod
-    def encode_selection_outline_info(obj):
+    def encode_outline_info(obj):
         return {
             'type': 'selection_outline_info',
             'data': {
                 'start': obj.start,
                 'end': obj.end,
                 'color': ProjectEncoder.encode_qcolor(obj.color),
-                'width': obj.width
+                'width': obj.width,
+                'type': obj.type.value
             }
+        }
+    
+
+    @staticmethod
+    def encode_layout_flag(obj):
+        return {
+            'type': 'layoutflag',
+            'data': obj.value
         }
     
 
@@ -116,7 +126,8 @@ class ProjectDecoder:
             'qpainterpath': self.decode_qpainterpath,
             'alignmentflag': self.decode_alignment_flag,
             'tuple': self.decode_tuple,  
-            'selection_outline_info': self.decode_selection_outline_info,
+            'selection_outline_info': self.decode_outline_info,
+            'layoutflag': self.decode_layout_flag,
         }
 
     def decode(self, obj):
@@ -187,14 +198,19 @@ class ProjectDecoder:
         return Qt.AlignmentFlag(obj['data'])
     
     @staticmethod
-    def decode_selection_outline_info(obj):
+    def decode_outline_info(obj):
         data = obj['data']
-        return SelectionOutlineInfo(
+        return OutlineInfo(
             start=data['start'],
             end=data['end'],
-            color=ProjectDecoder.decode_qcolor(data['color']),
-            width=data['width']
+            color=data['color'],
+            width=data['width'],
+            type=OutlineType(data['type']) if 'type' in data else OutlineType.Selection
         )
+    
+    @staticmethod
+    def decode_layout_flag(obj):
+        return Qt.LayoutDirection(obj['data'])
     
 def ensure_string_keys(d):
     """ Recursively ensures that all dictionary keys are strings. """

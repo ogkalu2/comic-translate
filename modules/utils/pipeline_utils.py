@@ -6,8 +6,10 @@ from .textblock import TextBlock, sort_textblock_rectangles
 from ..detection import does_rectangle_fit, is_mostly_contained
 from typing import List
 from ..inpainting.lama import LaMa
+from ..inpainting.mi_gan import MIGAN
 from ..inpainting.schema import Config
 from app.ui.messages import Messages
+from PySide6.QtCore import Qt
 
 
 language_codes = {
@@ -32,11 +34,16 @@ language_codes = {
     "Indonesian": "id",
     "Hungarian": "hu",
     "Finnish": "fi",
+    "Arabic": "ar",
     }
+
+def get_layout_direction(language: str) -> Qt.LayoutDirection:
+    return Qt.LayoutDirection.RightToLeft if language == 'Arabic' else Qt.LayoutDirection.LeftToRight
 
 
 inpaint_map = {
-    "LaMa": LaMa
+    "LaMa": LaMa,
+    "MI-GAN": MIGAN
 }
 
 def get_config(settings_page):

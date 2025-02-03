@@ -3,14 +3,15 @@ import numpy as np
 from typing import Tuple, List
 
 from PIL import Image, ImageFont, ImageDraw
-from PySide6.QtGui import QFont, QTextDocument, QTextCursor, QTextBlockFormat
+from PySide6.QtGui import QFont, QTextDocument, QTextCursor, QTextBlockFormat, QTextOption
+from PySide6.QtCore import Qt
 
 from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
 from ..detection import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import dataclass
 
 @dataclass
 class TextRenderingSettings:
@@ -27,6 +28,7 @@ class TextRenderingSettings:
     italic: bool
     underline: bool
     line_spacing: str
+    direction: Qt.LayoutDirection
 
 def cv2_to_pil(cv2_image: np.ndarray):
     # Convert color channels from BGR to RGB
@@ -170,7 +172,7 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
 
 def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int,
                     line_spacing, outline_width, bold, italic, underline,
-                    alignment, init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
+                    alignment, direction, init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
     """Break long text to multiple lines, and reduce point size
     until all text fits within a bounding box."""
     
@@ -189,6 +191,11 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
         doc = QTextDocument()
         doc.setDefaultFont(prepare_font(font_sz))
         doc.setPlainText(txt)
+
+        # Set text direction
+        text_option = QTextOption()
+        text_option.setTextDirection(direction)
+        doc.setDefaultTextOption(text_option)
         
         # Apply line spacing
         cursor = QTextCursor(doc)
@@ -255,8 +262,8 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
     return mutable_message, font_size
 
 def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
-                outline_width, bold, italic, underline, alignment, init_font_size: int = 40, 
-                min_font_size: int = 10):
+                outline_width, bold, italic, underline, alignment, direction, 
+                init_font_size: int = 40, min_font_size: int = 10):
     
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
@@ -267,7 +274,7 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
 
         translation, font_size = pyside_word_wrap(translation, font_family, width, height,
                                                  line_spacing, outline_width, bold, italic, underline,
-                                                 alignment, init_font_size, min_font_size)
+                                                 alignment, direction, init_font_size, min_font_size)
         
         main_page.blk_rendered.emit(translation, font_size, blk)
 

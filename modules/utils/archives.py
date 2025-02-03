@@ -1,9 +1,13 @@
-import os
+import os, re
 import zipfile, tarfile, py7zr, rarfile
 import math
 import img2pdf
 from ebooklib import epub
 import pymupdf
+
+def natural_sort_key(s):
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(r'(\d+)', str(s))]
 
 def is_image_file(filename):
     image_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.webp')
@@ -66,7 +70,7 @@ def extract_archive(file_path: str, extract_to: str):
     else:
         raise ValueError("Unsupported file format")
     
-    return image_paths
+    return sorted(image_paths, key=natural_sort_key)
 
 def make_cbz(input_dir, output_path='', output_dir='', output_base_name='', save_as_ext='.cbz'):
     if not output_path:

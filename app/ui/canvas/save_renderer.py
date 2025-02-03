@@ -46,6 +46,8 @@ class ImageSaveRenderer:
             )
 
             text_item.set_text(text_block['text'], text_block['width'])
+            if 'direction' in text_block:
+                text_item.set_direction(text_block['direction'])
             if text_block['transform_origin']:
                 text_item.setTransformOriginPoint(QtCore.QPointF(*text_block['transform_origin']))
             text_item.setPos(QtCore.QPointF(*text_block['position']))

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
 
 from modules.detection import TextBlockDetector
 from modules.ocr.ocr import OCRProcessor
@@ -12,11 +13,11 @@ from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
 from modules.utils.pipeline_utils import generate_mask, get_language_code, is_directory_empty
-from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
+from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations, set_upper_case
 from modules.utils.archives import make
 
 from app.ui.canvas.rectangle import MoveableRectItem
-from app.ui.canvas.text_item import SelectionOutlineInfo
+from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 
 class ComicTranslatePipeline:
@@ -38,10 +39,7 @@ class ComicTranslatePipeline:
                     rect_item.setTransformOriginPoint(QtCore.QPointF(*blk.tr_origin_point))
                 rect_item.setPos(x1,y1)
                 rect_item.setRotation(blk.angle)
-                rect_item.signals.rectangle_changed.connect(self.main_page.handle_rectangle_change)
-                rect_item.signals.change_undo.connect(self.main_page.rect_change_undo)
-                rect_item.signals.ocr_block.connect(lambda: self.main_page.ocr(True))
-                rect_item.signals.translate_block.connect(lambda: self.main_page.translate_image(True))
+                self.main_page.connect_rect_item_signals(rect_item)
                 self.main_page.image_viewer.rectangles.append(rect_item)
 
             rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
@@ -135,10 +133,10 @@ class ComicTranslatePipeline:
             if single_block:
                 blk = self.get_selected_block()
                 translator.translate([blk], image, extra_context)
-                format_translations([blk], trg_lng_cd, upper_case=upper_case)
+                set_upper_case([blk], upper_case)
             else:
                 translator.translate(self.main_page.blk_list, image, extra_context)
-                format_translations(self.main_page.blk_list, trg_lng_cd, upper_case=upper_case)
+                set_upper_case(self.main_page.blk_list, upper_case)
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
@@ -338,6 +336,7 @@ class ComicTranslatePipeline:
             underline = render_settings.underline
             alignment_id = render_settings.alignment_id
             alignment = self.main_page.button_to_alignment[alignment_id]
+            direction = render_settings.direction
                 
             text_items_state = []
             for blk in blk_list:
@@ -349,11 +348,14 @@ class ComicTranslatePipeline:
 
                 translation, font_size = pyside_word_wrap(translation, font, width, height,
                                                         line_spacing, outline_width, bold, italic, underline,
-                                                        alignment, max_font_size, min_font_size)
+                                                        alignment, direction, max_font_size, min_font_size)
                 
                 # Display text if on current page
                 if index == self.main_page.curr_img_idx:
                     self.main_page.blk_rendered.emit(translation, font_size, blk)
+
+                if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+                    translation = translation.replace(' ', '')
 
                 text_items_state.append({
                 'text': translation,
@@ -372,8 +374,10 @@ class ComicTranslatePipeline:
                 'scale': 1.0,
                 'transform_origin': blk.tr_origin_point,
                 'width': width,
-                'selection_outlines': [SelectionOutlineInfo(0, len(translation), 
-                                                            outline_color, outline_width)] if outline else []
+                'direction': direction,
+                'selection_outlines': [OutlineInfo(0, len(translation), 
+                                                            outline_color, outline_width, 
+                                                            OutlineType.Full_Document)] if outline else []
                 })
 
             self.main_page.image_states[image_path]['viewer_state'].update({
@@ -445,9 +449,10 @@ class ComicTranslatePipeline:
                     self.main_page.current_worker = None
                     break
 
-                # Clean up temporary directories
-                shutil.rmtree(save_dir)
-                shutil.rmtree(archive['temp_dir'])
+                # Clean up temporary 
+                if os.path.exists(save_dir):
+                    shutil.rmtree(save_dir)
+                # The temp dir is removed when closing the app
 
                 if is_directory_empty(check_from):
                     shutil.rmtree(check_from)

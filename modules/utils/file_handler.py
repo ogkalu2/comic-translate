@@ -9,8 +9,14 @@ class FileHandler:
         self.file_paths = []
         self.archive_info = []
     
-    def prepare_files(self, file_paths: list[str]):
+    def prepare_files(self, file_paths: list[str], extend: bool = False):
         all_image_paths = []
+        if not extend:
+            for archive in self.archive_info:
+                temp_dir = archive['temp_dir']
+                if os.path.exists(temp_dir): 
+                    shutil.rmtree(temp_dir)  
+            self.archive_info = []
         
         for path in file_paths:
             if path.lower().endswith(('.cbr', '.cbz', '.cbt', '.cb7', 
@@ -34,7 +40,7 @@ class FileHandler:
                 path = self.sanitize_and_copy_files([path])[0]
                 all_image_paths.append(path)
         
-        self.file_paths.extend(all_image_paths)
+        self.file_paths = self.file_paths + all_image_paths if extend else all_image_paths
         return all_image_paths
 
     def sanitize_and_copy_files(self, file_paths: list[str]):

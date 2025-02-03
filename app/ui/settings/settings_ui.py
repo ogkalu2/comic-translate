@@ -28,7 +28,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.credential_widgets = {}
         self.export_widgets = {}
 
-        self.inpainters = ['LaMa']
+        self.inpainters = ['LaMa', 'MI-GAN']
         self.ocr_engines = [self.tr("Default"), self.tr("Microsoft OCR"), self.tr("Google Cloud Vision")]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
@@ -39,7 +39,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         
         self.supported_translators = [self.tr("GPT-4o"), self.tr("GPT-4o mini"), self.tr("DeepL"), 
                                     self.tr("Claude-3-Opus"), self.tr("Claude-3.5-Sonnet"), 
-                                    self.tr("Claude-3-Haiku"), self.tr("Gemini-1.5-Flash"), 
+                                    self.tr("Claude-3-Haiku"), self.tr("Gemini-2.0-Flash"), 
                                     self.tr("Gemini-1.5-Pro"), self.tr("Yandex"), self.tr("Google Translate"),
                                     self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
         
@@ -78,7 +78,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Claude-3-Opus"): "Claude-3-Opus",
             self.tr("Claude-3.5-Sonnet"): "Claude-3.5-Sonnet",
             self.tr("Claude-3-Haiku"): "Claude-3-Haiku",
-            self.tr("Gemini-1.5-Flash"): "Gemini-1.5-Flash",
+            self.tr("Gemini-2.0-Flash"): "Gemini-2.0-Flash",
             self.tr("Gemini-1.5-Pro"): "Gemini-1.5-Pro",
             self.tr("Yandex"): "Yandex",
             self.tr("Google Translate"): "Google Translate",
@@ -91,6 +91,7 @@ class SettingsPageUI(QtWidgets.QWidget):
 
             # Inpainter mappings
             "LaMa": "LaMa",
+            "MI-GAN": "MI-GAN",
 
             # HD Strategy mappings
             self.tr("Resize"): "Resize",

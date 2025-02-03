@@ -6,7 +6,7 @@ import math
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QGraphicsPathItem
-from PySide6.QtCore import QEvent, QLineF
+from PySide6.QtCore import  Signal, QEvent, QLineF
 from PySide6.QtGui import QTransform, QEventPoint
 
 from .text_item import TextBlockItem, TextBlockState
@@ -18,10 +18,12 @@ from ..commands.box import ClearRectsCommand
 from ..commands.base import PathCommandBase as pcb
 
 class ImageViewer(QtWidgets.QGraphicsView):
-    rectangle_created = QtCore.Signal(MoveableRectItem)
-    rectangle_selected = QtCore.Signal(QtCore.QRectF)
-    rectangle_deleted = QtCore.Signal(QtCore.QRectF)
-    command_emitted = QtCore.Signal(QtGui.QUndoCommand)
+    rectangle_created = Signal(MoveableRectItem)
+    rectangle_selected = Signal(QtCore.QRectF)
+    rectangle_deleted = Signal(QtCore.QRectF)
+    command_emitted = Signal(QtGui.QUndoCommand)
+    connect_rect_item = Signal(MoveableRectItem)
+    connect_text_item =  Signal(TextBlockItem)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -857,6 +859,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 x, y, w, h = text_block['block'].xywh
                 text_item.set_text(text_block['text'], w)
 
+            if 'direction' in text_block:
+                text_item.set_direction(text_block['direction'])
+
             if 'transform_origin' in text_block and text_block['transform_origin']:
                 text_item.setTransformOriginPoint(QtCore.QPointF(*text_block['transform_origin']))
             text_item.setPos(QtCore.QPointF(*text_block['position']))
@@ -909,7 +914,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 'transform_origin': (item.transformOriginPoint().x(), 
                                      item.transformOriginPoint().y()),
                 'width': item.boundingRect().width(),
-                'selection_outlines': item.selection_outlines
+                'selection_outlines': item.selection_outlines,
+                'direction': item.direction
             })
 
         return {

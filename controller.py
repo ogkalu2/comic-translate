@@ -9,7 +9,7 @@ from dataclasses import asdict, is_dataclass
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 from PySide6.QtCore import QCoreApplication, QSettings, QThreadPool
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtGui import QUndoStack, QUndoGroup
 
@@ -33,7 +33,7 @@ from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import manual_wrap
 from modules.utils.file_handler import FileHandler
-from modules.utils.pipeline_utils import font_selected, validate_settings, \
+from modules.utils.pipeline_utils import font_selected, validate_settings, get_layout_direction, \
                                          validate_ocr, validate_translator, get_language_code
 from modules.utils.archives import make
 from modules.utils.download import get_models, mandatory_models
@@ -160,6 +160,8 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.rectangle_created.connect(self.handle_rectangle_creation)
         self.image_viewer.rectangle_deleted.connect(self.handle_rectangle_deletion)
         self.image_viewer.command_emitted.connect(self.push_command)
+        self.image_viewer.connect_rect_item.connect(self.connect_rect_item_signals)
+        self.image_viewer.connect_text_item.connect(self.connect_text_item_signals)
 
         # Rendering
         self.font_dropdown.currentTextChanged.connect(self.on_font_dropdown_change)
@@ -185,10 +187,29 @@ class ComicTranslate(ComicTranslateUI):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
 
+    def connect_rect_item_signals(self, rect_item: MoveableRectItem):
+        rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
+        rect_item.signals.change_undo.connect(self.rect_change_undo)
+        rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
+        rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
+    
+    def connect_text_item_signals(self, text_item: TextBlockItem):
+        text_item.item_selected.connect(self.on_text_item_selected)
+        text_item.item_deselected.connect(self.on_text_item_deselcted)
+        text_item.text_changed.connect(self.update_text_block_from_item)
+        text_item.item_changed.connect(self.handle_rectangle_change)
+        text_item.text_highlighted.connect(self.set_values_from_highlight)
+        text_item.change_undo.connect(self.rect_change_undo)
+
     def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock):
         if not self.image_viewer.hasPhoto():
             print("No main image to add to.")
             return
+        
+        target_lang = self.lang_mapping.get(self.t_combo.currentText(), None)
+        trg_lng_cd = get_language_code(target_lang)
+        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+            text = text.replace(' ', '')
         
         render_settings = self.render_settings()
         font_family = render_settings.font_family
@@ -204,22 +225,17 @@ class ComicTranslate(ComicTranslateUI):
         bold = render_settings.bold
         italic = render_settings.italic
         underline = render_settings.underline
+        direction = render_settings.direction
 
         text_item = TextBlockItem(text, self.image_viewer.photo, font_family, 
                                   font_size, text_color, alignment, line_spacing, 
-                                  outline_color, outline_width, bold, italic, underline)
+                                  outline_color, outline_width, bold, italic, underline, direction)
         
         text_item.setPos(blk.xyxy[0], blk.xyxy[1])
         text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer.text_items.append(text_item)  
-
-        text_item.item_selected.connect(self.on_text_item_selected)
-        text_item.item_deselected.connect(self.on_text_item_deselcted)
-        text_item.text_changed.connect(self.update_text_block_from_item)
-        text_item.item_changed.connect(self.handle_rectangle_change)
-        text_item.text_highlighted.connect(self.set_values_from_highlight)
-        text_item.change_undo.connect(self.rect_change_undo)
+        self.connect_text_item_signals(text_item)
 
         command = AddTextItemCommand(self, text_item)
         self.undo_group.activeStack().push(command)
@@ -290,6 +306,12 @@ class ComicTranslate(ComicTranslateUI):
             current_file = self.image_files[self.curr_img_idx]
             self.image_states[current_file]['source_lang'] = source_lang
             self.image_states[current_file]['target_lang'] = target_lang
+
+        target_en = self.lang_mapping.get(target_lang, None)
+        t_direction = get_layout_direction(target_en)
+        t_text_option = self.t_text_edit.document().defaultTextOption()
+        t_text_option.setTextDirection(t_direction)
+        self.t_text_edit.document().setDefaultTextOption(t_text_option)
 
     def set_src_trg_all(self):
         source_lang = self.s_combo.currentText()
@@ -511,7 +533,7 @@ class ComicTranslate(ComicTranslateUI):
                 self.page_list.setCurrentRow(new_index)
 
             self.run_threaded(
-                lambda: self.file_handler.prepare_files(file_paths),
+                lambda: self.file_handler.prepare_files(file_paths, True),
                 on_files_prepared,
                 self.default_error_handler)
         else:
@@ -555,15 +577,14 @@ class ComicTranslate(ComicTranslateUI):
             self.undo_group.addStack(stack)
 
         if self.image_files:
-            self.display_image(0)
+            self.page_list.blockSignals(True)
+            self.update_image_cards()
+            self.page_list.blockSignals(False)
+            self.page_list.setCurrentRow(0)
+            #self.display_image(0)
             self.loaded_images.append(self.image_files[0])
         else:
             self.image_viewer.clear_scene()
-
-        self.update_image_cards()
-        self.page_list.blockSignals(True)
-        self.page_list.setCurrentRow(0)
-        self.page_list.blockSignals(False)
 
         self.image_viewer.resetTransform()
         self.image_viewer.fitInView()
@@ -708,18 +729,10 @@ class ComicTranslate(ComicTranslateUI):
             self.image_viewer.load_brush_strokes(state['brush_strokes'])
 
             for text_item in self.image_viewer.text_items:
-                text_item.item_selected.connect(self.on_text_item_selected)
-                text_item.item_deselected.connect(self.on_text_item_deselcted)
-                text_item.text_changed.connect(self.update_text_block_from_item)
-                text_item.item_changed.connect(self.handle_rectangle_change)
-                text_item.text_highlighted.connect(self.set_values_from_highlight)
-                text_item.change_undo.connect(self.rect_change_undo)
+                self.connect_text_item_signals(text_item)
 
             for rect_item in self.image_viewer.rectangles:
-                rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
-                rect_item.signals.change_undo.connect(self.rect_change_undo)
-                rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
-                rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
+                self.connect_rect_item_signals(rect_item)
 
         self.clear_text_edits()
 
@@ -811,11 +824,7 @@ class ComicTranslate(ComicTranslateUI):
             self.curr_tblock = None
 
     def handle_rectangle_creation(self, rect_item: MoveableRectItem):
-        rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
-        rect_item.signals.change_undo.connect(self.rect_change_undo)
-        rect_item.signals.ocr_block.connect(lambda: self.ocr(True))
-        rect_item.signals.translate_block.connect(lambda: self.translate_image(True))
-
+        self.connect_rect_item_signals(rect_item)
         new_rect = rect_item.mapRectToScene(rect_item.rect())
         x1, y1, w, h = new_rect.getRect()
         x1, y1, w, h = int(x1), int(y1), int(w), int(h)
@@ -922,11 +931,13 @@ class ComicTranslate(ComicTranslateUI):
 
             align_id = self.alignment_tool_group.get_dayu_checked()
             alignment = self.button_to_alignment[align_id]
-
+            direction = render_settings.direction
+            
             self.undo_group.activeStack().beginMacro('text_items_rendered')
             self.run_threaded(manual_wrap, self.on_render_complete, self.default_error_handler, 
                               None, self, new_blocks, font_family, line_spacing, outline_width, 
-                              bold, italic, underline, alignment, max_font_size, min_font_size)
+                              bold, italic, underline, alignment, direction, max_font_size, 
+                              min_font_size)
 
     def handle_rectangle_change(self, new_rect: QRectF, angle: float, tr_origin: Tuple):
         # Find the corresponding TextBlock in blk_list
@@ -1335,6 +1346,9 @@ class ComicTranslate(ComicTranslateUI):
             settings_obj.setValue(group_key, mapped_value)
 
     def render_settings(self) -> TextRenderingSettings:
+        target_lang = self.lang_mapping.get(self.t_combo.currentText(), None)
+        direction = get_layout_direction(target_lang)
+
         return TextRenderingSettings(
             alignment_id = self.alignment_tool_group.get_dayu_checked(),
             font_family = self.font_dropdown.currentText(),
@@ -1348,7 +1362,8 @@ class ComicTranslate(ComicTranslateUI):
             bold = self.bold_button.isChecked(),
             italic = self.italic_button.isChecked(),
             underline = self.underline_button.isChecked(),
-            line_spacing = self.line_spacing_dropdown.currentText()
+            line_spacing = self.line_spacing_dropdown.currentText(),
+            direction = direction
         )
 
     def save_main_page_settings(self):
@@ -1448,7 +1463,9 @@ class ComicTranslate(ComicTranslateUI):
         
         # Delete temp archive folders
         for archive in self.file_handler.archive_info:
-            shutil.rmtree(archive['temp_dir'])
+            temp_dir = archive['temp_dir']
+            if os.path.exists(temp_dir): 
+                shutil.rmtree(temp_dir)  
 
         for root, dirs, files in os.walk(self.temp_dir, topdown=False):
             for name in files:
