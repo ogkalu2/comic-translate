@@ -34,14 +34,14 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
-        self.credential_services = [self.tr("Deepseek"), self.tr("Open AI GPT"), self.tr("Microsoft Azure"), self.tr("Google Cloud"), 
+        self.credential_services = [self.tr("Custom"), self.tr("Deepseek"), self.tr("Open AI GPT"), self.tr("Microsoft Azure"), self.tr("Google Cloud"), 
                                     self.tr("Google Gemini"), self.tr("DeepL"), self.tr("Anthropic Claude"), self.tr("Yandex")]
         
         self.supported_translators = [self.tr("GPT-4o"), self.tr("GPT-4o mini"), self.tr("DeepL"), 
                                     self.tr("Claude-3-Opus"), self.tr("Claude-3.5-Sonnet"), 
                                     self.tr("Claude-3-Haiku"), self.tr("Gemini-2.0-Flash"), 
                                     self.tr("Gemini-1.5-Pro"), self.tr("Yandex"), self.tr("Google Translate"),
-                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3")]
+                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
         
         self.languages = ['English', '한국어', 'Français', '日本語', 
          '简体中文', '繁體中文', 'русский', 'Deutsch', 
@@ -70,6 +70,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Light"): "Light",
 
             # Translator mappings
+            self.tr("Custom"): "Custom",
             self.tr("Deepseek-v3"): "Deepseek-v3",
             self.tr("GPT-4o"): "GPT-4o",
             self.tr("GPT-4o mini"): "GPT-4o mini",
@@ -103,6 +104,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Right"): "Right",
 
             # Credential services mappings
+            self.tr("Custom"): "Custom",
             self.tr("Deepseek"): "Deepseek",
             self.tr("Open AI GPT"): "Open AI GPT",
             self.tr("Microsoft Azure"): "Microsoft Azure",
@@ -399,6 +401,40 @@ class SettingsPageUI(QtWidgets.QWidget):
                 service_layout.addWidget(region_input)
                 
                 self.credential_widgets["Microsoft Azure_region"] = region_input
+            elif service == "Custom":
+                # API Key
+                api_key_input = MLineEdit()
+                api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
+                api_key_input.setFixedWidth(400)
+                api_key_prefix = MLabel(self.tr("API Key")).border()
+                self.set_label_width(api_key_prefix)
+                api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                api_key_input.set_prefix_widget(api_key_prefix)
+                service_layout.addWidget(api_key_input)
+                
+                self.credential_widgets[f"{service}_api_key"] = api_key_input
+                
+                # Endpoint URL
+                endpoint_input = MLineEdit()
+                endpoint_input.setFixedWidth(400)
+                endpoint_prefix = MLabel(self.tr("Endpoint URL")).border()
+                self.set_label_width(endpoint_prefix)
+                endpoint_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                endpoint_input.set_prefix_widget(endpoint_prefix)
+                service_layout.addWidget(endpoint_input)
+                
+                self.credential_widgets[f"{service}_api_url"] = endpoint_input
+
+                # Model Name
+                model_input = MLineEdit()
+                model_input.setFixedWidth(400)
+                model_prefix = MLabel(self.tr("Model")).border()
+                self.set_label_width(model_prefix)
+                model_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                model_input.set_prefix_widget(model_prefix)
+                service_layout.addWidget(model_input)
+                
+                self.credential_widgets[f"{service}_model"] = model_input
             else:
                 # API Key for other services
                 api_key_input = MLineEdit()
