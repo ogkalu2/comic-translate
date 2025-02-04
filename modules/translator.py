@@ -49,22 +49,21 @@ class Translator:
         return main_page.lang_mapping.get(translated_lang, translated_lang)
 
     def get_llm_model(self, translator_key: str):
-        if translator_key == "Custom":
-            credentials = self.settings.get_credentials()
-            return credentials.get(self.settings.ui.tr('Custom'), {}).get('model', "")
-        else:
-            model_map = {
-                "Custom": "Custom",
-                "Deepseek-v3": "deepseek-v3", 
-                "GPT-4o": "gpt-4o",
-                "GPT-4o mini": "gpt-4o-mini",
-                "Claude-3-Opus": "claude-3-opus-20240229",
-                "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
-                "Claude-3-Haiku": "claude-3-haiku-20240307",
-                "Gemini-2.0-Flash": "gemini-2.0-flash-exp",
-                "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
-            }
-            return model_map.get(translator_key)
+        credentials = self.settings.get_credentials()
+        custom_model = credentials.get(self.settings.ui.tr('Custom'), {}).get('model', '')
+
+        model_map = {
+            "Custom": custom_model,
+            "Deepseek-v3": "deepseek-v3", 
+            "GPT-4o": "gpt-4o",
+            "GPT-4o mini": "gpt-4o-mini",
+            "Claude-3-Opus": "claude-3-opus-20240229",
+            "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
+            "Claude-3-Haiku": "claude-3-haiku-20240307",
+            "Gemini-2.0-Flash": "gemini-2.0-flash-exp",
+            "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
+        }
+        return model_map.get(translator_key)
         
     def get_system_prompt(self, source_lang: str, target_lang: str):
         return f"""You are an expert translator who translates {source_lang} to {target_lang}. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a {target_lang} speaker would understand.
@@ -223,7 +222,6 @@ class Translator:
                 image = cv2_to_pil(image)
                 entire_translated_text = self.get_gemini_translation(user_prompt, model, system_prompt, image)
 
-            # print(blk_list, entire_translated_text) 
             set_texts_from_json(blk_list, entire_translated_text)
 
         return blk_list
