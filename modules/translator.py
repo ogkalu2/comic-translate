@@ -22,7 +22,6 @@ class Translator:
 
         self.api_key = self.get_api_key(self.translator_key)
         self.api_url = self.get_api_url(self.translator_key)
-        print(self.translator_key, self.api_key, self.api_url)
         self.client = get_llm_client(self.translator_key, self.api_key, self.api_url)
 
         self.img_as_llm_input = self.settings.get_llm_settings()['image_input_enabled']
@@ -106,8 +105,6 @@ class Translator:
                     {"role": "system", "content": [{"type": "text", "text": system_prompt}]},
                     {"role": "user", "content": [{"type": "text", "text": user_prompt}]}
                 ]
-
-        print(f'The model is set to: {model}')
 
         response = self.client.chat.completions.create(
             model=model,
@@ -226,7 +223,7 @@ class Translator:
                 image = cv2_to_pil(image)
                 entire_translated_text = self.get_gemini_translation(user_prompt, model, system_prompt, image)
 
-            print(blk_list, entire_translated_text)
+            # print(blk_list, entire_translated_text) 
             set_texts_from_json(blk_list, entire_translated_text)
 
         return blk_list
