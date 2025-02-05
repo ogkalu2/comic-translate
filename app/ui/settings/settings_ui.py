@@ -40,7 +40,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.supported_translators = [self.tr("GPT-4o"), self.tr("GPT-4o mini"), self.tr("DeepL"), 
                                     self.tr("Claude-3-Opus"), self.tr("Claude-3.5-Sonnet"), 
                                     self.tr("Claude-3-Haiku"), self.tr("Gemini-2.0-Flash"), 
-                                    self.tr("Gemini-1.5-Pro"), self.tr("Yandex"), self.tr("Google Translate"),
+                                    self.tr("Gemini-2.0-Pro"), self.tr("Yandex"), self.tr("Google Translate"),
                                     self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
         
         self.languages = ['English', '한국어', 'Français', '日本語', 
@@ -79,7 +79,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Claude-3.5-Sonnet"): "Claude-3.5-Sonnet",
             self.tr("Claude-3-Haiku"): "Claude-3-Haiku",
             self.tr("Gemini-2.0-Flash"): "Gemini-2.0-Flash",
-            self.tr("Gemini-1.5-Pro"): "Gemini-1.5-Pro",
+            self.tr("Gemini-2.0-Pro"): "Gemini-2.0-Pro",
             self.tr("Yandex"): "Yandex",
             self.tr("Google Translate"): "Google Translate",
             self.tr("Microsoft Translator"): "Microsoft Translator",

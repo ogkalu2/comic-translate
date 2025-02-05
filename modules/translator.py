@@ -37,7 +37,7 @@ class Translator:
             self.settings.ui.tr("Claude-3.5-Sonnet"): "Claude-3.5-Sonnet",
             self.settings.ui.tr("Claude-3-Haiku"): "Claude-3-Haiku",
             self.settings.ui.tr("Gemini-2.0-Flash"): "Gemini-2.0-Flash",
-            self.settings.ui.tr("Gemini-1.5-Pro"): "Gemini-1.5-Pro",
+            self.settings.ui.tr("Gemini-2.0-Pro"): "Gemini-2.0-Pro",
             self.settings.ui.tr("Google Translate"): "Google Translate",
             self.settings.ui.tr("Microsoft Translator"): "Microsoft Translator",
             self.settings.ui.tr("DeepL"): "DeepL",
@@ -60,8 +60,8 @@ class Translator:
             "Claude-3-Opus": "claude-3-opus-20240229",
             "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
             "Claude-3-Haiku": "claude-3-haiku-20240307",
-            "Gemini-2.0-Flash": "gemini-2.0-flash-exp",
-            "Gemini-1.5-Pro": "gemini-1.5-pro-latest"
+            "Gemini-2.0-Flash": "gemini-2.0-flash",
+            "Gemini-2.0-Pro": "gemini-2.0-pro-exp-02-05"
         }
         return model_map.get(translator_key)
         
