@@ -68,11 +68,14 @@ Note: Some of these also have Official English Translations
 
 ## Installation
 ### Python
-Install Python (>=3.10). Tick "Add python.exe to PATH" during the setup.
+Install Python (3.11 or 3.12). Tick "Add python.exe to PATH" during the setup.
 ```bash
 https://www.python.org/downloads/
 ```
-
+Install git
+```bash
+https://git-scm.com/
+```
 Clone the repo (or download the folder), navigate to the folder
 ```bash
 git clone https://github.com/ogkalu2/comic-translate
@@ -81,6 +84,11 @@ cd comic-translate
 and install the requirements
 ```bash
 pip install -r requirements.txt
+```
+
+To Update, run this in the directory the comic-translate folder is located
+```bash
+git pull
 ```
 If you run into any issues, you can try running it in a virtual environment.
 Open the terminal/cmd in whatever directory you want the virtual environment installed (or cd 'path/to/virtual environment/folder').
