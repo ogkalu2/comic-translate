@@ -89,7 +89,7 @@ uv init
 ```
 and install the requirements
 ```bash
-uv add -r requirements.txt
+uv add -r requirements.txt --compile-bytecode
 ```
 
 To Update, run this in the directory the comic-translate folder is located
