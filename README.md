@@ -76,55 +76,38 @@ Install git
 ```bash
 https://git-scm.com/
 ```
-Clone the repo (or download the folder), navigate to the folder
+Install uv
+```
+https://docs.astral.sh/uv/getting-started/installation/
+```
+
+First Time
 ```bash
 git clone https://github.com/ogkalu2/comic-translate
 cd comic-translate
+uv init
 ```
 and install the requirements
 ```bash
-pip install -r requirements.txt
+uv add -r requirements.txt
 ```
 
 To Update, run this in the directory the comic-translate folder is located
 ```bash
 git pull
 ```
-If you run into any issues, you can try running it in a virtual environment.
-Open the terminal/cmd in whatever directory you want the virtual environment installed (or cd 'path/to/virtual environment/folder').
-Create your virtual environment with:
-```bash
-python -m venv comic-translate-venv
-```
-
-Now activate the virtual environment. On Windows:
-```bash
-comic-translate-venv\Scripts\activate
-```
-
-On Mac and Linux:
-```bash
-source comic-translate-venv/bin/activate
-```
-
-Now you can run the Installation Commands again. When you are finished using the app, you can deactivate the virtul environment with:
-```bash
-deactivate
-```
-To re-activate, use the same commands with the terminal in the folder your virtual environment folder is located in.
 
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
-pip uninstall torch torchvision
-pip install torch==2.6.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
-pip install torchvision==0.21.0+cu121 -f https://download.pytorch.org/whl/torch_stable.html
+uv remove torch torchvision
+uv add torch==2.6.0+cu121 torchvision==0.21.0+cu121
 ```
 Note: The 121 in +cu121 represents the CUDA version - 12.1. Replace 121 with your CUDA version. E.g 118 if you are running CUDA 11.8
 
 ## Usage
 In the comic-translate directory, run
 ```bash
-python comic.py
+uv run comic.py
 ```
 This will launch the GUI
 
