@@ -81,7 +81,7 @@ Install uv
 https://docs.astral.sh/uv/getting-started/installation/
 ```
 
-First Time
+Then, in the command line
 ```bash
 git clone https://github.com/ogkalu2/comic-translate
 cd comic-translate
