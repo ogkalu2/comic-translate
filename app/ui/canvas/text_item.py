@@ -274,10 +274,11 @@ class TextBlockItem(QGraphicsTextItem):
         else:
             # Set global outline properties only when there's no selection
             self.outline = True if outline_color else False
-            self.outline_color = outline_color
-            self.outline_width = outline_width
-
+            
             if self.outline:
+                self.outline_color = outline_color
+                self.outline_width = outline_width
+
                 char_count = self.document().characterCount()
                 start = 0
                 end =  max(0, char_count - 1)
