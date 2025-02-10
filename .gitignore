@@ -6,7 +6,6 @@ __pycache__/
 # Settings File
 **/settings.json
 /app/icons
-/fonts
 
 # Environments
 .env
