@@ -100,8 +100,7 @@ git pull
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
 uv remove torch torchvision
-uv pip install torch --index-url https://download.pytorch.org/whl/cu121
-uv pip install torchvision --index-url https://download.pytorch.org/whl/cu121
+uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 ```
 Note: The 121 in cu121 represents the CUDA version - 12.1. Replace 121 with your CUDA version. E.g 118 if you are running CUDA 11.8
 
