@@ -85,7 +85,7 @@ Then, in the command line
 ```bash
 git clone https://github.com/ogkalu2/comic-translate
 cd comic-translate
-uv init
+uv init --python >=3.11,<3.13
 ```
 and install the requirements
 ```bash
