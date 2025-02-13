@@ -100,9 +100,10 @@ git pull
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
 uv remove torch torchvision
-uv add torch==2.6.0+cu121 torchvision==0.21.0+cu121
+uv pip install torch --index-url https://download.pytorch.org/whl/cu121
+uv pip install torchvision --index-url https://download.pytorch.org/whl/cu121
 ```
-Note: The 121 in +cu121 represents the CUDA version - 12.1. Replace 121 with your CUDA version. E.g 118 if you are running CUDA 11.8
+Note: The 121 in cu121 represents the CUDA version - 12.1. Replace 121 with your CUDA version. E.g 118 if you are running CUDA 11.8
 
 ## Usage
 In the comic-translate directory, run
