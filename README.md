@@ -92,9 +92,10 @@ and install the requirements
 uv add -r requirements.txt --compile-bytecode
 ```
 
-To Update, run this in the directory the comic-translate folder is located
+To Update, run this in the comic-translate folder
 ```bash
 git pull
+uv add -r requirements.txt --compile-bytecode
 ```
 
 If you have an NVIDIA GPU, then it is recommended to run
