@@ -95,6 +95,7 @@ uv add -r requirements.txt --compile-bytecode
 To Update, run this in the comic-translate folder
 ```bash
 git pull
+uv init --python >=3.11,<3.13 (Note: only run this line if you did not use uv for the first time installation)
 uv add -r requirements.txt --compile-bytecode
 ```
 
