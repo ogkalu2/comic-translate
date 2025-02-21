@@ -187,7 +187,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             ("CBZ files", "cbz"),
             ("CB7 files", "cb7"),
             ("PDF files", "pdf"),
-            ("EPUB files", "epub"),
         ]
 
         self.save_all_browser = MClickSaveFileToolButton()
