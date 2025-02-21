@@ -2,7 +2,6 @@ import os, re
 import zipfile, tarfile, py7zr, rarfile
 import math
 import img2pdf
-from ebooklib import epub
 import pymupdf
 
 def natural_sort_key(s):
@@ -125,61 +124,7 @@ def make_pdf(input_dir, output_path="", output_dir="", output_base_name=""):
     with open(output_path, "wb") as f:
         f.write(img2pdf.convert(sorted_paths))
 
-def make_epub(input_dir, lang, output_path="", output_dir="", output_base_name=""):
-    if not output_path:
-        output_path = os.path.join(output_dir, f"{output_base_name}_translated.epub")
-
-    mime = {
-        '.jpeg': 'jpeg',
-        '.jpg': 'jpg',
-        '.png': 'png',
-        '.webp': 'webp',
-        '.bmp': 'bmp'
-    }
-
-    book = epub.EpubBook()
-    book.set_title(os.path.splitext(os.path.basename(output_path))[0])
-    book.set_language(lang)
-
-    content = [u'<html> <head></head> <body>']
-
-    image_paths = []
-    for root, dirs, files in os.walk(input_dir):
-        for file in files:
-            if is_image_file(file):
-                image_paths.append(os.path.join(root, file))
-    
-    # Determine the cover image
-    cover_image_path = None
-    for image_path in image_paths:
-        if "cover" in os.path.basename(image_path) and "_translated" not in os.path.basename(image_path):
-            cover_image_path = image_path
-            break
-    if not cover_image_path:
-        cover_image_path = image_paths[0]  # Default to the first image if no suitable cover is found
-    
-    cover_ext = os.path.splitext(cover_image_path)[1]
-    book.set_cover("cover" + cover_ext, open(cover_image_path, 'rb').read())
-
-    # Add images to the book
-    for image_path in image_paths:
-        file_name = os.path.basename(image_path)
-        ext = os.path.splitext(image_path)[1]
-        epub_image = epub.EpubItem(file_name="images/" + file_name, content=open(image_path, 'rb').read(), media_type=f"image/{mime[ext]}")
-        book.add_item(epub_image)
-        content.append(f'<img src="{epub_image.file_name}"/>')
-
-    content.append('</body> </html>')
-    c1 = epub.EpubHtml(title='Images', file_name='images.xhtml', lang=lang)
-    c1.content = ''.join(content)
-
-    book.add_item(c1)
-    book.spine = ['nav', c1]
-
-    epub.write_epub(output_path, book, {})
-
-
-def make(input_dir, output_path="", save_as_ext="", output_dir="", output_base_name="", trg_lng=""):
+def make(input_dir, output_path="", save_as_ext="", output_dir="", output_base_name=""):
     if not output_path and (not output_dir or not output_base_name):
         raise ValueError("Either output_path or both output_dir and output_base_name must be provided")
     
@@ -192,7 +137,5 @@ def make(input_dir, output_path="", save_as_ext="", output_dir="", output_base_n
         make_cb7(input_dir, output_path, output_dir, output_base_name)
     elif save_as_ext == '.pdf':
         make_pdf(input_dir, output_path, output_dir, output_base_name)
-    elif save_as_ext == '.epub':
-        make_epub(input_dir, trg_lng, output_path, output_dir, output_base_name)
     else:
         raise ValueError(f"Unsupported save_as_ext: {save_as_ext}")

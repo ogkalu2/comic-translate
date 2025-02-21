@@ -125,8 +125,6 @@ class ComicTranslatePipeline:
             image = self.main_page.image_viewer.get_cv2_image()
             extra_context = settings_page.get_llm_settings()['extra_context']
 
-            target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
-            trg_lng_cd = get_language_code(target_lang_en)
             upper_case = settings_page.ui.uppercase_checkbox.isChecked()
 
             translator = Translator(self.main_page, source_lang, target_lang)
@@ -437,12 +435,8 @@ class ComicTranslatePipeline:
 
                 # Create the new archive
                 output_base_name = f"{archive_bname}"
-                target_lang = self.main_page.image_states[archive['extracted_images'][0]]['target_lang']
-                target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
-                trg_lng_code = get_language_code(target_lang_en)
                 make(save_as_ext=save_as_ext, input_dir=save_dir, 
-                    output_dir=archive_directory, output_base_name=output_base_name, 
-                    trg_lng=trg_lng_code)
+                    output_dir=archive_directory, output_base_name=output_base_name)
 
                 self.main_page.progress_update.emit(archive_index_input, total_images, 3, 3, True)
                 if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
