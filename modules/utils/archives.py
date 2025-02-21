@@ -1,8 +1,11 @@
 import os, re
-import zipfile, tarfile, py7zr, rarfile
+import zipfile, tarfile
+import py7zr, rarfile
 import math
 import img2pdf
-import pymupdf
+import pdfplumber
+import io
+from PIL import Image
 
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower()
@@ -45,27 +48,50 @@ def extract_archive(file_path: str, extract_to: str):
                     image_paths.append(os.path.join(extract_to, entry))
 
     elif file_path.lower().endswith('.pdf'):
-        pdf_file = pymupdf.open(file_path)
-        total_images = sum(len(page.get_images(full=True)) for page in pdf_file)
-        digits = math.floor(math.log10(total_images)) + 1
-        
-        index = 0
-        for page_num in range(len(pdf_file)):
-            page = pdf_file[page_num]
-            image_list = page.get_images(full=True)
-            for img_index, img in enumerate(image_list, start=1):
+        with pdfplumber.open(file_path) as pdf:
+            # Count total pages for consistent indexing
+            total_pages = len(pdf.pages)
+            digits = math.floor(math.log10(total_pages)) + 1 if total_pages > 0 else 1
+            
+            index = 0
+            for page_num, page in enumerate(pdf.pages):
                 index += 1
-                xref = img[0]
-                base_image = pdf_file.extract_image(xref)
-                image_bytes = base_image["image"]
-                image_ext = base_image["ext"]
-                image_filename = f"{index:0{digits}d}.{image_ext}"
-                image_path = os.path.join(extract_to, image_filename)
-                with open(image_path, "wb") as image_file:
-                    image_file.write(image_bytes)
-                image_paths.append(image_path)
-        pdf_file.close()
+                image_extracted = False
+                
+                # Try to extract embedded image first
+                if page.images and len(page.images) > 0:
+                    try:
+                        img = page.images[0]  # Assuming one image per page
+                        if "stream" in img:
+                            image_bytes = img["stream"].get_data()
+                            
+                            # Determine image extension
+                            try:
+                                pil_img = Image.open(io.BytesIO(image_bytes))
+                                image_ext = pil_img.format.lower()
+                                image_filename = f"{index:0{digits}d}.{image_ext}"
+                                image_path = os.path.join(extract_to, image_filename)
+                                
+                                with open(image_path, "wb") as image_file:
+                                    image_file.write(image_bytes)
+                                image_paths.append(image_path)
+                                image_extracted = True
+                            except Exception as e:
+                                print(f"{page_num+1}: {e}. Resorting to Page Rendering")
 
+                    except Exception as e:
+                        print(f"Error extracting image from page {page_num+1}: {e}")
+                
+                # If extraction failed, render the whole page as an image
+                if not image_extracted:
+                    try:
+                        page_img = page.to_image()
+                        image_filename = f"{index:0{digits}d}.png"  # Default to PNG for rendered pages
+                        image_path = os.path.join(extract_to, image_filename)
+                        page_img.save(image_path)
+                        image_paths.append(image_path)
+                    except Exception as e:
+                        print(f"Failed to render page {page_num+1} as image: {e}")
     else:
         raise ValueError("Unsupported file format")
     
