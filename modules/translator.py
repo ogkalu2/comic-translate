@@ -34,8 +34,8 @@ class Translator:
             self.settings.ui.tr("GPT-4o"): "GPT-4o",
             self.settings.ui.tr("GPT-4o mini"): "GPT-4o mini",
             self.settings.ui.tr("Claude-3-Opus"): "Claude-3-Opus",
-            self.settings.ui.tr("Claude-3.5-Sonnet"): "Claude-3.5-Sonnet",
-            self.settings.ui.tr("Claude-3-Haiku"): "Claude-3-Haiku",
+            self.settings.ui.tr("Claude-3.7-Sonnet"): "Claude-3.7-Sonnet",
+            self.settings.ui.tr("Claude-3.5-Haiku"): "Claude-3.5-Haiku",
             self.settings.ui.tr("Gemini-2.0-Flash"): "Gemini-2.0-Flash",
             self.settings.ui.tr("Gemini-2.0-Pro"): "Gemini-2.0-Pro",
             self.settings.ui.tr("Google Translate"): "Google Translate",
@@ -58,8 +58,8 @@ class Translator:
             "GPT-4o": "gpt-4o",
             "GPT-4o mini": "gpt-4o-mini",
             "Claude-3-Opus": "claude-3-opus-20240229",
-            "Claude-3.5-Sonnet": "claude-3-5-sonnet-20241022",
-            "Claude-3-Haiku": "claude-3-haiku-20240307",
+            "Claude-3.7-Sonnet": "claude-3-7-sonnet-20250219",
+            "Claude-3.5-Haiku": "claude-3-5-haiku-20241022",
             "Gemini-2.0-Flash": "gemini-2.0-flash",
             "Gemini-2.0-Pro": "gemini-2.0-pro-exp-02-05"
         }
