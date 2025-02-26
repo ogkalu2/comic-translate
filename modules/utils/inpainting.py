@@ -15,6 +15,9 @@ from loguru import logger
 from torch.hub import download_url_to_file, get_dir
 import hashlib
 
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
+
 def md5sum(filename):
     md5 = hashlib.md5()
     with open(filename, "rb") as f:
@@ -34,7 +37,8 @@ def get_cache_path_by_url(url):
     parts = urlparse(url)
     # hub_dir = get_dir()
     # model_dir = os.path.join(hub_dir, "checkpoints")
-    dir = os.path.join(os.getcwd(), "models")
+
+    dir = os.path.join(project_root, "models")
     model_dir = os.path.join(dir, "inpainting")
 
     if not os.path.isdir(model_dir):

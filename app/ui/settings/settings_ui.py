@@ -28,7 +28,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.credential_widgets = {}
         self.export_widgets = {}
 
-        self.inpainters = ['LaMa', 'MI-GAN']
+        self.inpainters = ['LaMa', 'AOT', 'MI-GAN']
         self.ocr_engines = [self.tr("Default"), self.tr("Microsoft OCR"), self.tr("Google Cloud Vision")]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
@@ -92,6 +92,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             # Inpainter mappings
             "LaMa": "LaMa",
             "MI-GAN": "MI-GAN",
+            "AOT": "AOT",
 
             # HD Strategy mappings
             self.tr("Resize"): "Resize",

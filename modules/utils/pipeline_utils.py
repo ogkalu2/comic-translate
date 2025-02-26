@@ -7,6 +7,7 @@ from ..detection import does_rectangle_fit, is_mostly_contained
 from typing import List
 from ..inpainting.lama import LaMa
 from ..inpainting.mi_gan import MIGAN
+from ..inpainting.aot import AOT
 from ..inpainting.schema import Config
 from app.ui.messages import Messages
 from PySide6.QtCore import Qt
@@ -43,7 +44,8 @@ def get_layout_direction(language: str) -> Qt.LayoutDirection:
 
 inpaint_map = {
     "LaMa": LaMa,
-    "MI-GAN": MIGAN
+    "MI-GAN": MIGAN,
+    "AOT": AOT,
 }
 
 def get_config(settings_page):
