@@ -70,7 +70,7 @@ class OCREngineFactory:
             credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
             gpt_client = get_llm_client('GPT', credentials['api_key'])
             engine = GPTOCR()
-            engine.initialize(client=gpt_client)
+            engine.initialize(client=gpt_client, model='gpt-4o')
             cls._engines[cache_key] = engine
             return engine
         
