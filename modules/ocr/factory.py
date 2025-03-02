@@ -4,8 +4,8 @@ from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
 from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
-from .easy_ocr import EasyOCREngine
 from .pororo.engine import PororoOCREngine
+from .doctr_ocr import DocTROCREngine
 from ..utils.pipeline_utils import language_codes
 from ..utils.translator_utils import get_llm_client
 
@@ -66,7 +66,7 @@ class OCREngineFactory:
             return engine
         
         # GPT-based OCR for European languages
-        elif is_default and source_lang_english in {"French", "German", "Dutch", "Russian", "Spanish", "Italian"}:
+        elif is_default and source_lang_english == "Russian":
             credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
             gpt_client = get_llm_client('GPT', credentials['api_key'])
             engine = GPTOCR()
@@ -88,12 +88,10 @@ class OCREngineFactory:
             cls._engines[cache_key] = engine
             return engine
         
-        # Default to EasyOCR for any other language
+        # Default to doctr for any other language
         else:
             device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
-            engine = EasyOCREngine()
-            # Map language to language code if possible
-            lang_code = language_codes.get(source_lang_english, 'en')
-            engine.initialize(languages=[lang_code], use_gpu=(device == 'cuda'))
+            engine = DocTROCREngine()
+            engine.initialize(device=device)
             cls._engines[cache_key] = engine
             return engine
