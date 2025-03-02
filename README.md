@@ -156,11 +156,11 @@ You can set your API Keys by going to Settings > Credentials
 
 ### OCR
 By Default:
-* [EasyOCR](https://github.com/JaidedAI/EasyOCR) for English
+* [doctr](https://github.com/mindee/doctr) for English, French, German, Dutch, Spanish and Italian.
 * [manga-ocr](https://github.com/kha-white/manga-ocr) for Japanese
 * [Pororo](https://github.com/yunwoong7/korean_ocr_using_pororo) for Korean 
 * [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) for Chinese 
-* [GPT-4o](https://platform.openai.com/docs/guides/vision) for French, Russian, German, Dutch, Spanish and Italian. Paid, Requires an API Key.
+* [GPT-4o](https://platform.openai.com/docs/guides/vision) for Russian. Paid, Requires an API Key.
 
 Optional:
 
