@@ -167,7 +167,7 @@ def validate_ocr(main_page, source_lang):
         return False
         
     # Validate GPT OCR
-    if source_lang_en in ["French", "German", "Dutch", "Russian", "Spanish", "Italian"]:
+    if source_lang_en == "Russian":
         if (ocr_tool == tr('Default') and 
             not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
             Messages.show_api_key_ocr_gpt4v_error(main_page)
