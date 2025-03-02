@@ -21,7 +21,8 @@ class PaddleOCREngine(OCREngine):
             lang: Language code for OCR
             **kwargs: Additional parameters passed to PaddleOCR
         """
-        self.ocr = PaddleOCR(lang=lang, **kwargs)
+        if self.ocr is None:
+            self.ocr = PaddleOCR(lang=lang, **kwargs)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         """
