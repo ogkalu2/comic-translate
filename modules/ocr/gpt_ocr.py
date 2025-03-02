@@ -14,17 +14,21 @@ class GPTOCR(OCREngine):
         """Initialize GPT OCR."""
         self.client = None
         self.expansion_percentage = 0
+        self.model = 'gpt-4o'  
         
-    def initialize(self, client: Any, expansion_percentage: int = 0, **kwargs) -> None:
+    def initialize(self, client: Any, model: str = 'gpt-4o', 
+                  expansion_percentage: int = 0, **kwargs) -> None:
         """
         Initialize the GPT OCR with client and parameters.
         
         Args:
             client: GPT client for API calls
+            model: GPT model to use for OCR (defaults to gpt-4o)
             expansion_percentage: Percentage to expand text bounding boxes
             **kwargs: Additional parameters (ignored)
         """
         self.client = client
+        self.model = model
         self.expansion_percentage = expansion_percentage
         
     def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
@@ -78,7 +82,7 @@ class GPTOCR(OCREngine):
         """
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o",
+                model=self.model,  # Use the model specified during initialization
                 messages=[
                     {
                         "role": "user",
