@@ -68,7 +68,7 @@ Note: Some of these also have Official English Translations
 
 ## Installation
 ### Python
-Install Python (3.11 or 3.12). Tick "Add python.exe to PATH" during the setup.
+Install Python 3.12. Tick "Add python.exe to PATH" during the setup.
 ```bash
 https://www.python.org/downloads/
 ```
@@ -85,7 +85,7 @@ Then, in the command line
 ```bash
 git clone https://github.com/ogkalu2/comic-translate
 cd comic-translate
-uv init --python '>=3.11,<3.13'
+uv init --python 3.12
 ```
 and install the requirements
 ```bash
@@ -95,7 +95,7 @@ uv add -r requirements.txt --compile-bytecode
 To Update, run this in the comic-translate folder
 ```bash
 git pull
-uv init --python '>=3.11,<3.13' (Note: only run this line if you did not use uv for the first time installation)
+uv init --python 3.12 (Note: only run this line if you did not use uv for the first time installation)
 uv add -r requirements.txt --compile-bytecode
 ```
 
