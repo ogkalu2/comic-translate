@@ -12,4 +12,8 @@ __pycache__/
 .venv
 env/
 venv/
-comic-translate-venv/
+
+# uv
+.python-version
+pyproject.toml
+uv.lock
