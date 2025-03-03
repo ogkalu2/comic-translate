@@ -4,11 +4,10 @@ from datetime import datetime
 from typing import List
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
-from PySide6.QtCore import Qt
 
 from modules.detection import TextBlockDetector
 from modules.ocr.processor import OCRProcessor
-from modules.translator import Translator
+from modules.translator.processor import Translator
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
