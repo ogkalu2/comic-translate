@@ -1,9 +1,4 @@
-"""
-Base classes for OCR engines.
-"""
 from abc import ABC, abstractmethod
-from typing import List, Optional, Any
-
 import numpy as np
 
 from ..utils.textblock import TextBlock
@@ -16,7 +11,7 @@ class OCREngine(ABC):
     """
     
     @abstractmethod
-    def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
+    def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         """
         Process an image with OCR and update text blocks with recognized text.
         
@@ -40,7 +35,7 @@ class OCREngine(ABC):
         pass
 
     @staticmethod
-    def set_source_language(blk_list: List[TextBlock], lang_code: str) -> None:
+    def set_source_language(blk_list: list[TextBlock], lang_code: str) -> None:
         """
         Set source language code for all text blocks.
         
