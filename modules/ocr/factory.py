@@ -7,8 +7,7 @@ from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCREngine
 from ..utils.pipeline_utils import language_codes
-from ..utils.translator_utils import get_llm_client
-
+from ..utils.translator_utils import get_llm_client, MODEL_MAP
 
 class OCREngineFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -31,6 +30,7 @@ class OCREngineFactory:
         is_microsoft = ocr_model == settings.ui.tr("Microsoft OCR")
         is_google = ocr_model == settings.ui.tr("Google Cloud Vision")
         is_default = ocr_model == settings.ui.tr("Default")
+        is_gpt = 'GPT' in ocr_model
         
         # Create a cache key based on model and language
         cache_key = f"{ocr_model}_{source_lang_english}"
@@ -39,15 +39,8 @@ class OCREngineFactory:
         if cache_key in cls._engines:
             return cls._engines[cache_key]
         
-        # Check for special case of Chinese with PaddleOCR
-        if source_lang_english == "Chinese" and not (is_microsoft or is_google):
-            engine = PaddleOCREngine()
-            engine.initialize()
-            cls._engines[cache_key] = engine
-            return engine
-        
         # Microsoft OCR
-        elif is_microsoft:
+        if is_microsoft:
             credentials = settings.get_credentials(settings.ui.tr("Microsoft Azure"))
             engine = MicrosoftOCR()
             engine.initialize(
@@ -65,12 +58,11 @@ class OCREngineFactory:
             cls._engines[cache_key] = engine
             return engine
         
-        # GPT-based OCR for European languages
-        elif is_default and source_lang_english == "Russian":
+        elif is_gpt:
             credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
             gpt_client = get_llm_client('GPT', credentials['api_key'])
             engine = GPTOCR()
-            engine.initialize(client=gpt_client, model='gpt-4o')
+            engine.initialize(client=gpt_client, model=MODEL_MAP.get(ocr_model))
             cls._engines[cache_key] = engine
             return engine
         
@@ -85,6 +77,20 @@ class OCREngineFactory:
         elif source_lang_english == "Korean":
             engine = PororoOCREngine()
             engine.initialize()
+            cls._engines[cache_key] = engine
+            return engine
+        
+        elif source_lang_english == "Chinese":
+            engine = PaddleOCREngine()
+            engine.initialize()
+            cls._engines[cache_key] = engine
+            return engine
+        
+        elif source_lang_english == "Russian":
+            credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
+            gpt_client = get_llm_client('GPT', credentials['api_key'])
+            engine = GPTOCR()
+            engine.initialize(client=gpt_client, model='gpt-4o')
             cls._engines[cache_key] = engine
             return engine
         

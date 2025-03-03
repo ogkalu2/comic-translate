@@ -11,6 +11,18 @@ from .textblock import TextBlock
 from typing import List
 
 
+MODEL_MAP = {
+    "Custom": "",  
+    "Deepseek-v3": "deepseek-v3", 
+    "GPT-4o": "gpt-4o",
+    "GPT-4o mini": "gpt-4o-mini",
+    "Claude-3-Opus": "claude-3-opus-20240229",
+    "Claude-3.7-Sonnet": "claude-3-7-sonnet-20250219",
+    "Claude-3.5-Haiku": "claude-3-5-haiku-20241022",
+    "Gemini-2.0-Flash": "gemini-2.0-flash",
+    "Gemini-2.0-Pro": "gemini-2.0-pro-exp-02-05"
+}
+
 def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')

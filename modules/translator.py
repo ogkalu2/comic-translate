@@ -2,7 +2,8 @@ import numpy as np
 from typing import List
 from .utils.textblock import TextBlock
 from .rendering.render import cv2_to_pil
-from .utils.translator_utils import encode_image_array, get_raw_text, set_texts_from_json, get_llm_client
+from .utils.translator_utils import encode_image_array, get_raw_text, \
+    set_texts_from_json, get_llm_client, MODEL_MAP
 from .utils.pipeline_utils import get_language_code
 from deep_translator import GoogleTranslator, YandexTranslator, MicrosoftTranslator
 import deepl
@@ -52,17 +53,9 @@ class Translator:
         credentials = self.settings.get_credentials()
         custom_model = credentials.get(self.settings.ui.tr('Custom'), {}).get('model', '')
 
-        model_map = {
-            "Custom": custom_model,
-            "Deepseek-v3": "deepseek-v3", 
-            "GPT-4o": "gpt-4o",
-            "GPT-4o mini": "gpt-4o-mini",
-            "Claude-3-Opus": "claude-3-opus-20240229",
-            "Claude-3.7-Sonnet": "claude-3-7-sonnet-20250219",
-            "Claude-3.5-Haiku": "claude-3-5-haiku-20241022",
-            "Gemini-2.0-Flash": "gemini-2.0-flash",
-            "Gemini-2.0-Pro": "gemini-2.0-pro-exp-02-05"
-        }
+        model_map = MODEL_MAP.copy()
+        model_map["Custom"] = custom_model
+        
         return model_map.get(translator_key)
         
     def get_system_prompt(self, source_lang: str, target_lang: str):
