@@ -6,7 +6,6 @@ from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCREngine
-from ..utils.pipeline_utils import language_codes
 from ..utils.translator_utils import get_llm_client, MODEL_MAP
 
 class OCREngineFactory:
