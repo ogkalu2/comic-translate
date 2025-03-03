@@ -14,7 +14,7 @@ class OCREngineFactory:
     _engines = {}  # Cache of created engines
     
     @classmethod
-    def create_engine(cls, settings, source_lang_english: str) -> OCREngine:
+    def create_engine(cls, settings, source_lang_english: str, ocr_model: str) -> OCREngine:
         """
         Create or retrieve an appropriate OCR engine based on settings.
         
@@ -25,9 +25,9 @@ class OCREngineFactory:
         Returns:
             Appropriate OCR engine instance
         """
-        ocr_model = settings.get_tool_selection('ocr')
-        is_microsoft = ocr_model == settings.ui.tr("Microsoft OCR")
-        is_google = ocr_model == settings.ui.tr("Google Cloud Vision")
+        
+        is_microsoft = ocr_model == "Microsoft OCR"
+        is_google = ocr_model == "Google Cloud Vision"
         is_gpt = 'GPT' in ocr_model
         
         # Create a cache key based on model and language

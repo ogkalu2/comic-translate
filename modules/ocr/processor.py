@@ -33,17 +33,9 @@ class OCRProcessor:
         self.settings = main_page.settings_page
         self.source_lang = source_lang
         self.source_lang_english = self._get_english_lang(source_lang)
+        self.ocr_key = self._get_ocr_key(self.settings.get_tool_selection('ocr'))
         
     def _get_english_lang(self, translated_lang: str) -> str:
-        """
-        Get the English language name from the translated language name.
-        
-        Args:
-            translated_lang: Language name in UI language
-            
-        Returns:
-            Language name in English
-        """
         return self.main_page.lang_mapping.get(translated_lang, translated_lang)
 
     def process(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
@@ -62,7 +54,7 @@ class OCRProcessor:
         
         try:
             # Get appropriate OCR engine from factory
-            engine = OCREngineFactory.create_engine(self.settings, self.source_lang_english)
+            engine = OCREngineFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
             
             # Process image with selected engine
             return engine.process_image(img, blk_list)
@@ -72,12 +64,14 @@ class OCRProcessor:
             return blk_list
             
     def _set_source_language(self, blk_list: list[TextBlock]) -> None:
-        """
-        Set source language code for all text blocks.
-        
-        Args:
-            blk_list: List of TextBlock objects
-        """
         source_lang_code = language_codes.get(self.source_lang_english, 'en')
         for blk in blk_list:
             blk.source_lang = source_lang_code
+
+    def _get_ocr_key(self, localized_ocr: str) -> str:
+        translator_map = {
+            self.settings.ui.tr("GPT-4o"): "GPT-4o",
+            self.settings.ui.tr("Microsoft OCR"): "Microsoft OCR",
+            self.settings.ui.tr("Google Cloud Vision"): "Google Cloud Vision",
+        }
+        return translator_map.get(localized_ocr, localized_ocr)
