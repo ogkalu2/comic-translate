@@ -2,12 +2,12 @@ from typing import Any
 import numpy as np
 from abc import abstractmethod
 
-from ..base import LLMTranslationEngine
+from ..base import LLMTranslation
 from ...utils.textblock import TextBlock
 from ...utils.translator_utils import get_raw_text, set_texts_from_json
 
 
-class BaseLLMTranslationEngine(LLMTranslationEngine):
+class BaseLLMTranslation(LLMTranslation):
     """Base class for LLM-based translation engines with shared functionality."""
     
     def __init__(self):

@@ -38,8 +38,8 @@ class TranslationEngine(ABC):
         return get_language_code(language)
 
 
-class TextTranslationEngine(TranslationEngine):
-    """Base class for text-based translation engines (non-LLM)."""
+class TraditionalTranslation(TranslationEngine):
+    """Base class for traditional translation engines (non-LLM)."""
     
     @abstractmethod
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
@@ -55,7 +55,7 @@ class TextTranslationEngine(TranslationEngine):
         pass
 
 
-class LLMTranslationEngine(TranslationEngine):
+class LLMTranslation(TranslationEngine):
     """Base class for LLM-based translation engines."""
     
     @abstractmethod

@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..utils.textblock import TextBlock
-from .base import LLMTranslationEngine
+from .base import LLMTranslation
 from .factory import TranslationEngineFactory
 
 
@@ -42,7 +42,7 @@ class Translator:
         )
         
         # Track engine type for method dispatching
-        self.is_llm_engine = isinstance(self.engine, LLMTranslationEngine)
+        self.is_llm_engine = isinstance(self.engine, LLMTranslation)
     
     def _get_translator_key(self, localized_translator: str) -> str:
         """

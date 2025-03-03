@@ -1,11 +1,11 @@
 from typing import Any
 from deep_translator import YandexTranslator
 
-from .base import TextTranslationEngine
+from .base import TraditionalTranslation
 from ..utils.textblock import TextBlock
 
 
-class YandexTranslationEngine(TextTranslationEngine):
+class YandexTranslation(TraditionalTranslation):
     """Translation engine using Yandex Translator API."""
     
     def __init__(self):

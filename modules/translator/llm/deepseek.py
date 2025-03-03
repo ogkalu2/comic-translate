@@ -1,11 +1,11 @@
 from typing import Any
 import numpy as np
 
-from .base import BaseLLMTranslationEngine
+from .base import BaseLLMTranslation
 from ...utils.translator_utils import get_llm_client, MODEL_MAP
 
 
-class DeepseekTranslationEngine(BaseLLMTranslationEngine):
+class DeepseekTranslation(BaseLLMTranslation):
     """Translation engine using Deepseek models."""
     
     def __init__(self):

@@ -1,12 +1,12 @@
 from typing import Any
 import numpy as np
 
-from .base import BaseLLMTranslationEngine
+from .base import BaseLLMTranslation
 from ...utils.translator_utils import get_llm_client, MODEL_MAP
 from ...rendering.render import cv2_to_pil
 
 
-class GeminiTranslationEngine(BaseLLMTranslationEngine):
+class GeminiTranslation(BaseLLMTranslation):
     """Translation engine using Google Gemini models."""
     
     def __init__(self):

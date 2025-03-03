@@ -1,11 +1,11 @@
 from typing import Any
 from deep_translator import MicrosoftTranslator
 
-from .base import TextTranslationEngine
+from .base import TraditionalTranslation
 from ..utils.textblock import TextBlock
 
 
-class MicrosoftTranslationEngine(TextTranslationEngine):
+class MicrosoftTranslation(TraditionalTranslation):
     """Translation engine using Microsoft Translator API."""
     
     def __init__(self):

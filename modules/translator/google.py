@@ -1,11 +1,11 @@
 from typing import Any
 from deep_translator import GoogleTranslator
 
-from .base import TextTranslationEngine
+from .base import TraditionalTranslation
 from ..utils.textblock import TextBlock
 
 
-class GoogleTranslationEngine(TextTranslationEngine):
+class GoogleTranslation(TraditionalTranslation):
     """Translation engine using Google Translate."""
     
     def __init__(self):

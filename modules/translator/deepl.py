@@ -1,11 +1,11 @@
 from typing import Any
 import deepl
 
-from .base import TextTranslationEngine
+from .base import TraditionalTranslation
 from ..utils.textblock import TextBlock
 
 
-class DeepLTranslationEngine(TextTranslationEngine):
+class DeepLTranslation(TraditionalTranslation):
     """Translation engine using DeepL API."""
     
     def __init__(self):

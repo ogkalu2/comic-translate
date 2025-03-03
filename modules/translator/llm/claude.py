@@ -2,11 +2,11 @@ from typing import Any
 import numpy as np
 
 
-from .base import BaseLLMTranslationEngine
+from .base import BaseLLMTranslation
 from ...utils.translator_utils import get_llm_client, encode_image_array, MODEL_MAP
 
 
-class ClaudeTranslationEngine(BaseLLMTranslationEngine):
+class ClaudeTranslation(BaseLLMTranslation):
     """Translation engine using Anthropic Claude models."""
     
     def __init__(self):

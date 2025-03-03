@@ -1,11 +1,11 @@
 from typing import Any
 import numpy as np
 
-from .base import BaseLLMTranslationEngine
+from .base import BaseLLMTranslation
 from ...utils.translator_utils import get_llm_client, encode_image_array
 
 
-class CustomTranslationEngine(BaseLLMTranslationEngine):
+class CustomTranslation(BaseLLMTranslation):
     """Translation engine using custom LLM configurations."""
     
     def __init__(self):
