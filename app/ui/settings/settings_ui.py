@@ -402,6 +402,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 service_layout.addWidget(region_input)
                 
                 self.credential_widgets["Microsoft Azure_region"] = region_input
+
             elif service == "Custom":
                 # API Key
                 api_key_input = MLineEdit()
@@ -436,6 +437,31 @@ class SettingsPageUI(QtWidgets.QWidget):
                 service_layout.addWidget(model_input)
                 
                 self.credential_widgets[f"{service}_model"] = model_input
+
+            elif service == "Yandex":
+                # API Key
+                api_key_input = MLineEdit()
+                api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
+                api_key_input.setFixedWidth(400)
+                api_key_prefix = MLabel(self.tr("API Key")).border()
+                self.set_label_width(api_key_prefix)
+                api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                api_key_input.set_prefix_widget(api_key_prefix)
+                service_layout.addWidget(api_key_input)
+                
+                self.credential_widgets[f"{service}_api_key"] = api_key_input
+                
+                # Folder ID
+                folder_id_input = MLineEdit()
+                folder_id_input.setFixedWidth(400)
+                folder_id_prefix = MLabel(self.tr("Folder ID")).border()
+                self.set_label_width(folder_id_prefix)
+                folder_id_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                folder_id_input.set_prefix_widget(folder_id_prefix)
+                service_layout.addWidget(folder_id_input)
+                
+                self.credential_widgets[f"{service}_folder_id"] = folder_id_input
+                
             else:
                 # API Key for other services
                 api_key_input = MLineEdit()

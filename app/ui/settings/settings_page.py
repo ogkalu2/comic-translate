@@ -86,6 +86,12 @@ class SettingsPage(QtWidgets.QWidget):
                     'model': self.ui.credential_widgets[f"{service}_model"].text(),
                     'save_key': save_keys
                 }
+            elif service == "Yandex":
+                return {
+                    'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
+                    'folder_id': self.ui.credential_widgets[f"{service}_folder_id"].text(),
+                    'save_key': save_keys
+                }
             else:
                 return {
                     'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),

@@ -1,5 +1,5 @@
 from typing import Any
-from deep_translator import YandexTranslator
+import requests
 
 from .base import TraditionalTranslation
 from ..utils.textblock import TextBlock
@@ -13,8 +13,9 @@ class YandexTranslation(TraditionalTranslation):
         self.source_lang_code = None
         self.target_lang_code = None
         self.api_key = None
+        self.folder_id = None
         
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
+    def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
         """
         Initialize Yandex Translator engine.
         
@@ -28,7 +29,8 @@ class YandexTranslation(TraditionalTranslation):
         self.target_lang_code = self.get_language_code(target_lang)
         
         credentials = settings.get_credentials(settings.ui.tr("Yandex"))
-        self.api_key = credentials['api_key']
+        self.api_key = credentials.get('api_key')
+        self.folder_id = credentials.get('folder_id', '')
         
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
         """
@@ -41,30 +43,67 @@ class YandexTranslation(TraditionalTranslation):
             List of updated TextBlock objects with translations
         """
         try:
-            translator = YandexTranslator(
-                source='auto', 
-                target=self.target_lang_code, 
-                api_key=self.api_key
-            )
-            
-            for blk in blk_list:
+            # Filter out empty texts
+            text_map = {}
+            for i, blk in enumerate(blk_list):
                 # Handle Chinese/Japanese spacing appropriately
                 text = blk.text.replace(" ", "") if (
                     'zh' in self.source_lang_code.lower() or 
                     self.source_lang_code.lower() == 'ja'
                 ) else blk.text
                 
-                if not text.strip():
+                if text.strip():
+                    text_map[i] = text
+            
+            if text_map:
+                texts_to_translate = list(text_map.values())
+                
+                # Prepare the request to Yandex.Translate API
+                url = "https://translate.api.cloud.yandex.net/translate/v2/translate"
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Api-Key {self.api_key}"
+                }
+                
+                # Build request body with REQUIRED folderId
+                body = {
+                    "texts": texts_to_translate,
+                    "targetLanguageCode": self.target_lang_code,
+                    "format": "PLAIN_TEXT",
+                    "folderId": self.folder_id  # This is REQUIRED for user accounts
+                }
+                
+                # Add source language if specified (not auto)
+                if self.source_lang_code.lower() != 'auto':
+                    body["sourceLanguageCode"] = self.source_lang_code
+                
+                # Make the API request
+                response = requests.post(url, headers=headers, json=body)
+                response.raise_for_status()  # Raise exception for HTTP errors
+                
+                # Process the response
+                result = response.json()
+                translations = result.get("translations", [])
+                
+                # Map translations back to their original text blocks
+                indices = list(text_map.keys())
+                for i, translation in enumerate(translations):
+                    if i < len(indices):
+                        idx = indices[i]
+                        blk_list[idx].translation = translation.get("text", "")
+            
+            # Ensure empty text blocks have empty translations
+            for blk in blk_list:
+                if not hasattr(blk, 'translation') or blk.translation is None:
                     blk.translation = ""
-                    continue
                     
-                translation = translator.translate(text)
-                if translation is not None:
-                    blk.translation = translation
-                else:
-                    blk.translation = ""
-        
         except Exception as e:
             print(f"Yandex Translator error: {str(e)}")
+            # Print more details if available
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    print(f"Response content: {e.response.text}")
+                except:
+                    pass
             
         return blk_list
