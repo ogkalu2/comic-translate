@@ -10,8 +10,8 @@ class Translator:
     Main translator class that orchestrates the translation process.
     
     Supports multiple translation engines including:
-    - Text-based translators (Google, Microsoft, DeepL, Yandex)
-    - LLM-based translators (GPT, Claude, Gemini, Deepseek, Custom)
+    - Traditional translators (e.g Google, Microsoft, DeepL, Yandex)
+    - LLM-based translators (e.g GPT, Claude, Gemini, Deepseek, Custom)
     """
     
     def __init__(self, main_page, source_lang: str = "", target_lang: str = ""):
