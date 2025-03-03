@@ -16,32 +16,20 @@ class YandexTranslation(TraditionalTranslation):
         self.folder_id = None
         
     def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
-        """
-        Initialize Yandex Translator engine.
-        
-        Args:
-            settings: Settings object with credentials
-            source_lang: Source language name
-            target_lang: Target language name
-            **kwargs: Additional parameters (ignored)
-        """
         self.source_lang_code = self.get_language_code(source_lang)
         self.target_lang_code = self.get_language_code(target_lang)
+
+        if self.target_lang_code.lower().startswith('zh'):
+            self.target_lang_code = 'zh'
+
+        elif self.target_lang_code == 'pt-br':
+            self.target_lang_code = 'pt-BR' 
         
         credentials = settings.get_credentials(settings.ui.tr("Yandex"))
         self.api_key = credentials.get('api_key', '')
         self.folder_id = credentials.get('folder_id', '')
         
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """
-        Translate text blocks using Yandex Translator.
-        
-        Args:
-            blk_list: List of TextBlock objects to translate
-            
-        Returns:
-            List of updated TextBlock objects with translations
-        """
         try:
             # Filter out empty texts
             text_map = {}
@@ -72,10 +60,6 @@ class YandexTranslation(TraditionalTranslation):
                     "format": "PLAIN_TEXT",
                     "folderId": self.folder_id  # This is REQUIRED for user accounts
                 }
-                
-                # Add source language if specified (not auto)
-                if self.source_lang_code.lower() != 'auto':
-                    body["sourceLanguageCode"] = self.source_lang_code
                 
                 # Make the API request
                 response = requests.post(url, headers=headers, json=body)
