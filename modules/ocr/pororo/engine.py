@@ -14,7 +14,7 @@ class PororoOCREngine(OCREngine):
         self.model = None
         self.expansion_percentage = 5
         
-    def initialize(self, expansion_percentage: int = 5, **kwargs) -> None:
+    def initialize(self, lang: str = 'ko', expansion_percentage: int = 5, **kwargs) -> None:
         """
         Initialize the PororoOCR engine.
         
@@ -27,7 +27,7 @@ class PororoOCREngine(OCREngine):
         # Initialize model if not already loaded
         if self.model is None:
             get_models(pororo_data)
-            self.model = PororoOcr()
+            self.model = PororoOcr(lang=lang)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         """
