@@ -29,7 +29,7 @@ class YandexTranslation(TraditionalTranslation):
         self.target_lang_code = self.get_language_code(target_lang)
         
         credentials = settings.get_credentials(settings.ui.tr("Yandex"))
-        self.api_key = credentials.get('api_key')
+        self.api_key = credentials.get('api_key', '')
         self.folder_id = credentials.get('folder_id', '')
         
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
