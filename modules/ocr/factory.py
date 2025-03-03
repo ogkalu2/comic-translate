@@ -29,7 +29,6 @@ class OCREngineFactory:
         ocr_model = settings.get_tool_selection('ocr')
         is_microsoft = ocr_model == settings.ui.tr("Microsoft OCR")
         is_google = ocr_model == settings.ui.tr("Google Cloud Vision")
-        is_default = ocr_model == settings.ui.tr("Default")
         is_gpt = 'GPT' in ocr_model
         
         # Create a cache key based on model and language
