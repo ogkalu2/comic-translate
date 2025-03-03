@@ -16,7 +16,7 @@ class DeepLTranslation(TraditionalTranslation):
         self.translator = None
         self.target_lang = None
         
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
+    def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
         """
         Initialize DeepL Translator engine.
         
