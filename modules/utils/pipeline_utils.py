@@ -167,6 +167,11 @@ def validate_ocr(main_page, source_lang):
         return False
         
     # Validate GPT OCR
+    if (ocr_tool == tr('GPT-4o') and 
+        not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
+        Messages.show_api_key_ocr_error(main_page)
+        return False
+    
     if source_lang_en == "Russian":
         if (ocr_tool == tr('Default') and 
             not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
