@@ -13,22 +13,13 @@ class CustomTranslation(BaseLLMTranslation):
         super().__init__()
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
-        """
-        Initialize Custom LLM translation engine.
-        
-        Args:
-            settings: Settings object with credentials
-            source_lang: Source language name
-            target_lang: Target language name
-            **kwargs: Additional parameters
-        """
         super().initialize(settings, source_lang, target_lang, **kwargs)
         
         credentials = settings.get_credentials(settings.ui.tr('Custom'))
         self.api_key = credentials.get('api_key', "")
         self.api_url = credentials.get('api_url', "")
         self.model = credentials.get('model', "")
-        self.client = get_llm_client('GPT', self.api_key, self.api_url)
+        self.client = get_llm_client('Custom', self.api_key, self.api_url)
     
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
         """
