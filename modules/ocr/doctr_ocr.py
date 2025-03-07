@@ -11,19 +11,10 @@ class DocTROCREngine(OCREngine):
     """OCR engine using DocTR"""
     
     def __init__(self):
-        """Initialize DocTR OCR engine."""
         self.model = None
         self.device = 'cpu'
         
-    def initialize(self, device: str = 'cpu', **kwargs) -> None:
-        """
-        Initialize the DocTR engine.
-        
-        Args:
-            device: Device to use ('cpu' or 'cuda')
-            **kwargs: Additional parameters (ignored)
-        """
-        
+    def initialize(self, device: str = 'cpu') -> None:
         self.device = device
         
         # Initialize model if not already loaded
@@ -39,16 +30,6 @@ class DocTROCREngine(OCREngine):
                 self.model.cuda().half()
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """
-        Process an image with DocTR and update text blocks.
-        
-        Args:
-            img: Input image as numpy array
-            blk_list: List of TextBlock objects to update with OCR text
-            
-        Returns:
-            List of updated TextBlock objects with recognized text
-        """
         try:
             # Process whole image with DocTR
             result = self.model([img])
