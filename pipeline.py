@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor
 
 from modules.detection import TextBlockDetector
 from modules.ocr.processor import OCRProcessor
-from modules.translator.processor import Translator
+from modules.translation.processor import Translator
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
