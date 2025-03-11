@@ -6,7 +6,7 @@ from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCREngine
-from ..utils.translator_utils import get_llm_client, MODEL_MAP
+from ..utils.translator_utils import MODEL_MAP
 
 class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -88,9 +88,9 @@ class OCRFactory:
     @staticmethod
     def _create_gpt_ocr(settings, model) -> OCREngine:
         credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
-        gpt_client = get_llm_client('GPT', credentials['api_key'])
+        api_key = credentials.get('api_key', '')
         engine = GPTOCR()
-        engine.initialize(client=gpt_client, model=model)
+        engine.initialize(api_key=api_key, model=model)
         return engine
     
     @staticmethod
