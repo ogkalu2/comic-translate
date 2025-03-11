@@ -17,6 +17,8 @@ class ClaudeTranslation(BaseLLMTranslation):
         self.api_key = None
         self.api_url = "https://api.anthropic.com/v1/messages"
         self.headers = None
+        self.temperature = 1
+        self.max_tokens = 5000
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, model_name: str, **kwargs) -> None:
         """
@@ -48,8 +50,8 @@ class ClaudeTranslation(BaseLLMTranslation):
         payload: Dict[str, Any] = {
             "model": self.model,
             "system": system_prompt,
-            "temperature": 1,
-            "max_tokens": 5000,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
         }
         
         # Add messages with text and optionally image
