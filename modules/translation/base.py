@@ -5,7 +5,6 @@ import cv2
 import base64
 
 from ..utils.textblock import TextBlock
-from ..rendering.render import cv2_to_pil
 
 
 class TranslationEngine(ABC):
