@@ -26,13 +26,11 @@ def encode_image_array(img_array: np.ndarray):
 def get_llm_client(translator: str, api_key: str, api_url: str = ""):
 
     from openai import OpenAI
-    import anthropic
 
     client_factories = {
         'Custom': lambda: OpenAI(api_key=api_key, base_url=api_url),
         'Deepseek': lambda: OpenAI(api_key=api_key, base_url='https://api.deepseek.com/v1'),
         'GPT': lambda: OpenAI(api_key=api_key),
-        'Claude': lambda: anthropic.Anthropic(api_key=api_key),
     }
     
     # Find the matching translator key
