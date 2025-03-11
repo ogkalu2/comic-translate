@@ -23,24 +23,6 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def get_llm_client(translator: str, api_key: str, api_url: str = ""):
-
-    from openai import OpenAI
-
-    client_factories = {
-        'Custom': lambda: OpenAI(api_key=api_key, base_url=api_url),
-        'Deepseek': lambda: OpenAI(api_key=api_key, base_url='https://api.deepseek.com/v1'),
-        'GPT': lambda: OpenAI(api_key=api_key),
-    }
-    
-    # Find the matching translator key
-    for key, factory in client_factories.items():
-        if key in translator:
-            return factory()
-    
-    # No match found
-    return None
-
 def get_raw_text(blk_list: List[TextBlock]):
     rw_txts_dict = {}
     for idx, blk in enumerate(blk_list):

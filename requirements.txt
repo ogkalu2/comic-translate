@@ -7,7 +7,6 @@ requests>=2.31.0
 pdfplumber>=0.11.5
 torch>=2.6.0
 torchvision>=0.21.0
-openai>=1.8.0
 py7zr>=0.20.8
 rarfile>=4.1
 img2pdf>=0.5.1
