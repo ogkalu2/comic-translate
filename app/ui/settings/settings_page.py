@@ -7,7 +7,7 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 from .settings_ui import SettingsPageUI
 
-from dataclasses import dataclass, asdict, is_dataclass
+from dataclasses import asdict, is_dataclass
 
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
@@ -43,7 +43,8 @@ class SettingsPage(QtWidgets.QWidget):
         tool_combos = {
             'translator': self.ui.translator_combo,
             'ocr': self.ui.ocr_combo,
-            'inpainter': self.ui.inpainter_combo
+            'inpainter': self.ui.inpainter_combo,
+            'detector': self.ui.detector_combo
         }
         return tool_combos[tool_type].currentText()
 
@@ -121,6 +122,7 @@ class SettingsPage(QtWidgets.QWidget):
             'tools': {
                 'translator': self.get_tool_selection('translator'),
                 'ocr': self.get_tool_selection('ocr'),
+                'detector': self.get_tool_selection('detector'),
                 'inpainter': self.get_tool_selection('inpainter'),
                 'use_gpu': self.is_gpu_enabled(),
                 'hd_strategy': self.get_hd_strategy_settings()
@@ -245,6 +247,10 @@ class SettingsPage(QtWidgets.QWidget):
         inpainter = settings.value('inpainter', 'LaMa')
         translated_inpainter = self.ui.reverse_mappings.get(inpainter, inpainter)
         self.ui.inpainter_combo.setCurrentText(translated_inpainter)
+
+        detector = settings.value('detector', 'RT-DETR-V2')
+        translated_detector = self.ui.reverse_mappings.get(detector, detector)
+        self.ui.detector_combo.setCurrentText(translated_detector)
 
         self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
 
