@@ -9,7 +9,6 @@ class YandexTranslation(TraditionalTranslation):
     """Translation engine using Yandex Translator API."""
     
     def __init__(self):
-        """Initialize Yandex translation engine."""
         self.source_lang_code = None
         self.target_lang_code = None
         self.api_key = None

@@ -9,7 +9,6 @@ class DeepLTranslation(TraditionalTranslation):
     """Translation engine using DeepL API."""
     
     def __init__(self):
-        """Initialize DeepL translation engine."""
         self.source_lang_code = None
         self.target_lang_code = None
         self.api_key = None
@@ -17,15 +16,6 @@ class DeepLTranslation(TraditionalTranslation):
         self.target_lang = None
         
     def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
-        """
-        Initialize DeepL Translator engine.
-        
-        Args:
-            settings: Settings object with credentials
-            source_lang: Source language name
-            target_lang: Target language name
-            **kwargs: Additional parameters
-        """
         self.source_lang_code = self.get_language_code(source_lang)
         self.target_lang_code = self.get_language_code(target_lang)
         self.target_lang = target_lang
@@ -35,15 +25,6 @@ class DeepLTranslation(TraditionalTranslation):
         self.translator = deepl.Translator(self.api_key)
         
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """
-        Translate text blocks using DeepL API.
-        
-        Args:
-            blk_list: List of TextBlock objects to translate
-            
-        Returns:
-            List of updated TextBlock objects with translations
-        """
         try:
             for blk in blk_list:
                 # Handle Chinese/Japanese spacing appropriately

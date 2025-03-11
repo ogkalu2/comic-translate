@@ -9,11 +9,10 @@ class GPTTranslation(BaseLLMTranslation):
     """Translation engine using OpenAI GPT models."""
     
     def __init__(self):
-        """Initialize GPT translation engine."""
         super().__init__()
-        self.model_type = None
+        self.model_name = None
     
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
+    def initialize(self, settings: Any, source_lang: str, target_lang: str, model_name: str, **kwargs) -> None:
         """
         Initialize GPT translation engine.
         
@@ -21,28 +20,17 @@ class GPTTranslation(BaseLLMTranslation):
             settings: Settings object with credentials
             source_lang: Source language name
             target_lang: Target language name
-            **kwargs: Additional parameters including model_type
+            model_name: GPT model name
         """
         super().initialize(settings, source_lang, target_lang, **kwargs)
         
-        self.model_type = kwargs.get('model_type', 'GPT-4o')
+        self.model_name = model_name
         credentials = settings.get_credentials(settings.ui.tr('Open AI GPT'))
         self.api_key = credentials['api_key']
         self.client = get_llm_client('GPT', self.api_key)
-        self.model = MODEL_MAP.get(self.model_type, 'gpt-4o')
+        self.model = MODEL_MAP.get(self.model_name)
     
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
-        """
-        Perform translation using GPT model.
-        
-        Args:
-            user_prompt: User prompt for GPT
-            system_prompt: System prompt for GPT
-            image: Image as numpy array
-            
-        Returns:
-            Translated JSON text
-        """
         encoded_image = None
         if self.img_as_llm_input:
             encoded_image = encode_image_array(image)

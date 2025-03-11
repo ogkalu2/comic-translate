@@ -44,7 +44,7 @@ class TraditionalTranslation(TranslationEngine):
     @abstractmethod
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
         """
-        Translate text blocks using text-based API.
+        Translate text blocks using non-LLM translators.
         
         Args:
             blk_list: List of TextBlock objects containing text to translate

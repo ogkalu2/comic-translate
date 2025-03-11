@@ -10,7 +10,7 @@ from .llm.deepseek import DeepseekTranslation
 from .llm.custom import CustomTranslation
 
 
-class TranslationEngineFactory:
+class TranslationFactory:
     """Factory for creating appropriate translation engines based on settings."""
     
     _engines = {}  # Cache of created engines
@@ -65,7 +65,7 @@ class TranslationEngineFactory:
         if translator_key in cls.TRADITIONAL_ENGINES:
             engine.initialize(settings, source_lang, target_lang)
         else:
-            engine.initialize(settings, source_lang, target_lang, model_type=translator_key)
+            engine.initialize(settings, source_lang, target_lang, translator_key)
         
         # Cache the engine
         cls._engines[cache_key] = engine

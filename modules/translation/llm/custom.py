@@ -9,7 +9,6 @@ class CustomTranslation(BaseLLMTranslation):
     """Translation engine using custom LLM configurations."""
     
     def __init__(self):
-        """Initialize Custom LLM translation engine."""
         super().__init__()
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
@@ -23,7 +22,7 @@ class CustomTranslation(BaseLLMTranslation):
     
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
         """
-        Perform translation using Custom model (default to GPT-like interface).
+        Perform translation using Custom model with Open AI API.
         
         Args:
             user_prompt: User prompt for LLM

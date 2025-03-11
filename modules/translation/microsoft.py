@@ -9,22 +9,12 @@ class MicrosoftTranslation(TraditionalTranslation):
     """Translation engine using Microsoft Translator API."""
     
     def __init__(self):
-        """Initialize Microsoft translation engine."""
         self.source_lang_code = None
         self.target_lang_code = None
         self.api_key = None
         self.region = None
         
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
-        """
-        Initialize Microsoft Translator engine.
-        
-        Args:
-            settings: Settings object with credentials
-            source_lang: Source language name
-            target_lang: Target language name
-            **kwargs: Additional parameters (ignored)
-        """
+    def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
         self.source_lang_code = self.get_language_code(source_lang)
         self.target_lang_code = self.get_language_code(target_lang)
         
@@ -33,15 +23,6 @@ class MicrosoftTranslation(TraditionalTranslation):
         self.region = credentials['region_translator']
         
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """
-        Translate text blocks using Microsoft Translator.
-        
-        Args:
-            blk_list: List of TextBlock objects to translate
-            
-        Returns:
-            List of updated TextBlock objects with translations
-        """
         try:
             translator = MicrosoftTranslator(
                 self.source_lang_code, 

@@ -10,11 +10,10 @@ class GeminiTranslation(BaseLLMTranslation):
     """Translation engine using Google Gemini models."""
     
     def __init__(self):
-        """Initialize Gemini translation engine."""
         super().__init__()
-        self.model_type = None
+        self.model_name = None
     
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
+    def initialize(self, settings: Any, source_lang: str, target_lang: str, model_name: str, **kwargs) -> None:
         """
         Initialize Gemini translation engine.
         
@@ -22,28 +21,17 @@ class GeminiTranslation(BaseLLMTranslation):
             settings: Settings object with credentials
             source_lang: Source language name
             target_lang: Target language name
-            **kwargs: Additional parameters including model_type
+            model_name: Gemini model name
         """
         super().initialize(settings, source_lang, target_lang, **kwargs)
         
-        self.model_type = kwargs.get('model_type', 'Gemini-2.0-Pro')
+        self.model_name = model_name
         credentials = settings.get_credentials(settings.ui.tr('Google Gemini'))
         self.api_key = credentials['api_key']
         self.client = get_llm_client('Gemini', self.api_key)
-        self.model = MODEL_MAP.get(self.model_type, 'gemini-2.0-pro')
+        self.model = MODEL_MAP.get(self.model_name)
     
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
-        """
-        Perform translation using Gemini model.
-        
-        Args:
-            user_prompt: User prompt for Gemini
-            system_prompt: System prompt for Gemini
-            image: Image as numpy array
-            
-        Returns:
-            Translated JSON text
-        """
         generation_config = {
             "temperature": 1,
             "top_p": 0.95,

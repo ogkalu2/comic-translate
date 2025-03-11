@@ -11,7 +11,6 @@ class BaseLLMTranslation(LLMTranslation):
     """Base class for LLM-based translation engines with shared functionality."""
     
     def __init__(self):
-        """Initialize LLM translation engine."""
         self.source_lang = None
         self.target_lang = None
         self.api_key = None

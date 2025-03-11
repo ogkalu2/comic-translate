@@ -2,7 +2,7 @@ import numpy as np
 
 from ..utils.textblock import TextBlock
 from .base import LLMTranslation
-from .factory import TranslationEngineFactory
+from .factory import TranslationFactory
 
 
 class Translator:
@@ -34,7 +34,7 @@ class Translator:
         self.target_lang_en = self._get_english_lang(main_page, self.target_lang)
         
         # Create appropriate engine using factory
-        self.engine = TranslationEngineFactory.create_engine(
+        self.engine = TranslationFactory.create_engine(
             self.settings,
             self.source_lang_en,
             self.target_lang_en,
