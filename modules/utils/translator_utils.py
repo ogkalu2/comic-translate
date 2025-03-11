@@ -33,7 +33,6 @@ def get_llm_client(translator: str, api_key: str, api_url: str = ""):
         'Deepseek': lambda: OpenAI(api_key=api_key, base_url='https://api.deepseek.com/v1'),
         'GPT': lambda: OpenAI(api_key=api_key),
         'Claude': lambda: anthropic.Anthropic(api_key=api_key),
-        'Gemini': lambda: configure_gemini(api_key)
     }
     
     # Find the matching translator key
@@ -43,11 +42,6 @@ def get_llm_client(translator: str, api_key: str, api_url: str = ""):
     
     # No match found
     return None
-
-def configure_gemini(api_key):
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
-    return genai
 
 def get_raw_text(blk_list: List[TextBlock]):
     rw_txts_dict = {}

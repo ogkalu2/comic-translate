@@ -24,7 +24,6 @@ largestinteriorrectangle>=0.2.0
 paddleocr>=2.8.1
 paddlepaddle>=2.6.1
 loguru>=0.7.2
-google-generativeai>=0.5.2
 anthropic>=0.25.6
 fugashi>=1.4.0
 pyperclip>=1.9.0
