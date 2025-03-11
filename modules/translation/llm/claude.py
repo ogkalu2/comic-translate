@@ -28,7 +28,7 @@ class ClaudeTranslation(BaseLLMTranslation):
         
         self.model_name = model_name
         credentials = settings.get_credentials(settings.ui.tr('Anthropic Claude'))
-        self.api_key = credentials['api_key']
+        self.api_key = credentials.get('api_key', '')
         self.client = get_llm_client('Claude', self.api_key)
         self.model = MODEL_MAP.get(self.model_name)
     

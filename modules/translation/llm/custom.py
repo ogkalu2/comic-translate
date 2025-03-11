@@ -15,9 +15,9 @@ class CustomTranslation(BaseLLMTranslation):
         super().initialize(settings, source_lang, target_lang, **kwargs)
         
         credentials = settings.get_credentials(settings.ui.tr('Custom'))
-        self.api_key = credentials.get('api_key', "")
-        self.api_url = credentials.get('api_url', "")
-        self.model = credentials.get('model', "")
+        self.api_key = credentials.get('api_key', '')
+        self.api_url = credentials.get('api_url', '')
+        self.model = credentials.get('model', '')
         self.client = get_llm_client('Custom', self.api_key, self.api_url)
     
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
