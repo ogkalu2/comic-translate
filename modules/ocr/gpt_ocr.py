@@ -11,13 +11,12 @@ class GPTOCR(OCREngine):
     """OCR engine using GPT vision capabilities."""
     
     def __init__(self):
-        """Initialize GPT OCR."""
         self.client = None
         self.expansion_percentage = 0
         self.model = 'gpt-4o'  
         
     def initialize(self, client: Any, model: str = 'gpt-4o', 
-                  expansion_percentage: int = 0, **kwargs) -> None:
+                  expansion_percentage: int = 0) -> None:
         """
         Initialize the GPT OCR with client and parameters.
         
@@ -25,7 +24,6 @@ class GPTOCR(OCREngine):
             client: GPT client for API calls
             model: GPT model to use for OCR (defaults to gpt-4o)
             expansion_percentage: Percentage to expand text bounding boxes
-            **kwargs: Additional parameters (ignored)
         """
         self.client = client
         self.model = model

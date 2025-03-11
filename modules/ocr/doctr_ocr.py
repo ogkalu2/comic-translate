@@ -15,6 +15,12 @@ class DocTROCREngine(OCREngine):
         self.device = 'cpu'
         
     def initialize(self, device: str = 'cpu') -> None:
+        """
+         Initialize the DocTR engine.
+         
+         Args:
+             device: Device to use ('cpu' or 'cuda')
+         """
         self.device = device
         
         # Initialize model if not already loaded

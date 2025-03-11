@@ -3,7 +3,7 @@ from typing import Any
 
 from ..utils.textblock import TextBlock
 from ..utils.pipeline_utils import language_codes
-from .factory import OCREngineFactory
+from .factory import OCRFactory
 
 
 class OCRProcessor:
@@ -15,7 +15,6 @@ class OCRProcessor:
     """
     
     def __init__(self):
-        """Initialize OCR processor."""
         self.main_page = None
         self.settings = None
         self.source_lang = None
@@ -54,7 +53,7 @@ class OCRProcessor:
         
         try:
             # Get appropriate OCR engine from factory
-            engine = OCREngineFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
+            engine = OCRFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
             
             # Process image with selected engine
             return engine.process_image(img, blk_list)

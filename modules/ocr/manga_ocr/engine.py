@@ -18,6 +18,13 @@ class MangaOCREngine(OCREngine):
         self.project_root = os.path.abspath(os.path.join(self.current_file_dir, '..', '..', '..'))
         
     def initialize(self, device: str = 'cpu', expansion_percentage: int = 5) -> None:
+        """
+         Initialize the MangaOCR engine.
+         
+         Args:
+             device: Device to use ('cpu' or 'cuda')
+             expansion_percentage: Percentage to expand text bounding boxes
+         """
         self.device = device
         self.expansion_percentage = expansion_percentage
         

@@ -10,17 +10,16 @@ class PororoOCREngine(OCREngine):
     """OCR engine using PororoOCR for Korean text."""
     
     def __init__(self):
-        """Initialize PororoOCR engine."""
         self.model = None
         self.expansion_percentage = 5
         
-    def initialize(self, lang: str = 'ko', expansion_percentage: int = 5, **kwargs) -> None:
+    def initialize(self, lang: str = 'ko', expansion_percentage: int = 5) -> None:
         """
         Initialize the PororoOCR engine.
         
         Args:
+            lang: Language code for OCR model - default is 'ko' (Korean)
             expansion_percentage: Percentage to expand text bounding boxes
-            **kwargs: Additional parameters (ignored)
         """
         self.expansion_percentage = expansion_percentage
         
@@ -30,16 +29,6 @@ class PororoOCREngine(OCREngine):
             self.model = PororoOcr(lang=lang)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """
-        Process an image with PororoOCR and update text blocks.
-        
-        Args:
-            img: Input image as numpy array
-            blk_list: List of TextBlock objects to update with OCR text
-            
-        Returns:
-            List of updated TextBlock objects with recognized text
-        """
         for blk in blk_list:
             try:
                 # Get box coordinates

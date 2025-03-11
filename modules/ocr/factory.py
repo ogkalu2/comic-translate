@@ -8,7 +8,7 @@ from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCREngine
 from ..utils.translator_utils import get_llm_client, MODEL_MAP
 
-class OCREngineFactory:
+class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
     
     _engines = {}  # Cache of created engines

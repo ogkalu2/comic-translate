@@ -14,12 +14,11 @@ class MicrosoftOCR(OCREngine):
     """OCR engine using Microsoft Azure Computer Vision API."""
     
     def __init__(self):
-        """Initialize Microsoft OCR."""
         self.client = None
         self.api_key = None
         self.endpoint = None
         
-    def initialize(self, api_key: str, endpoint: str, **kwargs) -> None:
+    def initialize(self, api_key: str, endpoint: str) -> None:
         """
         Initialize the Microsoft OCR with API key and endpoint.
         
@@ -35,16 +34,6 @@ class MicrosoftOCR(OCREngine):
         )
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """
-        Process an image with Microsoft Azure OCR and update text blocks.
-        
-        Args:
-            img: Input image as numpy array
-            blk_list: List of TextBlock objects to update with OCR text
-            
-        Returns:
-            List of updated TextBlock objects with recognized text
-        """
         texts_bboxes = []
         texts_string = []
         
