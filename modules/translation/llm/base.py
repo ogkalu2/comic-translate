@@ -1,6 +1,8 @@
 from typing import Any
 import numpy as np
 from abc import abstractmethod
+import cv2
+import base64
 
 from ..base import LLMTranslation
 from ...utils.textblock import TextBlock
@@ -72,3 +74,33 @@ class BaseLLMTranslation(LLMTranslation):
             Translated JSON text
         """
         pass
+
+    def encode_image(self, image: np.ndarray, ext=".png"):
+        """
+        Encode CV2/numpy image directly to base64 string using cv2.imencode.
+        
+        Args:
+            image: Numpy array representing the image
+            ext: Extension/format to encode the image as (".png" by default for higher quality)
+                
+        Returns:
+            Tuple of (Base64 encoded string, mime_type)
+        """
+        # Direct encoding from numpy/cv2 format to bytes
+        success, buffer = cv2.imencode(ext, image)
+        if not success:
+            raise ValueError(f"Failed to encode image with format {ext}")
+        
+        # Convert to base64
+        img_str = base64.b64encode(buffer).decode('utf-8')
+        
+        # Map extension to mime type
+        mime_types = {
+            ".jpg": "image/jpeg", 
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".webp": "image/webp"
+        }
+        mime_type = mime_types.get(ext.lower(), f"image/{ext[1:].lower()}")
+        
+        return img_str, mime_type
