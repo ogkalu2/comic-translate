@@ -16,14 +16,9 @@ class YandexTranslation(TraditionalTranslation):
         
     def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
         self.source_lang_code = self.get_language_code(source_lang)
-        self.target_lang_code = self.get_language_code(target_lang)
+        target_code = self.get_language_code(target_lang)
+        self.target_lang_code = self.preprocess_language_code(target_code)
 
-        if self.target_lang_code.lower().startswith('zh'):
-            self.target_lang_code = 'zh'
-
-        elif self.target_lang_code == 'pt-br':
-            self.target_lang_code = 'pt-BR' 
-        
         credentials = settings.get_credentials(settings.ui.tr("Yandex"))
         self.api_key = credentials.get('api_key', '')
         self.folder_id = credentials.get('folder_id', '')
@@ -33,12 +28,7 @@ class YandexTranslation(TraditionalTranslation):
             # Filter out empty texts
             text_map = {}
             for i, blk in enumerate(blk_list):
-                # Handle Chinese/Japanese spacing appropriately
-                text = blk.text.replace(" ", "") if (
-                    'zh' in self.source_lang_code.lower() or 
-                    self.source_lang_code.lower() == 'ja'
-                ) else blk.text
-                
+                text = self.preprocess_text(blk.text, self.source_lang_code) 
                 if text.strip():
                     text_map[i] = text
             
@@ -90,3 +80,15 @@ class YandexTranslation(TraditionalTranslation):
                     pass
             
         return blk_list
+    
+    def preprocess_language_code(self, lang_code: str) -> str:
+        if not lang_code:
+            return lang_code
+            
+        if lang_code.lower().startswith('zh'):
+            lang_code = 'zh'
+
+        elif lang_code == 'pt-br':
+            lang_code = 'pt-BR' 
+            
+        return lang_code

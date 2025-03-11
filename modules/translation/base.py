@@ -36,6 +36,26 @@ class TranslationEngine(ABC):
         """
         from ..utils.pipeline_utils import get_language_code
         return get_language_code(language)
+    
+    def preprocess_text(blk_text: str, source_lang_code: str) -> str: 
+        """
+        PreProcess text based on language:
+        - Remove spaces for Chinese and Japanese languages
+        - Keep original text for other languages
+        
+        Args:
+            blk_text (str): The input text to process
+            source_lang_code (str): Language code of the source text
+        
+        Returns:
+            str: Processed text
+        """
+        source_lang_code = source_lang_code.lower()
+        
+        if 'zh' in source_lang_code or source_lang_code == 'ja':
+            return blk_text.replace(' ', '')
+        else:
+            return blk_text
 
 
 class TraditionalTranslation(TranslationEngine):
@@ -51,6 +71,19 @@ class TraditionalTranslation(TranslationEngine):
             
         Returns:
             List of updated TextBlock objects with translations
+        """
+        pass
+
+    @abstractmethod
+    def preprocess_language_code(self, lang_code: str) -> str:
+        """
+        Preprocess language codes to match the specific translation API requirements.
+        
+        Args:
+            lang_code: The language code to preprocess
+            
+        Returns:
+            Preprocessed language code supported by the translation API
         """
         pass
 
