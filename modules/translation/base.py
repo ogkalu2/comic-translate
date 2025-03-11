@@ -37,7 +37,7 @@ class TranslationEngine(ABC):
         from ..utils.pipeline_utils import get_language_code
         return get_language_code(language)
     
-    def preprocess_text(blk_text: str, source_lang_code: str) -> str: 
+    def preprocess_text(self, blk_text: str, source_lang_code: str) -> str: 
         """
         PreProcess text based on language:
         - Remove spaces for Chinese and Japanese languages
