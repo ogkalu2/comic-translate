@@ -28,13 +28,17 @@ LAMA_MODEL_URL = os.environ.get(
 )
 LAMA_MODEL_MD5 = os.environ.get("LAMA_MODEL_MD5", "c09472d8ff584452a2c4529af520fe0b")
 
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
+model_path = os.path.join(project_root, 'models/inpainting/lama_large_512px.ckpt')
+
 
 class LaMa(InpaintModel):
     name = "lama"
     pad_mod = 8
 
     def init_model(self, device, **kwargs):
-        self.model = load_lama_model(model_path='models/inpainting/lama_large_512px.ckpt', device=device, large_arch=True)
+        self.model = load_lama_model(model_path=model_path, device=device, large_arch=True)
         #self.model = load_jit_model(LAMA_MODEL_URL, device, LAMA_MODEL_MD5).eval()
 
     @staticmethod
