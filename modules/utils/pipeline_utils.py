@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 import os
 import base64
+
 from .textblock import TextBlock, sort_textblock_rectangles
-from ..detection import does_rectangle_fit, is_mostly_contained
-from typing import List
+from ..detection.utils.general import does_rectangle_fit, is_mostly_contained
 from ..inpainting.lama import LaMa
 from ..inpainting.mi_gan import MIGAN
 from ..inpainting.aot import AOT
@@ -72,7 +72,7 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def lists_to_blk_list(blk_list: List[TextBlock], texts_bboxes: List, texts_string: List):
+def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_string: list):  
     group = list(zip(texts_bboxes, texts_string))  
 
     for blk in blk_list:
@@ -99,7 +99,7 @@ def lists_to_blk_list(blk_list: List[TextBlock], texts_bboxes: List, texts_strin
 
     return blk_list
 
-def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: int = 5) -> np.ndarray:
+def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
     h, w, c = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
     

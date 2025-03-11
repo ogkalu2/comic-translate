@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 
 from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
-from ..detection import make_bubble_mask, bubble_interior_bounds
+from ..detection.utils.general import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 
 from dataclasses import dataclass

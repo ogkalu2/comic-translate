@@ -2,7 +2,7 @@ import numpy as np
 from PySide6.QtGui import QUndoCommand
 from PySide6.QtCore import QRectF, QPointF
 
-from modules.detection import get_inpaint_bboxes
+from modules.detection.utils.general import get_inpaint_bboxes
 from .base import RectCommandBase
 from ..canvas.rectangle import MoveableRectItem
 from ..canvas.text_item import TextBlockItem
