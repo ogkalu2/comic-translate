@@ -13,7 +13,7 @@ from ..utils.inpainting import (
 
 AOT_MODEL_URL = os.environ.get(
     "AOT_MODEL_URL",
-    "https://huggingface.co/ogkalu/aot-inpainting-traced/resolve/main/aot_traced.pt",
+    "https://huggingface.co/ogkalu/aot-inpainting-jit/resolve/main/aot_traced.pt",
 )
 AOT_MODEL_MD5 = os.environ.get("AOT_MODEL_MD5", "5ecdac562c1d56267468fc4fbf80db27")
 
