@@ -4,7 +4,6 @@ import numpy as np
 from ..base import OCREngine
 from ...utils.textblock import TextBlock, adjust_text_line_coordinates
 from ...utils.download import get_models, manga_ocr_data
-from .manga_ocr import MangaOcr
 
 
 class MangaOCREngine(OCREngine):
@@ -25,10 +24,11 @@ class MangaOCREngine(OCREngine):
              device: Device to use ('cpu' or 'cuda')
              expansion_percentage: Percentage to expand text bounding boxes
          """
+        
+        from .manga_ocr import MangaOcr
+
         self.device = device
         self.expansion_percentage = expansion_percentage
-        
-        # Initialize model if not already loaded
         if self.model is None:
             get_models(manga_ocr_data)
             manga_ocr_path = os.path.join(self.project_root, 'models/ocr/manga-ocr-base')

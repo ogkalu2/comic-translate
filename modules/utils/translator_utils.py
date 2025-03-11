@@ -2,11 +2,7 @@ import cv2
 import base64
 import json
 import re
-import stanza
 import numpy as np
-from openai import OpenAI
-import google.generativeai as genai
-import anthropic
 from .textblock import TextBlock
 from typing import List
 
@@ -28,21 +24,30 @@ def encode_image_array(img_array: np.ndarray):
     return base64.b64encode(img_bytes).decode('utf-8')
 
 def get_llm_client(translator: str, api_key: str, api_url: str = ""):
-    if 'Custom' in translator:
-        client = OpenAI(api_key=api_key, base_url=api_url)
-    elif 'Deepseek' in translator:
-        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
-    elif 'GPT' in translator:
-        client  = OpenAI(api_key = api_key)
-    elif 'Claude' in translator:
-        client = anthropic.Anthropic(api_key = api_key)
-    elif 'Gemini' in translator:
-        client = genai
-        client.configure(api_key = api_key)
-    else:
-        client = None
 
-    return client
+    from openai import OpenAI
+    import anthropic
+
+    client_factories = {
+        'Custom': lambda: OpenAI(api_key=api_key, base_url=api_url),
+        'Deepseek': lambda: OpenAI(api_key=api_key, base_url='https://api.deepseek.com/v1'),
+        'GPT': lambda: OpenAI(api_key=api_key),
+        'Claude': lambda: anthropic.Anthropic(api_key=api_key),
+        'Gemini': lambda: configure_gemini(api_key)
+    }
+    
+    # Find the matching translator key
+    for key, factory in client_factories.items():
+        if key in translator:
+            return factory()
+    
+    # No match found
+    return None
+
+def configure_gemini(api_key):
+    import google.generativeai as genai
+    genai.configure(api_key=api_key)
+    return genai
 
 def get_raw_text(blk_list: List[TextBlock]):
     rw_txts_dict = {}
@@ -94,6 +99,8 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
     for blk in blk_list:
         translation = blk.translation
         if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+
+            import stanza
 
             if trg_lng_cd == 'zh-TW':
                 trg_lng_cd = 'zh-Hant'

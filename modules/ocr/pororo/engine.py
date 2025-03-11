@@ -3,7 +3,6 @@ import numpy as np
 from ..base import OCREngine
 from ...utils.textblock import TextBlock, adjust_text_line_coordinates
 from ...utils.download import get_models, pororo_data
-from .main import PororoOcr
 
 
 class PororoOCREngine(OCREngine):
@@ -21,9 +20,10 @@ class PororoOCREngine(OCREngine):
             lang: Language code for OCR model - default is 'ko' (Korean)
             expansion_percentage: Percentage to expand text bounding boxes
         """
+
+        from .main import PororoOcr
+
         self.expansion_percentage = expansion_percentage
-        
-        # Initialize model if not already loaded
         if self.model is None:
             get_models(pororo_data)
             self.model = PororoOcr(lang=lang)

@@ -1,5 +1,4 @@
 import numpy as np
-import easyocr
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock, adjust_text_line_coordinates
@@ -24,6 +23,8 @@ class EasyOCREngine(OCREngine):
             use_gpu: Whether to use GPU acceleration
             expansion_percentage: Percentage to expand text bounding boxes
         """
+
+        import easyocr
         self.language = languages or ['en']
         self.gpu_enabled = use_gpu
         self.expansion_percentage = expansion_percentage

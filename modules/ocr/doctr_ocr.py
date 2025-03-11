@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from doctr.models import ocr_predictor
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
@@ -21,8 +20,10 @@ class DocTROCREngine(OCREngine):
          Args:
              device: Device to use ('cpu' or 'cuda')
          """
-        self.device = device
         
+        from doctr.models import ocr_predictor
+
+        self.device = device
         # Initialize model if not already loaded
         if self.model is None:
             self.model = ocr_predictor(

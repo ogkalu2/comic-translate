@@ -1,7 +1,6 @@
 from typing import Any
 import numpy as np
 
-
 from .base import BaseLLMTranslation
 from ...utils.translator_utils import get_llm_client, encode_image_array, MODEL_MAP
 

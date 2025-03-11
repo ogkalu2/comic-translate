@@ -1,5 +1,4 @@
 import numpy as np
-from paddleocr import PaddleOCR
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
@@ -19,6 +18,9 @@ class PaddleOCREngine(OCREngine):
         Args:
             lang: Language code for OCR
         """
+
+        from paddleocr import PaddleOCR
+
         if self.ocr is None:
             self.ocr = PaddleOCR(lang=lang)
         

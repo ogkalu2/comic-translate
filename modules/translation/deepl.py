@@ -1,5 +1,4 @@
 from typing import Any
-import deepl
 
 from .base import TraditionalTranslation
 from ..utils.textblock import TextBlock
@@ -16,6 +15,9 @@ class DeepLTranslation(TraditionalTranslation):
         self.target_lang = None
         
     def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
+
+        import deepl
+
         self.source_lang_code = self.get_language_code(source_lang)
         self.target_lang_code = self.get_language_code(target_lang)
         self.target_lang = target_lang
@@ -27,14 +29,10 @@ class DeepLTranslation(TraditionalTranslation):
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
         try:
             for blk in blk_list:
-                # Handle Chinese/Japanese spacing appropriately
-                text = blk.text.replace(" ", "") if (
-                    'zh' in self.source_lang_code.lower() or 
-                    self.source_lang_code.lower() == 'ja'
-                ) else blk.text
+                text = self.preprocess_text(blk.text, self.source_lang_code)
                 
                 if not text.strip():
-                    blk.translation = ""
+                    blk.translation = ''
                     continue
                 
                 # Handle special cases for language codes
