@@ -232,6 +232,7 @@ class ComicTranslate(ComicTranslateUI):
                                   outline_color, outline_width, bold, italic, underline, direction)
         
         text_item.setPos(blk.xyxy[0], blk.xyxy[1])
+        text_item.setRotation(blk.angle)
         text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer.text_items.append(text_item)  
