@@ -62,7 +62,7 @@ class DetectionEngine(ABC):
                             text_bbox=txt_box,
                             bubble_xyxy=None,
                             text_class='text_free',
-                            inpaint_bboxes=inpaint_boxes
+                            inpaint_bboxes=inpaint_boxes,
                         )
                     )
                     continue
@@ -75,7 +75,7 @@ class DetectionEngine(ABC):
                                 text_bbox=txt_box,
                                 bubble_xyxy=bble_box,
                                 text_class='text_bubble',
-                                inpaint_bboxes=inpaint_boxes
+                                inpaint_bboxes=inpaint_boxes,
                             )
                         )
                         text_matched[txt_idx] = True  
@@ -87,7 +87,7 @@ class DetectionEngine(ABC):
                                 text_bbox=txt_box,
                                 bubble_xyxy=bble_box,
                                 text_class='text_free',
-                                inpaint_bboxes=inpaint_boxes
+                                inpaint_bboxes=inpaint_boxes,
                             )
                         )
                         text_matched[txt_idx] = True  
@@ -99,8 +99,9 @@ class DetectionEngine(ABC):
                             text_bbox=txt_box,
                             bubble_xyxy=None,
                             text_class='text_free',
-                            inpaint_bboxes=inpaint_boxes
+                            inpaint_bboxes=inpaint_boxes,
                         )
                     )
         
         return text_blocks
+    
