@@ -17,7 +17,6 @@ class BaseLLMTranslation(LLMTranslation):
         self.target_lang = None
         self.api_key = None
         self.api_url = None
-        self.client = None
         self.model = None
         self.img_as_llm_input = False
     
