@@ -29,7 +29,7 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         self.inpainters = ['LaMa', 'AOT', 'MI-GAN']
         self.detectors = ['RT-DETR-v2', 'DAMO-YOLO']
-        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('GPT-4o')]
+        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4o')]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
@@ -88,7 +88,6 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Default"): "Default",
             self.tr("Microsoft OCR"): "Microsoft OCR",
             self.tr("Google Cloud Vision"): "Google Cloud Vision",
-            self.tr("GPT-4o"): "GPT-4o",
 
             # Inpainter mappings
             "LaMa": "LaMa",

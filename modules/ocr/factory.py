@@ -6,7 +6,7 @@ from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCREngine
-from ..utils.translator_utils import MODEL_MAP
+from .gemini_ocr import GeminiOCR
 
 class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -46,7 +46,8 @@ class OCRFactory:
         general = {
             'Microsoft OCR': cls._create_microsoft_ocr,
             'Google Cloud Vision': cls._create_google_ocr,
-            'GPT-4o': lambda s: cls._create_gpt_ocr(s, MODEL_MAP.get('GPT-4o')),
+            'GPT-4o': lambda s: cls._create_gpt_ocr(s, ocr_model),
+            'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model)
         }
         
         # Language-specific factory functions (for Default model)
@@ -54,7 +55,7 @@ class OCRFactory:
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
-            'Russian': lambda s: cls._create_gpt_ocr(s,  MODEL_MAP.get('GPT-4o'))
+            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4o')
         }
         
         # Check if we have a specific model factory
@@ -117,4 +118,10 @@ class OCRFactory:
         device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
         engine = DocTROCREngine()
         engine.initialize(device=device)
+        return engine
+    
+    @staticmethod
+    def _create_gemini_ocr(settings, model) -> OCREngine:
+        engine = GeminiOCR()
+        engine.initialize(settings, model)
         return engine
