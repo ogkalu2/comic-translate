@@ -6,7 +6,7 @@ from ..utils.textblock import TextBlock
 from ..utils.pipeline_utils import lists_to_blk_list
 
 
-class DocTROCREngine(OCREngine):
+class DocTROCR(OCREngine):
     """OCR engine using DocTR"""
     
     def __init__(self):
