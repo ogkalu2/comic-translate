@@ -5,7 +5,7 @@ from .gpt_ocr import GPTOCR
 from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
-from .doctr_ocr import DocTROCREngine
+from .doctr_ocr import DocTROCR
 from .gemini_ocr import GeminiOCR
 
 class OCRFactory:
@@ -116,7 +116,7 @@ class OCRFactory:
     @staticmethod
     def _create_doctr_ocr(settings) -> OCREngine:
         device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
-        engine = DocTROCREngine()
+        engine = DocTROCR()
         engine.initialize(device=device)
         return engine
     
