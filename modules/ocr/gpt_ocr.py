@@ -6,6 +6,7 @@ import json
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock, adjust_text_line_coordinates
+from ..utils.translator_utils import MODEL_MAP
 
 
 class GPTOCR(OCREngine):
@@ -14,11 +15,11 @@ class GPTOCR(OCREngine):
     def __init__(self):
         self.api_key = None
         self.expansion_percentage = 0
-        self.model = 'gpt-4o'
-        self.api_base_url = "https://api.openai.com/v1/chat/completions"
+        self.model = 'GPT-4o'
+        self.api_base_url = 'https://api.openai.com/v1/chat/completions'
         self.max_tokens = 5000
         
-    def initialize(self, api_key: str, model: str = 'gpt-4o', 
+    def initialize(self, api_key: str, model: str = 'GPT-4o', 
                   expansion_percentage: int = 0) -> None:
         """
         Initialize the GPT OCR with API key and parameters.
@@ -29,7 +30,7 @@ class GPTOCR(OCREngine):
             expansion_percentage: Percentage to expand text bounding boxes
         """
         self.api_key = api_key
-        self.model = model
+        self.model = MODEL_MAP.get(model)
         self.expansion_percentage = expansion_percentage
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
