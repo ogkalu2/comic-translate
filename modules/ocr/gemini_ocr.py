@@ -18,7 +18,6 @@ class GeminiOCR(OCREngine):
         self.model = ''
         self.api_base_url = "https://generativelanguage.googleapis.com/v1beta/models"
         self.max_output_tokens = 5000
-        self.temperature = 0.2
         
     def initialize(self, settings: SettingsPage, model: str = 'Gemini-2.0-Flash', 
                    expansion_percentage: int = 5) -> None:
@@ -121,7 +120,6 @@ class GeminiOCR(OCREngine):
             
             # Setup generation config
             generation_config = {
-                "temperature": self.temperature,  
                 "maxOutputTokens": self.max_output_tokens,
             }
             
