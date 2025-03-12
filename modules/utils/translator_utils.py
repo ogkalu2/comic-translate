@@ -9,7 +9,7 @@ from typing import List
 
 MODEL_MAP = {
     "Custom": "",  
-    "Deepseek-v3": "deepseek-v3", 
+    "Deepseek-v3": "deepseek-chat", 
     "GPT-4o": "gpt-4o",
     "GPT-4o mini": "gpt-4o-mini",
     "Claude-3-Opus": "claude-3-opus-20240229",
