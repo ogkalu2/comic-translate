@@ -1,6 +1,5 @@
 from .base import DetectionEngine
 from .rtdetr_v2 import RTDetrV2Detection
-from .damo_yolo.engine import DamoYoloDetection
 
 
 class DetectionEngineFactory:
@@ -30,7 +29,6 @@ class DetectionEngineFactory:
         # Map model names to factory methods
         engine_factories = {
             'RT-DETR-V2': cls._create_rtdetr_v2,
-            'DAMO-YOLO': cls._create_damo_yolo
         }
         
         # Get the appropriate factory method, defaulting to RT-DETR-V2
@@ -49,10 +47,3 @@ class DetectionEngineFactory:
         engine.initialize(device=device)
         return engine
     
-    @staticmethod
-    def _create_damo_yolo(settings):
-        """Create and initialize DAMO-YOLO detection engine."""
-        engine = DamoYoloDetection()
-        device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
-        engine.initialize(device=device, use_slicing=True)
-        return engine
