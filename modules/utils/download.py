@@ -62,7 +62,7 @@ def get_models(data):
                     )
                 exit(-1)
 
-# Default Models
+# Model Download Data
 manga_ocr_data = {
     'url': 'https://huggingface.co/kha-white/manga-ocr-base/resolve/main/',
     'files': [
@@ -81,33 +81,6 @@ manga_ocr_data = {
     'save_dir': os.path.join(models_base_dir, 'ocr', 'manga-ocr-base')
 }
 
-comic_text_segmenter_data = {
-    'url': 'https://huggingface.co/ogkalu/comic-text-segmenter-yolov8m/resolve/main/',
-    'files': ['comic-text-segmenter.pt'],
-    'sha256_pre_calculated': [
-        'f2dded0d2f5aaa25eed49f1c34a4720f1c1cd40da8bc3138fde1abb202de625e', 
-    ],
-    'save_dir': os.path.join(models_base_dir, 'detection')
-}
-
-inpaint_lama_finetuned_data = {
-    'url': 'https://huggingface.co/dreMaz/AnimeMangaInpainting/resolve/main/',
-    'files': ['lama_large_512px.ckpt'],
-    'sha256_pre_calculated': [
-        "11d30fbb3000fb2eceae318b75d9ced9229d99ae990a7f8b3ac35c8d31f2c935"
-    ],
-    'save_dir': os.path.join(models_base_dir, 'inpainting')
-}
-
-comic_bubble_detector_data = {
-    'url': 'https://huggingface.co/ogkalu/comic-speech-bubble-detector-yolov8m/resolve/main/',
-    'files': ['comic-speech-bubble-detector.pt'],
-    'sha256_pre_calculated': [
-        '10bc9f702698148e079fb4462a6b910fcd69753e04838b54087ef91d5633097b'
-    ],
-    'save_dir': os.path.join(models_base_dir, 'detection')
-}
-
 pororo_data = {
     'url': 'https://twg.kakaocdn.net/pororo/ko/models/misc/',
     'files': ['craft.pt', 'brainocr.pt', 'ocr-opt.txt'],
@@ -119,14 +92,4 @@ pororo_data = {
     'save_dir': os.path.join(models_base_dir, 'ocr', 'pororo')
 }
 
-manga_text_detector_data = {
-    'url': 'https://huggingface.co/ogkalu/manga-text-detector-yolov8s/resolve/main/',
-    'files': ['manga-text-detector.pt'],
-    'sha256_pre_calculated': [
-        '297447cc99c47f15ffced11bebebd88034e56f0fac6c96d9a27cd725314909a1'
-    ],
-    'save_dir': os.path.join(models_base_dir, 'detection')
-}
-
-mandatory_models = [comic_text_segmenter_data, inpaint_lama_finetuned_data,
-                    comic_bubble_detector_data, manga_text_detector_data]
+mandatory_models = []
