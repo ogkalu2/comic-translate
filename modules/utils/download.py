@@ -92,13 +92,4 @@ pororo_data = {
     'save_dir': os.path.join(models_base_dir, 'ocr', 'pororo')
 }
 
-inpaint_lama_finetuned_data = {
-    'url': 'https://huggingface.co/dreMaz/AnimeMangaInpainting/resolve/main/',
-    'files': ['lama_large_512px.ckpt'],
-    'sha256_pre_calculated': [
-        "11d30fbb3000fb2eceae318b75d9ced9229d99ae990a7f8b3ac35c8d31f2c935"
-    ],
-    'save_dir': os.path.join(models_base_dir, 'inpainting')
-}
-
-mandatory_models = [inpaint_lama_finetuned_data]
+mandatory_models = []
