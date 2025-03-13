@@ -8,7 +8,7 @@ class DetectionEngineFactory:
     _engines = {}  # Cache of created engines
     
     @classmethod
-    def create_engine(cls, settings, model_name: str = 'RT-DETR-V2') -> DetectionEngine:
+    def create_engine(cls, settings, model_name: str = 'RT-DETR-v2') -> DetectionEngine:
         """
         Create or retrieve an appropriate detection engine.
         
@@ -28,7 +28,7 @@ class DetectionEngineFactory:
         
         # Map model names to factory methods
         engine_factories = {
-            'RT-DETR-V2': cls._create_rtdetr_v2,
+            'RT-DETR-v2': cls._create_rtdetr_v2,
         }
         
         # Get the appropriate factory method, defaulting to RT-DETR-V2
