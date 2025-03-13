@@ -28,7 +28,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.export_widgets = {}
 
         self.inpainters = ['LaMa', 'AOT', 'MI-GAN']
-        self.detectors = ['RT-DETR-v2', 'DAMO-YOLO']
+        self.detectors = ['RT-DETR-v2']
         self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4o')]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
@@ -96,7 +96,6 @@ class SettingsPageUI(QtWidgets.QWidget):
 
             # Detector mappings
             "RT-DETR-v2": "RT-DETR-v2",
-            "DAMO-YOLO": "DAMO-YOLO",
 
             # HD Strategy mappings
             self.tr("Resize"): "Resize",
