@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from typing import Callable, Tuple, Any, List
+from typing import Callable, Any
 from .general import calculate_iou
 
 
@@ -17,7 +17,7 @@ class ImageSlicer:
                  merge_iou_threshold: float = 0.2,
                  duplicate_iou_threshold: float = 0.5,
                  merge_y_distance_threshold: float = 0.1,
-                 containment_threshold: float = 0.85):  # Added new parameter
+                 containment_threshold: float = 0.85):  
         """
         Initialize the image slicer with configuration parameters.
         
@@ -47,7 +47,7 @@ class ImageSlicer:
         aspect_ratio = height / width
         return aspect_ratio > self.height_to_width_ratio_threshold
     
-    def calculate_slice_params(self, image: np.ndarray) -> Tuple[int, int, int, int]:
+    def calculate_slice_params(self, image: np.ndarray) -> tuple[int, int, int, int]:
         height, width = image.shape[:2]
         
         slice_width = width  # Full width of the image
@@ -69,7 +69,7 @@ class ImageSlicer:
         return slice_width, slice_height, effective_slice_height, num_slices
     
     def get_slice(self, image: np.ndarray, slice_number: int, 
-                 effective_slice_height: int, slice_height: int) -> Tuple[np.ndarray, int, int]:
+                 effective_slice_height: int, slice_height: int) -> tuple[np.ndarray, int, int]:
         """
         Extract a slice from the image.
         
@@ -117,7 +117,7 @@ class ImageSlicer:
         adjusted_boxes[:, 3] += start_y  # y2
         return adjusted_boxes
     
-    def box_contained(self, box1: List[float], box2: List[float]) -> Tuple[bool, float, int]:
+    def box_contained(self, box1: list[float], box2: list[float]) -> tuple[bool, float, int]:
         """
         Check if one box is contained within another box.
         
@@ -158,7 +158,7 @@ class ImageSlicer:
         return False, containment_ratio, 0
     
     def merge_overlapping_boxes(self, boxes: np.ndarray, class_ids: np.ndarray = None, 
-                               image_height: int = 1) -> Tuple[np.ndarray, np.ndarray]:
+                               image_height: int = 1) -> tuple[np.ndarray, np.ndarray]:
         """
         Merge boxes that are likely part of the same object across slices and
         remove duplicate detections from overlapping slices.
@@ -329,8 +329,8 @@ class ImageSlicer:
     
     def _process_box_tuple_results(self, 
                                   image: np.ndarray,
-                                  detect_func: Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]],
-                                  effective_slice_height: int) -> Tuple[np.ndarray, np.ndarray]:
+                                  detect_func: Callable[[np.ndarray], tuple[np.ndarray, np.ndarray]],
+                                  effective_slice_height: int) -> tuple[np.ndarray, np.ndarray]:
         """
         Process slices for detectors that return a tuple of (bubble_boxes, text_boxes).
         
