@@ -7,7 +7,6 @@ from .factory import DetectionEngineFactory
 class TextBlockDetector:
     """
     Detector for finding text blocks in images.
-    Supports multiple detection models including RT-DETR-V2 and DAMO-YOLO.
     """
     
     def __init__(self, settings_page):
