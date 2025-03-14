@@ -8,7 +8,7 @@ class CustomTranslation(GPTTranslation):
     def __init__(self):
         super().__init__()
     
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
+    def initialize(self, settings: Any, source_lang: str, target_lang: str, tr_key: str, **kwargs) -> None:
         """
         Initialize custom translation engine.
         
@@ -22,7 +22,7 @@ class CustomTranslation(GPTTranslation):
         super(GPTTranslation, self).initialize(settings, source_lang, target_lang, **kwargs)
         
         # Get custom credentials instead of OpenAI credentials
-        credentials = settings.get_credentials(settings.ui.tr('Custom'))
+        credentials = settings.get_credentials(settings.ui.tr(tr_key))
         self.api_key = credentials.get('api_key', '')
         self.model = credentials.get('model', '')
         
