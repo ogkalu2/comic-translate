@@ -142,7 +142,7 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
 def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
     # Using Speech Bubble detection to find best Text Render Area
     for blk in blk_list:
-        if blk.text_class == 'text_bubble':
+        if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
             bx1, by1, bx2, by2 = blk.bubble_xyxy
             bubble_clean_frame = inpainted_img[by1:by2, bx1:bx2]
             bubble_mask = make_bubble_mask(bubble_clean_frame)
