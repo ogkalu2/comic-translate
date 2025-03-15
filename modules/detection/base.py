@@ -67,6 +67,8 @@ class DetectionEngine(ABC):
                     continue
                 
                 for bble_box in bubble_boxes:
+                    if bble_box is None:
+                        continue
                     if does_rectangle_fit(bble_box, txt_box):
                         # Text is inside a bubble
                         text_blocks.append(
