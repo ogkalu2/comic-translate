@@ -114,7 +114,7 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
             kernel_size = default_padding
             if hasattr(blk, 'source_lang') and blk.source_lang not in ['ja', 'ko']:
                 kernel_size = 3
-            if hasattr(blk, 'text_class') and blk.text_class == 'text_bubble':
+            if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
                 # Calculate the minimal distance from the mask to the bounding box edges
                 min_distance_to_bbox = min(
                     x1 - blk.bubble_xyxy[0],  # left side

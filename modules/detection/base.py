@@ -60,7 +60,6 @@ class DetectionEngine(ABC):
                     text_blocks.append(
                         TextBlock(
                             text_bbox=txt_box,
-                            bubble_xyxy=None,
                             text_class='text_free',
                             inpaint_bboxes=inpaint_boxes,
                         )
@@ -86,7 +85,7 @@ class DetectionEngine(ABC):
                             TextBlock(
                                 text_bbox=txt_box,
                                 bubble_xyxy=bble_box,
-                                text_class='text_free',
+                                text_class='text_bubble',
                                 inpaint_bboxes=inpaint_boxes,
                             )
                         )
@@ -97,7 +96,6 @@ class DetectionEngine(ABC):
                     text_blocks.append(
                         TextBlock(
                             text_bbox=txt_box,
-                            bubble_xyxy=None,
                             text_class='text_free',
                             inpaint_bboxes=inpaint_boxes,
                         )
