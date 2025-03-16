@@ -74,10 +74,10 @@ class TraditionalTranslation(TranslationEngine):
         """
         pass
 
-    @abstractmethod
     def preprocess_language_code(self, lang_code: str) -> str:
         """
         Preprocess language codes to match the specific translation API requirements.
+        By default, returns the original language code.
         
         Args:
             lang_code: The language code to preprocess
@@ -85,7 +85,7 @@ class TraditionalTranslation(TranslationEngine):
         Returns:
             Preprocessed language code supported by the translation API
         """
-        pass
+        return lang_code  # Default implementation just returns the original code
 
 
 class LLMTranslation(TranslationEngine):
