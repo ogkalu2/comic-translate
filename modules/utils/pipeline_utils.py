@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 import os
 import base64
-
 from .textblock import TextBlock, sort_textblock_rectangles
-from ..detection.utils.general import does_rectangle_fit, is_mostly_contained
+from ..detection import does_rectangle_fit, is_mostly_contained
+from typing import List
 from ..inpainting.lama import LaMa
 from ..inpainting.mi_gan import MIGAN
 from ..inpainting.aot import AOT
@@ -72,7 +72,7 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_string: list):  
+def lists_to_blk_list(blk_list: List[TextBlock], texts_bboxes: List, texts_string: List):
     group = list(zip(texts_bboxes, texts_string))  
 
     for blk in blk_list:
@@ -99,7 +99,7 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
 
     return blk_list
 
-def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
+def generate_mask(img: np.ndarray, blk_list: List[TextBlock], default_padding: int = 5) -> np.ndarray:
     h, w, c = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
     
@@ -114,7 +114,7 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
             kernel_size = default_padding
             if hasattr(blk, 'source_lang') and blk.source_lang not in ['ja', 'ko']:
                 kernel_size = 3
-            if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
+            if hasattr(blk, 'text_class') and blk.text_class == 'text_bubble':
                 # Calculate the minimal distance from the mask to the bounding box edges
                 min_distance_to_bbox = min(
                     x1 - blk.bubble_xyxy[0],  # left side

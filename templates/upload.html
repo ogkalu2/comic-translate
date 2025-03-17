@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>图片翻译</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-container {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .result-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #resultImage {
+            max-width: 100%;
+            margin-top: 20px;
+        }
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <h2>图片翻译工具</h2>
+        <form id="uploadForm">
+            <input type="file" name="image" accept="image/*" required>
+            <button type="submit">上传并翻译</button>
+        </form>
+        <div class="loading" id="loading">处理中...</div>
+    </div>
+    <div class="result-container">
+        <img id="resultImage" style="display: none;">
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loading = document.getElementById('loading');
+            const resultImage = document.getElementById('resultImage');
+            
+            loading.style.display = 'block';
+            resultImage.style.display = 'none';
+            
+            fetch('/covert_image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                resultImage.src = url;
+                resultImage.style.display = 'block';
+                loading.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.textContent = '处理失败，请重试';
+            });
+        };
+    </script>
+</body>
+</html>

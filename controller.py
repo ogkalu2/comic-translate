@@ -29,7 +29,7 @@ from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.image import SetImageCommand
 from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
 
-from modules.detection.utils.general import do_rectangles_overlap, get_inpaint_bboxes
+from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import manual_wrap
 from modules.utils.file_handler import FileHandler
@@ -232,7 +232,6 @@ class ComicTranslate(ComicTranslateUI):
                                   outline_color, outline_width, bold, italic, underline, direction)
         
         text_item.setPos(blk.xyxy[0], blk.xyxy[1])
-        text_item.setRotation(blk.angle)
         text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer.text_items.append(text_item)  

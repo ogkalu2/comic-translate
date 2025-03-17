@@ -5,10 +5,10 @@ from .gpt_ocr import GPTOCR
 from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
-from .doctr_ocr import DocTROCR
-from .gemini_ocr import GeminiOCR
+from .doctr_ocr import DocTROCREngine
+from ..utils.translator_utils import get_llm_client, MODEL_MAP
 
-class OCRFactory:
+class OCREngineFactory:
     """Factory for creating appropriate OCR engines based on settings."""
     
     _engines = {}  # Cache of created engines
@@ -46,8 +46,7 @@ class OCRFactory:
         general = {
             'Microsoft OCR': cls._create_microsoft_ocr,
             'Google Cloud Vision': cls._create_google_ocr,
-            'GPT-4o': lambda s: cls._create_gpt_ocr(s, ocr_model),
-            'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model)
+            'GPT-4o': lambda s: cls._create_gpt_ocr(s, MODEL_MAP.get('GPT-4o')),
         }
         
         # Language-specific factory functions (for Default model)
@@ -55,7 +54,7 @@ class OCRFactory:
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
-            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4o')
+            'Russian': lambda s: cls._create_gpt_ocr(s,  MODEL_MAP.get('GPT-4o'))
         }
         
         # Check if we have a specific model factory
@@ -89,9 +88,9 @@ class OCRFactory:
     @staticmethod
     def _create_gpt_ocr(settings, model) -> OCREngine:
         credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
-        api_key = credentials.get('api_key', '')
+        gpt_client = get_llm_client('GPT', credentials['api_key'])
         engine = GPTOCR()
-        engine.initialize(api_key=api_key, model=model)
+        engine.initialize(client=gpt_client, model=model)
         return engine
     
     @staticmethod
@@ -116,12 +115,6 @@ class OCRFactory:
     @staticmethod
     def _create_doctr_ocr(settings) -> OCREngine:
         device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
-        engine = DocTROCR()
+        engine = DocTROCREngine()
         engine.initialize(device=device)
-        return engine
-    
-    @staticmethod
-    def _create_gemini_ocr(settings, model) -> OCREngine:
-        engine = GeminiOCR()
-        engine.initialize(settings, model)
         return engine

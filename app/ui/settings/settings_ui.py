@@ -28,8 +28,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.export_widgets = {}
 
         self.inpainters = ['LaMa', 'AOT', 'MI-GAN']
-        self.detectors = ['RT-DETR-v2']
-        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4o')]
+        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('GPT-4o')]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
@@ -88,14 +87,12 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Default"): "Default",
             self.tr("Microsoft OCR"): "Microsoft OCR",
             self.tr("Google Cloud Vision"): "Google Cloud Vision",
+            self.tr("GPT-4o"): "GPT-4o",
 
             # Inpainter mappings
             "LaMa": "LaMa",
             "MI-GAN": "MI-GAN",
             "AOT": "AOT",
-
-            # Detector mappings
-            "RT-DETR-v2": "RT-DETR-v2",
 
             # HD Strategy mappings
             self.tr("Resize"): "Resize",
@@ -241,9 +238,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         ocr_widget, self.ocr_combo = self._create_title_and_combo(self.tr("OCR"), self.ocr_engines)
         self.set_combo_box_width(self.ocr_combo, self.ocr_engines)
 
-        detector_widget, self.detector_combo = self._create_title_and_combo(self.tr("Text Detector"), self.detectors)
-        self.set_combo_box_width(self.detector_combo, self.detectors)
-
         inpainting_label = MLabel(self.tr("Inpainting")).h4() 
         inpainter_widget, self.inpainter_combo = self._create_title_and_combo(self.tr("Inpainter"), self.inpainters)
         self.set_combo_box_width(self.inpainter_combo, self.inpainters)
@@ -322,8 +316,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.use_gpu_checkbox = MCheckBox(self.tr("Use GPU"))
 
         tools_layout.addWidget(translator_widget)
-        tools_layout.addSpacing(10)
-        tools_layout.addWidget(detector_widget)
         tools_layout.addSpacing(10)
         tools_layout.addWidget(ocr_widget)
         tools_layout.addSpacing(10)

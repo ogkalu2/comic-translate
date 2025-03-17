@@ -4,37 +4,48 @@ import numpy as np
 from ..base import OCREngine
 from ...utils.textblock import TextBlock, adjust_text_line_coordinates
 from ...utils.download import get_models, manga_ocr_data
+from .manga_ocr import MangaOcr
 
 
 class MangaOCREngine(OCREngine):
     """OCR engine using MangaOCR for Japanese text."""
     
     def __init__(self):
+        """Initialize MangaOCR engine."""
         self.model = None
         self.device = 'cpu'
         self.expansion_percentage = 5
-        self.current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.abspath(os.path.join(self.current_file_dir, '..', '..', '..'))
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
         
-    def initialize(self, device: str = 'cpu', expansion_percentage: int = 5) -> None:
+    def initialize(self, device: str = 'cpu', expansion_percentage: int = 5, **kwargs) -> None:
         """
-         Initialize the MangaOCR engine.
-         
-         Args:
-             device: Device to use ('cpu' or 'cuda')
-             expansion_percentage: Percentage to expand text bounding boxes
-         """
+        Initialize the MangaOCR engine.
         
-        from .manga_ocr import MangaOcr
-
+        Args:
+            device: Device to use ('cpu' or 'cuda')
+            expansion_percentage: Percentage to expand text bounding boxes
+            **kwargs: Additional parameters (ignored)
+        """
         self.device = device
         self.expansion_percentage = expansion_percentage
+        
+        # Initialize model if not already loaded
         if self.model is None:
             get_models(manga_ocr_data)
             manga_ocr_path = os.path.join(self.project_root, 'models/ocr/manga-ocr-base')
             self.model = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
+        """
+        Process an image with MangaOCR and update text blocks.
+        
+        Args:
+            img: Input image as numpy array
+            blk_list: List of TextBlock objects to update with OCR text
+            
+        Returns:
+            List of updated TextBlock objects with recognized text
+        """
         for blk in blk_list:
             try:
                 # Get box coordinates

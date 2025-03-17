@@ -2,14 +2,18 @@ import cv2
 import base64
 import json
 import re
+import stanza
 import numpy as np
+from openai import OpenAI
+import google.generativeai as genai
+import anthropic
 from .textblock import TextBlock
 from typing import List
 
 
 MODEL_MAP = {
     "Custom": "",  
-    "Deepseek-v3": "deepseek-chat", 
+    "Deepseek-v3": "deepseek-v3", 
     "GPT-4o": "gpt-4o",
     "GPT-4o mini": "gpt-4o-mini",
     "Claude-3-Opus": "claude-3-opus-20240229",
@@ -22,6 +26,23 @@ MODEL_MAP = {
 def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
+
+def get_llm_client(translator: str, api_key: str, api_url: str = ""):
+    if 'Custom' in translator:
+        client = OpenAI(api_key=api_key, base_url=api_url)
+    elif 'Deepseek' in translator:
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
+    elif 'GPT' in translator:
+        client = OpenAI(api_key=api_key)
+    elif 'Claude' in translator:
+        client = anthropic.Anthropic(api_key=api_key)
+    elif 'Gemini' in translator:
+        client = genai
+        client.configure(api_key=api_key)
+    else:
+        client = None
+
+    return client
 
 def get_raw_text(blk_list: List[TextBlock]):
     rw_txts_dict = {}
@@ -73,8 +94,6 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
     for blk in blk_list:
         translation = blk.translation
         if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
-
-            import stanza
 
             if trg_lng_cd == 'zh-TW':
                 trg_lng_cd = 'zh-Hant'

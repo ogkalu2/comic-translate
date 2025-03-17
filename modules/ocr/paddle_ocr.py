@@ -1,30 +1,40 @@
 import numpy as np
+from paddleocr import PaddleOCR
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
-from ..utils.pipeline_utils import lists_to_blk_list
+from ..utils.maga_utils import lists_to_blk_list
 
 
 class PaddleOCREngine(OCREngine):
     """OCR engine using PaddleOCR for Chinese text."""
     
     def __init__(self):
+        """Initialize PaddleOCR engine."""
         self.ocr = None
         
-    def initialize(self, lang: str = 'ch') -> None:
+    def initialize(self, lang: str = 'ch', **kwargs) -> None:
         """
         Initialize the PaddleOCR engine.
         
         Args:
             lang: Language code for OCR
+            **kwargs: Additional parameters passed to PaddleOCR
         """
-
-        from paddleocr import PaddleOCR
-
         if self.ocr is None:
-            self.ocr = PaddleOCR(lang=lang)
+            self.ocr = PaddleOCR(lang=lang, **kwargs)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
+        """
+        Process an image with PaddleOCR and update text blocks.
+        
+        Args:
+            img: Input image as numpy array
+            blk_list: List of TextBlock objects to update with OCR text
+            
+        Returns:
+            List of updated TextBlock objects with recognized text
+        """
         try:
             result = self.ocr.ocr(img)
             

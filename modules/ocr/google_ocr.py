@@ -6,25 +6,37 @@ import requests
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
-from ..utils.pipeline_utils import lists_to_blk_list
+from ..utils.maga_utils import lists_to_blk_list
 
 
 class GoogleOCR(OCREngine):
     """OCR engine using Google Cloud Vision API."""
     
     def __init__(self):
+        """Initialize Google OCR."""
         self.api_key = None
         
-    def initialize(self, api_key: str) -> None:
+    def initialize(self, api_key: str, **kwargs) -> None:
         """
         Initialize the Google OCR with API key.
         
         Args:
             api_key: Google Cloud API key
+            **kwargs: Additional parameters (ignored)
         """
         self.api_key = api_key
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
+        """
+        Process an image with Google Cloud Vision OCR and update text blocks.
+        
+        Args:
+            img: Input image as numpy array
+            blk_list: List of TextBlock objects to update with OCR text
+            
+        Returns:
+            List of updated TextBlock objects with recognized text
+        """
         texts_bboxes = []
         texts_string = []
         

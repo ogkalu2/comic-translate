@@ -5,9 +5,9 @@ from typing import List
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
 
-from modules.detection.processor import TextBlockDetector
+from modules.detection import TextBlockDetector
 from modules.ocr.processor import OCRProcessor
-from modules.translation.processor import Translator
+from modules.translator.processor import Translator
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
@@ -48,7 +48,10 @@ class ComicTranslatePipeline:
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
             if self.block_detector_cache is None:
-                self.block_detector_cache = TextBlockDetector(self.main_page.settings_page)
+                device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+                self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
+                                                'models/detection/comic-text-segmenter.pt','models/detection/manga-text-detector.pt',
+                                                 device)
             image = self.main_page.image_viewer.get_cv2_image()
             blk_list = self.block_detector_cache.detect(image)
 
@@ -147,7 +150,7 @@ class ComicTranslatePipeline:
         total_images = len(self.main_page.image_files)
 
         for index, image_path in enumerate(self.main_page.image_files):
-
+            print('image_path %s'%image_path)
             # index, step, total_steps, change_name
             self.main_page.progress_update.emit(index, total_images, 0, 10, True)
 
@@ -181,8 +184,12 @@ class ComicTranslatePipeline:
                 break
 
             if self.block_detector_cache is None:
-                self.block_detector_cache = TextBlockDetector(self.main_page.settings_page)
-            
+                bdetect_device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+                self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
+                                                            'models/detection/comic-text-segmenter.pt', 'models/detection/manga-text-detector.pt', 
+                                                            bdetect_device)
+
+            print('bdetect_device %s'%bdetect_device)
             blk_list = self.block_detector_cache.detect(image)
 
             self.main_page.progress_update.emit(index, total_images, 2, 10, False)
@@ -190,6 +197,7 @@ class ComicTranslatePipeline:
                 self.main_page.current_worker = None
                 break
 
+            print('ocr')
             if blk_list:
                 self.ocr.initialize(self.main_page, source_lang)
                 try:
@@ -225,6 +233,7 @@ class ComicTranslatePipeline:
                 self.inpainter_cache = InpainterClass(device)
                 self.cached_inpainter_key = inpainter_key
 
+            print('generate_mask')
             config = get_config(settings_page)
             mask = generate_mask(image, blk_list)
 
@@ -254,10 +263,12 @@ class ComicTranslatePipeline:
                 self.main_page.current_worker = None
                 break
 
+            print('translator')
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
             translator = Translator(self.main_page, source_lang, target_lang)
             try:
+                print('translate')
                 translator.translate(blk_list, image, extra_context)
             except Exception as e:
                 error_message = str(e)
@@ -269,6 +280,9 @@ class ComicTranslatePipeline:
 
             entire_raw_text = get_raw_text(blk_list)
             entire_translated_text = get_raw_translation(blk_list)
+
+            print('---------------------')
+            print(entire_translated_text)
 
             # Parse JSON strings and check if they're empty objects or invalid
             try:
@@ -328,7 +342,10 @@ class ComicTranslatePipeline:
             alignment_id = render_settings.alignment_id
             alignment = self.main_page.button_to_alignment[alignment_id]
             direction = render_settings.direction
-                
+
+            print('----------blk_list-----------')
+            print(blk_list)
+
             text_items_state = []
             for blk in blk_list:
                 x1, y1, width, height = blk.xywh
