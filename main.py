@@ -70,6 +70,13 @@ class Settings:
         if self.render_settings is None:
             self.render_settings = RenderSettings()
 
+        if 'Chinese' in target_language:
+            self.render_settings.font_family = 'fonts/msyh.ttc'
+        if target_language == 'Japanese':
+            self.render_settings.font_family = 'fonts/msgothic.ttc'
+        else:
+            self.render_settings.font_family = 'fonts/Arial-Unicode-Regular.ttf'
+
         # self.settings_page.tools.translator = 'Deepseek'
         # self.settings_page.credentials.credentials['Deepseek_api_key'] = 'sk-91043ea797ae460680043f6964239dc1'
         self.settings_page.tools.translator = 'Custom'
@@ -93,7 +100,7 @@ def main():
         print("未找到有效的图片文件")
         return
 
-    target_language = 'English' # 'Chinese'
+    target_language = 'Chinese' # 'English' #
     # 构造基本设置
     settings = Settings(target_language)
     
@@ -153,7 +160,7 @@ if __name__ == '__main__':
     image_path = sys.argv[1]
     input_image = cv2.imread(image_path)
 
-    target_language = 'English'  # 'Chinese'
+    target_language = 'Korean' # 'Simplified Chinese' # 'Chinese' # 'English' #'Traditional Chinese' #
     settings = Settings(target_language)
     processor = BatchProcessor()
     flag, output_image = processor.process_one_image(settings, input_image, 'Japanese', target_language)
