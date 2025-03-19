@@ -62,6 +62,8 @@ def set_texts_from_json(blk_list: List[TextBlock], json_string: str):
 def set_upper_case(blk_list: List[TextBlock], upper_case: bool):
     for blk in blk_list:
         translation = blk.translation
+        if translation is None:
+            continue
         if upper_case and not translation.isupper():
             blk.translation = translation.upper() 
         elif not upper_case and translation.isupper():
