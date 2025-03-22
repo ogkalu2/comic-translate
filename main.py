@@ -78,7 +78,6 @@ class Settings:
             self.render_settings.font_family = os.path.join(src_folder, 'fonts/msgothic.ttc')
         else:
             self.render_settings.font_family = os.path.join(src_folder, 'fonts/Arial-Unicode-Regular.ttf')
-            self.render_settings.min_font_size = 14.0
         print('font file:', self.render_settings.font_family)
 
         # self.settings_page.tools.translator = 'Deepseek'
@@ -165,7 +164,7 @@ if __name__ == '__main__':
     image_path = sys.argv[1]
     input_image = cv2.imread(image_path)
 
-    target_language = 'Korean'  # 'Korean' # 'Simplified Chinese' # 'Chinese' # 'English' #'Traditional Chinese' #
+    target_language = 'English'  # 'Korean' # 'Simplified Chinese' # 'Chinese' # 'English' #'Traditional Chinese' #
     settings = Settings(target_language)
     processor = BatchProcessor()
     flag, output_image = processor.process_one_image(settings, input_image, 'Japanese', target_language)
