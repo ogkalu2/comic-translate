@@ -104,7 +104,7 @@ class BatchProcessor:
 
     def process_one_image(self, settings, image, source_lang, target_lang):
         target_lang_en = settings.lang_mapping.get(target_lang, target_lang)
-        trg_lng_cd = get_language_code(target_lang_en, target_lang_en)
+        trg_lng_cd = get_language_code(target_lang_en)
         if self.block_detector_cache is None:
             device = 0 if settings.gpu_enabled else 'cpu'
             self.block_detector_cache = TextBlockDetector(

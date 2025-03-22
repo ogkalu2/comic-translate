@@ -91,7 +91,7 @@ def set_upper_case(blk_list: List[TextBlock], upper_case: bool):
             blk.translation = translation
 
 def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: bool =True):
-    dic = {}
+    # dic = {}
     for blk in blk_list:
         translation = blk.translation
         if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
@@ -103,12 +103,12 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
             else:
                 trg_lng_cd = trg_lng_cd
 
-            try:
-                if trg_lng_cd not in dic:
-                    stanza.download(trg_lng_cd, processors='tokenize')
-                    dic[trg_lng_cd] = True
-            except Exception as ex:
-                print(ex)
+            # try:
+            #     if trg_lng_cd not in dic:
+            #         stanza.download(trg_lng_cd, processors='tokenize')
+            #         dic[trg_lng_cd] = True
+            # except Exception as ex:
+            #     print(ex)
             nlp = stanza.Pipeline(trg_lng_cd, processors='tokenize')
             doc = nlp(translation)
             seg_result = []
