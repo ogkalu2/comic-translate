@@ -94,7 +94,7 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
     # dic = {}
     for blk in blk_list:
         translation = blk.translation
-        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th', 'ko', 'vi', 'ru']):
 
             if trg_lng_cd == 'zh-TW':
                 trg_lng_cd = 'zh-Hant'
