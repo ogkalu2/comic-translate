@@ -109,7 +109,7 @@ def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: 
             #         dic[trg_lng_cd] = True
             # except Exception as ex:
             #     print(ex)
-            nlp = stanza.Pipeline(trg_lng_cd, processors='tokenize')
+            nlp = stanza.Pipeline(trg_lng_cd, processors='tokenize', download_method=None)
             doc = nlp(translation)
             seg_result = []
             for sentence in doc.sentences:
