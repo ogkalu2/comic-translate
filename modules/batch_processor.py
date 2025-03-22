@@ -103,8 +103,8 @@ class BatchProcessor:
             file.write(image_path + "\n")
 
     def process_one_image(self, settings, image, source_lang, target_lang):
-        target_lang_en = settings.lang_mapping.get(target_lang)
-        trg_lng_cd = get_language_code(target_lang_en)
+        target_lang_en = settings.lang_mapping.get(target_lang, target_lang)
+        trg_lng_cd = get_language_code(target_lang_en, target_lang_en)
         if self.block_detector_cache is None:
             device = 0 if settings.gpu_enabled else 'cpu'
             self.block_detector_cache = TextBlockDetector(
@@ -265,8 +265,13 @@ class BatchProcessor:
                 
             source_lang = image_states[image_path]['source_lang']
             target_lang = image_states[image_path]['target_lang']
-            target_lang_en = settings.lang_mapping.get(target_lang)
+            print('target_lang', target_lang)
+            target_lang_en = settings.lang_mapping.get(target_lang, target_lang)
+            print('target_lang_en', target_lang_en)
             trg_lng_cd = get_language_code(target_lang_en)
+            if trg_lng_cd is None:
+                trg_lng_cd = 'en'
+            print('trg_lng_cd', trg_lng_cd)
             
             base_name = os.path.splitext(os.path.basename(image_path))[0]
             extension = os.path.splitext(image_path)[1]
@@ -391,11 +396,12 @@ class BatchProcessor:
                     progress_callback(index, total_images, 5, 10, False, f"Translation Error: {error_msg}")
                 self.log_skipped_image(directory, timestamp, image_path)
                 continue
-                
+
+            print('-------------Process translation results------------')
             # Process translation results
             entire_raw_text = get_raw_text(blk_list)
             entire_translated_text = get_raw_translation(blk_list)
-            
+
             try:
                 raw_text_obj = json.loads(entire_raw_text)
                 translated_text_obj = json.loads(entire_translated_text)
@@ -413,7 +419,7 @@ class BatchProcessor:
                     progress_callback(index, total_images, 5, 10, False, f"Invalid translation format: {error_msg}")
                 self.log_skipped_image(directory, timestamp, image_path)
                 continue
-                
+
             # Save text files if needed
             if settings.export_raw_text:
                 path = os.path.join(directory, f"comic_translate_{timestamp}", "raw_texts", archive_bname)
@@ -433,12 +439,14 @@ class BatchProcessor:
                 progress_callback(index, total_images, 7, 10, False, "")
             if cancel_check and cancel_check():
                 break
-                
+
+
+            print('-------------Text Rendering------------')
             # Text Rendering
             render_settings = settings.render_settings
             format_translations(blk_list, trg_lng_cd, upper_case=render_settings.upper_case)
             get_best_render_area(blk_list, image, inpaint_input_img)
-            
+
             text_items_state = []
             for blk in blk_list:
                 x1, y1, width, height = blk.xywh
@@ -487,7 +495,9 @@ class BatchProcessor:
                                                     float(render_settings.outline_width),
                                                     OutlineType.Full_Document)] if render_settings.outline else []
                 })
-                
+
+
+            print('-------------Save rendered image------------')
             # Save rendered image
             if output_path:
                 sv_pth = os.path.join(directory, f"{base_name}{extension}")

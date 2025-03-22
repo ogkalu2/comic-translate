@@ -34,6 +34,8 @@ language_codes = {
     "Hungarian": "hu",
     "Finnish": "fi",
     "Arabic": "ar",
+    "Czech": "cs",
+    "Filipino": "fil",
     }
 
 inpaint_map = {

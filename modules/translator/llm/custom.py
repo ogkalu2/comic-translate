@@ -64,6 +64,7 @@ class CustomTranslation(BaseLLMTranslation):
                                             data=payload)
 
                 data = response.json()
+                print(data)
                 s = data.get('choices', [])[0].get('message').get('content')
                 return s
             except Exception as ex:

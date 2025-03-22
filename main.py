@@ -70,12 +70,15 @@ class Settings:
         if self.render_settings is None:
             self.render_settings = RenderSettings()
 
+        from pathlib import Path
+        src_folder = Path(__file__).parent
         if 'Chinese' in target_language:
-            self.render_settings.font_family = 'fonts/msyh.ttc'
+            self.render_settings.font_family = os.path.join(src_folder, 'fonts/msyh.ttc')
         if target_language == 'Japanese':
-            self.render_settings.font_family = 'fonts/msgothic.ttc'
+            self.render_settings.font_family = os.path.join(src_folder, 'fonts/msgothic.ttc')
         else:
-            self.render_settings.font_family = 'fonts/Arial-Unicode-Regular.ttf'
+            self.render_settings.font_family = os.path.join(src_folder, 'fonts/Arial-Unicode-Regular.ttf')
+        print('font file:', self.render_settings.font_family)
 
         # self.settings_page.tools.translator = 'Deepseek'
         # self.settings_page.credentials.credentials['Deepseek_api_key'] = 'sk-91043ea797ae460680043f6964239dc1'
@@ -142,6 +145,7 @@ def run(input_path, output_path, target_language):
             'viewer_state': {}
         }
 
+    print('image_states', image_states)
     # 初始化处理器并处理图片
     processor = BatchProcessor()
     processor.process_images(
