@@ -490,7 +490,7 @@ class BatchProcessor:
                 
             # Save rendered image
             if output_path:
-                sv_pth = os.path.join(directory, f"{base_name}_translated{extension}")
+                sv_pth = os.path.join(directory, f"{base_name}{extension}")
             else:
                 render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
                 if not os.path.exists(render_save_dir):
