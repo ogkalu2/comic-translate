@@ -115,14 +115,21 @@ class BatchProcessor:
             )
 
         blk_list = self.block_detector_cache.detect(image)
+        import time
+        cur_t = time.time()
+        print(time.time() - cur_t)
         print('------------------blk_list------------------')
         print(blk_list)
 
         # OCR Processing
         if blk_list:
+            cur_t = time.time()
+            print(time.time() - cur_t)
             print('------------------ocr.initialize------------------')
             self.ocr.initialize(settings, source_lang)
             try:
+                cur_t = time.time()
+                print(time.time() - cur_t)
                 print('------------------ocr.process------------------')
                 self.ocr.process(image, blk_list)
                 source_lang_english = settings.lang_mapping.get(source_lang, source_lang)
@@ -147,6 +154,8 @@ class BatchProcessor:
         inpaint_input_img = self.inpainter_cache(image, mask, settings.inpaint_config)
         inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img)
 
+        print(time.time() - cur_t)
+        cur_t = time.time()
         print('------------------Translation------------------')
         # Translation
         translator = Translator(settings, source_lang, target_lang)
@@ -169,6 +178,10 @@ class BatchProcessor:
         except json.JSONDecodeError as e:
             error_msg = str(e)
             return False, error_msg
+
+        print(time.time() - cur_t)
+        cur_t = time.time()
+        print('------------------Text Rendering------------------')
 
         # Text Rendering
         render_settings = settings.render_settings
@@ -224,6 +237,8 @@ class BatchProcessor:
                                                    OutlineType.Full_Document)] if render_settings.outline else []
             })
 
+        print(time.time() - cur_t)
+        print('------------------ImageSaveRenderer------------------')
         im = cv2.cvtColor(inpaint_input_img, cv2.COLOR_RGB2BGR)
         renderer = ImageSaveRenderer(im)
         viewer_state = {
@@ -256,7 +271,10 @@ class BatchProcessor:
         """
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         total_images = len(image_files)
-        
+
+        import time
+        cur_t = time.time()
+        print(time.time()-cur_t)
         for index, image_path in enumerate(image_files):
             if progress_callback:
                 progress_callback(index, total_images, 0, 10, True, "")
@@ -317,6 +335,8 @@ class BatchProcessor:
 
             blk_list = self.block_detector_cache.detect(image)
             print('------------------blk_list------------------')
+            print(time.time()-cur_t)
+            cur_t = time.time()
             print(blk_list)
 
             if progress_callback:
@@ -326,9 +346,13 @@ class BatchProcessor:
                 
             # OCR Processing
             if blk_list:
+                cur_t = time.time()
+                print(time.time()-cur_t)
                 print('------------------ocr.initialize------------------')
                 self.ocr.initialize(settings, source_lang)
                 try:
+                    cur_t = time.time()
+                    print(time.time()-cur_t)
                     print('------------------ocr.process------------------')
                     self.ocr.process(image, blk_list)
                     source_lang_english = settings.lang_mapping.get(source_lang, source_lang)
@@ -384,6 +408,8 @@ class BatchProcessor:
             if cancel_check and cancel_check():
                 break
 
+            print(time.time() - cur_t)
+            cur_t = time.time()
             print('------------------Translation------------------')
             # Translation
             translator = Translator(settings, source_lang, target_lang)
@@ -397,6 +423,8 @@ class BatchProcessor:
                 self.log_skipped_image(directory, timestamp, image_path)
                 continue
 
+            print(time.time() - cur_t)
+            cur_t = time.time()
             print('-------------Process translation results------------')
             # Process translation results
             entire_raw_text = get_raw_text(blk_list)
@@ -440,6 +468,8 @@ class BatchProcessor:
             if cancel_check and cancel_check():
                 break
 
+            print(time.time() - cur_t)
+            cur_t = time.time()
 
             print('-------------Text Rendering------------')
             # Text Rendering
@@ -496,7 +526,8 @@ class BatchProcessor:
                                                     OutlineType.Full_Document)] if render_settings.outline else []
                 })
 
-
+            print(time.time() - cur_t)
+            cur_t = time.time()
             print('-------------Save rendered image------------')
             # Save rendered image
             if output_path:
