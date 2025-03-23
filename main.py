@@ -14,8 +14,8 @@ class RenderSettings:
     color: str = '#333'
     line_spacing: float = 1.0
     outline: bool = False
-    outline_color: str = '#000000'
-    outline_width: float = 1.0
+    outline_color: str = '#333'
+    outline_width: float = 0.5
     bold: bool = False
     italic: bool = False
     underline: bool = False
