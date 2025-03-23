@@ -1,6 +1,5 @@
-from concurrent.futures import ThreadPoolExecutor
-from threading import Lock
-
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import cpu_count
 from modules.rendering.maga_render import pyside_word_wrap
 
 from enum import Enum
@@ -120,24 +119,24 @@ def process_block(blk, render_settings, trg_lng_cd):
     }
 
 def get_text_items_state(blk_list, render_settings, trg_lng_cd):
-    # 创建线程安全的列表
+    # 使用进程池并行处理文本块
+    max_workers = max(1, cpu_count() - 1)  # 保留一个核心给系统
     text_items_state = []
-    state_lock = Lock()
-
-    # 使用线程池处理文本块
-    with ThreadPoolExecutor(max_workers=min(len(blk_list), 18)) as executor:
-        futures = []
-        for blk in blk_list:
-            future = executor.submit(process_block, blk, render_settings, trg_lng_cd)
-            futures.append(future)
-
-        print('all future submit')
+    print('---------------max_workers-------------', max_workers)
+    
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # 提交所有任务到进程池
+        future_to_block = {executor.submit(process_block, blk, render_settings, trg_lng_cd): blk 
+                          for blk in blk_list}
+        
         # 收集处理结果
-        for future in futures:
-            result = future.result()
-            if result:
-                print(result)
-                with state_lock:
+        for future in future_to_block:
+            try:
+                result = future.result()
+                if result:
                     text_items_state.append(result)
-
+            except Exception as e:
+                print(f"处理文本块时发生错误: {str(e)}")
+                continue
+    
     return text_items_state
