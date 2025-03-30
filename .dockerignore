@@ -1,0 +1,16 @@
+.git
+.gitignore
+.vscode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dll
+*.a
+data/*
+output/*
+config/*
+!data/.gitkeep
+!output/.gitkeep
+!config/.gitkeep

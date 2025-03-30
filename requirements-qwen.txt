@@ -1,0 +1,6 @@
+requests>=2.31.0
+PyQt6>=6.4.0
+numpy>=1.21.0
+Pillow>=9.0.0
+openai>=1.10.0
+opencv-python>=4.5.0

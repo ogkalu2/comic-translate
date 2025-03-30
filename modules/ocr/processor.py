@@ -3,7 +3,7 @@ from typing import Any
 
 from ..utils.textblock import TextBlock
 from ..utils.pipeline_utils import language_codes
-from .factory import OCRFactory
+from .factory import OCREngineFactory
 
 
 class OCRProcessor:
@@ -15,6 +15,7 @@ class OCRProcessor:
     """
     
     def __init__(self):
+        """Initialize OCR processor."""
         self.main_page = None
         self.settings = None
         self.source_lang = None
@@ -53,7 +54,7 @@ class OCRProcessor:
         
         try:
             # Get appropriate OCR engine from factory
-            engine = OCRFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
+            engine = OCREngineFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
             
             # Process image with selected engine
             return engine.process_image(img, blk_list)
@@ -69,10 +70,8 @@ class OCRProcessor:
 
     def _get_ocr_key(self, localized_ocr: str) -> str:
         translator_map = {
-            self.settings.ui.tr('GPT-4o'): 'GPT-4o',
-            self.settings.ui.tr('Microsoft OCR'): 'Microsoft OCR',
-            self.settings.ui.tr('Google Cloud Vision'): 'Google Cloud Vision',
-            self.settings.ui.tr('Gemini-2.0-Flash'): 'Gemini-2.0-Flash',
-            self.settings.ui.tr('Default'): 'Default',
+            self.settings.ui.tr("GPT-4o"): "GPT-4o",
+            self.settings.ui.tr("Microsoft OCR"): "Microsoft OCR",
+            self.settings.ui.tr("Google Cloud Vision"): "Google Cloud Vision",
         }
         return translator_map.get(localized_ocr, localized_ocr)

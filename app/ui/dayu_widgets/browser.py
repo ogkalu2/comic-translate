@@ -267,7 +267,46 @@ class MClickSaveFileToolButton(MToolButton):
 
     def slot_save_file(self):
         filter_string = self._create_filter_string()
-        default_name = f"untitled.{self._get_default_extension()}"
+        
+        # Find ComicTranslate instance in parent hierarchy
+        parent_widget = self
+        comic_translate = None
+        while parent_widget:
+            parent_widget = parent_widget.parent()
+            if parent_widget and hasattr(parent_widget, 'curr_img_idx') and hasattr(parent_widget, 'image_files'):
+                comic_translate = parent_widget
+                break
+        
+        current_file = None
+        if comic_translate and comic_translate.curr_img_idx >= 0:
+            current_idx = comic_translate.curr_img_idx
+            if current_idx < len(comic_translate.image_files):
+                current_file = comic_translate.image_files[current_idx]
+        
+        if current_file:
+            base_name = os.path.basename(current_file)
+            name_without_ext, original_ext = os.path.splitext(base_name)
+            
+            # Rimuovi il punto dall'estensione
+            if original_ext.startswith('.'):
+                original_ext = original_ext[1:]
+                
+            # Verifica se l'estensione originale è tra quelle supportate
+            supported_extensions = []
+            for file_type in self._file_types:
+                if isinstance(file_type[1], list):
+                    supported_extensions.extend(file_type[1])
+                else:
+                    supported_extensions.append(file_type[1])
+            
+            # Usa l'estensione originale se supportata, altrimenti quella predefinita
+            if original_ext.lower() in [ext.lower() for ext in supported_extensions]:
+                default_name = f"{name_without_ext}.{original_ext}"
+            else:
+                default_name = f"{name_without_ext}.{self._get_default_extension()}"
+        else:
+            default_name = f"untitled.{self._get_default_extension()}"
+            
         initial_dir = self._last_directory
         
         file_name, selected_filter = QtWidgets.QFileDialog.getSaveFileName(

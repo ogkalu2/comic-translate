@@ -12,6 +12,7 @@ from PySide6.QtGui import QTransform, QEventPoint
 from .text_item import TextBlockItem, TextBlockState
 from .rectangle import MoveableRectItem, RectState
 from .rotate_cursor import RotateHandleCursors
+from .watermark_item import WatermarkItem
 from ..commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, \
                             SegmentBoxesCommand, EraseUndoCommand
 from ..commands.box import ClearRectsCommand
@@ -24,6 +25,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
     command_emitted = Signal(QtGui.QUndoCommand)
     connect_rect_item = Signal(MoveableRectItem)
     connect_text_item =  Signal(TextBlockItem)
+    watermark_added = Signal(WatermarkItem)
+    watermark_selected = Signal(WatermarkItem)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -55,6 +58,10 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.panning = False
         self.pan_start_pos = None
 
+        # Watermark
+        self.watermark_item = None
+        self.watermark_visible = False
+
         self.brush_color = QtGui.QColor(255, 0, 0, 100)
         self.brush_size = 25
         self.drawing_path = None
@@ -71,6 +78,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self.last_pan_pos = QtCore.QPoint()
         self.total_scale_factor = 0.2
+
+        self._border_color = QtGui.QColor(255, 0, 0)
+        self._fill_color = QtGui.QColor(255, 255, 255)
 
     def hasPhoto(self):
         return not self.empty
@@ -266,6 +276,14 @@ class ImageViewer(QtWidgets.QGraphicsView):
         scroll = self.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
         if self.current_tool == 'pan' or isinstance(clicked_item, TextBlockItem) or scroll:
             super().mousePressEvent(event)
+
+        # Handle watermark selection
+        if isinstance(clicked_item, WatermarkItem):
+            if event.button() == QtCore.Qt.LeftButton:
+                # Seleziona il watermark
+                if self.watermark_item:
+                    self.watermark_item.setSelected(True)
+                    self.watermark_selected.emit(self.watermark_item)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -979,3 +997,201 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 isinstance(item, MoveableRectItem) and item.selected)
             ),  None )
         return blk_item, rect_item
+
+    def add_shape(self, shape_type, pos=None):
+        """Aggiunge una nuova forma alla scena nella posizione specificata."""
+        from .shape_factory import ShapeFactory
+        
+        if pos is None:
+            # Se non è specificata una posizione, usa il centro della vista
+            view_center = self.mapToScene(self.viewport().rect().center())
+            pos = view_center
+        
+        # Dimensioni iniziali predefinite
+        width, height = 150, 100
+        
+        # Crea la forma usando la factory
+        shape_item = ShapeFactory.create_shape(
+            shape_type, 
+            pos.x() - width/2, 
+            pos.y() - height/2, 
+            width, 
+            height
+        )
+        
+        if shape_item:
+            # Imposta colori predefiniti
+            shape_item.set_border_color(self._border_color)
+            shape_item.set_fill_color(self._fill_color)
+            
+            # Aggiunge alla scena e alla lista
+            self._scene.addItem(shape_item)
+            self.shapes = getattr(self, 'shapes', [])
+            self.shapes.append(shape_item)
+            
+            # Seleziona la nuova forma
+            self.deselect_all()
+            shape_item._is_selected = True
+            shape_item.setSelected(True)
+            shape_item._update_handles()
+            shape_item.update()
+            
+            return shape_item
+        return None
+    
+    def select_shape(self, shape_item):
+        """Seleziona una forma specifica."""
+        # Deseleziona qualsiasi altra forma prima
+        if hasattr(self, 'selected_shape') and self.selected_shape:
+            self.selected_shape.setSelected(False)
+        
+        # Imposta la nuova forma selezionata
+        self.selected_shape = shape_item
+        shape_item.setSelected(True)
+        
+        # Porta la forma selezionata in primo piano per l'editing
+        shape_item.setZValue(self.get_max_z_value() + 1)
+    
+    def get_max_z_value(self):
+        """Ottiene il valore Z massimo tra tutti gli elementi nella scena."""
+        max_z = 0
+        for item in self._scene.items():
+            if item.zValue() > max_z:
+                max_z = item.zValue()
+        return max_z
+    
+    def bring_shape_to_front(self):
+        """Porta la forma selezionata in primo piano."""
+        if hasattr(self, 'selected_shape') and self.selected_shape:
+            self.selected_shape.setZValue(self.get_max_z_value() + 1)
+    
+    def send_shape_to_back(self):
+        """Invia la forma selezionata in secondo piano."""
+        if hasattr(self, 'selected_shape') and self.selected_shape:
+            # Trova il valore Z minimo
+            min_z = 0
+            for item in self._scene.items():
+                if hasattr(item, 'type') and item.type() in ['rectangle', 'ellipse', 'balloon']:
+                    if item.zValue() < min_z:
+                        min_z = item.zValue()
+            
+            self.selected_shape.setZValue(min_z - 1)
+    
+    def set_shape_border_color(self, color):
+        """Imposta il colore del bordo per la forma selezionata."""
+        self._border_color = color
+        if hasattr(self, 'selected_shape') and self.selected_shape:
+            self.selected_shape.set_border_color(color)
+    
+    def set_shape_fill_color(self, color):
+        """Imposta il colore di riempimento per la forma selezionata."""
+        self._fill_color = color
+        if hasattr(self, 'selected_shape') and self.selected_shape:
+            self.selected_shape.set_fill_color(color)
+    
+    def delete_selected_shape(self):
+        """Elimina la forma attualmente selezionata."""
+        if hasattr(self, 'selected_shape') and self.selected_shape:
+            # Rimuovi dalla scena
+            self._scene.removeItem(self.selected_shape)
+            
+            # Rimuovi dalla lista
+            if hasattr(self, 'shapes'):
+                self.shapes.remove(self.selected_shape)
+            
+            # Reset della selezione
+            self.selected_shape = None
+
+    def add_watermark(self, pixmap=None):
+        """Aggiunge un watermark all'immagine"""
+        if self.watermark_item is None:
+            self.watermark_item = WatermarkItem()
+            self._scene.addItem(self.watermark_item)
+            
+            # Imposta il watermark sopra l'immagine ma sotto gli altri elementi
+            self.watermark_item.setZValue(0.5)
+            
+            # Connessione dei segnali
+            self.watermark_item.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+            
+            # Emetti il segnale che è stato aggiunto un watermark
+            self.watermark_added.emit(self.watermark_item)
+        
+        if pixmap is not None and not pixmap.isNull():
+            # Imposta l'immagine del watermark
+            self.watermark_item.set_watermark(pixmap)
+            
+            # Posiziona il watermark al centro dell'immagine inizialmente
+            scene_rect = self.photo.boundingRect()
+            watermark_rect = self.watermark_item.boundingRect()
+            x = scene_rect.center().x() - watermark_rect.width() / 2
+            y = scene_rect.center().y() - watermark_rect.height() / 2
+            self.watermark_item.setPos(x, y)
+            
+            # Rendilo visibile
+            self.watermark_item.show()
+            self.watermark_visible = True
+            
+            return True
+        
+        return False
+    
+    def remove_watermark(self):
+        """Rimuove il watermark dall'immagine"""
+        if self.watermark_item is not None:
+            self._scene.removeItem(self.watermark_item)
+            self.watermark_item = None
+            self.watermark_visible = False
+            return True
+        return False
+    
+    def show_watermark(self, visible=True):
+        """Mostra o nasconde il watermark"""
+        if self.watermark_item is not None:
+            self.watermark_item.setVisible(visible)
+            self.watermark_visible = visible
+            return True
+        return False
+    
+    def set_watermark_position(self, position):
+        """Imposta la posizione del watermark"""
+        if self.watermark_item is None or not self.watermark_visible:
+            return False
+        
+        scene_rect = self.photo.boundingRect()
+        watermark_rect = self.watermark_item.boundingRect()
+        
+        if position == "centro":
+            x = scene_rect.center().x() - watermark_rect.width() / 2
+            y = scene_rect.center().y() - watermark_rect.height() / 2
+        elif position == "alto sx":
+            x = scene_rect.left() + 10
+            y = scene_rect.top() + 10
+        elif position == "alto dx":
+            x = scene_rect.right() - watermark_rect.width() - 10
+            y = scene_rect.top() + 10
+        elif position == "basso sx":
+            x = scene_rect.left() + 10
+            y = scene_rect.bottom() - watermark_rect.height() - 10
+        elif position == "basso dx":
+            x = scene_rect.right() - watermark_rect.width() - 10
+            y = scene_rect.bottom() - watermark_rect.height() - 10
+        else:  # "libera" o altro, non fa nulla
+            return True
+            
+        self.watermark_item.setPos(x, y)
+        return True
+    
+    def set_watermark_scale(self, scale):
+        """Imposta la scala del watermark"""
+        if self.watermark_item is not None:
+            self.watermark_item.set_scale(scale)
+            return True
+        return False
+    
+    def set_watermark_opacity(self, opacity):
+        """Imposta l'opacità del watermark"""
+        if self.watermark_item is not None:
+            self.watermark_item.set_opacity(opacity)
+            return True
+        return False

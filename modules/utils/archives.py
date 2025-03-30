@@ -1,6 +1,9 @@
 import os, re
-import zipfile
+import zipfile, tarfile
+import py7zr, rarfile
 import math
+import img2pdf
+import pdfplumber
 import io
 from PIL import Image
 
@@ -24,7 +27,6 @@ def extract_archive(file_path: str, extract_to: str):
                     image_paths.append(os.path.join(extract_to, file))
     
     elif file_lower.endswith(('.cbr', '.rar')):
-        import rarfile
         with rarfile.RarFile(file_path, 'r') as archive:
             for file in archive.namelist():
                 if is_image_file(file):
@@ -32,7 +34,6 @@ def extract_archive(file_path: str, extract_to: str):
                     image_paths.append(os.path.join(extract_to, file))
     
     elif file_lower.endswith(('.cbt', '.tar')):
-        import tarfile
         with tarfile.open(file_path, 'r') as archive:
             for member in archive:
                 if member.isfile() and is_image_file(member.name):
@@ -40,7 +41,6 @@ def extract_archive(file_path: str, extract_to: str):
                     image_paths.append(os.path.join(extract_to, member.name))
     
     elif file_lower.endswith(('.cb7', '.7z')):
-        import py7zr
         with py7zr.SevenZipFile(file_path, 'r') as archive:
             for entry in archive.getnames():
                 if is_image_file(entry):
@@ -48,8 +48,6 @@ def extract_archive(file_path: str, extract_to: str):
                     image_paths.append(os.path.join(extract_to, entry))
 
     elif file_path.lower().endswith('.pdf'):
-        import pdfplumber
-
         with pdfplumber.open(file_path) as pdf:
             # Count total pages for consistent indexing
             total_pages = len(pdf.pages)
@@ -113,8 +111,7 @@ def make_cbz(input_dir, output_path='', output_dir='', output_base_name='', save
 def make_cb7(input_dir, output_path="", output_dir="", output_base_name=""):
     if not output_path:
         output_path = os.path.join(output_dir, f"{output_base_name}_translated.cb7")
-
-    import py7zr
+    
     with py7zr.SevenZipFile(output_path, 'w') as archive:
         for root, dirs, files in os.walk(input_dir):
             for file in files:
@@ -123,8 +120,6 @@ def make_cb7(input_dir, output_path="", output_dir="", output_base_name=""):
                     archive.write(file_path, arcname=os.path.relpath(file_path, input_dir))
 
 def make_pdf(input_dir, output_path="", output_dir="", output_base_name=""):
-    import img2pdf
-    
     if not output_path:
         output_path = os.path.join(output_dir, f"{output_base_name}_translated.pdf")
 

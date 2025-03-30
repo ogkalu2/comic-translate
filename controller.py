@@ -29,7 +29,7 @@ from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.image import SetImageCommand
 from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
 
-from modules.detection.utils.general import do_rectangles_overlap, get_inpaint_bboxes
+from modules.detection import do_rectangles_overlap, get_inpaint_bboxes
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import manual_wrap
 from modules.utils.file_handler import FileHandler
@@ -96,6 +96,9 @@ class ComicTranslate(ComicTranslateUI):
         self.temp_dir = tempfile.mkdtemp()
         self.max_images_in_memory = 10
         self.loaded_images = []
+        
+        # Dizionario per memorizzare le immagini originali (quelle inizialmente caricate)
+        self.original_images = {}
 
         # List of widgets to block signals for during manual rendering
         self.widgets_to_block = [
@@ -133,6 +136,8 @@ class ComicTranslate(ComicTranslateUI):
         self.hbutton_group.get_button_group().buttons()[3].clicked.connect(self.load_segmentation_points)
         self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
         self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.render_text)
+        # Collegamento del pulsante "Original" ora indipendente
+        self.original_button.clicked.connect(self.show_original_image)
 
         self.undo_tool_group.get_button_group().buttons()[0].clicked.connect(self.undo_group.undo)
         self.undo_tool_group.get_button_group().buttons()[1].clicked.connect(self.undo_group.redo)
@@ -232,7 +237,6 @@ class ComicTranslate(ComicTranslateUI):
                                   outline_color, outline_width, bold, italic, underline, direction)
         
         text_item.setPos(blk.xyxy[0], blk.xyxy[1])
-        text_item.setRotation(blk.angle)
         text_item.set_plain_text(text)
         self.image_viewer._scene.addItem(text_item)
         self.image_viewer.text_items.append(text_item)  
@@ -418,10 +422,16 @@ class ComicTranslate(ComicTranslateUI):
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(False)
+        # Il pulsante Original rimane sempre abilitato quando c'è un'immagine
+        if self.curr_img_idx >= 0 and self.image_files and self.curr_img_idx < len(self.image_files):
+            self.original_button.setEnabled(True)
 
     def enable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(True)
+        # Il pulsante Original rimane sempre abilitato quando c'è un'immagine
+        if self.curr_img_idx >= 0 and self.image_files and self.curr_img_idx < len(self.image_files):
+            self.original_button.setEnabled(True)
 
     def block_detect(self, load_rects: bool = True):
         self.loading.setVisible(True)
@@ -485,9 +495,17 @@ class ComicTranslate(ComicTranslateUI):
         self.image_files = file_paths
 
         if file_paths:
+            img = cv2.imread(file_paths[0])
+            
+            # Salva immediatamente l'immagine originale
+            if img is not None:
+                # Salviamo l'immagine originale come RGB
+                # Questo sarà il formato corretto quando verrà caricato nel dialogo
+                self.original_images[file_paths[0]] = img.copy()
+            
             return self.load_image(file_paths[0])
         return None
-    
+
     def load_image(self, file_path: str):
         if file_path in self.image_data:
             return self.image_data[file_path]
@@ -570,6 +588,14 @@ class ComicTranslate(ComicTranslateUI):
             self.in_memory_history[self.image_files[0]] = [cv2_image.copy()]
             self.current_history_index[self.image_files[0]] = 0
             self.save_image_state(self.image_files[0])
+            
+            # Salva una copia dell'immagine originale convertita in RGB
+            # per evitare problemi quando viene visualizzata
+            original_image = cv2_image.copy()
+            if original_image.shape[2] == 3:  # Se è un'immagine BGR
+                # Converte esplicitamente da BGR a RGB scambiando i canali con numpy
+                original_image = original_image[:, :, ::-1].copy()
+            self.original_images[self.image_files[0]] = original_image
 
         for file in self.image_files:
             self.save_image_state(file)
@@ -1307,13 +1333,19 @@ class ComicTranslate(ComicTranslateUI):
             stack = QUndoStack(self)
             self.undo_stacks[file] = stack
             self.undo_group.addStack(stack)
-            
-        self.run_threaded(
-            lambda: self.load_image(self.image_files[index]),
-            lambda result: self.display_image_from_loaded(result, index, switch_page=False),
-            self.default_error_handler,
-            None
-        )
+
+        if self.image_files:
+            self.page_list.blockSignals(True)
+            self.update_image_cards()
+            self.page_list.blockSignals(False)
+            self.page_list.setCurrentRow(0)
+            #self.display_image(0)
+            self.loaded_images.append(self.image_files[0])
+        else:
+            self.image_viewer.clear_scene()
+
+        self.image_viewer.resetTransform()
+        self.image_viewer.fitInView()
 
     def thread_load_project(self, file_name):
         self.clear_state()
@@ -1368,7 +1400,7 @@ class ComicTranslate(ComicTranslateUI):
         )
 
     def save_main_page_settings(self):
-        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings = QSettings("ComicLabs", "CTkif 2_5 VL")
         
         self.process_group('text_rendering', self.render_settings(), settings)
 
@@ -1392,7 +1424,7 @@ class ComicTranslate(ComicTranslateUI):
         settings.endGroup()
 
     def load_main_page_settings(self):
-        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings = QSettings("ComicLabs", "CTkif 2_5 VL")
         settings.beginGroup("main_page")
 
         # Load languages and convert back to current language
@@ -1477,3 +1509,19 @@ class ComicTranslate(ComicTranslateUI):
 
         super().closeEvent(event)
 
+    def show_original_image(self):
+        from app.ui.original_image_dialog import OriginalImageDialog
+        
+        if self.image_viewer.hasPhoto() and self.curr_img_idx >= 0:
+            current_file = self.image_files[self.curr_img_idx]
+            
+            # Usa l'immagine originale dal dizionario invece di quella corrente
+            if current_file in self.original_images:
+                image = self.original_images[current_file].copy()
+                
+                # Ottieni le dimensioni dell'area di visualizzazione corrente
+                view_size = (self.image_viewer.width(), self.image_viewer.height())
+                
+                # Crea e mostra la finestra di dialogo con le dimensioni appropriate
+                original_dialog = OriginalImageDialog(image, target_size=view_size, parent=self)
+                original_dialog.exec_()

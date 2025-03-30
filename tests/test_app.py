@@ -7,4 +7,4 @@ def test_comic_translate_ui_basic(qtbot):
     widget.show()
 
     assert widget.isVisible()
-    assert widget.windowTitle() == "Comic Translate"
+    assert widget.windowTitle() == "CTkif 2_5 VL"

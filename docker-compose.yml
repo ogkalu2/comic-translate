@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  ctkif:
+    build: .
+    container_name: ctkif25vl
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./config:/app/config
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ports:
+      - "5900:5900"  # VNC port (opzionale per accesso remoto)
+    restart: unless-stopped
