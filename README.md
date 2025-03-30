@@ -102,9 +102,9 @@ uv add -r requirements.txt --compile-bytecode
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
 uv remove torch torchvision
-uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 ```
-Note: The 121 in cu121 represents the CUDA version - 12.1. Replace 121 with your CUDA version. E.g 118 if you are running CUDA 11.8
+Note: The 126 in cu126 represents the CUDA version - 12.6. Replace 126 with your CUDA version (or the version closest to yours). E.g 118 if you are running CUDA 11.8
 
 ## Usage
 In the comic-translate directory, run
@@ -182,7 +182,7 @@ All LLMs are fed the entire page text to aid translations.
 There is also the Option to provide the Image itself for further context. 
 
 ### Text Rendering
-PIL for rendering wrapped text in bounding boxes obtained from bubbles and text.
+Wrapped text in bounding boxes obtained from bubbles and text.
 
 ## Acknowledgements
 
