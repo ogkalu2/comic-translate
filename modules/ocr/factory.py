@@ -54,6 +54,8 @@ class OCREngineFactory:
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
+            'Simplified Chinese': cls._create_paddle_ocr,
+            'Traditional Chinese': cls._create_paddle_ocr,
             'Russian': lambda s: cls._create_gpt_ocr(s,  MODEL_MAP.get('GPT-4o'))
         }
         

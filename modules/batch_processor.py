@@ -53,11 +53,20 @@ class BatchProcessor:
         print('------------------blk_list------------------')
         print(blk_list)
 
+        print('source_lang', source_lang)
+        source_lang_en = settings.lang_mapping.get(source_lang, source_lang)
+        print('source_lang_en', source_lang_en)
+        source_lng_cd = get_language_code(source_lang_en)
+        if source_lng_cd is None:
+            source_lng_cd = 'en'
+        print('source_lng_cd', source_lng_cd)
+
         # OCR Processing
         if blk_list:
             cur_t = time.time()
             print(time.time() - cur_t)
             print('------------------ocr.initialize------------------')
+            print(source_lng_cd)
             self.ocr.initialize(settings, source_lang)
             try:
                 cur_t = time.time()
@@ -175,6 +184,14 @@ class BatchProcessor:
                 break
 
             source_lang = image_states[image_path]['source_lang']
+            print('source_lang', source_lang)
+            source_lang_en = settings.lang_mapping.get(source_lang, source_lang)
+            print('source_lang_en', source_lang_en)
+            source_lng_cd = get_language_code(source_lang_en)
+            if source_lng_cd is None:
+                source_lng_cd = 'en'
+            print('source_lng_cd', source_lng_cd)
+
             target_lang = image_states[image_path]['target_lang']
             print('target_lang', target_lang)
             target_lang_en = settings.lang_mapping.get(target_lang, target_lang)
@@ -241,8 +258,9 @@ class BatchProcessor:
             if blk_list:
                 cur_t = time.time()
                 print(time.time()-cur_t)
-                print('------------------ocr.initialize------------------')
-                self.ocr.initialize(settings, source_lang)
+                print('------------------ocr.initialize----p--------------')
+                print('source_lng_cd',source_lng_cd)
+                self.ocr.initialize(settings, source_lng_cd)
                 try:
                     cur_t = time.time()
                     print(time.time()-cur_t)
