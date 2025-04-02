@@ -125,7 +125,7 @@ def main():
     )
 
 
-def run(input_path, output_path, target_language):
+def run(input_path, output_path, target_language, source_language='Japanese'):
     image_files = []
 
     names = os.listdir(input_path)
@@ -140,7 +140,7 @@ def run(input_path, output_path, target_language):
     image_states = {}
     for image_path in image_files:
         image_states[image_path] = {
-            'source_lang': 'Japanese',  # 默认源语言
+            'source_lang': source_language,  # 默认源语言
             'target_lang': target_language,  # 目标语言
             'viewer_state': {}
         }
@@ -164,10 +164,11 @@ if __name__ == '__main__':
     image_path = sys.argv[1]
     input_image = cv2.imread(image_path)
 
-    target_language = 'English'  # 'Korean' # 'Simplified Chinese' # 'Chinese' # 'English' #'Traditional Chinese' #
+    target_language = 'Simplified Chinese'  # 'Korean' # 'Simplified Chinese' # 'Chinese' # 'English' #'Traditional Chinese' #
     settings = Settings(target_language)
     processor = BatchProcessor()
-    flag, output_image = processor.process_one_image(settings, input_image, 'Japanese', target_language)
+    # flag, output_image = processor.process_one_image(settings, input_image, 'Japanese', target_language)
+    flag, output_image = processor.process_one_image(settings, input_image, 'English', target_language)
 
     if flag:
         cv2.imwrite('output.png', output_image)
