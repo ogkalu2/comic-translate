@@ -259,8 +259,8 @@ class BatchProcessor:
                 cur_t = time.time()
                 print(time.time()-cur_t)
                 print('------------------ocr.initialize----p--------------')
-                print('source_lng_cd',source_lng_cd)
-                self.ocr.initialize(settings, source_lng_cd)
+                print('source_lang',source_lang)
+                self.ocr.initialize(settings, source_lang)
                 try:
                     cur_t = time.time()
                     print(time.time()-cur_t)
