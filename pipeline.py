@@ -5,9 +5,9 @@ from typing import List
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
 
-from modules.detection.processor import TextBlockDetector
+from modules.detection import TextBlockDetector
 from modules.ocr.processor import OCRProcessor
-from modules.translation.processor import Translator
+from modules.translator.processor import Translator
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
@@ -48,7 +48,10 @@ class ComicTranslatePipeline:
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
             if self.block_detector_cache is None:
-                self.block_detector_cache = TextBlockDetector(self.main_page.settings_page)
+                device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+                self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
+                                                'models/detection/comic-text-segmenter.pt','models/detection/manga-text-detector.pt',
+                                                 device)
             image = self.main_page.image_viewer.get_cv2_image()
             blk_list = self.block_detector_cache.detect(image)
 
@@ -181,7 +184,10 @@ class ComicTranslatePipeline:
                 break
 
             if self.block_detector_cache is None:
-                self.block_detector_cache = TextBlockDetector(self.main_page.settings_page)
+                bdetect_device = 0 if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+                self.block_detector_cache = TextBlockDetector('models/detection/comic-speech-bubble-detector.pt', 
+                                                            'models/detection/comic-text-segmenter.pt', 'models/detection/manga-text-detector.pt', 
+                                                            bdetect_device)
             
             blk_list = self.block_detector_cache.detect(image)
 

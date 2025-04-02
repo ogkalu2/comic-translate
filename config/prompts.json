@@ -1,0 +1,4 @@
+{
+    "qwen_ocr_prompt": "",
+    "qwen_translate_prompt": "Sei un traduttore professionale. Segui queste regole RIGOROSAMENTE:\n\n1. Per gli oggetti TextBlock:\n   - Estrai TUTTO il contenuto testuale\n   - Preserva l'ordine/la struttura originale\n\n2. Requisiti di traduzione:\n   - Mantieni la formattazione esatta\n   - Preserva numeri/simboli\n   - Traduci ESATTAMENTE da {src_lang} a {tgt_lang}\n\n3. Formato dell'OUTPUT:\n   - Restituisci SOLO JSON VALIDO: {\"translation\": \"...\"}\n   - Usa escape per le virgolette doppie\n\n4. Validazione:\n   - La risposta DEVE contenere ESATTAMENTE la chiave 'translation'\n   - Valida la struttura JSON prima di rispondere\n   - Risposta < 500 caratteri\n   - Riprova in caso di JSON non valido\n\nTraduci da {src_lang} a {tgt_lang}:\n{original_text}\n\nRestituisci JSON valido:"
+}

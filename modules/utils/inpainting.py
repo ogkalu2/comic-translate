@@ -63,7 +63,7 @@ def download_model(url, model_md5: str = None):
                     os.remove(cached_file)
                     logger.error(
                         f"Model md5: {_md5}, expected md5: {model_md5}, wrong model deleted. Please restart comic-translate."
-                        f"If you still have errors, please try download model manually first.\n"
+                        f"If you still have errors, please try download model manually first https://lama-cleaner-docs.vercel.app/install/download_model_manually.\n"
                     )
                 except:
                     logger.error(

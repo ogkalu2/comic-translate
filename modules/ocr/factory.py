@@ -5,13 +5,21 @@ from .gpt_ocr import GPTOCR
 from .paddle_ocr import PaddleOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
-from .doctr_ocr import DocTROCR
-from .gemini_ocr import GeminiOCR
+from .doctr_ocr import DocTROCREngine
+from .qwen_ocr import QwenOCREngine, QwenFullOCREngine, QwenVLPlusOCR, QwenMaxOCR
+from .mistral_ocr import MistralOCR
+from ..utils.translator_utils import get_llm_client, MODEL_MAP
 
-class OCRFactory:
+class OCREngineFactory:
     """Factory for creating appropriate OCR engines based on settings."""
     
     _engines = {}  # Cache of created engines
+    
+    OCR_ENGINE_MAP = {
+        'DefaultOCR': DocTROCREngine,
+        'Qwen-Max': QwenVLPlusOCR,
+        # Aggiungi qui eventuali altri motori OCR
+    }
     
     @classmethod
     def create_engine(cls, settings, source_lang_english: str, ocr_model: str) -> OCREngine:
@@ -26,6 +34,7 @@ class OCRFactory:
         Returns:
             Appropriate OCR engine instance
         """
+        print(f"Creating OCR engine for model: {ocr_model}")
         # Create a cache key based on model and language
         cache_key = f"{ocr_model}_{source_lang_english}"
         
@@ -46,8 +55,11 @@ class OCRFactory:
         general = {
             'Microsoft OCR': cls._create_microsoft_ocr,
             'Google Cloud Vision': cls._create_google_ocr,
-            'GPT-4o': lambda s: cls._create_gpt_ocr(s, ocr_model),
-            'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model)
+            'GPT-4o': lambda s: cls._create_gpt_ocr(s, MODEL_MAP.get('GPT-4o')),
+            'Qwen2.5 VL 72B Instruct (free)': cls._create_qwen_ocr,
+            'Qwen2.5 VL 72B Instruct': cls._create_qwen_full_ocr,
+            'Qwen-Max': cls._create_qwen_max_ocr,
+            'Mistral Document': cls._create_mistral_ocr
         }
         
         # Language-specific factory functions (for Default model)
@@ -55,7 +67,7 @@ class OCRFactory:
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
-            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4o')
+            'Russian': lambda s: cls._create_gpt_ocr(s,  MODEL_MAP.get('GPT-4o'))
         }
         
         # Check if we have a specific model factory
@@ -89,9 +101,9 @@ class OCRFactory:
     @staticmethod
     def _create_gpt_ocr(settings, model) -> OCREngine:
         credentials = settings.get_credentials(settings.ui.tr("Open AI GPT"))
-        api_key = credentials.get('api_key', '')
+        gpt_client = get_llm_client('GPT', credentials['api_key'])
         engine = GPTOCR()
-        engine.initialize(api_key=api_key, model=model)
+        engine.initialize(client=gpt_client, model=model)
         return engine
     
     @staticmethod
@@ -114,14 +126,39 @@ class OCRFactory:
         return engine
     
     @staticmethod
-    def _create_doctr_ocr(settings) -> OCREngine:
-        device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
-        engine = DocTROCR()
-        engine.initialize(device=device)
+    def _create_qwen_ocr(settings) -> OCREngine:
+        credentials = settings.get_credentials(settings.ui.tr("Qwen2.5 VL 72B Instruct (free)"))
+        engine = QwenOCREngine()
+        prompt = settings.get_qwen_ocr_prompt() if hasattr(settings, 'get_qwen_ocr_prompt') else None
+        engine.initialize(api_key=credentials['api_key'], prompt=prompt)
         return engine
     
     @staticmethod
-    def _create_gemini_ocr(settings, model) -> OCREngine:
-        engine = GeminiOCR()
-        engine.initialize(settings, model)
+    def _create_qwen_full_ocr(settings) -> OCREngine:
+        credentials = settings.get_credentials(settings.ui.tr("Qwen2.5 VL 72B Instruct"))
+        engine = QwenFullOCREngine()
+        prompt = settings.get_qwen_ocr_prompt() if hasattr(settings, 'get_qwen_ocr_prompt') else None
+        engine.initialize(api_key=credentials['api_key'], prompt=prompt)
+        return engine
+    
+    @staticmethod
+    def _create_qwen_max_ocr(settings) -> OCREngine:
+        credentials = settings.get_credentials(settings.ui.tr("Qwen-Max"))
+        engine = QwenMaxOCR(settings)
+        engine.initialize(api_key=credentials['api_key'])
+        return engine
+    
+    @staticmethod
+    def _create_mistral_ocr(settings) -> OCREngine:
+        credentials = settings.get_credentials(settings.ui.tr("Mistral"))
+        engine = MistralOCR()
+        prompt = settings.get_qwen_ocr_prompt() if hasattr(settings, 'get_qwen_ocr_prompt') else None
+        engine.initialize(api_key=credentials['api_key'], prompt=prompt)
+        return engine
+    
+    @staticmethod
+    def _create_doctr_ocr(settings) -> OCREngine:
+        device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
+        engine = DocTROCREngine()
+        engine.initialize(device=device)
         return engine

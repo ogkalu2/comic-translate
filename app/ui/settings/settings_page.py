@@ -1,4 +1,4 @@
-import os, shutil
+import os, shutil, json
 from typing import List
 
 from PySide6 import QtWidgets, QtGui
@@ -7,11 +7,12 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 from .settings_ui import SettingsPageUI
 
-from dataclasses import asdict, is_dataclass
+from dataclasses import dataclass, asdict, is_dataclass
 
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
     font_imported = Signal(str)
+    selected_fonts_changed = Signal()  # Nuovo segnale per la modifica dei font selezionati
 
     def __init__(self, parent=None):
         super(SettingsPage, self).__init__(parent)
@@ -29,13 +30,11 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         self.ui.lang_combo.currentTextChanged.connect(self.on_language_changed)
         self.ui.font_browser.sig_files_changed.connect(self.import_font)
+        self.selected_fonts_changed.connect(self._on_selected_fonts_changed)  # Connetti il segnale selected_fonts_changed
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
 
-    def get_language(self):
-        return self.ui.lang_combo.currentText()
-    
     def get_theme(self):
         return self.ui.theme_combo.currentText()
 
@@ -43,8 +42,7 @@ class SettingsPage(QtWidgets.QWidget):
         tool_combos = {
             'translator': self.ui.translator_combo,
             'ocr': self.ui.ocr_combo,
-            'inpainter': self.ui.inpainter_combo,
-            'detector': self.ui.detector_combo
+            'inpainter': self.ui.inpainter_combo
         }
         return tool_combos[tool_type].currentText()
 
@@ -87,12 +85,6 @@ class SettingsPage(QtWidgets.QWidget):
                     'model': self.ui.credential_widgets[f"{service}_model"].text(),
                     'save_key': save_keys
                 }
-            elif service == "Yandex":
-                return {
-                    'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
-                    'folder_id': self.ui.credential_widgets[f"{service}_folder_id"].text(),
-                    'save_key': save_keys
-                }
             else:
                 return {
                     'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
@@ -108,21 +100,20 @@ class SettingsPage(QtWidgets.QWidget):
         }
 
         if strategy == self.ui.tr("Resize"):
-            settings['resize_limit'] = self.ui.resize_spinbox.value()
+            settings['resize_limit'] = str(self.ui.resize_spinbox.value())
         elif strategy == self.ui.tr("Crop"):
-            settings['crop_margin'] = self.ui.crop_margin_spinbox.value()
-            settings['crop_trigger_size'] = self.ui.crop_trigger_spinbox.value()
+            settings['crop_margin'] = str(self.ui.crop_margin_spinbox.value())
+            settings['crop_trigger_size'] = str(self.ui.crop_trigger_spinbox.value())
 
         return settings
 
     def get_all_settings(self):
         return {
-            'language': self.get_language(),
+            'language': self.ui.lang_combo.currentText(),
             'theme': self.get_theme(),
             'tools': {
                 'translator': self.get_tool_selection('translator'),
                 'ocr': self.get_tool_selection('ocr'),
-                'detector': self.get_tool_selection('detector'),
                 'inpainter': self.get_tool_selection('inpainter'),
                 'use_gpu': self.is_gpu_enabled(),
                 'hd_strategy': self.get_hd_strategy_settings()
@@ -165,33 +156,35 @@ class SettingsPage(QtWidgets.QWidget):
         color_dialog = QtWidgets.QColorDialog()
         color_dialog.setCurrentColor(default_color)
         
-        if color_dialog.exec() == QtWidgets.QDialog.Accepted:
+        if color_dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:
             color = color_dialog.selectedColor()
             if color.isValid():
-                button = self.ui.color_button if not outline else self.ui.outline_color_button
-                button.setStyleSheet(
-                    f"background-color: {color.name()}; border: none; border-radius: 5px;"
-                )
-                button.setProperty('selected_color', color.name())
+                # Check if the buttons exist before accessing them
+                if hasattr(self.ui, 'color_button') and hasattr(self.ui, 'outline_color_button'):
+                    button = self.ui.color_button if not outline else self.ui.outline_color_button
+                    button.setStyleSheet(
+                        f"background-color: {color.name()}; border: none; border-radius: 5px;"
+                    )
+                    button.setProperty('selected_color', color.name())
 
     # With the mappings, settings are saved with English values and loaded in the selected language
     def save_settings(self):
-        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings = QSettings("ComicLabs", "CTkif 2_5 VL")
         all_settings = self.get_all_settings()
 
-        def process_group(group_key, group_value, settings_obj: QSettings):
+        def process_group(group_key: str, group_value, settings_obj: QSettings):
             """Helper function to process a group and its nested values."""
-            if is_dataclass(group_value):
+            if is_dataclass(group_value) and not isinstance(group_value, type):
                 group_value = asdict(group_value)
             if isinstance(group_value, dict):
-                settings_obj.beginGroup(group_key)
+                settings_obj.beginGroup(str(group_key))
                 for sub_key, sub_value in group_value.items():
-                    process_group(sub_key, sub_value, settings_obj)
+                    process_group(str(sub_key), sub_value, settings_obj)
                 settings_obj.endGroup()
             else:
                 # Convert value to English using mappings if available
-                mapped_value = self.ui.value_mappings.get(group_value, group_value)
-                settings_obj.setValue(group_key, mapped_value)
+                mapped_value = self.ui.value_mappings.get(str(group_value), group_value)
+                settings_obj.setValue(str(group_key), mapped_value)
 
         for key, value in all_settings.items():
             process_group(key, value, settings)
@@ -219,65 +212,88 @@ class SettingsPage(QtWidgets.QWidget):
             settings.remove('credentials')  # Clear all credentials if save_keys is unchecked
         settings.endGroup()
 
+        # Save selected fonts
+        selected_fonts = self.get_selected_fonts()
+        settings.beginGroup('text_rendering')
+        settings.setValue('selected_fonts', selected_fonts)
+        settings.endGroup()
+
     def load_settings(self):
         self._loading_settings = True
-        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings = QSettings("ComicLabs", "CTkif 2_5 VL")
 
         # Load language
-        language = settings.value('language', 'English')
-        translated_language = self.ui.reverse_mappings.get(language, language)
-        self.ui.lang_combo.setCurrentText(translated_language)
+        language = settings.value('language', 'English', type=str)
+        translated_language = self.ui.reverse_mappings.get(str(language), language)
+        self.ui.lang_combo.setCurrentText(str(translated_language))
 
         # Load theme
-        theme = settings.value('theme', 'Dark')
-        translated_theme = self.ui.reverse_mappings.get(theme, theme)
-        self.ui.theme_combo.setCurrentText(translated_theme)
-        self.theme_changed.emit(translated_theme)
+        theme = settings.value('theme', 'Dark', type=str)
+        translated_theme = self.ui.reverse_mappings.get(str(theme), theme)
+        self.ui.theme_combo.setCurrentText(str(translated_theme))
+        self.theme_changed.emit(str(translated_theme))
 
         # Load tools settings
         settings.beginGroup('tools')
-        translator = settings.value('translator', 'GPT-4o')
-        translated_translator = self.ui.reverse_mappings.get(translator, translator)
-        self.ui.translator_combo.setCurrentText(translated_translator)
+        translator = settings.value('translator', 'GPT-4o', type=str)
+        translated_translator = self.ui.reverse_mappings.get(str(translator), translator)
+        self.ui.translator_combo.setCurrentText(str(translated_translator))
 
-        ocr = settings.value('ocr', 'Default')
-        translated_ocr = self.ui.reverse_mappings.get(ocr, ocr)
-        self.ui.ocr_combo.setCurrentText(translated_ocr)
+        ocr = settings.value('ocr', 'Default', type=str)
+        translated_ocr = self.ui.reverse_mappings.get(str(ocr), ocr)
+        self.ui.ocr_combo.setCurrentText(str(translated_ocr))
 
-        inpainter = settings.value('inpainter', 'LaMa')
-        translated_inpainter = self.ui.reverse_mappings.get(inpainter, inpainter)
-        self.ui.inpainter_combo.setCurrentText(translated_inpainter)
+        inpainter = settings.value('inpainter', 'LaMa', type=str)
+        translated_inpainter = self.ui.reverse_mappings.get(str(inpainter), inpainter)
+        self.ui.inpainter_combo.setCurrentText(str(translated_inpainter))
 
-        detector = settings.value('detector', 'RT-DETR-V2')
-        translated_detector = self.ui.reverse_mappings.get(detector, detector)
-        self.ui.detector_combo.setCurrentText(translated_detector)
-
-        self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
+        # Explicitly convert settings value to bool to avoid type mismatch
+        use_gpu = bool(settings.value('use_gpu', False, type=bool))
+        self.ui.use_gpu_checkbox.setChecked(use_gpu)
 
         # Load HD strategy settings
         settings.beginGroup('hd_strategy')
-        strategy = settings.value('strategy', 'Resize')
-        translated_strategy = self.ui.reverse_mappings.get(strategy, strategy)
-        self.ui.inpaint_strategy_combo.setCurrentText(translated_strategy)
+        strategy = settings.value('strategy', 'Resize', type=str)
+        translated_strategy = self.ui.reverse_mappings.get(str(strategy), strategy)
+        self.ui.inpaint_strategy_combo.setCurrentText(str(translated_strategy))
         if strategy == 'Resize':
-            self.ui.resize_spinbox.setValue(settings.value('resize_limit', 960, type=int))
+            resize_limit = settings.value('resize_limit', 960)
+            if isinstance(resize_limit, int):
+                self.ui.resize_spinbox.setValue(resize_limit)
+            else:
+                self.ui.resize_spinbox.setValue(960)  # Default value if conversion fails
         elif strategy == 'Crop':
-            self.ui.crop_margin_spinbox.setValue(settings.value('crop_margin', 512, type=int))
-            self.ui.crop_trigger_spinbox.setValue(settings.value('crop_trigger_size', 512, type=int))
+            crop_margin = settings.value('crop_margin', 512)
+            crop_trigger = settings.value('crop_trigger_size', 512)
+            
+            if isinstance(crop_margin, int):
+                self.ui.crop_margin_spinbox.setValue(crop_margin)
+            else:
+                self.ui.crop_margin_spinbox.setValue(512)  # Default value if conversion fails
+                
+            if isinstance(crop_trigger, int):
+                self.ui.crop_trigger_spinbox.setValue(crop_trigger)
+            else:
+                self.ui.crop_trigger_spinbox.setValue(512)  # Default value if conversion fails
         settings.endGroup()  # hd_strategy
         settings.endGroup()  # tools
 
         # Load LLM settings
         settings.beginGroup('llm')
-        self.ui.extra_context.setPlainText(settings.value('extra_context', ''))
-        self.ui.image_checkbox.setChecked(settings.value('image_input_enabled', True, type=bool))
+        extra_context = settings.value('extra_context', '', type=str)
+        if extra_context is not None:
+            self.ui.extra_context.setPlainText(str(extra_context))
+        else:
+            self.ui.extra_context.setPlainText('')
+        image_input_enabled = bool(settings.value('image_input_enabled', True, type=bool))
+        self.ui.image_checkbox.setChecked(image_input_enabled)
         settings.endGroup()
 
         # Load export settings
         settings.beginGroup('export')
-        self.ui.raw_text_checkbox.setChecked(settings.value('export_raw_text', False, type=bool))
-        self.ui.translated_text_checkbox.setChecked(settings.value('export_translated_text', False, type=bool))
-        self.ui.inpainted_image_checkbox.setChecked(settings.value('export_inpainted_image', False, type=bool))
+        self.ui.raw_text_checkbox.setChecked(bool(settings.value('export_raw_text', False, type=bool)))
+        self.ui.translated_text_checkbox.setChecked(bool(settings.value('export_translated_text', False, type=bool)))
+        self.ui.inpainted_image_checkbox.setChecked(bool(settings.value('export_inpainted_image', False, type=bool)))
         settings.beginGroup('save_as')
         for file_type in ['.pdf', '.epub', '.cbr', '.cbz', '.cb7', '.cbt']:
             self.ui.export_widgets[f'{file_type}_save_as'].setCurrentText(settings.value(file_type, file_type[1:]))
@@ -287,7 +303,7 @@ class SettingsPage(QtWidgets.QWidget):
         # Load credentials
         settings.beginGroup('credentials')
         save_keys = settings.value('save_keys', False, type=bool)
-        self.ui.save_keys_checkbox.setChecked(save_keys)
+        self.ui.save_keys_checkbox.setChecked(bool(save_keys))
         if save_keys:
             for service in self.ui.credential_services:
                 translated_service = self.ui.reverse_mappings.get(service, service)
@@ -304,6 +320,12 @@ class SettingsPage(QtWidgets.QWidget):
                     self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()
 
+        # Load selected fonts
+        settings.beginGroup('text_rendering')
+        selected_fonts = settings.value('selected_fonts', [], type=list)
+        settings.endGroup()
+        self.set_selected_fonts(selected_fonts)
+
         self._loading_settings = False
 
     def on_language_changed(self, new_language):
@@ -314,8 +336,8 @@ class SettingsPage(QtWidgets.QWidget):
         msg_box = QtWidgets.QMessageBox(self)
         msg_box.setWindowTitle(self.tr("Restart Required"))
         msg_box.setText(self.tr("Please restart the application for the language changes to take effect."))
-        msg_box.setIcon(QtWidgets.QMessageBox.Information)
-        msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg_box.setIcon(QtWidgets.QMessageBox.Icon.Information)
+        msg_box.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
         msg_box.exec()
 
     def get_min_font_size(self):
@@ -324,7 +346,7 @@ class SettingsPage(QtWidgets.QWidget):
     def get_max_font_size(self):
         return int(self.ui.max_font_spinbox.value())
 
-    def add_font_family(self, font_input: str) -> QFont:
+    def add_font_family(self, font_input: str) -> str:
         # Check if font_input is a file path
         if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
             font_id = QFontDatabase.addApplicationFont(font_input)
@@ -336,5 +358,93 @@ class SettingsPage(QtWidgets.QWidget):
         # If not a file path or loading failed, treat as font family name
         return font_input
 
+    def get_value(self, key: str, default_value=None):
+        """Get a value from settings with a default fallback.
+        
+        Args:
+            key: The settings key to retrieve
+            default_value: Default value if key not found
+            
+        Returns:
+            The value if found, otherwise the default value
+        """
+        # Handle credential keys
+        if key.endswith('_api_key'):
+            service = key.replace('_api_key', '')
+            credentials = self.get_credentials(service)
+            return credentials.get('api_key', default_value)
+            
+        # Handle other settings
+        settings = self.get_all_settings()
+        
+        # Navigate nested dictionaries using dot notation
+        try:
+            value = settings
+            for part in key.split('.'):
+                value = value[part]
+            return value
+        except (KeyError, TypeError):
+            return default_value
 
+    # Removed duplicate get_theme method
 
+    def get_qwen_ocr_prompt(self):
+        """Gets the custom prompt for Qwen OCR."""
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
+        prompts_path = os.path.join(project_root, 'config', 'prompts.json')
+        
+        try:
+            with open(prompts_path, 'r', encoding='utf-8') as f:
+                prompts = json.load(f)
+                return prompts.get('qwen_ocr_prompt', 'Recognize the text in the image. Write exactly what appears, DO NOT translate.')
+        except Exception as e:
+            print(f"Error loading prompts: {e}")
+            return 'Recognize the text in the image. Write exactly what appears, DO NOT translate.'
+
+    def get_qwen_translate_prompt(self):
+        """Ottiene il prompt personalizzato per il traduttore Qwen."""
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
+        prompts_path = os.path.join(project_root, 'config', 'prompts.json')
+        
+        try:
+            with open(prompts_path, 'r', encoding='utf-8') as f:
+                prompts = json.load(f)
+                return prompts.get('qwen_translate_prompt', '')
+        except Exception as e:
+            print(f"Error loading prompts: {e}")
+            return ''
+
+    def get_selected_fonts(self):
+        """Restituisce la lista dei font selezionati nelle impostazioni"""
+        selected_fonts = []
+        for font_family, checkbox in self.ui.font_checkboxes.items():
+            if checkbox.isChecked():
+                selected_fonts.append(font_family)
+        return selected_fonts
+
+    def set_selected_fonts(self, selected_fonts):
+        """Imposta i checkbox dei font"""
+        # Se non ci sono font selezionati, seleziona tutti i font come default
+        if not selected_fonts:
+            for checkbox in self.ui.font_checkboxes.values():
+                checkbox.setChecked(True)
+        else:
+            for font_family, checkbox in self.ui.font_checkboxes.items():
+                checkbox.setChecked(font_family in selected_fonts)
+        self.selected_fonts_changed.emit()  # Emit the signal when fonts are changed
+
+    # Handler del segnale selected_fonts_changed
+    def _on_selected_fonts_changed(self):
+        # Salva le impostazioni quando i font selezionati cambiano
+        self.save_font_settings()
+        # Non emettiamo di nuovo il segnale qui per evitare un loop infinito
+
+    def save_font_settings(self):
+        # Salva solo le impostazioni dei font
+        settings = QSettings("ComicLabs", "CTkif 2_5 VL")
+        settings.beginGroup('text_rendering')
+        selected_fonts = self.get_selected_fonts()
+        settings.setValue('selected_fonts', selected_fonts)
+        settings.endGroup()

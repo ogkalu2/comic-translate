@@ -1,39 +1,37 @@
 import base64
 import cv2
 import numpy as np
-import requests
-import json
+from typing import List, Any
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock, adjust_text_line_coordinates
-from ..utils.translator_utils import MODEL_MAP
 
 
 class GPTOCR(OCREngine):
-    """OCR engine using GPT vision capabilities via direct REST API calls."""
+    """OCR engine using GPT vision capabilities."""
     
     def __init__(self):
-        self.api_key = None
+        """Initialize GPT OCR."""
+        self.client = None
         self.expansion_percentage = 0
-        self.model = 'GPT-4o'
-        self.api_base_url = 'https://api.openai.com/v1/chat/completions'
-        self.max_tokens = 5000
+        self.model = 'gpt-4o'  
         
-    def initialize(self, api_key: str, model: str = 'GPT-4o', 
-                  expansion_percentage: int = 0) -> None:
+    def initialize(self, client: Any, model: str = 'gpt-4o', 
+                  expansion_percentage: int = 0, **kwargs) -> None:
         """
-        Initialize the GPT OCR with API key and parameters.
+        Initialize the GPT OCR with client and parameters.
         
         Args:
-            api_key: OpenAI API key for authentication
+            client: GPT client for API calls
             model: GPT model to use for OCR (defaults to gpt-4o)
             expansion_percentage: Percentage to expand text bounding boxes
+            **kwargs: Additional parameters (ignored)
         """
-        self.api_key = api_key
-        self.model = MODEL_MAP.get(model)
+        self.client = client
+        self.model = model
         self.expansion_percentage = expansion_percentage
         
-    def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
+    def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
         """
         Process an image with GPT-based OCR by processing individual text regions.
         
@@ -74,7 +72,7 @@ class GPTOCR(OCREngine):
     
     def _get_gpt_ocr(self, base64_image: str) -> str:
         """
-        Get OCR result from GPT model using direct REST API call.
+        Get OCR result from GPT model.
         
         Args:
             base64_image: Base64 encoded image
@@ -82,48 +80,23 @@ class GPTOCR(OCREngine):
         Returns:
             OCR result text
         """
-        if not self.api_key:
-            raise ValueError("API key not initialized. Call initialize() first.")
-            
         try:
-            # Prepare request headers
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.api_key}"
-            }
-            
-            # Prepare request payload
-            payload = {
-                "model": self.model,
-                "messages": [
+            response = self.client.chat.completions.create(
+                model=self.model,  # Use the model specified during initialization
+                messages=[
                     {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": "Write out the text in this image. Do NOT Translate. Do not write anything else"},
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                            {"type": "text", "text": "Write out the text in this image. Do NOT Translate. Do not write anything else"}
                         ]
                     }
                 ],
-                "max_tokens": self.max_tokens
-            }
-            
-            # Make POST request to OpenAI API
-            response = requests.post(
-                self.api_base_url,
-                headers=headers,
-                data=json.dumps(payload)
+                max_tokens=1000,
             )
-            
-            # Parse response
-            if response.status_code == 200:
-                response_json = response.json()
-                text = response_json['choices'][0]['message']['content']
-                # Replace newlines with spaces
-                return text.replace('\n', ' ') if '\n' in text else text
-            else:
-                print(f"API error: {response.status_code} {response.text}")
-                return ""
-                
+            text = response.choices[0].message.content
+            # Replace newlines with spaces
+            return text.replace('\n', ' ') if '\n' in text else text
         except Exception as e:
-            print(f"GPT API request error: {str(e)}")
+            print(f"GPT API error: {str(e)}")
             return ""

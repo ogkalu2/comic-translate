@@ -1,34 +1,36 @@
 import numpy as np
 import torch
+from doctr.models import ocr_predictor
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
 from ..utils.pipeline_utils import lists_to_blk_list
 
 
-class DocTROCR(OCREngine):
+class DocTROCREngine(OCREngine):
     """OCR engine using DocTR"""
     
     def __init__(self):
+        """Initialize DocTR OCR engine."""
         self.model = None
         self.device = 'cpu'
         
-    def initialize(self, device: str = 'cpu') -> None:
+    def initialize(self, device: str = 'cpu', **kwargs) -> None:
         """
-         Initialize the DocTR engine.
-         
-         Args:
-             device: Device to use ('cpu' or 'cuda')
-         """
+        Initialize the DocTR engine.
         
-        from doctr.models import ocr_predictor
-
+        Args:
+            device: Device to use ('cpu' or 'cuda')
+            **kwargs: Additional parameters (ignored)
+        """
+        
         self.device = device
+        
         # Initialize model if not already loaded
         if self.model is None:
             self.model = ocr_predictor(
-                det_arch='db_resnet34', 
-                reco_arch='parseq', 
+                det_arch='db_mobilenet_v3_large', 
+                reco_arch='crnn_vgg16_bn', 
                 pretrained=True,
             )
 
@@ -37,6 +39,16 @@ class DocTROCR(OCREngine):
                 self.model.cuda().half()
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
+        """
+        Process an image with DocTR and update text blocks.
+        
+        Args:
+            img: Input image as numpy array
+            blk_list: List of TextBlock objects to update with OCR text
+            
+        Returns:
+            List of updated TextBlock objects with recognized text
+        """
         try:
             # Process whole image with DocTR
             result = self.model([img])

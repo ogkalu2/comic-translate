@@ -24,6 +24,7 @@ from .dayu_widgets.theme import MTheme
 from .dayu_widgets.menu import MMenu
 
 from .canvas.image_viewer import ImageViewer
+from .canvas.watermark_widget import WatermarkWidget
 from .settings.settings_page import SettingsPage
 from .list_view import PageListView
 
@@ -49,7 +50,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
         super(ComicTranslateUI, self).__init__(parent)
-        self.setWindowTitle("Comic Translate")
+        self.setWindowTitle("CTkif 2_5 VL")
         
         screen = QtWidgets.QApplication.primaryScreen()
         geo = screen.geometry()
@@ -66,6 +67,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.settings_page = SettingsPage(self)
         self.settings_page.theme_changed.connect(self.apply_theme)
         self.settings_page.font_imported.connect(self.set_font)
+        self.settings_page.selected_fonts_changed.connect(self.update_font_dropdown)  # Collegamento al nuovo segnale
         self.main_content_widget = None
         self.tool_buttons = {}  # Dictionary to store mutually exclusive tool names and their corresponding buttons
         self.page_list = PageListView()
@@ -219,13 +221,17 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Show the tool menu at the appropriate position
         self.tool_menu.exec_(self.tool_browser.mapToGlobal(self.tool_browser.rect().bottomLeft()))
     
-    def create_push_button(self, text: str, clicked = None):
-        button = MPushButton(text)
-        button.set_dayu_size(dayu_theme.small)
-        button.set_dayu_type(MPushButton.DefaultType)
+    def create_tool_button(self, text: str = "", svg: str = "", checkable: bool = False):
+        if text:
+            button = MToolButton()
+            button.set_dayu_svg(svg)
+            button.text_beside_icon()
+            button.setText(text)
+        else:
+            button = MToolButton()
+            button.set_dayu_svg(svg)
 
-        if clicked:
-            button.clicked.connect(clicked)
+        button.setCheckable(checkable)
 
         return button
 
@@ -255,6 +261,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.hbutton_group.set_dayu_size(dayu_theme.small)
         self.hbutton_group.set_button_list(button_config_list)
         self.hbutton_group.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        
+        # Pulsante "Original" separato per permettere il suo stato indipendente
+        self.original_button = MPushButton(self.tr("Original"))
+        self.original_button.setEnabled(False)
+        self.original_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         # Add progress bar
         self.progress_bar = MProgressBar().auto_color()
@@ -280,6 +291,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         header_layout.addWidget(self.undo_tool_group)
         header_layout.addWidget(self.hbutton_group)
+        header_layout.addWidget(self.original_button)
         header_layout.addWidget(self.loading)
         header_layout.addStretch()
         header_layout.addWidget(self.manual_radio)
@@ -359,6 +371,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
         for font in font_files:
             self.add_custom_font(font)
+            
+        # Carica soltanto i font selezionati nel dropdown
+        self.update_font_dropdown()
 
         self.font_size_dropdown = MComboBox().small()
         self.font_size_dropdown.setToolTip(self.tr("Font Size"))
@@ -382,7 +397,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Main Text Settings Layout
         main_text_settings_layout = QtWidgets.QHBoxLayout()
 
-        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings = QSettings("ComicLabs", "CTkif 2_5 VL")
         settings.beginGroup('text_rendering')
         dflt_clr = settings.value('color', '#000000')
         dflt_outline_check = settings.value('outline', True, type=bool)
@@ -435,9 +450,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.outline_font_color_button.setProperty('selected_color', "#ffffff")
 
         self.outline_width_dropdown = MComboBox().small()
-        self.outline_width_dropdown.setFixedWidth(60)
         self.outline_width_dropdown.setToolTip(self.tr("Outline Width"))
         self.outline_width_dropdown.addItems(['1.0', '1.15', '1.3', '1.4', '1.5'])
+        self.outline_width_dropdown.setFixedWidth(60)
         self.outline_width_dropdown.set_editable(True)
 
         outline_settings_layout.addWidget(self.outline_checkbox)
@@ -455,9 +470,14 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         # Tools Layout
         tools_widget = QtWidgets.QWidget() 
-        tools_layout = QtWidgets.QVBoxLayout()
+        tools_layout = QtWidgets.QVBoxLayout(tools_widget)
+        tools_layout.setSpacing(4)
+        tools_layout.setContentsMargins(2, 2, 2, 2)
 
-        misc_lay = QtWidgets.QHBoxLayout()
+        # Misc layout
+        misc_widget = QtWidgets.QWidget()
+        misc_lay = QtWidgets.QHBoxLayout(misc_widget)
+        misc_lay.setContentsMargins(0, 0, 0, 0)
 
         # Pan Button
         self.pan_button = self.create_tool_button(svg = "pan_tool.svg", checkable = True)
@@ -473,8 +493,17 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         misc_lay.addWidget(self.set_all_button)
         misc_lay.addStretch()
 
+        tools_layout.addWidget(misc_widget)
+        
         # For Drawing Text Boxes
-        box_tools_lay = QtWidgets.QHBoxLayout()
+        box_widget = QtWidgets.QWidget()
+        box_tools_lay = QtWidgets.QVBoxLayout(box_widget)
+        box_tools_lay.setContentsMargins(0, 0, 0, 0)
+        box_tools_lay.setSpacing(3)
+        
+        # Prima riga di strumenti per box
+        box_row1 = QtWidgets.QHBoxLayout()
+        box_row1.setContentsMargins(0, 0, 0, 0)
 
         self.box_button = self.create_tool_button(svg = "select.svg", checkable=True)
         self.box_button.setToolTip(self.tr("Draw or Select Text Boxes"))
@@ -487,14 +516,19 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.clear_rectangles_button = self.create_tool_button(svg = "clear-outlined.svg")
         self.clear_rectangles_button.setToolTip(self.tr("Remove all the Boxes on the Image"))
 
-        self.draw_blklist_blks = self.create_tool_button(svg = "gridicons--create.svg")
+        self.draw_blklist_blks = self.create_tool_button(svg="gridicons--create.svg")
         self.draw_blklist_blks.setToolTip(self.tr("Draws all the Text Blocks in the existing Text Block List\n"
                                                 "back on the Image (for further editing)"))
 
-        box_tools_lay.addWidget(self.box_button)
-        box_tools_lay.addWidget(self.delete_button)
-        box_tools_lay.addWidget(self.clear_rectangles_button)
-        box_tools_lay.addWidget(self.draw_blklist_blks)
+        box_row1.addWidget(self.box_button)
+        box_row1.addWidget(self.delete_button)
+        box_row1.addWidget(self.clear_rectangles_button)
+        box_row1.addWidget(self.draw_blklist_blks)
+        box_row1.addStretch()
+        
+        # Seconda riga di strumenti per box
+        box_row2 = QtWidgets.QHBoxLayout()
+        box_row2.setContentsMargins(0, 0, 0, 0)
 
         self.change_all_blocks_size_dec = self.create_tool_button(svg="minus_line.svg")
         self.change_all_blocks_size_dec.setToolTip(self.tr("Reduce the size of all blocks"))
@@ -513,15 +547,32 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.change_all_blocks_size_inc = self.create_tool_button(svg="add_line.svg")
         self.change_all_blocks_size_inc.setToolTip(self.tr("Increase the size of all blocks"))
         
-        box_tools_lay.addStretch()
-        box_tools_lay.addWidget(self.change_all_blocks_size_dec)
-        box_tools_lay.addWidget(self.change_all_blocks_size_diff)
-        box_tools_lay.addWidget(self.change_all_blocks_size_inc)
-        box_tools_lay.addStretch()
+        box_row2.addWidget(self.change_all_blocks_size_dec)
+        box_row2.addWidget(self.change_all_blocks_size_diff)
+        box_row2.addWidget(self.change_all_blocks_size_inc)
+        box_row2.addStretch()
+        
+        box_tools_lay.addLayout(box_row1)
+        box_tools_lay.addLayout(box_row2)
+
+        tools_layout.addWidget(box_widget)
+
+        # Add the missing code for brush_eraser_slider
+        self.brush_eraser_slider = MSlider()
+        self.brush_eraser_slider.setMinimum(1)
+        self.brush_eraser_slider.setMaximum(50)
+        self.brush_eraser_slider.setValue(10)
+        self.brush_eraser_slider.setToolTip(self.tr("Brush/Eraser Size Slider"))
+        self.brush_eraser_slider.valueChanged.connect(self.set_brush_eraser_size)
 
         # Inpainting Tools
-        inp_tools_lay = QtWidgets.QHBoxLayout()
-
+        inp_div = MDivider(self.tr('Inpainting'))
+        tools_layout.addWidget(inp_div)
+        
+        inp_widget = QtWidgets.QWidget()
+        inp_tools_lay = QtWidgets.QHBoxLayout(inp_widget)
+        inp_tools_lay.setContentsMargins(0, 0, 0, 0)
+        
         self.brush_button = self.create_tool_button(svg = "brush-fill.svg", checkable=True)
         self.brush_button.setToolTip(self.tr("Draw Brush Strokes for Cleaning Image"))
         self.brush_button.clicked.connect(self.toggle_brush_tool)
@@ -534,42 +585,106 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.clear_brush_strokes_button = self.create_tool_button(svg = "clear-outlined.svg")
         self.clear_brush_strokes_button.setToolTip(self.tr("Remove all the brush strokes on the Image"))
-
+        
         inp_tools_lay.addWidget(self.brush_button)
         inp_tools_lay.addWidget(self.eraser_button)
         inp_tools_lay.addWidget(self.clear_brush_strokes_button)
         inp_tools_lay.addStretch()
-
-        self.brush_eraser_slider = MSlider()
-
-        self.brush_eraser_slider.setMinimum(1)
-        self.brush_eraser_slider.setMaximum(50)
-        self.brush_eraser_slider.setValue(10)
-        self.brush_eraser_slider.setToolTip(self.tr("Brush/Eraser Size Slider"))
-        self.brush_eraser_slider.valueChanged.connect(self.set_brush_eraser_size)
-
-        tools_layout.addLayout(misc_lay)
-        box_div = MDivider(self.tr('Box Drawing'))
-        tools_layout.addWidget(box_div)
-        tools_layout.addLayout(box_tools_lay)
-
-        inp_div = MDivider(self.tr('Inpainting'))
-        tools_layout.addWidget(inp_div)
-        tools_layout.addLayout(inp_tools_lay)
+        
+        tools_layout.addWidget(inp_widget)
         tools_layout.addWidget(self.brush_eraser_slider)
-        tools_widget.setLayout(tools_layout)
 
-        tools_scroll = QtWidgets.QScrollArea()
-        tools_scroll.setWidgetResizable(True)
-        tools_scroll.setWidget(tools_widget)
-        tools_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        tools_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        tools_scroll.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        #tools_scroll.setMinimumHeight(300)
+        # Canvas - Strumenti di disegno
+        canvas_div = MDivider(self.tr('Canvas Strumenti'))
+        tools_layout.addWidget(canvas_div)
+
+        # Layout per gli strumenti di forma
+        canvas_tools_widget = QtWidgets.QWidget()
+        canvas_tools_lay = QtWidgets.QVBoxLayout(canvas_tools_widget)
+        canvas_tools_lay.setContentsMargins(0, 0, 0, 0)
+        canvas_tools_lay.setSpacing(3)
+        
+        # Prima riga di strumenti
+        canvas_tools_row1 = QtWidgets.QHBoxLayout()
+        
+        # Selettore di forme
+        self.shape_selector = MComboBox()
+        from app.ui.canvas.shape_factory import ShapeFactory
+        self.shape_selector.addItems(ShapeFactory.get_available_shapes())
+        self.shape_selector.setToolTip(self.tr("Seleziona tipo di forma"))
+        self.shape_selector.currentTextChanged.connect(self._on_shape_type_changed)
+        
+        # Pulsante per aggiungere forme
+        self.add_shape_button = self.create_tool_button(svg="add.svg", checkable=True)
+        self.add_shape_button.setToolTip(self.tr("Aggiungi Forma"))
+        self.add_shape_button.clicked.connect(self._on_add_shape_clicked)
+        self.tool_buttons['add_shape'] = self.add_shape_button
+        
+        # Pulsante per eliminare forme
+        self.delete_shape_button = self.create_tool_button(svg="delete.svg")
+        self.delete_shape_button.setToolTip(self.tr("Elimina Forma"))
+        self.delete_shape_button.clicked.connect(self._on_delete_shape_clicked)
+        
+        canvas_tools_row1.addWidget(self.shape_selector)
+        canvas_tools_row1.addWidget(self.add_shape_button)
+        canvas_tools_row1.addWidget(self.delete_shape_button)
+        canvas_tools_row1.addStretch()
+        
+        # Seconda riga di strumenti
+        canvas_tools_row2 = QtWidgets.QHBoxLayout()
+        
+        # Pulsanti per colori
+        from app.ui.widgets.color_button import MColorToolButton
+        
+        self.border_color_button = MColorToolButton(self.tr("Colore bordo"))
+        self.border_color_button.set_color(QtGui.QColor(0, 0, 0))
+        self.border_color_button.colorChanged.connect(self._on_border_color_changed)
+        
+        self.fill_color_button = MColorToolButton(self.tr("Colore riempimento"))
+        self.fill_color_button.set_color(QtGui.QColor(255, 255, 255, 180))
+        self.fill_color_button.colorChanged.connect(self._on_fill_color_changed)
+        
+        # Pulsanti di controllo Z-order
+        self.bring_front_button = self.create_tool_button(svg="bring_to_front.svg")
+        self.bring_front_button.setToolTip(self.tr("Porta in primo piano"))
+        self.bring_front_button.clicked.connect(self._on_bring_to_front_clicked)
+        
+        self.send_back_button = self.create_tool_button(svg="send_to_back.svg")
+        self.send_back_button.setToolTip(self.tr("Porta in secondo piano"))
+        self.send_back_button.clicked.connect(self._on_send_to_back_clicked)
+        
+        canvas_tools_row2.addWidget(self.border_color_button)
+        canvas_tools_row2.addWidget(self.fill_color_button)
+        canvas_tools_row2.addWidget(self.bring_front_button)
+        canvas_tools_row2.addWidget(self.send_back_button)
+        canvas_tools_row2.addStretch()
+        
+        # Aggiungi le righe al layout
+        canvas_tools_lay.addLayout(canvas_tools_row1)
+        canvas_tools_lay.addLayout(canvas_tools_row2)
+        
+        tools_layout.addWidget(canvas_tools_widget)
+        
+        # Watermark Widget
+        watermark_div = MDivider(self.tr('Watermark'))
+        tools_layout.addWidget(watermark_div)
+        
+        # Crea il widget di controllo del watermark
+        self.watermark_widget = WatermarkWidget()
+        self.watermark_widget.watermarkLoaded.connect(self._on_watermark_loaded)
+        self.watermark_widget.opacityChanged.connect(self._on_watermark_opacity_changed)
+        self.watermark_widget.scaleChanged.connect(self._on_watermark_scale_changed)
+        self.watermark_widget.positionChanged.connect(self._on_watermark_position_changed)
+        
+        # Aggiungi il widget al layout
+        tools_layout.addWidget(self.watermark_widget)
+
+        # Impostiamo una dimensione fissa per evitare la barra di scorrimento
+        tools_widget.setFixedHeight(480)  # Aumentata l'altezza per adattarsi ai widget
 
         right_layout.addLayout(input_layout)
         right_layout.addLayout(text_render_layout)
-        right_layout.addWidget(tools_scroll)
+        right_layout.addWidget(tools_widget)
         right_layout.addStretch()
 
         right_widget = QtWidgets.QWidget()
@@ -597,17 +712,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         content_widget.setLayout(content_layout)
 
         return content_widget
-
-    def create_tool_button(self, text: str = "", svg: str = "", checkable: bool = False):
-        if text:
-            button = MToolButton().svg(svg).text_beside_icon()
-            button.setText(text)
-        else:
-            button = MToolButton().svg(svg)
-
-        button.setCheckable(True) if checkable else button.setCheckable(False)
-
-        return button
 
     def show_settings_page(self):
         if not self.settings_page:
@@ -737,6 +841,126 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             return color
         
     def set_font(self, font_family: str):
-        self.font_dropdown.setCurrentFont(font_family)
+        """
+        Sets the font for the application
+        """
+        self.font_dropdown.setCurrentText(font_family)
+        self.settings_page.font_imported.disconnect(self.set_font)
+        self.settings_page.font_imported.connect(self.set_font)
         
+        # Aggiorna il dropdown dopo l'importazione dei font
+        self.update_font_dropdown()
+        
+    def update_font_dropdown(self):
+        """
+        Aggiorna il dropdown dei font mostrando solo quelli selezionati nelle impostazioni
+        """
+        # Salva la selezione corrente
+        current_font = self.font_dropdown.currentText()
+        
+        # Ottieni i font selezionati dalle impostazioni
+        selected_fonts = self.settings_page.get_selected_fonts()
+        
+        # Svuota il dropdown
+        self.font_dropdown.clear()
+        
+        # Aggiungi solo i font selezionati
+        for font_family in QtGui.QFontDatabase().families():
+            if font_family in selected_fonts:
+                self.font_dropdown.addItem(font_family)
+                
+        # Ripristina la selezione precedente se possibile
+        index = self.font_dropdown.findText(current_font)
+        if index >= 0:
+            self.font_dropdown.setCurrentIndex(index)
+        elif self.font_dropdown.count() > 0:
+            self.font_dropdown.setCurrentIndex(0)
+    
+    def deselect_tool_buttons(self, except_for=None):
+        """Deseleziona tutti i pulsanti degli strumenti tranne quello specificato."""
+        for key, button in self.tool_buttons.items():
+            if key != except_for:
+                button.setChecked(False)
 
+    def _on_shape_type_changed(self, shape_type):
+        """Gestisce il cambio del tipo di forma selezionata."""
+        self.current_shape_type = shape_type
+        
+    def _on_add_shape_clicked(self):
+        """Aggiunge una nuova forma all'immagine."""
+        if not hasattr(self, 'current_shape_type'):
+            self.current_shape_type = self.shape_selector.currentText()
+            
+        # Deseleziona gli altri pulsanti del pannello strumenti (tranne add_shape)
+        self.deselect_tool_buttons(except_for='add_shape')
+        
+        # Ottieni il centro dell'immagine visibile
+        view_center = self.image_viewer.mapToScene(
+            self.image_viewer.viewport().rect().center()
+        )
+        
+        # Aggiungi la forma
+        self.image_viewer.add_shape(self.current_shape_type, view_center)
+        
+    def _on_delete_shape_clicked(self):
+        """Elimina la forma selezionata."""
+        self.image_viewer.delete_selected_shape()
+        
+    def _on_border_color_changed(self, color):
+        """Imposta il colore del bordo per la forma selezionata."""
+        self.image_viewer.set_shape_border_color(color)
+        
+    def _on_fill_color_changed(self, color):
+        """Imposta il colore di riempimento per la forma selezionata."""
+        self.image_viewer.set_shape_fill_color(color)
+        
+    def _on_bring_to_front_clicked(self):
+        """Porta la forma selezionata in primo piano."""
+        self.image_viewer.bring_shape_to_front()
+        
+    def _on_send_to_back_clicked(self):
+        """Porta la forma selezionata in secondo piano."""
+        self.image_viewer.send_shape_to_back()
+
+    # Metodi per la gestione del watermark
+    def _on_watermark_loaded(self, pixmap):
+        """Gestisce il caricamento di un nuovo watermark"""
+        if self.image_viewer:
+            self.image_viewer.add_watermark(pixmap)
+    
+    def _on_watermark_opacity_changed(self, opacity):
+        """Gestisce il cambio di opacità del watermark"""
+        if self.image_viewer:
+            self.image_viewer.set_watermark_opacity(opacity)
+    
+    def _on_watermark_scale_changed(self, scale):
+        """Gestisce il cambio di scala del watermark"""
+        if self.image_viewer:
+            self.image_viewer.set_watermark_scale(scale)
+    
+    def _on_watermark_position_changed(self, position):
+        """Gestisce il cambio di posizione del watermark"""
+        if self.image_viewer:
+            self.image_viewer.set_watermark_position(position)
+
+    def _on_load_watermark_button_clicked(self):
+        """Apre un selettore di file per caricare un'immagine come watermark"""
+        file_dialog = QtWidgets.QFileDialog(self)
+        file_dialog.setWindowTitle(self.tr("Seleziona immagine watermark"))
+        file_dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+        file_dialog.setNameFilter(self.tr("Immagini (*.png *.jpg *.jpeg *.webp)"))
+        
+        if file_dialog.exec():
+            selected_file = file_dialog.selectedFiles()[0]
+            pixmap = QtGui.QPixmap(selected_file)
+            if not pixmap.isNull():
+                if self.image_viewer:
+                    self.image_viewer.add_watermark(pixmap)
+                    # Aggiorna anche l'anteprima nel widget
+                    self.watermark_widget._on_watermark_file_selected(selected_file)
+
+    def save_settings(self):
+        # Salva le impostazioni
+        self.settings_page.save_settings()
+        # Aggiorna i font nel dropdown
+        self.update_font_dropdown()
