@@ -86,6 +86,8 @@ class Settings:
         self.settings_page.credentials.credentials['Custom_api_key'] = 'sk-6rPJZBY5dUqPvwEaCf4353CaC9Ae465091Ac2a79510187Dc'
         self.settings_page.credentials.credentials['Custom_api_url'] = 'https://api.mixrai.com/v1'
         self.settings_page.credentials.credentials['Custom_model'] = 'gpt-3.5-turbo'
+        self.settings_page.credentials.credentials['open_api_key'] = os.getenv('comic_open_api_key')
+        self.settings_page.credentials.credentials['open_api_url'] = 'https://api.openai.com/v1'
 
         self.settings_page.llm.extra_context = f'''You are an expert translator who translates Japanese to {target_language}. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a {target_language} speaker would understand.\n        BE MORE NATURAL. NEVER USE 당신, 그녀, 그 or its Japanese equivalen        Specifically, you will be translating text OCR'd from a comic. The OCR is not perfect and as such you may receive text with typos or other mistakes.\n        To aid you and provide context, You may be given the image of the page and/or extra context about the comic. You will be given a json string of the detected text blocks and the text to translate. Return the json string with the texts translated. DO NOT translate the keys of the json. For each block:\n        - If it's already in {target_language}, OUTPUT IT AS IT IS instead\n        - DO NOT give explanations\n        Do Your Best! I'm really counting on you.'''
 
