@@ -30,6 +30,7 @@ class ClaudeTranslation(BaseLLMTranslation):
         """
         super().initialize(settings, source_lang, target_lang, **kwargs)
         
+        self.temperature = self.temperature/2
         self.model_name = model_name
         credentials = settings.get_credentials(settings.ui.tr('Anthropic Claude'))
         self.api_key = credentials.get('api_key', '')
@@ -50,6 +51,7 @@ class ClaudeTranslation(BaseLLMTranslation):
             "system": system_prompt,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
+            "top_p": self.top_p,
         }
         
         # Add messages with text and optionally image
