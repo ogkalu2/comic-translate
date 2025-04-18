@@ -3,6 +3,7 @@ from typing import List
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 from PySide6.QtGui import QFontMetrics
+from PySide6.QtGui import QIntValidator, QDoubleValidator
 
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.line_edit import MLineEdit
@@ -14,6 +15,7 @@ from ..dayu_widgets.qt import MPixmap
 from ..dayu_widgets.combo_box import MComboBox
 from ..dayu_widgets.spin_box import MSpinBox
 from ..dayu_widgets.browser import MClickBrowserFileToolButton
+from ..dayu_widgets.slider import MSlider
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -504,19 +506,133 @@ class SettingsPageUI(QtWidgets.QWidget):
 
     def _create_llms_layout(self):
         llms_layout = QtWidgets.QVBoxLayout()
-
-        prompt_label = MLabel(self.tr("Extra Context:"))
-        self.extra_context = MTextEdit()
+        
+        # Main horizontal layout to position the text edit and controls side by side
+        main_layout = QtWidgets.QHBoxLayout()
 
         self.image_checkbox = MCheckBox(self.tr("Provide Image as input to multimodal LLMs"))
         self.image_checkbox.setChecked(True)
-
-        llms_layout.addWidget(prompt_label)
-        llms_layout.addWidget(self.extra_context)
+        
+        # Left side - Text edit area
+        left_layout = QtWidgets.QVBoxLayout()
+        prompt_label = MLabel(self.tr("Extra Context:"))
+        self.extra_context = MTextEdit()
+        left_layout.addWidget(prompt_label)
+        left_layout.addWidget(self.extra_context)
+        
+        # Right side - Controls
+        right_layout = QtWidgets.QVBoxLayout()
+        
+        # Temperature control
+        temp_layout = QtWidgets.QVBoxLayout()
+        temp_header = MLabel(self.tr("Temperature")).h4()
+        temp_controls = QtWidgets.QHBoxLayout()
+        
+        self.temp_slider = MSlider(QtCore.Qt.Horizontal)
+        self.temp_slider.setRange(0, 200)  # 0-2 with 100x multiplier for precision
+        self.temp_slider.setValue(70)  # Default to 0.7
+        self.temp_slider.disable_show_text()
+        
+        self.temp_edit = MLineEdit().small()
+        self.temp_edit.setFixedWidth(50)
+        temp_validator = QDoubleValidator(0.0, 2.0, 2)  # two decimals
+        self.temp_edit.setValidator(temp_validator)
+        self.temp_edit.setText("0.7")
+        
+        temp_controls.addWidget(self.temp_slider)
+        temp_controls.addWidget(self.temp_edit)
+        
+        temp_layout.addWidget(temp_header)
+        temp_layout.addLayout(temp_controls)
+        
+        # Top P control
+        top_p_layout = QtWidgets.QVBoxLayout()
+        top_p_header = MLabel(self.tr("Top P")).h4()
+        top_p_controls = QtWidgets.QHBoxLayout()
+        
+        self.top_p_slider = MSlider(QtCore.Qt.Horizontal)
+        self.top_p_slider.setRange(0, 100)  # 0-1 with 100x multiplier for precision
+        self.top_p_slider.setValue(95)  # Default to 0.95
+        self.top_p_slider.disable_show_text() 
+        
+        self.top_p_edit = MLineEdit().small()
+        self.top_p_edit.setFixedWidth(50)
+        top_p_validator = QDoubleValidator(0.0, 1.0, 2)
+        self.top_p_edit.setValidator(top_p_validator)
+        self.top_p_edit.setText("0.95")
+        
+        top_p_controls.addWidget(self.top_p_slider)
+        top_p_controls.addWidget(self.top_p_edit)
+        
+        top_p_layout.addWidget(top_p_header)
+        top_p_layout.addLayout(top_p_controls)
+        
+        # Max Tokens control
+        max_tokens_layout = QtWidgets.QVBoxLayout()
+        max_tokens_header = MLabel(self.tr("Max Tokens")).h4()
+        self.max_tokens_edit = MLineEdit().small()
+        self.max_tokens_edit.setFixedWidth(100)
+        max_tokens_validator = QIntValidator(1, 100000)
+        self.max_tokens_edit.setValidator(max_tokens_validator)
+        self.max_tokens_edit.setText("4096")
+        
+        max_tokens_layout.addWidget(max_tokens_header)
+        max_tokens_layout.addWidget(self.max_tokens_edit)
+        
+        # Add all controls to right layout
+        right_layout.addLayout(temp_layout)
+        right_layout.addSpacing(10)
+        right_layout.addLayout(top_p_layout)
+        right_layout.addSpacing(10)
+        right_layout.addLayout(max_tokens_layout)
+        right_layout.addStretch(1)
+        
+        # Add left and right layouts to main layout
+        main_layout.addLayout(left_layout, 3)  # Text edit takes 3/4 of the space
+        main_layout.addLayout(right_layout, 1)  # Controls take 1/4 of the space
+        
+        # Add the main layout and the checkbox to the llms layout
+        llms_layout.addLayout(main_layout)
         llms_layout.addWidget(self.image_checkbox)
         llms_layout.addStretch(1)
-
+        
+        # Connect signals for syncing sliders and edit fields
+        self.temp_slider.valueChanged.connect(self._update_temp_edit)
+        self.temp_edit.textChanged.connect(self._update_temp_slider)
+        self.top_p_slider.valueChanged.connect(self._update_top_p_edit)
+        self.top_p_edit.textChanged.connect(self._update_top_p_slider)
+        
         return llms_layout
+
+    def _update_temp_edit(self):
+        # Update text edit when slider changes
+        value = self.temp_slider.value() / 100.0
+        self.temp_edit.setText(str(value))
+        
+    def _update_temp_slider(self):
+        # Update slider when text edit changes
+        try:
+            text = self.temp_edit.text()
+            if text:
+                value = float(text) * 100
+                self.temp_slider.setValue(int(value))
+        except ValueError:
+            pass
+
+    def _update_top_p_edit(self):
+        # Update text edit when slider changes
+        value = self.top_p_slider.value() / 100.0
+        self.top_p_edit.setText(str(value))
+        
+    def _update_top_p_slider(self):
+        # Update slider when text edit changes
+        try:
+            text = self.top_p_edit.text()
+            if text:
+                value = float(text) * 100
+                self.top_p_slider.setValue(int(value))
+        except ValueError:
+            pass
 
     def _create_text_rendering_layout(self):
         text_rendering_layout = QtWidgets.QVBoxLayout()

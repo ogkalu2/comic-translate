@@ -54,7 +54,10 @@ class SettingsPage(QtWidgets.QWidget):
     def get_llm_settings(self):
         return {
             'extra_context': self.ui.extra_context.toPlainText(),
-            'image_input_enabled': self.ui.image_checkbox.isChecked()
+            'image_input_enabled': self.ui.image_checkbox.isChecked(),
+            'temperature': float(self.ui.temp_edit.text()),
+            'top_p': float(self.ui.top_p_edit.text()),
+            'max_tokens': int(self.ui.max_tokens_edit.text()),
         }
 
     def get_export_settings(self):
