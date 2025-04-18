@@ -16,6 +16,7 @@ from ..dayu_widgets.combo_box import MComboBox
 from ..dayu_widgets.spin_box import MSpinBox
 from ..dayu_widgets.browser import MClickBrowserFileToolButton
 from ..dayu_widgets.slider import MSlider
+from ..dayu_widgets.collapse import MCollapse
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -523,21 +524,21 @@ class SettingsPageUI(QtWidgets.QWidget):
         # Right side - Controls
         right_layout = QtWidgets.QVBoxLayout()
         
-        # Temperature control
+        # Temperature control - keep this in the main UI
         temp_layout = QtWidgets.QVBoxLayout()
         temp_header = MLabel(self.tr("Temperature")).h4()
         temp_controls = QtWidgets.QHBoxLayout()
         
         self.temp_slider = MSlider(QtCore.Qt.Horizontal)
         self.temp_slider.setRange(0, 200)  # 0-2 with 100x multiplier for precision
-        self.temp_slider.setValue(70)  # Default to 0.7
+        self.temp_slider.setValue(100)  # Default to 1
         self.temp_slider.disable_show_text()
         
         self.temp_edit = MLineEdit().small()
         self.temp_edit.setFixedWidth(50)
         temp_validator = QDoubleValidator(0.0, 2.0, 2)  # two decimals
         self.temp_edit.setValidator(temp_validator)
-        self.temp_edit.setText("0.7")
+        self.temp_edit.setText("1")
         
         temp_controls.addWidget(self.temp_slider)
         temp_controls.addWidget(self.temp_edit)
@@ -545,7 +546,12 @@ class SettingsPageUI(QtWidgets.QWidget):
         temp_layout.addWidget(temp_header)
         temp_layout.addLayout(temp_controls)
         
-        # Top P control
+        # Create advanced settings widgets for the collapsible section
+        advanced_widget = QtWidgets.QWidget()
+        advanced_layout = QtWidgets.QVBoxLayout(advanced_widget)
+        advanced_layout.setContentsMargins(0, 5, 0, 5)
+        
+        # Top P control - for advanced settings
         top_p_layout = QtWidgets.QVBoxLayout()
         top_p_header = MLabel(self.tr("Top P")).h4()
         top_p_controls = QtWidgets.QHBoxLayout()
@@ -567,7 +573,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         top_p_layout.addWidget(top_p_header)
         top_p_layout.addLayout(top_p_controls)
         
-        # Max Tokens control
+        # Max Tokens control - for advanced settings
         max_tokens_layout = QtWidgets.QVBoxLayout()
         max_tokens_header = MLabel(self.tr("Max Tokens")).h4()
         self.max_tokens_edit = MLineEdit().small()
@@ -579,12 +585,24 @@ class SettingsPageUI(QtWidgets.QWidget):
         max_tokens_layout.addWidget(max_tokens_header)
         max_tokens_layout.addWidget(self.max_tokens_edit)
         
-        # Add all controls to right layout
+        # Add Top P and Max Tokens to the advanced settings layout
+        advanced_layout.addLayout(top_p_layout)
+        advanced_layout.addSpacing(10)
+        advanced_layout.addLayout(max_tokens_layout)
+        
+        # Create the collapsible section for advanced settings
+        self.advanced_collapse = MCollapse()
+        section_data = {
+            "title": "Advanced Settings",
+            "widget": advanced_widget,
+            "expand": False,  # Initially collapsed
+        }
+        self.advanced_collapse.add_section(section_data)
+        
+        # Add standard controls to right layout
         right_layout.addLayout(temp_layout)
         right_layout.addSpacing(10)
-        right_layout.addLayout(top_p_layout)
-        right_layout.addSpacing(10)
-        right_layout.addLayout(max_tokens_layout)
+        right_layout.addWidget(self.advanced_collapse)
         right_layout.addStretch(1)
         
         # Add left and right layouts to main layout
