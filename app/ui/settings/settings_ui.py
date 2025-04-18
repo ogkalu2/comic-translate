@@ -573,17 +573,28 @@ class SettingsPageUI(QtWidgets.QWidget):
         top_p_layout.addWidget(top_p_header)
         top_p_layout.addLayout(top_p_controls)
         
-        # Max Tokens control - for advanced settings
+        # Max Tokens control - for advanced settings 
         max_tokens_layout = QtWidgets.QVBoxLayout()
         max_tokens_header = MLabel(self.tr("Max Tokens")).h4()
+        max_tokens_controls = QtWidgets.QHBoxLayout()
+        
+        # Add slider for max tokens
+        self.max_tokens_slider = MSlider(QtCore.Qt.Horizontal)
+        self.max_tokens_slider.setRange(1, 16384)  # Common range for most models
+        self.max_tokens_slider.setValue(4096)  # Default to 4096
+        self.max_tokens_slider.disable_show_text()
+        
         self.max_tokens_edit = MLineEdit().small()
-        self.max_tokens_edit.setFixedWidth(100)
-        max_tokens_validator = QIntValidator(1, 100000)
+        self.max_tokens_edit.setFixedWidth(70)
+        max_tokens_validator = QIntValidator(1, 16384)
         self.max_tokens_edit.setValidator(max_tokens_validator)
         self.max_tokens_edit.setText("4096")
         
+        max_tokens_controls.addWidget(self.max_tokens_slider)
+        max_tokens_controls.addWidget(self.max_tokens_edit)
+        
         max_tokens_layout.addWidget(max_tokens_header)
-        max_tokens_layout.addWidget(self.max_tokens_edit)
+        max_tokens_layout.addLayout(max_tokens_controls)
         
         # Add Top P and Max Tokens to the advanced settings layout
         advanced_layout.addLayout(top_p_layout)
@@ -619,6 +630,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.temp_edit.textChanged.connect(self._update_temp_slider)
         self.top_p_slider.valueChanged.connect(self._update_top_p_edit)
         self.top_p_edit.textChanged.connect(self._update_top_p_slider)
+        self.max_tokens_slider.valueChanged.connect(self._update_max_tokens_edit)
+        self.max_tokens_edit.textChanged.connect(self._update_max_tokens_slider)
         
         return llms_layout
 
@@ -649,6 +662,23 @@ class SettingsPageUI(QtWidgets.QWidget):
             if text:
                 value = float(text) * 100
                 self.top_p_slider.setValue(int(value))
+        except ValueError:
+            pass
+
+    def _update_max_tokens_edit(self):
+        # Update text edit when slider changes
+        value = self.max_tokens_slider.value()
+        self.max_tokens_edit.setText(str(value))
+        
+    def _update_max_tokens_slider(self):
+        # Update slider when text edit changes
+        try:
+            text = self.max_tokens_edit.text()
+            if text:
+                value = int(text)
+                # Clamp the value to slider range
+                value = max(1, min(value, 16384))
+                self.max_tokens_slider.setValue(value)
         except ValueError:
             pass
 
