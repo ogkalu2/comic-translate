@@ -518,8 +518,11 @@ class SettingsPageUI(QtWidgets.QWidget):
         left_layout = QtWidgets.QVBoxLayout()
         prompt_label = MLabel(self.tr("Extra Context:"))
         self.extra_context = MTextEdit()
+        self.extra_context.setMinimumHeight(200)
         left_layout.addWidget(prompt_label)
         left_layout.addWidget(self.extra_context)
+        left_layout.addWidget(self.image_checkbox)
+        left_layout.addStretch(1)
         
         # Right side - Controls
         right_layout = QtWidgets.QVBoxLayout()
@@ -622,7 +625,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         
         # Add the main layout and the checkbox to the llms layout
         llms_layout.addLayout(main_layout)
-        llms_layout.addWidget(self.image_checkbox)
         llms_layout.addStretch(1)
         
         # Connect signals for syncing sliders and edit fields
