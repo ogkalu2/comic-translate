@@ -19,6 +19,9 @@ class BaseLLMTranslation(LLMTranslation):
         self.api_url = None
         self.model = None
         self.img_as_llm_input = False
+        self.temperature = None
+        self.top_p = None
+        self.max_tokens = None
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
         """
@@ -30,9 +33,13 @@ class BaseLLMTranslation(LLMTranslation):
             target_lang: Target language name
             **kwargs: Engine-specific initialization parameters
         """
+        llm_settings = settings.get_llm_settings()
         self.source_lang = source_lang
         self.target_lang = target_lang
-        self.img_as_llm_input = settings.get_llm_settings()['image_input_enabled']
+        self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
+        self.temperature = llm_settings.get('temperature', 1)
+        self.top_p = llm_settings.get('top_p', 0.95)
+        self.max_tokens = llm_settings.get('max_tokens', 5000)
         
     def translate(self, blk_list: list[TextBlock], image: np.ndarray, extra_context: str) -> list[TextBlock]:
         """

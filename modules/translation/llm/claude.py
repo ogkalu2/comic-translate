@@ -17,8 +17,6 @@ class ClaudeTranslation(BaseLLMTranslation):
         self.api_key = None
         self.api_url = "https://api.anthropic.com/v1/messages"
         self.headers = None
-        self.temperature = 1
-        self.max_tokens = 5000
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, model_name: str, **kwargs) -> None:
         """

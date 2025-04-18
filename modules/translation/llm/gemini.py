@@ -51,10 +51,8 @@ class GeminiTranslation(BaseLLMTranslation):
         
         # Setup generation config
         generation_config = {
-            "temperature": 1,
-            "topP": 0.95,
-            "topK": 0,
-            "maxOutputTokens": 5000,
+            "temperature": self.temperature,
+            "maxOutputTokens": self.max_tokens,
         }
         
         # Setup safety settings
