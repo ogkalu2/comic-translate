@@ -46,7 +46,7 @@ class OCRFactory:
         general = {
             'Microsoft OCR': cls._create_microsoft_ocr,
             'Google Cloud Vision': cls._create_google_ocr,
-            'GPT-4o': lambda s: cls._create_gpt_ocr(s, ocr_model),
+            'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
             'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model)
         }
         
@@ -55,7 +55,7 @@ class OCRFactory:
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
-            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4o')
+            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini')
         }
         
         # Check if we have a specific model factory

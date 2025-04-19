@@ -243,8 +243,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.undo_tool_group.set_button_list(undo_tools)
 
         button_config_list = [
-            {"text": self.tr("Detect Text Boxes"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("OCR"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Detect Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Recognize Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Get Translations"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Segment Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Clean Image"), "dayu_type": MPushButton.DefaultType, "enabled": False},

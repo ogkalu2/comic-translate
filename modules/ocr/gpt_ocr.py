@@ -15,11 +15,11 @@ class GPTOCR(OCREngine):
     def __init__(self):
         self.api_key = None
         self.expansion_percentage = 0
-        self.model = 'GPT-4o'
+        self.model = None
         self.api_base_url = 'https://api.openai.com/v1/chat/completions'
         self.max_tokens = 5000
         
-    def initialize(self, api_key: str, model: str = 'GPT-4o', 
+    def initialize(self, api_key: str, model: str = 'GPT-4.1-mini', 
                   expansion_percentage: int = 0) -> None:
         """
         Initialize the GPT OCR with API key and parameters.
