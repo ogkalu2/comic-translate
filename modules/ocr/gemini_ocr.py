@@ -19,14 +19,14 @@ class GeminiOCR(OCREngine):
         self.api_base_url = "https://generativelanguage.googleapis.com/v1beta/models"
         self.max_output_tokens = 5000
         
-    def initialize(self, settings: SettingsPage, model: str = 'Gemini-2.0-Flash', 
+    def initialize(self, settings: SettingsPage, model: str = 'Gemini-2.5-Flash', 
                    expansion_percentage: int = 5) -> None:
         """
         Initialize the Gemini OCR with API key and parameters.
         
         Args:
             settings: Settings page containing credentials
-            model: Gemini model to use for OCR (defaults to Gemini-2.0-Flash)
+            model: Gemini model to use for OCR (defaults to Gemini-2.5-Flash)
             expansion_percentage: Percentage to expand text bounding boxes
         """
         self.expansion_percentage = expansion_percentage
@@ -121,6 +121,9 @@ class GeminiOCR(OCREngine):
             # Setup generation config
             generation_config = {
                 "maxOutputTokens": self.max_output_tokens,
+                "thinkingConfig": {
+                    "thinkingBudget": 0
+                },
             }
             
             # Prepare payload

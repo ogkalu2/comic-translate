@@ -54,6 +54,9 @@ class GeminiTranslation(BaseLLMTranslation):
             "temperature": self.temperature,
             "maxOutputTokens": self.max_tokens,
             "topP": self.top_p,
+            "thinkingConfig": {
+                "thinkingBudget": 0
+            },
         }
         
         # Setup safety settings

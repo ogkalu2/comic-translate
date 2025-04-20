@@ -239,7 +239,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        translator = settings.value('translator', 'GPT-4o')
+        translator = settings.value('translator', 'GPT-4.1')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         self.ui.translator_combo.setCurrentText(translated_translator)
 
