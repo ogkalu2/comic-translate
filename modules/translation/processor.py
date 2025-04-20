@@ -59,7 +59,6 @@ class Translator:
             self.settings.ui.tr("Deepseek-v3"): "Deepseek-v3",
             self.settings.ui.tr("GPT-4.1"): "GPT-4.1",
             self.settings.ui.tr("GPT-4.1-mini"): "GPT-4.1-mini",
-            self.settings.ui.tr("Claude-3-Opus"): "Claude-3-Opus",
             self.settings.ui.tr("Claude-3.7-Sonnet"): "Claude-3.7-Sonnet",
             self.settings.ui.tr("Claude-3.5-Haiku"): "Claude-3.5-Haiku",
             self.settings.ui.tr("Gemini-2.5-Flash"): "Gemini-2.5-Flash",

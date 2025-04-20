@@ -19,6 +19,7 @@ TRANSLATOR_MIGRATIONS = {
     "GPT-4o mini":         "GPT-4.1-mini",
     "Gemini-2.0-Flash":    "Gemini-2.5-Flash",
     "Gemini-2.0-Pro":      "Gemini-2.5-Pro",
+    "Claude-3-Opus":       "Claude-3.7-Sonnet",
 }
 
 class SettingsPage(QtWidgets.QWidget):
