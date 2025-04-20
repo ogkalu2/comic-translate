@@ -87,37 +87,34 @@ class SettingsPage(QtWidgets.QWidget):
 
     def get_credentials(self, service: str = ""):
         save_keys = self.ui.save_keys_checkbox.isChecked()
-        
+
+        def _text_or_none(widget_key):
+            w = self.ui.credential_widgets.get(widget_key)
+            return w.text() if w is not None else None
+
         if service:
+            creds = {'save_key': save_keys}
             if service == "Microsoft Azure":
-                return {
-                    'api_key_ocr': self.ui.credential_widgets["Microsoft Azure_api_key_ocr"].text(),
-                    'api_key_translator': self.ui.credential_widgets["Microsoft Azure_api_key_translator"].text(),
-                    'region_translator': self.ui.credential_widgets["Microsoft Azure_region"].text(),
-                    'save_key': save_keys,
-                    'endpoint': self.ui.credential_widgets["Microsoft Azure_endpoint"].text()
-                }
+                creds.update({
+                    'api_key_ocr': _text_or_none("Microsoft Azure_api_key_ocr"),
+                    'api_key_translator': _text_or_none("Microsoft Azure_api_key_translator"),
+                    'region_translator': _text_or_none("Microsoft Azure_region"),
+                    'endpoint': _text_or_none("Microsoft Azure_endpoint"),
+                })
             elif service == "Custom":
-                return {
-                    'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
-                    'api_url': self.ui.credential_widgets[f"{service}_api_url"].text(),
-                    'model': self.ui.credential_widgets[f"{service}_model"].text(),
-                    'save_key': save_keys
-                }
+                for field in ("api_key", "api_url", "model"):
+                    creds[field] = _text_or_none(f"Custom_{field}")
             elif service == "Yandex":
-                return {
-                    'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
-                    'folder_id': self.ui.credential_widgets[f"{service}_folder_id"].text(),
-                    'save_key': save_keys
-                }
+                creds['api_key'] = _text_or_none("Yandex_api_key")
+                creds['folder_id'] = _text_or_none("Yandex_folder_id")
             else:
-                return {
-                    'api_key': self.ui.credential_widgets[f"{service}_api_key"].text(),
-                    'save_key': save_keys
-                }
-        else:
-            return {s: self.get_credentials(s) for s in self.ui.credential_services}
-        
+                creds['api_key'] = _text_or_none(f"{service}_api_key")
+
+            return creds
+
+        # no `service` passed → recurse over all known services
+        return {s: self.get_credentials(s) for s in self.ui.credential_services}
+
     def get_hd_strategy_settings(self):
         strategy = self.ui.inpaint_strategy_combo.currentText()
         settings = {
