@@ -95,11 +95,16 @@ class TranslationFactory:
                         target_lang: str,
                         settings) -> str:
         """
-        Generate a cache key for any translation engine:
+        Build a cache key for all translation engines.
 
-        - For LLM-based engines, include a short hash of all dynamic settings 
-        (credentials and LLM parameters) by JSON‑serializing and fingerprinting them.
-        - For traditional engines with no dynamic settings, use the simple key format: `<translator_key>_<source_lang>_<target_lang>`.
+        - Always includes per-translator credentials (if available),
+          so changing any API key, URL, region, etc. triggers a new engine.
+        - For LLM engines, also includes all LLM-specific settings
+          (temperature, top_p, context, etc.).
+        - The cache key is a hash of these dynamic values, combined with
+          the translator key and language pair.
+        - If no dynamic values are found, falls back to a simple key
+          based on translator and language pair.
         """
         base = f"{translator_key}_{source_lang}_{target_lang}"
 
