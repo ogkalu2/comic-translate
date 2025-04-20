@@ -121,9 +121,6 @@ class GeminiOCR(OCREngine):
             # Setup generation config
             generation_config = {
                 "maxOutputTokens": self.max_output_tokens,
-                "thinkingConfig": {
-                    "thinkingBudget": 0
-                },
             }
             
             # Prepare payload
