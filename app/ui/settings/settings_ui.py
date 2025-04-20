@@ -32,7 +32,7 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         self.inpainters = ['LaMa', 'AOT', 'MI-GAN']
         self.detectors = ['RT-DETR-v2']
-        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.5-Flash'), self.tr('GPT-4.1-mini')]
+        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4.1-mini')]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]

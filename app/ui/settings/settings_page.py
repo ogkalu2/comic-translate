@@ -8,13 +8,17 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 from .settings_ui import SettingsPageUI
 
-# Dictionary to map old model names to the newest versions
-MODEL_MIGRATIONS = {
-    # LLM Models
-    "GPT-4o": "GPT-4.1",
-    "GPT-4o mini": "GPT-4.1-mini",
-    "Gemini-2.0-Flash": "Gemini-2.5-Flash",
-    "Gemini-2.0-Pro": "Gemini-2.5-Pro",
+# Dictionary to map old model names to the newest versions in settings
+OCR_MIGRATIONS = {
+    "GPT-4o":       "GPT-4.1-mini",
+    "Gemini-2.5-Flash": "Gemini-2.0-Flash",
+}
+
+TRANSLATOR_MIGRATIONS = {
+    "GPT-4o":              "GPT-4.1",
+    "GPT-4o mini":         "GPT-4.1-mini",
+    "Gemini-2.0-Flash":    "Gemini-2.5-Flash",
+    "Gemini-2.0-Pro":      "Gemini-2.5-Pro",
 }
 
 class SettingsPage(QtWidgets.QWidget):
@@ -248,12 +252,12 @@ class SettingsPage(QtWidgets.QWidget):
         # Load tools settings
         settings.beginGroup('tools')
         raw_translator = settings.value('translator', 'GPT-4.1')
-        translator = MODEL_MIGRATIONS.get(raw_translator, raw_translator)
+        translator = TRANSLATOR_MIGRATIONS.get(raw_translator, raw_translator)
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         self.ui.translator_combo.setCurrentText(translated_translator)
 
         raw_ocr = settings.value('ocr', 'Default')
-        ocr = MODEL_MIGRATIONS.get(raw_ocr, raw_ocr)
+        ocr = OCR_MIGRATIONS.get(raw_ocr, raw_ocr)
         translated_ocr = self.ui.reverse_mappings.get(ocr, ocr)
         self.ui.ocr_combo.setCurrentText(translated_ocr)
 
