@@ -22,6 +22,7 @@ class BaseLLMTranslation(LLMTranslation):
         self.temperature = None
         self.top_p = None
         self.max_tokens = None
+        self.settings = None
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
         """
@@ -33,14 +34,21 @@ class BaseLLMTranslation(LLMTranslation):
             target_lang: Target language name
             **kwargs: Engine-specific initialization parameters
         """
+        self.settings = settings
         llm_settings = settings.get_llm_settings()
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
-        self.temperature = llm_settings.get('temperature', 1)
-        self.top_p = llm_settings.get('top_p', 0.95)
-        self.max_tokens = llm_settings.get('max_tokens', 5000)
+        self._update_llm_params()
         
+    def _update_llm_params(self):
+        """Update LLM parameters from current settings"""
+        if self.settings:
+            llm_settings = self.settings.get_llm_settings()
+            self.temperature = llm_settings.get('temperature', 1)
+            self.top_p = llm_settings.get('top_p', 0.95)
+            self.max_tokens = llm_settings.get('max_tokens', 5000)
+    
     def translate(self, blk_list: list[TextBlock], image: np.ndarray, extra_context: str) -> list[TextBlock]:
         """
         Translate text blocks using LLM.
@@ -54,6 +62,9 @@ class BaseLLMTranslation(LLMTranslation):
             List of updated TextBlock objects with translations
         """
         try:
+            # Update parameters before each translation
+            self._update_llm_params()
+        
             entire_raw_text = get_raw_text(blk_list)
             system_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
             user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"

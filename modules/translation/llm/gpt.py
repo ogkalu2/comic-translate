@@ -50,6 +50,8 @@ class GPTTranslation(BaseLLMTranslation):
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
+        llm_settings = self.settings.get_llm_settings()
+        self._update_llm_params()
         
         if self.supports_images and self.img_as_llm_input:
             # Use the base class method to encode the image
