@@ -1,5 +1,6 @@
 import os, shutil
 from typing import List
+from dataclasses import asdict, is_dataclass
 
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Signal, QSettings
@@ -7,7 +8,14 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 from .settings_ui import SettingsPageUI
 
-from dataclasses import asdict, is_dataclass
+# Dictionary to map old model names to the newest versions
+MODEL_MIGRATIONS = {
+    # LLM Models
+    "GPT-4o": "GPT-4.1",
+    "GPT-4o mini": "GPT-4.1-mini",
+    "Gemini-2.0-Flash": "Gemini-2.5-Flash",
+    "Gemini-2.0-Pro": "Gemini-2.5-Pro",
+}
 
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
@@ -239,11 +247,13 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        translator = settings.value('translator', 'GPT-4.1')
+        raw_translator = settings.value('translator', 'GPT-4.1')
+        translator = MODEL_MIGRATIONS.get(raw_translator, raw_translator)
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         self.ui.translator_combo.setCurrentText(translated_translator)
 
-        ocr = settings.value('ocr', 'Default')
+        raw_ocr = settings.value('ocr', 'Default')
+        ocr = MODEL_MIGRATIONS.get(raw_ocr, raw_ocr)
         translated_ocr = self.ui.reverse_mappings.get(ocr, ocr)
         self.ui.ocr_combo.setCurrentText(translated_ocr)
 
