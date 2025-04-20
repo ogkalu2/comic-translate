@@ -95,35 +95,39 @@ class TranslationFactory:
                         target_lang: str,
                         settings) -> str:
         """
-        Build a cache key for both traditional and LLM engines.
-        - If it's an LLM (identifier substring in the key), we JSON-hash
-          the full settings dict.
-        - Otherwise, just use translator_key + langs.
+        Generate a cache key for any translation engine:
+
+        - For LLM-based engines, include a short hash of all dynamic settings 
+        (credentials and LLM parameters) by JSON‑serializing and fingerprinting them.
+        - For traditional engines with no dynamic settings, use the simple key format: `<translator_key>_<source_lang>_<target_lang>`.
         """
         base = f"{translator_key}_{source_lang}_{target_lang}"
 
-        # detect LLM by seeing if any identifier substr is in the key
+        # Gather any dynamic bits we care about:
+        extras = {}
+
+        # Always grab credentials for this service (if any)
+        creds = settings.get_credentials(translator_key)
+        if creds:
+            extras["credentials"] = creds
+
+        # If it's an LLM, also grab the llm settings
         is_llm = any(identifier in translator_key
                      for identifier in cls.LLM_ENGINE_IDENTIFIERS)
+        if is_llm:
+            extras["llm"] = settings.get_llm_settings()
 
-        if not is_llm:
+        if not extras:
             return base
 
-        # pull your full LLM-settings dict (temp, top_p, etc.)
-        llm_cfg = settings.get_llm_settings().copy()
-
-        if "Custom" in translator_key:
-            creds = settings.get_credentials("Custom")
-            # nest the credentials under their own key so they don't collide
-            llm_cfg["custom_credentials"] = creds
-
-        # deterministic JSON
-        cfg_json = json.dumps(
-            llm_cfg,
+        # Otherwise, hash the combined extras dict
+        extras_json = json.dumps(
+            extras,
             sort_keys=True,
             separators=(",", ":"),
             default=str
         )
-        # sha256 fingerprint
-        digest = hashlib.sha256(cfg_json.encode("utf-8")).hexdigest()
+        digest = hashlib.sha256(extras_json.encode("utf-8")).hexdigest()
+
+        # Append the fingerprint
         return f"{base}_{digest}"
