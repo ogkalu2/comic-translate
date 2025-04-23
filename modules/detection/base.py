@@ -4,7 +4,7 @@ from typing import Optional
 
 from ..utils.textblock import TextBlock
 from .utils.general import does_rectangle_fit, do_rectangles_overlap, \
-      get_inpaint_bboxes, filter_bounding_boxes
+      get_inpaint_bboxes, filter_bounding_boxes, merge_overlapping_boxes
 
 
 class DetectionEngine(ABC):
@@ -41,6 +41,8 @@ class DetectionEngine(ABC):
                           bubble_boxes: Optional[np.ndarray] = None) -> list[TextBlock]:
         
         text_boxes = filter_bounding_boxes(text_boxes)
+        bubble_boxes = filter_bounding_boxes(bubble_boxes)
+        text_boxes = merge_overlapping_boxes(text_boxes)
 
         text_blocks = []
         text_matched = [False] * len(text_boxes)  # Track matched text boxes

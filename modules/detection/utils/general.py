@@ -99,7 +99,6 @@ def filter_bounding_boxes(bboxes, width_tolerance=5, height_tolerance=5):
         if not (is_close(bbox[0], bbox[2], width_tolerance) or is_close(bbox[1], bbox[3], height_tolerance))
     ])
 
-
 def detect_content_in_bbox(image):
     """
     Detect content (text) within a cropped image.
@@ -166,7 +165,6 @@ def detect_content_in_bbox(image):
     
     return content_bboxes
 
-
 def get_inpaint_bboxes(text_bbox, image):
     """
     Get inpaint bounding boxes for a text region.
@@ -220,8 +218,6 @@ def is_mostly_contained(outer_box, inner_box, threshold):
     
     # Check if the proportion of intersection to inner area is greater than the threshold
     return intersection_area / inner_area >= threshold
-
-# From https://github.com/TareHimself/manga-translator/blob/master/translator/utils.py
 
 def adjust_contrast_brightness(img: np.ndarray, contrast: float = 1.0, brightness: int = 0):
     """
@@ -334,3 +330,45 @@ def bubble_interior_bounds(frame_mask: np.ndarray):
     x2, y2 = lir.pt2(rect)
 
     return x1, y1, x2, y2
+
+def merge_boxes(box1, box2):
+    """Merge two bounding boxes"""
+    return [
+        min(box1[0], box2[0]),
+        min(box1[1], box2[1]),
+        max(box1[2], box2[2]),
+        max(box1[3], box2[3])
+    ]
+
+def merge_overlapping_boxes(bboxes: np.ndarray,
+                            containment_threshold: float = 0.3,
+                            overlap_threshold: float = 0.5,
+                           ) -> np.ndarray:
+
+    # Process bboxes to handle overlaps that should be merged into a bigger box
+    final_boxes = []
+    for i, box in enumerate(bboxes):
+        running_box = box
+        for j, other_box in enumerate(bboxes):
+            if i == j:
+                continue  # Skip comparing the box with itself
+            if is_mostly_contained(running_box, other_box, containment_threshold) or \
+                is_mostly_contained(other_box, running_box, containment_threshold):
+                running_box = merge_boxes(running_box, other_box)
+        
+        final_boxes.append(running_box)  # Add the final running box after second pass
+
+    # Remove duplicates and high-overlap boxes
+    unique_boxes = []
+    seen_boxes = []
+    for box in final_boxes:
+        duplicate = False
+        for seen_box in seen_boxes:
+            if (np.array_equal(box, seen_box) or do_rectangles_overlap(box, seen_box, overlap_threshold)):
+                duplicate = True
+                break
+        if not duplicate:
+            unique_boxes.append(box)
+            seen_boxes.append(box)  # Track the box that we've added to the final list
+
+    return np.array(unique_boxes)
