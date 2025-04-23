@@ -234,3 +234,15 @@ class ClickMeta(QtWidgets.QWidget):
         else:
             self.setStyleSheet("")
         self.update()
+
+    def set_skipped(self, skipped: bool):
+        """Visually mark / un-mark this row as skipped."""
+        font = self._title_label.font()
+        font.setStrikeOut(skipped)
+        self._title_label.setFont(font)
+
+        # grey text if skipped, default otherwise
+        if skipped:
+            self._title_label.setStyleSheet("color: gray;")
+        else:
+            self._title_label.setStyleSheet("")

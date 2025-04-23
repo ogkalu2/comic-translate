@@ -174,6 +174,13 @@ class ComicTranslatePipeline:
 
             image = cv2.imread(image_path)
 
+            # skip UI-skipped images
+            state = self.main_page.image_states.get(image_path, {})
+            if state.get('skip', False):
+                self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
+                self.log_skipped_image(directory, timestamp, image_path)
+                continue
+
             # Text Block Detection
             self.main_page.progress_update.emit(index, total_images, 1, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:

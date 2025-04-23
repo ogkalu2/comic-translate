@@ -182,6 +182,7 @@ class ComicTranslate(ComicTranslateUI):
         self.page_list.currentItemChanged.connect(self.on_card_selected)
         self.page_list.del_img.connect(self.handle_image_deletion)
         self.page_list.insert_browser.sig_files_changed.connect(self.thread_insert)
+        self.page_list.toggle_skip_img.connect(self.handle_toggle_skip_images)
 
     def push_command(self, command):
         if self.undo_group.activeStack():
@@ -603,6 +604,9 @@ class ComicTranslate(ComicTranslateUI):
                 "title": file_name,
                 #"avatar": MPixmap(file_path)
             })
+            # re-apply strike-through if previously skipped
+            if self.image_states.get(file_path, {}).get('skip'):
+                card.set_skipped(True)
             self.page_list.addItem(list_item)
             self.page_list.setItemWidget(list_item, card)
 
@@ -674,6 +678,36 @@ class ComicTranslate(ComicTranslateUI):
             self.central_stack.setCurrentWidget(self.drag_browser)
             self.update_image_cards()
 
+
+    def handle_toggle_skip_images(self, file_names: list[str], skip_status: bool):
+        """
+        Handle toggling skip status for images
+        
+        Args:
+            file_names: List of file names to update
+            skip_status: If True, mark as skipped; if False, mark as not skipped
+        """
+        for name in file_names:
+            # find full path
+            path = next((p for p in self.image_files if os.path.basename(p) == name), None)
+            if not path:
+                continue
+
+            # update skip status in state dictionary
+            self.image_states.get(path, {})['skip'] = skip_status
+
+            # update item appearance
+            idx = self.image_files.index(path)
+            item = self.page_list.item(idx)
+            fnt = item.font()
+            fnt.setStrikeOut(skip_status)
+            item.setFont(fnt)
+
+            # update card 
+            card = self.page_list.itemWidget(item)
+            if card:
+                card.set_skipped(skip_status)
+
     def display_image_from_loaded(self, cv2_image, index, switch_page=True):
         file_path = self.image_files[index]
         self.image_data[file_path] = cv2_image
@@ -703,12 +737,14 @@ class ComicTranslate(ComicTranslateUI):
             self.undo_group.activeStack().push(command)
 
     def save_image_state(self, file: str):
+        skip_status = self.image_states.get(file, {}).get('skip', False)
         self.image_states[file] = {
             'viewer_state': self.image_viewer.save_state(),
             'source_lang': self.s_combo.currentText(),
             'target_lang': self.t_combo.currentText(),
             'brush_strokes': self.image_viewer.save_brush_strokes(),
-            'blk_list': self.blk_list.copy()  # Store a copy of the list, not a reference
+            'blk_list': self.blk_list.copy(),  # Store a copy of the list, not a reference
+            'skip': skip_status,
         }
 
     def save_current_image_state(self):
