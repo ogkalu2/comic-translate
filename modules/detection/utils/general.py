@@ -344,31 +344,41 @@ def merge_overlapping_boxes(bboxes: np.ndarray,
                             containment_threshold: float = 0.3,
                             overlap_threshold: float = 0.5,
                            ) -> np.ndarray:
+    """
+    Merge boxes that are mostly contained within each other, and
+    prune out duplicates/overlaps immediately as you go.
+    """
+    accepted = []
 
-    # Process bboxes to handle overlaps that should be merged into a bigger box
-    final_boxes = []
     for i, box in enumerate(bboxes):
-        running_box = box
-        for j, other_box in enumerate(bboxes):
+        # 1) Merge this box against all others based on containment:
+        merged = box.copy()
+        for j, other in enumerate(bboxes):
             if i == j:
-                continue  # Skip comparing the box with itself
-            if is_mostly_contained(running_box, other_box, containment_threshold) or \
-                is_mostly_contained(other_box, running_box, containment_threshold):
-                running_box = merge_boxes(running_box, other_box)
-        
-        final_boxes.append(running_box)  # Add the final running box after second pass
+                continue
+            if (is_mostly_contained(merged, other, containment_threshold)
+             or is_mostly_contained(other, merged, containment_threshold)):
+                merged = merge_boxes(merged, other)
 
-    # Remove duplicates and high-overlap boxes
-    unique_boxes = []
-    seen_boxes = []
-    for box in final_boxes:
-        duplicate = False
-        for seen_box in seen_boxes:
-            if (np.array_equal(box, seen_box) or do_rectangles_overlap(box, seen_box, overlap_threshold)):
-                duplicate = True
+        # 2) On-the-fly pruning: see if `merged` overlaps or duplicates any accepted box
+        conflict = False
+        for acc in accepted:
+            if np.array_equal(merged, acc) or do_rectangles_overlap(merged, acc, overlap_threshold):
+                conflict = True
                 break
-        if not duplicate:
-            unique_boxes.append(box)
-            seen_boxes.append(box)  # Track the box that we've added to the final list
 
-    return np.array(unique_boxes)
+        if conflict:
+            # skip this one entirely
+            continue
+
+        # 3) Optionally, remove any already-accepted boxes that overlap too much with the new merged box
+        accepted = [
+            acc for acc in accepted
+            if not (np.array_equal(acc, merged)
+                    or do_rectangles_overlap(merged, acc, overlap_threshold))
+        ]
+
+        # 4) Finally accept the new box
+        accepted.append(merged)
+
+    return np.array(accepted)

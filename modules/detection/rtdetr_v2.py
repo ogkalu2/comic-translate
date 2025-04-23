@@ -58,7 +58,6 @@ class RTDetrV2Detection(DetectionEngine):
             image,
             self._detect_single_image
         )
-        
         return self.create_text_blocks(image, text_boxes, bubble_boxes)
     
     def _detect_single_image(self, image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
