@@ -73,16 +73,16 @@ def save_state_to_proj_file(comic_translate, file_name):
 
         # Process image_files and image_history
         for file_path in comic_translate.image_files:
+            # Always assign a fresh image-ID → file mapping
+            image_id = copy_and_assign(file_path)
+            state['image_files_references'][file_path] = image_id
+
+            # If there is history, also populate the history list
             if file_path in comic_translate.image_history:
                 state['image_history_references'][file_path] = []
-                history_paths = comic_translate.image_history[file_path]
-                for path in history_paths:
-                    image_id = copy_and_assign(path)
-                    state['image_history_references'][file_path].append(image_id)
-            else:
-                # This file hasn't been loaded before
-                image_id = copy_and_assign(file_path)
-                state['image_files_references'][file_path] = image_id
+                for path in comic_translate.image_history[file_path]:
+                    hist_id = copy_and_assign(path)
+                    state['image_history_references'][file_path].append(hist_id)
 
         state['unique_images'] = ensure_string_keys(unique_images)
 
@@ -239,6 +239,7 @@ def load_state_from_proj_file(comic_translate, file_name):
     comic_translate.displayed_images = set(
         original_to_temp.get(i, i) for i in displayed_images
     )
+    
     loaded_images = state.get('loaded_images', [])
     comic_translate.loaded_images = [
         original_to_temp.get(file, file) for file in loaded_images
