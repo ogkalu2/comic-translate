@@ -27,6 +27,8 @@ from app.ui.commands.box import AddRectangleCommand, DeleteBoxesCommand, \
                                       BoxesChangeCommand, AddTextItemCommand 
 from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.image import SetImageCommand
+from app.ui.commands.inpaint import PatchInsertCommand
+from app.ui.commands.base import PatchCommandBase
 from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
 
 from modules.detection.utils.general import do_rectangles_overlap, get_inpaint_bboxes
@@ -47,6 +49,7 @@ for model in mandatory_models:
 
 class ComicTranslate(ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)
+    patches_processed = QtCore.Signal(int, list, str)
     progress_update = QtCore.Signal(int, int, int, int, bool)
     image_skipped = QtCore.Signal(str, str, str)
     blk_rendered = QtCore.Signal(str, int, object)
@@ -64,7 +67,8 @@ class ComicTranslate(ComicTranslateUI):
         self.in_memory_history = {}  # Store cv2 image history for recent images
         self.current_history_index = {}  # Current position in the history for each image
         self.displayed_images = set()  # Set to track displayed images
-
+        self.image_patches = {}  # Store patches for each image
+        self.in_memory_patches = {}  # Store patches in memory for each image
         self.undo_group = QUndoGroup(self)
         self.undo_stacks = {}
 
@@ -80,6 +84,7 @@ class ComicTranslate(ComicTranslateUI):
 
         self.image_skipped.connect(self.on_image_skipped)
         self.image_processed.connect(self.on_image_processed)
+        self.patches_processed.connect(self.on_inpaint_patches_processed)
         self.progress_update.connect(self.update_progress)
 
         self.blk_rendered.connect(self.on_blk_rendered)
@@ -201,6 +206,10 @@ class ComicTranslate(ComicTranslateUI):
         text_item.item_changed.connect(self.handle_rectangle_change)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.rect_change_undo)
+
+    def apply_inpaint_patches(self, patches):
+        command = PatchInsertCommand(self, patches, self.image_files[self.curr_img_idx])
+        self.undo_group.activeStack().push(command) 
 
     def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock):
         if not self.image_viewer.hasPhoto():
@@ -351,6 +360,13 @@ class ComicTranslate(ComicTranslateUI):
             self.undo_group.activeStack().push(command)
             self.image_data[image_path] = image
 
+    def on_inpaint_patches_processed(self, index: int, patches: list, image_path: str):
+        if index == self.curr_img_idx:
+            self.apply_inpaint_patches(patches)
+        else:
+            command = PatchInsertCommand(self, patches, image_path, False)
+            self.undo_group.activeStack().push(command)
+
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
         message = { 
             "Text Blocks": QCoreApplication.translate('Messages', 'No Text Blocks Detected.\nSkipping:') + f" {image_path}\n{error}", 
@@ -478,6 +494,7 @@ class ComicTranslate(ComicTranslateUI):
             self.clear_text_edits()
             self.loading.setVisible(True)
             self.disable_hbutton_group()
+            self.undo_group.activeStack().beginMacro('inpaint')
             self.run_threaded(self.pipeline.inpaint, self.pipeline.inpaint_complete, 
                               self.default_error_handler, self.on_manual_finished)
 
@@ -558,6 +575,8 @@ class ComicTranslate(ComicTranslateUI):
         self.loaded_images = []
         self.in_memory_history.clear()
         self.undo_stacks.clear()
+        self.image_patches.clear()
+        self.in_memory_patches.clear()
         self.project_file = None
 
         # Reset current_image_index
@@ -728,16 +747,47 @@ class ComicTranslate(ComicTranslateUI):
                 del self.image_data[oldest_image]
                 self.in_memory_history[oldest_image] = []
 
-    def set_cv2_image(self, cv2_img: np.ndarray):
+                self.in_memory_patches.pop(oldest_image, None)
+
+    def set_cv2_image(self, cv2_img: np.ndarray, push = True):
         if self.curr_img_idx >= 0:
             file_path = self.image_files[self.curr_img_idx]
             
             # Push the command to the appropriate stack
             command = SetImageCommand(self, file_path, cv2_img)
-            self.undo_group.activeStack().push(command)
+            if push:
+                self.undo_group.activeStack().push(command)
+            else:
+                command.redo()
+
+    def load_patch_state(self, file_path: str):
+        # for every patch in the persistent store:
+        mem_list = self.in_memory_patches.setdefault(file_path, [])
+        for saved in self.image_patches.get(file_path, []):
+            match = next((m for m in mem_list if m['hash'] == saved['hash']), None)
+            if match:
+                prop = {
+                    'bbox': saved['bbox'],
+                    'cv2_img': match['cv2_img'],
+                    'hash': saved['hash']
+                }
+            else:
+                # load into memory
+                cv_img = cv2.imread(saved['png_path'])
+                prop = {
+                    'bbox':     saved['bbox'],
+                    'cv2_img':  cv_img,
+                    'hash':     saved['hash']
+                }
+                self.in_memory_patches[file_path].append(prop)
+
+            # draw it
+            if not PatchCommandBase.find_matching_item(self.image_viewer._scene, prop):   
+                PatchCommandBase.create_patch_item(prop, self.image_viewer.photo)
 
     def save_image_state(self, file: str):
         skip_status = self.image_states.get(file, {}).get('skip', False)
+
         self.image_states[file] = {
             'viewer_state': self.image_viewer.save_state(),
             'source_lang': self.s_combo.currentText(),
@@ -755,7 +805,7 @@ class ComicTranslate(ComicTranslateUI):
     def load_image_state(self, file_path: str):
         cv2_image = self.image_data[file_path]
 
-        self.set_cv2_image(cv2_image)
+        self.set_cv2_image(cv2_image, push=False)
         if file_path in self.image_states:
             state = self.image_states[file_path]
 
@@ -770,6 +820,8 @@ class ComicTranslate(ComicTranslateUI):
 
             for rect_item in self.image_viewer.rectangles:
                 self.connect_rect_item_signals(rect_item)
+
+            self.load_patch_state(file_path)
 
         self.clear_text_edits()
 

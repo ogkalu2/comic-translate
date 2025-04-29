@@ -99,6 +99,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.document().contentsChanged.connect(self._on_text_changed)
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setCacheMode(QGraphicsItem.CacheMode.DeviceCoordinateCache)
+        self.setZValue(1)
 
         # Set the initial text direction
         self._apply_text_direction()

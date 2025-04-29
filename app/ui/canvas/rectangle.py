@@ -38,6 +38,7 @@ class MoveableRectItem(QGraphicsRectItem):
         self.setAcceptHoverEvents(True)
         self.setBrush(QBrush(QColor(255, 192, 203, 125)))  # Transparent pink
         self.setTransformOriginPoint(self.boundingRect().center())
+        self.setZValue(1)
         self.handle_size = 20
         self.resize_handle = None
         self.resize_start = None

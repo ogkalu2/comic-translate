@@ -180,7 +180,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             else:
                 self.setCursor(self.eraser_cursor)
         else:
-            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+            self.setDragMode(QtWidgets.QGraphicsView.NoDrag)        
 
     def delete_selected_rectangle(self):
         if self.selected_rect:
@@ -260,7 +260,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
                     rect = QtCore.QRectF(0, 0, 0, 0)
                     self.current_rect = MoveableRectItem(rect, self.photo)
                     self.current_rect.setPos(scene_pos)
-                    self.current_rect.setZValue(1)
 
         # Handle pan tool and text block interaction
         scroll = self.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
@@ -568,7 +567,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             txt_item.handleDeselection()
         self.selected_rect = None
 
-    def get_cv2_image(self, paint_all=False):
+    def get_cv2_image(self, paint_all=False, include_patches=True):
         """Get the currently loaded image as a cv2 image, including text blocks and all scene items."""
         if self.photo.pixmap() is None:
             return None
@@ -609,6 +608,35 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
             # Restore the original transformation
             self._scene.views()[0].setTransform(original_transform)
+
+        elif include_patches:
+            # Render only the base photo and pixmap patch items
+            pixmap = self.photo.pixmap()
+            original_size = pixmap.size()
+            
+            # Create an image with the same size as the original photo
+            qimage = QtGui.QImage(original_size, QtGui.QImage.Format_ARGB32)
+            qimage.fill(QtCore.Qt.transparent)
+            
+            painter = QtGui.QPainter(qimage)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.SmoothPixmapTransform, True)
+            
+            # First, draw the base photo
+            painter.drawPixmap(0, 0, pixmap)
+            
+            # Find all child pixmap items of the photo and draw them
+            for item in self._scene.items():
+                # Check if this is a pixmap item that's a child of the photo
+                if (isinstance(item, QtWidgets.QGraphicsPixmapItem) and 
+                    item != self.photo and 
+                    item.parentItem() == self.photo):
+                    
+                    # Get the position relative to the photo
+                    pos = item.pos()
+                    # Draw the pixmap at its correct position
+                    painter.drawPixmap(int(pos.x()), int(pos.y()), item.pixmap())
+            
+            painter.end()
         else:
             qimage = self.photo.pixmap().toImage()
 
@@ -833,8 +861,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             
             # Set position and rotation
             rect_item.setPos(x1, y1)
-            rect_item.setRotation(rect_data['rotation'])
-            
+            rect_item.setRotation(rect_data['rotation']) 
             self.rectangles.append(rect_item)
         
         # Recreate text block items
@@ -870,7 +897,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
             text_item.selection_outlines = text_block['selection_outlines']
             text_item.update()
 
-            self._scene.addItem(text_item)
+            self._scene.addItem(text_item)  
             self.text_items.append(text_item)  
 
     def save_state(self):
@@ -878,21 +905,21 @@ class ImageViewer(QtWidgets.QGraphicsView):
         center = self.mapToScene(self.viewport().rect().center())
 
         rectangles_state = []
-        for rect in self.rectangles:
-            # Get the rectangle's scene coordinates
-            x1 = rect.pos().x()
-            y1 = rect.pos().y()
-            width = rect.boundingRect().width() 
-            height = rect.boundingRect().height() 
-            
-            rectangles_state.append({
-                'rect': (x1, y1, width, height),
-                'rotation': rect.rotation(),
-                'transform_origin': (
-                    rect.transformOriginPoint().x(),
-                    rect.transformOriginPoint().y()
-                )
-            })
+        for item in self.scene().items():
+            if isinstance(item, QtWidgets.QGraphicsRectItem):
+                x1 = item.pos().x()
+                y1 = item.pos().y()
+                width = item.boundingRect().width()
+                height = item.boundingRect().height()
+
+                rectangles_state.append({
+                    'rect': (x1, y1, width, height),
+                    'rotation': item.rotation(),
+                    'transform_origin': (
+                        item.transformOriginPoint().x(),
+                        item.transformOriginPoint().y()
+                    )
+                })
 
         text_items_state = []
         for item in self.text_items:

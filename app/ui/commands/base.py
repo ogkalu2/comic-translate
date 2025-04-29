@@ -1,13 +1,18 @@
 import numpy as np
+import cv2
 from typing import TypedDict
 from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, Qt
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import QRectF, QPointF
+from PySide6 import QtGui, QtWidgets
 
 from modules.utils.textblock import TextBlock
 from ..canvas.rectangle import MoveableRectItem
 from ..canvas.text_item import TextBlockItem
 
+
+def is_close(value1, value2, tolerance=2):
+    return abs(value1 - value2) <= tolerance
 
 class PenSettings(TypedDict):
     color: QColor
@@ -98,8 +103,7 @@ class RectCommandBase:
         rect_item = MoveableRectItem(rect, photo)
         rect_item.setTransformOriginPoint(QPointF(*properties['transform_origin']))
         rect_item.setPos(*properties['pos'])
-        rect_item.setRotation(properties['rotation'])
-        rect_item.setZValue(1)        
+        rect_item.setRotation(properties['rotation'])      
         return rect_item
 
 
@@ -231,6 +235,48 @@ class RectCommandBase:
                     return item
         return None
 
-    
-def is_close(value1, value2, tolerance=2):
-    return abs(value1 - value2) <= tolerance
+
+class PatchProperties(TypedDict):
+    bbox: tuple            # (x, y, w, h)
+    png_path: str          # absolute path to the patch PNG on disk
+    hash: str             # hash of the patch image + bbox
+
+class PatchCommandBase:
+    """Shared helpers for pixmap patch commands"""
+
+    HASH_KEY = 0
+
+    @staticmethod
+    def create_patch_item(properties, parent_photo):
+        x, y, w, h = properties['bbox']
+        img = cv2.imread(properties['png_path']) if 'png_path' in properties else properties['cv2_img']
+        qimg = QtGui.QImage(img.data, w, h, img.strides[0],
+                            QtGui.QImage.Format.Format_RGB888)
+        pix  = QtGui.QPixmap.fromImage(qimg)
+        item = QtWidgets.QGraphicsPixmapItem(pix, parent_photo)
+        item.setPos(x, y)
+        item.setZValue(parent_photo.zValue() + 0.5)
+        item.setData(PatchCommandBase.HASH_KEY, properties['hash'])
+        return item
+
+    @staticmethod
+    def find_matching_item(scene, properties):
+        x, y, w, h = properties['bbox']
+        want_hash = properties['hash']
+
+        for itm in scene.items():
+            if not isinstance(itm, QtWidgets.QGraphicsPixmapItem):
+                continue
+
+            # first check position & size
+            if (int(itm.pos().x())   == x and
+                int(itm.pos().y())   == y and
+                itm.pixmap().width()  == w and
+                itm.pixmap().height() == h):
+
+                # now check the stored hash
+                stored_hash = itm.data(PatchCommandBase.HASH_KEY)
+                if stored_hash == want_hash:
+                    return itm
+                
+        return None

@@ -6,7 +6,8 @@ from PySide6.QtGui import QUndoCommand
 
 
 class SetImageCommand(QUndoCommand):
-    def __init__(self, parent, file_path: str, cv2_img: np.ndarray, display: bool = True):
+    def __init__(self, parent, file_path: str, cv2_img: np.ndarray, 
+                 display: bool = True):
         super().__init__()
         self.ct = parent
         self.update_image_history(file_path, cv2_img)

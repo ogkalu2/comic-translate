@@ -1,5 +1,6 @@
 import os, json
 import cv2, shutil
+import numpy as np
 from datetime import datetime
 from typing import List
 from PySide6 import QtCore
@@ -83,16 +84,30 @@ class ComicTranslatePipeline:
         inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img) 
 
         return inpaint_input_img
-    
-    def inpaint_complete(self, result):
-        inpainted, original_image = result
-        self.main_page.set_cv2_image(inpainted)
-        # get_best_render_area(self.main_page.blk_list, original_image, inpainted)
+
+    def inpaint_complete(self, patch_list):
+        self.main_page.apply_inpaint_patches(patch_list)
+        self.main_page.image_viewer.clear_brush_strokes() 
+        self.main_page.undo_group.activeStack().endMacro()  
+        # get_best_render_area(self.main_page.blk_list, original_image, inpainted)    
+
+    def get_inpainted_patches(self, mask: np.ndarray, inpainted_image: np.ndarray):
+        # slice mask into bounding boxes
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
+                                    cv2.CHAIN_APPROX_SIMPLE)
+        patches = []
+        for c in contours:
+            x, y, w, h = cv2.boundingRect(c)
+            patch = inpainted_image[y:y+h, x:x+w]
+            patches.append(((x, y, w, h), patch.copy()))
+
+        return patches
     
     def inpaint(self):
-        image = self.main_page.image_viewer.get_cv2_image()
-        inpainted = self.manual_inpaint()
-        return inpainted, image
+        mask = self.main_page.image_viewer.get_mask_for_inpainting()
+        painted = self.manual_inpaint()              
+        patches = self.get_inpainted_patches(mask, painted)
+        return patches         
     
     def get_selected_block(self):
         rect = self.main_page.image_viewer.selected_rect
@@ -244,9 +259,8 @@ class ComicTranslatePipeline:
             inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img)
 
             # Saving cleaned image
-            self.main_page.image_history[image_path] = [image_path]
-            self.main_page.current_history_index[image_path] = 0
-            self.main_page.image_processed.emit(index, inpaint_input_img, image_path)
+            patches = self.get_inpainted_patches(mask, inpaint_input_img)
+            self.main_page.patches_processed.emit(index, patches, image_path)
 
             inpaint_input_img = cv2.cvtColor(inpaint_input_img, cv2.COLOR_BGR2RGB)
 

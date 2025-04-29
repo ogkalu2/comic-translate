@@ -21,6 +21,8 @@ def save_state_to_proj_file(comic_translate, file_name):
     with tempfile.TemporaryDirectory() as temp_dir:
         unique_images_dir = os.path.join(temp_dir, "unique_images")
         os.makedirs(unique_images_dir, exist_ok=True)
+        unique_patches_dir = os.path.join(temp_dir, "unique_patches")
+        os.makedirs(unique_patches_dir, exist_ok=True)
 
         # Initialize the state dictionary
         state = {
@@ -34,7 +36,8 @@ def save_state_to_proj_file(comic_translate, file_name):
             'original_image_files': comic_translate.image_files,
             'current_history_index': comic_translate.current_history_index,
             'displayed_images': list(comic_translate.displayed_images),
-            'loaded_images': comic_translate.loaded_images
+            'loaded_images': comic_translate.loaded_images,
+            'image_patches': {}, 
         }
 
         image_id_counter = 0
@@ -84,6 +87,25 @@ def save_state_to_proj_file(comic_translate, file_name):
                     hist_id = copy_and_assign(path)
                     state['image_history_references'][file_path].append(hist_id)
 
+        # Process image patches
+        for page_path, patch_list in comic_translate.image_patches.items():
+            state['image_patches'][page_path] = []
+            for patch in patch_list:
+                src_png  = patch['png_path'] # absolute path in temp dir
+                sub_dir  = os.path.join(unique_patches_dir,
+                                        os.path.basename(page_path))  # keep per-page sub-folder
+                os.makedirs(sub_dir, exist_ok=True)
+
+                dst_png  = os.path.join(sub_dir, os.path.basename(src_png))
+                shutil.copy2(src_png, dst_png)
+
+                state['image_patches'][page_path].append({
+                    'bbox': patch['bbox'],
+                    'png_path': os.path.relpath(dst_png, unique_patches_dir),  # <–– relative
+                    'hash': patch['hash'],
+                })     
+
+
         state['unique_images'] = ensure_string_keys(unique_images)
 
         # Serialize the state to msgpack
@@ -95,11 +117,20 @@ def save_state_to_proj_file(comic_translate, file_name):
         zip_file_name = file_name
         with zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_STORED) as zipf:
             zipf.write(msgpack_file, arcname="state.msgpack")
+            # Save unique images in the zip file
             for root, _, files in os.walk(unique_images_dir):
                 for file in files:
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, temp_dir)
                     zipf.write(file_path, arcname=arcname)
+
+            # Save unique patches in the zip file
+            for root, _ , files in os.walk(unique_patches_dir):
+                for f in files:
+                    fpath = os.path.join(root, f)
+                    arcname = os.path.relpath(fpath, temp_dir)
+                    zipf.write(fpath, arcname=arcname)
+
 
 def load_state_from_proj_file(comic_translate, file_name):
     decoder = ProjectDecoder()
@@ -126,6 +157,7 @@ def load_state_from_proj_file(comic_translate, file_name):
 
     msgpack_file = os.path.join(temp_dir, "state.msgpack")
     unique_images_dir = os.path.join(temp_dir, "unique_images")
+    unique_patches_dir = os.path.join(temp_dir, "unique_patches")
 
     with open(msgpack_file, 'rb') as file:
         unpacker = msgpack.Unpacker(file, object_hook=decoder.decode, strict_map_key=True)
@@ -260,6 +292,22 @@ def load_state_from_proj_file(comic_translate, file_name):
         for file_path, history_list in image_history.items()
     }
 
+    # Hydrate patch state
+    saved_patches = state.get('image_patches')  
+    if saved_patches and os.path.isdir(unique_patches_dir):
+        reconstructed = {}
+        for page_path, patch_list in saved_patches.items():
+            new_list = []
+            for p in patch_list:
+                abs_png = os.path.join(unique_patches_dir, p['png_path'])
+                if os.path.isfile(abs_png):  
+                    new_list.append({'bbox': p['bbox'],
+                                    'png_path': abs_png,
+                                    'hash': p['hash']})
+            if new_list:
+                reconstructed[page_path] = new_list
 
-
-
+        comic_translate.image_patches = {
+            original_to_temp.get(page, page): plist
+            for page, plist in reconstructed.items()
+        }
