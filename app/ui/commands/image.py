@@ -71,6 +71,7 @@ class SetImageCommand(QUndoCommand):
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', dir=self.ct.temp_dir)
             pil_image = Image.fromarray(cv2_img)
             pil_image.save(temp_file.name)
+            temp_file.close()
 
             history.append(temp_file.name)
 
