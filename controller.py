@@ -1391,6 +1391,12 @@ class ComicTranslate(ComicTranslateUI):
         index = self.curr_img_idx
         self.update_image_cards()
 
+        # highlight the row that matches the current image 
+        self.page_list.blockSignals(True) 
+        if 0 <= index < self.page_list.count(): 
+            self.page_list.setCurrentRow(index)
+        self.page_list.blockSignals(False)
+
         for file in self.image_files:
             stack = QUndoStack(self)
             self.undo_stacks[file] = stack
