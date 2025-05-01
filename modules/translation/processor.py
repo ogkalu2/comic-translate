@@ -66,7 +66,8 @@ class Translator:
             self.settings.ui.tr("Google Translate"): "Google Translate",
             self.settings.ui.tr("Microsoft Translator"): "Microsoft Translator",
             self.settings.ui.tr("DeepL"): "DeepL",
-            self.settings.ui.tr("Yandex"): "Yandex"
+            self.settings.ui.tr("Yandex"): "Yandex",
+            self.settings.ui.tr("Opus-MT"): "Opus-MT",
         }
         return translator_map.get(localized_translator, localized_translator)
     
