@@ -1338,7 +1338,7 @@ class ComicTranslate(ComicTranslateUI):
 
                 renderer = ImageSaveRenderer(cv2_img)
                 viewer_state = self.image_states[file_path]['viewer_state']
-                renderer.apply_patches(self.image_patches[file_path])
+                renderer.apply_patches(self.image_patches.get(file_path, []))
                 renderer.add_state_to_image(viewer_state)
                 sv_pth = os.path.join(temp_dir, bname)
                 renderer.save_image(sv_pth)
