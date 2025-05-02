@@ -420,6 +420,7 @@ class ComicTranslatePipeline:
             im = cv2.cvtColor(inpaint_input_img, cv2.COLOR_RGB2BGR)
             renderer = ImageSaveRenderer(im)
             viewer_state = self.main_page.image_states[image_path]['viewer_state']
+            patches = self.main_page.image_patches[image_path]
             renderer.apply_patches(patches)
             renderer.add_state_to_image(viewer_state)
             renderer.save_image(sv_pth)
