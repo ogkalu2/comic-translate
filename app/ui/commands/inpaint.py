@@ -20,7 +20,11 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
 
         # prepare lists of patch properties with composite hashes for deduplication
         self.properties_list = []
-        for idx, (bbox, cv2_patch) in enumerate(patches):
+        for idx, patch in enumerate(patches):
+            # Extract data from patch dictionary
+            bbox = patch['bbox']
+            cv2_patch = patch['cv2_img']
+
             # spill every cv2 patch to a temp PNG (if not already on disk)
             sub_dir = os.path.join(ct.temp_dir,
                                    "inpaint_patches",

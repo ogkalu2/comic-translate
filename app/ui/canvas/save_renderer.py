@@ -111,3 +111,24 @@ class ImageSaveRenderer:
         final_image = self.render_to_image()
         cv2.imwrite(output_path, final_image)
 
+    def apply_patches(self, patches: list[dict]):
+        """Apply inpainting patches to the image."""
+
+        for patch in patches:
+            # Extract data from the patch dict
+            x, y, w, h = patch['bbox']
+            patch_image = cv2.imread(patch['png_path']) if 'png_path' in patch else patch['cv2_img']
+            
+            # Convert patch to QImage
+            patch_qimage = self.cv2_to_qimage(patch_image)
+            patch_pixmap = QtGui.QPixmap.fromImage(patch_qimage)
+            
+            # Create a pixmap item for the patch
+            patch_item = QtWidgets.QGraphicsPixmapItem(patch_pixmap, self.pixmap_item)
+            
+            # Position the patch relative to its parent (pixmap_item)
+            patch_item.setPos(x, y)
+            patch_item.setZValue(self.pixmap_item.zValue() + 0.5)
+
+
+

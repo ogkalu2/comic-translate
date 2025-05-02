@@ -99,7 +99,10 @@ class ComicTranslatePipeline:
         for c in contours:
             x, y, w, h = cv2.boundingRect(c)
             patch = inpainted_image[y:y+h, x:x+w]
-            patches.append(((x, y, w, h), patch.copy()))
+            patches.append({
+                'bbox': (x, y, w, h),
+                'cv2_img': patch.copy(),
+            })
 
         return patches
     
@@ -417,6 +420,7 @@ class ComicTranslatePipeline:
             im = cv2.cvtColor(inpaint_input_img, cv2.COLOR_RGB2BGR)
             renderer = ImageSaveRenderer(im)
             viewer_state = self.main_page.image_states[image_path]['viewer_state']
+            renderer.apply_patches(patches)
             renderer.add_state_to_image(viewer_state)
             renderer.save_image(sv_pth)
 
