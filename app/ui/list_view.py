@@ -10,6 +10,7 @@ class PageListView(QListWidget):
 
     del_img = Signal(list)
     toggle_skip_img = Signal(list, bool)  # list of images, bool for skip status (True=skip, False=unskip)
+    translate_imgs = Signal(list)
 
     def __init__(self) -> None:
         super().__init__()
@@ -43,9 +44,23 @@ class PageListView(QListWidget):
         insert.triggered.connect(self.insert_browser.clicked)
         delete_act.triggered.connect(self.delete_selected_items)
 
-        menu.exec_(event.globalPos())
+        translate_act = menu.addAction(self.tr('Translate'))
+        translate_act.triggered.connect(self.translate_selected_items)
 
+        menu.exec_(event.globalPos())
         super().contextMenuEvent(event)
+
+    def sizeHint(self) -> QSize:
+        # Provide a reasonable default size
+        return QSize(100, super().sizeHint().height())
+
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.viewport().update() 
+
+    def setCurrentItem(self, item):
+        super().setCurrentItem(item)
+        self.viewport().update()
 
     def delete_selected_items(self):
         selected_items = self.selectedItems()
@@ -65,17 +80,12 @@ class PageListView(QListWidget):
         # Otherwise, we're skipping (True)
         skip_status = not all(item.font().strikeOut() for item in selected)
         self.toggle_skip_img.emit(names, skip_status)
-    
-    def sizeHint(self) -> QSize:
-        # Provide a reasonable default size
-        return QSize(100, super().sizeHint().height())
 
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        self.viewport().update() 
-
-    def setCurrentItem(self, item):
-        super().setCurrentItem(item)
-        self.viewport().update()
+    def translate_selected_items(self):
+        selected = self.selectedItems()
+        if not selected:
+            return
+        names = [item.text() for item in selected]
+        self.translate_imgs.emit(names)
 
 

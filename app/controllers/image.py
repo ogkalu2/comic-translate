@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, List
 from PySide6 import QtCore, QtWidgets, QtGui
 
 from app.ui.dayu_widgets.clickable_card import ClickMeta
+from app.ui.dayu_widgets.message import MMessage
 from app.ui.commands.image import SetImageCommand
 from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
@@ -373,7 +374,10 @@ class ImageStateController:
                 self.main.displayed_images.add(file_path)  # Mark this image as displayed
 
     def on_image_processed(self, index: int, image: np.ndarray, image_path: str):
-        if index == self.main.curr_img_idx:
+        file_on_display = self.main.image_files[self.main.curr_img_idx]
+        current_batch_file = self.main.selected_batch[index] if self.main.selected_batch else self.main.image_files[index]
+        
+        if current_batch_file == file_on_display:
             self.set_cv2_image(image)
         else:
             command = SetImageCommand(self.main, image_path, image, False)
@@ -389,7 +393,7 @@ class ImageStateController:
 
         text = message.get(skip_reason, f"Unknown skip reason: {skip_reason}. Error: {error}")
         
-        self.main.MMessage.info(
+        MMessage.info(
             text=text,
             parent=self.main,
             duration=5,
@@ -397,7 +401,10 @@ class ImageStateController:
         )
 
     def on_inpaint_patches_processed(self, index: int, patches: list, image_path: str):
-        if index == self.main.curr_img_idx:
+        file_on_display = self.main.image_files[self.main.curr_img_idx]
+        current_batch_file = self.main.selected_batch[index] if self.main.selected_batch else self.main.image_files[index]
+
+        if current_batch_file == file_on_display:
             self.apply_inpaint_patches(patches)
         else:
             command = PatchInsertCommand(self.main, patches, image_path, False)

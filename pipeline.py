@@ -160,11 +160,18 @@ class ComicTranslatePipeline:
         with open(os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt"), 'a', encoding='UTF-8') as file:
             file.write(image_path + "\n")
 
-    def batch_process(self):
+    def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
-        total_images = len(self.main_page.image_files)
+        image_list = selected_paths if selected_paths is not None else self.main_page.image_files
+        total_images = len(image_list)
 
-        for index, image_path in enumerate(self.main_page.image_files):
+        for index, image_path in enumerate(image_list):
+
+            file_on_display = self.main_page.image_files[self.main_page.curr_img_idx]
+            if self.main_page.selected_batch:
+                current_batch_file = self.main_page.selected_batch[index]
+            else:
+                current_batch_file = self.main_page.image_files[index]
 
             # index, step, total_steps, change_name
             self.main_page.progress_update.emit(index, total_images, 0, 10, True)
@@ -365,8 +372,8 @@ class ComicTranslatePipeline:
                                                         line_spacing, outline_width, bold, italic, underline,
                                                         alignment, direction, max_font_size, min_font_size)
                 
-                # Display text if on current page
-                if index == self.main_page.curr_img_idx:
+                # Display text if on current page  
+                if current_batch_file == file_on_display:
                     self.main_page.blk_rendered.emit(translation, font_size, blk)
 
                 if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
@@ -409,7 +416,7 @@ class ComicTranslatePipeline:
                 'blk_list': blk_list                   
             })
 
-            if index == self.main_page.curr_img_idx:
+            if current_batch_file == file_on_display:
                 self.main_page.blk_list = blk_list
                 
             render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)

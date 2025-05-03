@@ -49,6 +49,7 @@ class ComicTranslate(ComicTranslateUI):
         self.curr_tblock_item: TextBlockItem = None     
 
         self.image_files = []
+        self.selected_batch = []
         self.curr_img_idx = -1
         self.image_states = {}
         self.image_data = {}  # Store the latest version of each image
@@ -166,6 +167,7 @@ class ComicTranslate(ComicTranslateUI):
         self.page_list.del_img.connect(self.image_ctrl.handle_image_deletion)
         self.page_list.insert_browser.sig_files_changed.connect(self.image_ctrl.thread_insert)
         self.page_list.toggle_skip_img.connect(self.image_ctrl.handle_toggle_skip_images)
+        self.page_list.translate_imgs.connect(self.batch_translate_selected)
 
     def connect_rect_item_signals(self, rect_item): return self.rect_item_ctrl.connect_rect_item_signals(rect_item)
     def find_corresponding_rect(self, tblock, iou_threshold): return self.rect_item_ctrl.find_corresponding_rect(tblock, iou_threshold)
@@ -244,9 +246,42 @@ class ComicTranslate(ComicTranslateUI):
         self.progress_bar.setVisible(True) 
         self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
 
+    def batch_translate_selected(self, selected_file_names: list[str]):
+        # map base‐name back to full paths
+        selected_paths = [
+            p for p in self.image_files
+            if os.path.basename(p) in selected_file_names
+        ]
+        if not selected_paths:
+            return
+
+        # validate each
+        for path in selected_paths:
+            src = self.image_states[path]['source_lang']
+            tgt = self.image_states[path]['target_lang']
+            if not validate_settings(self, src, tgt):
+                return
+            
+        self.selected_batch = selected_paths
+
+        # disable UI & run
+        if self.manual_radio.isChecked():
+            self.automatic_radio.setChecked(True)
+            self.batch_mode_selected()
+        self.translate_button.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        # pass our subset into batch_process
+        self.run_threaded(
+            lambda: self.pipeline.batch_process(selected_paths),
+            None,
+            self.default_error_handler,
+            self.on_batch_process_finished
+        )
+
     def on_batch_process_finished(self):
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
+        self.selected_batch = []
         Messages.show_translation_complete(self)
 
     def disable_hbutton_group(self):
@@ -349,10 +384,11 @@ class ComicTranslate(ComicTranslateUI):
 
         archive_info_list = self.file_handler.archive_info
         total_archives = len(archive_info_list)
+        image_list = self.selected_batch if self.selected_batch else self.image_files
 
         if change_name:
             if index < total_images:
-                im_path = self.image_files[index]
+                im_path = image_list[index]
                 im_name = os.path.basename(im_path)
                 self.progress_bar.setFormat(QCoreApplication.translate('Messages', 'Processing:') + f" {im_name} . . . %p%")
             else:

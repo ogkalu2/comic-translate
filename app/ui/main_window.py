@@ -271,7 +271,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.automatic_radio.setChecked(True)
         self.automatic_radio.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
-        self.translate_button = MPushButton(self.tr("Translate"))
+        self.translate_button = MPushButton(self.tr("Translate All"))
         self.translate_button.setEnabled(True)
         self.translate_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.cancel_button = MPushButton(self.tr("Cancel"))
