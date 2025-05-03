@@ -6,7 +6,7 @@ import math
 from PySide6 import QtWidgets
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QGraphicsPathItem
-from PySide6.QtCore import  Signal, QEvent, QLineF
+from PySide6.QtCore import  Signal, QEvent, QLineF, Qt
 from PySide6.QtGui import QTransform, QEventPoint
 
 from .text_item import TextBlockItem, TextBlockState
@@ -49,8 +49,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.box_mode = False
         self.start_point = None
         self.current_rect = None
-        self.rectangles = []
-        self.text_items = []
+        self.rectangles: list[MoveableRectItem] = []
+        self.text_items: list[TextBlockItem] = []
         self.selected_rect = None
         self.panning = False
         self.pan_start_pos = None
@@ -872,7 +872,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 font_family=text_block['font_family'],
                 font_size=text_block['font_size'],
                 render_color=text_block['text_color'],
-                alignment=text_block['alignment'],
+                alignment=Qt.AlignmentFlag(text_block['alignment']),
                 line_spacing=text_block['line_spacing'],
                 outline_color=text_block['outline_color'],
                 outline_width=text_block['outline_width'],
