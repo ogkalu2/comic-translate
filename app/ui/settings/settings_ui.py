@@ -510,7 +510,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         main_layout = QtWidgets.QHBoxLayout()
 
         self.image_checkbox = MCheckBox(self.tr("Provide Image as input to multimodal LLMs"))
-        self.image_checkbox.setChecked(True)
+        self.image_checkbox.setChecked(False)
         
         # Left side - Text edit area
         left_layout = QtWidgets.QVBoxLayout()

@@ -286,7 +286,7 @@ class SettingsPage(QtWidgets.QWidget):
         # Load LLM settings
         settings.beginGroup('llm')
         self.ui.extra_context.setPlainText(settings.value('extra_context', ''))
-        self.ui.image_checkbox.setChecked(settings.value('image_input_enabled', True, type=bool))
+        self.ui.image_checkbox.setChecked(settings.value('image_input_enabled', False, type=bool))
         temp = settings.value('temperature', 1.0, type=float)
         self.ui.temp_edit.setText(f"{temp:.2f}")
         top_p = settings.value('top_p', 0.95, type=float)
