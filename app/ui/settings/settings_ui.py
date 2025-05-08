@@ -43,7 +43,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.supported_translators = [self.tr("GPT-4.1"), self.tr("GPT-4.1-mini"), self.tr("DeepL"), 
                                     self.tr("Claude-3.7-Sonnet"), self.tr("Claude-3.5-Haiku"),
                                     self.tr("Gemini-2.5-Flash"), self.tr("Yandex"), self.tr("Google Translate"),
-                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
+                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Opus-MT"),
+                                    self.tr("Custom"),]
         
         self.languages = ['English', '한국어', 'Français', '日本語', 
          '简体中文', '繁體中文', 'русский', 'Deutsch', 
