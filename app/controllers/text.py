@@ -38,7 +38,6 @@ class TextController:
         text_item.item_selected.connect(self.on_text_item_selected)
         text_item.item_deselected.connect(self.on_text_item_deselected)
         text_item.text_changed.connect(self.update_text_block_from_item)
-        text_item.item_changed.connect(self.main.rect_item_ctrl.handle_rectangle_change)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
 

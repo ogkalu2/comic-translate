@@ -23,7 +23,6 @@ class RectState:
         )
 
 class RectSignals(QObject):
-    rectangle_changed = Signal(QRectF, float, QPointF)
     change_undo = Signal(RectState, RectState)
     ocr_block = Signal()
     translate_block = Signal()
@@ -229,11 +228,6 @@ class MoveableRectItem(QGraphicsRectItem):
             new_pos.setY(self.pos().y() + parent_rect.height() - bounding_rect.bottom())
         
         self.setPos(new_pos)
-        
-        # Update Textblock
-        new_rect = QRectF(new_pos, self.boundingRect().size())
-        self.signals.rectangle_changed.emit(new_rect, self.rotation(),
-                                             self.transformOriginPoint())
 
     def init_rotation(self, scene_pos):
         self.rotating = True
@@ -263,11 +257,6 @@ class MoveableRectItem(QGraphicsRectItem):
         new_rotation = self.rotation() + smoothed_angle
         self.setRotation(new_rotation)
         self.last_rotation_angle = current_angle
-
-        # Emit signal for rectangle change
-        rect = QRectF(self.pos(), self.boundingRect().size())
-        self.signals.rectangle_changed.emit(rect, self.rotation(), 
-                                            self.transformOriginPoint())
 
     def resize_rectangle(self, pos: QtCore.QPointF):
         if not self.resize_start:
@@ -335,9 +324,4 @@ class MoveableRectItem(QGraphicsRectItem):
             # Update the rectangle
             self.setPos(act_pos)
             self.setRect(0, 0, new_rect.width(), new_rect.height())
-
-            # Emit signal for rectangle change
-            rect = QRectF(act_pos, self.boundingRect().size())
-            self.signals.rectangle_changed.emit(rect, self.rotation(),
-                                                 self.transformOriginPoint())
         

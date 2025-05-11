@@ -38,7 +38,6 @@ class TextBlockItem(QGraphicsTextItem):
     text_changed = Signal(str)
     item_selected = Signal(object)
     item_deselected = Signal()
-    item_changed = Signal(QRectF, float, QPointF)
     text_highlighted = Signal(dict)
     change_undo = Signal(TextBlockState, TextBlockState)
     
@@ -503,10 +502,6 @@ class TextBlockItem(QGraphicsTextItem):
         
         self.setPos(new_pos)
 
-        # Update Textblock
-        new_rect = QRectF(new_pos, self.boundingRect().size())
-        self.item_changed.emit(new_rect, self.rotation(), self.transformOriginPoint())
-
     def rotate_item(self, scene_pos):
         self.setTransformOriginPoint(self.boundingRect().center())
         current_angle = math.degrees(math.atan2(
@@ -526,10 +521,6 @@ class TextBlockItem(QGraphicsTextItem):
         new_rotation = self.rotation() + smoothed_angle
         self.setRotation(new_rotation)
         self.last_rotation_angle = current_angle
-
-        # Update Textblock
-        rect = QRectF(self.pos(), self.boundingRect().size())
-        self.item_changed.emit(rect, self.rotation(), self.transformOriginPoint())
     
     def update_cursor(self, pos):
         if not self.editing_mode:
@@ -683,10 +674,6 @@ class TextBlockItem(QGraphicsTextItem):
 
             # Update the resize start position
             self._resize_start = scene_pos
-
-            # Update Textblock
-            nrect = QRectF(act_pos, self.boundingRect().size())
-            self.item_changed.emit(nrect, self.rotation(), self.transformOriginPoint())
 
     def on_selection_changed(self):
         cursor = self.textCursor()

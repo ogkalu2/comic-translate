@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import TYPE_CHECKING, Tuple
-from PySide6.QtCore import QRectF
+from typing import TYPE_CHECKING
+from PySide6.QtCore import QRectF, QPointF
 
 from app.ui.canvas.rectangle import MoveableRectItem
 from app.ui.commands.box import AddRectangleCommand, BoxesChangeCommand
@@ -19,7 +19,6 @@ class RectItemController:
         self.main = main
 
     def connect_rect_item_signals(self, rect_item: MoveableRectItem):
-        rect_item.signals.rectangle_changed.connect(self.handle_rectangle_change)
         rect_item.signals.change_undo.connect(self.rect_change_undo)
         rect_item.signals.ocr_block.connect(lambda: self.main.ocr(True))
         rect_item.signals.translate_block.connect(lambda: self.main.translate_image(True))
@@ -59,14 +58,17 @@ class RectItemController:
         current_text_block = self.find_corresponding_text_block(rect_coords, 0.5)
         self.main.blk_list.remove(current_text_block)
 
-    def handle_rectangle_change(self, new_rect: QRectF, angle: float, tr_origin: Tuple):
+    def handle_rectangle_change(self, old_rect_coords: tuple, new_angle: float, new_tr_origin: QPointF):
         # Find the corresponding TextBlock in blk_list
         for blk in self.main.blk_list:
-            if do_rectangles_overlap(blk.xyxy, (new_rect.left(), new_rect.top(), new_rect.right(), new_rect.bottom()), 0.2):
+            if do_rectangles_overlap(blk.xyxy, old_rect_coords, 0.2):
                 # Update the TextBlock coordinates
-                blk.xyxy[:] = [int(new_rect.left()), int(new_rect.top()), int(new_rect.right()), int(new_rect.bottom())]
-                blk.angle = angle if angle else 0
-                blk.tr_origin_point = (tr_origin.x(), tr_origin.y()) if tr_origin else ()
+                blk.xyxy[:] = [int(old_rect_coords[0]), 
+                               int(old_rect_coords[1]),
+                               int(old_rect_coords[2]), 
+                               int(old_rect_coords[3])]
+                blk.angle = new_angle if new_angle else 0
+                blk.tr_origin_point = (new_tr_origin.x(), new_tr_origin.y()) if new_tr_origin else ()
                 image = self.main.image_viewer.get_cv2_image()
                 inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
                 blk.inpaint_bboxes = inpaint_bboxes
@@ -76,8 +78,10 @@ class RectItemController:
         command = BoxesChangeCommand(self.main.image_viewer, old_state,
                                          new_state, self.main.blk_list)
         self.main.undo_group.activeStack().push(command)
+        self.handle_rectangle_change(old_state.rect, new_state.rotation, new_state.transform_origin)
 
-    def find_corresponding_text_block(self, rect: Tuple[float], iou_threshold: int = 0.5):
+
+    def find_corresponding_text_block(self, rect: tuple[float], iou_threshold: int = 0.5):
         for blk in self.main.blk_list:
             if do_rectangles_overlap(rect, blk.xyxy, iou_threshold):
                 return blk
