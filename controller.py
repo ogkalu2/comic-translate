@@ -60,7 +60,7 @@ class ComicTranslate(ComicTranslateUI):
         self.image_patches = {}  # Store patches for each image
         self.in_memory_patches = {}  # Store patches in memory for each image
         self.image_cards = []
-        self.current_highlighted_card = None
+        self.current_card = None
         self.max_images_in_memory = 10
         self.loaded_images = []
 

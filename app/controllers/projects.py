@@ -93,6 +93,7 @@ class ProjectController:
         self.main.page_list.blockSignals(True)
         if 0 <= index < self.main.page_list.count():
             self.main.page_list.setCurrentRow(index)
+            self.main.image_ctrl.highlight_card(index)
         self.main.page_list.blockSignals(False)
 
         for file in self.main.image_files:

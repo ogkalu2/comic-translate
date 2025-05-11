@@ -77,6 +77,7 @@ class ImageStateController:
         self.main.image_patches.clear()
         self.main.in_memory_patches.clear()
         self.main.project_file = None
+        self.main.image_cards.clear()
 
         # Reset current_image_index
         self.main.curr_img_idx = -1
@@ -133,6 +134,7 @@ class ImageStateController:
     def update_image_cards(self):
         # Clear existing items
         self.main.page_list.clear()
+        self.main.image_cards.clear()
 
         # Add new items
         for index, file_path in enumerate(self.main.image_files):
@@ -148,6 +150,7 @@ class ImageStateController:
                 card.set_skipped(True)
             self.main.page_list.addItem(list_item)
             self.main.page_list.setItemWidget(list_item, card)
+            self.main.image_cards.append(card)
 
     def on_card_selected(self, current, previous):
         if current:  
@@ -158,7 +161,7 @@ class ImageStateController:
                 lambda: self.load_image(self.main.image_files[index]),
                 lambda result: self.display_image_from_loaded(result, index),
                 self.main.default_error_handler,
-                None
+                lambda: self.highlight_card(index)
             )
 
     def navigate_images(self, direction: int):
@@ -167,6 +170,16 @@ class ImageStateController:
             if 0 <= new_index < len(self.main.image_files):
                 item = self.main.page_list.item(new_index)
                 self.main.page_list.setCurrentItem(item)
+
+    def highlight_card(self, index: int):
+        if 0 <= index < len(self.main.image_cards):
+            # Remove highlight from the previously highlighted card
+            if self.main.current_card:
+                self.main.current_card.set_highlight(False)
+            
+            # Highlight the new card
+            self.main.image_cards[index].set_highlight(True)
+            self.main.current_card = self.main.image_cards[index]
 
     def handle_image_deletion(self, file_names: list[str]):
         """Handles the deletion of images based on the provided file names."""
@@ -210,6 +223,7 @@ class ImageStateController:
             self.update_image_cards()
             self.main.page_list.blockSignals(True)
             self.main.page_list.setCurrentRow(new_index)
+            self.highlight_card(new_index)
             self.main.page_list.blockSignals(False)
         else:
             # If no images remain, reset the view to the drag browser.
