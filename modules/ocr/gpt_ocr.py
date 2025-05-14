@@ -104,7 +104,7 @@ class GPTOCR(OCREngine):
                         ]
                     }
                 ],
-                "max_tokens": self.max_tokens
+                "max_completion_tokens": self.max_tokens
             }
             
             # Make POST request to OpenAI API
