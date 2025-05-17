@@ -1,0 +1,43 @@
+[tool.poetry]
+name = "comic-translate"
+version = "0.1.0"
+description = ""
+authors = ["lioshi <lionel.fenneteau@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.10.*"
+opencv-python = "^4.10.0.84"
+pyside6 = ">=6.7.2"
+dayu-path = ">=0.5.2"
+msgpack = ">=1.1.0"
+requests = ">=2.31.0"
+matplotlib = ">=3.8.2"
+pymupdf = ">=1.24.9"
+torch = ">=2.1.0"
+torchvision = ">=0.16.0"
+openai = ">=1.8.0"
+py7zr = ">=0.20.8"
+rarfile = ">=4.1"
+img2pdf = ">=0.5.1"
+ebooklib = ">=0.18"
+easyocr = ">=1.7.1"
+azure-ai-vision-imageanalysis = ">=1.0.0b1"
+deepl = ">=1.16.1"
+deep-translator = ">=1.11.4"
+stanza = ">=1.7.0"
+jaconv = ">=0.3.4"
+transformers = ">=4.36.2"
+wget = ">=3.2"
+ultralytics = ">=8.1.3"
+largestinteriorrectangle = ">=0.2.0"
+paddleocr = ">=2.8.1"
+paddlepaddle = ">=2.6.1"
+loguru = ">=0.7.2"
+google-generativeai = ">=0.5.2"
+anthropic = ">=0.25.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
