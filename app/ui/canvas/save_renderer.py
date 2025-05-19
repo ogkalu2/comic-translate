@@ -1,5 +1,6 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 import cv2
+from PIL import Image
 import numpy as np
 from .text_item import TextBlockItem
 
@@ -107,9 +108,11 @@ class ImageSaveRenderer:
 
         return arr
 
-    def save_image(self, output_path):
-        final_image = self.render_to_image()
-        cv2.imwrite(output_path, final_image)
+    def save_image(self, output_path: str):
+        final_bgr = self.render_to_image()
+        final_rgb = cv2.cvtColor(final_bgr, cv2.COLOR_BGR2RGB)
+        pil_img   = Image.fromarray(final_rgb)
+        pil_img.save(output_path)
 
     def apply_patches(self, patches: list[dict]):
         """Apply inpainting patches to the image."""

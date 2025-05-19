@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import cv2
+from PIL import Image
 import numpy as np
 from typing import TYPE_CHECKING, List
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -320,8 +321,10 @@ class ImageStateController:
                 PatchCommandBase.create_patch_item(prop, self.main.image_viewer.photo)
 
     def save_current_image(self, file_path: str):
-        curr_image = self.main.image_viewer.get_cv2_image(paint_all=True)
-        cv2.imwrite(file_path, curr_image)
+        final_bgr = self.main.image_viewer.get_cv2_image(paint_all=True)
+        final_rgb = cv2.cvtColor(final_bgr, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(final_rgb)
+        pil_img.save(file_path)
 
     def save_image_state(self, file: str):
         skip_status = self.main.image_states.get(file, {}).get('skip', False)
