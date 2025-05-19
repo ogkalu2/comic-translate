@@ -51,7 +51,12 @@ class YandexTranslation(TraditionalTranslation):
                 }
                 
                 # Make the API request
-                response = requests.post(url, headers=headers, json=body)
+                response = requests.post(
+                    url, 
+                    headers=headers, 
+                    json=body,
+                    timeout=10
+                )
                 response.raise_for_status()  # Raise exception for HTTP errors
                 
                 # Process the response

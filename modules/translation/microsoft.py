@@ -76,7 +76,8 @@ class MicrosoftTranslation(TraditionalTranslation):
                     constructed_url, 
                     headers=headers, 
                     params=params, 
-                    json=body
+                    json=body,
+                    timeout=10
                 )
                 response.raise_for_status()
                 

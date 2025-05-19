@@ -111,7 +111,8 @@ class GPTOCR(OCREngine):
             response = requests.post(
                 self.api_base_url,
                 headers=headers,
-                data=json.dumps(payload)
+                data=json.dumps(payload),
+                timeout=10
             )
             
             # Parse response

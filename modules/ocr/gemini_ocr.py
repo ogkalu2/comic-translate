@@ -147,7 +147,12 @@ class GeminiOCR(OCREngine):
             
             # Make POST request to Gemini API
             headers = {"Content-Type": "application/json"}
-            response = requests.post(url, headers=headers, json=payload)
+            response = requests.post(
+                url,
+                headers=headers, 
+                json=payload,
+                timeout=10
+            )
             
             # Handle response
             if response.status_code == 200:

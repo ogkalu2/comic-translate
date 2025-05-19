@@ -98,7 +98,8 @@ class GPTTranslation(BaseLLMTranslation):
             response = requests.post(
                 f"{self.api_base_url}/chat/completions",
                 headers=headers,
-                data=json.dumps(payload)
+                data=json.dumps(payload),
+                timeout=15
             )
             
             response.raise_for_status()
