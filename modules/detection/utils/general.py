@@ -76,28 +76,56 @@ def does_rectangle_fit(bigger_rect, smaller_rect) -> bool:
     return fits_horizontally and fits_vertically
 
 
-def filter_bounding_boxes(bboxes, width_tolerance=5, height_tolerance=5):
+def filter_and_fix_bboxes(bboxes, image_shape=None, width_tolerance=5, height_tolerance=5):
     """
-    Filter out bounding boxes that are too small in width or height.
+    Filter out or fix bounding boxes that don't make sense.
+    
+    - Drops any box with x2<=x1 or y2<=y1
+    - Drops any box whose width or height is <= the given tolerances
+    - If image_shape is provided, clamps boxes to [0, width)×[0, height)
     
     Args:
-        bboxes: Array of bounding boxes as [x1, y1, x2, y2]
-        width_tolerance: Minimum width to keep
-        height_tolerance: Minimum height to keep
+        bboxes: array-like of boxes [[x1, y1, x2, y2], …]
+        image_shape: optional tuple (img_h, img_w) to clamp coordinates into
+        width_tolerance: minimum width to keep
+        height_tolerance: minimum height to keep
     
     Returns:
-        Filtered array of bounding boxes
+        np.ndarray of cleaned boxes
     """
-    def is_close(value1, value2, tolerance):
-        return abs(value1 - value2) <= tolerance
-
     if len(bboxes) == 0:
-        return bboxes
+        return np.empty((0,4), dtype=int)
 
-    return np.array([
-        bbox for bbox in bboxes
-        if not (is_close(bbox[0], bbox[2], width_tolerance) or is_close(bbox[1], bbox[3], height_tolerance))
-    ])
+    cleaned = []
+    img_h, img_w = (None, None)
+    if image_shape is not None:
+        img_h, img_w = image_shape[:2]
+
+    for box in bboxes:
+        x1, y1, x2, y2 = box
+        
+        # clamp to image if dims given
+        if img_w is not None:
+            x1 = max(0, min(x1, img_w))
+            x2 = max(0, min(x2, img_w))
+        if img_h is not None:
+            y1 = max(0, min(y1, img_h))
+            y2 = max(0, min(y2, img_h))
+        
+        # ensure positive area
+        w = x2 - x1
+        h = y2 - y1
+        if w <= 0 or h <= 0:
+            continue
+        
+        # enforce minimum size
+        if w <= width_tolerance or h <= height_tolerance:
+            continue
+        
+        cleaned.append([x1, y1, x2, y2])
+
+    return np.array(cleaned, dtype=int)
+
 
 def detect_content_in_bbox(image):
     """
