@@ -335,6 +335,10 @@ def bubble_contour(frame_mask: np.ndarray):
     
     # Find contours
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+    if not contours:
+        return None
+    
     largest_contour = max(contours, key=cv2.contourArea) 
     return largest_contour
 
@@ -350,6 +354,9 @@ def bubble_interior_bounds(frame_mask: np.ndarray):
         Interior bounds as (x1, y1, x2, y2)
     """
     bble_contour = bubble_contour(frame_mask)
+
+    if bble_contour is None:
+        return None
 
     polygon = np.array([bble_contour[:, 0, :]])
     rect = lir.lir(polygon)
