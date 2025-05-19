@@ -37,11 +37,12 @@ class TranslationEngine(ABC):
         from ..utils.pipeline_utils import get_language_code
         return get_language_code(language)
     
-    def preprocess_text(self, blk_text: str, source_lang_code: str) -> str: 
+    def preprocess_text(self, blk_text: str, source_lang_code: str) -> str:
         """
         PreProcess text based on language:
         - Remove spaces for Chinese and Japanese languages
-        - Keep original text for other languages
+        - Remove all newline/carriage-return characters
+        - Keep original text for other languages (aside from the newline removal)
         
         Args:
             blk_text (str): The input text to process
@@ -50,12 +51,17 @@ class TranslationEngine(ABC):
         Returns:
             str: Processed text
         """
+        # Remove newline and carriage‐return characters
+        text = blk_text.replace('\r', '').replace('\n', '')
+
         source_lang_code = source_lang_code.lower()
         
+        # 2) If Chinese/Japanese, also remove all spaces
         if 'zh' in source_lang_code or source_lang_code == 'ja':
-            return blk_text.replace(' ', '')
+            return text.replace(' ', '')
+        # 3) Otherwise, return the text (with newlines already removed)
         else:
-            return blk_text
+            return text
 
 
 class TraditionalTranslation(TranslationEngine):
