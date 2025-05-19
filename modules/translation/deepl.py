@@ -18,9 +18,13 @@ class DeepLTranslation(TraditionalTranslation):
 
         import deepl
 
-        self.source_lang_code = self.get_language_code(source_lang)
-        self.target_lang_code = self.get_language_code(target_lang)
         self.target_lang = target_lang
+
+        # get the “raw” code (e.g. “en”, “zh”, etc.) then normalize for DeepL:
+        raw_src = self.get_language_code(source_lang)
+        raw_tgt = self.get_language_code(target_lang)
+        self.source_lang_code = self.preprocess_language_code(raw_src)
+        self.target_lang_code = self.preprocess_language_code(raw_tgt)
         
         credentials = settings.get_credentials(settings.ui.tr("DeepL"))
         self.api_key = credentials.get('api_key', '')
@@ -35,17 +39,27 @@ class DeepLTranslation(TraditionalTranslation):
                     blk.translation = ''
                     continue
                 
-                # Handle special cases for language codes
-                target_code = self.target_lang_code
-                if self.target_lang == 'Simplified Chinese':
-                    target_code = "zh"
-                elif self.target_lang == 'English':
-                    target_code = "EN-US"
+                result = self.translator.translate_text(
+                    text, 
+                    source_lang=self.source_lang_code, 
+                    target_lang=self.target_lang_code
+                )
                 
-                result = self.translator.translate_text(text, source_lang=self.source_lang_code, target_lang=target_code)
                 blk.translation = result.text
         
         except Exception as e:
             print(f"DeepL Translator error: {str(e)}")
             
-        return blk_list
+        return blk_list 
+
+    def preprocess_language_code(self, lang_code: str) -> str:
+        # Chinese variants
+        if lang_code == 'zh-CN':
+            return 'ZH-HANS'
+        if lang_code == 'zh-TW':
+            return 'ZH-HANT'
+        # English always as US:
+        if lang_code == 'en':
+            return 'EN-US'
+        # fallback: e.g. 'fr' → 'FR', 'de' → 'DE'
+        return lang_code.upper()
