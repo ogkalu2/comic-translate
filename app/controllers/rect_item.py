@@ -69,9 +69,6 @@ class RectItemController:
                                int(old_rect_coords[3])]
                 blk.angle = new_angle if new_angle else 0
                 blk.tr_origin_point = (new_tr_origin.x(), new_tr_origin.y()) if new_tr_origin else ()
-                image = self.main.image_viewer.get_cv2_image()
-                inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                blk.inpaint_bboxes = inpaint_bboxes
                 break
 
     def rect_change_undo(self, old_state, new_state):

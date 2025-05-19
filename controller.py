@@ -22,6 +22,7 @@ from modules.utils.file_handler import FileHandler
 from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
                                          validate_translator
 from modules.utils.download import get_models, mandatory_models
+from modules.detection.utils.general import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
 from pipeline import ComicTranslatePipeline
 
@@ -361,21 +362,42 @@ class ComicTranslate(ComicTranslateUI):
             self.disable_hbutton_group()
             self.image_viewer.clear_rectangles()
             self.image_viewer.clear_text_items()
+
+            self.loading.setVisible(True)
+            self.disable_hbutton_group()
+            
             if self.blk_list:
                 self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
-                for blk in self.blk_list:
-                    bboxes = blk.inpaint_bboxes
-                    if bboxes is not None and len(bboxes) > 0:
-                        self.image_viewer.draw_segmentation_lines(bboxes)
-                
-                self.enable_hbutton_group()
-                self.undo_group.activeStack().endMacro()
+
+                def compute_all_bboxes():
+                    image = self.image_viewer.get_cv2_image()
+                    results = []
+                    for blk in self.blk_list:
+                        bboxes = get_inpaint_bboxes(blk.xyxy, image)
+                        results.append((blk, bboxes))
+                    return results
+
+                self.run_threaded(
+                    compute_all_bboxes,
+                    self._on_segmentation_bboxes_ready,
+                    self.default_error_handler,
+                    self.on_manual_finished
+                )
 
             else:
-                self.loading.setVisible(True)
-                self.disable_hbutton_group()
-                self.run_threaded(self.pipeline.detect_blocks, self.blk_detect_segment, 
-                          self.default_error_handler, self.on_manual_finished)
+                self.run_threaded(
+                    self.pipeline.detect_blocks, 
+                    self.blk_detect_segment, 
+                    self.default_error_handler, 
+                    self.on_manual_finished)
+                
+    def _on_segmentation_bboxes_ready(self, results):
+        # Handle results on the main thread
+        for blk, bboxes in results:
+            blk.inpaint_bboxes = bboxes
+            if bboxes is not None and len(bboxes) > 0:
+                self.image_viewer.draw_segmentation_lines(bboxes)
+        self.undo_group.activeStack().endMacro()
 
     def update_progress(self, index: int, total_images: int, step: int, total_steps: int, change_name: bool):
         # Assign weights to image processing and archiving (adjust as needed)
