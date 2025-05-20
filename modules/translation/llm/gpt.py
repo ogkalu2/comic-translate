@@ -99,7 +99,7 @@ class GPTTranslation(BaseLLMTranslation):
                 f"{self.api_base_url}/chat/completions",
                 headers=headers,
                 data=json.dumps(payload),
-                timeout=30
+                timeout=60
             )
             
             response.raise_for_status()
