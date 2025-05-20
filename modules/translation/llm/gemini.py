@@ -107,7 +107,7 @@ class GeminiTranslation(BaseLLMTranslation):
             url, 
             headers=headers, 
             json=payload,
-            timeout=15
+            timeout=30
         )
         
         # Handle response

@@ -151,7 +151,7 @@ class GeminiOCR(OCREngine):
                 url,
                 headers=headers, 
                 json=payload,
-                timeout=10
+                timeout=20
             )
             
             # Handle response

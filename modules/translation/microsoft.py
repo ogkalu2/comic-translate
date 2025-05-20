@@ -77,7 +77,7 @@ class MicrosoftTranslation(TraditionalTranslation):
                     headers=headers, 
                     params=params, 
                     json=body,
-                    timeout=10
+                    timeout=30
                 )
                 response.raise_for_status()
                 

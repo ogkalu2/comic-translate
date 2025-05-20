@@ -55,7 +55,7 @@ class YandexTranslation(TraditionalTranslation):
                     url, 
                     headers=headers, 
                     json=body,
-                    timeout=10
+                    timeout=30
                 )
                 response.raise_for_status()  # Raise exception for HTTP errors
                 
