@@ -62,9 +62,6 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
                 blk.xyxy[:] = self.new_xyxy
                 blk.angle = self.new_angle
                 blk.tr_origin_point = self.new_tr_origin
-                image = self.viewer.get_cv2_image()
-                inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                blk.inpaint_bboxes = inpaint_bboxes
 
                 self.find_and_update_item(self.scene, self.old_xyxy, self.old_angle, 
                                                 self.new_xyxy, self.new_angle, self.new_tr_origin)
@@ -78,9 +75,6 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
                 blk.xyxy[:] = self.old_xyxy
                 blk.angle = self.old_angle
                 blk.tr_origin_point = self.old_tr_origin
-                image = self.viewer.get_cv2_image()
-                inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                blk.inpaint_bboxes = inpaint_bboxes
 
                 self.find_and_update_item(self.scene, self.new_xyxy, self.new_angle, 
                                         self.old_xyxy, self.old_angle, self.old_tr_origin)
