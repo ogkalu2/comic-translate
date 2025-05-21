@@ -13,7 +13,7 @@ class TextBlockState:
     transform_origin: QPointF
 
     @classmethod
-    def from_item(cls, item):
+    def from_item(cls, item: QGraphicsTextItem):
         """Create TextBlockState from a TextBlockItem"""
         rect = QRectF(item.pos(), item.boundingRect().size()).getCoords()
         return cls(
