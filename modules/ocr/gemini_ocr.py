@@ -76,7 +76,7 @@ class GeminiOCR(OCREngine):
                 if x1 < x2 and y1 < y2 and x1 >= 0 and y1 >= 0 and x2 <= img.shape[1] and y2 <= img.shape[0]:
                     # Crop image and encode
                     cropped_img = img[y1:y2, x1:x2]
-                    encoded_img = self._encode_image(cropped_img)
+                    encoded_img = self.encode_image(cropped_img)
                     
                     # Get OCR result from Gemini
                     blk.text = self._get_gemini_block_ocr(encoded_img)
@@ -85,21 +85,6 @@ class GeminiOCR(OCREngine):
                 blk.text = ""
                 
         return blk_list
-    
-    def _encode_image(self, image: np.ndarray) -> str:
-        """
-        Encode an image as base64 string.
-        
-        Args:
-            image: Image as numpy array
-            
-        Returns:
-            Base64 encoded image string
-        """
-        success, img_buffer = cv2.imencode('.png', image)
-        if not success:
-            raise Exception("Failed to encode image")
-        return base64.b64encode(img_buffer).decode('utf-8')
     
     def _get_gemini_block_ocr(self, base64_image: str) -> str:
         """
@@ -133,7 +118,7 @@ class GeminiOCR(OCREngine):
                     "parts": [
                         {
                             "inline_data": {
-                                "mime_type": "image/png",
+                                "mime_type": "image/jpg",
                                 "data": base64_image
                             }
                         },

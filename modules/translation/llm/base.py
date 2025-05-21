@@ -81,7 +81,7 @@ class BaseLLMTranslation(LLMTranslation):
         """
         pass
 
-    def encode_image(self, image: np.ndarray, ext=".png"):
+    def encode_image(self, image: np.ndarray, ext=".jpg"):
         """
         Encode CV2/numpy image directly to base64 string using cv2.imencode.
         

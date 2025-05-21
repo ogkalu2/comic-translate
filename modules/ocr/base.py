@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
+import cv2
+import base64
 
 from ..utils.textblock import TextBlock
 
@@ -45,3 +47,19 @@ class OCREngine(ABC):
         """
         for blk in blk_list:
             blk.source_lang = lang_code
+
+    @staticmethod
+    def encode_image(image: np.ndarray, ext: str = '.jpg') -> str:
+        """
+        Encode an image as base64 string.
+        
+        Args:
+            image: Image as numpy array
+            ext: Image format extension (default is .jpg)
+        Returns:
+            Base64 encoded image string
+        """
+        success, img_buffer = cv2.imencode(ext, image)
+        if not success:
+            raise Exception("Failed to encode image")
+        return base64.b64encode(img_buffer).decode('utf-8')

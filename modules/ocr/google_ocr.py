@@ -29,7 +29,7 @@ class GoogleOCR(OCREngine):
         texts_string = []
         
         try:
-            encoded_image = base64.b64encode(cv2.imencode('.png', img)[1].tobytes()).decode('utf-8')
+            encoded_image = self.encode_image(img)
             
             payload = {
                 "requests": [{

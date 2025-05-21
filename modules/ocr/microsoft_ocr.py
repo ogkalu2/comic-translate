@@ -41,7 +41,7 @@ class MicrosoftOCR(OCREngine):
         texts_string = []
         
         try:
-            image_buffer = cv2.imencode('.png', img)[1].tobytes()
+            image_buffer = cv2.imencode('.jpg', img)[1].tobytes()
             result = self.client.analyze(
                 image_data=image_buffer, 
                 visual_features=[VisualFeatures.READ]
