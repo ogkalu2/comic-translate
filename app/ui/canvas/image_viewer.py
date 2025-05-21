@@ -803,43 +803,65 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         return mask
 
-    def draw_segmentation_lines(self, bboxes, layers: int = 1, scale_factor: float = 1.0):
-        if not self.hasPhoto():
-            print("No photo loaded.")
+    def draw_segmentation_lines(self, bboxes):
+        if not self.hasPhoto() or not bboxes:
             return
 
-        if bboxes is None or len(bboxes) == 0:
-            return
+        # 1) Compute tight ROI so mask stays small
+        xs = [x for x1,_,x2,_ in bboxes for x in (x1, x2)]
+        ys = [y for _,y1,_,y2 in bboxes for y in (y1, y2)]
+        min_x, max_x = int(min(xs)), int(max(xs))
+        min_y, max_y = int(min(ys)), int(max(ys))
+        w, h = max_x - min_x + 1, max_y - min_y + 1
 
-        # Calculate the centroid of all points
-        all_points = np.array(bboxes).reshape(-1, 2)
-        centroid = np.mean(all_points, axis=0)
+        # 2) Down-sample factor to cap mask size (optional)
+        LONG_EDGE = 2048
+        ds = max(1.0, max(w, h) / LONG_EDGE)
+        mw, mh = int(w/ds) + 2, int(h/ds) + 2
 
-        # Scale the line segments towards the centroid
-        scaled_segments = []
+        # 3) Paint the true bboxes (no padding)
+        mask = np.zeros((mh, mw), np.uint8)
         for x1, y1, x2, y2 in bboxes:
-            scaled_p1 = (np.array([x1, y1]) - centroid) * scale_factor + centroid
-            scaled_p2 = (np.array([x2, y2]) - centroid) * scale_factor + centroid
-            scaled_segments.append((scaled_p1[0], scaled_p1[1], scaled_p2[0], scaled_p2[1]))
+            x1i = int((x1 - min_x) / ds)
+            y1i = int((y1 - min_y) / ds)
+            x2i = int((x2 - min_x) / ds)
+            y2i = int((y2 - min_y) / ds)
+            cv2.rectangle(mask, (x1i, y1i), (x2i, y2i), 255, -1)
 
-        # Create rectangles for each line segment
+        # 4) Morphological closing to bridge small gaps
+        # Tweak KSIZE to cover the max gap you expect
+        KSIZE = 15
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
+        mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+
+        # 5) Grab the single external contour
+        contours, _ = cv2.findContours(
+            mask_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        if not contours:
+            return
+        # If you get multiple, pick the largest area one
+        main = max(contours, key=cv2.contourArea).squeeze(1)
+        if main.ndim != 2 or main.shape[0] < 3:
+            return
+
+        # 6) Build a single QPainterPath
+        path = QtGui.QPainterPath()
+        x0, y0 = main[0]
+        path.moveTo(x0 * ds + min_x, y0 * ds + min_y)
+        for x, y in main[1:]:
+            path.lineTo(x * ds + min_x, y * ds + min_y)
+        path.closeSubpath()
+
+        # 7) Wrap in one GraphicsPathItem & emit
         fill_color = QtGui.QColor(255, 0, 0, 128)  # Semi-transparent red
         outline_color = QtGui.QColor(255, 0, 0)  # Solid red for the outline
+        item = QtWidgets.QGraphicsPathItem(path)
+        item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
+        item.setBrush(QtGui.QBrush(fill_color))
 
-        boxes = []
-        for _ in range(layers):
-            for x1, y1, x2, y2 in scaled_segments:
-                path = QtGui.QPainterPath()
-                path.addRect(QtCore.QRectF(x1, y1, x2 - x1, y2 - y1))
-                
-                path_item = QtWidgets.QGraphicsPathItem(path)
-                path_item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
-                path_item.setBrush(QtGui.QBrush(fill_color))
-                boxes.append(path_item)
-
-        command = SegmentBoxesCommand(self, boxes)
-        self.command_emitted.emit(command)
-
+        self.command_emitted.emit(SegmentBoxesCommand(self, [item]))
+        
         # # Ensure the rectangles are visible
         # self._scene.update()
 

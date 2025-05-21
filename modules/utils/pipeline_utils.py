@@ -100,45 +100,87 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
     return blk_list
 
 def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
-    h, w, c = img.shape
-    mask = np.zeros((h, w), dtype=np.uint8)  # Start with a black mask
-    
+    """
+    Generate a mask by fitting a single shape around each block's inpaint bboxes,
+    then dilating that shape according to padding logic.
+    """
+    h, w, _ = img.shape
+    mask = np.zeros((h, w), dtype=np.uint8)
+    LONG_EDGE = 2048
+
     for blk in blk_list:
         bboxes = blk.inpaint_bboxes
         if bboxes is None or len(bboxes) == 0:
             continue
-        for bbox in bboxes:
-            x1, y1, x2, y2 = bbox
-            
-            # Determine kernel size for dilation
-            kernel_size = default_padding
-            if hasattr(blk, 'source_lang') and blk.source_lang not in ['ja', 'ko']:
-                kernel_size = 3
-            if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
-                # Calculate the minimal distance from the mask to the bounding box edges
-                min_distance_to_bbox = min(
-                    x1 - blk.bubble_xyxy[0],  # left side
-                    blk.bubble_xyxy[2] - x2,  # right side
-                    y1 - blk.bubble_xyxy[1],  # top side
-                    blk.bubble_xyxy[3] - y2   # bottom side
-                )
-                # Adjust kernel size if necessary
-                if kernel_size >= min_distance_to_bbox:
-                    kernel_size = max(1, int(min_distance_to_bbox - (0.2 * min_distance_to_bbox)))
-            
-            # Create a temporary mask for this bbox
-            temp_mask = np.zeros((h, w), dtype=np.uint8)
-            cv2.rectangle(temp_mask, (x1, y1), (x2, y2), 255, -1)
-            
-            # Create kernel for dilation
-            kernel = np.ones((kernel_size, kernel_size), np.uint8)
-            
-            # Dilate the temporary mask
-            dilated_mask = cv2.dilate(temp_mask, kernel, iterations=4)
-            
-            # Add the dilated mask to the main mask
-            mask = cv2.bitwise_or(mask, dilated_mask)
-    
+
+        # 1) Compute tight per-block ROI
+        xs = [x for x1, _, x2, _ in bboxes for x in (x1, x2)]
+        ys = [y for _, y1, _, y2 in bboxes for y in (y1, y2)]
+        min_x, max_x = int(min(xs)), int(max(xs))
+        min_y, max_y = int(min(ys)), int(max(ys))
+        roi_w, roi_h = max_x - min_x + 1, max_y - min_y + 1
+
+        # 2) Down-sample factor to limit mask size
+        ds = max(1.0, max(roi_w, roi_h) / LONG_EDGE)
+        mw, mh = int(roi_w / ds) + 2, int(roi_h / ds) + 2
+
+        # 3) Paint bboxes into small mask
+        small = np.zeros((mh, mw), dtype=np.uint8)
+        for x1, y1, x2, y2 in bboxes:
+            x1i = int((x1 - min_x) / ds)
+            y1i = int((y1 - min_y) / ds)
+            x2i = int((x2 - min_x) / ds)
+            y2i = int((y2 - min_y) / ds)
+            cv2.rectangle(small, (x1i, y1i), (x2i, y2i), 255, -1)
+
+        # 4) Close small mask to bridge gaps
+        KSIZE = 15
+        kernel_rect = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
+        closed = cv2.morphologyEx(small, cv2.MORPH_CLOSE, kernel_rect)
+
+        # 5) Extract largest contour
+        contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            continue
+        main = max(contours, key=cv2.contourArea).squeeze(1)
+        if main.ndim != 2 or main.shape[0] < 3:
+            continue
+
+        # 6) Scale contour points back to image coordinates
+        pts = (main.astype(np.float32) * ds)
+        pts[:, 0] += min_x
+        pts[:, 1] += min_y
+        pts = pts.astype(np.int32)
+
+        # 7) Create per-block mask and fill polygon
+        block_mask = np.zeros((h, w), dtype=np.uint8)
+        cv2.fillPoly(block_mask, [pts], 255)
+
+        # 8) Determine dilation kernel size
+        kernel_size = default_padding
+        src_lang = getattr(blk, 'source_lang', None)
+        if src_lang and src_lang not in ['ja', 'ko']:
+            kernel_size = 3
+        # Adjust for text bubbles
+        if getattr(blk, 'text_class', None) == 'text_bubble' and getattr(blk, 'bubble_xyxy', None) is not None:
+            bx1, by1, bx2, by2 = blk.bubble_xyxy
+            # distance from fitted shape to bubble edges
+            min_dist = min(
+                pts[:,0].min() - bx1,
+                bx2 - pts[:,0].max(),
+                pts[:,1].min() - by1,
+                by2 - pts[:,1].max()
+            )
+            if kernel_size >= min_dist:
+                kernel_size = max(1, int(min_dist * 0.8))
+
+        # 9) Dilate the block mask
+        dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        dilated = cv2.dilate(block_mask, dil_kernel, iterations=4)
+
+        # 10) Combine with global mask
+        mask = cv2.bitwise_or(mask, dilated)
+
     return mask
 
 def validate_ocr(main_page, source_lang):
