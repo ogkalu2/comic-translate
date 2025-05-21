@@ -79,6 +79,7 @@ class ImageStateController:
         self.main.in_memory_patches.clear()
         self.main.project_file = None
         self.main.image_cards.clear()
+        self.main.current_card = None
 
         # Reset current_image_index
         self.main.curr_img_idx = -1
