@@ -7,7 +7,7 @@ from typing import Callable, Tuple
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 from PySide6.QtCore import QCoreApplication, QThreadPool
-from PySide6.QtGui import QUndoGroup
+from PySide6.QtGui import QUndoGroup, QUndoStack
 
 from app.ui.dayu_widgets.qt import MPixmap
 from app.ui.main_window import ComicTranslateUI
@@ -66,7 +66,7 @@ class ComicTranslate(ComicTranslateUI):
         self.loaded_images = []
 
         self.undo_group = QUndoGroup(self)
-        self.undo_stacks = {}
+        self.undo_stacks: dict[str, QUndoStack] = {}
         self.project_file = None
         self.temp_dir = tempfile.mkdtemp()
 
