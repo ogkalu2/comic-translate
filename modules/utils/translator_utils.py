@@ -67,7 +67,7 @@ def set_upper_case(blk_list: List[TextBlock], upper_case: bool):
         if upper_case and not translation.isupper():
             blk.translation = translation.upper() 
         elif not upper_case and translation.isupper():
-            blk.translation = translation.capitalize()
+            blk.translation = translation.lower().capitalize()
         else:
             blk.translation = translation
 
