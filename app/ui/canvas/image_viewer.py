@@ -417,7 +417,6 @@ class ImageViewer(QtWidgets.QGraphicsView):
         self.rotate_margin_min = inner
         self.rotate_margin_max = outer
 
-
     def _in_rotate_ring(self, 
             item: Optional[MoveableRectItem|TextBlockItem], 
             scene_pos
