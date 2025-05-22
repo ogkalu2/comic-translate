@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import List, Dict
+from typing import List, Dict, Optional
 import math
 
 from PySide6 import QtWidgets
@@ -71,6 +71,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
 
         self.last_pan_pos = QtCore.QPoint()
         self.total_scale_factor = 0.2
+
+        self.rotate_margin_min = 25   # inner edge of ring
+        self.rotate_margin_max = 80   # outer edge of ring
 
     def hasPhoto(self):
         return not self.empty
@@ -199,17 +202,21 @@ class ImageViewer(QtWidgets.QGraphicsView):
             blk_item, rect_item = self.sel_rot_item()
             if blk_item or rect_item:
                 sel_item = blk_item if blk_item else rect_item
-                local_pos = sel_item.mapFromScene(scene_pos)
-                buffer = 25     
-                angle = sel_item.rotation()
+                local_pos = sel_item.mapFromScene(scene_pos)  
                 inner_rect = sel_item.boundingRect()
-                outer_rect = inner_rect.adjusted(-buffer, -buffer, buffer, buffer)
-                sel_item.rot_handle = self.get_rotate_handle(outer_rect, local_pos, angle)
+                if self._in_rotate_ring(sel_item, scene_pos):
+                    angle = sel_item.rotation()
+                    outer_rect = inner_rect.adjusted(
+                        -self.rotate_margin_max, -self.rotate_margin_max,
+                        self.rotate_margin_max,  self.rotate_margin_max
+                    )
 
-                if sel_item.rot_handle: 
-                    sel_item.init_rotation(scene_pos)
-                    event.accept()
-                    return  # Exit early if handling rotation
+                    sel_item.rot_handle = self.get_rotate_handle(outer_rect, local_pos, angle)
+
+                    if sel_item.rot_handle: 
+                        sel_item.init_rotation(scene_pos)
+                        event.accept()
+                        return  # Exit early if handling rotation
 
         # Handle deselection
         if clicked_item is None:
@@ -275,17 +282,33 @@ class ImageViewer(QtWidgets.QGraphicsView):
         if blk_item or rect_item:
             sel_item = blk_item if blk_item else rect_item
             local_pos = sel_item.mapFromScene(scene_pos)
+            angle = sel_item.rotation()
+            inner_rect = sel_item.boundingRect()
+
+            # 1) Check for resize handles (from rectangle.py / text_item.py) 
+            handle = sel_item.get_handle_at_position(local_pos, inner_rect)
+            if handle:
+                # get_cursor_for_position already applies rotation‐adjustment :contentReference[oaicite:1]{index=1}
+                cursor_shape = sel_item.get_cursor_for_position(local_pos)
+                self.viewport().setCursor(QtGui.QCursor(cursor_shape))
+                return     # done
+
             if sel_item.rotating and sel_item.center_scene_pos:
                 sel_item.rotate_item(scene_pos)
                 event.accept()
             else:
-                buffer = 25
-                angle = sel_item.rotation()
-                inner_rect = sel_item.boundingRect()
-                outer_rect = inner_rect.adjusted(-buffer, -buffer, buffer, buffer)
-                cursor = self.get_rotation_cursor(outer_rect, local_pos, angle)
-                if cursor:
+                if self._in_rotate_ring(sel_item, scene_pos):
+                    outer_rect = inner_rect.adjusted(
+                        -self.rotate_margin_max, -self.rotate_margin_max,
+                        self.rotate_margin_max,  self.rotate_margin_max
+                    )
+
+                    cursor = self.get_rotation_cursor(outer_rect, local_pos, angle)
                     self.viewport().setCursor(cursor)
+                    return
+            
+            # 3) Neither resizing nor rotating → default cursor
+            self.viewport().setCursor(QtCore.Qt.CursorShape.ArrowCursor)
             
         if self.panning:
             new_pos = event.position()
@@ -347,6 +370,9 @@ class ImageViewer(QtWidgets.QGraphicsView):
                     new_state = TextBlockState.from_item(sel_item)
                     sel_item.change_undo.emit(old_state, new_state)
 
+            # reset the view’s cursor so it doesn’t stay stuck on a resize shape
+            self.viewport().setCursor(QtCore.Qt.CursorShape.ArrowCursor)
+
         item = self.itemAt(event.pos())
         scroll = self.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
         if self.current_tool == 'pan' or isinstance(item, TextBlockItem) or scroll:
@@ -384,39 +410,78 @@ class ImageViewer(QtWidgets.QGraphicsView):
                 self.current_rect = None
             super().mouseReleaseEvent(event)
 
-    def get_rotate_handle(self, rect, pos: QtCore.QPointF, angle):
-        handle_size = 30
+    def set_rotate_ring(self, inner: int, outer: int):
+        """Change the thickness/position of the rotate cursor ring."""
+        if inner < 0 or outer <= inner:
+            raise ValueError("outer must be > inner ≥ 0")
+        self.rotate_margin_min = inner
+        self.rotate_margin_max = outer
 
-        # Rotate all four corners
-        top_left = rect.topLeft()
-        top_right = rect.topRight()
-        bottom_left = rect.bottomLeft()
-        bottom_right = rect.bottomRight()
 
-        handles = {
-            'top_left': QtCore.QRectF(top_left.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
-            'top_right': QtCore.QRectF(top_right.x() - handle_size/2, top_right.y() - handle_size/2, handle_size, handle_size),
-            'bottom_left': QtCore.QRectF(bottom_left.x() - handle_size/2, bottom_left.y() - handle_size/2, handle_size, handle_size),
-            'bottom_right': QtCore.QRectF(bottom_right.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
-            'top': QtCore.QRectF(top_left.x(), top_left.y() - handle_size/2, rect.width(), handle_size),
-            'bottom': QtCore.QRectF(bottom_left.x(), bottom_left.y() - handle_size/2, rect.width(), handle_size),
-            'left': QtCore.QRectF(top_left.x() - handle_size/2, top_left.y(), handle_size, rect.height()),
-            'right': QtCore.QRectF(top_right.x() - handle_size/2, top_right.y(), handle_size, rect.height()),
-        }
+    def _in_rotate_ring(self, 
+            item: Optional[MoveableRectItem|TextBlockItem], 
+            scene_pos
+        ) -> bool:
+        from math import hypot
+        """
+        Returns True if the point (in scene coords) lies between
+        rotate_margin_min and rotate_margin_max *outside* the
+        item's boundingRect, in item-local pixels.
+        """
+        # 1) map scene→item
+        local = item.mapFromScene(scene_pos)
+        r = item.boundingRect()
 
-        # Check if the pos is within any of the handle rectangles
-        for handle, handle_rect in handles.items():
-            if handle_rect.contains(pos):
-                return handle
-        return None
+        # 2) compute how far outside the rect we are, per axis
+        dx = max(r.left()   - local.x(), 0, local.x() - r.right())
+        dy = max(r.top()    - local.y(), 0, local.y() - r.bottom())
 
-    def get_rotation_cursor(self, outer_rect: QtWidgets.QGraphicsRectItem, pos: QtCore.QPointF, angle):
-        handle = self.get_rotate_handle(outer_rect, pos, angle)
-        if handle:
-            return self.rotate_cursors.get_cursor(handle)
-        elif outer_rect.contains(pos):
-            return None
-        return QtGui.QCursor(QtCore.Qt.ArrowCursor)
+        # 3) radial distance from the edge
+        dist = hypot(dx, dy)
+
+        return (self.rotate_margin_min < dist < self.rotate_margin_max)
+
+    def _resolve_rotate_handle(self, inner: QtCore.QRectF,
+                            outer: QtCore.QRectF,
+                            pos:   QtCore.QPointF,
+                            angle: float) -> str | None:
+        # outside the ring → None
+        if not outer.contains(pos) or inner.contains(pos):
+            return None                         # Arrow / no rotation
+
+        # un-rotate the point into the item’s 0-degree frame
+        centre = inner.center()
+        rot = QtGui.QTransform().translate(centre.x(), centre.y()) \
+                                .rotate(-angle) \
+                                .translate(-centre.x(), -centre.y())
+        p = rot.map(pos)
+
+        # decide side / corner (8-way)
+        if   p.y() < inner.top():              # above
+            return ('top_left'  if p.x() < inner.left()  else
+                    'top_right' if p.x() > inner.right() else 'top')
+        elif p.y() > inner.bottom():           # below
+            return ('bottom_left'  if p.x() < inner.left()  else
+                    'bottom_right' if p.x() > inner.right() else 'bottom')
+        else:                                  # same Y band → left/right
+            return 'left' if p.x() < inner.left() else 'right'
+    
+    def get_rotate_handle(self, outer_rect, pos, angle):
+        inner_rect = outer_rect.adjusted( self.rotate_margin_max,
+                                        self.rotate_margin_max,
+                                        -self.rotate_margin_max,
+                                        -self.rotate_margin_max )
+        return self._resolve_rotate_handle(inner_rect, outer_rect, pos, angle)
+
+
+    def get_rotation_cursor(self, outer_rect, pos, angle):
+        inner_rect = outer_rect.adjusted( self.rotate_margin_max,
+                                        self.rotate_margin_max,
+                                        -self.rotate_margin_max,
+                                        -self.rotate_margin_max )
+        handle = self._resolve_rotate_handle(inner_rect, outer_rect, pos, angle)
+        return ( self.rotate_cursors.get_cursor(handle)
+                if handle else QtGui.QCursor(QtCore.Qt.ArrowCursor) )
 
     def erase_at(self, pos: QtCore.QPointF):
         erase_path = QtGui.QPainterPath()
