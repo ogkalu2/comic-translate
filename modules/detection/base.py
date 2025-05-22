@@ -4,7 +4,7 @@ from typing import Optional
 
 from ..utils.textblock import TextBlock
 from .utils.general import does_rectangle_fit, do_rectangles_overlap, \
-      get_inpaint_bboxes, filter_and_fix_bboxes, merge_overlapping_boxes
+      filter_and_fix_bboxes, merge_overlapping_boxes
 
 
 class DetectionEngine(ABC):

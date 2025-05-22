@@ -7,7 +7,7 @@ from PySide6.QtCore import QRectF, QPointF
 from app.ui.canvas.rectangle import MoveableRectItem
 from app.ui.commands.box import AddRectangleCommand, BoxesChangeCommand
 
-from modules.detection.utils.general import do_rectangles_overlap, get_inpaint_bboxes
+from modules.detection.utils.general import do_rectangles_overlap
 from modules.utils.textblock import TextBlock
 
 if TYPE_CHECKING:
@@ -44,10 +44,8 @@ class RectItemController:
         x1, y1, w, h = new_rect.getRect()
         x1, y1, w, h = int(x1), int(y1), int(w), int(h)
         new_rect_coords = (x1, y1, x1 + w, y1 + h)
-        image = self.main.image_viewer.get_cv2_image()
-        inpaint_boxes = get_inpaint_bboxes(new_rect_coords, image)
 
-        new_blk = TextBlock(text_bbox=np.array(new_rect_coords), inpaint_bboxes=inpaint_boxes)
+        new_blk = TextBlock(text_bbox=np.array(new_rect_coords))
         self.main.blk_list.append(new_blk)
 
         command = AddRectangleCommand(self.main, rect_item, new_blk, self.main.blk_list)
