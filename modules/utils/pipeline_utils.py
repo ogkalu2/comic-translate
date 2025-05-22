@@ -4,7 +4,8 @@ import os
 import base64
 
 from .textblock import TextBlock, sort_textblock_rectangles
-from ..detection.utils.general import does_rectangle_fit, is_mostly_contained
+from ..detection.utils.general import does_rectangle_fit, is_mostly_contained, \
+                                      get_inpaint_bboxes
 from ..inpainting.lama import LaMa
 from ..inpainting.mi_gan import MIGAN
 from ..inpainting.aot import AOT
@@ -109,7 +110,8 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
     LONG_EDGE = 2048
 
     for blk in blk_list:
-        bboxes = blk.inpaint_bboxes
+        bboxes = get_inpaint_bboxes(blk.xyxy, img)
+        blk.inpaint_bboxes = bboxes
         if bboxes is None or len(bboxes) == 0:
             continue
 
