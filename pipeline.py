@@ -397,13 +397,20 @@ class ComicTranslatePipeline:
                 'transform_origin': blk.tr_origin_point,
                 'width': width,
                 'direction': direction,
-                'selection_outlines': [OutlineInfo(0, len(translation), 
-                                                            outline_color, outline_width, 
-                                                            OutlineType.Full_Document)] if outline else []
+                'selection_outlines': [
+                    OutlineInfo(0, len(translation), 
+                    outline_color, 
+                    outline_width, 
+                    OutlineType.Full_Document)
+                ] if outline else [],
                 })
 
             self.main_page.image_states[image_path]['viewer_state'].update({
                 'text_items_state': text_items_state
+                })
+            
+            self.main_page.image_states[image_path]['viewer_state'].update({
+                'push_to_stack': True
                 })
             
             self.main_page.progress_update.emit(index, total_images, 9, 10, False)

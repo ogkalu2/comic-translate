@@ -12,6 +12,7 @@ from app.ui.dayu_widgets.message import MMessage
 from app.ui.commands.image import SetImageCommand
 from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
+from app.ui.commands.box import AddTextItemCommand
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -350,6 +351,7 @@ class ImageStateController:
         self.set_cv2_image(cv2_image, push=False)
         if file_path in self.main.image_states:
             state = self.main.image_states[file_path]
+            push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
 
             self.main.blk_list = state['blk_list']
             self.main.image_viewer.load_state(state['viewer_state'])
@@ -357,8 +359,17 @@ class ImageStateController:
             self.main.t_combo.setCurrentText(state['target_lang'])
             self.main.image_viewer.load_brush_strokes(state['brush_strokes'])
 
-            for text_item in self.main.image_viewer.text_items:
-                self.main.text_ctrl.connect_text_item_signals(text_item)
+            if push_to_stack:
+                self.main.undo_stacks[file_path].beginMacro('text_items_rendered')
+                for text_item in self.main.image_viewer.text_items:
+                    self.main.text_ctrl.connect_text_item_signals(text_item)
+                    command = AddTextItemCommand(self.main, text_item)
+                    self.main.undo_stacks[file_path].push(command)
+                self.main.undo_stacks[file_path].endMacro()
+                state['viewer_state'].update({'push_to_stack': False})
+            else:
+                for text_item in self.main.image_viewer.text_items:
+                    self.main.text_ctrl.connect_text_item_signals(text_item)
 
             for rect_item in self.main.image_viewer.rectangles:
                 self.main.rect_item_ctrl.connect_rect_item_signals(rect_item)
@@ -399,7 +410,7 @@ class ImageStateController:
             self.set_cv2_image(image)
         else:
             command = SetImageCommand(self.main, image_path, image, False)
-            self.main.undo_group.activeStack().push(command)
+            self.main.undo_stacks[current_batch_file].push(command)
             self.main.image_data[image_path] = image
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
@@ -426,7 +437,7 @@ class ImageStateController:
             self.apply_inpaint_patches(patches)
         else:
             command = PatchInsertCommand(self.main, patches, image_path, False)
-            self.main.undo_group.activeStack().push(command)
+            self.main.undo_stacks[current_batch_file].push(command)
 
     def apply_inpaint_patches(self, patches):
         command = PatchInsertCommand(self.main, patches, self.main.image_files[self.main.curr_img_idx])
