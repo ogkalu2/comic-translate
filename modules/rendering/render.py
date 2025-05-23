@@ -3,7 +3,8 @@ import numpy as np
 from typing import Tuple, List
 
 from PIL import Image, ImageFont, ImageDraw
-from PySide6.QtGui import QFont, QTextDocument, QTextCursor, QTextBlockFormat, QTextOption
+from PySide6.QtGui import QFont, QTextDocument,\
+      QTextCursor, QTextBlockFormat, QTextOption
 from PySide6.QtCore import Qt
 
 from .hyphen_textwrap import wrap as hyphen_wrap
@@ -179,8 +180,8 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
 def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int,
                     line_spacing, outline_width, bold, italic, underline,
                     alignment, direction, init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
-    """Break long text to multiple lines, and reduce point size
-    until all text fits within a bounding box."""
+    """Break long text to multiple lines, and find the largest point size
+        so that all wrapped text fits within the box."""
     
     def prepare_font(font_size):
         font = QFont(font_input, font_size)
@@ -223,49 +224,85 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
         
         return width, height
 
-    mutable_message = text
-    font_size = init_font_size
-    
-    while font_size > min_font_size:
-        width, height = eval_metrics(mutable_message, font_size)
-        if height > roi_height:
-            font_size -= 1  # Reduce pointsize
-            mutable_message = text  # Restore original text
-        elif width > roi_width:
-            columns = len(mutable_message)
-            while columns > 0:
-                columns -= 1
-                if columns == 0:
+    def wrap_and_size(font_size):
+        words = text.split()
+        lines = []
+        # build lines greedily
+        while words:
+            line = words.pop(0)
+            # try extending the current line
+            while words:
+                test = f"{line} {words[0]}"
+                w, _ = eval_metrics(test, font_size)
+                if w <= roi_width:
+                    line = test
+                    words.pop(0)
+                else:
                     break
-                mutable_message = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True)) 
-                wrapped_width, _ = eval_metrics(mutable_message, font_size)
-                if wrapped_width <= roi_width:
-                    break
-            if columns < 1:
-                font_size -= 1  # Reduce pointsize
-                mutable_message = text  # Restore original text
+            lines.append(line)
+        wrapped = "\n".join(lines)
+        # measure wrapped block
+        w, h = eval_metrics(wrapped, font_size)
+        return wrapped, w, h
+
+    lo, hi = min_font_size, init_font_size
+    best_text, best_size = text, init_font_size
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        wrapped, w, h = wrap_and_size(mid)
+        if w <= roi_width and h <= roi_height:
+            best_text, best_size = wrapped, mid
+            lo = mid + 1
         else:
-            break
-
-    if font_size <= min_font_size:
-        font_size = min_font_size
-        mutable_message = text
-
-        # Wrap text to fit within as much as possible
-        # Minimize cost function: (width - roi_width)^2 + (height - roi_height)^2
-        min_cost = 1e9
-        min_text = text
-        for columns in range(1, len(text)):
-            wrapped_text = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True))
-            wrapped_width, wrapped_height = eval_metrics(wrapped_text, font_size)
-            cost = (wrapped_width - roi_width)**2 + (wrapped_height - roi_height)**2
-            if cost < min_cost:
-                min_cost = cost
-                min_text = wrapped_text
-
-        mutable_message = min_text
+            hi = mid - 1
+    font_size, mutable_message = best_size, best_text
 
     return mutable_message, font_size
+
+    # mutable_message = text
+    # # font_size = init_font_size
+    # font_size = max(roi_width, roi_height)
+
+    # while font_size > min_font_size:
+    #     width, height = eval_metrics(mutable_message, font_size)
+    #     if height > roi_height:
+    #         font_size -= 1  # Reduce pointsize
+    #         mutable_message = text  # Restore original text
+    #     elif width > roi_width:
+    #         columns = len(mutable_message)
+    #         while columns > 0:
+    #             columns -= 1
+    #             if columns == 0:
+    #                 break
+    #             mutable_message = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True)) 
+    #             wrapped_width, _ = eval_metrics(mutable_message, font_size)
+    #             if wrapped_width <= roi_width:
+    #                 break
+    #         if columns < 1:
+    #             font_size -= 1  # Reduce pointsize
+    #             mutable_message = text  # Restore original text
+    #     else:
+    #         break
+
+    # if font_size <= min_font_size:
+    #     font_size = min_font_size
+    #     mutable_message = text
+
+    #     # Wrap text to fit within as much as possible
+    #     # Minimize cost function: (width - roi_width)^2 + (height - roi_height)^2
+    #     min_cost = 1e9
+    #     min_text = text
+    #     for columns in range(1, len(text)):
+    #         wrapped_text = '\n'.join(hyphen_wrap(text, columns, break_on_hyphens=False, break_long_words=False, hyphenate_broken_words=True))
+    #         wrapped_width, wrapped_height = eval_metrics(wrapped_text, font_size)
+    #         cost = (wrapped_width - roi_width)**2 + (wrapped_height - roi_height)**2
+    #         if cost < min_cost:
+    #             min_cost = cost
+    #             min_text = wrapped_text
+
+    #     mutable_message = min_text
+
+    # return mutable_message, font_size
 
 def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
                 outline_width, bold, italic, underline, alignment, direction, 
