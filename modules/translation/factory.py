@@ -6,6 +6,7 @@ from .google import GoogleTranslation
 from .microsoft import MicrosoftTranslation
 from .deepl import DeepLTranslation
 from .yandex import YandexTranslation
+from .opus import OpusTranslation
 from .llm.gpt import GPTTranslation
 from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
@@ -23,7 +24,8 @@ class TranslationFactory:
         "Google Translate": GoogleTranslation,
         "Microsoft Translator": MicrosoftTranslation,
         "DeepL": DeepLTranslation,
-        "Yandex": YandexTranslation
+        "Yandex": YandexTranslation,
+        "Opus-MT": OpusTranslation,
     }
     
     # Map LLM identifiers to their engine classes
