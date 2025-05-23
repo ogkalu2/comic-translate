@@ -872,8 +872,8 @@ class ImageViewer(QtWidgets.QGraphicsView):
             return
 
         # 1) Compute tight ROI so mask stays small
-        xs = [x for x1,_,x2,_ in bboxes for x in (x1, x2)]
-        ys = [y for _,y1,_,y2 in bboxes for y in (y1, y2)]
+        xs = [x for x1, _, x2, _ in bboxes for x in (x1, x2)]
+        ys = [y for _, y1, _, y2 in bboxes for y in (y1, y2)]
         min_x, max_x = int(min(xs)), int(max(xs))
         min_y, max_y = int(min(ys)), int(max(ys))
         w, h = max_x - min_x + 1, max_y - min_y + 1
@@ -881,7 +881,7 @@ class ImageViewer(QtWidgets.QGraphicsView):
         # 2) Down-sample factor to cap mask size (optional)
         LONG_EDGE = 2048
         ds = max(1.0, max(w, h) / LONG_EDGE)
-        mw, mh = int(w/ds) + 2, int(h/ds) + 2
+        mw, mh = int(w / ds) + 2, int(h / ds) + 2
 
         # 3) Paint the true bboxes (no padding)
         mask = np.zeros((mh, mw), np.uint8)
@@ -893,33 +893,33 @@ class ImageViewer(QtWidgets.QGraphicsView):
             cv2.rectangle(mask, (x1i, y1i), (x2i, y2i), 255, -1)
 
         # 4) Morphological closing to bridge small gaps
-        # Tweak KSIZE to cover the max gap you expect
         KSIZE = 15
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
         mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-        # 5) Grab the single external contour
+        # 5) Grab all external contours
         contours, _ = cv2.findContours(
             mask_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
         if not contours:
             return
-        # If you get multiple, pick the largest area one
-        main = max(contours, key=cv2.contourArea).squeeze(1)
-        if main.ndim != 2 or main.shape[0] < 3:
-            return
 
-        # 6) Build a single QPainterPath
+        # 6) Build a single QPainterPath merging all contours
         path = QtGui.QPainterPath()
-        x0, y0 = main[0]
-        path.moveTo(x0 * ds + min_x, y0 * ds + min_y)
-        for x, y in main[1:]:
-            path.lineTo(x * ds + min_x, y * ds + min_y)
-        path.closeSubpath()
+        for cnt in contours:
+            pts = cnt.squeeze(1)
+            if pts.ndim != 2 or pts.shape[0] < 3:
+                continue
+            # start a subpath for this contour
+            x0, y0 = pts[0]
+            path.moveTo(x0 * ds + min_x, y0 * ds + min_y)
+            for x, y in pts[1:]:
+                path.lineTo(x * ds + min_x, y * ds + min_y)
+            path.closeSubpath()
 
         # 7) Wrap in one GraphicsPathItem & emit
         fill_color = QtGui.QColor(255, 0, 0, 128)  # Semi-transparent red
-        outline_color = QtGui.QColor(255, 0, 0)  # Solid red for the outline
+        outline_color = QtGui.QColor(255, 0, 0)    # Solid red
         item = QtWidgets.QGraphicsPathItem(path)
         item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
         item.setBrush(QtGui.QBrush(fill_color))

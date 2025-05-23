@@ -102,7 +102,7 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
 
 def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
     """
-    Generate a mask by fitting a single shape around each block's inpaint bboxes,
+    Generate a mask by fitting a merged shape around each block's inpaint bboxes,
     then dilating that shape according to padding logic.
     """
     h, w, _ = img.shape
@@ -137,44 +137,55 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
 
         # 4) Close small mask to bridge gaps
         KSIZE = 15
-        kernel_rect = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
-        closed = cv2.morphologyEx(small, cv2.MORPH_CLOSE, kernel_rect)
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
+        closed = cv2.morphologyEx(small, cv2.MORPH_CLOSE, kernel)
 
-        # 5) Extract largest contour
+        # 5) Extract all contours
         contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             continue
-        main = max(contours, key=cv2.contourArea).squeeze(1)
-        if main.ndim != 2 or main.shape[0] < 3:
+
+        # 6) Merge contours: collect valid polygons in full image coords
+        polys = []
+        for cnt in contours:
+            pts = cnt.squeeze(1)
+            if pts.ndim != 2 or pts.shape[0] < 3:
+                continue
+            pts_f = (pts.astype(np.float32) * ds)
+            pts_f[:, 0] += min_x
+            pts_f[:, 1] += min_y
+            polys.append(pts_f.astype(np.int32))
+        if not polys:
             continue
 
-        # 6) Scale contour points back to image coordinates
-        pts = (main.astype(np.float32) * ds)
-        pts[:, 0] += min_x
-        pts[:, 1] += min_y
-        pts = pts.astype(np.int32)
-
-        # 7) Create per-block mask and fill polygon
+        # 7) Create per-block mask and fill all polygons
         block_mask = np.zeros((h, w), dtype=np.uint8)
-        cv2.fillPoly(block_mask, [pts], 255)
+        cv2.fillPoly(block_mask, polys, 255)
 
         # 8) Determine dilation kernel size
         kernel_size = default_padding
         src_lang = getattr(blk, 'source_lang', None)
         if src_lang and src_lang not in ['ja', 'ko']:
             kernel_size = 3
-        # Adjust for text bubbles
+        # Adjust for text bubbles: only consider contours wholly inside the bubble
         if getattr(blk, 'text_class', None) == 'text_bubble' and getattr(blk, 'bubble_xyxy', None) is not None:
             bx1, by1, bx2, by2 = blk.bubble_xyxy
-            # distance from fitted shape to bubble edges
-            min_dist = min(
-                pts[:,0].min() - bx1,
-                bx2 - pts[:,0].max(),
-                pts[:,1].min() - by1,
-                by2 - pts[:,1].max()
-            )
-            if kernel_size >= min_dist:
-                kernel_size = max(1, int(min_dist * 0.8))
+            # filter polygons fully within bubble bounds
+            valid = [p for p in polys 
+                     if (p[:,0] >= bx1).all() and (p[:,0] <= bx2).all() 
+                     and (p[:,1] >= by1).all() and (p[:,1] <= by2).all()]
+            if valid:
+                # compute distances for each polygon and get overall minimum
+                dists = []
+                for p in valid:
+                    left   = p[:,0].min() - bx1
+                    right  = bx2 - p[:,0].max()
+                    top    = p[:,1].min() - by1
+                    bottom = by2 - p[:,1].max()
+                    dists.extend([left, right, top, bottom])
+                min_dist = min(dists)
+                if kernel_size >= min_dist:
+                    kernel_size = max(1, int(min_dist * 0.8))
 
         # 9) Dilate the block mask
         dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
