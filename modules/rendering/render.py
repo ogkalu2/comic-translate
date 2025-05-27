@@ -244,24 +244,32 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
         # measure wrapped block
         w, h = eval_metrics(wrapped, font_size)
         return wrapped, w, h
+    
+    # Initialize
+    best_text, best_size = text, init_font_size
+    found_fit = False
 
     lo, hi = min_font_size, init_font_size
-    best_text, best_size = text, init_font_size
     while lo <= hi:
         mid = (lo + hi) // 2
         wrapped, w, h = wrap_and_size(mid)
         if w <= roi_width and h <= roi_height:
+            found_fit = True
             best_text, best_size = wrapped, mid
             lo = mid + 1
         else:
             hi = mid - 1
-    font_size, mutable_message = best_size, best_text
 
-    return mutable_message, font_size
+    # if nothing ever fit, force a wrap at the minimum size
+    if not found_fit:
+        best_text, w, h = wrap_and_size(min_font_size)
+        best_size = min_font_size
+
+    return best_text, best_size
 
     # mutable_message = text
-    # # font_size = init_font_size
-    # font_size = max(roi_width, roi_height)
+    # font_size = init_font_size
+    # # font_size = max(roi_width, roi_height)
 
     # while font_size > min_font_size:
     #     width, height = eval_metrics(mutable_message, font_size)
