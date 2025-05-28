@@ -438,11 +438,11 @@ class ComicTranslate(ComicTranslateUI):
         self.loading.setVisible(True)
         self.disable_hbutton_group()
         self.run_threaded(
-                lambda: self.pipeline.OCR_image(single_block),
-                None,
-                self.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block)
-            )
+            lambda: self.pipeline.OCR_image(single_block),
+            None,
+            self.default_error_handler,
+            lambda: self.finish_ocr_translate(single_block)
+        )
 
     def translate_image(self, single_block=False):
         source_lang = self.s_combo.currentText()
@@ -452,11 +452,81 @@ class ComicTranslate(ComicTranslateUI):
         self.loading.setVisible(True)
         self.disable_hbutton_group()
         self.run_threaded(
-                lambda: self.pipeline.translate_image(single_block),
-                None,
-                self.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block)
+            lambda: self.pipeline.translate_image(single_block),
+            None,
+            self.default_error_handler,
+            lambda: self.update_translated_text_items(single_block)
+        )
+
+    def update_translated_text_items(self, single_blk: bool):
+        def set_new_text(text_item, wrapped, font_size):
+            if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+                wrapped = wrapped.replace(' ', '')
+            text_item.set_plain_text(wrapped)
+            text_item.set_font_size(font_size)
+
+        if not self.image_viewer.text_items:
+            self.finish_ocr_translate(single_blk)
+            return
+
+        rs = self.render_settings()
+        upper = rs.upper_case
+        target_lang_en = self.lang_mapping.get(self.t_combo.currentText(), None)
+        trg_lng_cd = get_language_code(target_lang_en)
+
+        # This callback only runs **after** format_translations has finished.
+        def on_format_finished():
+            for text_item in self.image_viewer.text_items:
+                x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
+                rot = text_item.rotation()
+                blk = next(
+                    (
+                        b for b in self.blk_list
+                        if (int(b.xyxy[0]), int(b.xyxy[1])) == (x1, y1)
+                        and b.angle == rot
+                    ),
+                    None
+                )
+                if not (blk and blk.translation):
+                    continue
+
+                wrap_args = (
+                    blk.translation,
+                    text_item.font_family,
+                    blk.xyxy[2] - blk.xyxy[0],
+                    blk.xyxy[3] - blk.xyxy[1],
+                    float(text_item.line_spacing),
+                    float(text_item.outline_width),
+                    text_item.bold,
+                    text_item.italic,
+                    text_item.underline,
+                    text_item.alignment,
+                    text_item.direction,
+                    rs.max_font_size,
+                    rs.min_font_size,
+                )
+
+                # enqueue the word-wrap
+                self.run_threaded(
+                    pyside_word_wrap,
+                    lambda wrap_res, ti=text_item: set_new_text(ti, wrap_res[0], wrap_res[1]),
+                    self.default_error_handler,
+                    None,
+                    *wrap_args
+                )
+
+            # once all wraps are queued, finish off
+            self.run_finish_only(
+                finished_callback=lambda: self.finish_ocr_translate(single_blk)
             )
+
+        # enqueue the formatter
+        self.run_threaded(
+            lambda: format_translations(self.blk_list, trg_lng_cd, upper_case=upper),
+            None,                          
+            self.default_error_handler,
+            on_format_finished             
+        )
 
     def inpaint_and_set(self):
         if self.image_viewer.hasPhoto() and self.image_viewer.has_drawn_elements():
