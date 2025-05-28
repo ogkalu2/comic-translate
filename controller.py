@@ -24,12 +24,16 @@ from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
 from modules.utils.download import get_models, mandatory_models
 from modules.detection.utils.general import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
+from modules.rendering.render import pyside_word_wrap
+from modules.utils.pipeline_utils import get_language_code
+from modules.utils.translator_utils import format_translations
 from pipeline import ComicTranslatePipeline
 
 from app.controllers.image import ImageStateController
 from app.controllers.rect_item import RectItemController
 from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
+from collections import deque
 
 
 for model in mandatory_models:
@@ -91,6 +95,9 @@ class ComicTranslate(ComicTranslateUI):
 
         self.project_ctrl.load_main_page_settings()
         self.settings_page.load_settings()
+
+        self.operation_queue = deque()
+        self.is_processing_queue = False
 
 
     def connect_ui_elements(self):
@@ -206,8 +213,86 @@ class ComicTranslate(ComicTranslateUI):
     def on_manual_finished(self):
         self.loading.setVisible(False)
         self.enable_hbutton_group()
-    
-    def run_threaded(self, callback: Callable, result_callback: Callable=None, error_callback: Callable=None, finished_callback: Callable=None, *args, **kwargs):
+
+    def run_threaded(self, callback: Callable, result_callback: Callable=None, 
+                    error_callback: Callable=None, finished_callback: Callable=None, 
+                    *args, **kwargs):
+        """
+        Enhanced run_threaded with automatic queuing for top-level calls
+        """
+        return self._queue_operation(
+            callback, result_callback, error_callback, finished_callback,
+            *args, **kwargs
+        )
+
+    def _queue_operation(self, callback: Callable, result_callback: Callable=None, 
+                        error_callback: Callable=None, finished_callback: Callable=None, 
+                        *args, **kwargs):
+        """Queue an operation for sequential execution"""
+        operation = {
+            'callback': callback,
+            'result_callback': result_callback,
+            'error_callback': error_callback,
+            'finished_callback': finished_callback,
+            'args': args,
+            'kwargs': kwargs,
+        }
+        
+        self.operation_queue.append(operation)
+        
+        if not self.is_processing_queue:
+            self._process_next_operation()
+
+    def _process_next_operation(self):
+        """
+        Process the next operation in the queue
+        """
+        if not self.operation_queue:
+            self.is_processing_queue = False
+            return
+            
+        self.is_processing_queue = True
+        operation = self.operation_queue.popleft()
+        
+        # Create enhanced callbacks that handle queue processing
+
+        def enhanced_finished_callback():
+            # Call the original finished callback if it exists
+            if operation['finished_callback']:
+                operation['finished_callback']()
+            
+            # Process the next operation in the queue
+            QtCore.QTimer.singleShot(0, self._process_next_operation)
+        
+        def enhanced_error_callback(error_tuple):
+            # Call the original error callback if it exists
+            if operation['error_callback']:
+                operation['error_callback'](error_tuple)
+            
+            # Process the next operation in the queue even after error
+            QtCore.QTimer.singleShot(0, self._process_next_operation)
+
+        def enhanced_result_callback(result):
+            # Call the original result callback if it exists
+            if operation['result_callback']:
+                operation['result_callback'](result)
+        
+        # Execute the operation
+        self._execute_single_operation(
+            operation['callback'],
+            enhanced_result_callback,
+            enhanced_error_callback,
+            enhanced_finished_callback,
+            *operation['args'],
+            **operation['kwargs']
+        )
+
+    def _execute_single_operation(self, callback: Callable, result_callback: Callable=None, 
+                                error_callback: Callable=None, finished_callback: Callable=None, 
+                                *args, **kwargs):
+        """
+        Execute a single threaded operation (original run_threaded logic)
+        """
         worker = GenericWorker(callback, *args, **kwargs)
 
         if result_callback:
@@ -220,11 +305,48 @@ class ComicTranslate(ComicTranslateUI):
         self.current_worker = worker
         self.threadpool.start(worker)
 
+    def run_threaded_immediate(self, callback: Callable, result_callback: Callable=None, 
+                              error_callback: Callable=None, finished_callback: Callable=None, 
+                              *args, **kwargs):
+        """
+        Run a threaded operation immediately without queuing (bypass the queue)
+        Use this if you need the old behavior for specific operations
+        """
+        return self._execute_single_operation(callback, result_callback, error_callback, 
+                                            finished_callback, *args, **kwargs)
+
+    def clear_operation_queue(self):
+        """Clear all pending operations in the queue"""
+        self.operation_queue.clear()
+        
     def cancel_current_task(self):
+        """Enhanced cancel that also clears the queue"""
         if self.current_worker:
             self.current_worker.cancel()
+        
+        # Clear the queue and reset state
+        self.clear_operation_queue()
+        self.is_processing_queue = False
+
         # No need to Enable necessary Widgets/Buttons because the threads 
         # already have finish callbacks that handle this.
+
+    def run_finish_only(self, finished_callback: Callable, error_callback: Callable = None):
+        """
+        Queue a no-op operation whose only effect is to invoke the finished_callback.
+        """
+        # 1) define a no-op function
+        def _noop():
+            pass
+
+        # 2) hand it off to the existing queue machinery
+        #    (this will wrap it in a GenericWorker and enqueue it)
+        self._queue_operation(
+            callback=_noop,
+            result_callback=None,
+            error_callback=error_callback,
+            finished_callback=finished_callback
+        )
 
     def default_error_handler(self, error_tuple: Tuple):
         exctype, value, traceback_str = error_tuple
