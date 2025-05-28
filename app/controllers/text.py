@@ -489,7 +489,11 @@ class TextController:
             target_lang = self.main.t_combo.currentText()
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
-            format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper)
+
+            self.main.run_threaded(
+            lambda: format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper)
+            )
+
             min_font_size = self.main.settings_page.get_min_font_size()
             max_font_size = self.main.settings_page.get_max_font_size()
 
