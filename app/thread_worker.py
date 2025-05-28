@@ -38,6 +38,3 @@ class GenericWorker(QRunnable):
 
     def cancel(self):
         self.is_cancelled = True
-
-
-
