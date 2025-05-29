@@ -468,7 +468,7 @@ class ComicTranslate(ComicTranslateUI):
         if not self.image_viewer.text_items:
             self.finish_ocr_translate(single_blk)
             return
-
+        
         rs = self.render_settings()
         upper = rs.upper_case
         target_lang_en = self.lang_mapping.get(self.t_combo.currentText(), None)
@@ -477,6 +477,7 @@ class ComicTranslate(ComicTranslateUI):
         # This callback only runs **after** format_translations has finished.
         def on_format_finished():
             for text_item in self.image_viewer.text_items:
+                text_item.handleDeselection()
                 x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
                 rot = text_item.rotation()
                 blk = next(
@@ -517,7 +518,7 @@ class ComicTranslate(ComicTranslateUI):
 
             # once all wraps are queued, finish off
             self.run_finish_only(
-                finished_callback=lambda: self.finish_ocr_translate(single_blk)
+                finished_callback=self.on_manual_finished
             )
 
         # enqueue the formatter
