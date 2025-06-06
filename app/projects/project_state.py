@@ -38,6 +38,8 @@ def save_state_to_proj_file(comic_translate, file_name):
             'displayed_images': list(comic_translate.displayed_images),
             'loaded_images': comic_translate.loaded_images,
             'image_patches': {}, 
+            'llm_extra_context': comic_translate.settings_page.get_llm_settings().get('extra_context', ''),
+
         }
 
         image_id_counter = 0
@@ -311,3 +313,8 @@ def load_state_from_proj_file(comic_translate, file_name):
             original_to_temp.get(page, page): plist
             for page, plist in reconstructed.items()
         }
+
+    # restore LLM extra context
+    saved_ctx = state.get('llm_extra_context', '')
+    comic_translate.settings_page.ui.extra_context.setPlainText(saved_ctx)
+
