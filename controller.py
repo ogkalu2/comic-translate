@@ -178,9 +178,7 @@ class ComicTranslate(ComicTranslateUI):
         self.page_list.translate_imgs.connect(self.batch_translate_selected)
 
     def connect_rect_item_signals(self, rect_item): return self.rect_item_ctrl.connect_rect_item_signals(rect_item)
-    def find_corresponding_rect(self, tblock, iou_threshold): return self.rect_item_ctrl.find_corresponding_rect(tblock, iou_threshold)
     def apply_inpaint_patches(self, patches): return self.image_ctrl.apply_inpaint_patches(patches)
-    def find_corresponding_text_block(self, rect, iou_threshold): return self.rect_item_ctrl.find_corresponding_text_block(rect, iou_threshold)
     def render_settings(self): return self.text_ctrl.render_settings()
     def load_image(self, file_path: str) -> np.ndarray: return self.image_ctrl.load_image(file_path)
 
@@ -426,7 +424,7 @@ class ComicTranslate(ComicTranslateUI):
             if single_block:
                 rect = self.image_viewer.selected_rect
             else:
-                rect = self.find_corresponding_rect(self.blk_list[0], 0.5)
+                rect = self.rect_item_ctrl.find_corresponding_rect(self.blk_list[0], 0.5)
             self.image_viewer.select_rectangle(rect) 
         self.set_tool('box')
         self.on_manual_finished()

@@ -42,7 +42,7 @@ class ComicTranslatePipeline:
                 self.main_page.connect_rect_item_signals(rect_item)
                 self.main_page.image_viewer.rectangles.append(rect_item)
 
-            rect = self.main_page.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
+            rect = self.main_page.rect_item_ctrl.find_corresponding_rect(self.main_page.blk_list[0], 0.5)
             self.main_page.image_viewer.select_rectangle(rect)
             self.main_page.set_tool('box')
 
@@ -116,7 +116,7 @@ class ComicTranslatePipeline:
         rect = self.main_page.image_viewer.selected_rect
         srect = rect.mapRectToScene(rect.rect())
         srect_coords = srect.getCoords()
-        blk = self.main_page.find_corresponding_text_block(srect_coords)
+        blk = self.main_page.rect_item_ctrl.find_corresponding_text_block(srect_coords)
         return blk
 
     def OCR_image(self, single_block=False):
