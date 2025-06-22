@@ -83,23 +83,13 @@ class DeepLTranslation(TraditionalTranslation):
 
     def preprocess_target_language(self, lang_code: str) -> str:
         """Prepares a language code for the 'target_lang' parameter."""
-        # For target language, DeepL can handle regional variants.
-        if lang_code.lower() == 'zh-cn':
-            return 'ZH' # DeepL now recommends 'ZH' for Simplified Chinese
-        if lang_code.lower() == 'zh-tw':
-            return 'ZH' # And also 'ZH'. DeepL no longer uses HANS/HANT.
-
-        # For English, you can specify the variant. 'EN-US' is a safe default.
-        if lang_code.lower() == 'en':
+        code = lang_code.lower()
+        if code == 'zh-cn':
+            return 'ZH-HANS'  # DeepL: Simplified Chinese
+        if code == 'zh-tw':
+            return 'ZH-HANT'  # DeepL: Traditional Chinese
+        if code == 'en':
             return 'EN-US'
-
-        # For Portuguese, you must distinguish between PT-PT and PT-BR.
-        # This code defaults to PT-PT, which might be wrong.
-        # DeepL requires 'PT-BR' or 'PT-PT', not just 'PT'.
-        if lang_code.lower() == 'pt':
-             # You might need to add logic here to decide which one to use.
-             # Using PT-BR as a more common default.
+        if code == 'pt':
             return 'PT-BR'
-
-        # Fallback for other languages (e.g., 'fr' -> 'FR')
         return lang_code.upper()
