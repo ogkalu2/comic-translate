@@ -484,6 +484,159 @@ class ComicTranslatePipeline:
                 if is_directory_empty(check_from):
                     shutil.rmtree(check_from)
 
+    def batch_text_extraction(self, selected_paths: List[str] = None):
+        """
+        Batch process images for text extraction only (detection + OCR).
+        Exports all extracted text to a single text file.
+        """
+        timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
+        image_list = selected_paths if selected_paths is not None else self.main_page.image_files
+        total_images = len(image_list)
+        
+        # Store all extracted text
+        extracted_texts = []
+        
+        for index, image_path in enumerate(image_list):
+            # Progress update: index, total, current_step, total_steps, change_name
+            self.main_page.progress_update.emit(index, total_images, 0, 2, True)
+            
+            # Check for cancellation
+            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
+                self.main_page.current_worker = None
+                break
+                
+            # Get image metadata
+            base_name = os.path.splitext(os.path.basename(image_path))[0]
+            directory = os.path.dirname(image_path)
+            
+            # Handle archive extraction
+            archive_bname = ""
+            for archive in self.main_page.file_handler.archive_info:
+                images = archive['extracted_images']
+                archive_path = archive['archive_path']
+                
+                for img_pth in images:
+                    if img_pth == image_path:
+                        directory = os.path.dirname(archive_path)
+                        archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+            
+            # Load image
+            image = cv2.imread(image_path)
+            if image is None:
+                print(f"Failed to load image: {image_path}")
+                continue
+                
+            # Get source language for OCR
+            source_lang = self.main_page.image_states[image_path].get('source_lang', 
+                                                                     self.main_page.s_combo.currentText())
+            
+            # Text Block Detection
+            self.main_page.progress_update.emit(index, total_images, 1, 2, False)
+            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
+                self.main_page.current_worker = None
+                break
+                
+            if self.block_detector_cache is None:
+                self.block_detector_cache = TextBlockDetector(self.main_page.settings_page)
+            
+            blk_list = self.block_detector_cache.detect(image)
+            
+            if not blk_list:
+                # No text detected, add entry with no text
+                extracted_texts.append({
+                    'image_path': image_path,
+                    'base_name': base_name,
+                    'archive_name': archive_bname,
+                    'texts': []
+                })
+                continue
+            
+            # OCR Processing
+            self.main_page.progress_update.emit(index, total_images, 2, 2, False)
+            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
+                self.main_page.current_worker = None
+                break
+                
+            self.ocr.initialize(self.main_page, source_lang)
+            try:
+                self.ocr.process(image, blk_list)
+                
+                # Sort blocks for consistent output
+                source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
+                rtl = True if source_lang_english == 'Japanese' else False
+                blk_list = sort_blk_list(blk_list, rtl)
+                
+                # Extract text from blocks
+                block_texts = []
+                for blk in blk_list:
+                    if blk.text and blk.text.strip():
+                        block_texts.append(blk.text.strip())
+                
+                extracted_texts.append({
+                    'image_path': image_path,
+                    'base_name': base_name,
+                    'archive_name': archive_bname,
+                    'texts': block_texts
+                })
+                
+            except Exception as e:
+                error_message = str(e)
+                print(f"OCR error for {image_path}: {error_message}")
+                extracted_texts.append({
+                    'image_path': image_path,
+                    'base_name': base_name,
+                    'archive_name': archive_bname,
+                    'texts': [],
+                    'error': error_message
+                })
+        
+        # Export all extracted text to file
+        if extracted_texts:
+            self._export_extracted_text(extracted_texts, directory, timestamp, archive_bname)
+    
+    def _export_extracted_text(self, extracted_texts: List[dict], directory: str, timestamp: str, archive_bname: str):
+        """Export extracted text data to a formatted text file."""
+        # Create output directory
+        output_dir = os.path.join(directory, f"comic_translate_{timestamp}", "extracted_texts")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # Determine output filename
+        if archive_bname:
+            output_filename = f"{archive_bname}_extracted_text.txt"
+        else:
+            output_filename = f"extracted_text_{timestamp}.txt"
+        
+        output_path = os.path.join(output_dir, output_filename)
+        
+        # Write formatted text file
+        with open(output_path, 'w', encoding='UTF-8') as f:
+            f.write(f"Comic Translate - Text Extraction Report\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            f.write(f"Total Images Processed: {len(extracted_texts)}\n")
+            f.write("=" * 80 + "\n\n")
+            
+            for img_data in extracted_texts:
+                # Image header
+                f.write(f"Image: {img_data['base_name']}\n")
+                f.write(f"Path: {img_data['image_path']}\n")
+                if img_data.get('error'):
+                    f.write(f"Error: {img_data['error']}\n")
+                f.write("-" * 60 + "\n")
+                
+                # Text blocks
+                if img_data['texts']:
+                    f.write(f"Text Blocks Found: {len(img_data['texts'])}\n\n")
+                    for i, text in enumerate(img_data['texts'], 1):
+                        f.write(f"{i}. {text}\n")
+                    f.write("\n")
+                else:
+                    f.write("No text detected.\n\n")
+                
+                f.write("=" * 80 + "\n\n")
+        
+        print(f"Text extraction complete. Results saved to: {output_path}")
+
 
 
 
