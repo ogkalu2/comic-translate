@@ -316,5 +316,5 @@ def load_state_from_proj_file(comic_translate, file_name):
 
     # restore LLM extra context
     saved_ctx = state.get('llm_extra_context', '')
-    comic_translate.settings_page.ui.extra_context.setPlainText(saved_ctx)
+    return saved_ctx
 
