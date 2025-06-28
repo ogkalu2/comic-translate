@@ -114,8 +114,8 @@ class ProjectController:
                           self.main.default_error_handler, self.update_ui_from_project, file_name)
 
     def load_project(self, file_name):
-        self.main.project_file = file_name
-        load_state_from_proj_file(self.main, file_name)
+      self.main.project_file = file_name
+      return load_state_from_proj_file(self.main, file_name)
 
     def save_main_page_settings(self):
         settings = QSettings("ComicLabs", "ComicTranslate")
