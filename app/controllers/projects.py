@@ -110,12 +110,20 @@ class ProjectController:
 
     def thread_load_project(self, file_name):
         self.main.image_ctrl.clear_state()
-        self.main.run_threaded(self.load_project, None,
-                          self.main.default_error_handler, self.update_ui_from_project, file_name)
+        self.main.run_threaded(
+            self.load_project, 
+            self.load_state_to_ui,
+            self.main.default_error_handler, 
+            self.update_ui_from_project, 
+            file_name
+        )
 
     def load_project(self, file_name):
-      self.main.project_file = file_name
-      return load_state_from_proj_file(self.main, file_name)
+        self.main.project_file = file_name
+        return load_state_from_proj_file(self.main, file_name)
+    
+    def load_state_to_ui(self, saved_ctx: str):
+        self.main.settings_page.ui.extra_context.setPlainText(saved_ctx)
 
     def save_main_page_settings(self):
         settings = QSettings("ComicLabs", "ComicTranslate")
