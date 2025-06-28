@@ -132,8 +132,8 @@ class TextController:
             cursor.setPosition(cursor_position)
             self.main.t_text_edit.setTextCursor(cursor)
 
-    def update_text_block_from_item(self, new_text):
-        if self.main.curr_tblock:
+    def update_text_block_from_item(self, new_text: str):
+        if self.main.curr_tblock and new_text:
             self.main.curr_tblock.translation = new_text
             self.main.t_text_edit.blockSignals(True)
             self.main.t_text_edit.setPlainText(new_text)
@@ -172,8 +172,8 @@ class TextController:
         self.main.pipeline.load_box_coords(self.main.blk_list)
 
     # Formatting actions
-    def on_font_dropdown_change(self, font_family):
-        if self.main.curr_tblock_item:
+    def on_font_dropdown_change(self, font_family: str):
+        if self.main.curr_tblock_item and font_family:
             old_item = copy.copy(self.main.curr_tblock_item)
             font_size = int(self.main.font_size_dropdown.currentText())
             self.main.curr_tblock_item.set_font(font_family, font_size)
@@ -181,8 +181,8 @@ class TextController:
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
 
-    def on_font_size_change(self, font_size):
-        if self.main.curr_tblock_item:
+    def on_font_size_change(self, font_size: str):
+        if self.main.curr_tblock_item and font_size:
             old_item = copy.copy(self.main.curr_tblock_item)
             font_size = float(font_size)
             self.main.curr_tblock_item.set_font_size(font_size)
@@ -190,8 +190,8 @@ class TextController:
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
 
-    def on_line_spacing_change(self, line_spacing):
-        if self.main.curr_tblock_item:
+    def on_line_spacing_change(self, line_spacing: str):
+        if self.main.curr_tblock_item and line_spacing:
             old_item = copy.copy(self.main.curr_tblock_item)
             spacing = float(line_spacing)
             self.main.curr_tblock_item.set_line_spacing(spacing)
