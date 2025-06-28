@@ -138,6 +138,7 @@ class ImageStateController:
         # Clear existing items
         self.main.page_list.clear()
         self.main.image_cards.clear()
+        self.main.current_card = None
 
         # Add new items
         for index, file_path in enumerate(self.main.image_files):
