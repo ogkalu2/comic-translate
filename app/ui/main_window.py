@@ -274,6 +274,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.translate_button = MPushButton(self.tr("Translate All"))
         self.translate_button.setEnabled(True)
         self.translate_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        
+        self.extract_text_button = MPushButton(self.tr("Extract Text"))
+        self.extract_text_button.setEnabled(True)
+        self.extract_text_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        
         self.cancel_button = MPushButton(self.tr("Cancel"))
         self.cancel_button.setEnabled(True)
         self.cancel_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
@@ -285,6 +290,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         header_layout.addWidget(self.manual_radio)
         header_layout.addWidget(self.automatic_radio)
         header_layout.addWidget(self.translate_button)
+        header_layout.addWidget(self.extract_text_button)
         header_layout.addWidget(self.cancel_button)
 
         # Left Side (Image Selection)

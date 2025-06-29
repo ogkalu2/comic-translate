@@ -131,6 +131,7 @@ class ComicTranslate(ComicTranslateUI):
 
         # Connect other buttons and widgets
         self.translate_button.clicked.connect(self.start_batch_process)
+        self.extract_text_button.clicked.connect(self.start_text_extraction)
         self.cancel_button.clicked.connect(self.cancel_current_task)
         self.set_all_button.clicked.connect(self.text_ctrl.set_src_trg_all)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
@@ -648,4 +649,42 @@ class ComicTranslate(ComicTranslateUI):
         os.rmdir(self.temp_dir)
 
         super().closeEvent(event)
+
+    def start_text_extraction(self):
+        """Start the text extraction process for all images."""
+        # Validate that we have images to process
+        if not self.image_files:
+            QtWidgets.QMessageBox.warning(self, "Warning", "No images loaded for text extraction.")
+            return
+        
+        # Validate source language settings
+        for image_path in self.image_files:
+            source_lang = self.image_states[image_path]['source_lang']
+            # Basic validation - make sure source language is set
+            if not source_lang or source_lang == "":
+                QtWidgets.QMessageBox.warning(self, "Warning", 
+                    f"Source language not set for image: {os.path.basename(image_path)}")
+                return
+        
+        # Disable the extract button and show progress
+        self.extract_text_button.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        
+        # Run the text extraction in a separate thread
+        self.run_threaded(
+            self.pipeline.batch_text_extraction, 
+            None, 
+            self.default_error_handler, 
+            self.on_text_extraction_finished
+        )
+    
+    def on_text_extraction_finished(self):
+        """Called when text extraction is complete."""
+        self.progress_bar.setVisible(False)
+        self.extract_text_button.setEnabled(True)
+        
+        # Show completion message
+        QtWidgets.QMessageBox.information(self, "Text Extraction Complete", 
+            "Text extraction has been completed successfully!\n"
+            "The extracted text has been saved to a text file in the output directory.")
 
