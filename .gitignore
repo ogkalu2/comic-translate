@@ -17,3 +17,7 @@ venv/
 .python-version
 pyproject.toml
 uv.lock
+
+# Test files
+test_*.py
+demo_*.py

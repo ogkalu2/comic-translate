@@ -27,6 +27,13 @@ class ComicTranslatePipeline:
         self.inpainter_cache = None
         self.cached_inpainter_key = None
         self.ocr = OCRProcessor()
+        # OCR results cache: {(image_hash, model_key, source_lang): {block_id: text}}
+        self.ocr_cache = {}
+
+    def clear_ocr_cache(self):
+        """Clear the OCR cache. Note: Cache now persists across image and model changes automatically."""
+        self.ocr_cache = {}
+        print("OCR cache manually cleared")
 
     def load_box_coords(self, blk_list: List[TextBlock]):
         self.main_page.image_viewer.clear_rectangles()
@@ -119,17 +126,100 @@ class ComicTranslatePipeline:
         blk = self.main_page.rect_item_ctrl.find_corresponding_text_block(srect_coords)
         return blk
 
+    def _generate_image_hash(self, image):
+        """Generate a hash for the image to use as cache key"""
+        import hashlib
+        try:
+            # Use a small portion of the image data to generate hash for efficiency
+            # Take every 10th pixel to reduce computation while maintaining uniqueness
+            sample_data = image[::10, ::10].tobytes()
+            return hashlib.md5(sample_data).hexdigest()
+        except Exception as e:
+            # Fallback: use the full image shape and first few bytes if sampling fails
+            shape_str = str(image.shape) if hasattr(image, 'shape') else str(type(image))
+            fallback_data = shape_str.encode() + str(image.dtype).encode() if hasattr(image, 'dtype') else b'fallback'
+            return hashlib.md5(fallback_data).hexdigest()
+
+    def _get_cache_key(self, image, source_lang):
+        """Generate cache key for OCR results"""
+        image_hash = self._generate_image_hash(image)
+        ocr_model = self.main_page.settings_page.get_tool_selection('ocr')
+        return (image_hash, ocr_model, source_lang)
+
+    def _get_block_id(self, block):
+        """Generate a unique identifier for a text block based on its position"""
+        # Use the block's bounding box coordinates as a unique identifier
+        try:
+            x1, y1, x2, y2 = block.xyxy
+            return f"{x1}_{y1}_{x2}_{y2}"
+        except (AttributeError, ValueError, TypeError):
+            # Fallback: use object id if xyxy is not available or malformed
+            return str(id(block))
+
+    def _is_ocr_cached(self, cache_key):
+        """Check if OCR results are cached for this image/model/language combination"""
+        return cache_key in self.ocr_cache
+
+    def _cache_ocr_results(self, cache_key, blk_list):
+        """Cache OCR results for all blocks"""
+        try:
+            block_results = {}
+            for blk in blk_list:
+                block_id = self._get_block_id(blk)
+                # Ensure we have text to cache, use empty string if None
+                text = getattr(blk, 'text', '') or ''
+                block_results[block_id] = text
+            self.ocr_cache[cache_key] = block_results
+        except Exception as e:
+            print(f"Warning: Failed to cache OCR results: {e}")
+            # Don't raise exception, just skip caching
+
+    def _get_cached_text_for_block(self, cache_key, block):
+        """Retrieve cached text for a specific block"""
+        block_id = self._get_block_id(block)
+        cached_results = self.ocr_cache.get(cache_key, {})
+        return cached_results.get(block_id, "")
+
     def OCR_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
             image = self.main_page.image_viewer.get_cv2_image()
-            self.ocr.initialize(self.main_page, source_lang)
+            cache_key = self._get_cache_key(image, source_lang)
+            
             if single_block:
                 blk = self.get_selected_block()
-                self.ocr.process(image, [blk])
+                if blk is None:
+                    return
+                
+                # Check if we have cached results for this image/model/language
+                if self._is_ocr_cached(cache_key):
+                    # Extract text from cache for this specific block
+                    cached_text = self._get_cached_text_for_block(cache_key, blk)
+                    blk.text = cached_text
+                    print(f"Using cached OCR result for block: {cached_text}")
+                else:
+                    # Run OCR on all blocks and cache results
+                    print("No cached OCR results found, running OCR on entire page...")
+                    self.ocr.initialize(self.main_page, source_lang)
+                    # Create a copy of all blocks to avoid modifying the originals during processing
+                    all_blocks = [blk for blk in self.main_page.blk_list]
+                    
+                    if all_blocks:  # Only process if there are blocks
+                        self.ocr.process(image, all_blocks)
+                        # Cache the results
+                        self._cache_ocr_results(cache_key, all_blocks)
+                        # Now get the text for the requested block
+                        cached_text = self._get_cached_text_for_block(cache_key, blk)
+                        blk.text = cached_text
+                        print(f"Cached OCR results and extracted text for block: {cached_text}")
             else:
-                self.ocr.process(image, self.main_page.blk_list)
-                print("Block Length: ", len(self.main_page.blk_list))
+                # For full page OCR, run normally and cache results
+                self.ocr.initialize(self.main_page, source_lang)
+                if self.main_page.blk_list:  # Only process if there are blocks
+                    self.ocr.process(image, self.main_page.blk_list)
+                    # Cache the results
+                    self._cache_ocr_results(cache_key, self.main_page.blk_list)
+                    print("Block Length: ", len(self.main_page.blk_list))
 
     def translate_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
