@@ -454,9 +454,18 @@ class ComicTranslatePipeline:
 
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
+            translator_key = settings_page.get_tool_selection('translator')
             translator = Translator(self.main_page, source_lang, target_lang)
+            
+            # Get translation cache key for batch processing
+            translation_cache_key = self._get_translation_cache_key(
+                image, source_lang, target_lang, translator_key, extra_context
+            )
+            
             try:
                 translator.translate(blk_list, image, extra_context)
+                # Cache the translation results for potential future use
+                self._cache_translation_results(translation_cache_key, blk_list)
             except Exception as e:
                 # if it's an HTTPError, try to pull the "error_description" field
                 if isinstance(e, requests.exceptions.HTTPError):
