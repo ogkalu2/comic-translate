@@ -1,6 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 import cv2
+import copy
 
 class TextBlock(object):
     """
@@ -68,6 +69,40 @@ class TextBlock(object):
             return 'ver_rtl'
         else:
             return 'hor_ltr'
+    
+    def deep_copy(self):
+        """
+        Create a deep copy of this TextBlock instance.
+        
+        Returns:
+            TextBlock: A new TextBlock instance with copied data
+        """
+        # Create a new TextBlock with copied numpy arrays and other data
+        new_block = TextBlock()
+        
+        # Copy numpy arrays properly
+        new_block.xyxy = self.xyxy.copy() if isinstance(self.xyxy, np.ndarray) else self.xyxy
+        new_block.segm_pts = self.segm_pts.copy() if isinstance(self.segm_pts, np.ndarray) else self.segm_pts
+        new_block.bubble_xyxy = self.bubble_xyxy.copy() if isinstance(self.bubble_xyxy, np.ndarray) else self.bubble_xyxy
+        new_block.inpaint_bboxes = self.inpaint_bboxes.copy() if isinstance(self.inpaint_bboxes, np.ndarray) else self.inpaint_bboxes
+        
+        # Copy simple attributes
+        new_block.text_class = self.text_class
+        new_block.angle = self.angle
+        new_block.tr_origin_point = copy.deepcopy(self.tr_origin_point)
+        new_block.lines = copy.deepcopy(self.lines)
+        new_block.texts = copy.deepcopy(self.texts)
+        new_block.text = self.text
+        new_block.translation = self.translation
+        new_block.line_spacing = self.line_spacing
+        new_block.alignment = self.alignment
+        new_block.source_lang = self.source_lang
+        new_block.target_lang = self.target_lang
+        new_block.min_font_size = self.min_font_size
+        new_block.max_font_size = self.max_font_size
+        new_block.font_color = self.font_color
+        
+        return new_block
 
 def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:
     # Sort blk_list from right to left, top to bottom

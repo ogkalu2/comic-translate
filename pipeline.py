@@ -206,8 +206,8 @@ class ComicTranslatePipeline:
                     # Run OCR on all blocks and cache results
                     print("No cached OCR results found, running OCR on entire page...")
                     self.ocr.initialize(self.main_page, source_lang)
-                    # Create a copy of all blocks to avoid modifying the originals during processing
-                    all_blocks = [blk for blk in self.main_page.blk_list]
+                    # Create deep copies of all blocks to avoid modifying the originals during processing
+                    all_blocks = [blk.deep_copy() for blk in self.main_page.blk_list]
                     
                     if all_blocks:  # Only process if there are blocks
                         self.ocr.process(image, all_blocks)
