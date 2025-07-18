@@ -1,8 +1,6 @@
 import os, json
 import cv2, shutil
 import numpy as np
-import requests
-import logging
 from datetime import datetime
 from typing import List
 from PySide6 import QtCore
@@ -21,9 +19,6 @@ from modules.utils.archives import make
 from app.ui.canvas.rectangle import MoveableRectItem
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.save_renderer import ImageSaveRenderer
-
-
-logger = logging.getLogger(__name__)
 
 class ComicTranslatePipeline:
     def __init__(self, main_page):
@@ -225,8 +220,6 @@ class ComicTranslatePipeline:
                     # Cache the results
                     self._cache_ocr_results(cache_key, self.main_page.blk_list)
                     print("Block Length: ", len(self.main_page.blk_list))
-                self.ocr.process(image, self.main_page.blk_list)
-                logger.info("Block Length: %d", len(self.main_page.blk_list))
 
     def translate_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
@@ -253,11 +246,9 @@ class ComicTranslatePipeline:
             os.makedirs(path, exist_ok=True)
         cv2.imwrite(os.path.join(path, f"{base_name}_translated{extension}"), image)
 
-    def log_skipped_image(self, directory, timestamp, image_path, reason=""):
-        skipped_file = os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt")
-        with open(skipped_file, 'a', encoding='UTF-8') as file:
+    def log_skipped_image(self, directory, timestamp, image_path):
+        with open(os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt"), 'a', encoding='UTF-8') as file:
             file.write(image_path + "\n")
-            file.write(reason + "\n\n")
 
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
@@ -302,7 +293,7 @@ class ComicTranslatePipeline:
             state = self.main_page.image_states.get(image_path, {})
             if state.get('skip', False):
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
-                self.log_skipped_image(directory, timestamp, image_path, "User-skipped")
+                self.log_skipped_image(directory, timestamp, image_path)
                 continue
 
             # Text Block Detection
@@ -328,28 +319,17 @@ class ComicTranslatePipeline:
                     source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
                     rtl = True if source_lang_english == 'Japanese' else False
                     blk_list = sort_blk_list(blk_list, rtl)
-                    
                 except Exception as e:
-                    # if it's an HTTPError, try to pull the "message" field
-                    if isinstance(e, requests.exceptions.HTTPError):
-                        try:
-                            err_json = e.response.json()
-                            err_msg = err_json.get("message", str(e))
-                        except Exception:
-                            err_msg = str(e)
-                    else:
-                        err_msg = str(e)
-
-                    logger.error(err_msg)
-                    reason = f"OCR: {err_msg}"
+                    error_message = str(e)
+                    print(error_message)
                     self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
-                    self.main_page.image_skipped.emit(image_path, "OCR", err_msg)
-                    self.log_skipped_image(directory, timestamp, image_path, reason)
+                    self.main_page.image_skipped.emit(image_path, "OCR", error_message)
+                    self.log_skipped_image(directory, timestamp, image_path)
                     continue
             else:
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                 self.main_page.image_skipped.emit(image_path, "Text Blocks", "")
-                self.log_skipped_image(directory, timestamp, image_path, "No text blocks detected")
+                self.log_skipped_image(directory, timestamp, image_path)
                 continue
 
             self.main_page.progress_update.emit(index, total_images, 3, 10, False)
@@ -401,21 +381,11 @@ class ComicTranslatePipeline:
             try:
                 translator.translate(blk_list, image, extra_context)
             except Exception as e:
-                # if it's an HTTPError, try to pull the "message" field
-                if isinstance(e, requests.exceptions.HTTPError):
-                    try:
-                        err_json = e.response.json()
-                        err_msg = err_json.get("message", str(e))
-                    except Exception:
-                        err_msg = str(e)
-                else:
-                    err_msg = str(e)
-
-                logger.error(err_msg)
-                reason = f"Translator: {err_msg}"
+                error_message = str(e)
+                print(error_message)
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
-                self.main_page.image_skipped.emit(image_path, "Translator", err_msg)
-                self.log_skipped_image(directory, timestamp, image_path, reason)
+                self.main_page.image_skipped.emit(image_path, "Translator", error_message)
+                self.log_skipped_image(directory, timestamp, image_path)
                 continue
 
             entire_raw_text = get_raw_text(blk_list)
@@ -429,15 +399,14 @@ class ComicTranslatePipeline:
                 if (not raw_text_obj) or (not translated_text_obj):
                     self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                     self.main_page.image_skipped.emit(image_path, "Translator", "")
-                    self.log_skipped_image(directory, timestamp, image_path, "Translator: empty JSON")
+                    self.log_skipped_image(directory, timestamp, image_path)
                     continue
             except json.JSONDecodeError as e:
                 # Handle invalid JSON
                 error_message = str(e)
-                reason = f"Translator: JSONDecodeError: {error_message}"
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                 self.main_page.image_skipped.emit(image_path, "Translator", error_message)
-                self.log_skipped_image(directory, timestamp, image_path, reason)
+                self.log_skipped_image(directory, timestamp, image_path)
                 continue
 
             if export_settings['export_raw_text']:
