@@ -3,6 +3,7 @@ import cv2, shutil
 import numpy as np
 import requests
 import logging
+import hashlib
 from datetime import datetime
 from typing import List
 from PySide6 import QtCore
@@ -33,11 +34,17 @@ class ComicTranslatePipeline:
         self.cached_inpainter_key = None
         self.ocr = OCRProcessor()
         self.ocr_cache = {} # OCR results cache: {(image_hash, model_key, source_lang): {block_id: text}}
+        self.translation_cache = {} # Translation results cache: {(image_hash, translator_key, source_lang, target_lang, extra_context): {block_id: translation}}
 
     def clear_ocr_cache(self):
         """Clear the OCR cache. Note: Cache now persists across image and model changes automatically."""
         self.ocr_cache = {}
         logger.info("OCR cache manually cleared")
+
+    def clear_translation_cache(self):
+        """Clear the translation cache. Note: Cache now persists across image and model changes automatically."""
+        self.translation_cache = {}
+        logger.info("Translation cache manually cleared")
 
     def load_box_coords(self, blk_list: List[TextBlock]):
         self.main_page.image_viewer.clear_rectangles()
@@ -132,7 +139,6 @@ class ComicTranslatePipeline:
 
     def _generate_image_hash(self, image):
         """Generate a hash for the image to use as cache key"""
-        import hashlib
         try:
             # Use a small portion of the image data to generate hash for efficiency
             # Take every 10th pixel to reduce computation while maintaining uniqueness
@@ -184,6 +190,37 @@ class ComicTranslatePipeline:
         cached_results = self.ocr_cache.get(cache_key, {})
         return cached_results.get(block_id, "")
 
+    def _get_translation_cache_key(self, image, source_lang, target_lang, translator_key, extra_context):
+        """Generate cache key for translation results"""
+        image_hash = self._generate_image_hash(image)
+        # Include extra_context in cache key since it affects translation results
+        context_hash = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
+        return (image_hash, translator_key, source_lang, target_lang, context_hash)
+
+    def _is_translation_cached(self, cache_key):
+        """Check if translation results are cached for this image/translator/language combination"""
+        return cache_key in self.translation_cache
+
+    def _cache_translation_results(self, cache_key, blk_list):
+        """Cache translation results for all blocks"""
+        try:
+            block_results = {}
+            for blk in blk_list:
+                block_id = self._get_block_id(blk)
+                # Ensure we have translation to cache, use empty string if None
+                translation = getattr(blk, 'translation', '') or ''
+                block_results[block_id] = translation
+            self.translation_cache[cache_key] = block_results
+        except Exception as e:
+            logger.warning(f"Failed to cache translation results: {e}")
+            # Don't raise exception, just skip caching
+
+    def _get_cached_translation_for_block(self, cache_key, block):
+        """Retrieve cached translation for a specific block"""
+        block_id = self._get_block_id(block)
+        cached_results = self.translation_cache.get(cache_key, {})
+        return cached_results.get(block_id, "")
+
     def OCR_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
@@ -227,16 +264,44 @@ class ComicTranslatePipeline:
             settings_page = self.main_page.settings_page
             image = self.main_page.image_viewer.get_cv2_image()
             extra_context = settings_page.get_llm_settings()['extra_context']
+            translator_key = settings_page.get_tool_selection('translator')
 
             upper_case = settings_page.ui.uppercase_checkbox.isChecked()
 
             translator = Translator(self.main_page, source_lang, target_lang)
+            
+            # Get translation cache key
+            translation_cache_key = self._get_translation_cache_key(
+                image, source_lang, target_lang, translator_key, extra_context
+            )
+            
             if single_block:
                 blk = self.get_selected_block()
-                translator.translate([blk], image, extra_context)
+                if blk is None:
+                    return
+                
+                # Check if we have cached translation results for this image/translator/language combination
+                if self._is_translation_cached(translation_cache_key):
+                    cached_translation = self._get_cached_translation_for_block(translation_cache_key, blk)
+                    blk.translation = cached_translation
+                    logger.info(f"Using cached translation result for block: {cached_translation}")
+                else:
+                    # Run translation on a deep copies of all the blocks and cache the results
+                    logger.info("No cached translation results found, running translation on entire page...")
+                    all_blocks = [blk.deep_copy() for blk in self.main_page.blk_list]
+                    
+                    if all_blocks:  
+                        translator.translate(all_blocks, image, extra_context)
+                        self._cache_translation_results(translation_cache_key, all_blocks)
+                        cached_translation = self._get_cached_translation_for_block(translation_cache_key, blk)
+                        blk.translation = cached_translation
+                        logger.info(f"Cached translation results and extracted translation for block: {cached_translation}")
+                
                 set_upper_case([blk], upper_case)
             else:
+                # For full page translation, run normally and cache results
                 translator.translate(self.main_page.blk_list, image, extra_context)
+                self._cache_translation_results(translation_cache_key, self.main_page.blk_list)
                 set_upper_case(self.main_page.blk_list, upper_case)
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
@@ -389,9 +454,18 @@ class ComicTranslatePipeline:
 
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
+            translator_key = settings_page.get_tool_selection('translator')
             translator = Translator(self.main_page, source_lang, target_lang)
+            
+            # Get translation cache key for batch processing
+            translation_cache_key = self._get_translation_cache_key(
+                image, source_lang, target_lang, translator_key, extra_context
+            )
+            
             try:
                 translator.translate(blk_list, image, extra_context)
+                # Cache the translation results for potential future use
+                self._cache_translation_results(translation_cache_key, blk_list)
             except Exception as e:
                 # if it's an HTTPError, try to pull the "error_description" field
                 if isinstance(e, requests.exceptions.HTTPError):
