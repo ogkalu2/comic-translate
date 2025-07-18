@@ -31,9 +31,9 @@ class ComicTranslatePipeline:
         self.ocr_cache = {}
 
     def clear_ocr_cache(self):
-        """Clear the OCR cache. Call this when switching images or changing OCR models."""
+        """Clear the OCR cache. Note: Cache now persists across image and model changes automatically."""
         self.ocr_cache = {}
-        print("OCR cache cleared")
+        print("OCR cache manually cleared")
 
     def load_box_coords(self, blk_list: List[TextBlock]):
         self.main_page.image_viewer.clear_rectangles()

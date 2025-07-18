@@ -394,9 +394,6 @@ class ImageStateController:
             # Check if this image has been displayed before
             first_time_display = file_path not in self.main.displayed_images
             
-            # Clear OCR cache when switching to a different image
-            self.main.pipeline.clear_ocr_cache()
-            
             self.load_image_state(file_path)
             self.main.central_stack.setCurrentWidget(self.main.image_viewer)
             self.main.central_stack.layout().activate()
