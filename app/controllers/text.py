@@ -142,6 +142,10 @@ class TextController:
     def save_src_trg(self):
         source_lang = self.main.s_combo.currentText()
         target_lang = self.main.t_combo.currentText()
+        
+        # Clear OCR cache when language settings change
+        self.main.pipeline.clear_ocr_cache()
+        
         if self.main.curr_img_idx >= 0:
             current_file = self.main.image_files[self.main.curr_img_idx]
             self.main.image_states[current_file]['source_lang'] = source_lang
