@@ -1,4 +1,5 @@
 import os, sys
+import logging
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QSettings, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication  
@@ -7,6 +8,12 @@ from app.translations import ct_translations
 from app import icon_resource
 
 def main():
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+    )
+    
     if sys.platform == "win32":
         # Necessary Workaround to set Taskbar Icon on Windows
         import ctypes
