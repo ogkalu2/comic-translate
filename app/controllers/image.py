@@ -327,7 +327,17 @@ class ImageStateController:
         final_bgr = self.main.image_viewer.get_cv2_image(paint_all=True)
         final_rgb = cv2.cvtColor(final_bgr, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(final_rgb)
-        pil_img.save(file_path)
+        
+        settings = QtCore.QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup('export')
+        jpeg_quality = settings.value('jpeg_quality', 95, type=int)
+        settings.endGroup()
+        
+        file_ext = os.path.splitext(file_path)[1].lower()
+        if file_ext in ['.jpg', '.jpeg']:
+            pil_img.save(file_path, quality=jpeg_quality, optimize=True)
+        else:
+            pil_img.save(file_path)
 
     def save_image_state(self, file: str):
         skip_status = self.main.image_states.get(file, {}).get('skip', False)
