@@ -250,9 +250,6 @@ class WebtoonController:
     def toggle_webtoon_mode(self):
         """Toggle between regular image viewer and webtoon mode."""
         requested_mode = self.main.webtoon_toggle.isChecked()
-        print(requested_mode)
-        print(self.main.webtoon_mode)
-        print(self.main.image_viewer.webtoon_mode)
         
         # Don't do anything if we're already in the requested mode
         if self.main.webtoon_mode == requested_mode:
