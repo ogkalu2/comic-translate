@@ -47,7 +47,6 @@ class RectItemController:
 
         new_blk = TextBlock(text_bbox=np.array(new_rect_coords))
         self.main.blk_list.append(new_blk)
-
         command = AddRectangleCommand(self.main, rect_item, new_blk, self.main.blk_list)
         self.main.undo_group.activeStack().push(command)
 
