@@ -206,37 +206,44 @@ def validate_ocr(main_page, source_lang):
     credentials = settings.get('credentials', {})
     source_lang_en = main_page.lang_mapping.get(source_lang, source_lang)
     ocr_tool = settings['tools']['ocr']
-    
-    # Validate OCR API keys
-    if (ocr_tool == tr("Microsoft OCR") and 
-        not credentials.get(tr("Microsoft Azure"), {}).get("api_key_ocr")):
-        Messages.show_api_key_ocr_error(main_page)
-        return False
-    
-    if (ocr_tool == tr("Google Cloud Vision") and 
-        not credentials.get(tr("Google Cloud"), {}).get("api_key")):
-        Messages.show_api_key_ocr_error(main_page)
-        return False
-        
-    # Validate Microsoft Endpoint
-    if (ocr_tool == tr('Microsoft OCR') and 
-        not credentials.get(tr('Microsoft Azure'), {}).get('endpoint')):
-        Messages.show_endpoint_url_error(main_page)
-        return False
-        
-    # Validate GPT OCR
-    if (ocr_tool == tr('GPT-4.1-mini') and 
-        not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
-        Messages.show_api_key_ocr_error(main_page)
-        return False
-    
-    if source_lang_en == "Russian":
-        if (ocr_tool == tr('Default') and 
-            not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
-            Messages.show_api_key_ocr_gpt4v_error(main_page)
+
+    # Helper to check authentication or credential
+    def has_access(service, key_field):
+        return bool(credentials.get(service, {}).get(key_field)))
+
+    # Microsoft OCR: needs api_key_ocr and endpoint
+    if ocr_tool == tr("Microsoft OCR"):
+        service = tr("Microsoft Azure")
+        if not (settings_page.is_logged_in() or
+                (credentials.get(service, {}).get('api_key_ocr') and
+                 credentials.get(service, {}).get('endpoint'))):
+            Messages.show_signup_or_credentials_error(main_page)
             return False
     
+
+    # Google Cloud Vision
+    elif ocr_tool == tr("Google Cloud Vision"):
+        service = tr("Google Cloud")
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+
+    # GPT-based OCR
+    elif ocr_tool == tr('GPT-4.1-mini'):
+        service = tr('Open AI GPT')
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+
+    # Default OCR for Russian uses GPT
+    if source_lang_en == "Russian" and ocr_tool == tr('Default'):
+        service = tr('Open AI GPT')
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+
     return True
+
 
 def validate_translator(main_page, source_lang, target_lang):
     settings_page = main_page.settings_page
@@ -245,55 +252,60 @@ def validate_translator(main_page, source_lang, target_lang):
     credentials = settings.get('credentials', {})
     translator_tool = settings['tools']['translator']
     
-    # Validate translator API keys
-    if (translator_tool == tr("DeepL") and 
-        not credentials.get(tr("DeepL"), {}).get("api_key")):
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    
-    if (translator_tool == tr("Microsoft Translator") and 
-        not credentials.get(tr("Microsoft Azure"), {}).get("api_key_translator")):
-        Messages.show_api_key_translator_error(main_page)
-        return False
-        
-    if (translator_tool == tr("Yandex") and 
-        not credentials.get(tr("Yandex"), {}).get("api_key")):
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    
-    if ('GPT' in translator_tool and 
-        not credentials.get(tr('Open AI GPT'), {}).get('api_key')):
-        Messages.show_api_key_translator_error(main_page)
-        return False
-        
-    if ('Gemini' in translator_tool and 
-        not credentials.get(tr('Google Gemini'), {}).get('api_key')):
-        Messages.show_api_key_translator_error(main_page)
-        return False
-        
-    if ('Claude' in translator_tool and 
-        not credentials.get(tr('Anthropic Claude'), {}).get('api_key')):
-        Messages.show_api_key_translator_error(main_page)
-        return False
-    
-    # Check service-specific incompatibilities
-    if translator_tool == tr('DeepL'):
-        if target_lang == main_page.tr('Traditional Chinese'):
-            Messages.show_deepl_ch_error(main_page)
+
+    def has_access(service, key_field):
+        return bool(credentials.get(service, {}).get(key_field))
+
+    # Credential checks
+    if translator_tool == tr("DeepL"):
+        service = tr("DeepL")
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
             return False
         if target_lang == main_page.tr('Thai'):
-            Messages.show_deepl_th_error(main_page)
+    elif translator_tool == tr("Microsoft Translator"):
+        service = tr("Microsoft Azure")
+        if not has_access(service, 'api_key_translator'):
+            Messages.show_signup_or_credentials_error(main_page)
             return False
         if target_lang == main_page.tr('Vietnamese'):
-            Messages.show_deepl_vi_error(main_page)
+    elif translator_tool == tr("Yandex"):
+        service = tr("Yandex")
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
             return False
             
-    if  translator_tool == tr('Google Translate'):
-            if (source_lang == main_page.tr('Brazilian Portuguese') or 
-                target_lang == main_page.tr('Brazilian Portuguese')):
-                Messages.show_googlet_ptbr_error(main_page)
-                return False
-    
+    elif "GPT" in translator_tool:
+        service = tr('Open AI GPT')
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+    elif "Gemini" in translator_tool:
+        service = tr('Google Gemini')
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+    elif "Claude" in translator_tool:
+        service = tr('Anthropic Claude')
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+
+    # Unsupported target languages by service
+    unsupported = {
+        tr("DeepL"): [
+            main_page.tr('Thai'),
+            main_page.tr('Vietnamese')
+        ],
+        tr("Google Translate"): [
+            main_page.tr('Brazilian Portuguese')
+        ]
+    }
+    unsupported_langs = unsupported.get(translator_tool, [])
+    if target_lang in unsupported_langs:
+        Messages.show_translator_language_not_supported(main_page)
+        return False
+
     return True
 
 def font_selected(main_page):
