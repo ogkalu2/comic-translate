@@ -219,7 +219,6 @@ def validate_ocr(main_page, source_lang):
                  credentials.get(service, {}).get('endpoint'))):
             Messages.show_signup_or_credentials_error(main_page)
             return False
-    
 
     # Google Cloud Vision
     elif ocr_tool == tr("Google Cloud Vision"):
@@ -251,7 +250,6 @@ def validate_translator(main_page, source_lang, target_lang):
     settings = settings_page.get_all_settings()
     credentials = settings.get('credentials', {})
     translator_tool = settings['tools']['translator']
-    
 
     def has_access(service, key_field):
         return bool(credentials.get(service, {}).get(key_field))
@@ -262,19 +260,16 @@ def validate_translator(main_page, source_lang, target_lang):
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
-        if target_lang == main_page.tr('Thai'):
     elif translator_tool == tr("Microsoft Translator"):
         service = tr("Microsoft Azure")
         if not has_access(service, 'api_key_translator'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
-        if target_lang == main_page.tr('Vietnamese'):
     elif translator_tool == tr("Yandex"):
         service = tr("Yandex")
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
-            
     elif "GPT" in translator_tool:
         service = tr('Open AI GPT')
         if not has_access(service, 'api_key'):
