@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- First rectangle representing image 1 -->
+  <rect x="2" y="3" width="8" height="6" fill="none" stroke="currentColor"/>
+  <!-- Second rectangle representing image 2 -->
+  <rect x="2" y="11" width="8" height="6" fill="none" stroke="currentColor"/>
+  <!-- Arrow pointing to combined image -->
+  <path d="M12 9h4m0 0l-2-2m2 2l-2 2"/>
+  <!-- Combined rectangle representing stitched image -->
+  <rect x="18" y="5" width="4" height="10" fill="none" stroke="currentColor"/>
+  <!-- Stitching lines -->
+  <path d="M19 8l2 0M19 11l2 0" stroke="currentColor" stroke-width="1" stroke-dasharray="1,1"/>
+</svg>

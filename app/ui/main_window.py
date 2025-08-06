@@ -69,6 +69,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.main_content_widget = None
         self.tool_buttons = {}  # Dictionary to store mutually exclusive tool names and their corresponding buttons
         self.page_list = PageListView()
+        
+        # Webtoon mode state
+        self.webtoon_mode = False
 
         self.grabGesture(QtCore.Qt.GestureType.PanGesture)
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
@@ -270,6 +273,13 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.automatic_radio = MRadioButton(self.tr("Automatic"))
         self.automatic_radio.setChecked(True)
         self.automatic_radio.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        
+        # Webtoon mode toggle
+        self.webtoon_toggle = MToolButton()
+        self.webtoon_toggle.set_dayu_svg("webtoon-toggle.svg")  # You can change this icon
+        self.webtoon_toggle.setCheckable(True)
+        self.webtoon_toggle.setToolTip(self.tr("Toggle Webtoon Mode"))
+        self.webtoon_toggle.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         self.translate_button = MPushButton(self.tr("Translate All"))
         self.translate_button.setEnabled(True)
@@ -282,6 +292,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         header_layout.addWidget(self.hbutton_group)
         header_layout.addWidget(self.loading)
         header_layout.addStretch()
+        header_layout.addWidget(self.webtoon_toggle)
         header_layout.addWidget(self.manual_radio)
         header_layout.addWidget(self.automatic_radio)
         header_layout.addWidget(self.translate_button)
@@ -311,7 +322,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.drag_browser.setToolTip(self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)"))
         self.central_stack.addWidget(self.drag_browser)
         
-        # Photo Viewer
+        # Unified Image Viewer (handles both single images and webtoon mode)
         #self.image_viewer.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
         self.central_stack.addWidget(self.image_viewer)
         
@@ -678,7 +689,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
     def set_tool(self, tool_name: str):
         self.image_viewer.unsetCursor()
         self.image_viewer.set_tool(tool_name)
-
+        
         for name, button in self.tool_buttons.items():
             if name != tool_name:
                 button.setChecked(False)
