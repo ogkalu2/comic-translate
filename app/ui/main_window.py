@@ -276,7 +276,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         
         # Webtoon mode toggle
         self.webtoon_toggle = MToolButton()
-        self.webtoon_toggle.set_dayu_svg("webtoon-toggle.svg")  # You can change this icon
+        self.webtoon_toggle.set_dayu_svg("webtoon-toggle.svg") 
+        self.webtoon_toggle.huge()
         self.webtoon_toggle.setCheckable(True)
         self.webtoon_toggle.setToolTip(self.tr("Toggle Webtoon Mode"))
         self.webtoon_toggle.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
