@@ -216,7 +216,7 @@ def get_inpaint_bboxes(text_bbox, image):
     adjusted_bboxes = []
     for bbox in content_bboxes:
         lx1, ly1, lx2, ly2 = bbox
-        adjusted_bbox = (x1 + lx1, y1 + ly1, x1 + lx2, y1 + ly2)
+        adjusted_bbox = [x1 + lx1, y1 + ly1, x1 + lx2, y1 + ly2]
         adjusted_bboxes.append(adjusted_bbox)
 
     return adjusted_bboxes
