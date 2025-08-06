@@ -342,7 +342,14 @@ class MDragFileButton(MToolButton):
         Get last browser file path
         :return: str
         """
-        return self._path
+        if isinstance(self._path, list):
+            # If it's a list, return the directory of the first file
+            return os.path.dirname(self._path[0]) if self._path else ""
+        elif isinstance(self._path, str):
+            # If it's a file path, return its directory
+            return os.path.dirname(self._path) if self._path else ""
+        else:
+            return ""
 
     def set_dayu_path(self, value):
         """
