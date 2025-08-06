@@ -75,12 +75,6 @@ class TextController:
         underline = render_settings.underline
         direction = render_settings.direction
 
-        text_item = TextBlockItem(text, self.main.image_viewer.photo, font_family,
-                                  font_size, text_color, alignment, line_spacing,
-                                  outline_color, outline_width, bold, italic, underline, direction)
-
-        text_item.setPos(blk.xyxy[0], blk.xyxy[1])
-        text_item.setRotation(blk.angle)
         properties = TextItemProperties(
             text=text,
             parent_item=self.main.image_viewer.photo,
@@ -101,9 +95,6 @@ class TextController:
         
         text_item = self.main.image_viewer.add_text_item(properties)
         text_item.set_plain_text(text)
-        self.main.image_viewer._scene.addItem(text_item)
-        self.main.image_viewer.text_items.append(text_item)
-        self.connect_text_item_signals(text_item)
 
         command = AddTextItemCommand(self.main, text_item)
         self.main.push_command(command)
