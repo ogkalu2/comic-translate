@@ -260,26 +260,31 @@ def validate_translator(main_page, source_lang, target_lang):
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
+        
     elif translator_tool == tr("Microsoft Translator"):
         service = tr("Microsoft Azure")
         if not has_access(service, 'api_key_translator'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
+        
     elif translator_tool == tr("Yandex"):
         service = tr("Yandex")
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
+        
     elif "GPT" in translator_tool:
         service = tr('Open AI GPT')
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
+        
     elif "Gemini" in translator_tool:
         service = tr('Google Gemini')
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
+        
     elif "Claude" in translator_tool:
         service = tr('Anthropic Claude')
         if not has_access(service, 'api_key'):
