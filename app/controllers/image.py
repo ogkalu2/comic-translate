@@ -95,11 +95,62 @@ class ImageStateController:
     def thread_insert(self, paths: List[str]):
         if self.main.image_files:
             def on_files_prepared(prepared_files):
-                self.main.image_files.extend(prepared_files)
-                path = prepared_files[0]
-                new_index = self.main.image_files.index(path)
-                self.update_image_cards()
-                self.main.page_list.setCurrentRow(new_index)
+                # Save current state and determine insert position
+                self.save_current_image_state()
+                
+                # Insert at the end of the list
+                insert_position = len(self.main.image_files)
+                
+                # Insert files into the main image_files list
+                for i, file_path in enumerate(prepared_files):
+                    self.main.image_files.insert(insert_position + i, file_path)
+                    
+                    # Initialize image state for new files
+                    self.main.image_data[file_path] = None
+                    self.main.image_history[file_path] = [file_path]
+                    self.main.in_memory_history[file_path] = []
+                    self.main.current_history_index[file_path] = 0
+                    self.save_image_state(file_path)
+                    
+                    # Create undo stack for new file
+                    stack = QtGui.QUndoStack(self.main)
+                    self.main.undo_stacks[file_path] = stack
+                    self.main.undo_group.addStack(stack)
+                
+                # Handle webtoon mode specific updates
+                if self.main.webtoon_mode:
+                    # Use the insert_pages method for webtoon mode
+                    success = self.main.image_viewer.webtoon_manager.insert_pages(prepared_files, insert_position)
+                    
+                    if success:
+                        # Update image cards and set selection to the first inserted image
+                        self.update_image_cards()
+                        self.main.page_list.blockSignals(True)
+                        self.main.page_list.setCurrentRow(insert_position)
+                        self.highlight_card(insert_position)
+                        self.main.page_list.blockSignals(False)
+                        
+                        # Update current index to the first inserted image
+                        self.main.curr_img_idx = insert_position
+                    else:
+                        # Fallback to full reload if insert failed
+                        current_page = max(0, self.main.curr_img_idx)
+                        self.main.image_viewer.webtoon_manager.load_images_lazy(self.main.image_files, current_page)
+                        self.update_image_cards()
+                        self.main.page_list.blockSignals(True)
+                        self.main.page_list.setCurrentRow(current_page)
+                        self.highlight_card(current_page)
+                        self.main.page_list.blockSignals(False)
+                else:
+                    # Handle normal mode
+                    self.update_image_cards()
+                    self.main.page_list.setCurrentRow(insert_position)
+                    
+                    # Load and display the first inserted image
+                    path = prepared_files[0]
+                    new_index = self.main.image_files.index(path)
+                    im = self.load_image(path)
+                    self.display_image_from_loaded(im, new_index, False)
 
             self.main.run_threaded(
                 lambda: self.main.file_handler.prepare_files(paths, True),
@@ -161,12 +212,48 @@ class ImageStateController:
             index = self.main.page_list.row(current)
             self.main.curr_tblock_item = None
             
-            self.main.run_threaded(
-                lambda: self.load_image(self.main.image_files[index]),
-                lambda result: self.display_image_from_loaded(result, index),
-                self.main.default_error_handler,
-                lambda: self.highlight_card(index)
-            )
+            # Avoid circular calls when in webtoon mode
+            if getattr(self.main, '_processing_page_change', False):
+                return
+            
+            if self.main.webtoon_mode:
+                # In webtoon mode, just scroll to the page using the unified image viewer
+                if self.main.image_viewer.hasPhoto():
+                    print(f"Card selected: scrolling to page {index}")
+                    
+                    # Set the current index immediately to avoid confusion
+                    self.main.curr_img_idx = index
+                    
+                    # Scroll to the page (this will set _programmatic_scroll = True)
+                    self.main.image_viewer.scroll_to_page(index)
+                    self.highlight_card(index)
+                    
+                    # Load minimal page state without interfering with the webtoon view
+                    file_path = self.main.image_files[index]
+                    if file_path in self.main.image_states:
+                        state = self.main.image_states[file_path]
+                        # Only load language settings in webtoon mode
+                        self.main.s_combo.setCurrentText(state.get('source_lang', ''))
+                        self.main.t_combo.setCurrentText(state.get('target_lang', ''))
+                        
+                    # Clear text edits
+                    self.main.text_ctrl.clear_text_edits()
+                else:
+                    # Webtoon viewer not ready, fall back to regular mode
+                    self.main.run_threaded(
+                        lambda: self.load_image(self.main.image_files[index]),
+                        lambda result: self.display_image_from_loaded(result, index),
+                        self.main.default_error_handler,
+                        lambda: self.highlight_card(index)
+                    )
+            else:
+                # Regular mode - load and display the image
+                self.main.run_threaded(
+                    lambda: self.load_image(self.main.image_files[index]),
+                    lambda result: self.display_image_from_loaded(result, index),
+                    self.main.default_error_handler,
+                    lambda: self.highlight_card(index)
+                )
 
     def navigate_images(self, direction: int):
         if self.main.image_files:
@@ -204,11 +291,16 @@ class ImageStateController:
                 self.main.image_history.pop(file_path, None)
                 self.main.in_memory_history.pop(file_path, None)
                 self.main.current_history_index.pop(file_path, None)
+                self.main.image_states.pop(file_path, None)  
+                self.main.image_patches.pop(file_path, None)  
+                self.main.in_memory_patches.pop(file_path, None)  
 
                 if file_path in self.main.undo_stacks:
                     stack = self.main.undo_stacks[file_path]
                     self.main.undo_group.removeStack(stack)
-                    self.main.undo_stacks.pop(file_path, None)
+                
+                # Remove from other collections
+                self.main.undo_stacks.pop(file_path, None)
                     
                 if file_path in self.main.displayed_images:
                     self.main.displayed_images.remove(file_path)
@@ -216,24 +308,71 @@ class ImageStateController:
                 if file_path in self.main.loaded_images:
                     self.main.loaded_images.remove(file_path)
 
-        if self.main.image_files:
-            if self.main.curr_img_idx >= len(self.main.image_files):
-                self.main.curr_img_idx = len(self.main.image_files) - 1
-
-            new_index = max(0, self.main.curr_img_idx - 1)
-            file = self.main.image_files[new_index]
-            im = self.load_image(file)
-            self.display_image_from_loaded(im, new_index, False)
-            self.update_image_cards()
-            self.main.page_list.blockSignals(True)
-            self.main.page_list.setCurrentRow(new_index)
-            self.highlight_card(new_index)
-            self.main.page_list.blockSignals(False)
+        # Handle webtoon mode specific updates
+        if self.main.webtoon_mode:
+            # Force update all file paths in the scene item manager to match main.image_files
+            scene_item_manager = self.main.image_viewer.webtoon_manager.scene_item_manager
+            scene_item_manager.update_file_paths(self.main.image_files.copy())
+            # Use non-destructive page removal in webtoon mode
+            if self.main.image_files:
+                # Get full file paths of deleted files from the webtoon manager's file paths
+                webtoon_file_paths = self.main.image_viewer.webtoon_manager.image_loader.image_file_paths
+                deleted_file_paths = []
+                for file_name in file_names:
+                    # Find matching file paths in webtoon manager
+                    matching_paths = [fp for fp in webtoon_file_paths if os.path.basename(fp) == file_name]
+                    deleted_file_paths.extend(matching_paths)
+                
+                # Remove pages non-destructively from webtoon manager
+                success = self.main.image_viewer.webtoon_manager.remove_pages(deleted_file_paths)
+                
+                if success:
+                    # Adjust current index if necessary
+                    if self.main.curr_img_idx >= len(self.main.image_files):
+                        self.main.curr_img_idx = len(self.main.image_files) - 1
+                    
+                    current_page = max(0, self.main.curr_img_idx)
+                    self.update_image_cards()
+                    self.main.page_list.blockSignals(True)
+                    self.main.page_list.setCurrentRow(current_page)
+                    self.highlight_card(current_page)
+                    self.main.page_list.blockSignals(False)
+                else:
+                    # Fallback to full reload if non-destructive removal failed
+                    current_page = max(0, self.main.curr_img_idx)
+                    self.main.image_viewer.webtoon_manager.load_images_lazy(self.main.image_files, current_page)
+                    self.update_image_cards()
+                    self.main.page_list.blockSignals(True)
+                    self.main.page_list.setCurrentRow(current_page)
+                    self.highlight_card(current_page)
+                    self.main.page_list.blockSignals(False)
+            else:
+                # If no images remain, exit webtoon mode and reset to drag browser
+                self.main.webtoon_mode = False
+                self.main.image_viewer.webtoon_manager.clear()
+                self.main.curr_img_idx = -1
+                self.main.central_stack.setCurrentWidget(self.main.drag_browser)
+                self.update_image_cards()
         else:
-            # If no images remain, reset the view to the drag browser.
-            self.main.curr_img_idx = -1
-            self.main.central_stack.setCurrentWidget(self.main.drag_browser)
-            self.update_image_cards()
+            # Handle normal mode
+            if self.main.image_files:
+                if self.main.curr_img_idx >= len(self.main.image_files):
+                    self.main.curr_img_idx = len(self.main.image_files) - 1
+
+                new_index = max(0, self.main.curr_img_idx - 1)
+                file = self.main.image_files[new_index]
+                im = self.load_image(file)
+                self.display_image_from_loaded(im, new_index, False)
+                self.update_image_cards()
+                self.main.page_list.blockSignals(True)
+                self.main.page_list.setCurrentRow(new_index)
+                self.highlight_card(new_index)
+                self.main.page_list.blockSignals(False)
+            else:
+                # If no images remain, reset the view to the drag browser.
+                self.main.curr_img_idx = -1
+                self.main.central_stack.setCurrentWidget(self.main.drag_browser)
+                self.update_image_cards()
 
 
     def handle_toggle_skip_images(self, file_names: list[str], skip_status: bool):
@@ -321,17 +460,22 @@ class ImageStateController:
             
             # draw it
             if not PatchCommandBase.find_matching_item(self.main.image_viewer._scene, prop):   
-                PatchCommandBase.create_patch_item(prop, self.main.image_viewer.photo)
+                PatchCommandBase.create_patch_item(prop, self.main.image_viewer)
 
     def save_current_image(self, file_path: str):
-        final_bgr = self.main.image_viewer.get_cv2_image(paint_all=True)
-        final_rgb = cv2.cvtColor(final_bgr, cv2.COLOR_BGR2RGB)
+        if self.main.webtoon_mode:
+            # In webtoon mode, get the visible area image which combines all visible pages
+            final_rgb, _ = self.main.image_viewer.get_visible_area_image(paint_all=True)
+        else:
+            # In regular mode, get the current single image
+            final_rgb = self.main.image_viewer.get_cv2_image(paint_all=True)
+        
         pil_img = Image.fromarray(final_rgb)
         pil_img.save(file_path)
 
     def save_image_state(self, file: str):
+        # For regular mode only
         skip_status = self.main.image_states.get(file, {}).get('skip', False)
-        
         self.main.image_states[file] = {
             'viewer_state': self.main.image_viewer.save_state(),
             'source_lang': self.main.s_combo.currentText(),
@@ -349,12 +493,12 @@ class ImageStateController:
     def load_image_state(self, file_path: str):
         cv2_image = self.main.image_data[file_path]
 
-        self.set_cv2_image(cv2_image, push=False)
+        self.set_cv2_image(cv2_image, push=False) 
         if file_path in self.main.image_states:
             state = self.main.image_states[file_path]
             push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
 
-            self.main.blk_list = state['blk_list']
+            self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
             self.main.image_viewer.load_state(state['viewer_state'])
             self.main.s_combo.setCurrentText(state['source_lang'])
             self.main.t_combo.setCurrentText(state['target_lang'])
@@ -395,11 +539,20 @@ class ImageStateController:
             first_time_display = file_path not in self.main.displayed_images
             
             self.load_image_state(file_path)
-            self.main.central_stack.setCurrentWidget(self.main.image_viewer)
+            
+            # Handle webtoon mode vs regular mode
+            if self.main.webtoon_mode:
+                # In webtoon mode, scroll to the specific page using the unified viewer
+                self.main.image_viewer.scroll_to_page(index)
+                self.main.central_stack.setCurrentWidget(self.main.image_viewer)
+            else:
+                # Regular mode - display single image
+                self.main.central_stack.setCurrentWidget(self.main.image_viewer)
+                
             self.main.central_stack.layout().activate()
             
-            # Fit in view only if it's the first time displaying this image
-            if first_time_display:
+            # Fit in view only if it's the first time displaying this image and not in webtoon mode
+            if first_time_display and not self.main.webtoon_mode:
                 self.main.image_viewer.fitInView()
                 self.main.displayed_images.add(file_path)  # Mark this image as displayed
 
@@ -430,15 +583,28 @@ class ImageStateController:
             closable=True
         )
 
-    def on_inpaint_patches_processed(self, index: int, patches: list, image_path: str):
-        file_on_display = self.main.image_files[self.main.curr_img_idx]
-        current_batch_file = self.main.selected_batch[index] if self.main.selected_batch else self.main.image_files[index]
+    def on_inpaint_patches_processed(self, patches: list, file_path: str):
+        target_stack = self.main.undo_stacks[file_path]
 
-        if current_batch_file == file_on_display:
-            self.apply_inpaint_patches(patches)
+        # Check if this page is currently visible in webtoon mode
+        should_display = False
+        if self.main.webtoon_mode:
+            # In webtoon mode, display patches for pages that are currently loaded/visible
+            loaded_pages = self.main.image_viewer.webtoon_manager.loaded_pages
+            page_index = None
+            # Find the page index for this file path
+            if file_path in self.main.image_files:
+                page_index = self.main.image_files.index(file_path)
+            if page_index is not None and page_index in loaded_pages:
+                should_display = True
         else:
-            command = PatchInsertCommand(self.main, patches, image_path, False)
-            self.main.undo_stacks[current_batch_file].push(command)
+            # Regular mode - check if it's the current file
+            file_on_display = self.main.image_files[self.main.curr_img_idx] if self.main.image_files else None
+            should_display = (file_path == file_on_display)
+
+        # Create the command for the specific page
+        command = PatchInsertCommand(self.main, patches, file_path, display=should_display)
+        target_stack.push(command)
 
     def apply_inpaint_patches(self, patches):
         command = PatchInsertCommand(self.main, patches, self.main.image_files[self.main.curr_img_idx])
