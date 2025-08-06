@@ -61,6 +61,9 @@ def get_config(settings_page):
 
     return config
 
+def is_close(value1, value2, tolerance=2):
+    return abs(value1 - value2) <= tolerance
+
 def get_language_code(lng: str):
     lng_cd = language_codes.get(lng, None)
     return lng_cd
