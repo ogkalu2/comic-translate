@@ -39,11 +39,19 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
             bbox_bytes = str(bbox).encode('utf-8')
             img_hash = hashlib.sha256(img_bytes + bbox_bytes).hexdigest()
 
-            self.properties_list.append({
+            prop = {
                 'bbox': bbox,
                 'png_path': png_path,
                 'hash': img_hash
-            })
+            }
+            
+            # Add webtoon mode information if present
+            if 'scene_pos' in patch:
+                prop['scene_pos'] = patch['scene_pos']
+            if 'page_index' in patch:
+                prop['page_index'] = patch['page_index']
+                
+            self.properties_list.append(prop)
 
     def _register_patches(self):
         # Ensure top-level storage exists
@@ -57,11 +65,17 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
                 continue
 
             # add to persistent store
-            patches_list.append({
+            patch_entry = {
                 'bbox': prop['bbox'],
                 'png_path': prop['png_path'],
                 'hash': prop['hash']
-            })
+            }
+            # Save scene position and page index for webtoon mode
+            if 'scene_pos' in prop:
+                patch_entry['scene_pos'] = prop['scene_pos']
+            if 'page_index' in prop:
+                patch_entry['page_index'] = prop['page_index']
+            patches_list.append(patch_entry)
 
             # only load into memory if being displayed
             if self.display:
@@ -90,7 +104,7 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
         # add new patch items
         for prop in self.properties_list:
             if not self.find_matching_item(self.scene, prop):
-                self.create_patch_item(prop, self.viewer.photo)
+                self.create_patch_item(prop, self.viewer)
 
     def _remove_pixmaps(self):
         # only remove when display=True

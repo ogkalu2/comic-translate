@@ -18,9 +18,7 @@ class AddRectangleCommand(QUndoCommand, RectCommandBase):
 
     def redo(self):
         if not self.find_matching_rect(self.scene, self.rect_properties):
-            rect_item = self.create_rect_item(self.rect_properties, self.viewer.photo)
-            self.viewer.connect_rect_item.emit(rect_item)
-            self.viewer.rectangles.append(rect_item)
+            self.create_rect_item(self.rect_properties, self.viewer)
 
         if not self.find_matching_blk(self.blk_list, self.blk_properties):
             blk = self.create_new_blk(self.blk_properties)
@@ -107,9 +105,7 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
         
     def undo(self):
         for properties in self.properties_list:
-            rect_item = self.create_rect_item(properties, self.viewer.photo)
-            self.viewer.connect_rect_item.emit(rect_item)
-            self.viewer.rectangles.append(rect_item)
+            self.create_rect_item(properties, self.viewer)
         self.scene.update()
         
     def redo(self):
@@ -155,9 +151,7 @@ class DeleteBoxesCommand(QUndoCommand, RectCommandBase):
 
     def undo(self):
         if self.rect_properties and not self.find_matching_rect(self.scene, self.rect_properties):
-            rect_item = self.create_rect_item(self.rect_properties, self.viewer.photo)
-            self.viewer.connect_rect_item.emit(rect_item)
-            self.viewer.rectangles.append(rect_item)
+            self.create_rect_item(self.rect_properties, self.viewer)
             self.scene.update()
 
         if not self.find_matching_blk(self.blk_list, self.blk_properties):
@@ -165,10 +159,7 @@ class DeleteBoxesCommand(QUndoCommand, RectCommandBase):
             self.blk_list.append(blk)
 
         if self.txt_item_prp and not self.find_matching_txt_item(self.scene, self.txt_item_prp):
-            text_item = self.create_new_txt_item(self.txt_item_prp, self.viewer.photo)
-            self.viewer.connect_text_item.emit(text_item)
-            self.scene.addItem(text_item)
-            self.viewer.text_items.append(text_item)
+            text_item = self.create_new_txt_item(self.txt_item_prp, self.viewer)
 
 class AddTextItemCommand(QUndoCommand, RectCommandBase):
     def __init__(self, main_page, text_item):
@@ -179,10 +170,7 @@ class AddTextItemCommand(QUndoCommand, RectCommandBase):
 
     def redo(self):
         if not self.find_matching_txt_item(self.scene, self.txt_item_prp):
-            text_item = self.create_new_txt_item(self.txt_item_prp, self.viewer.photo)
-            self.viewer.connect_text_item.emit(text_item)
-            self.scene.addItem(text_item)
-            self.viewer.text_items.append(text_item)
+            text_item = self.create_new_txt_item(self.txt_item_prp, self.viewer)
 
     def undo(self):
         matching_txt_item = self.find_matching_txt_item(self.scene, self.txt_item_prp)

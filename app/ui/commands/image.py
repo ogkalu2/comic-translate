@@ -20,6 +20,13 @@ class SetImageCommand(QUndoCommand):
                 return
             
             file_path = self.ct.image_files[self.ct.curr_img_idx]
+            
+            # Ensure the file has proper history initialization
+            if file_path not in self.ct.current_history_index:
+                self.ct.current_history_index[file_path] = 0
+            if file_path not in self.ct.image_history:
+                self.ct.image_history[file_path] = [file_path]
+                
             current_index = self.ct.current_history_index[file_path]
             cv2_img = self.get_img(file_path, current_index)
             self.ct.image_viewer.display_cv2_image(cv2_img)
@@ -27,6 +34,13 @@ class SetImageCommand(QUndoCommand):
 
         if self.ct.curr_img_idx >= 0:
             file_path = self.ct.image_files[self.ct.curr_img_idx]
+            
+            # Ensure proper initialization
+            if file_path not in self.ct.current_history_index:
+                self.ct.current_history_index[file_path] = 0
+            if file_path not in self.ct.image_history:
+                self.ct.image_history[file_path] = [file_path]
+                
             current_index = self.ct.current_history_index[file_path]
             
             if current_index < len(self.ct.image_history[file_path]) - 1:
@@ -42,6 +56,13 @@ class SetImageCommand(QUndoCommand):
         if self.ct.curr_img_idx >= 0:
 
             file_path = self.ct.image_files[self.ct.curr_img_idx]
+            
+            # Ensure proper initialization
+            if file_path not in self.ct.current_history_index:
+                self.ct.current_history_index[file_path] = 0
+            if file_path not in self.ct.image_history:
+                self.ct.image_history[file_path] = [file_path]
+                
             current_index = self.ct.current_history_index[file_path]
             
             if current_index > 0:
