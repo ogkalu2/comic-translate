@@ -337,4 +337,3 @@ class MoveableRectItem(QGraphicsRectItem):
             # Update the rectangle
             self.setPos(act_pos)
             self.setRect(0, 0, new_rect.width(), new_rect.height())
-        
