@@ -214,18 +214,24 @@ class MoveableRectItem(QGraphicsRectItem):
         scene_rect = self.mapToScene(self.boundingRect())
         bounding_rect = scene_rect.boundingRect()
         
-        parent_rect = self.parentItem().boundingRect()
+        # Get constraint bounds - use parent if available, otherwise use scene rect
+        if self.parentItem():
+            parent_rect = self.parentItem().boundingRect()
+        else:
+            # In webtoon mode or when no parent, use scene bounds
+            scene_rect = self.scene().sceneRect()
+            parent_rect = scene_rect
         
         # Constrain the movement
-        if bounding_rect.left() + delta.x() < 0:
-            new_pos.setX(self.pos().x() - bounding_rect.left())
-        elif bounding_rect.right() + delta.x() > parent_rect.width():
-            new_pos.setX(self.pos().x() + parent_rect.width() - bounding_rect.right())
+        if bounding_rect.left() + delta.x() < parent_rect.left():
+            new_pos.setX(self.pos().x() - (bounding_rect.left() - parent_rect.left()))
+        elif bounding_rect.right() + delta.x() > parent_rect.right():
+            new_pos.setX(self.pos().x() + parent_rect.right() - bounding_rect.right())
         
-        if bounding_rect.top() + delta.y() < 0:
-            new_pos.setY(self.pos().y() - bounding_rect.top())
-        elif bounding_rect.bottom() + delta.y() > parent_rect.height():
-            new_pos.setY(self.pos().y() + parent_rect.height() - bounding_rect.bottom())
+        if bounding_rect.top() + delta.y() < parent_rect.top():
+            new_pos.setY(self.pos().y() - (bounding_rect.top() - parent_rect.top()))
+        elif bounding_rect.bottom() + delta.y() > parent_rect.bottom():
+            new_pos.setY(self.pos().y() + parent_rect.bottom() - bounding_rect.bottom())
         
         self.setPos(new_pos)
 
@@ -313,12 +319,19 @@ class MoveableRectItem(QGraphicsRectItem):
         
         # Convert the new rectangle to scene coordinates to check bounds
         scene_rect = self.mapRectToScene(new_rect)
-        parent_rect = self.parentItem().boundingRect()
+        
+        # Get constraint bounds - use parent if available, otherwise use scene bounds
+        if self.parentItem():
+            parent_rect = self.parentItem().boundingRect()
+        else:
+            # In webtoon mode or when no parent, use scene bounds
+            scene_rect_bounds = self.scene().sceneRect()
+            parent_rect = scene_rect_bounds
         
         # Ensure the rectangle stays within parent bounds
-        if (scene_rect.left() >= 0 and 
+        if (scene_rect.left() >= parent_rect.left() and 
             scene_rect.right() <= parent_rect.right() and
-            scene_rect.top() >= 0 and 
+            scene_rect.top() >= parent_rect.top() and 
             scene_rect.bottom() <= parent_rect.bottom()):
             
             # Update the rectangle
