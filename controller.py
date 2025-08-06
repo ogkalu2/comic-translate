@@ -6,8 +6,9 @@ from typing import Callable, Tuple
 
 from PySide6 import QtWidgets
 from PySide6 import QtCore
-from PySide6.QtCore import QCoreApplication, QThreadPool
-from PySide6.QtGui import QUndoGroup, QUndoStack
+from PySide6 import QtGui
+from PySide6.QtCore import QCoreApplication, QThreadPool, QPointF
+from PySide6.QtGui import QUndoGroup, QUndoStack, QPainterPath
 
 from app.ui.dayu_widgets.qt import MPixmap
 from app.ui.main_window import ComicTranslateUI
@@ -25,14 +26,16 @@ from modules.utils.download import get_models, mandatory_models
 from modules.detection.utils.general import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
 from modules.rendering.render import pyside_word_wrap
-from modules.utils.pipeline_utils import get_language_code
+from modules.utils.pipeline_utils import get_language_code, is_close
 from modules.utils.translator_utils import format_translations
-from pipeline import ComicTranslatePipeline
+from pipeline.main_pipeline import ComicTranslatePipeline
+from pipeline.webtoon_utils import get_visible_text_items, get_first_visible_block
 
 from app.controllers.image import ImageStateController
 from app.controllers.rect_item import RectItemController
 from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
+from app.controllers.webtoons import WebtoonController
 from collections import deque
 
 
@@ -41,7 +44,7 @@ for model in mandatory_models:
 
 class ComicTranslate(ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)
-    patches_processed = QtCore.Signal(int, list, str)
+    patches_processed = QtCore.Signal(list, str)
     progress_update = QtCore.Signal(int, int, int, int, bool)
     image_skipped = QtCore.Signal(str, str, str)
     blk_rendered = QtCore.Signal(str, int, object)
@@ -83,6 +86,7 @@ class ComicTranslate(ComicTranslateUI):
         self.rect_item_ctrl = RectItemController(self)
         self.project_ctrl = ProjectController(self)
         self.text_ctrl = TextController(self)
+        self.webtoon_ctrl = WebtoonController(self)
 
         self.image_skipped.connect(self.image_ctrl.on_image_skipped)
         self.image_processed.connect(self.image_ctrl.on_image_processed)
@@ -98,6 +102,7 @@ class ComicTranslate(ComicTranslateUI):
 
         self.operation_queue = deque()
         self.is_processing_queue = False
+        self._processing_page_change = False  # Flag to prevent recursive page change handling
 
 
     def connect_ui_elements(self):
@@ -117,6 +122,9 @@ class ComicTranslate(ComicTranslateUI):
        
         self.manual_radio.clicked.connect(self.manual_mode_selected)
         self.automatic_radio.clicked.connect(self.batch_mode_selected)
+        
+        # Webtoon mode toggle
+        self.webtoon_toggle.clicked.connect(self.webtoon_ctrl.toggle_webtoon_mode)
 
         # Connect buttons from button_groups
         self.hbutton_group.get_button_group().buttons()[0].clicked.connect(lambda: self.block_detect())
@@ -147,13 +155,15 @@ class ComicTranslate(ComicTranslateUI):
         self.s_combo.currentTextChanged.connect(self.text_ctrl.save_src_trg)
         self.t_combo.currentTextChanged.connect(self.text_ctrl.save_src_trg)
 
-        # Connect image viewer signals
+        # Connect image viewer signals for both modes
         self.image_viewer.rectangle_selected.connect(self.rect_item_ctrl.handle_rectangle_selection)
         self.image_viewer.rectangle_created.connect(self.rect_item_ctrl.handle_rectangle_creation)
         self.image_viewer.rectangle_deleted.connect(self.rect_item_ctrl.handle_rectangle_deletion)
         self.image_viewer.command_emitted.connect(self.push_command)
         self.image_viewer.connect_rect_item.connect(self.rect_item_ctrl.connect_rect_item_signals)
         self.image_viewer.connect_text_item.connect(self.text_ctrl.connect_text_item_signals)
+        self.image_viewer.page_changed.connect(self.webtoon_ctrl.on_page_changed)
+        self.image_viewer.clear_text_edits.connect(self.text_ctrl.clear_text_edits)
 
         # Rendering
         self.font_dropdown.currentTextChanged.connect(self.text_ctrl.on_font_dropdown_change)
@@ -364,8 +374,13 @@ class ComicTranslate(ComicTranslateUI):
                 return
             
         self.translate_button.setEnabled(False)
-        self.progress_bar.setVisible(True) 
-        self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
+        self.progress_bar.setVisible(True)
+        
+        # Choose batch processor based on webtoon mode
+        if self.webtoon_mode:
+            self.run_threaded(self.pipeline.webtoon_batch_process, None, self.default_error_handler, self.on_batch_process_finished)
+        else:
+            self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
 
     def batch_translate_selected(self, selected_file_names: list[str]):
         # map base‐name back to full paths
@@ -391,13 +406,24 @@ class ComicTranslate(ComicTranslateUI):
             self.batch_mode_selected()
         self.translate_button.setEnabled(False)
         self.progress_bar.setVisible(True)
-        # pass our subset into batch_process
-        self.run_threaded(
-            lambda: self.pipeline.batch_process(selected_paths),
-            None,
-            self.default_error_handler,
-            self.on_batch_process_finished
-        )
+        
+        # Choose batch processor based on webtoon mode
+        if self.webtoon_mode:
+            # pass our subset into webtoon_batch_process
+            self.run_threaded(
+                lambda: self.pipeline.webtoon_batch_process(selected_paths),
+                None,
+                self.default_error_handler,
+                self.on_batch_process_finished
+            )
+        else:
+            # pass our subset into batch_process
+            self.run_threaded(
+                lambda: self.pipeline.batch_process(selected_paths),
+                None,
+                self.default_error_handler,
+                self.on_batch_process_finished
+            )
 
     def on_batch_process_finished(self):
         self.progress_bar.setVisible(False)
@@ -424,7 +450,14 @@ class ComicTranslate(ComicTranslateUI):
             if single_block:
                 rect = self.image_viewer.selected_rect
             else:
-                rect = self.rect_item_ctrl.find_corresponding_rect(self.blk_list[0], 0.5)
+                # In webtoon mode, use first visible block instead of just first block
+                if self.webtoon_mode:
+                    first_block = get_first_visible_block(self.blk_list, self.image_viewer)
+                    if first_block is None:
+                        first_block = self.blk_list[0]  # Fallback to first block if no visible blocks
+                else:
+                    first_block = self.blk_list[0]
+                rect = self.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
             self.image_viewer.select_rectangle(rect) 
         self.set_tool('box')
         self.on_manual_finished()
@@ -435,12 +468,22 @@ class ComicTranslate(ComicTranslateUI):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()
-        self.run_threaded(
-            lambda: self.pipeline.OCR_image(single_block),
-            None,
-            self.default_error_handler,
-            lambda: self.finish_ocr_translate(single_block)
-        )
+        
+        # Handle webtoon mode specially for visible area OCR
+        if self.webtoon_mode:
+            self.run_threaded(
+                lambda: self.pipeline.OCR_webtoon_visible_area(single_block),
+                None,
+                self.default_error_handler,
+                lambda: self.finish_ocr_translate(single_block)
+            )
+        else:
+            self.run_threaded(
+                lambda: self.pipeline.OCR_image(single_block),
+                None,
+                self.default_error_handler,
+                lambda: self.finish_ocr_translate(single_block)
+            )
 
     def translate_image(self, single_block=False):
         source_lang = self.s_combo.currentText()
@@ -449,12 +492,29 @@ class ComicTranslate(ComicTranslateUI):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()
-        self.run_threaded(
-            lambda: self.pipeline.translate_image(single_block),
-            None,
-            self.default_error_handler,
-            lambda: self.update_translated_text_items(single_block)
-        )
+        
+        # Handle webtoon mode specially for visible area translation
+        if self.webtoon_mode:
+            self.run_threaded(
+                lambda: self.pipeline.translate_webtoon_visible_area(single_block),
+                None,
+                self.default_error_handler,
+                lambda: self.update_translated_text_items(single_block)
+            )
+        else:
+            self.run_threaded(
+                lambda: self.pipeline.translate_image(single_block),
+                None,
+                self.default_error_handler,
+                lambda: self.update_translated_text_items(single_block)
+            )
+
+    def _get_visible_text_items(self):
+        """Get text items that are currently visible in webtoon mode."""
+        if not self.webtoon_mode:
+            return self.image_viewer.text_items
+        
+        return get_visible_text_items(self.image_viewer.text_items, self.image_viewer.webtoon_manager)
 
     def update_translated_text_items(self, single_blk: bool):
         def set_new_text(text_item, wrapped, font_size):
@@ -463,7 +523,10 @@ class ComicTranslate(ComicTranslateUI):
             text_item.set_plain_text(wrapped)
             text_item.set_font_size(font_size)
 
-        if not self.image_viewer.text_items:
+        # Get visible text items instead of all text items
+        text_items_to_process = self._get_visible_text_items()
+        
+        if not text_items_to_process:
             self.finish_ocr_translate(single_blk)
             return
         
@@ -474,15 +537,17 @@ class ComicTranslate(ComicTranslateUI):
 
         # This callback only runs **after** format_translations has finished.
         def on_format_finished():
-            for text_item in self.image_viewer.text_items:
+            for text_item in text_items_to_process:
                 text_item.handleDeselection()
                 x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
                 rot = text_item.rotation()
+                
                 blk = next(
                     (
                         b for b in self.blk_list
-                        if (int(b.xyxy[0]), int(b.xyxy[1])) == (x1, y1)
-                        and b.angle == rot
+                        if is_close(b.xyxy[0], x1, 5) and 
+                        is_close(b.xyxy[1], y1, 5) and 
+                        is_close(b.angle, rot, 1)
                     ),
                     None
                 )
@@ -537,7 +602,11 @@ class ComicTranslate(ComicTranslateUI):
                               self.default_error_handler, self.on_manual_finished)
 
     def blk_detect_segment(self, result): 
-        blk_list, load_rects = result
+        # Handle both old (2-tuple) and new (3-tuple) result formats
+        if len(result) == 3:
+            blk_list, load_rects, _ = result
+        else:
+            blk_list, load_rects = result
         self.blk_list = blk_list
         self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
         for blk in self.blk_list:
@@ -560,20 +629,29 @@ class ComicTranslate(ComicTranslateUI):
             if self.blk_list:
                 self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
 
-                def compute_all_bboxes():
-                    image = self.image_viewer.get_cv2_image()
-                    results = []
-                    for blk in self.blk_list:
-                        bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                        results.append((blk, bboxes))
-                    return results
+                # Handle webtoon mode specially for visible area segmentation
+                if self.webtoon_mode:
+                    self.run_threaded(
+                        lambda: self.pipeline.segment_webtoon_visible_area(),
+                        self._on_segmentation_bboxes_ready,
+                        self.default_error_handler,
+                        self.on_manual_finished
+                    )
+                else:
+                    def compute_all_bboxes():
+                        image = self.image_viewer.get_cv2_image()
+                        results = []
+                        for blk in self.blk_list:
+                            bboxes = get_inpaint_bboxes(blk.xyxy, image)
+                            results.append((blk, bboxes))
+                        return results
 
-                self.run_threaded(
-                    compute_all_bboxes,
-                    self._on_segmentation_bboxes_ready,
-                    self.default_error_handler,
-                    self.on_manual_finished
-                )
+                    self.run_threaded(
+                        compute_all_bboxes,
+                        self._on_segmentation_bboxes_ready,
+                        self.default_error_handler,
+                        self.on_manual_finished
+                    )
 
             else:
                 self.run_threaded(
