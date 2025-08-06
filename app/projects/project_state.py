@@ -1,13 +1,19 @@
+from __future__ import annotations
+
 import msgpack
 import cv2
 import os
 import tempfile
 import zipfile
 import shutil
+from typing import TYPE_CHECKING
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .parsers import ProjectEncoder, ProjectDecoder, ensure_string_keys
 
-def save_state_to_proj_file(comic_translate, file_name):
+if TYPE_CHECKING:
+    from controller import ComicTranslate
+
+def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
     """
     Saves the state of the comic_translate object to a msgpack file and a folder of unique images.
 
@@ -39,6 +45,8 @@ def save_state_to_proj_file(comic_translate, file_name):
             'loaded_images': comic_translate.loaded_images,
             'image_patches': {}, 
             'llm_extra_context': comic_translate.settings_page.get_llm_settings().get('extra_context', ''),
+            'webtoon_mode': comic_translate.webtoon_mode,
+            'webtoon_view_state': comic_translate.image_viewer.webtoon_view_state
 
         }
 
@@ -134,7 +142,7 @@ def save_state_to_proj_file(comic_translate, file_name):
                     zipf.write(fpath, arcname=arcname)
 
 
-def load_state_from_proj_file(comic_translate, file_name):
+def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
     decoder = ProjectDecoder()
 
     if not hasattr(comic_translate, 'temp_dir'):
@@ -253,6 +261,8 @@ def load_state_from_proj_file(comic_translate, file_name):
 
     # Finalize loading by updating comic_translate attributes
     comic_translate.curr_img_idx = state.get('current_image_index', 0)
+    comic_translate.webtoon_mode = state.get('webtoon_mode', False)
+    comic_translate.image_viewer.webtoon_view_state = state.get('webtoon_view_state', {})
 
     original_image_files = state.get('original_image_files', [])
     comic_translate.image_files = [
