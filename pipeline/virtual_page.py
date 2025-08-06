@@ -164,7 +164,7 @@ class VirtualPageCreator:
     Creates virtual pages from physical webtoon pages to handle very long images.
     """
     
-    def __init__(self, max_virtual_height: int = 3000, overlap_height: int = 200):
+    def __init__(self, max_virtual_height: int = 2000, overlap_height: int = 200):
         """
         Initialize the virtual page creator.
         

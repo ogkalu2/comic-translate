@@ -49,7 +49,7 @@ class WebtoonBatchProcessor:
         self.ocr_handler = ocr_handler
         
         # Virtual page settings
-        self.max_virtual_height = 3000  # Maximum height for virtual pages
+        self.max_virtual_height = 2000  # Maximum height for virtual pages
         self.overlap_height = 200       # Overlap between virtual pages
         
         # Virtual page management
