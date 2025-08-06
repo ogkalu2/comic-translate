@@ -1,18 +1,21 @@
+from __future__ import annotations
+
 import numpy as np
 import cv2
-from typing import TypedDict
+from typing import TypedDict, TYPE_CHECKING
 from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, Qt
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import QRectF, QPointF
 from PySide6 import QtGui, QtWidgets
 
+from ..canvas.text.text_item_properties import TextItemProperties
 from modules.utils.textblock import TextBlock
 from ..canvas.rectangle import MoveableRectItem
 from ..canvas.text_item import TextBlockItem
+from modules.utils.pipeline_utils import is_close
 
-
-def is_close(value1, value2, tolerance=2):
-    return abs(value1 - value2) <= tolerance
+if TYPE_CHECKING:
+    from app.ui.canvas.image_viewer import ImageViewer
 
 class PenSettings(TypedDict):
     color: QColor
@@ -97,13 +100,15 @@ class RectCommandBase:
         }
 
     @staticmethod
-    def create_rect_item(properties, photo):
-        """Create a new rect item with given properties"""
+    def create_rect_item(properties, viewer: ImageViewer):
+        """Create a new rect item with given properties using the viewer's method"""
         rect = QRectF(0, 0, properties['width'], properties['height'])
-        rect_item = MoveableRectItem(rect, photo)
-        rect_item.setTransformOriginPoint(QPointF(*properties['transform_origin']))
-        rect_item.setPos(*properties['pos'])
-        rect_item.setRotation(properties['rotation'])      
+        transform_origin = QPointF(*properties['transform_origin'])
+        position = QPointF(*properties['pos'])
+        rotation = properties['rotation']
+        
+        # Use the viewer's add_rectangle method for consistent handling
+        rect_item = viewer.add_rectangle(rect, position, rotation, transform_origin)
         return rect_item
 
 
@@ -139,11 +144,20 @@ class RectCommandBase:
                 value1 = current_props.get(key)
                 value2 = properties.get(key)
                 
-                # If the value is a numpy array, use np.array_equal for comparison
-                if isinstance(value1, np.ndarray) and isinstance(value2, np.ndarray):
-                    if not np.array_equal(value1, value2):
-                        match = False
-                        break
+                # Handle numpy arrays properly
+                if isinstance(value1, np.ndarray) or isinstance(value2, np.ndarray):
+                    # Convert both to numpy arrays if needed for comparison
+                    try:
+                        arr1 = np.array(value1) if not isinstance(value1, np.ndarray) else value1
+                        arr2 = np.array(value2) if not isinstance(value2, np.ndarray) else value2
+                        if not np.array_equal(arr1, arr2):
+                            match = False
+                            break
+                    except (ValueError, TypeError):
+                        # If conversion fails, fall back to regular comparison
+                        if value1 != value2:
+                            match = False
+                            break
                 else:
                     # Use standard equality for non-numpy values
                     if value1 != value2:
@@ -164,49 +178,22 @@ class RectCommandBase:
     
     @staticmethod
     def save_txt_item_properties(item):
-        prp = {
-                'text': item.toHtml(),
-                'font_family': item.font_family,
-                'font_size': item.font_size,
-                'text_color': item.text_color,
-                'alignment': item.alignment,
-                'line_spacing': item.line_spacing,
-                'outline_color': item.outline_color,
-                'outline_width': item.outline_width,
-                'bold': item.bold,
-                'italic': item.italic,
-                'underline': item.underline,
-                'position': (item.pos().x(), item.pos().y()),
-                'rotation': item.rotation(),
-                'scale': item.scale(),
-                'transform_origin': (item.transformOriginPoint().x(), 
-                                     item.transformOriginPoint().y()),
-                'width': item.boundingRect().width()
-            }
-        return prp
+        """Save TextBlockItem properties using the centralized TextItemProperties"""
+        return TextItemProperties.from_text_item(item)
     
     @staticmethod
-    def create_new_txt_item(properties, photo):  
-        text_item = TextBlockItem(
-            text=properties['text'],
-            parent_item = photo,
-            font_family=properties['font_family'],
-            font_size=properties['font_size'],
-            render_color=properties['text_color'],
-            alignment=properties['alignment'],
-            line_spacing=properties['line_spacing'],
-            outline_color=properties['outline_color'],
-            outline_width=properties['outline_width'],
-            bold=properties['bold'],
-            italic=properties['italic'],
-            underline=properties['underline'],
-            )
-        text_item.set_text(properties['text'], properties['width'])
-        text_item.setTransformOriginPoint(QPointF(*properties['transform_origin']))
-        text_item.setPos(QPointF(*properties['position']))
-        text_item.setRotation(properties['rotation'])
-        text_item.setScale(properties['scale'])
-
+    def create_new_txt_item(properties, viewer: ImageViewer):  
+        """Create a new TextBlockItem using the centralized add_text_item method"""
+        
+        # Convert properties dict to TextItemProperties if needed
+        if isinstance(properties, dict):
+            text_props = TextItemProperties.from_dict(properties)
+        else:
+            text_props = properties
+            
+        # Use the viewer's add_text_item method for consistent creation
+        text_item = viewer.add_text_item(text_props)
+        
         return text_item
     
     @staticmethod
@@ -215,23 +202,23 @@ class RectCommandBase:
         for item in scene.items():
             if isinstance(item, TextBlockItem):
                 # Compare all relevant properties with is_close for numerical values
-                if (item.font_family == properties['font_family'] and
-                    is_close(item.font_size, properties['font_size']) and
-                    item.text_color == properties['text_color'] and
-                    item.alignment == properties['alignment'] and
-                    is_close(item.line_spacing, properties['line_spacing']) and
-                    item.outline_color == properties['outline_color'] and
-                    is_close(item.outline_width, properties['outline_width']) and
-                    item.bold == properties['bold'] and
-                    item.italic == properties['italic'] and
-                    item.underline == properties['underline'] and
-                    is_close(item.pos().x(), properties['position'][0]) and
-                    is_close(item.pos().y(), properties['position'][1]) and
-                    is_close(item.rotation(), properties['rotation']) and
-                    is_close(item.scale(), properties['scale']) and
-                    is_close(item.transformOriginPoint().x(), properties['transform_origin'][0]) and
-                    is_close(item.transformOriginPoint().y(), properties['transform_origin'][1]) and
-                    is_close(item.boundingRect().width(), properties['width'])):
+                if (item.font_family == properties.font_family and
+                    is_close(item.font_size, properties.font_size) and
+                    item.text_color == properties.text_color and
+                    item.alignment == properties.alignment and
+                    is_close(item.line_spacing, properties.line_spacing) and
+                    item.outline_color == properties.outline_color and
+                    is_close(item.outline_width, properties.outline_width) and
+                    item.bold == properties.bold and
+                    item.italic == properties.italic and
+                    item.underline == properties.underline and
+                    is_close(item.pos().x(), properties.position[0]) and
+                    is_close(item.pos().y(), properties.position[1]) and
+                    is_close(item.rotation(), properties.rotation) and
+                    is_close(item.scale(), properties.scale) and
+                    is_close(item.transformOriginPoint().x(), properties.transform_origin[0]) and
+                    is_close(item.transformOriginPoint().y(), properties.transform_origin[1]) and
+                    is_close(item.boundingRect().width(), properties.width)):
                     return item
         return None
 
@@ -247,36 +234,55 @@ class PatchCommandBase:
     HASH_KEY = 0
 
     @staticmethod
-    def create_patch_item(properties, parent_photo):
+    def create_patch_item(properties, viewer: ImageViewer):
         x, y, w, h = properties['bbox']
         img = cv2.imread(properties['png_path']) if 'png_path' in properties else properties['cv2_img']
         qimg = QtGui.QImage(img.data, w, h, img.strides[0],
                             QtGui.QImage.Format.Format_RGB888)
         pix  = QtGui.QPixmap.fromImage(qimg)
-        item = QtWidgets.QGraphicsPixmapItem(pix, parent_photo)
-        item.setPos(x, y)
-        item.setZValue(parent_photo.zValue() + 0.5)
+        item = QtWidgets.QGraphicsPixmapItem(pix)
+        
+        # Handle webtoon mode with scene coordinates
+        if 'scene_pos' in properties and viewer.webtoon_mode:
+            scene_x, scene_y = properties['scene_pos']
+            item.setPos(scene_x, scene_y)
+            item.setZValue(0.5)  # Above images but below text
+        else:
+            item.setPos(x, y)
+            item.setZValue(0.5)
         item.setData(PatchCommandBase.HASH_KEY, properties['hash'])
+        viewer._scene.addItem(item)
+        viewer._scene.update()
         return item
 
     @staticmethod
     def find_matching_item(scene, properties):
         x, y, w, h = properties['bbox']
         want_hash = properties['hash']
+        
+        # Check if we have scene position (webtoon mode)
+        if 'scene_pos' in properties:
+            scene_x, scene_y = properties['scene_pos']
+        else:
+            scene_x, scene_y = x, y
 
         for itm in scene.items():
             if not isinstance(itm, QtWidgets.QGraphicsPixmapItem):
                 continue
 
-            # first check position & size
-            if (int(itm.pos().x())   == x and
-                int(itm.pos().y())   == y and
-                itm.pixmap().width()  == w and
-                itm.pixmap().height() == h):
+            # Check hash first for efficiency
+            stored_hash = itm.data(PatchCommandBase.HASH_KEY)
+            if stored_hash != want_hash:
+                continue
 
-                # now check the stored hash
-                stored_hash = itm.data(PatchCommandBase.HASH_KEY)
-                if stored_hash == want_hash:
-                    return itm
+            # Check size
+            if (itm.pixmap().width() != w or itm.pixmap().height() != h):
+                continue
+                
+            # Check position (try both scene and bbox coordinates)
+            item_x, item_y = int(itm.pos().x()), int(itm.pos().y())
+            if ((item_x == int(scene_x) and item_y == int(scene_y)) or 
+                (item_x == x and item_y == y)):
+                return itm
                 
         return None

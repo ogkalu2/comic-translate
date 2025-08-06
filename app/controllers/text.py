@@ -10,10 +10,12 @@ from PySide6.QtGui import QColor
 from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.box import AddTextItemCommand
 from app.ui.canvas.text_item import TextBlockItem
+from app.ui.canvas.text.text_item_properties import TextItemProperties
 
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import TextRenderingSettings, manual_wrap
-from modules.utils.pipeline_utils import font_selected, get_language_code, get_layout_direction
+from modules.utils.pipeline_utils import font_selected, get_language_code, \
+    get_layout_direction, is_close
 from modules.utils.translator_utils import format_translations
 
 if TYPE_CHECKING:
@@ -79,6 +81,25 @@ class TextController:
 
         text_item.setPos(blk.xyxy[0], blk.xyxy[1])
         text_item.setRotation(blk.angle)
+        properties = TextItemProperties(
+            text=text,
+            parent_item=self.main.image_viewer.photo,
+            font_family=font_family,
+            font_size=font_size,
+            text_color=text_color,
+            alignment=alignment,
+            line_spacing=line_spacing,
+            outline_color=outline_color,
+            outline_width=outline_width,
+            bold=bold,
+            italic=italic,
+            underline=underline,
+            direction=direction,
+            position=(blk.xyxy[0], blk.xyxy[1]),
+            rotation=blk.angle,
+        )
+        
+        text_item = self.main.image_viewer.add_text_item(properties)
         text_item.set_plain_text(text)
         self.main.image_viewer._scene.addItem(text_item)
         self.main.image_viewer.text_items.append(text_item)
@@ -94,15 +115,19 @@ class TextController:
         rotation = text_item.rotation()
 
         self.main.curr_tblock = next(
-                (blk for blk in self.main.blk_list if (int(blk.xyxy[0]), int(blk.xyxy[1])) == (x1, y1)
-                 and blk.angle == rotation),
-                None
-            )
+            (
+            blk for blk in self.main.blk_list
+            if is_close(blk.xyxy[0], x1, 5) and is_close(blk.xyxy[1], y1, 5)
+            and is_close(blk.angle, rotation, 1)
+            ),
+            None
+        )
 
         # Update both s_text_edit and t_text_edit
-        self.main.s_text_edit.blockSignals(True)
-        self.main.s_text_edit.setPlainText(self.main.curr_tblock.text)
-        self.main.s_text_edit.blockSignals(False)
+        if self.main.curr_tblock:
+            self.main.s_text_edit.blockSignals(True)
+            self.main.s_text_edit.setPlainText(self.main.curr_tblock.text)
+            self.main.s_text_edit.blockSignals(False)
 
         self.main.t_text_edit.blockSignals(True)
         self.main.t_text_edit.setPlainText(text_item.toPlainText())
