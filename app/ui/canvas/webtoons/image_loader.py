@@ -126,7 +126,6 @@ class LazyImageLoader:
             # Load the actual image
             import cv2
             file_path = self.image_file_paths[page_idx]
-            print(f"Loading image from: {file_path}")
             cv2_img = cv2.imread(file_path)
             
             if cv2_img is not None:
@@ -634,7 +633,7 @@ class LazyImageLoader:
                 
                 print(f"Removed {len(indices_to_remove)} pages. New total: {len(self.image_file_paths)}")
                 
-                # CRITICAL: Reload scene items for currently loaded pages
+                # Reload scene items for currently loaded pages
                 self.scene_item_manager._clear_all_scene_items()
                 for page_idx in list(self.loaded_pages):
                     if page_idx < len(self.image_file_paths):

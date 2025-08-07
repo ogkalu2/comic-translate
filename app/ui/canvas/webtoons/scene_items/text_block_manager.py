@@ -198,7 +198,6 @@ class TextBlockManager:
         Similar to rectangles, this stores the FULL text block (not clipped) if it intersects with the page.
         In webtoon mode, there's no visual concept of page separation, so we preserve the complete blocks.
         """
-        print('unloading text blocks')
         if not self.main_controller:
             return
             

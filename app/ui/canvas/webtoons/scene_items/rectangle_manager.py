@@ -129,7 +129,6 @@ class RectangleManager:
     def redistribute_existing_rectangles(self, all_existing_rects: List[tuple], scene_items_by_page: Dict):
         """Redistribute existing rectangles to all pages they intersect with after clipping."""
         processed_rects = set()  # Track processed rectangles to avoid duplicates
-        print(f"Redistributing {len(all_existing_rects)} existing rectangles")
         
         for rect_data, original_page_idx in all_existing_rects:
             # Create a unique identifier for this rectangle to avoid duplicates
