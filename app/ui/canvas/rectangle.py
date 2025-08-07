@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QGraphicsRectItem
 from PySide6.QtCore import Signal, QObject, QRectF, Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QCursor
 from PySide6 import QtCore
+from PySide6.QtGui import QTransform, QPolygonF
 from dataclasses import dataclass
 from ..dayu_widgets.menu import MMenu
 
@@ -14,7 +15,7 @@ class RectState:
 
     @classmethod
     def from_item(cls, item: QGraphicsRectItem):
-        """Create TextBlockState from a TextBlockItem"""
+        """Create RectState from a MoveableRectItem"""
         rect = QRectF(item.pos(), item.boundingRect().size()).getCoords()
         return cls(
             rect=rect,
@@ -38,78 +39,26 @@ class MoveableRectItem(QGraphicsRectItem):
         self.setBrush(QBrush(QColor(255, 192, 203, 125)))  # Transparent pink
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setZValue(1)
-        self.handle_size = 20
+        
         self.resize_handle = None
         self.resize_start = None
-        self.dragging = False
-        self.drag_start = None
-        self.drag_offset = None
         self.selected = False
+        self.resizing = False
 
         # Rotation properties
         self.rot_handle = None
-        self.rotating = True
+        self.rotating = False
         self.last_rotation_angle = 0
         self.rotation_smoothing = 1.0 # rotation sensitivity
         self.center_scene_pos = None
 
         self.old_state = None
 
-    def hoverMoveEvent(self, event):
-        if self.selected:
-            self.update_cursor(event.pos())
-        else:
-            self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-
     def focusOutEvent(self, event):
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.selected = False
         self.update()
         super().focusOutEvent(event)
-
-    def mousePressEvent(self, event):
-        scene_pos = self.mapToScene(event.pos())
-        local_pos = event.pos()
-        self.selected = self.boundingRect().contains(local_pos)
-
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.old_state = RectState.from_item(self)
-            rect = self.boundingRect()
-            handle = self.get_handle_at_position(local_pos, rect)
-            if handle:
-                self.resize_handle = handle
-                self.resize_start = event.scenePos()
-            else:
-                self.dragging = True
-                self.drag_start = scene_pos
-                self.drag_offset = scene_pos - self.mapToScene(self.rect().topLeft())
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event):
-        if self.resize_handle:
-            self.resize_rectangle(event.pos())
-        elif self.dragging:
-            scene_pos = event.scenePos()
-            local_pos = self.mapFromScene(scene_pos)
-            local_last_scene = self.mapFromScene(event.lastScenePos())
-            self.move_rectangle(local_pos, local_last_scene)
-
-    def mouseReleaseEvent(self, event):
-        if self.old_state:
-            new_state = RectState.from_item(self)
-            if self.old_state.rect != new_state.rect:
-                self.signals.change_undo.emit(self.old_state, new_state)
-
-        self.dragging = False
-        self.drag_offset = None
-        self.resize_handle = None
-        self.resize_start = None
-        self.rotating = False
-        self.center_scene_pos = None
-        self.update_cursor(event.pos())
-        #self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
-
-        super().mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event):
         # Get the global position for the context menu
@@ -130,84 +79,9 @@ class MoveableRectItem(QGraphicsRectItem):
             menu.exec_(global_pos)
 
             super().contextMenuEvent(event)
-
-    def update_cursor(self, pos):
-        cursor = self.get_cursor_for_position(pos)
-        self.setCursor(QCursor(cursor))
-
-    def get_cursor_for_position(self, pos):
-        rect = self.boundingRect()
-        handle = self.get_handle_at_position(pos, rect)
-        
-        cursors = {
-            'top_left': Qt.CursorShape.SizeFDiagCursor,
-            'top_right': Qt.CursorShape.SizeBDiagCursor,
-            'bottom_left': Qt.CursorShape.SizeBDiagCursor,
-            'bottom_right': Qt.CursorShape.SizeFDiagCursor,
-            'top': Qt.CursorShape.SizeVerCursor,
-            'bottom': Qt.CursorShape.SizeVerCursor,
-            'left': Qt.CursorShape.SizeHorCursor,
-            'right': Qt.CursorShape.SizeHorCursor,
-        }
-        
-        if handle:
-            cursor = cursors.get(handle, Qt.CursorShape.ArrowCursor)
-            # Adjust cursor based on rotation
-            rotation = self.rotation() % 360
-            if 22.5 <= rotation < 67.5:
-                cursor = self.rotate_cursor(cursor, 1)
-            elif 67.5 <= rotation < 112.5:
-                cursor = self.rotate_cursor(cursor, 2)
-            elif 112.5 <= rotation < 157.5:
-                cursor = self.rotate_cursor(cursor, 3)
-            elif 157.5 <= rotation < 202.5:
-                cursor = self.rotate_cursor(cursor, 4)
-            elif 202.5 <= rotation < 247.5:
-                cursor = self.rotate_cursor(cursor, 5)
-            elif 247.5 <= rotation < 292.5:
-                cursor = self.rotate_cursor(cursor, 6)
-            elif 292.5 <= rotation < 337.5:
-                cursor = self.rotate_cursor(cursor, 7)
-            return cursor
-        elif rect.contains(pos):
-            return Qt.CursorShape.SizeAllCursor
-        else:
-            return Qt.CursorShape.PointingHandCursor
-            
-    def rotate_cursor(self, cursor, steps):
-        cursor_map = {
-            Qt.SizeVerCursor: [Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor] * 2,
-            Qt.SizeHorCursor: [Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor] * 2,
-            Qt.SizeFDiagCursor: [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor] * 2,
-            Qt.SizeBDiagCursor: [Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor] * 2
-        }
-        return cursor_map.get(cursor, [cursor] * 8)[steps]
-
-    def get_handle_at_position(self, pos, rect):
-        handle_size = self.handle_size
-        rect_rect = rect.toRect()
-        top_left = rect_rect.topLeft()
-        bottom_right = rect_rect.bottomRight()
-
-        handles = {
-            'top_left': QRectF(top_left.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
-            'top_right': QRectF(bottom_right.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
-            'bottom_left': QRectF(top_left.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
-            'bottom_right': QRectF(bottom_right.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
-            'top': QRectF(top_left.x(), top_left.y() - handle_size/2, rect_rect.width(), handle_size),
-            'bottom': QRectF(top_left.x(), bottom_right.y() - handle_size/2, rect_rect.width(), handle_size),
-            'left': QRectF(top_left.x() - handle_size/2, top_left.y(), handle_size, rect_rect.height()),
-            'right': QRectF(bottom_right.x() - handle_size/2, top_left.y(), handle_size, rect_rect.height()),
-        }
-
-        for handle, handle_rect in handles.items():
-            if handle_rect.contains(pos):
-                return handle
-
-        return None
     
-    def move_rectangle(self, local_pos: QtCore.QPointF, last_scene_pos: QtCore.QPointF):
-        delta = self.mapToParent(local_pos) - self.mapToParent(last_scene_pos)
+    def move_item(self, local_pos: QtCore.QPointF, last_local_pos: QtCore.QPointF):
+        delta = self.mapToParent(local_pos) - self.mapToParent(last_local_pos)
         new_pos = self.pos() + delta
         
         # Calculate the bounding rect of the rotated rectangle in scene coordinates
@@ -234,6 +108,10 @@ class MoveableRectItem(QGraphicsRectItem):
             new_pos.setY(self.pos().y() + parent_rect.bottom() - bounding_rect.bottom())
         
         self.setPos(new_pos)
+
+    def init_resize(self, scene_pos: QPointF):
+        self.resizing = True
+        self.resize_start = scene_pos
 
     def init_rotation(self, scene_pos):
         self.rotating = True
@@ -264,76 +142,63 @@ class MoveableRectItem(QGraphicsRectItem):
         self.setRotation(new_rotation)
         self.last_rotation_angle = current_angle
 
-    def resize_rectangle(self, pos: QtCore.QPointF):
-        if not self.resize_start:
+    def resize_item(self, scene_pos: QPointF):
+        if not self.resize_start or not self.resize_handle:
             return
-            
-        # Convert positions to scene coordinates
-        scene_pos = self.mapToScene(pos)
 
-        # Get the current rectangle in local coordinates
-        current_rect = self.rect()
-        new_rect = QRectF(current_rect)
+        # Calculate delta in scene coordinates
+        scene_delta = scene_pos - self.resize_start
 
-        # Rect Calcs
-        # Map scene position back to item coordinates, taking rotation into account
-        local_pos = self.mapFromScene(scene_pos)
-        
-        # Handle different resize handles
-        if self.resize_handle == 'top_left':
-            new_rect.setTopLeft(local_pos)
-        elif self.resize_handle == 'top_right':
-            new_rect.setTopRight(local_pos)
-        elif self.resize_handle == 'bottom_left':
-            new_rect.setBottomLeft(local_pos)
-        elif self.resize_handle == 'bottom_right':
-            new_rect.setBottomRight(local_pos)
-        elif self.resize_handle == 'top':
-            new_rect.setTop(local_pos.y())
-        elif self.resize_handle == 'bottom':
-            new_rect.setBottom(local_pos.y())
-        elif self.resize_handle == 'left':
-            new_rect.setLeft(local_pos.x())
-        elif self.resize_handle == 'right':
-            new_rect.setRight(local_pos.x())
+        # Counter-rotate the delta to align with the item's unrotated coordinate system
+        angle_rad = math.radians(-self.rotation())
+        rotated_delta_x = scene_delta.x() * math.cos(angle_rad) - scene_delta.y() * math.sin(angle_rad)
+        rotated_delta_y = scene_delta.x() * math.sin(angle_rad) + scene_delta.y() * math.cos(angle_rad)
+        rotated_delta = QPointF(rotated_delta_x, rotated_delta_y)
+
+        # Get the current rect and create a new one to modify
+        rect = self.rect()
+        new_rect = QRectF(rect)
+
+        # Apply the delta based on which handle is being dragged
+        if self.resize_handle in ['left', 'top_left', 'bottom_left']:
+            new_rect.setLeft(rect.left() + rotated_delta.x())
+        if self.resize_handle in ['right', 'top_right', 'bottom_right']:
+            new_rect.setRight(rect.right() + rotated_delta.x())
+        if self.resize_handle in ['top', 'top_left', 'top_right']:
+            new_rect.setTop(rect.top() + rotated_delta.y())
+        if self.resize_handle in ['bottom', 'bottom_left', 'bottom_right']:
+            new_rect.setBottom(rect.bottom() + rotated_delta.y())
 
         # Ensure minimum size
         min_size = 20
         if new_rect.width() < min_size:
-            if 'right' in self.resize_handle:
-                new_rect.setRight(new_rect.left() + min_size)
-            else:
-                new_rect.setLeft(new_rect.right() - min_size)
-        
+            if 'left' in self.resize_handle: new_rect.setLeft(new_rect.right() - min_size)
+            else: new_rect.setRight(new_rect.left() + min_size)
         if new_rect.height() < min_size:
-            if 'bottom' in self.resize_handle:
-                new_rect.setBottom(new_rect.top() + min_size)
-            else:
-                new_rect.setTop(new_rect.bottom() - min_size)
+            if 'top' in self.resize_handle: new_rect.setTop(new_rect.bottom() - min_size)
+            else: new_rect.setBottom(new_rect.top() + min_size)
 
-        # Calculate the change in position in scene coordinates
-        old_pos = self.mapToScene(current_rect.topLeft())
-        new_pos = self.mapToScene(new_rect.topLeft())
-        pos_delta = new_pos - old_pos
-        act_pos = self.pos() + pos_delta
-        
         # Convert the new rectangle to scene coordinates to check bounds
-        scene_rect = self.mapRectToScene(new_rect)
+        prospective_scene_rect = self.mapRectToScene(new_rect)
         
         # Get constraint bounds - use parent if available, otherwise use scene bounds
+        constraint_rect = None
         if self.parentItem():
-            parent_rect = self.parentItem().boundingRect()
-        else:
-            # In webtoon mode or when no parent, use scene bounds
-            scene_rect_bounds = self.scene().sceneRect()
-            parent_rect = scene_rect_bounds
+            constraint_rect = self.parentItem().sceneBoundingRect()
+        elif self.scene():
+            constraint_rect = self.scene().sceneRect()
         
-        # Ensure the rectangle stays within parent bounds
-        if (scene_rect.left() >= parent_rect.left() and 
-            scene_rect.right() <= parent_rect.right() and
-            scene_rect.top() >= parent_rect.top() and 
-            scene_rect.bottom() <= parent_rect.bottom()):
-            
-            # Update the rectangle
-            self.setPos(act_pos)
-            self.setRect(0, 0, new_rect.width(), new_rect.height())
+        if constraint_rect:
+            if (prospective_scene_rect.left() < constraint_rect.left() or
+                prospective_scene_rect.right() > constraint_rect.right() or
+                prospective_scene_rect.top() < constraint_rect.top() or
+                prospective_scene_rect.bottom() > constraint_rect.bottom()):
+                return  # Abort the resize operation
+
+        # Calculate the required shift in the parent's coordinate system.
+        pos_delta = self.mapToParent(new_rect.topLeft()) - self.mapToParent(rect.topLeft())
+        new_pos = self.pos() + pos_delta
+
+        self.setPos(new_pos)
+        self.setRect(0, 0, new_rect.width(), new_rect.height())
+        self.resize_start = scene_pos

@@ -4,7 +4,7 @@ from PySide6.QtGui import QTransform, QEventPoint
 from PySide6.QtWidgets import QGraphicsPixmapItem
 
 from .text_item import TextBlockItem, TextBlockState
-from .rectangle import MoveableRectItem
+from .rectangle import MoveableRectItem, RectState
 
 
 class EventHandler:
@@ -12,6 +12,8 @@ class EventHandler:
     
     def __init__(self, viewer):
         self.viewer = viewer
+        self.dragged_item = None
+        self.last_scene_pos = None
     
     # Main Event Handlers
 
@@ -22,10 +24,20 @@ class EventHandler:
         # Delegate page change detection to the appropriate manager
         if self.viewer.webtoon_mode:
             self.viewer.webtoon_manager.update_page_on_click(scene_pos)
+
+        if isinstance(clicked_item, TextBlockItem):
+            if not clicked_item.selected:  
+                self.viewer.deselect_all()
+                clicked_item.setSelected(True)
+                clicked_item.selected = True # Ensure custom flag is set
+                if not clicked_item.editing_mode:
+                    clicked_item.item_selected.emit(clicked_item)
         
         if event.button() == Qt.LeftButton:
-            if self._press_handle_rotation(event, scene_pos): 
-                return
+            # Order is important: check for handles, then drag, then general deselection
+            if self._press_handle_resize(event, scene_pos): return
+            if self._press_handle_rotation(event, scene_pos): return
+            if self._press_handle_drag(event, scene_pos): return
             self._press_handle_deselection(clicked_item)
 
         if event.button() == Qt.MiddleButton:
@@ -38,22 +50,34 @@ class EventHandler:
 
         if self.viewer.current_tool == 'box' and self.viewer.hasPhoto():
             if self._is_on_image(scene_pos):
+                # The default event is still needed for selection handles on unselected boxes
                 if isinstance(clicked_item, MoveableRectItem):
                     self.viewer.select_rectangle(clicked_item)
                     QtWidgets.QGraphicsView.mousePressEvent(self.viewer, event)
                 else:
                     self._press_handle_new_box(scene_pos)
 
+        # Only pass to QGraphicsView for panning or tool-specific interactions, not our items
         scroll = self.viewer.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
-        if self.viewer.current_tool == 'pan' or isinstance(clicked_item, (TextBlockItem, MoveableRectItem)) or scroll:
+        if self.viewer.current_tool == 'pan' or scroll:
             QtWidgets.QGraphicsView.mousePressEvent(self.viewer, event)
     
     def handle_mouse_move(self, event: QtGui.QMouseEvent):
-        QtWidgets.QGraphicsView.mouseMoveEvent(self.viewer, event)
         scene_pos = self.viewer.mapToScene(event.position().toPoint())
 
+        # Explicitly handle dragging our items first
+        if self._move_handle_drag(event, scene_pos):
+            # Update last position after handling drag
+            self.last_scene_pos = scene_pos
+            return
+
+        # Then handle other interactions like resize/rotate hover
         if self._move_handle_item_interaction(scene_pos): 
             return
+
+        # Let QGraphicsView handle its default behaviors (like ScrollHandDrag)
+        QtWidgets.QGraphicsView.mouseMoveEvent(self.viewer, event)
+
         if self.viewer.panning: 
             self._move_handle_pan(event)
             return
@@ -65,14 +89,44 @@ class EventHandler:
         if self.viewer.current_tool == 'box':
             self._move_handle_box_resize(scene_pos)
 
-    def handle_mouse_release(self, event: QtGui.QMouseEvent):
-        if event.button() == Qt.LeftButton:
-            self._release_handle_item_interaction()
+        # Update last position at the end of any mouse move
+        self.last_scene_pos = scene_pos
 
-        item = self.viewer.itemAt(event.pos())
-        scroll = self.viewer.dragMode() == QtWidgets.QGraphicsView.DragMode.ScrollHandDrag
-        if isinstance(item, (MoveableRectItem, TextBlockItem)) or self.viewer.current_tool == 'pan' or scroll:
-            QtWidgets.QGraphicsView.mouseReleaseEvent(self.viewer, event)
+    def handle_mouse_release(self, event: QtGui.QMouseEvent):
+        interaction_finished = False # Flag to track if we handled the event
+
+        if event.button() == Qt.LeftButton:
+            # Finalize drag operation if one was active
+            if self.dragged_item:
+                # Use sel_item for consistency
+                blk_item, rect_item = self.viewer.sel_rot_item()
+                sel_item = blk_item or rect_item
+                
+                if sel_item:
+                    # Emit undo signal for the move operation
+                    if isinstance(sel_item, TextBlockItem) and sel_item.old_state:
+                        new_state = TextBlockState.from_item(sel_item)
+                        sel_item.change_undo.emit(sel_item.old_state, new_state)
+                    elif isinstance(sel_item, MoveableRectItem) and sel_item.old_state:
+                        new_state = RectState.from_item(sel_item)
+                        sel_item.signals.change_undo.emit(sel_item.old_state, new_state)
+                
+                # Reset drag state
+                self.dragged_item = None
+                interaction_finished = True # Mark that we handled the drag
+
+            # Finalize other interactions like resize/rotate
+            # The 'or' ensures this runs if drag didn't happen, and sets the flag
+            interaction_finished = self._release_handle_item_interaction() or interaction_finished
+
+            # If a custom drag, resize, or rotate was just finished, stop the event here
+            # to prevent the base QGraphicsView from deselecting the item.
+            if interaction_finished:
+                self.viewer.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+                return # <-- THE CRITICAL CHANGE
+
+        # Let QGraphicsView handle its release events (e.g., for ScrollHandDrag)
+        QtWidgets.QGraphicsView.mouseReleaseEvent(self.viewer, event)
 
         if event.button() == Qt.MiddleButton:
             self._release_handle_pan()
@@ -83,7 +137,6 @@ class EventHandler:
             
         if self.viewer.current_tool == 'box':
             self._release_handle_box_creation()
-            QtWidgets.QGraphicsView.mouseReleaseEvent(self.viewer, event)
 
     def handle_wheel(self, event: QtGui.QWheelEvent):
         if not self.viewer.hasPhoto(): 
@@ -133,6 +186,52 @@ class EventHandler:
         if self.viewer.webtoon_mode:
             return any(item.contains(item.mapFromScene(scene_pos)) for item in self.viewer.webtoon_manager.image_items.values())
         return self.viewer.photo.contains(scene_pos)
+    
+    def _press_handle_drag(self, event: QtGui.QMouseEvent, scene_pos: QPointF) -> bool:
+        """Checks if a drag should be initiated on a custom item."""
+        blk_item, rect_item = self.viewer.sel_rot_item()
+        sel_item = blk_item or rect_item
+
+        if not sel_item:
+            return False
+
+        local_pos = sel_item.mapFromScene(scene_pos)
+        if sel_item.boundingRect().contains(local_pos):
+            self.dragged_item = sel_item
+            # Store the initial position for drag calculations
+            self.last_scene_pos = scene_pos
+            # Record state for undo purposes (instead of calling mousePressEvent which expects QGraphicsSceneMouseEvent)
+            if isinstance(sel_item, TextBlockItem):
+                sel_item.old_state = TextBlockState.from_item(sel_item)
+            elif isinstance(sel_item, MoveableRectItem):
+                sel_item.old_state = RectState.from_item(sel_item)
+            # Set cursor for drag operation
+            self.viewer.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
+            event.accept()
+            return True
+
+        return False
+
+    def _press_handle_resize(self, event, scene_pos) -> bool:
+        blk_item, rect_item = self.viewer.sel_rot_item()
+        sel_item = blk_item or rect_item
+        if sel_item and self.viewer.interaction_manager._in_resize_area(sel_item, scene_pos):
+            local_pos = sel_item.mapFromScene(scene_pos)
+            handle = self.viewer.interaction_manager.get_resize_handle(sel_item, local_pos)
+            if handle:
+                sel_item.resize_handle = handle
+                sel_item.init_resize(scene_pos)
+                # Record state for undo purposes (instead of calling mousePressEvent which expects QGraphicsSceneMouseEvent)
+                if isinstance(sel_item, TextBlockItem):
+                    sel_item.old_state = TextBlockState.from_item(sel_item)
+                elif isinstance(sel_item, MoveableRectItem):
+                    sel_item.old_state = RectState.from_item(sel_item)
+                # Set cursor for resize operation
+                cursor = self.viewer.interaction_manager.get_resize_cursor(sel_item, local_pos)
+                self.viewer.viewport().setCursor(cursor)
+                event.accept()
+                return True
+        return False
 
     def _press_handle_rotation(self, event, scene_pos) -> bool:
         blk_item, rect_item = self.viewer.sel_rot_item()
@@ -147,6 +246,15 @@ class EventHandler:
             sel_item.rot_handle = self.viewer.interaction_manager.get_rotate_handle(outer_rect, sel_item.mapFromScene(scene_pos), angle)
             if sel_item.rot_handle:
                 sel_item.init_rotation(scene_pos)
+                # Record state for undo purposes (instead of calling mousePressEvent which expects QGraphicsSceneMouseEvent)
+                if isinstance(sel_item, TextBlockItem):
+                    sel_item.old_state = TextBlockState.from_item(sel_item)
+                elif isinstance(sel_item, MoveableRectItem):
+                    sel_item.old_state = RectState.from_item(sel_item)
+                # Set cursor for rotation operation
+                local_pos = sel_item.mapFromScene(scene_pos)
+                cursor = self.viewer.interaction_manager.get_rotation_cursor(outer_rect, local_pos, angle)
+                self.viewer.viewport().setCursor(cursor)
                 event.accept()
                 return True
         return False
@@ -174,31 +282,59 @@ class EventHandler:
         self.viewer.current_rect = self.viewer.create_rect_item(QtCore.QRectF(0, 0, 0, 0))
         self.viewer.current_rect.setPos(scene_pos)
 
+    def _move_handle_drag(self, event: QtGui.QMouseEvent, scene_pos: QPointF) -> bool:
+        """Performs a drag by calling the item's specific move method."""
+        if not self.dragged_item:
+            return False
+
+        sel_item = self.dragged_item
+
+        # Get positions needed by the item's move method
+        local_pos = sel_item.mapFromScene(scene_pos)
+        # Use stored last position instead of event.lastScenePos() which doesn't exist
+        last_scene_pos = self.last_scene_pos if self.last_scene_pos else scene_pos
+        last_local_pos = sel_item.mapFromScene(last_scene_pos)
+
+        # Call the appropriate move method
+        sel_item.move_item(local_pos, last_local_pos)
+
+        event.accept()
+        return True
+
     def _move_handle_item_interaction(self, scene_pos) -> bool:
         blk_item, rect_item = self.viewer.sel_rot_item()
         sel_item = blk_item or rect_item
         if not sel_item: 
             return False
 
-        local_pos = sel_item.mapFromScene(scene_pos)
-        inner_rect = sel_item.boundingRect()
-        
-        if sel_item.get_handle_at_position(local_pos, inner_rect):
-            cursor_shape = sel_item.get_cursor_for_position(local_pos)
-            self.viewer.viewport().setCursor(QtGui.QCursor(cursor_shape))
+        # Handle active dragging operations first
+        if sel_item.resizing:
+            sel_item.resize_item(scene_pos)
             return True
         
         if sel_item.rotating and sel_item.center_scene_pos:
             sel_item.rotate_item(scene_pos)
             return True
         
+        # Then, handle hover states for cursor updates
+        local_pos = sel_item.mapFromScene(scene_pos)
+
+        if self.viewer.interaction_manager._in_resize_area(sel_item, scene_pos):
+            cursor = self.viewer.interaction_manager.get_resize_cursor(sel_item, local_pos)
+            self.viewer.viewport().setCursor(cursor)
+            return True
+        
         if self.viewer.interaction_manager._in_rotate_ring(sel_item, scene_pos):
-            outer_rect = inner_rect.adjusted(-self.viewer.interaction_manager.rotate_margin_max, 
+            outer_rect = sel_item.boundingRect().adjusted(-self.viewer.interaction_manager.rotate_margin_max, 
                                            -self.viewer.interaction_manager.rotate_margin_max, 
                                            self.viewer.interaction_manager.rotate_margin_max, 
                                            self.viewer.interaction_manager.rotate_margin_max)
             cursor = self.viewer.interaction_manager.get_rotation_cursor(outer_rect, local_pos, sel_item.rotation())
             self.viewer.viewport().setCursor(cursor)
+            return True
+        
+        if sel_item.boundingRect().contains(local_pos):
+            self.viewer.viewport().setCursor(Qt.CursorShape.SizeAllCursor)
             return True
 
         self.viewer.viewport().setCursor(Qt.CursorShape.ArrowCursor)
@@ -228,17 +364,35 @@ class EventHandler:
         self.viewer.current_rect.setPos(QPointF(pos_x, pos_y))
         self.viewer.current_rect.setRect(QtCore.QRectF(0, 0, width, height))
         
-    def _release_handle_item_interaction(self):
+    def _release_handle_item_interaction(self) -> bool: # Add return type hint for clarity
         blk_item, rect_item = self.viewer.sel_rot_item()
         sel_item = blk_item or rect_item
         if sel_item:
+            # Emit undo signal for resize/rotate
+            state_changed = sel_item.resizing or sel_item.rotating
+            
+            # Reset flags
+            sel_item.resizing = False
+            sel_item.resize_handle = None
+            sel_item.resize_start = None
             sel_item.rotating = False
             sel_item.center_scene_pos = None
             sel_item.rot_handle = None
-            if isinstance(sel_item, TextBlockItem):
-                new_state = TextBlockState.from_item(sel_item)
-                sel_item.change_undo.emit(sel_item.old_state, new_state)
+
+            if state_changed:
+                if isinstance(sel_item, TextBlockItem) and sel_item.old_state:
+                    new_state = TextBlockState.from_item(sel_item)
+                    sel_item.change_undo.emit(sel_item.old_state, new_state)
+                elif isinstance(sel_item, MoveableRectItem) and sel_item.old_state:
+                    new_state = RectState.from_item(sel_item)
+                    sel_item.signals.change_undo.emit(sel_item.old_state, new_state)
+                    
+                # Reset cursor after resize/rotate operation
+                self.viewer.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+                return True # <-- ADD THIS: Interaction was handled
+
         self.viewer.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+        return False # <-- ADD THIS: No interaction was handled
 
     def _release_handle_pan(self):
         self.viewer.panning = False

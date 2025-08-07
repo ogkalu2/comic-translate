@@ -2,27 +2,36 @@ import math
 from typing import Optional
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QPointF, QRectF
-from PySide6.QtWidgets import QGraphicsPathItem
+from PySide6.QtCore import QPointF, QRectF, Qt
 
-from .text_item import TextBlockItem, TextBlockState
+from .text_item import TextBlockItem
 from .rectangle import MoveableRectItem
 from ..commands.box import ClearRectsCommand
 
 
 class InteractionManager:
-    """Manages interactions with scene items like selection and rotation using composition."""
+    """Manages interactions with scene items like selection, rotation, and resizing using composition."""
 
     def __init__(self, viewer):
         self.viewer = viewer
+        # Rotation margins
         self.rotate_margin_min = 20
         self.rotate_margin_max = 50
+        # Resize margins
+        self.resize_margin_min = 0
+        self.resize_margin_max = 20
 
     def set_rotate_ring(self, inner: int, outer: int):
         if inner < 0 or outer <= inner:
             raise ValueError("outer must be > inner ≥ 0")
         self.rotate_margin_min = inner
         self.rotate_margin_max = outer
+
+    def set_resize_ring(self, inner: int, outer: int):
+        if inner < 0 or outer <= inner:
+            raise ValueError("outer must be > inner ≥ 0")
+        self.resize_margin_min = inner
+        self.resize_margin_max = outer
     
     def sel_rot_item(self):
         blk_item = next(
@@ -43,7 +52,108 @@ class InteractionManager:
         r = item.boundingRect()
         dx = max(r.left() - local.x(), 0, local.x() - r.right())
         dy = max(r.top() - local.y(), 0, local.y() - r.bottom())
-        return self.rotate_margin_min < math.hypot(dx, dy) < self.rotate_margin_max
+        dist = math.hypot(dx, dy)
+        return self.rotate_margin_min < dist < self.rotate_margin_max
+
+    def _in_resize_area(self, item: Optional[MoveableRectItem|TextBlockItem], scene_pos) -> bool:
+        """Checks if a scene position is within the item's resize area."""
+        if not item: return False
+        local = item.mapFromScene(scene_pos)
+        r = item.boundingRect()
+        dx = max(r.left() - local.x(), 0, local.x() - r.right())
+        dy = max(r.top() - local.y(), 0, local.y() - r.bottom())
+        dist = math.hypot(dx, dy)
+        return self.resize_margin_min < dist < self.resize_margin_max
+
+    # --- START: NEW METHOD FROM YOUR CODE ---
+    def rotate_cursor(self, cursor, steps):
+        cursor_map = {
+            Qt.SizeVerCursor: [Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor] * 2,
+            Qt.SizeHorCursor: [Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor] * 2,
+            Qt.SizeFDiagCursor: [Qt.SizeFDiagCursor, Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor] * 2,
+            Qt.SizeBDiagCursor: [Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor] * 2
+        }
+        return cursor_map.get(cursor, [cursor] * 8)[steps]
+    # --- END: NEW METHOD FROM YOUR CODE ---
+
+    # --- START: REPLACED get_resize_cursor WITH YOUR get_cursor_for_position LOGIC ---
+    def get_resize_cursor(self, item: MoveableRectItem | TextBlockItem, pos: QPointF) -> QtGui.QCursor:
+        """Gets the appropriate resize cursor for a given position."""
+        rect = item.boundingRect()
+        handle = self.get_handle_at_position(pos, rect)
+        
+        cursors = {
+            'top_left': Qt.CursorShape.SizeFDiagCursor,
+            'top_right': Qt.CursorShape.SizeBDiagCursor,
+            'bottom_left': Qt.CursorShape.SizeBDiagCursor,
+            'bottom_right': Qt.CursorShape.SizeFDiagCursor,
+            'top': Qt.CursorShape.SizeVerCursor,
+            'bottom': Qt.CursorShape.SizeVerCursor,
+            'left': Qt.CursorShape.SizeHorCursor,
+            'right': Qt.CursorShape.SizeHorCursor,
+        }
+        
+        if handle:
+            cursor = cursors.get(handle, Qt.CursorShape.ArrowCursor)
+            # Adjust cursor based on rotation
+            rotation = item.rotation() % 360
+            steps = 0
+            if 22.5 <= rotation < 67.5:
+                steps = 1
+            elif 67.5 <= rotation < 112.5:
+                steps = 2
+            elif 112.5 <= rotation < 157.5:
+                steps = 3
+            elif 157.5 <= rotation < 202.5:
+                steps = 4
+            elif 202.5 <= rotation < 247.5:
+                steps = 5
+            elif 247.5 <= rotation < 292.5:
+                steps = 6
+            elif 292.5 <= rotation < 337.5:
+                steps = 7
+            
+            rotated_shape = self.rotate_cursor(cursor, steps)
+            return QtGui.QCursor(rotated_shape)
+        
+        return QtGui.QCursor(QtCore.Qt.ArrowCursor)
+    # --- END: REPLACED get_resize_cursor ---
+
+    # --- START: REPLACED get_resize_handle WITH YOUR get_handle_at_position LOGIC ---
+    def get_resize_handle(self, item: MoveableRectItem | TextBlockItem, pos: QPointF) -> str | None:
+        """Determines which resize handle is at a position (pos is in item's local coordinates)."""
+        return self.get_handle_at_position(pos, item.boundingRect())
+
+    def get_handle_at_position(self, pos, rect):
+        handle_size = self.resize_margin_max # Use manager's property
+        rect_rect = rect.toRect()
+        top_left = rect_rect.topLeft()
+        bottom_right = rect_rect.bottomRight()
+
+        handles = {
+            'top_left': QRectF(top_left.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
+            'top_right': QRectF(bottom_right.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
+            'bottom_left': QRectF(top_left.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
+            'bottom_right': QRectF(bottom_right.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
+            'top': QRectF(top_left.x(), top_left.y() - handle_size/2, rect_rect.width(), handle_size),
+            'bottom': QRectF(top_left.x(), bottom_right.y() - handle_size/2, rect_rect.width(), handle_size),
+            'left': QRectF(top_left.x() - handle_size/2, top_left.y(), handle_size, rect_rect.height()),
+            'right': QRectF(bottom_right.x() - handle_size/2, top_left.y(), handle_size, rect_rect.height()),
+        }
+
+        # Check corners first, as they overlap with sides
+        corner_handles = ['top_left', 'top_right', 'bottom_left', 'bottom_right']
+        for handle in corner_handles:
+            if handles[handle].contains(pos):
+                return handle
+        
+        side_handles = ['top', 'bottom', 'left', 'right']
+        for handle in side_handles:
+             if handles[handle].contains(pos):
+                return handle
+
+        return None
+    # --- END: REPLACED get_resize_handle ---
 
     def get_rotation_cursor(self, outer_rect, pos, angle):
         """Gets the appropriate rotation cursor for a given position."""
