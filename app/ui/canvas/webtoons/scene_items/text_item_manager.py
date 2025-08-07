@@ -15,21 +15,19 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 class TextItemManager:
     """Manages text items for webtoon mode with lazy loading."""
     
-    def __init__(self, viewer, layout_manager, coordinate_converter):
+    def __init__(self, viewer, layout_manager, coordinate_converter, image_loader):
         self.viewer = viewer
         self.layout_manager = layout_manager
         self.coordinate_converter = coordinate_converter
+        self.image_loader = image_loader
         self._scene = viewer._scene
         
         # Main controller reference (set by scene item manager)
         self.main_controller = None
-        
-        # File path references (for state storage)
-        self.image_file_paths: List[str] = []
     
-    def initialize(self, file_paths: List[str]):
-        """Initialize text item manager with file paths."""
-        self.image_file_paths = file_paths.copy()
+    def initialize(self):
+        """Initialize or reset the text item manager state."""
+        pass
     
     def load_text_items(self, state: Dict, page_idx: int):
         """Load text items for a specific page."""
@@ -79,7 +77,7 @@ class TextItemManager:
     
     def clear(self):
         """Clear all text item management state."""
-        self.image_file_paths.clear()
+        pass
     
     def _split_text_by_lines(self, text_item, clip_ratios: dict) -> str:
         """
@@ -222,7 +220,7 @@ class TextItemManager:
                 # If text only intersects one page, no clipping needed
                 if len(intersecting_pages_list) == 1:
                     page_idx = intersecting_pages_list[0]
-                    if 0 <= page_idx < len(self.image_file_paths):
+                    if 0 <= page_idx < len(self.image_loader.image_file_paths):
                         scene_pos = text_item.pos()
                         page_local_pos = self.coordinate_converter.scene_to_page_local_position(scene_pos, page_idx)
                         
@@ -235,7 +233,7 @@ class TextItemManager:
                 else:
                     # Text spans multiple pages - need to clip and split
                     for page_idx in intersecting_pages_list:
-                        if 0 <= page_idx < len(self.image_file_paths):
+                        if 0 <= page_idx < len(self.image_loader.image_file_paths):
                             # Get clipping information for this page
                             clip_info = self.coordinate_converter.clip_text_item_to_page(text_item, page_idx)
                             if clip_info:
@@ -348,7 +346,7 @@ class TextItemManager:
                 # If text only intersects one page, no clipping needed
                 if len(intersecting_pages_list) == 1:
                     page_idx = intersecting_pages_list[0]
-                    if 0 <= page_idx < len(self.image_file_paths):
+                    if 0 <= page_idx < len(self.image_loader.image_file_paths):
                         # Convert back to page-local coordinates for the target page
                         target_page_local_pos = self.coordinate_converter.scene_to_page_local_position(scene_pos, page_idx)
                         clipped_text_data = text_item_data.copy()
@@ -357,7 +355,7 @@ class TextItemManager:
                 else:
                     # Text spans multiple pages - need to clip and split
                     for page_idx in intersecting_pages_list:
-                        if 0 <= page_idx < len(self.image_file_paths):
+                        if 0 <= page_idx < len(self.image_loader.image_file_paths):
                             clip_info = self.coordinate_converter.clip_text_item_to_page(mock_text_item, page_idx)
                             if clip_info:
                                 # Use text item manager's splitting logic

@@ -12,21 +12,19 @@ from PySide6.QtCore import QPointF, QRectF
 class RectangleManager:
     """Manages rectangles for webtoon mode with lazy loading."""
     
-    def __init__(self, viewer, layout_manager, coordinate_converter):
+    def __init__(self, viewer, layout_manager, coordinate_converter, image_loader):
         self.viewer = viewer
         self.layout_manager = layout_manager
         self.coordinate_converter = coordinate_converter
+        self.image_loader = image_loader
         self._scene = viewer._scene
         
         # Main controller reference (set by scene item manager)
         self.main_controller = None
-        
-        # File path references (for state storage)
-        self.image_file_paths: List[str] = []
     
-    def initialize(self, file_paths: List[str]):
-        """Initialize rectangle manager with file paths."""
-        self.image_file_paths = file_paths.copy()
+    def initialize(self):
+        """Initialize or reset the rectangle manager state."""
+        pass
     
     def load_rectangles(self, state: Dict, page_idx: int):
         """Load rectangles for a specific page."""
@@ -113,7 +111,7 @@ class RectangleManager:
                 
                 # Add clipped version to each intersecting page
                 for page_idx in intersecting_pages:
-                    if 0 <= page_idx < len(self.image_file_paths):
+                    if 0 <= page_idx < len(self.image_loader.image_file_paths):
                         clipped_rect = self.coordinate_converter.clip_rectangle_to_page(rect_item, page_idx)
                         if clipped_rect and clipped_rect[2] > 0 and clipped_rect[3] > 0:
                             rect_data = {
@@ -126,7 +124,7 @@ class RectangleManager:
     
     def clear(self):
         """Clear all rectangle management state."""
-        self.image_file_paths.clear()
+        pass
 
     def redistribute_existing_rectangles(self, all_existing_rects: List[tuple], scene_items_by_page: Dict):
         """Redistribute existing rectangles to all pages they intersect with after clipping."""
@@ -176,7 +174,7 @@ class RectangleManager:
             
             # Add clipped version to each intersecting page (following save_rectangles_to_states pattern)
             for page_idx in intersecting_pages:
-                if 0 <= page_idx < len(self.image_file_paths):
+                if 0 <= page_idx < len(self.image_loader.image_file_paths):
                     clipped_rect = self.coordinate_converter.clip_rectangle_to_page(mock_rect, page_idx)
                     if clipped_rect and clipped_rect[2] > 0 and clipped_rect[3] > 0:
                         clipped_rect_data = {

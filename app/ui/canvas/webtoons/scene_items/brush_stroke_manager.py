@@ -13,21 +13,19 @@ from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, Qt
 class BrushStrokeManager:
     """Manages brush strokes for webtoon mode with lazy loading."""
     
-    def __init__(self, viewer, layout_manager, coordinate_converter):
+    def __init__(self, viewer, layout_manager, coordinate_converter, image_loader):
         self.viewer = viewer
         self.layout_manager = layout_manager
         self.coordinate_converter = coordinate_converter
+        self.image_loader = image_loader
         self._scene = viewer._scene
         
         # Main controller reference (set by scene item manager)
         self.main_controller = None
-        
-        # File path references (for state storage)
-        self.image_file_paths: List[str] = []
     
-    def initialize(self, file_paths: List[str]):
-        """Initialize brush stroke manager with file paths."""
-        self.image_file_paths = file_paths.copy()
+    def initialize(self):
+        """Initialize or reset the brush stroke manager state."""
+        pass
     
     def load_brush_strokes(self, state: Dict, page_idx: int):
         """Load brush strokes for a specific page."""
@@ -117,7 +115,7 @@ class BrushStrokeManager:
             
             # Check which page this point belongs to
             page_index = self.layout_manager.get_page_at_position(point.y())
-            if 0 <= page_index < len(self.image_file_paths):
+            if 0 <= page_index < len(self.image_loader.image_file_paths):
                 pages_touched.add(page_index)
         
         # Create page-specific paths for each touched page
@@ -213,7 +211,7 @@ class BrushStrokeManager:
     
     def clear(self):
         """Clear all brush stroke management state."""
-        self.image_file_paths.clear()
+        pass
 
     def redistribute_existing_brush_strokes(self, all_existing_brush_strokes: List[tuple], scene_items_by_page: Dict):
         """Redistribute existing brush strokes to all pages they intersect with after clipping."""

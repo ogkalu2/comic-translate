@@ -2,6 +2,7 @@
 Coordinate Converter for Webtoon Manager
 
 Handles coordinate transformations between page-local and scene coordinates.
+This class is stateless and relies on live data from other managers.
 """
 
 from typing import List, Dict, Optional
@@ -12,34 +13,29 @@ from PySide6.QtGui import QPainterPath
 class CoordinateConverter:
     """Handles coordinate transformations for webtoon mode."""
     
-    def __init__(self):
-        self.image_positions: List[float] = []
-        self.image_heights: List[float] = []
-        self.webtoon_width: float = 0
-        self.image_data: Dict[int, any] = {}  # page_index -> cv2 image
-    
-    def update_layout(self, positions: List[float], heights: List[float], 
-                     width: float, image_data: Dict[int, any]):
-        """Update layout information for coordinate calculations."""
-        self.image_positions = positions.copy()
-        self.image_heights = heights.copy()
-        self.webtoon_width = width
-        self.image_data = image_data.copy()
+    def __init__(self, layout_manager, image_loader):
+        """
+        Initializes the converter with references to the data owners.
+        This class does not own any state itself.
+        """
+        self.layout_manager = layout_manager
+        self.image_loader = image_loader
     
     def page_local_to_scene_position(self, page_local_pos: QPointF, page_idx: int) -> QPointF:
         """Convert page-local coordinates to scene coordinates."""
-        if not (0 <= page_idx < len(self.image_positions)):
+        if not (0 <= page_idx < len(self.layout_manager.image_positions)):
             return page_local_pos
             
-        # Get page offset
-        page_y = self.image_positions[page_idx]
+        # Get page offset from LayoutManager
+        page_y = self.layout_manager.image_positions[page_idx]
         
         # Calculate page x offset (items are centered in webtoon mode)
-        if page_idx in self.image_data:
-            page_width = self.image_data[page_idx].shape[1]
+        image_data = self.image_loader.image_data
+        if page_idx in image_data:
+            page_width = image_data[page_idx].shape[1]
         else:
-            page_width = self.webtoon_width
-        page_x_offset = (self.webtoon_width - page_width) / 2
+            page_width = self.layout_manager.webtoon_width
+        page_x_offset = (self.layout_manager.webtoon_width - page_width) / 2
         
         # Convert to scene coordinates
         scene_x = page_local_pos.x() + page_x_offset
@@ -49,18 +45,19 @@ class CoordinateConverter:
     
     def scene_to_page_local_position(self, scene_pos: QPointF, page_idx: int) -> QPointF:
         """Convert scene coordinates to page-local coordinates."""
-        if not (0 <= page_idx < len(self.image_positions)):
+        if not (0 <= page_idx < len(self.layout_manager.image_positions)):
             return scene_pos
             
-        # Get page offset
-        page_y = self.image_positions[page_idx]
+        # Get page offset from LayoutManager
+        page_y = self.layout_manager.image_positions[page_idx]
         
         # Calculate page x offset (items are centered in webtoon mode)
-        if page_idx in self.image_data:
-            page_width = self.image_data[page_idx].shape[1]
+        image_data = self.image_loader.image_data
+        if page_idx in image_data:
+            page_width = image_data[page_idx].shape[1]
         else:
-            page_width = self.webtoon_width
-        page_x_offset = (self.webtoon_width - page_width) / 2
+            page_width = self.layout_manager.webtoon_width
+        page_x_offset = (self.layout_manager.webtoon_width - page_width) / 2
         
         # Convert to page-local coordinates
         local_x = scene_pos.x() - page_x_offset
@@ -70,7 +67,7 @@ class CoordinateConverter:
     
     def convert_path_to_scene_coordinates(self, page_local_path: QPainterPath, page_idx: int) -> QPainterPath:
         """Convert a page-local brush path to scene coordinates."""
-        if not (0 <= page_idx < len(self.image_positions)):
+        if not (0 <= page_idx < len(self.layout_manager.image_positions)):
             return page_local_path
             
         # Create a new path in scene coordinates
@@ -99,20 +96,21 @@ class CoordinateConverter:
     
     def convert_stroke_to_page_local(self, stroke_item, page_idx: int) -> Optional[Dict]:
         """Convert a brush stroke to page-local coordinates and clip to page bounds."""
-        if not (0 <= page_idx < len(self.image_positions)):
+        if not (0 <= page_idx < len(self.layout_manager.image_positions)):
             return None
             
-        # Get page bounds
-        page_y = self.image_positions[page_idx]
-        page_height = self.image_heights[page_idx]
+        # Get page bounds from LayoutManager
+        page_y = self.layout_manager.image_positions[page_idx]
+        page_height = self.layout_manager.image_heights[page_idx]
         page_bottom = page_y + page_height
         
         # Calculate page x offset
-        if page_idx in self.image_data:
-            page_width = self.image_data[page_idx].shape[1]
+        image_data = self.image_loader.image_data
+        if page_idx in image_data:
+            page_width = image_data[page_idx].shape[1]
         else:
-            page_width = self.webtoon_width
-        page_x_offset = (self.webtoon_width - page_width) / 2
+            page_width = self.layout_manager.webtoon_width
+        page_x_offset = (self.layout_manager.webtoon_width - page_width) / 2
         
         # Create a clipping rectangle for this page in scene coordinates
         page_rect = QRectF(page_x_offset, page_y, page_width, page_height)
@@ -159,19 +157,20 @@ class CoordinateConverter:
     
     def clip_rectangle_to_page(self, rect_item, page_index: int) -> Optional[tuple]:
         """Clip a rectangle to page bounds and return page-local coordinates"""
-        if not (0 <= page_index < len(self.image_positions)):
+        if not (0 <= page_index < len(self.layout_manager.image_positions)):
             return None
             
-        # Get page bounds in scene coordinates
-        page_y = self.image_positions[page_index]
-        page_height = self.image_heights[page_index]
+        # Get page bounds in scene coordinates from LayoutManager
+        page_y = self.layout_manager.image_positions[page_index]
+        page_height = self.layout_manager.image_heights[page_index]
         
-        # Calculate page x offset (items are centered in webtoon mode)
-        if page_index in self.image_data:
-            page_width = self.image_data[page_index].shape[1]
+        # Calculate page x offset
+        image_data = self.image_loader.image_data
+        if page_index in image_data:
+            page_width = image_data[page_index].shape[1]
         else:
-            page_width = self.webtoon_width
-        page_x_offset = (self.webtoon_width - page_width) / 2
+            page_width = self.layout_manager.webtoon_width
+        page_x_offset = (self.layout_manager.webtoon_width - page_width) / 2
         
         # Page bounds in scene coordinates
         page_rect = QRectF(page_x_offset, page_y, page_width, page_height)
@@ -204,19 +203,20 @@ class CoordinateConverter:
     
     def clip_textblock_to_page(self, text_block, page_index: int) -> Optional[tuple]:
         """Clip a text block to page bounds and return page-local coordinates"""
-        if not (0 <= page_index < len(self.image_positions)):
+        if not (0 <= page_index < len(self.layout_manager.image_positions)):
             return None
             
-        # Get page bounds in scene coordinates
-        page_y = self.image_positions[page_index]
-        page_height = self.image_heights[page_index]
+        # Get page bounds in scene coordinates from LayoutManager
+        page_y = self.layout_manager.image_positions[page_index]
+        page_height = self.layout_manager.image_heights[page_index]
         
-        # Calculate page x offset (items are centered in webtoon mode)
-        if page_index in self.image_data:
-            page_width = self.image_data[page_index].shape[1]
+        # Calculate page x offset
+        image_data = self.image_loader.image_data
+        if page_index in image_data:
+            page_width = image_data[page_index].shape[1]
         else:
-            page_width = self.webtoon_width
-        page_x_offset = (self.webtoon_width - page_width) / 2
+            page_width = self.layout_manager.webtoon_width
+        page_x_offset = (self.layout_manager.webtoon_width - page_width) / 2
         
         # Page bounds in scene coordinates
         page_rect = QRectF(page_x_offset, page_y, page_width, page_height)
@@ -255,19 +255,20 @@ class CoordinateConverter:
         Clip a text item to page bounds and return clipped text data.
         For text items that span multiple pages, this handles text splitting.
         """
-        if not (0 <= page_index < len(self.image_positions)):
+        if not (0 <= page_index < len(self.layout_manager.image_positions)):
             return None
             
-        # Get page bounds in scene coordinates
-        page_y = self.image_positions[page_index]
-        page_height = self.image_heights[page_index]
+        # Get page bounds in scene coordinates from LayoutManager
+        page_y = self.layout_manager.image_positions[page_index]
+        page_height = self.layout_manager.image_heights[page_index]
         
-        # Calculate page x offset (items are centered in webtoon mode)
-        if page_index in self.image_data:
-            page_width = self.image_data[page_index].shape[1]
+        # Calculate page x offset
+        image_data = self.image_loader.image_data
+        if page_index in image_data:
+            page_width = image_data[page_index].shape[1]
         else:
-            page_width = self.webtoon_width
-        page_x_offset = (self.webtoon_width - page_width) / 2
+            page_width = self.layout_manager.webtoon_width
+        page_x_offset = (self.layout_manager.webtoon_width - page_width) / 2
         
         # Page bounds in scene coordinates
         page_rect = QRectF(page_x_offset, page_y, page_width, page_height)

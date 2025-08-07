@@ -13,23 +13,20 @@ from modules.utils.textblock import TextBlock
 class TextBlockManager:
     """Manages TextBlock objects for webtoon mode with lazy loading."""
     
-    def __init__(self, viewer, layout_manager, coordinate_converter):
+    def __init__(self, viewer, layout_manager, coordinate_converter, image_loader):
         self.viewer = viewer
         self.layout_manager = layout_manager
         self.coordinate_converter = coordinate_converter
+        self.image_loader = image_loader
         
         # Main controller reference (set by scene item manager)
         self.main_controller = None
         
-        # File path references (for state storage)
-        self.image_file_paths: List[str] = []
-        
         # Current page tracking
         self.current_page_idx = -1
     
-    def initialize(self, file_paths: List[str]):
-        """Initialize text block manager with file paths."""
-        self.image_file_paths = file_paths.copy()
+    def initialize(self):
+        """Initialize or reset the text block manager state."""
         self.current_page_idx = -1
     
     def _convert_bbox_coordinates(self, bbox, page_idx: int, to_scene: bool = True):
@@ -178,10 +175,10 @@ class TextBlockManager:
     
     def load_text_blocks(self, page_idx: int):
         """Load TextBlock objects for a specific page into main controller's blk_list."""
-        if not self.main_controller or page_idx >= len(self.image_file_paths):
+        if not self.main_controller or page_idx >= len(self.image_loader.image_file_paths):
             return
             
-        file_path = self.image_file_paths[page_idx]
+        file_path = self.image_loader.image_file_paths[page_idx]
         stored_blks = self.main_controller.image_states[file_path].get('blk_list', []).copy()
         
         # Convert coordinates from page-local to scene coordinates for webtoon mode
@@ -261,7 +258,7 @@ class TextBlockManager:
             
             # Add clipped version to each intersecting page
             for page_idx in intersecting_pages:
-                if 0 <= page_idx < len(self.image_file_paths):
+                if 0 <= page_idx < len(self.image_loader.image_file_paths):
                     clipped_xyxy = self.coordinate_converter.clip_textblock_to_page(blk, page_idx)
                     if clipped_xyxy and clipped_xyxy[2] > clipped_xyxy[0] and clipped_xyxy[3] > clipped_xyxy[1]:
                         # Create a clipped copy of the text block for this page
@@ -270,7 +267,6 @@ class TextBlockManager:
     
     def clear(self):
         """Clear all text block management state."""
-        self.image_file_paths.clear()
         self.current_page_idx = -1
 
     def redistribute_existing_text_blocks(self, all_existing_blk_list: List[tuple], scene_items_by_page: Dict):
@@ -310,7 +306,7 @@ class TextBlockManager:
             
             # Add clipped version to each intersecting page (following save_text_blocks_to_states pattern)
             for page_idx in intersecting_pages:
-                if 0 <= page_idx < len(self.image_file_paths):
+                if 0 <= page_idx < len(self.image_loader.image_file_paths):
                     clipped_xyxy = self.coordinate_converter.clip_textblock_to_page(temp_blk, page_idx)
                     if clipped_xyxy and clipped_xyxy[2] > clipped_xyxy[0] and clipped_xyxy[3] > clipped_xyxy[1]:
                         # Create a clipped copy of the text block for this page

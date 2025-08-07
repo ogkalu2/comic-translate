@@ -16,40 +16,29 @@ from app.ui.commands.base import PatchCommandBase
 class PatchManager:
     """Manages inpaint patches for webtoon mode with lazy loading."""
     
-    def __init__(self, viewer, layout_manager, coordinate_converter):
+    def __init__(self, viewer, layout_manager, coordinate_converter, image_loader):
         self.viewer = viewer
         self.layout_manager = layout_manager
         self.coordinate_converter = coordinate_converter
+        self.image_loader = image_loader
         self._scene = viewer._scene
         
         # Main controller reference (set by scene item manager)
         self.main_controller = None
         
-        # File path references
-        self.image_file_paths: List[str] = []
-        
         # Track loaded patch items per page
         self.loaded_patch_items: Dict[int, List[QGraphicsPixmapItem]] = {}
     
-    def initialize(self, file_paths: List[str]):
-        """Initialize patch manager with file paths."""
-        self.image_file_paths = file_paths.copy()
+    def initialize(self):
+        """Initialize or reset the patch manager state."""
         self.loaded_patch_items.clear()
     
     def load_patches(self, page_idx: int):
         """Load inpaint patches for a specific page."""
-        if not self.main_controller or page_idx >= len(self.image_file_paths):
+        if not self.main_controller or page_idx >= len(self.image_loader.image_file_paths):
             return
             
-        # Use the main controller's image_files as the source of truth for file paths
-        # This ensures we're using the most up-to-date paths after deletions
-        if self.main_controller.image_files:
-            if self.image_file_paths != self.main_controller.image_files:
-                self.image_file_paths = self.main_controller.image_files.copy()
-        
-        file_path = self.image_file_paths[page_idx]
-
-        print(self.image_file_paths)
+        file_path = self.image_loader.image_file_paths[page_idx]
 
         # Don't reload if already loaded
         if page_idx in self.loaded_patch_items:
@@ -116,12 +105,6 @@ class PatchManager:
             return []
         return self.loaded_patch_items[page_idx].copy()
     
-    def clear_all_patches(self):
-        """Clear all loaded patch items."""
-        for page_idx in list(self.loaded_patch_items.keys()):
-            self.unload_patches(page_idx)
-    
     def clear(self):
         """Clear all patch management state."""
-        self.image_file_paths.clear()
         self.loaded_patch_items.clear()

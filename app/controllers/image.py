@@ -310,9 +310,6 @@ class ImageStateController:
 
         # Handle webtoon mode specific updates
         if self.main.webtoon_mode:
-            # Force update all file paths in the scene item manager to match main.image_files
-            scene_item_manager = self.main.image_viewer.webtoon_manager.scene_item_manager
-            scene_item_manager.update_file_paths(self.main.image_files.copy())
             # Use non-destructive page removal in webtoon mode
             if self.main.image_files:
                 # Get full file paths of deleted files from the webtoon manager's file paths

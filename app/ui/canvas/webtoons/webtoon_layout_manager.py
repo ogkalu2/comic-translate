@@ -2,6 +2,7 @@
 Webtoon Layout Manager
 
 Handles layout calculations, positioning, and viewport management.
+This class is the single source of truth for layout information.
 """
 
 from typing import List, Set, Tuple
@@ -15,7 +16,7 @@ class WebtoonLayoutManager:
         self.viewer = viewer
         self._scene = viewer._scene
         
-        # Layout state
+        # Layout state (OWNER of this data)
         self.image_positions: List[float] = []
         self.image_heights: List[float] = []
         self.total_height: float = 0
@@ -37,6 +38,9 @@ class WebtoonLayoutManager:
         
         # Callback for when page detection is enabled
         self.on_page_detection_enabled = None
+        # References to other managers (will be set by LazyWebtoonManager)
+        self.image_loader = None
+        self.coordinate_converter = None
     
     def estimate_layout(self, file_paths: List[str]) -> bool:
         """Estimate layout dimensions without loading all images."""
@@ -324,3 +328,55 @@ class WebtoonLayoutManager:
         self.webtoon_width = 0
         self.image_positions.clear()
         self.image_heights.clear()
+
+    def _recalculate_layout(self):
+        """Recalculate layout positions after page addition/removal."""
+        if not self.image_loader.image_file_paths:
+            self.total_height = 0
+            self.image_positions.clear()
+            self.image_heights.clear()
+            self._scene.setSceneRect(0, 0, 0, 0)
+            return
+        
+        # Recalculate positions from scratch
+        current_y = 100
+        new_positions = []
+        
+        for i in range(len(self.image_loader.image_file_paths)):
+            new_positions.append(current_y)
+            # Use existing height if available, otherwise estimate
+            height = self.image_heights[i] if i < len(self.image_heights) else 1000
+            current_y += height + self.image_spacing
+        
+        # Update layout manager with new positions
+        self.image_positions = new_positions
+        
+        # Update total height
+        self.total_height = current_y - self.image_spacing if new_positions else 0
+        
+        # Update scene rectangle to new dimensions
+        scene_rect = QRectF(0, 0, self.webtoon_width, self.total_height)
+        self._scene.setSceneRect(scene_rect)
+        
+        # Also update the viewer's scene rect to ensure scrollbars are updated
+        self.viewer.setSceneRect(scene_rect)
+        
+        # Update image item positions for loaded pages
+        for page_idx in list(self.image_loader.loaded_pages):
+            if page_idx < len(self.image_positions) and page_idx in self.image_loader.image_items:
+                item = self.image_loader.image_items[page_idx]
+                y_pos = self.image_positions[page_idx]
+                # Calculate x position (centered)
+                if page_idx in self.image_loader.image_data:
+                    img_width = self.image_loader.image_data[page_idx].shape[1]
+                    x_offset = (self.webtoon_width - img_width) / 2
+                else:
+                    x_offset = item.pos().x()  # Keep existing x position
+                item.setPos(x_offset, y_pos)
+        
+        # Update placeholder positions if any exist
+        for page_idx in list(self.image_loader.placeholder_items.keys()):
+            if page_idx < len(self.image_positions):
+                placeholder = self.image_loader.placeholder_items[page_idx]
+                y_pos = self.image_positions[page_idx]
+                placeholder.setPos(0, y_pos)
