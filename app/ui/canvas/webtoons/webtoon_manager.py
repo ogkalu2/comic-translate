@@ -34,9 +34,9 @@ class LazyWebtoonManager:
         self._scene = viewer._scene
         
         # Initialize specialized components and establish ownership
-        self.coordinate_converter = CoordinateConverter(self.layout_manager, self.image_loader)
-        self.image_loader = LazyImageLoader(viewer, self.layout_manager)
         self.layout_manager = WebtoonLayoutManager(viewer)
+        self.image_loader = LazyImageLoader(viewer, self.layout_manager)
+        self.coordinate_converter = CoordinateConverter(self.layout_manager, self.image_loader)
         self.scene_item_manager = SceneItemManager(viewer, self.layout_manager, self.coordinate_converter, self.image_loader)
         
         # Set up cross-references between all components
