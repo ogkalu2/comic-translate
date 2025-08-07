@@ -4,8 +4,6 @@ Text Item Manager for Webtoon Scene Items
 Handles text item management with state storage for webtoon mode.
 """
 
-import re
-from typing import List, Dict, Optional, Tuple
 from PySide6.QtCore import QPointF, Qt, QRectF
 from PySide6.QtGui import QTextDocument, QTextCursor
 from app.ui.canvas.text_item import TextBlockItem
@@ -29,7 +27,7 @@ class TextItemManager:
         """Initialize or reset the text item manager state."""
         pass
     
-    def load_text_items(self, state: Dict, page_idx: int):
+    def load_text_items(self, state: dict, page_idx: int):
         """Load text items for a specific page."""
         text_items = state.get('viewer_state', {}).get('text_items_state', [])
         for text_data in text_items:
@@ -183,8 +181,8 @@ class TextItemManager:
         return temp_doc.toHtml()
     
     def _create_clipped_text_data(self, original_text_data: dict, clipped_text: str, 
-                                 clipped_position: Tuple[float, float], 
-                                 clipped_size: Tuple[float, float]) -> dict:
+                                 clipped_position: tuple[float, float], 
+                                 clipped_size: tuple[float, float]) -> dict:
         """Create a new text data dictionary for a clipped portion of text."""
         clipped_data = original_text_data.copy()
         clipped_data.update({
@@ -195,7 +193,7 @@ class TextItemManager:
         })
         return clipped_data
     
-    def save_text_items_to_states(self, scene_items_by_page: Dict):
+    def save_text_items_to_states(self, scene_items_by_page: dict):
         """Save text items to appropriate page states with clipping support."""
         for item in self.viewer._scene.items():
             if isinstance(item, TextBlockItem):
@@ -269,7 +267,7 @@ class TextItemManager:
                                         )
                                         scene_items_by_page[page_idx]['text_items'].append(clipped_text_data)
 
-    def redistribute_existing_text_items(self, existing_text_items_by_page: Dict, scene_items_by_page: Dict):
+    def redistribute_existing_text_items(self, existing_text_items_by_page: dict, scene_items_by_page: dict):
         """Redistribute existing text items to all pages they intersect with after clipping."""
         processed_text_items = set()  # Track processed text items to avoid duplicates
         print(f"Redistributing existing text items with clipping")

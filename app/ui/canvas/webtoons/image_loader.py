@@ -1,7 +1,7 @@
 import numpy as np
-from typing import List, Dict, Set, Optional
+from typing import Set, Optional
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem
-from PySide6.QtCore import QTimer, QPointF, QRectF, Qt
+from PySide6.QtCore import QTimer, QRectF, Qt
 from PySide6.QtGui import QPixmap, QColor, QPen, QBrush, QImage, QPainter
 
 
@@ -19,30 +19,30 @@ class LazyImageLoader:
         # Configuration
         self.max_loaded_pages = 10  # Maximum pages in memory
         
-        # File path references (OWNER of this data)
-        self.image_file_paths: List[str] = []
+        # File path references (Owner of this data)
+        self.image_file_paths: list[str] = []
         
-        # Loaded content tracking (OWNER of this data)
+        # Loaded content tracking (Owner of this data)
         self.loaded_pages: Set[int] = set()
-        self.image_items: Dict[int, QGraphicsPixmapItem] = {}  # page_index -> item
-        self.image_data: Dict[int, np.ndarray] = {}  # page_index -> cv2 image
-        self.placeholder_items: Dict[int, QGraphicsRectItem] = {}  # page_index -> placeholder
+        self.image_items: dict[int, QGraphicsPixmapItem] = {}  # page_index -> item
+        self.image_data: dict[int, np.ndarray] = {}  # page_index -> cv2 image
+        self.placeholder_items: dict[int, QGraphicsRectItem] = {}  # page_index -> placeholder
         
         # Timers for debounced loading
         self.load_timer = QTimer()
         self.load_timer.timeout.connect(self._process_load_queue)
         
         # Loading queue and state
-        self.load_queue: List[int] = []
+        self.load_queue: list[int] = []
         self.loading_pages: Set[int] = set()
         
         # References to other managers (will be set by LazyWebtoonManager)
         self.main_controller = None
-        self.webtoon_manager = None  # Reference to the lazy webtoon manager
+        self.webtoon_manager = None  
         self.scene_item_manager = None
         self.coordinate_converter = None
     
-    def initialize_images(self, file_paths: List[str], current_page: int = 0):
+    def initialize_images(self, file_paths: list[str], current_page: int = 0):
         """Initialize image loading with file paths."""
         self.image_file_paths = file_paths.copy()
         
@@ -553,7 +553,7 @@ class LazyImageLoader:
             if page_changed:
                 self.viewer.page_changed.emit(self.layout_manager.current_page_index)
 
-    def remove_pages(self, file_paths_to_remove: List[str]) -> bool:
+    def remove_pages(self, file_paths_to_remove: list[str]) -> bool:
         """Remove specific pages from the webtoon manager without full reload."""
         try:
             # Find indices of pages to remove
@@ -574,7 +574,7 @@ class LazyImageLoader:
             # Save current page for adjustment
             current_page = self.layout_manager.current_page_index
             
-            # CRITICAL: Save scene items for all pages before removing any pages
+            # Save scene items for all pages before removing any pages
             self.scene_item_manager.save_all_scene_items_to_states()
             
             # Remove pages from each component (from highest index to lowest)
@@ -652,7 +652,7 @@ class LazyImageLoader:
             traceback.print_exc()
             return False
 
-    def insert_pages(self, new_file_paths: List[str], insert_position: int = None) -> bool:
+    def insert_pages(self, new_file_paths: list[str], insert_position: int = None) -> bool:
         """Insert new pages into the webtoon manager at the specified position."""
         try:
             if not new_file_paths:
@@ -718,7 +718,7 @@ class LazyImageLoader:
             traceback.print_exc()
             return False
 
-    def _recalculate_index(self, old_idx: int, removed_indices: List[int]) -> Optional[int]:
+    def _recalculate_index(self, old_idx: int, removed_indices: list[int]) -> Optional[int]:
         """Calculates the new index of an item after removals."""
         if old_idx in removed_indices:
             return None

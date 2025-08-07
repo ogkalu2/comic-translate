@@ -5,7 +5,7 @@ Handles layout calculations, positioning, and viewport management.
 This class is the single source of truth for layout information.
 """
 
-from typing import List, Set, Tuple
+from typing import Set, Tuple
 from PySide6.QtCore import QPointF, QRectF, QTimer
 
 
@@ -17,8 +17,8 @@ class WebtoonLayoutManager:
         self._scene = viewer._scene
         
         # Layout state (OWNER of this data)
-        self.image_positions: List[float] = []
-        self.image_heights: List[float] = []
+        self.image_positions: list[float] = []
+        self.image_heights: list[float] = []
         self.total_height: float = 0
         self.webtoon_width: float = 0
         self.image_spacing = 0
@@ -42,7 +42,7 @@ class WebtoonLayoutManager:
         self.image_loader = None
         self.coordinate_converter = None
     
-    def estimate_layout(self, file_paths: List[str]) -> bool:
+    def estimate_layout(self, file_paths: list[str]) -> bool:
         """Estimate layout dimensions without loading all images."""
         try:
             # Load just the first few images to estimate average dimensions

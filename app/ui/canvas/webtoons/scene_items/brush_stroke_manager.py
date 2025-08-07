@@ -4,7 +4,7 @@ Brush Stroke Manager for Webtoon Scene Items
 Handles brush stroke management with state storage for webtoon mode.
 """
 
-from typing import List, Dict, Set, Optional, Tuple
+from typing import List, Dict, Set, Optional
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, Qt

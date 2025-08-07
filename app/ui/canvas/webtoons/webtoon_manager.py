@@ -4,18 +4,17 @@ Lazy Loading Webtoon Manager
 main coordinator that delegates to specialized components:
 - LazyImageLoader: Memory-efficient image loading and unloading
 - WebtoonLayoutManager: Layout calculations, positioning, and viewport management  
-- SceneItemManager: Scene items (rectangles, text, brush strokes) management
+- SceneItemManager: Scene items (rectangles, text, brush strokes etc) management
 - CoordinateConverter: Coordinate transformations between page-local and scene coordinates
 """
 
 from __future__ import annotations
 
 import numpy as np
-import cv2
-from typing import List, Dict, Set, TYPE_CHECKING
-from PySide6.QtCore import QTimer, QPointF, QRectF, Qt
+from typing import Set, TYPE_CHECKING
+from PySide6.QtCore import QTimer, QPointF
 from PySide6.QtWidgets import QGraphicsPixmapItem
-from PySide6.QtGui import QPixmap, QImage, QPainter, QTransform
+from PySide6.QtGui import QTransform
 
 from .image_loader import LazyImageLoader
 from .webtoon_layout_manager import WebtoonLayoutManager
@@ -35,9 +34,9 @@ class LazyWebtoonManager:
         self._scene = viewer._scene
         
         # Initialize specialized components and establish ownership
-        self.layout_manager = WebtoonLayoutManager(viewer)
-        self.image_loader = LazyImageLoader(viewer, self.layout_manager)
         self.coordinate_converter = CoordinateConverter(self.layout_manager, self.image_loader)
+        self.image_loader = LazyImageLoader(viewer, self.layout_manager)
+        self.layout_manager = WebtoonLayoutManager(viewer)
         self.scene_item_manager = SceneItemManager(viewer, self.layout_manager, self.coordinate_converter, self.image_loader)
         
         # Set up cross-references between all components
@@ -61,7 +60,7 @@ class LazyWebtoonManager:
         self.scroll_timer.setSingleShot(True)
         self.scroll_timer.timeout.connect(self._update_loaded_pages)
 
-    def load_images_lazy(self, file_paths: List[str], current_page: int = 0) -> bool:
+    def load_images_lazy(self, file_paths: list[str], current_page: int = 0) -> bool:
         """Initialize webtoon mode with lazy loading."""
         try:
             if self.main_controller:
@@ -183,12 +182,12 @@ class LazyWebtoonManager:
     # PROXY PROPERTIES to access data from the correct owner
 
     @property
-    def image_positions(self) -> List[float]:
+    def image_positions(self) -> list[float]:
         """Get image positions from LayoutManager."""
         return self.layout_manager.image_positions
     
     @property
-    def image_heights(self) -> List[float]:
+    def image_heights(self) -> list[float]:
         """Get image heights from LayoutManager."""
         return self.layout_manager.image_heights
     
@@ -213,17 +212,17 @@ class LazyWebtoonManager:
         return self.image_loader.loaded_pages
     
     @property
-    def image_items(self) -> Dict[int, QGraphicsPixmapItem]:
+    def image_items(self) -> dict[int, QGraphicsPixmapItem]:
         """Get image items from ImageLoader."""
         return self.image_loader.image_items
     
     @property
-    def image_data(self) -> Dict[int, np.ndarray]:
+    def image_data(self) -> dict[int, np.ndarray]:
         """Get image data from ImageLoader."""
         return self.image_loader.image_data
     
     @property
-    def image_file_paths(self) -> List[str]:
+    def image_file_paths(self) -> list[str]:
         """Get image file paths from ImageLoader."""
         return self.image_loader.image_file_paths
 
@@ -287,10 +286,10 @@ class LazyWebtoonManager:
         """Proxy method to get combined image of all visible pages."""
         return self.image_loader.get_visible_area_image(paint_all, include_patches)
 
-    def remove_pages(self, file_paths_to_remove: List[str]) -> bool:
+    def remove_pages(self, file_paths_to_remove: list[str]) -> bool:
         """Proxy method to remove specific pages from the webtoon manager."""
         return self.image_loader.remove_pages(file_paths_to_remove)
 
-    def insert_pages(self, new_file_paths: List[str], insert_position: int = None) -> bool:
+    def insert_pages(self, new_file_paths: list[str], insert_position: int = None) -> bool:
         """Proxy method to insert new pages into the webtoon manager."""
         return self.image_loader.insert_pages(new_file_paths, insert_position)

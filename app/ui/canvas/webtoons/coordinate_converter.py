@@ -5,7 +5,7 @@ Handles coordinate transformations between page-local and scene coordinates.
 This class is stateless and relies on live data from other managers.
 """
 
-from typing import List, Dict, Optional
+from typing import Optional
 from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QPainterPath
 
@@ -94,7 +94,7 @@ class CoordinateConverter:
         
         return scene_path
     
-    def convert_stroke_to_page_local(self, stroke_item, page_idx: int) -> Optional[Dict]:
+    def convert_stroke_to_page_local(self, stroke_item, page_idx: int) -> Optional[dict]:
         """Convert a brush stroke to page-local coordinates and clip to page bounds."""
         if not (0 <= page_idx < len(self.layout_manager.image_positions)):
             return None

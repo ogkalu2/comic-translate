@@ -8,7 +8,6 @@ import cv2
 from typing import List, Dict
 from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QGraphicsPixmapItem
-from PySide6.QtGui import QPixmap
 
 from app.ui.commands.base import PatchCommandBase
 

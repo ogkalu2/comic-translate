@@ -5,9 +5,7 @@ Handles scene items (rectangles, text, brush strokes, patches) management with s
 Refactored to delegate to specialized managers and reference live data from other main managers.
 """
 
-from typing import List, Dict
-from PySide6.QtCore import QPointF, QRectF
-from PySide6.QtGui import QPainterPath, QTextDocument
+from PySide6.QtGui import QTextDocument
 from .rectangle_manager import RectangleManager
 from .text_item_manager import TextItemManager
 from .brush_stroke_manager import BrushStrokeManager
