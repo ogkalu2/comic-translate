@@ -65,7 +65,6 @@ class InteractionManager:
         dist = math.hypot(dx, dy)
         return self.resize_margin_min < dist < self.resize_margin_max
 
-    # --- START: NEW METHOD FROM YOUR CODE ---
     def rotate_cursor(self, cursor, steps):
         cursor_map = {
             Qt.SizeVerCursor: [Qt.SizeVerCursor, Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor] * 2,
@@ -74,9 +73,7 @@ class InteractionManager:
             Qt.SizeBDiagCursor: [Qt.SizeBDiagCursor, Qt.SizeHorCursor, Qt.SizeFDiagCursor, Qt.SizeVerCursor] * 2
         }
         return cursor_map.get(cursor, [cursor] * 8)[steps]
-    # --- END: NEW METHOD FROM YOUR CODE ---
 
-    # --- START: REPLACED get_resize_cursor WITH YOUR get_cursor_for_position LOGIC ---
     def get_resize_cursor(self, item: MoveableRectItem | TextBlockItem, pos: QPointF) -> QtGui.QCursor:
         """Gets the appropriate resize cursor for a given position."""
         rect = item.boundingRect()
@@ -117,9 +114,7 @@ class InteractionManager:
             return QtGui.QCursor(rotated_shape)
         
         return QtGui.QCursor(QtCore.Qt.ArrowCursor)
-    # --- END: REPLACED get_resize_cursor ---
 
-    # --- START: REPLACED get_resize_handle WITH YOUR get_handle_at_position LOGIC ---
     def get_resize_handle(self, item: MoveableRectItem | TextBlockItem, pos: QPointF) -> str | None:
         """Determines which resize handle is at a position (pos is in item's local coordinates)."""
         return self.get_handle_at_position(pos, item.boundingRect())
@@ -153,7 +148,6 @@ class InteractionManager:
                 return handle
 
         return None
-    # --- END: REPLACED get_resize_handle ---
 
     def get_rotation_cursor(self, outer_rect, pos, angle):
         """Gets the appropriate rotation cursor for a given position."""
