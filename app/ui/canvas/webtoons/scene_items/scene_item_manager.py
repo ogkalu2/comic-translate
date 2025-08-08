@@ -205,6 +205,7 @@ class SceneItemManager:
         """
         if not self.main_controller: 
             return
+        
         for page_idx in range(len(self.image_loader.image_file_paths)):
             file_path = self.image_loader.image_file_paths[page_idx]
             state = self.main_controller.image_states.get(file_path, {})
