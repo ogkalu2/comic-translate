@@ -3,7 +3,6 @@ from PySide6.QtWidgets import QGraphicsRectItem
 from PySide6.QtCore import Signal, QObject, QRectF, Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QCursor
 from PySide6 import QtCore
-from PySide6.QtGui import QTransform, QPolygonF
 from dataclasses import dataclass
 from ..dayu_widgets.menu import MMenu
 
