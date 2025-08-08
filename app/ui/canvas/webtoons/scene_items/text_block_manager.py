@@ -188,8 +188,6 @@ class TextBlockManager:
 
         self.main_controller.blk_list.extend(stored_blks)
         self.current_page_idx = page_idx
-        
-        print(f"Loaded {len(stored_blks)} TextBlocks for page {page_idx}")
     
     def unload_text_blocks(self, page_idx: int, page_y: float, page_bottom: float, file_path: str):
         """
