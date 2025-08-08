@@ -442,7 +442,19 @@ class TextBlockManager:
         """Merge a group of clipped text blocks back into one."""
         if len(group) <= 1:
             return
-            
+        
+        # Check if all text blocks have the same text content - if so, don't merge
+        texts = []
+        for item in group:
+            blk_text = getattr(item['blk'], 'text', '') or ''
+            texts.append(blk_text.strip())
+        
+        # Remove empty strings and check uniqueness
+        non_empty_texts = [text for text in texts if text]
+        if len(set(non_empty_texts)) <= 1:
+            # All texts are the same or empty, don't merge
+            return
+        
         # Sort by Y position to maintain reading order
         group_sorted = sorted(group, key=lambda x: x['scene_bounds'].top())
         
