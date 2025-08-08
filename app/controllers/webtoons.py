@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-
 from typing import TYPE_CHECKING
 from dataclasses import dataclass
+from PySide6.QtCore import QTimer
 
-from PySide6.QtCore import QPointF, QRectF, QTimer
-from PySide6.QtGui import QPainterPath
-
-from modules.utils.textblock import TextBlock
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -80,30 +76,20 @@ class WebtoonController:
             return False
         
         # Apply configuration
-        if hasattr(self.image_viewer, 'webtoon_manager'):
-            manager = self.image_viewer.webtoon_manager
-            manager.max_loaded_pages = self.lazy_config.max_loaded_pages
-            manager.viewport_buffer = self.lazy_config.viewport_buffer
-            manager.load_timer.setInterval(self.lazy_config.load_timer_interval)
-            manager.scroll_timer.setInterval(self.lazy_config.scroll_debounce_delay)
-            
-            # Pass main controller reference for compatibility
-            manager.main = self.main
-            
-            # Set enhanced controller reference for callbacks
-            manager.set_enhanced_controller(self)
-            
-            # Connect page change signal now that manager is initialized
-            self.image_viewer.page_changed.connect(self.on_page_changed)
-            
-            # Store reference to this controller in the manager so it can notify when ready
-            manager.enhanced_controller = self
+        manager = self.image_viewer.webtoon_manager
+        manager.max_loaded_pages = self.lazy_config.max_loaded_pages
+        manager.viewport_buffer = self.lazy_config.viewport_buffer
+        manager.load_timer.setInterval(self.lazy_config.load_timer_interval)
+        manager.scroll_timer.setInterval(self.lazy_config.scroll_debounce_delay)
         
-        # Set up scene item management for lazy loading
+        manager.main = self.main
+        manager.set_enhanced_controller(self)
+        self.image_viewer.page_changed.connect(self.on_page_changed)
+        manager.enhanced_controller = self
+        manager.scene_item_manager.merge_clipped_items_back()
         self._setup_lazy_scene_items()
-        
-        # Connect scroll events for lazy loading
         self._connect_lazy_loading_events()
+        self.image_viewer.webtoon_manager.restore_view_state()
 
         return True
 
@@ -245,7 +231,6 @@ class WebtoonController:
     def _on_lazy_manager_ready(self):
         """Called when the lazy manager has completed initialization."""
         self._initialization_complete = True
-        self.image_viewer.webtoon_manager.restore_view_state()
 
     def toggle_webtoon_mode(self):
         """Toggle between regular image viewer and webtoon mode."""

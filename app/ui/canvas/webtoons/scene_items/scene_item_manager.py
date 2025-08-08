@@ -180,6 +180,25 @@ class SceneItemManager:
         # Final consistency check
         self._update_text_blocks_with_clipped_text()
     
+    def merge_clipped_items_back(self):
+        """
+        Merge clipped items back to their original form when switching to webtoon mode.
+        This identifies items that were split across page boundaries in regular mode
+        and merges them back so they display as whole items in webtoon mode.
+        """
+        if not self.main_controller:
+            return
+            
+        print("Merging clipped items for webtoon mode...")
+        
+        # Use manager-specific merge methods
+        self.text_item_manager.merge_clipped_text_items()
+        self.rectangle_manager.merge_clipped_rectangles()
+        self.brush_stroke_manager.merge_clipped_brush_strokes()
+        self.text_block_manager.merge_clipped_text_blocks()
+        
+        print("Clipped items merging completed.")
+
     def _update_text_blocks_with_clipped_text(self):
         """
         Update text blocks' text to match the plain text of their corresponding clipped text items.

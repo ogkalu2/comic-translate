@@ -412,3 +412,205 @@ class TextItemManager:
                 new_text == ex_text):
                 return True
         return False
+    
+    def merge_clipped_text_items(self):
+        """Merge text items that were clipped across page boundaries in regular mode."""
+        if not self.main_controller:
+            return
+            
+        all_text_items = []
+        
+        # Collect all text items from all pages
+        for page_idx in range(len(self.image_loader.image_file_paths)):
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states.get(file_path, {})
+            text_items = state.get('viewer_state', {}).get('text_items_state', [])
+            
+            for text_item in text_items:
+                # Convert to scene coordinates for comparison
+                local_pos = QPointF(text_item['position'][0], text_item['position'][1])
+                scene_pos = self.coordinate_converter.page_local_to_scene_position(local_pos, page_idx)
+                
+                all_text_items.append({
+                    'data': text_item,
+                    'page_idx': page_idx,
+                    'scene_pos': scene_pos,
+                    'scene_bounds': QRectF(
+                        scene_pos.x(), 
+                        scene_pos.y(),
+                        text_item.get('width', 100),
+                        text_item.get('height', 50)
+                    )
+                })
+        
+        if len(all_text_items) < 2:
+            return  # Need at least 2 items to merge
+            
+        # Group items that are vertically adjacent (likely clipped from same original)
+        # This is especially important for text that spans page boundaries
+        merged_groups = []
+        used_items = set()
+        
+        for i, item1 in enumerate(all_text_items):
+            if i in used_items:
+                continue
+                
+            group = [item1]
+            used_items.add(i)
+            
+            # Look for vertically adjacent items with similar properties
+            for j, item2 in enumerate(all_text_items):
+                if j in used_items or i == j:
+                    continue
+                    
+                if self._are_text_items_mergeable(item1, item2, group):
+                    group.append(item2)
+                    used_items.add(j)
+            
+            # Only process groups with multiple items (potential merges)
+            if len(group) > 1:
+                merged_groups.append(group)
+                print(f"Found mergeable text group with {len(group)} items")
+        
+        # Merge each group
+        for group in merged_groups:
+            self._merge_text_item_group(group)
+
+    def _are_text_items_mergeable(self, item1, item2, existing_group):
+        """Check if two text items can be merged (are parts of the same original item clipped in regular mode)."""
+        # Sort group by Y position to check adjacency
+        group_sorted = sorted(existing_group + [item2], key=lambda x: x['scene_pos'].y())
+        item2_index = next(i for i, item in enumerate(group_sorted) if item == item2)
+        
+        # Check if item2 is adjacent to any item in the group
+        is_adjacent = False
+        tolerance = 20  # Increased tolerance for page boundary clipping
+        
+        if item2_index > 0:
+            prev_item = group_sorted[item2_index - 1]
+            prev_bottom = prev_item['scene_pos'].y() + prev_item['data'].get('height', 50)
+            item2_top = item2['scene_pos'].y()
+            gap = abs(prev_bottom - item2_top)
+            if gap < tolerance:
+                is_adjacent = True
+                
+        if item2_index < len(group_sorted) - 1:
+            next_item = group_sorted[item2_index + 1]
+            item2_bottom = item2['scene_pos'].y() + item2['data'].get('height', 50)
+            next_top = next_item['scene_pos'].y()
+            gap = abs(item2_bottom - next_top)
+            if gap < tolerance:
+                is_adjacent = True
+        
+        if not is_adjacent:
+            return False
+        
+        # Check if items are on adjacent pages (important for clipped items)
+        ref_page = existing_group[0]['page_idx']
+        test_page = item2['page_idx']
+        if abs(ref_page - test_page) > 1:  # Only merge items from adjacent pages
+            return False
+        
+        # Check similar styling (font, color, etc.)
+        ref_item = existing_group[0]['data']
+        test_item = item2['data']
+        
+        style_attrs = ['font_family', 'font_size', 'font_bold', 'font_italic', 'color', 'outline_color']
+        for attr in style_attrs:
+            if ref_item.get(attr) != test_item.get(attr):
+                return False
+                
+        # Check horizontal alignment (clipped items should have very similar X positions)
+        ref_x = existing_group[0]['scene_pos'].x()
+        test_x = item2['scene_pos'].x()
+        if abs(ref_x - test_x) > 15:  # Strict alignment for clipped items
+            return False
+            
+        return True
+
+    def _merge_text_item_group(self, group):
+        """Merge a group of clipped text items back into one."""
+        if len(group) <= 1:
+            return
+            
+        # Sort by Y position
+        group_sorted = sorted(group, key=lambda x: x['scene_pos'].y())
+        
+        # Use the topmost item as the base
+        base_item = group_sorted[0]
+        base_data = base_item['data'].copy()
+        
+        # Merge text content while preserving HTML formatting
+        merged_text = self._merge_text_content([item['data'].get('text', '') for item in group_sorted])
+        
+        # Calculate merged bounds
+        top_y = min(item['scene_pos'].y() for item in group_sorted)
+        bottom_y = max(item['scene_pos'].y() + item['data'].get('height', 50) for item in group_sorted)
+        left_x = min(item['scene_pos'].x() for item in group_sorted)
+        right_x = max(item['scene_pos'].x() + item['data'].get('width', 100) for item in group_sorted)
+        
+        # Determine which page this merged item should belong to
+        center_y = (top_y + bottom_y) / 2
+        target_page = self.layout_manager.get_page_at_position(center_y)
+        
+        # Convert back to page-local coordinates
+        scene_pos = QPointF(left_x, top_y)
+        local_pos = self.coordinate_converter.scene_to_page_local_position(scene_pos, target_page)
+        
+        # Update merged item data
+        base_data.update({
+            'text': merged_text,
+            'position': (local_pos.x(), local_pos.y()),
+            'width': right_x - left_x,
+            'height': bottom_y - top_y
+        })
+        
+        # Remove all items from their current pages
+        for item in group:
+            page_idx = item['page_idx']
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states[file_path]
+            text_items = state['viewer_state']['text_items_state']
+            
+            # Remove this item
+            text_items[:] = [ti for ti in text_items if ti != item['data']]
+        
+        # Add merged item to target page
+        target_file_path = self.image_loader.image_file_paths[target_page]
+        target_state = self.main_controller.image_states[target_file_path]
+        target_state['viewer_state']['text_items_state'].append(base_data)
+
+    def _merge_text_content(self, text_fragments):
+        """Merge text fragments while preserving HTML formatting."""
+        if not text_fragments:
+            return ""
+            
+        # If all fragments are plain text, just join with newlines
+        if all(not self._is_html(text) for text in text_fragments):
+            return '\n'.join(text_fragments)
+        
+        # For HTML content, we need to carefully merge while preserving formatting
+        merged_doc = QTextDocument()
+        cursor = QTextCursor(merged_doc)
+        
+        for i, fragment in enumerate(text_fragments):
+            
+            # if i > 0:
+            #     cursor.insertText('\n')  # Add line break between fragments
+                
+            if self._is_html(fragment):
+                # Create temporary document to extract formatted content
+                temp_doc = QTextDocument()
+                temp_doc.setHtml(fragment)
+                temp_cursor = QTextCursor(temp_doc)
+                temp_cursor.select(QTextCursor.SelectionType.Document)
+                cursor.insertFragment(temp_cursor.selection())
+            else:
+                cursor.insertText(fragment)
+        
+        return merged_doc.toHtml()
+    
+    def _is_html(self, text):
+        """Check if text contains HTML tags."""
+        import re
+        return bool(re.search(r'<[^>]+>', text))

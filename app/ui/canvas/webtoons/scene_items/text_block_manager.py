@@ -333,3 +333,213 @@ class TextBlockManager:
                 abs(new_rotation - ex_rotation) <= 1.0):  # 1 degree tolerance for rotation
                 return True
         return False
+
+    def merge_clipped_text_blocks(self):
+        """Merge text blocks that were clipped across page boundaries in regular mode."""
+        if not self.main_controller:
+            return
+            
+        all_text_blocks = []
+        
+        # Collect all text blocks from all pages
+        for page_idx in range(len(self.image_loader.image_file_paths)):
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states.get(file_path, {})
+            text_blocks = state.get('blk_list', [])
+            
+            for blk in text_blocks:
+                if not (hasattr(blk, 'xyxy') and blk.xyxy is not None and len(blk.xyxy) >= 4):
+                    continue
+                    
+                # Convert to scene coordinates for comparison
+                local_x1, local_y1, local_x2, local_y2 = blk.xyxy[:4]
+                local_top_left = QPointF(local_x1, local_y1)
+                local_bottom_right = QPointF(local_x2, local_y2)
+                
+                scene_top_left = self.coordinate_converter.page_local_to_scene_position(local_top_left, page_idx)
+                scene_bottom_right = self.coordinate_converter.page_local_to_scene_position(local_bottom_right, page_idx)
+                
+                all_text_blocks.append({
+                    'blk': blk,
+                    'page_idx': page_idx,
+                    'scene_bounds': QRectF(
+                        scene_top_left.x(), 
+                        scene_top_left.y(),
+                        scene_bottom_right.x() - scene_top_left.x(),
+                        scene_bottom_right.y() - scene_top_left.y()
+                    )
+                })
+        
+        if len(all_text_blocks) < 2:
+            return  # Need at least 2 blocks to merge
+        
+        # Group vertically adjacent text blocks with similar properties
+        merged_groups = []
+        used_blocks = set()
+        
+        for i, block1 in enumerate(all_text_blocks):
+            if i in used_blocks:
+                continue
+                
+            group = [block1]
+            used_blocks.add(i)
+            
+            for j, block2 in enumerate(all_text_blocks):
+                if j in used_blocks or i == j:
+                    continue
+                    
+                if self._are_text_blocks_mergeable(block1, block2):
+                    group.append(block2)
+                    used_blocks.add(j)
+            
+            if len(group) > 1:
+                merged_groups.append(group)
+                print(f"Found mergeable text block group with {len(group)} items")
+        
+        # Merge each group
+        for group in merged_groups:
+            self._merge_text_block_group(group)
+
+    def _are_text_blocks_mergeable(self, block1, block2):
+        """Check if two text blocks can be merged (were likely clipped from same original in regular mode)."""
+        bounds1 = block1['scene_bounds']
+        bounds2 = block2['scene_bounds']
+        blk1 = block1['blk']
+        blk2 = block2['blk']
+        
+        # Check if they're on adjacent pages (key for clipped items)
+        if abs(block1['page_idx'] - block2['page_idx']) > 1:
+            return False
+        
+        # Check if they're vertically adjacent
+        tolerance = 15  # Tolerance for text blocks
+        adjacent = (abs(bounds1.bottom() - bounds2.top()) < tolerance or 
+                   abs(bounds2.bottom() - bounds1.top()) < tolerance)
+        
+        if not adjacent:
+            return False
+            
+        # Check horizontal alignment (clipped text blocks should have very similar X positions)
+        x_tolerance = 10
+        if abs(bounds1.left() - bounds2.left()) > x_tolerance:
+            return False
+            
+        # Check width similarity (clipped text blocks should have similar widths)
+        width_tolerance = 20
+        if abs(bounds1.width() - bounds2.width()) > width_tolerance:
+            return False
+            
+        # Check similar properties
+        if (blk1.text_class != blk2.text_class or
+            abs(blk1.angle - blk2.angle) > 1.0 or  # 1 degree tolerance
+            blk1.source_lang != blk2.source_lang or
+            blk1.target_lang != blk2.target_lang):
+            return False
+            
+        return True
+
+    def _merge_text_block_group(self, group):
+        """Merge a group of clipped text blocks back into one."""
+        if len(group) <= 1:
+            return
+            
+        # Sort by Y position to maintain reading order
+        group_sorted = sorted(group, key=lambda x: x['scene_bounds'].top())
+        
+        # Use the first block as base and create a deep copy
+        base_block_item = group_sorted[0]
+        base_blk = base_block_item['blk']
+        merged_blk = base_blk.deep_copy()
+        
+        # Calculate unified bounds in scene coordinates
+        all_bounds = [item['scene_bounds'] for item in group_sorted]
+        unified_left = min(bounds.left() for bounds in all_bounds)
+        unified_top = min(bounds.top() for bounds in all_bounds)
+        unified_right = max(bounds.right() for bounds in all_bounds)
+        unified_bottom = max(bounds.bottom() for bounds in all_bounds)
+        
+        # Determine target page (center of merged block)
+        center_y = (unified_top + unified_bottom) / 2
+        target_page = self.layout_manager.get_page_at_position(center_y)
+        
+        # Convert unified bounds back to page-local coordinates
+        scene_top_left = QPointF(unified_left, unified_top)
+        scene_bottom_right = QPointF(unified_right, unified_bottom)
+        local_top_left = self.coordinate_converter.scene_to_page_local_position(scene_top_left, target_page)
+        local_bottom_right = self.coordinate_converter.scene_to_page_local_position(scene_bottom_right, target_page)
+        
+        # Update merged block's xyxy coordinates
+        merged_blk.xyxy = [
+            local_top_left.x(),
+            local_top_left.y(),
+            local_bottom_right.x(),
+            local_bottom_right.y()
+        ]
+        
+        # Merge text content from all blocks
+        merged_texts = []
+        for item in group_sorted:
+            if hasattr(item['blk'], 'text') and item['blk'].text:
+                merged_texts.append(item['blk'].text)
+        merged_blk.text = ' '.join(merged_texts) if merged_texts else base_blk.text
+        
+        # Merge translations if available
+        merged_translations = []
+        for item in group_sorted:
+            if hasattr(item['blk'], 'translation') and item['blk'].translation:
+                merged_translations.append(item['blk'].translation)
+        merged_blk.translation = ' '.join(merged_translations) if merged_translations else base_blk.translation
+        
+        # Handle bubble_xyxy if present - merge bubble bounds as well
+        if any(hasattr(item['blk'], 'bubble_xyxy') and item['blk'].bubble_xyxy is not None for item in group_sorted):
+            # Find the unified bubble bounds
+            bubble_bounds = []
+            for item in group_sorted:
+                blk = item['blk']
+                if hasattr(blk, 'bubble_xyxy') and blk.bubble_xyxy is not None and len(blk.bubble_xyxy) >= 4:
+                    page_idx = item['page_idx']
+                    bx1, by1, bx2, by2 = blk.bubble_xyxy[:4]
+                    bubble_top_left = QPointF(bx1, by1)
+                    bubble_bottom_right = QPointF(bx2, by2)
+                    
+                    scene_bubble_top_left = self.coordinate_converter.page_local_to_scene_position(bubble_top_left, page_idx)
+                    scene_bubble_bottom_right = self.coordinate_converter.page_local_to_scene_position(bubble_bottom_right, page_idx)
+                    
+                    bubble_bounds.extend([scene_bubble_top_left, scene_bubble_bottom_right])
+            
+            if bubble_bounds:
+                # Calculate unified bubble bounds
+                unified_bubble_left = min(pt.x() for pt in bubble_bounds)
+                unified_bubble_top = min(pt.y() for pt in bubble_bounds)
+                unified_bubble_right = max(pt.x() for pt in bubble_bounds)
+                unified_bubble_bottom = max(pt.y() for pt in bubble_bounds)
+                
+                # Convert back to target page coordinates
+                scene_bubble_top_left = QPointF(unified_bubble_left, unified_bubble_top)
+                scene_bubble_bottom_right = QPointF(unified_bubble_right, unified_bubble_bottom)
+                local_bubble_top_left = self.coordinate_converter.scene_to_page_local_position(scene_bubble_top_left, target_page)
+                local_bubble_bottom_right = self.coordinate_converter.scene_to_page_local_position(scene_bubble_bottom_right, target_page)
+                
+                merged_blk.bubble_xyxy = [
+                    local_bubble_top_left.x(),
+                    local_bubble_top_left.y(),
+                    local_bubble_bottom_right.x(),
+                    local_bubble_bottom_right.y()
+                ]
+        
+        # Remove all blocks from their current pages
+        for item in group:
+            page_idx = item['page_idx']
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states[file_path]
+            blk_list = state.get('blk_list', [])
+            # Remove this block
+            if item['blk'] in blk_list:
+                blk_list.remove(item['blk'])
+        
+        # Add merged block to target page
+        target_file_path = self.image_loader.image_file_paths[target_page]
+        target_state = self.main_controller.image_states[target_file_path]
+        if 'blk_list' not in target_state:
+            target_state['blk_list'] = []
+        target_state['blk_list'].append(merged_blk)

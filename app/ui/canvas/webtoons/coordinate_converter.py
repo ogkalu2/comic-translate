@@ -370,3 +370,32 @@ class CoordinateConverter:
         
         # Return the first intersection point (could be improved to choose the best one)
         return intersections[0] if intersections else None
+
+    def convert_path_to_page_local(self, scene_path: QPainterPath, page_idx: int) -> QPainterPath:
+        """Convert a scene-coordinate brush path to page-local coordinates."""
+        if not (0 <= page_idx < len(self.layout_manager.image_positions)):
+            return scene_path
+            
+        # Create a new path in page-local coordinates
+        local_path = QPainterPath()
+        
+        # Convert each element of the path
+        for i in range(scene_path.elementCount()):
+            element = scene_path.elementAt(i)
+            scene_point = QPointF(element.x, element.y)
+            local_point = self.scene_to_page_local_position(scene_point, page_idx)
+            
+            if element.type == QPainterPath.ElementType.MoveToElement:
+                local_path.moveTo(local_point)
+            elif element.type == QPainterPath.ElementType.LineToElement:
+                local_path.lineTo(local_point)
+            elif element.type == QPainterPath.ElementType.CurveToElement:
+                # Handle curve elements
+                if i + 2 < scene_path.elementCount():
+                    c1 = scene_path.elementAt(i + 1)
+                    c2 = scene_path.elementAt(i + 2)
+                    c1_local = self.scene_to_page_local_position(QPointF(c1.x, c1.y), page_idx)
+                    c2_local = self.scene_to_page_local_position(QPointF(c2.x, c2.y), page_idx)
+                    local_path.cubicTo(local_point, c1_local, c2_local)
+        
+        return local_path

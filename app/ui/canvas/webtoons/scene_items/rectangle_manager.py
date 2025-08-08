@@ -206,3 +206,138 @@ class RectangleManager:
                 abs(new_rotation - ex_rotation) <= 1.0): 
                 return True
         return False
+
+    def merge_clipped_rectangles(self):
+        """Merge rectangle items that were clipped across page boundaries in regular mode."""
+        if not self.main_controller:
+            return
+            
+        all_rectangles = []
+        
+        # Collect all rectangles from all pages
+        for page_idx in range(len(self.image_loader.image_file_paths)):
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states.get(file_path, {})
+            rectangles = state.get('viewer_state', {}).get('rectangles', [])
+            
+            for rect_data in rectangles:
+                if 'rect' not in rect_data or len(rect_data['rect']) < 4:
+                    continue
+                    
+                # Convert to scene coordinates
+                local_x, local_y, width, height = rect_data['rect']
+                local_pos = QPointF(local_x, local_y)
+                scene_pos = self.coordinate_converter.page_local_to_scene_position(local_pos, page_idx)
+                
+                all_rectangles.append({
+                    'data': rect_data,
+                    'page_idx': page_idx,
+                    'scene_bounds': QRectF(scene_pos.x(), scene_pos.y(), width, height)
+                })
+        
+        if len(all_rectangles) < 2:
+            return  # Need at least 2 rectangles to merge
+        
+        # Group vertically adjacent rectangles with similar properties
+        merged_groups = []
+        used_rects = set()
+        
+        for i, rect1 in enumerate(all_rectangles):
+            if i in used_rects:
+                continue
+                
+            group = [rect1]
+            used_rects.add(i)
+            
+            for j, rect2 in enumerate(all_rectangles):
+                if j in used_rects or i == j:
+                    continue
+                    
+                if self._are_rectangles_mergeable(rect1, rect2):
+                    group.append(rect2)
+                    used_rects.add(j)
+            
+            if len(group) > 1:
+                merged_groups.append(group)
+                print(f"Found mergeable rectangle group with {len(group)} items")
+        
+        # Merge each group
+        for group in merged_groups:
+            self._merge_rectangle_group(group)
+
+    def _are_rectangles_mergeable(self, rect1, rect2):
+        """Check if two rectangles can be merged (were likely clipped from same original in regular mode)."""
+        bounds1 = rect1['scene_bounds']
+        bounds2 = rect2['scene_bounds']
+        
+        # Check if they're on adjacent pages (key for clipped items)
+        if abs(rect1['page_idx'] - rect2['page_idx']) > 1:
+            return False
+        
+        # Check if they're vertically adjacent
+        tolerance = 10  # Stricter tolerance for rectangles
+        adjacent = (abs(bounds1.bottom() - bounds2.top()) < tolerance or 
+                   abs(bounds2.bottom() - bounds1.top()) < tolerance)
+        
+        if not adjacent:
+            return False
+            
+        # Check horizontal alignment (clipped rectangles should have very similar X positions)
+        x_tolerance = 5
+        if abs(bounds1.left() - bounds2.left()) > x_tolerance:
+            return False
+            
+        # Check width similarity (clipped rectangles should have similar widths)
+        width_tolerance = 10
+        if abs(bounds1.width() - bounds2.width()) > width_tolerance:
+            return False
+            
+        # Check similar styling
+        style_attrs = ['stroke', 'fill', 'opacity']
+        for attr in style_attrs:
+            if rect1['data'].get(attr) != rect2['data'].get(attr):
+                return False
+                
+        return True
+
+    def _merge_rectangle_group(self, group):
+        """Merge a group of clipped rectangles back into one."""
+        if len(group) <= 1:
+            return
+            
+        # Calculate unified bounds
+        all_bounds = [item['scene_bounds'] for item in group]
+        unified_left = min(bounds.left() for bounds in all_bounds)
+        unified_top = min(bounds.top() for bounds in all_bounds)
+        unified_right = max(bounds.right() for bounds in all_bounds)
+        unified_bottom = max(bounds.bottom() for bounds in all_bounds)
+        
+        # Determine target page (center of merged rectangle)
+        center_y = (unified_top + unified_bottom) / 2
+        target_page = self.layout_manager.get_page_at_position(center_y)
+        
+        # Convert to page-local coordinates
+        scene_pos = QPointF(unified_left, unified_top)
+        local_pos = self.coordinate_converter.scene_to_page_local_position(scene_pos, target_page)
+        
+        # Create merged rectangle data
+        base_data = group[0]['data'].copy()
+        base_data['rect'] = [
+            local_pos.x(),
+            local_pos.y(),
+            unified_right - unified_left,
+            unified_bottom - unified_top
+        ]
+        
+        # Remove all rectangles from their current pages
+        for item in group:
+            page_idx = item['page_idx']
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states[file_path]
+            rectangles = state['viewer_state']['rectangles']
+            rectangles[:] = [r for r in rectangles if r != item['data']]
+        
+        # Add merged rectangle to target page
+        target_file_path = self.image_loader.image_file_paths[target_page]
+        target_state = self.main_controller.image_states[target_file_path]
+        target_state['viewer_state']['rectangles'].append(base_data)

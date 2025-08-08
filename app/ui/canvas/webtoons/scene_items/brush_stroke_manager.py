@@ -288,3 +288,145 @@ class BrushStrokeManager:
                 abs(new_bounds.height() - ex_bounds.height()) <= margin):
                 return True
         return False
+
+    def merge_clipped_brush_strokes(self):
+        """Merge brush stroke items that were clipped across page boundaries in regular mode."""
+        if not self.main_controller:
+            return
+            
+        all_strokes = []
+        
+        # Collect all brush strokes from all pages
+        for page_idx in range(len(self.image_loader.image_file_paths)):
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states.get(file_path, {})
+            strokes = state.get('brush_strokes', [])
+            
+            for stroke_data in strokes:
+                if 'path' not in stroke_data:
+                    continue
+                    
+                # Convert path to scene coordinates for comparison
+                path = stroke_data['path']
+                if hasattr(path, 'boundingRect'):
+                    bounds = path.boundingRect()
+                    # Convert path to scene coordinates using the center point as reference
+                    center_point = QPointF(bounds.center().x(), bounds.center().y())
+                    scene_center = self.coordinate_converter.page_local_to_scene_position(center_point, page_idx)
+                    
+                    all_strokes.append({
+                        'data': stroke_data,
+                        'page_idx': page_idx,
+                        'scene_bounds': bounds,
+                        'scene_center': scene_center
+                    })
+        
+        if len(all_strokes) < 2:
+            return  # Need at least 2 strokes to merge
+        
+        # Group vertically adjacent strokes with similar properties
+        merged_groups = []
+        used_strokes = set()
+        
+        for i, stroke1 in enumerate(all_strokes):
+            if i in used_strokes:
+                continue
+                
+            group = [stroke1]
+            used_strokes.add(i)
+            
+            for j, stroke2 in enumerate(all_strokes):
+                if j in used_strokes or i == j:
+                    continue
+                    
+                if self._are_brush_strokes_mergeable(stroke1, stroke2):
+                    group.append(stroke2)
+                    used_strokes.add(j)
+            
+            if len(group) > 1:
+                merged_groups.append(group)
+                print(f"Found mergeable brush stroke group with {len(group)} items")
+        
+        # Merge each group
+        for group in merged_groups:
+            self._merge_brush_stroke_group(group)
+
+    def _are_brush_strokes_mergeable(self, stroke1, stroke2):
+        """Check if two brush strokes can be merged (were likely clipped from same original in regular mode)."""
+        # Check if they're on adjacent pages (key for clipped items)
+        if abs(stroke1['page_idx'] - stroke2['page_idx']) > 1:
+            return False
+        
+        # Check if they're vertically adjacent
+        tolerance = 20  # More lenient tolerance for brush strokes
+        center1 = stroke1['scene_center']
+        center2 = stroke2['scene_center']
+        vertical_distance = abs(center1.y() - center2.y())
+        
+        if vertical_distance > tolerance:
+            return False
+            
+        # Check horizontal proximity (clipped strokes should be relatively close)
+        horizontal_distance = abs(center1.x() - center2.x())
+        if horizontal_distance > 50:  # Allow some horizontal variation
+            return False
+            
+        # Check similar styling
+        data1 = stroke1['data']
+        data2 = stroke2['data']
+        style_attrs = ['pen', 'width', 'brush']
+        for attr in style_attrs:
+            if data1.get(attr) != data2.get(attr):
+                return False
+                
+        return True
+
+    def _merge_brush_stroke_group(self, group):
+        """Merge a group of clipped brush strokes back into one."""
+        if len(group) <= 1:
+            return
+            
+        # Calculate unified path by combining all paths
+        combined_path = QPainterPath()
+        
+        # Determine target page (center of all strokes)
+        all_centers = [item['scene_center'] for item in group]
+        avg_y = sum(center.y() for center in all_centers) / len(all_centers)
+        target_page = self.layout_manager.get_page_at_position(avg_y)
+        
+        # Combine all paths into one
+        for item in group:
+            path = item['data']['path']
+            if hasattr(path, 'addPath'):
+                combined_path.addPath(path)
+            else:
+                # Convert path data to QPainterPath if needed
+                if isinstance(path, list):
+                    temp_path = QPainterPath()
+                    for i, point in enumerate(path):
+                        if i == 0:
+                            temp_path.moveTo(QPointF(point[0], point[1]))
+                        else:
+                            temp_path.lineTo(QPointF(point[0], point[1]))
+                    combined_path.addPath(temp_path)
+        
+        # Create merged stroke data using first stroke as base
+        base_data = group[0]['data'].copy()
+        base_data['path'] = combined_path
+        
+        # Remove all strokes from their current pages
+        for item in group:
+            page_idx = item['page_idx']
+            file_path = self.image_loader.image_file_paths[page_idx]
+            state = self.main_controller.image_states[file_path]
+            strokes = state.get('brush_strokes', [])
+            # Remove the stroke data
+            if item['data'] in strokes:
+                strokes.remove(item['data'])
+        
+        # Add merged stroke to target page
+        target_file_path = self.image_loader.image_file_paths[target_page]
+        target_state = self.main_controller.image_states[target_file_path]
+        if 'brush_strokes' not in target_state:
+            target_state['brush_strokes'] = []
+        target_state['brush_strokes'].append(base_data)
