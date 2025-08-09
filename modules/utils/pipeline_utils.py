@@ -209,7 +209,7 @@ def validate_ocr(main_page, source_lang):
 
     # Helper to check authentication or credential
     def has_access(service, key_field):
-        return bool(credentials.get(service, {}).get(key_field)))
+        return bool(credentials.get(service, {}).get(key_field))
 
     # Microsoft OCR: needs api_key_ocr and endpoint
     if ocr_tool == tr("Microsoft OCR"):
