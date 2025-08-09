@@ -269,7 +269,6 @@ class TextBlockManager:
     def redistribute_existing_text_blocks(self, all_existing_blk_list: List[tuple], scene_items_by_page: Dict):
         """Redistribute existing text blocks to all pages they intersect with after clipping."""
         processed_blocks = set()  # Track processed blocks to avoid duplicates
-        print(f"Redistributing {len(all_existing_blk_list)} existing text blocks")
         for blk, original_page_idx in all_existing_blk_list:
             # Create a unique identifier for this block to avoid duplicates
             blk_id = id(blk)
@@ -394,7 +393,6 @@ class TextBlockManager:
             
             if len(group) > 1:
                 merged_groups.append(group)
-                print(f"Found mergeable text block group with {len(group)} items")
         
         # Merge each group
         for group in merged_groups:

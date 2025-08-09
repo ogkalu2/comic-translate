@@ -188,16 +188,12 @@ class SceneItemManager:
         """
         if not self.main_controller:
             return
-            
-        print("Merging clipped items for webtoon mode...")
         
         # Use manager-specific merge methods
         self.text_item_manager.merge_clipped_text_items()
         self.rectangle_manager.merge_clipped_rectangles()
         self.brush_stroke_manager.merge_clipped_brush_strokes()
         self.text_block_manager.merge_clipped_text_blocks()
-        
-        print("Clipped items merging completed.")
 
     def _update_text_blocks_with_clipped_text(self):
         """

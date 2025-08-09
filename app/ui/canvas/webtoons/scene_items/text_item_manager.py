@@ -270,7 +270,6 @@ class TextItemManager:
     def redistribute_existing_text_items(self, existing_text_items_by_page: dict, scene_items_by_page: dict):
         """Redistribute existing text items to all pages they intersect with after clipping."""
         processed_text_items = set()  # Track processed text items to avoid duplicates
-        print(f"Redistributing existing text items with clipping")
         
         for original_page_idx, text_items in existing_text_items_by_page.items():
             for text_item_data in text_items:

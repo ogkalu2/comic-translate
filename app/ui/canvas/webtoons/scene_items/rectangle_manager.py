@@ -259,7 +259,6 @@ class RectangleManager:
             
             if len(group) > 1:
                 merged_groups.append(group)
-                print(f"Found mergeable rectangle group with {len(group)} items")
         
         # Merge each group
         for group in merged_groups:

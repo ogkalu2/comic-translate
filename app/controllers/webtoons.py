@@ -60,7 +60,6 @@ class WebtoonController:
 
     def _switch_to_lazy_webtoon_mode(self) -> bool:
         """Switch to memory-efficient lazy loading webtoon mode."""
-        print("Using lazy loading webtoon mode")
 
         self.main.image_ctrl.save_current_image_state()
         self.image_viewer.webtoon_manager.set_main_controller(self.main)
