@@ -46,7 +46,6 @@ class CacheManager:
             angle = block.angle
             return f"{int(x1)}_{int(y1)}_{int(x2)}_{int(y2)}_{int(angle)}"
         except (AttributeError, ValueError, TypeError):
-            # Fallback: use object id if xyxy is not available or malformed
             return str(id(block))
 
     def _find_matching_block_id(self, cache_key, target_block):
@@ -228,7 +227,6 @@ class CacheManager:
                     block_id = self._get_block_id(blk)
                     translation = getattr(blk, 'translation', '') or ''
                     source_text = getattr(blk, 'text', '') or ''
-                    # Store both source text and translation to validate cache validity
                     block_results[block_id] = {
                         'source_text': source_text,
                         'translation': translation
@@ -238,7 +236,6 @@ class CacheManager:
             logger.info(f"Cached translation results for {len(block_results)} blocks")
         except Exception as e:
             logger.warning(f"Failed to cache translation results: {e}")
-            # Don't raise exception, just skip caching
 
     def update_translation_cache_for_block(self, cache_key, block):
         """Update or add a single block's translation result to the cache."""
@@ -259,8 +256,8 @@ class CacheManager:
         """Retrieve cached translation for a specific block, validating source text matches"""
         matched_id, result = self._find_matching_translation_block_id(cache_key, block)
 
-        if matched_id is not None:  # Block found in cache
-            if result:  # Block has cached data
+        if matched_id is not None:  
+            if result: 
                 cached_source_text = result.get('source_text', '')
                 current_source_text = getattr(block, 'text', '') or ''
                 
@@ -281,8 +278,6 @@ class CacheManager:
             logger.debug(f"No cached translation found for block ID {block_id}")
             logger.debug(f"Available block IDs in cache: {list(cached_results.keys())}")
             return None  # Indicate block needs processing
-        
-        return ""
 
     def _can_serve_all_blocks_from_ocr_cache(self, cache_key, block_list):
         """Check if all blocks in the list can be served from OCR cache"""
@@ -290,11 +285,9 @@ class CacheManager:
             return False
         
         for block in block_list:
-            # Use the centralized cache retrieval function
             cached_text = self._get_cached_text_for_block(cache_key, block)
-            if cached_text is None:  # Block not found in cache at all
+            if cached_text is None:  
                 return False
-            # If cached_text is not None, the block was processed before (even if text is empty)
         
         return True
 
@@ -304,11 +297,9 @@ class CacheManager:
             return False
         
         for block in block_list:
-            # Use the centralized cache retrieval function
             cached_translation = self._get_cached_translation_for_block(cache_key, block)
             if cached_translation is None:  # Block not found in cache or source text changed
                 return False
-            # If cached_translation is not None, the block was processed and source text matches
         
         return True
 
@@ -316,14 +307,12 @@ class CacheManager:
         """Apply cached OCR results to all blocks in the list"""
         for block in block_list:
             cached_text = self._get_cached_text_for_block(cache_key, block)
-            if cached_text is not None:  # Block found in cache
-                block.text = cached_text  # Apply cached text (could be empty string)
-            # If cached_text is None, block was not processed yet, skip it
+            if cached_text is not None: 
+                block.text = cached_text  
 
     def _apply_cached_translations_to_blocks(self, cache_key, block_list):
         """Apply cached translation results to all blocks in the list"""
         for block in block_list:
             cached_translation = self._get_cached_translation_for_block(cache_key, block)
-            if cached_translation is not None:  # Block found in cache and source text matches
-                block.translation = cached_translation  # Apply cached translation (could be empty string)
-            # If cached_translation is None, block was not processed yet or source text changed, skip it
+            if cached_translation is not None: 
+                block.translation = cached_translation  
