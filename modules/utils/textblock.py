@@ -126,74 +126,113 @@ def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlo
             sorted_blk_list.append(blk)
     return sorted_blk_list
 
-def sort_textblock_rectangles(coords_text_list: List[Tuple[Tuple[int, int, int, int], str]], direction: str = 'ver_rtl', threshold: int = 10):
-    
+def sort_textblock_rectangles(coords_text_list: List[Tuple[Tuple[int, int, int, int], str]], direction: str = 'ver_rtl', threshold: int = 10) -> List[Tuple[Tuple[int, int, int, int], str]]:
+    """
+    Sorts a list of bounding boxes with associated text into reading order.
+
+    This function:
+      1) Groups items into lines (or columns) based on spatial proximity
+         and the specified threshold.
+      2) Sorts items within each line/column by their in-line reading sequence.
+      3) Sorts the lines/columns themselves according to the overall reading flow.
+
+    Args:
+        coords_text_list (List[Tuple[Tuple[int, int, int, int], str]]):
+            A list of tuples, each containing a bounding box
+            (x1, y1, x2, y2) and its corresponding text string.
+        direction (str):
+            Reading orientation and progression. Supported values:
+              - 'hor_ltr': Horizontal text,
+                           characters left-to-right,
+                           lines top-to-bottom.
+              - 'hor_rtl': Horizontal text,
+                           characters right-to-left (e.g., Arabic),
+                           lines top-to-bottom.
+              - 'ver_ltr': Vertical text,
+                           characters top-to-bottom,
+                           columns left-to-right.
+              - 'ver_rtl': Vertical text,
+                           characters top-to-bottom,
+                           columns right-to-left (e.g., Japanese tategaki).
+        threshold (int):
+            Maximum pixel distance between the centers of two bboxes for
+            them to be considered part of the same line/column.
+
+    Returns:
+        List[Tuple[Tuple[int, int, int, int], str]]:
+            A flattened list of (bbox, text) tuples,
+            sorted in the specified reading order.
+    """
+    if not coords_text_list:
+        return []
+
     def in_same_line(bbox_a, bbox_b, direction, threshold):
-        """
-        Checks if two bounding boxes are on the same line based on their relative positions.
-
-        Args:
-            bbox_a (tuple): Bounding box coordinates for the first object (x1, y1, x2, y2).
-            bbox_b (tuple): Bounding box coordinates for the second object (x1, y1, x2, y2).
-            direction (str): The predominant text direction, either 'horizontal' or 'vertical'.
-            threshold (float): Maximum distance between the centers of the bounding boxes to be considered on the same line.
-
-        Returns:
-            bool: True if the bounding boxes are on the same line, False otherwise.
-        """
-        # Calculate the center points of the bounding boxes
+        """Checks if two bounding boxes are on the same line."""
         center_a = ((bbox_a[0] + bbox_a[2]) / 2, (bbox_a[1] + bbox_a[3]) / 2)
         center_b = ((bbox_b[0] + bbox_b[2]) / 2, (bbox_b[1] + bbox_b[3]) / 2)
-
-        # For horizontal text, check if the centers are within the same horizontal band
+        
         if 'hor' in direction:
             return abs(center_a[1] - center_b[1]) <= threshold
-        # For vertical text, check if the centers are within the same vertical band
         elif 'ver' in direction:
             return abs(center_a[0] - center_b[0]) <= threshold
+        return False
 
-    # Group word bounding boxes into lines
-    lines = []
-    remaining_boxes = coords_text_list[:]  # create a shallow copy
+    # Start of Disjoint Set Union Implementation
+    num_items = len(coords_text_list)
+    # Initially, each item is its own parent/group
+    parent = list(range(num_items))
 
-    while remaining_boxes:
-        box = remaining_boxes.pop(0)
-        current_line = [box]
-        closest_line = None
-        closest_distance = float('inf')
+    def find(i):
+        if parent[i] == i:
+            return i
+        parent[i] = find(parent[i])  # Path compression for efficiency
+        return parent[i]
 
-        # Find the closest existing line to the current bounding box
-        for line in lines:
-            for line_box in line:
-                if in_same_line(box[0], line_box[0], direction, threshold):
-                    distance = abs(box[0][0] - line_box[0][0]) + abs(box[0][1] - line_box[0][1])
-                    if distance < closest_distance:
-                        closest_line = line
-                        closest_distance = distance
+    def union(i, j):
+        root_i = find(i)
+        root_j = find(j)
+        if root_i != root_j:
+            parent[root_j] = root_i
 
-        # If a close line was found, add the bounding box to that line
-        if closest_line is not None:
-            closest_line.append(box)
-        # Otherwise, create a new line with the current bounding box
-        else:
-            lines.append(current_line)
+    # Iterate through all pairs and merge their sets if they are in the same line
+    for i in range(num_items):
+        for j in range(i + 1, num_items):
+            # Access the bounding box (the first element of the tuple) for comparison
+            bbox_i = coords_text_list[i][0]
+            bbox_j = coords_text_list[j][0]
+            if in_same_line(bbox_i, bbox_j, direction, threshold):
+                union(i, j)
 
-    # Sort the boxes in each line based on the reading direction
+    # Collect the final groups (lines) based on their root parent
+    groups = {}
+    for i, item in enumerate(coords_text_list):
+        root = find(i)
+        if root not in groups:
+            groups[root] = []
+        groups[root].append(item)
+
+    lines = list(groups.values())
+    
+    # End of DSU Grouping Logic
+    # Sort the boxes (items) in each line based on the reading direction
     for i, line in enumerate(lines):
         if direction == 'hor_ltr':
-            lines[i] = sorted(line, key=lambda box: box[0][0])  # Sort by leftmost x-coordinate
+            lines[i] = sorted(line, key=lambda item: item[0][0])  # Sort by leftmost x-coordinate
         elif direction == 'hor_rtl':
-            lines[i] = sorted(line, key=lambda box: -box[0][0])  # Sort by leftmost x-coordinate, reversed
+            lines[i] = sorted(line, key=lambda item: -item[0][0]) # Sort by rightmost x-coordinate (via negative x1)
         elif direction in ['ver_ltr', 'ver_rtl']:
-            lines[i] = sorted(line, key=lambda box: box[0][1])  # Sort by topmost y-coordinate
+            lines[i] = sorted(line, key=lambda item: item[0][1])  # Sort by topmost y-coordinate
 
     # Sort the lines themselves based on the orientation of the text
     if 'hor' in direction:
-        lines.sort(key=lambda line: min(box[0][1] for box in line))  # Sort by topmost y-coordinate for horizontal text
+        # Sort by topmost y-coordinate for horizontal text
+        lines.sort(key=lambda line: min(item[0][1] for item in line))
     elif direction == 'ver_ltr':
-        lines.sort(key=lambda line: min(box[0][0] for box in line)) # Sort by leftmost x-coordinate for vertical text
+        # Sort by leftmost x-coordinate for vertical text
+        lines.sort(key=lambda line: min(item[0][0] for item in line))
     elif direction == 'ver_rtl':
-        lines.sort(key=lambda line: min(box[0][0] for box in line), reverse=True)  # Reversed order of sort by leftmost x-coordinate 
+        # Reversed order of sort by leftmost x-coordinate (rightmost)
+        lines.sort(key=lambda line: min(item[0][0] for item in line), reverse=True)
 
     # Flatten the list of lines to return a single list with all grouped boxes
     grouped_boxes = [box for line in lines for box in line]
