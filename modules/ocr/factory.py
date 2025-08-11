@@ -114,6 +114,8 @@ class OCRFactory:
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
             'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini')
+            'Chinese': lambda s: cls._create_paddle_ocr(s, 'ch'),
+            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini'),
         }
         
         # Check if we have a specific model factory
@@ -166,9 +168,9 @@ class OCRFactory:
         return engine
     
     @staticmethod
-    def _create_paddle_ocr(settings) -> OCREngine:
+    def _create_paddle_ocr(settings, lang: str) -> OCREngine:
         engine = PaddleOCREngine()
-        engine.initialize()
+        engine.initialize(lang=lang)
         return engine
     
     @staticmethod
