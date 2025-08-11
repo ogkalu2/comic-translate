@@ -83,13 +83,7 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
         blk_entries = []
         
         for line, text in group:
-            if blk.bubble_xyxy is not None:
-                if does_rectangle_fit(blk.bubble_xyxy, line):
-                    blk_entries.append((line, text))  
-                elif is_mostly_contained(blk.bubble_xyxy, line, 0.5):
-                    blk_entries.append((line, text)) 
-
-            elif does_rectangle_fit(blk.xyxy, line):
+            if does_rectangle_fit(blk.xyxy, line):
                 blk_entries.append((line, text)) 
             elif is_mostly_contained(blk.xyxy, line, 0.5):
                 blk_entries.append((line, text)) 
