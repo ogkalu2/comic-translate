@@ -452,7 +452,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 api_key_input = MLineEdit()
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
                 api_key_input.setFixedWidth(400)
-                api_key_prefix = MLabel(self.tr("API Key")).border()
+                api_key_prefix = MLabel(self.tr("Secret Key")).border()
                 self.set_label_width(api_key_prefix)
                 api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 api_key_input.set_prefix_widget(api_key_prefix)
