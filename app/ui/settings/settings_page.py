@@ -227,6 +227,9 @@ class SettingsPage(QtWidgets.QWidget):
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
                     settings.setValue(f"{translated_service}_api_url", cred['api_url'])
                     settings.setValue(f"{translated_service}_model", cred['model'])
+                elif translated_service == "Yandex":
+                    settings.setValue(f"{translated_service}_api_key", cred['api_key'])
+                    settings.setValue(f"{translated_service}_folder_id", cred['folder_id'])
                 else:
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
         else:
@@ -322,6 +325,9 @@ class SettingsPage(QtWidgets.QWidget):
                     self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
                     self.ui.credential_widgets[f"{service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
                     self.ui.credential_widgets[f"{service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                elif translated_service == "Yandex":
+                    self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
+                    self.ui.credential_widgets[f"{service}_folder_id"].setText(settings.value(f"{translated_service}_folder_id", ''))
                 else:
                     self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()
