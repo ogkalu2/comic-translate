@@ -113,7 +113,7 @@ class OCRFactory:
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
             'Chinese': cls._create_paddle_ocr,
-            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini')
+            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini'),
             'Chinese': lambda s: cls._create_paddle_ocr(s, 'ch'),
             'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini'),
         }
