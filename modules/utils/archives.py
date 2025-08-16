@@ -134,23 +134,7 @@ def make_pdf(input_dir, output_path="", output_dir="", output_base_name=""):
             if is_image_file(file):
                 image_paths.append(os.path.join(root, file))
     
-    def get_number(filepath):
-        basename = os.path.splitext(os.path.basename(filepath))[0]
-        import re
-        # Match either:
-        # - numbers with or without padding (001, 01, 1)
-        # - numbers with or without padding followed by _translated
-        match = re.match(r'^(0*\d+)(_translated)?$', basename)
-        if match:
-            # Extract and return the number if it matches our pattern
-            return int(match.group(1))  # int('002') will return 2
-        return None
-    
-    # Sort files, keeping non-matching files in original order
-    sorted_paths = sorted(
-        image_paths,
-        key=lambda x: (get_number(x) is None, get_number(x))
-    )
+    sorted_paths = sorted(image_paths, key=lambda p: natural_sort_key(os.path.basename(p)))
     
     with open(output_path, "wb") as f:
         f.write(img2pdf.convert(sorted_paths))
