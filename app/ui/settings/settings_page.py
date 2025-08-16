@@ -92,23 +92,24 @@ class SettingsPage(QtWidgets.QWidget):
             w = self.ui.credential_widgets.get(widget_key)
             return w.text() if w is not None else None
 
-        if service:
+        translated_service = self.ui.value_mappings.get(service, service)
+        if translated_service:
             creds = {'save_key': save_keys}
-            if service == "Microsoft Azure":
+            if translated_service == "Microsoft Azure":
                 creds.update({
-                    'api_key_ocr': _text_or_none("Microsoft Azure_api_key_ocr"),
-                    'api_key_translator': _text_or_none("Microsoft Azure_api_key_translator"),
-                    'region_translator': _text_or_none("Microsoft Azure_region"),
-                    'endpoint': _text_or_none("Microsoft Azure_endpoint"),
+                    'api_key_ocr': _text_or_none(f"{translated_service}_api_key_ocr"),
+                    'api_key_translator': _text_or_none(f"{translated_service}_api_key_translator"),
+                    'region_translator': _text_or_none(f"{translated_service}_region"),
+                    'endpoint': _text_or_none(f"{translated_service}_endpoint"),
                 })
-            elif service == "Custom":
+            elif translated_service == "Custom":
                 for field in ("api_key", "api_url", "model"):
-                    creds[field] = _text_or_none(f"Custom_{field}")
-            elif service == "Yandex":
-                creds['api_key'] = _text_or_none("Yandex_api_key")
-                creds['folder_id'] = _text_or_none("Yandex_folder_id")
+                    creds[field] = _text_or_none(f"{translated_service}_{field}")
+            elif translated_service == "Yandex":
+                creds['api_key'] = _text_or_none(f"{translated_service}_api_key")
+                creds['folder_id'] = _text_or_none(f"{translated_service}_folder_id")
             else:
-                creds['api_key'] = _text_or_none(f"{service}_api_key")
+                creds['api_key'] = _text_or_none(f"{translated_service}_api_key")
 
             return creds
 
@@ -315,21 +316,21 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.save_keys_checkbox.setChecked(save_keys)
         if save_keys:
             for service in self.ui.credential_services:
-                translated_service = self.ui.reverse_mappings.get(service, service)
+                translated_service = self.ui.value_mappings.get(service, service)
                 if translated_service == "Microsoft Azure":
-                    self.ui.credential_widgets["Microsoft Azure_api_key_ocr"].setText(settings.value(f"{translated_service}_api_key_ocr", ''))
-                    self.ui.credential_widgets["Microsoft Azure_api_key_translator"].setText(settings.value(f"{translated_service}_api_key_translator", ''))
-                    self.ui.credential_widgets["Microsoft Azure_region"].setText(settings.value(f"{translated_service}_region_translator", ''))
-                    self.ui.credential_widgets["Microsoft Azure_endpoint"].setText(settings.value(f"{translated_service}_endpoint", ''))
+                    self.ui.credential_widgets[f"{translated_service}_api_key_ocr"].setText(settings.value(f"{translated_service}_api_key_ocr", ''))
+                    self.ui.credential_widgets[f"{translated_service}_api_key_translator"].setText(settings.value(f"{translated_service}_api_key_translator", ''))
+                    self.ui.credential_widgets[f"{translated_service}_region"].setText(settings.value(f"{translated_service}_region_translator", ''))
+                    self.ui.credential_widgets[f"{translated_service}_endpoint"].setText(settings.value(f"{translated_service}_endpoint", ''))
                 elif translated_service == "Custom":
-                    self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
-                    self.ui.credential_widgets[f"{service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
-                    self.ui.credential_widgets[f"{service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                    self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
+                    self.ui.credential_widgets[f"{translated_service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
+                    self.ui.credential_widgets[f"{translated_service}_model"].setText(settings.value(f"{translated_service}_model", ''))
                 elif translated_service == "Yandex":
-                    self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
-                    self.ui.credential_widgets[f"{service}_folder_id"].setText(settings.value(f"{translated_service}_folder_id", ''))
+                    self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
+                    self.ui.credential_widgets[f"{translated_service}_folder_id"].setText(settings.value(f"{translated_service}_folder_id", ''))
                 else:
-                    self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
+                    self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()
 
         self._loading_settings = False
