@@ -356,9 +356,8 @@ class SettingsPageUI(QtWidgets.QWidget):
             service_label = MLabel(service).strong()
             service_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
             service_layout.addWidget(service_label)
-
-            translated_service = self.value_mappings.get(service, service)
-            if translated_service == "Microsoft Azure":
+            
+            if service == "Microsoft Azure":
                 # OCR subheading
                 ocr_label = MLabel(self.tr("OCR")).secondary()
                 service_layout.addWidget(ocr_label)
@@ -373,7 +372,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 ocr_api_key_input.set_prefix_widget(ocr_api_key_prefix)
                 service_layout.addWidget(ocr_api_key_input)
                 
-                self.credential_widgets[f"{translated_service}_api_key_ocr"] = ocr_api_key_input
+                self.credential_widgets["Microsoft Azure_api_key_ocr"] = ocr_api_key_input
                 
                 # Endpoint URL
                 endpoint_input = MLineEdit()
@@ -384,7 +383,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 endpoint_input.set_prefix_widget(endpoint_prefix)
                 service_layout.addWidget(endpoint_input)
                 
-                self.credential_widgets[f"{translated_service}_endpoint"] = endpoint_input
+                self.credential_widgets["Microsoft Azure_endpoint"] = endpoint_input
 
                 # Translate subheading
                 translate_label = MLabel(self.tr("Translate")).secondary()
@@ -400,7 +399,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 translator_api_key_input.set_prefix_widget(translator_api_key_prefix)
                 service_layout.addWidget(translator_api_key_input)
                 
-                self.credential_widgets[f"{translated_service}_api_key_translator"] = translator_api_key_input
+                self.credential_widgets["Microsoft Azure_api_key_translator"] = translator_api_key_input
 
                 # Region
                 region_input = MLineEdit()
@@ -411,9 +410,9 @@ class SettingsPageUI(QtWidgets.QWidget):
                 region_input.set_prefix_widget(region_prefix)
                 service_layout.addWidget(region_input)
                 
-                self.credential_widgets[f"{translated_service}_region"] = region_input
+                self.credential_widgets["Microsoft Azure_region"] = region_input
 
-            elif translated_service == "Custom":
+            elif service == "Custom":
                 # API Key
                 api_key_input = MLineEdit()
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
@@ -424,7 +423,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 api_key_input.set_prefix_widget(api_key_prefix)
                 service_layout.addWidget(api_key_input)
                 
-                self.credential_widgets[f"{translated_service}_api_key"] = api_key_input
+                self.credential_widgets[f"{service}_api_key"] = api_key_input
                 
                 # Endpoint URL
                 endpoint_input = MLineEdit()
@@ -435,7 +434,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 endpoint_input.set_prefix_widget(endpoint_prefix)
                 service_layout.addWidget(endpoint_input)
                 
-                self.credential_widgets[f"{translated_service}_api_url"] = endpoint_input
+                self.credential_widgets[f"{service}_api_url"] = endpoint_input
 
                 # Model Name
                 model_input = MLineEdit()
@@ -446,9 +445,9 @@ class SettingsPageUI(QtWidgets.QWidget):
                 model_input.set_prefix_widget(model_prefix)
                 service_layout.addWidget(model_input)
                 
-                self.credential_widgets[f"{translated_service}_model"] = model_input
+                self.credential_widgets[f"{service}_model"] = model_input
 
-            elif translated_service == "Yandex":
+            elif service == "Yandex":
                 # API Key
                 api_key_input = MLineEdit()
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
@@ -459,7 +458,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 api_key_input.set_prefix_widget(api_key_prefix)
                 service_layout.addWidget(api_key_input)
                 
-                self.credential_widgets[f"{translated_service}_api_key"] = api_key_input
+                self.credential_widgets[f"{service}_api_key"] = api_key_input
                 
                 # Folder ID
                 folder_id_input = MLineEdit()
@@ -470,7 +469,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 folder_id_input.set_prefix_widget(folder_id_prefix)
                 service_layout.addWidget(folder_id_input)
                 
-                self.credential_widgets[f"{translated_service}_folder_id"] = folder_id_input
+                self.credential_widgets[f"{service}_folder_id"] = folder_id_input
                 
             else:
                 # API Key for other services
@@ -483,7 +482,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                 api_key_input.set_prefix_widget(api_key_prefix)
                 service_layout.addWidget(api_key_input)
                 
-                self.credential_widgets[f"{translated_service}_api_key"] = api_key_input
+                self.credential_widgets[f"{service}_api_key"] = api_key_input
 
             credentials_layout.addLayout(service_layout)
             credentials_layout.addSpacing(20)  # Add 20 pixels of vertical spacing between services
@@ -755,7 +754,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         export_layout.addWidget(self.raw_text_checkbox)
         export_layout.addWidget(self.translated_text_checkbox)
         export_layout.addWidget(self.inpainted_image_checkbox)
-        
+
         # Add JPEG Quality section
         export_layout.addSpacing(20)
         jpeg_quality_label = MLabel(self.tr("JPEG Quality")).h4()
