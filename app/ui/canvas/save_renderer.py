@@ -37,11 +37,9 @@ class ImageSaveRenderer:
         for text_block in state.get('text_items_state', []):
             # Use TextItemProperties for consistent text item construction
             text_props = TextItemProperties.from_dict(text_block)
-            text_props.parent_item = self.pixmap_item
             
             text_item = TextBlockItem(
                 text=text_props.text,
-                parent_item=text_props.parent_item,
                 font_family=text_props.font_family,
                 font_size=text_props.font_size,
                 render_color=text_props.text_color,

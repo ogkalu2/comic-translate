@@ -361,14 +361,10 @@ class ImageViewer(QGraphicsView):
         if isinstance(properties, dict):
             properties = TextItemProperties.from_dict(properties)
         
-        # Use parent_item from properties if specified, otherwise default to self.photo
-        parent_item = properties.parent_item if properties.parent_item is not None else self.photo
-        
         # Create the TextBlockItem with the most up-to-date construction logic
         # Based on the load_state function which has the most complete setup
         item = TextBlockItem(
             text=properties.text, 
-            parent_item=parent_item, 
             font_family=properties.font_family,
             font_size=properties.font_size, 
             render_color=properties.text_color,

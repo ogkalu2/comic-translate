@@ -77,7 +77,6 @@ class TextController:
 
         properties = TextItemProperties(
             text=text,
-            parent_item=self.main.image_viewer.photo,
             font_family=font_family,
             font_size=font_size,
             text_color=text_color,

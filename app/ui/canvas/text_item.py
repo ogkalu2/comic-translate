@@ -43,7 +43,6 @@ class TextBlockItem(QGraphicsTextItem):
     
     def __init__(self, 
              text = "", 
-             parent_item = None, 
              font_family = "", 
              font_size = 20, 
              render_color = QColor(0, 0, 0), 
@@ -57,7 +56,6 @@ class TextBlockItem(QGraphicsTextItem):
              direction=Qt.LayoutDirection.LeftToRight):
 
         super().__init__(text)
-        self.parent_item = parent_item
         self.text_color = render_color
         self.outline = True if outline_color else False
         self.outline_color = outline_color
@@ -450,16 +448,7 @@ class TextBlockItem(QGraphicsTextItem):
         # Check if we're in webtoon mode by looking for the lazy webtoon manager
         scene = self.scene()
         if scene and scene.views():
-            viewer = scene.views()[0]
-            if viewer.webtoon_mode:
-                # In webtoon mode, use scene bounds for movement constraint
-                parent_rect = scene.sceneRect()
-            elif self.parent_item and hasattr(self.parent_item, 'boundingRect'):
-                # Regular mode with valid parent
-                parent_rect = self.parent_item.boundingRect()
-            else:
-                # Fallback to scene bounds
-                parent_rect = scene.sceneRect()
+            parent_rect = scene.sceneRect()
         
         # Constrain the movement
         if bounding_rect.left() + delta.x() < parent_rect.left():
@@ -537,13 +526,7 @@ class TextBlockItem(QGraphicsTextItem):
         scene = self.scene()
         
         if scene and scene.views():
-            viewer = scene.views()[0]
-            if viewer.webtoon_mode:
-                constraint_rect = scene.sceneRect()
-            elif self.parent_item and hasattr(self.parent_item, 'sceneBoundingRect'):
-                constraint_rect = self.parent_item.sceneBoundingRect()
-            else:
-                constraint_rect = scene.sceneRect()
+            constraint_rect = scene.sceneRect()
         
         if constraint_rect:
             # Map the proposed new local rect to the scene to get its final footprint
@@ -663,7 +646,6 @@ class TextBlockItem(QGraphicsTextItem):
         cls = self.__class__
         new_instance = cls(
             text=self.toHtml(),
-            parent_item=self.parent_item,
             font_family=self.font_family,
             font_size=self.font_size,
             render_color=self.text_color,

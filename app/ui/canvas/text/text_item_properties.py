@@ -7,7 +7,6 @@ from PySide6.QtCore import Qt
 class TextItemProperties:
     """Dataclass for TextBlockItem properties to reduce duplication in construction"""
     text: str = ""
-    parent_item: Optional[Any] = None  # QGraphicsItem parent
     font_family: str = ""
     font_size: float = 20
     text_color: QColor = None
@@ -40,7 +39,6 @@ class TextItemProperties:
         
         # Basic text properties
         props.text = data.get('text', '')
-        props.parent_item = data.get('parent_item')
         props.font_family = data.get('font_family', '')
         props.font_size = data.get('font_size', 20)
         props.line_spacing = data.get('line_spacing', 1.2)
@@ -96,7 +94,6 @@ class TextItemProperties:
         
         # Basic text properties
         props.text = item.toHtml()
-        props.parent_item = item.parent_item
         props.font_family = item.font_family
         props.font_size = item.font_size
         props.text_color = item.text_color
@@ -130,7 +127,6 @@ class TextItemProperties:
         """Convert TextItemProperties to dictionary"""
         return {
             'text': self.text,
-            'parent_item': self.parent_item,
             'font_family': self.font_family,
             'font_size': self.font_size,
             'text_color': self.text_color,
