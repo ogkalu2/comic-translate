@@ -157,7 +157,6 @@ class SettingsPage(QtWidgets.QWidget):
             'llm': self.get_llm_settings(),
             'export': self.get_export_settings(),
             'credentials': self.get_credentials(),
-            'save_keys': self.ui.save_keys_checkbox.isChecked()
             'save_keys': self.ui.save_keys_checkbox.isChecked(),
         }
 
