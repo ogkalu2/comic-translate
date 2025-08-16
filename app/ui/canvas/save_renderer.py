@@ -2,6 +2,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 import cv2
 from PIL import Image
 import numpy as np
+import os
 from .text_item import TextBlockItem
 from .text.text_item_properties import TextItemProperties
 
@@ -192,7 +193,17 @@ class ImageSaveRenderer:
     def save_image(self, output_path: str):
         final_rgb = self.render_to_image()
         pil_img   = Image.fromarray(final_rgb)
-        pil_img.save(output_path)
+        
+        settings = QtCore.QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup('export')
+        jpeg_quality = settings.value('jpeg_quality', 95, type=int)
+        settings.endGroup()
+        
+        file_ext = os.path.splitext(output_path)[1].lower()
+        if file_ext in ['.jpg', '.jpeg']:
+            pil_img.save(output_path, quality=jpeg_quality, optimize=True)
+        else:
+            pil_img.save(output_path)
 
     def apply_patches(self, patches: list[dict]):
         """Apply inpainting patches to the image."""
