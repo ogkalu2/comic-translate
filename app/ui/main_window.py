@@ -131,10 +131,20 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         nav_divider = MDivider()
         nav_divider.setFixedWidth(30)
 
+        # New project button
+        self.new_project_button = MToolButton()
+        self.new_project_button.set_dayu_svg("file.svg")
+        self.new_project_button.setToolTip(self.tr("New Project"))
+
         # Create the tool browser button
         self.tool_browser = MToolButton()
-        self.tool_browser.set_dayu_svg("upload-file.svg")
-        self.tool_browser.setToolTip(self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)"))
+        self.tool_browser.set_dayu_svg("folder-open.svg")
+        self.tool_browser.setToolTip(
+            self.tr(
+                "Import Images, PDFs, Epubs or Comic Book Archive Files (cbr, cbz, etc). " \
+                "This will Open a new project"
+            )
+        )
         self.tool_browser.clicked.connect(self.show_tool_menu)
 
         self.image_browser_button = MClickBrowserFileToolButton(multiple=True)
@@ -205,7 +215,20 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         nav_tool_group.set_button_list(nav_tools)
         nav_tool_group.get_button_group().buttons()[0].setChecked(True)
 
+        # Insert into existing project button and underlying browser
+        self.insert_button = MToolButton()
+        self.insert_button.set_dayu_svg("file-plus.svg")
+        self.insert_button.setToolTip(self.tr("Insert files into current project"))
+        self.insert_browser_button = MClickBrowserFileToolButton(multiple=True)
+        self.insert_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
+                                                     ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
+                                                     ".pdf", ".epub"])
+        # Clicking the toolbar button should open the browser dialog
+        self.insert_button.clicked.connect(self.insert_browser_button.clicked)
+
+        nav_rail_layout.addWidget(self.new_project_button)
         nav_rail_layout.addWidget(self.tool_browser)
+        nav_rail_layout.addWidget(self.insert_button)
         nav_rail_layout.addWidget(self.save_project_button)
         nav_rail_layout.addWidget(self.save_as_project_button)
         nav_rail_layout.addWidget(self.save_browser)
@@ -218,7 +241,28 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         return nav_rail_layout
 
+    def _confirm_start_new_project(self) -> bool:
+        """Ask for confirmation if there's unsaved work (no project file but images are loaded)."""
+        try:
+            has_unsaved = (getattr(self, 'project_file', None) is None) and bool(getattr(self, 'image_files', []))
+        except Exception:
+            has_unsaved = False
+
+        if has_unsaved:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                self.tr("Start New Project"),
+                self.tr("Your current project is not saved, are you sure you want to start a new project?"),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No
+            )
+            return reply == QtWidgets.QMessageBox.StandardButton.Yes
+        return True
+
     def show_tool_menu(self):
+        # Confirm before starting a new import session
+        if not self._confirm_start_new_project():
+            return
         # Show the tool menu at the appropriate position
         self.tool_menu.exec_(self.tool_browser.mapToGlobal(self.tool_browser.rect().bottomLeft()))
     

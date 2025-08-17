@@ -81,6 +81,9 @@ class ImageStateController:
         self.main.project_file = None
         self.main.image_cards.clear()
         self.main.current_card = None
+        self.main.page_list.blockSignals(True)
+        self.main.page_list.clear()
+        self.main.page_list.blockSignals(False)
 
         # Reset current_image_index
         self.main.curr_img_idx = -1

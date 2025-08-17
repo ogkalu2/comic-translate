@@ -112,13 +112,13 @@ class ComicTranslate(ComicTranslateUI):
         self.archive_browser_button.sig_files_changed.connect(self.image_ctrl.thread_load_images)
         self.comic_browser_button.sig_files_changed.connect(self.image_ctrl.thread_load_images)
         self.project_browser_button.sig_file_changed.connect(self.project_ctrl.thread_load_project)
+        self.insert_browser_button.sig_files_changed.connect(self.image_ctrl.thread_insert)
 
         self.save_browser.sig_file_changed.connect(self.image_ctrl.save_current_image)
         self.save_all_browser.sig_file_changed.connect(self.project_ctrl.save_and_make)
         self.save_project_button.clicked.connect(self.project_ctrl.thread_save_project)
         self.save_as_project_button.clicked.connect(self.project_ctrl.thread_save_as_project)
-
-        self.drag_browser.sig_files_changed.connect(self.image_ctrl.thread_load_images)
+        self.drag_browser.sig_files_changed.connect(self._guarded_thread_load_images)
        
         self.manual_radio.clicked.connect(self.manual_mode_selected)
         self.automatic_radio.clicked.connect(self.batch_mode_selected)
@@ -186,6 +186,27 @@ class ComicTranslate(ComicTranslateUI):
         self.page_list.insert_browser.sig_files_changed.connect(self.image_ctrl.thread_insert)
         self.page_list.toggle_skip_img.connect(self.image_ctrl.handle_toggle_skip_images)
         self.page_list.translate_imgs.connect(self.batch_translate_selected)
+
+        # New project and safety confirmations
+        self.new_project_button.clicked.connect(self._on_new_project_clicked)
+
+    def _guarded_thread_load_images(self, paths: list[str]):
+        """Wrap thread_load_images with unsaved-project confirmation and clear state."""
+        if not self._confirm_start_new_project():
+            return
+        self.image_ctrl.thread_load_images(paths)
+
+    def _on_new_project_clicked(self):
+        """Clear the app to initial state after confirmation."""
+        if not self._confirm_start_new_project():
+            return
+        # Clear state and show the drag area
+        self.image_ctrl.clear_state()
+        self.central_stack.setCurrentWidget(self.drag_browser)
+        # Reset webtoon mode UI state
+        if self.webtoon_mode:
+            self.webtoon_toggle.setChecked(False)
+        self.webtoon_mode = False
 
     def connect_rect_item_signals(self, rect_item): return self.rect_item_ctrl.connect_rect_item_signals(rect_item)
     def apply_inpaint_patches(self, patches): return self.image_ctrl.apply_inpaint_patches(patches)
