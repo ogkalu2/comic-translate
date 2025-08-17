@@ -60,7 +60,11 @@ def get_models(data):
                     logger.error(
                         f"Model sha256: {calculated_checksum}, expected sha256: {expected_checksum}, please delete {file_path} and restart comic-translate."
                     )
-                exit(-1)
+
+                    raise RuntimeError(
+                        f"Model sha256 mismatch for {file_path}: got {calculated_checksum}, expected {expected_checksum}. "
+                        "Please delete the file and restart comic-translate or re-download the model."
+                    )
 
 # Model Download Data
 manga_ocr_data = {
