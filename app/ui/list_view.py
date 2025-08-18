@@ -87,5 +87,3 @@ class PageListView(QListWidget):
             return
         names = [item.text() for item in selected]
         self.translate_imgs.emit(names)
-
-

@@ -13,6 +13,7 @@ from app.ui.commands.image import SetImageCommand
 from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
 from app.ui.commands.box import AddTextItemCommand
+from app.ui.list_view_image_loader import ListViewImageLoader
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -21,6 +22,12 @@ if TYPE_CHECKING:
 class ImageStateController:
     def __init__(self, main: ComicTranslate):
         self.main = main
+        
+        # Initialize lazy image loader for list view
+        self.page_list_loader = ListViewImageLoader(
+            self.main.page_list,
+            avatar_size=(35, 50)
+        )
 
     def load_initial_image(self, file_paths: List[str]):
         file_paths = self.main.file_handler.prepare_files(file_paths)
@@ -84,6 +91,7 @@ class ImageStateController:
         self.main.page_list.blockSignals(True)
         self.main.page_list.clear()
         self.main.page_list.blockSignals(False)
+        self.page_list_loader.clear()
 
         # Reset current_image_index
         self.main.curr_img_idx = -1
@@ -201,8 +209,12 @@ class ImageStateController:
             card = ClickMeta(extra=False, avatar_size=(35, 50))
             card.setup_data({
                 "title": file_name,
-                #"avatar": MPixmap(file_path)
+                # Avatar will be loaded lazily
             })
+            
+            # Set the list item size hint to match the card size
+            list_item.setSizeHint(card.sizeHint())
+            
             # re-apply strike-through if previously skipped
             if self.main.image_states.get(file_path, {}).get('skip'):
                 card.set_skipped(True)
@@ -210,11 +222,16 @@ class ImageStateController:
             self.main.page_list.setItemWidget(list_item, card)
             self.main.image_cards.append(card)
 
+        # Initialize lazy loading for the new cards
+        self.page_list_loader.set_file_paths(self.main.image_files, self.main.image_cards)
+
     def on_card_selected(self, current, previous):
         if current:  
             index = self.main.page_list.row(current)
             self.main.curr_tblock_item = None
-            
+            # Force load the selected image thumbnail
+            self.page_list_loader.force_load_image(index)
+
             # Avoid circular calls when in webtoon mode
             if getattr(self.main, '_processing_page_change', False):
                 return
@@ -619,3 +636,8 @@ class ImageStateController:
     def apply_inpaint_patches(self, patches):
         command = PatchInsertCommand(self.main, patches, self.main.image_files[self.main.curr_img_idx])
         self.main.undo_group.activeStack().push(command)
+
+    def cleanup(self):
+        """Clean up resources, including the lazy loader."""
+        if hasattr(self, 'page_list_loader'):
+            self.page_list_loader.shutdown()

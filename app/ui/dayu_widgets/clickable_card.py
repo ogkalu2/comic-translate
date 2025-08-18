@@ -246,3 +246,26 @@ class ClickMeta(QtWidgets.QWidget):
             self._title_label.setStyleSheet("color: gray;")
         else:
             self._title_label.setStyleSheet("")
+
+    def sizeHint(self):
+        """Return appropriate size hint based on avatar size and content."""
+        # Calculate minimum height needed
+        avatar_height = self._avatar_size[1] if hasattr(self, '_avatar_size') else 50
+        
+        # Add padding for title, spacing, and margins
+        title_height = self._title_label.sizeHint().height() if self._title_label.isVisible() else 0
+        desc_height = self._description_label.sizeHint().height() if self._description_label.isVisible() else 0
+        
+        # Use the larger of avatar height or content height, plus padding
+        content_height = title_height + desc_height + 10  # 10px for spacing/margins
+        total_height = max(avatar_height, content_height) + 10  # Additional padding
+        
+        # Width should accommodate avatar + content + spacing
+        avatar_width = self._avatar_size[0] if hasattr(self, '_avatar_size') else 35
+        content_width = max(
+            self._title_label.sizeHint().width() if self._title_label.isVisible() else 0,
+            self._description_label.sizeHint().width() if self._description_label.isVisible() else 0
+        )
+        total_width = avatar_width + content_width + 20  # 20px for spacing and margins
+        
+        return QtCore.QSize(max(total_width, 150), total_height)  # Minimum width of 150

@@ -732,6 +732,7 @@ class ComicTranslate(ComicTranslateUI):
         # Save all settings when the application is closed
         self.settings_page.save_settings()
         self.project_ctrl.save_main_page_settings()
+        self.image_ctrl.cleanup()
         
         # Delete temp archive folders
         for archive in self.file_handler.archive_info:
