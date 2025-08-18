@@ -97,8 +97,7 @@ def handle_error(model_path, model_md5, e):
             )
     else:
         logger.error(
-            f"Failed to load model {model_path},"
-            f"please submit an issue at https://github.com/Sanster/lama-cleaner/issues and include a screenshot of the error:\n{e}"
+            f"Failed to load model {model_path}"
         )
         raise RuntimeError(f"Failed to load model {model_path}: {e}")
 
