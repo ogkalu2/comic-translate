@@ -11,6 +11,7 @@ class PageListView(QListWidget):
     del_img = Signal(list)
     toggle_skip_img = Signal(list, bool)  # list of images, bool for skip status (True=skip, False=unskip)
     translate_imgs = Signal(list)
+    selection_changed = Signal(list)  # list of selected indices
 
     def __init__(self) -> None:
         super().__init__()
@@ -20,12 +21,24 @@ class PageListView(QListWidget):
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) 
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
         self.ui_elements()
+        
+        # Connect selection model changes to emit our custom signal
+        self.selectionModel().selectionChanged.connect(self._on_selection_changed)
 
     def ui_elements(self):
         self.insert_browser = MClickBrowserFilePushButton(multiple=True)
         self.insert_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
+
+    def _on_selection_changed(self, selected, deselected):
+        """Handle selection changes and emit signal with selected indices."""
+        selected_indices = []
+        for item in self.selectedItems():
+            index = self.row(item)
+            if index >= 0:
+                selected_indices.append(index)
+        self.selection_changed.emit(selected_indices)
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         menu = MMenu(parent=self)

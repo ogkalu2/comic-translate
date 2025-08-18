@@ -182,6 +182,7 @@ class ComicTranslate(ComicTranslateUI):
 
         # Page List
         self.page_list.currentItemChanged.connect(self.image_ctrl.on_card_selected)
+        self.page_list.selection_changed.connect(self.image_ctrl.on_selection_changed)
         self.page_list.del_img.connect(self.image_ctrl.handle_image_deletion)
         self.page_list.insert_browser.sig_files_changed.connect(self.image_ctrl.thread_insert)
         self.page_list.toggle_skip_img.connect(self.image_ctrl.handle_toggle_skip_images)

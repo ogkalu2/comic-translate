@@ -246,7 +246,7 @@ class ImageStateController:
                     
                     # Scroll to the page (this will set _programmatic_scroll = True)
                     self.main.image_viewer.scroll_to_page(index)
-                    self.highlight_card(index)
+                    # Note: highlighting is now handled by on_selection_changed
                     
                     # Load minimal page state without interfering with the webtoon view
                     file_path = self.main.image_files[index]
@@ -263,16 +263,16 @@ class ImageStateController:
                     self.main.run_threaded(
                         lambda: self.load_image(self.main.image_files[index]),
                         lambda result: self.display_image_from_loaded(result, index),
-                        self.main.default_error_handler,
-                        lambda: self.highlight_card(index)
+                        self.main.default_error_handler
+                        # Note: highlighting is now handled by on_selection_changed
                     )
             else:
                 # Regular mode - load and display the image
                 self.main.run_threaded(
                     lambda: self.load_image(self.main.image_files[index]),
                     lambda result: self.display_image_from_loaded(result, index),
-                    self.main.default_error_handler,
-                    lambda: self.highlight_card(index)
+                    self.main.default_error_handler
+                    # Note: highlighting is now handled by on_selection_changed
                 )
 
     def navigate_images(self, direction: int):
@@ -283,14 +283,36 @@ class ImageStateController:
                 self.main.page_list.setCurrentItem(item)
 
     def highlight_card(self, index: int):
-        if 0 <= index < len(self.main.image_cards):
-            # Remove highlight from the previously highlighted card
-            if self.main.current_card:
-                self.main.current_card.set_highlight(False)
+        """Highlight a single card (used for programmatic selection when signals are blocked)."""
+        # Clear highlights from all cards first
+        for card in self.main.image_cards:
+            card.set_highlight(False)
             
-            # Highlight the new card
+        # Highlight the specified card
+        if 0 <= index < len(self.main.image_cards):
             self.main.image_cards[index].set_highlight(True)
             self.main.current_card = self.main.image_cards[index]
+        else:
+            self.main.current_card = None
+
+    def on_selection_changed(self, selected_indices: list):
+        """Handle selection changes and update visual highlighting for all selected cards."""
+        # Clear highlights from all cards first
+        for card in self.main.image_cards:
+            card.set_highlight(False)
+        
+        # Highlight all selected cards
+        for index in selected_indices:
+            if 0 <= index < len(self.main.image_cards):
+                self.main.image_cards[index].set_highlight(True)
+        
+        # Keep track of the current card for backward compatibility
+        if selected_indices:
+            current_index = selected_indices[-1]  # Use the last selected as current
+            if 0 <= current_index < len(self.main.image_cards):
+                self.main.current_card = self.main.image_cards[current_index]
+        else:
+            self.main.current_card = None
 
     def handle_image_deletion(self, file_names: list[str]):
         """Handles the deletion of images based on the provided file names."""
