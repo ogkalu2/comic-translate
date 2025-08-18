@@ -9,12 +9,13 @@ from PySide6.QtWidgets import QListWidget
 class ImageLoadWorker(QObject):
     """Worker thread for loading images in the background."""
     
-    image_loaded = Signal(int, QPixmap)  # index, pixmap
+    image_loaded = Signal(int, QPixmap, int)  # index, pixmap, generation
     
     def __init__(self):
         super().__init__()
         self.load_queue = []
         self.should_stop = False
+        self.generation = 0  # Track generation to prevent stale callbacks
         
         # Timer for processing queue
         self.process_timer = QTimer()
@@ -24,14 +25,15 @@ class ImageLoadWorker(QObject):
     def add_to_queue(self, index: int, file_path: str, target_size: QSize):
         """Add an image to the loading queue."""
         # Avoid duplicates
-        for queued_index, _, _ in self.load_queue:
+        for queued_index, _, _, _ in self.load_queue:
             if queued_index == index:
                 return
-        self.load_queue.append((index, file_path, target_size))
+        self.load_queue.append((index, file_path, target_size, self.generation))
     
     def clear_queue(self):
-        """Clear the loading queue."""
+        """Clear the loading queue and increment generation."""
         self.load_queue.clear()
+        self.generation += 1  # Increment generation to invalidate pending operations
         
     def stop(self):
         """Stop the worker."""
@@ -43,13 +45,13 @@ class ImageLoadWorker(QObject):
         if not self.load_queue or self.should_stop:
             return
             
-        index, file_path, target_size = self.load_queue.pop(0)
+        index, file_path, target_size, generation = self.load_queue.pop(0)
         
         try:
             # Load and resize image
             pixmap = self._load_and_resize_image(file_path, target_size)
             if pixmap and not pixmap.isNull():
-                self.image_loaded.emit(index, pixmap)
+                self.image_loaded.emit(index, pixmap, generation)
         except Exception as e:
             print(f"Error loading image {file_path}: {e}")
                 
@@ -103,6 +105,7 @@ class ListViewImageLoader:
         self.visible_items: Set[int] = set()
         self.file_paths: list[str] = []
         self.cards = []  # Reference to the actual card widgets
+        self.generation = 0  # Track generation to prevent stale callbacks
         
         # Worker thread for background loading
         self.worker_thread = QThread()
@@ -128,9 +131,17 @@ class ListViewImageLoader:
         
     def set_file_paths(self, file_paths: list[str], cards: list):
         """Set the file paths and card references for lazy loading."""
+        # Store cards reference before clearing (to avoid clearing the passed list)
+        cards_copy = cards.copy() if cards else []
+        
         self.clear()
         self.file_paths = file_paths.copy()
-        self.cards = cards
+        self.cards = cards_copy  # Use the copy instead of the original reference
+        self.generation += 1  # Increment generation for new card set
+        
+        # Sync generation with worker
+        if self.worker:
+            self.worker.generation = self.generation
         
         # Start the worker thread if not already running
         if not self.worker_thread.isRunning():
@@ -217,8 +228,12 @@ class ListViewImageLoader:
                 # Process the queue
                 QTimer.singleShot(0, self.worker.process_queue)
                 
-    def _on_image_loaded(self, index: int, pixmap: QPixmap):
+    def _on_image_loaded(self, index: int, pixmap: QPixmap, generation: int):
         """Handle when an image has been loaded."""
+        # Check if this is from the current generation
+        if generation != self.generation:
+            return  # Ignore stale callbacks
+            
         if 0 <= index < len(self.cards):
             # Store the loaded pixmap
             self.loaded_images[index] = pixmap
