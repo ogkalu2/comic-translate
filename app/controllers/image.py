@@ -306,7 +306,7 @@ class ImageStateController:
             if 0 <= index < len(self.main.image_cards):
                 self.main.image_cards[index].set_highlight(True)
         
-        # Keep track of the current card for backward compatibility
+        # Keep track of the current card
         if selected_indices:
             current_index = selected_indices[-1]  # Use the last selected as current
             if 0 <= current_index < len(self.main.image_cards):
