@@ -27,23 +27,19 @@ class GoogleTranslation(TraditionalTranslation):
         
         from deep_translator import GoogleTranslator
 
-        try:
-            translator = GoogleTranslator(source='auto', target=self.target_lang_code)
-            
-            for blk in blk_list:
-                text = self.preprocess_text(blk.text, self.source_lang_code)
-                
-                if not text.strip():
-                    blk.translation = ''
-                    continue
-                    
-                translation = translator.translate(text)
-                if translation is not None:
-                    blk.translation = translation
-                else:
-                    blk.translation = ''
+        translator = GoogleTranslator(source='auto', target=self.target_lang_code)
         
-        except Exception as e:
-            print(f"Google Translate error: {str(e)}")
+        for blk in blk_list:
+            text = self.preprocess_text(blk.text, self.source_lang_code)
+            
+            if not text.strip():
+                blk.translation = ''
+                continue
+                
+            translation = translator.translate(text)
+            if translation is not None:
+                blk.translation = translation
+            else:
+                blk.translation = ''
             
         return blk_list

@@ -53,16 +53,12 @@ class BaseLLMTranslation(LLMTranslation):
         Returns:
             List of updated TextBlock objects with translations
         """
-        try:
-            entire_raw_text = get_raw_text(blk_list)
-            system_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
-            user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
-            
-            entire_translated_text = self._perform_translation(user_prompt, system_prompt, image)
-            set_texts_from_json(blk_list, entire_translated_text)
+        entire_raw_text = get_raw_text(blk_list)
+        system_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
+        user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
         
-        except Exception as e:
-            print(f"{type(self).__name__} translation error: {str(e)}")
+        entire_translated_text = self._perform_translation(user_prompt, system_prompt, image)
+        set_texts_from_json(blk_list, entire_translated_text)
             
         return blk_list
     

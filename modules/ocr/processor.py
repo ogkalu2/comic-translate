@@ -48,19 +48,10 @@ class OCRProcessor:
         Returns:
             Updated list of TextBlock objects with recognized text
         """
-        # Set language code for each text block
+
         self._set_source_language(blk_list)
-        
-        try:
-            # Get appropriate OCR engine from factory
-            engine = OCRFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
-            
-            # Process image with selected engine
-            return engine.process_image(img, blk_list)
-        
-        except Exception as e:
-            print(f"OCR processing error: {str(e)}")
-            return blk_list
+        engine = OCRFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
+        return engine.process_image(img, blk_list)
             
     def _set_source_language(self, blk_list: list[TextBlock]) -> None:
         source_lang_code = language_codes.get(self.source_lang_english, 'en')

@@ -31,24 +31,20 @@ class DeepLTranslation(TraditionalTranslation):
         self.translator = deepl.Translator(self.api_key)
         
     def translate(self, blk_list: list[TextBlock]) -> list[TextBlock]:
-        try:
-            for blk in blk_list:
-                text = self.preprocess_text(blk.text, self.source_lang_code)
-                
-                if not text.strip():
-                    blk.translation = ''
-                    continue
-                
-                result = self.translator.translate_text(
-                    text, 
-                    source_lang=self.source_lang_code, 
-                    target_lang=self.target_lang_code
-                )
-                
-                blk.translation = result.text
-        
-        except Exception as e:
-            print(f"DeepL Translator error: {str(e)}")
+        for blk in blk_list:
+            text = self.preprocess_text(blk.text, self.source_lang_code)
+            
+            if not text.strip():
+                blk.translation = ''
+                continue
+            
+            result = self.translator.translate_text(
+                text, 
+                source_lang=self.source_lang_code, 
+                target_lang=self.target_lang_code
+            )
+            
+            blk.translation = result.text
             
         return blk_list 
     
