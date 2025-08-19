@@ -6,9 +6,8 @@ from typing import Callable, Tuple
 
 from PySide6 import QtWidgets
 from PySide6 import QtCore
-from PySide6 import QtGui
-from PySide6.QtCore import QCoreApplication, QThreadPool, QPointF
-from PySide6.QtGui import QUndoGroup, QUndoStack, QPainterPath
+from PySide6.QtCore import QCoreApplication, QThreadPool
+from PySide6.QtGui import QUndoGroup, QUndoStack
 
 from app.ui.dayu_widgets.qt import MPixmap
 from app.ui.main_window import ComicTranslateUI
