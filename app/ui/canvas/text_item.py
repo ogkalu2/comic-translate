@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem
+from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QApplication
 from PySide6.QtGui import QFont, QCursor, QColor, \
      QTextCharFormat, QTextBlockFormat, QTextCursor
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
@@ -133,7 +133,9 @@ class TextBlockItem(QGraphicsTextItem):
             self.font_family = font_family
             self.font_size = font_size
 
-        font = QFont(font_family, font_size)
+        # Fallback to application default font family if none provided
+        effective_family = font_family.strip() if isinstance(font_family, str) and font_family.strip() else QApplication.font().family()
+        font = QFont(effective_family, font_size)
         self.update_text_format('font', font)
 
     def set_font_size(self, font_size):

@@ -112,9 +112,10 @@ class OCRFactory:
         language_factories = {
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
-            'Chinese': cls._create_paddle_ocr,
-            'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini'),
+            # For Chinese, explicitly set PaddleOCR with 'ch' language
             'Chinese': lambda s: cls._create_paddle_ocr(s, 'ch'),
+            'Simplified Chinese': lambda s: cls._create_paddle_ocr(s, 'ch'),
+            'Traditional Chinese': lambda s: cls._create_paddle_ocr(s, 'ch'),
             'Russian': lambda s: cls._create_gpt_ocr(s, 'GPT-4.1-mini'),
         }
         

@@ -1,6 +1,6 @@
 import os, sys
 import logging
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QFont
 from PySide6.QtCore import QSettings, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication  
 from controller import ComicTranslate
@@ -22,6 +22,14 @@ def main():
 
     # Create QApplication directly instead of using the context manager
     app = QApplication(sys.argv)
+
+    # On some Windows setups Qt may fall back to legacy fonts like "MS Sans Serif"
+    # which can cause DirectWrite errors. Force a modern default font.
+    try:
+        if sys.platform == "win32":
+            app.setFont(QFont("Segoe UI", 10))
+    except Exception:
+        pass
     
     # Set the application icon
     icon = QIcon(":/icons/window_icon.png")  

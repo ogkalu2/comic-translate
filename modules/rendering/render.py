@@ -4,7 +4,8 @@ from typing import Tuple, List
 
 from PIL import Image, ImageFont, ImageDraw
 from PySide6.QtGui import QFont, QTextDocument,\
-      QTextCursor, QTextBlockFormat, QTextOption
+      QTextCursor, QTextBlockFormat, QTextOption, QFontDatabase
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
 from .hyphen_textwrap import wrap as hyphen_wrap
@@ -184,7 +185,8 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
         so that all wrapped text fits within the box."""
     
     def prepare_font(font_size):
-        font = QFont(font_input, font_size)
+        effective_family = font_input.strip() if isinstance(font_input, str) and font_input.strip() else QApplication.font().family()
+        font = QFont(effective_family, font_size)
         font.setBold(bold)
         font.setItalic(italic)
         font.setUnderline(underline)
