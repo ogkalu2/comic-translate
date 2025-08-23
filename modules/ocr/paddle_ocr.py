@@ -12,7 +12,6 @@ class PaddleOCREngine(OCREngine):
         self.ocr = None
         self._use_predict_api = False
         self._legacy_api = False
-        self._fallback_engine = None
         
     def initialize(self, lang: str = 'ch') -> None:
         """
@@ -22,7 +21,7 @@ class PaddleOCREngine(OCREngine):
             lang: Language code for OCR
         """
 
-        if self.ocr is not None or self._fallback_engine is not None:
+        if self.ocr is not None:
             return
 
         # Try initializing PaddleOCR with minimal, broadly compatible arguments.
@@ -74,10 +73,6 @@ class PaddleOCREngine(OCREngine):
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         try:
-            # If PaddleOCR failed to initialize and we have a fallback, use it
-            if self._fallback_engine is not None:
-                return self._fallback_engine.process_image(img, blk_list)
-
             if self.ocr is None:
                 return blk_list
 
