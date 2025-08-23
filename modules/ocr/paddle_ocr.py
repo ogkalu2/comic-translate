@@ -71,18 +71,6 @@ class PaddleOCREngine(OCREngine):
                 return
             except Exception as e:
                 print(f"Direct legacy PaddleOCR init failed: {str(e)}")
-
-        # Final fallback to DocTR so that OCR still works even if Paddle fails
-        try:
-            from .doctr_ocr import DocTROCR
-            import torch
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            self._fallback_engine = DocTROCR()
-            self._fallback_engine.initialize(device=device)
-            print("Falling back to DocTR OCR engine for Chinese OCR")
-        except Exception as e:
-            print(f"DocTR fallback initialization failed: {str(e)}")
-            self._fallback_engine = None
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         try:
