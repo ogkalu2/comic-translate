@@ -154,27 +154,40 @@ class CacheManager:
                 for original_blk, processed_blk in zip(blk_list, processed_blk_list):
                     block_id = self._get_block_id(original_blk)  # Use original block for ID
                     text = getattr(processed_blk, 'text', '') or ''  # Get text from processed block
-                    block_results[block_id] = text
+                    # Only include blocks that actually have OCR text
+                    if text:
+                        block_results[block_id] = text
             else:
                 # Standard case: use the same blocks for both ID and text
                 for blk in blk_list:
                     block_id = self._get_block_id(blk)
                     text = getattr(blk, 'text', '') or ''
-                    block_results[block_id] = text
-            
-            self.ocr_cache[cache_key] = block_results
-            logger.info(f"Cached OCR results for {len(block_results)} blocks")
+                    # Only include blocks that actually have OCR text
+                    if text:
+                        block_results[block_id] = text
+            # Do not create a cache entry if there are no blocks with OCR text
+            if block_results:
+                self.ocr_cache[cache_key] = block_results
+                logger.info(f"Cached OCR results for {len(block_results)} blocks")
+            else:
+                logger.debug("No OCR text found in blocks; skipping OCR cache creation")
         except Exception as e:
             logger.warning(f"Failed to cache OCR results: {e}")
             # Don't raise exception, just skip caching
             
     def update_ocr_cache_for_block(self, cache_key, block):
         """Update or add a single block's OCR result to the cache."""
-        if cache_key not in self.ocr_cache:
-            self.ocr_cache[cache_key] = {}
-        
         block_id = self._get_block_id(block)
         text = getattr(block, 'text', '') or ''
+
+        # Don't create/update cache entries for empty OCR text
+        if not text:
+            logger.debug(f"Skipping OCR cache update for empty text for block ID {block_id}")
+            return
+
+        if cache_key not in self.ocr_cache:
+            self.ocr_cache[cache_key] = {}
+
         self.ocr_cache[cache_key][block_id] = text
         logger.debug(f"Updated OCR cache for block ID {block_id}")
 
@@ -216,35 +229,48 @@ class CacheManager:
                     block_id = self._get_block_id(original_blk)  # Use original block for ID
                     translation = getattr(processed_blk, 'translation', '') or ''  # Get translation from processed block
                     source_text = getattr(original_blk, 'text', '') or ''  # Get source text from original block
-                    # Store both source text and translation to validate cache validity
-                    block_results[block_id] = {
-                        'source_text': source_text,
-                        'translation': translation
-                    }
+                    # Only include blocks that actually have a translation
+                    if translation:
+                        # Store both source text and translation to validate cache validity
+                        block_results[block_id] = {
+                            'source_text': source_text,
+                            'translation': translation
+                        }
             else:
                 # Standard case: use the same blocks for both ID and translation
                 for blk in blk_list:
                     block_id = self._get_block_id(blk)
                     translation = getattr(blk, 'translation', '') or ''
                     source_text = getattr(blk, 'text', '') or ''
-                    block_results[block_id] = {
-                        'source_text': source_text,
-                        'translation': translation
-                    }
-            
-            self.translation_cache[cache_key] = block_results
-            logger.info(f"Cached translation results for {len(block_results)} blocks")
+                    # Only include blocks that actually have a translation
+                    if translation:
+                        block_results[block_id] = {
+                            'source_text': source_text,
+                            'translation': translation
+                        }
+            # Do not create a translation cache entry if no translations were present
+            if block_results:
+                self.translation_cache[cache_key] = block_results
+                logger.info(f"Cached translation results for {len(block_results)} blocks")
+            else:
+                logger.debug("No translations found in blocks; skipping translation cache creation")
         except Exception as e:
             logger.warning(f"Failed to cache translation results: {e}")
 
     def update_translation_cache_for_block(self, cache_key, block):
         """Update or add a single block's translation result to the cache."""
-        if cache_key not in self.translation_cache:
-            self.translation_cache[cache_key] = {}
-            
         block_id = self._get_block_id(block)
         translation = getattr(block, 'translation', '') or ''
         source_text = getattr(block, 'text', '') or ''
+
+        # Don't create/update cache entries for empty translations
+        if not translation:
+            logger.debug(f"Skipping translation cache update for empty translation for block ID {block_id}")
+            return
+
+        if cache_key not in self.translation_cache:
+            self.translation_cache[cache_key] = {}
+
         self.translation_cache[cache_key][block_id] = {
             'source_text': source_text,
             'translation': translation
