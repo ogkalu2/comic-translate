@@ -33,7 +33,9 @@ def _center_from_item(item):
 
 
 def group_items_into_lines(
-    items: list, direction: str = 'ver_rtl', band_ratio: float = 0.5,
+    items: list, 
+    direction: str = 'hor_ltr', 
+    band_ratio: float = 0.5,
 ) -> list[list]:
     """Group detections (either boxes [x1,y1,x2,y2] or polygons [[x,y],...]) into reading lines.
 
