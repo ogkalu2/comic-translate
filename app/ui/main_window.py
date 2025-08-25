@@ -749,11 +749,37 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.image_viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
 
     def set_brush_eraser_size(self, size: int):
+        try:
+            current_tool = self.image_viewer.current_tool
+        except Exception:
+            current_tool = None
+
+        # Update the base values so next toggle will restore them
+        if current_tool == 'brush':
+            self.image_viewer.brush_size = size
+        elif current_tool == 'eraser':
+            self.image_viewer.eraser_size = size
+        else:
+            # If no tool is active, still update both stored sizes so users can
+            # preconfigure a preferred size before switching.
+            self.image_viewer.brush_size = size
+            self.image_viewer.eraser_size = size
+
+        # If an image exists, compute scaled cursor size and update the active
+        # drawing manager cursor so the immediate cursor reflects the slider.
         if self.image_viewer.hasPhoto():
             image = self.image_viewer.get_cv2_image()
-            h, w, c = image.shape
-            scaled_size = self.scale_size(size, w, h)
-            self.image_viewer.set_br_er_size(size, scaled_size)
+            if image is not None:
+                h, w = image.shape[:2]
+                scaled_size = self.scale_size(size, w, h)
+                
+                if current_tool == 'brush':
+                    self.image_viewer.set_br_er_size(size, scaled_size)
+                elif current_tool == 'eraser':
+                    self.image_viewer.set_br_er_size(size, scaled_size)
+                else:
+                    self.image_viewer.drawing_manager.set_brush_size(size, scaled_size)
+                    self.image_viewer.drawing_manager.set_eraser_size(size, scaled_size)
 
     def scale_size(self, base_size, image_width, image_height):
         # Calculate the diagonal of the image

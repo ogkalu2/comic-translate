@@ -161,6 +161,28 @@ class ImageViewer(QGraphicsView):
         else:
             self.setDragMode(QGraphicsView.NoDrag)
 
+    @property
+    def brush_size(self):
+        return self.drawing_manager.brush_size
+
+    @brush_size.setter
+    def brush_size(self, size: int):
+        try:
+            self.drawing_manager.set_brush_size(size, size)
+        except Exception:
+            self.drawing_manager.brush_size = size
+
+    @property
+    def eraser_size(self):
+        return self.drawing_manager.eraser_size
+
+    @eraser_size.setter
+    def eraser_size(self, size: int):
+        try:
+            self.drawing_manager.set_eraser_size(size, size)
+        except Exception:
+            self.drawing_manager.eraser_size = size
+
     # Event Handler Methods (Delegated to EventHandler)
     def mousePressEvent(self, event):
         self.event_handler.handle_mouse_press(event)
