@@ -157,6 +157,8 @@ class ClickMeta(QtWidgets.QWidget):
         if avatar_size:
             w, h = avatar_size
             self._avatar.setFixedSize(QtCore.QSize(w, h))
+        # Remember avatar size for sizeHint calculations (None when not provided)
+        self._avatar_size = avatar_size if avatar_size else None
         # Make widgets transparent for mouse events (excluding extra button)
         self._make_widgets_transparent()
 
@@ -249,23 +251,45 @@ class ClickMeta(QtWidgets.QWidget):
 
     def sizeHint(self):
         """Return appropriate size hint based on avatar size and content."""
-        # Calculate minimum height needed
-        avatar_height = self._avatar_size[1] if hasattr(self, '_avatar_size') else 50
-        
-        # Add padding for title, spacing, and margins
+        # If a cover is visible it sits above content and controls the width/height mainly
+        cover_size = self._cover_label.size() if self._cover_label.isVisible() else QtCore.QSize(0, 0)
+
+        # Avatar dimensions: only count if avatar widget is visible
+        if self._avatar.isVisible():
+            if self._avatar_size:
+                avatar_width, avatar_height = self._avatar_size
+            else:
+                av_hint = self._avatar.sizeHint()
+                avatar_width, avatar_height = av_hint.width(), av_hint.height()
+        else:
+            avatar_width = 0
+            avatar_height = 0
+
+        # Content dimensions
         title_height = self._title_label.sizeHint().height() if self._title_label.isVisible() else 0
         desc_height = self._description_label.sizeHint().height() if self._description_label.isVisible() else 0
-        
-        # Use the larger of avatar height or content height, plus padding
-        content_height = title_height + desc_height + 10  # 10px for spacing/margins
-        total_height = max(avatar_height, content_height) + 10  # Additional padding
-        
-        # Width should accommodate avatar + content + spacing
-        avatar_width = self._avatar_size[0] if hasattr(self, '_avatar_size') else 35
+        content_height = title_height + desc_height + 10  # spacing/margins
+
+        # Total height: if cover visible, stack cover above content; otherwise rely on avatar/content
+        if not cover_size.isEmpty():
+            total_height = cover_size.height() + content_height + 10
+        else:
+            # If there's an avatar, keep a small extra padding; if not, don't add extra padding
+            if avatar_height:
+                total_height = max(avatar_height, content_height) + 10
+            else:
+                total_height = content_height
+
+        # Total width: max of cover width (if visible) or avatar+content width
         content_width = max(
             self._title_label.sizeHint().width() if self._title_label.isVisible() else 0,
-            self._description_label.sizeHint().width() if self._description_label.isVisible() else 0
+            self._description_label.sizeHint().width() if self._description_label.isVisible() else 0,
         )
-        total_width = avatar_width + content_width + 20  # 20px for spacing and margins
-        
-        return QtCore.QSize(max(total_width, 150), total_height)  # Minimum width of 150
+        # If there's an avatar include spacing between avatar and content; if not, don't add extra padding
+        if avatar_width:
+            stacked_width = avatar_width + content_width + 20
+        else:
+            stacked_width = content_width
+        total_width = max(cover_size.width(), stacked_width)
+
+        return QtCore.QSize(max(total_width, 150), total_height)
