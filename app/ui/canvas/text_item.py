@@ -554,7 +554,7 @@ class TextBlockItem(QGraphicsTextItem):
             new_font_size = self.font_size * height_ratio
             self.set_font_size(new_font_size)
 
-        self._resize_start = scene_pos
+        self.resize_start = scene_pos
 
     def on_selection_changed(self):
         cursor = self.textCursor()
