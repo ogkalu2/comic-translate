@@ -133,12 +133,18 @@ class TextBlockItem(QGraphicsTextItem):
             self.font_family = font_family
             self.font_size = font_size
 
+        # Ensure minimum font size.
+        font_size = max(1, font_size)
+
         # Fallback to application default font family if none provided
         effective_family = font_family.strip() if isinstance(font_family, str) and font_family.strip() else QApplication.font().family()
         font = QFont(effective_family, font_size)
         self.update_text_format('font', font)
 
     def set_font_size(self, font_size):
+        # Ensure minimum font size.
+        font_size = max(1, font_size)
+        
         if not self.textCursor().hasSelection():
             self.font_size = font_size
         self.update_text_format('size', font_size)
@@ -549,10 +555,20 @@ class TextBlockItem(QGraphicsTextItem):
         
         # Update size and font
         self.setTextWidth(new_rect.width())
+
+        # Update the font size proportionally with minimum size constraint.
         if original_height > 0:
             height_ratio = new_rect.height() / original_height
             new_font_size = self.font_size * height_ratio
-            self.set_font_size(new_font_size)
+            
+            # Ensure minimum font size of 1pt.
+            min_font_size = 1
+            if new_font_size >= min_font_size:
+                self.font_size = new_font_size
+                self.set_font_size(new_font_size)
+            else:
+                # If font would become invalid, stop the resize.
+                return
 
         self.resize_start = scene_pos
 
