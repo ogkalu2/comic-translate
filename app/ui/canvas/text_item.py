@@ -412,19 +412,6 @@ class TextBlockItem(QGraphicsTextItem):
         self.text_changed.emit(new_text)
         self.update_outlines()
 
-    def mousePressEvent(self, event):
-        super().mousePressEvent(event)
-        self.last_selection = self.textCursor().selection()
-
-    def mouseReleaseEvent(self, event):
-        # Undo signaling and cursor updates are now handled by EventHandler
-        super().mouseReleaseEvent(event)
-
-        current_selection = self.textCursor().selection()
-        if current_selection != self.last_selection:
-            self.on_selection_changed()
-        self.last_selection = current_selection
-
     def mouseMoveEvent(self, event):
         # Resize/rotate/move logic is now handled by EventHandler and QGraphicsView
         if self.editing_mode:

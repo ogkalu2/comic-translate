@@ -32,6 +32,11 @@ class EventHandler:
                     self.viewer.deselect_all()
                     clicked_item.selected = True 
                     clicked_item.setSelected(True)
+                    # Record the current text selection state so we can detect changes on release
+                    try:
+                        clicked_item.last_selection = clicked_item.textCursor().selection()
+                    except Exception:
+                        clicked_item.last_selection = None
                     if not clicked_item.editing_mode:
                         clicked_item.item_selected.emit(clicked_item)
                 elif isinstance(clicked_item, MoveableRectItem):
@@ -102,6 +107,17 @@ class EventHandler:
             # to prevent the base QGraphicsView from deselecting the item.
             if interaction_finished:
                 self.viewer.viewport().setCursor(Qt.CursorShape.ArrowCursor)
+                # If we handled the interaction, also check selection changes on TextBlockItem
+                blk_item, rect_item = self.viewer.sel_rot_item()
+                sel_item = blk_item or rect_item
+                if isinstance(sel_item, TextBlockItem):
+                    try:
+                        current_selection = sel_item.textCursor().selection()
+                        if current_selection != getattr(sel_item, 'last_selection', None):
+                            sel_item.on_selection_changed()
+                        sel_item.last_selection = current_selection
+                    except Exception:
+                        pass
                 return 
 
         # Let QGraphicsView handle its release events (e.g., for ScrollHandDrag)
