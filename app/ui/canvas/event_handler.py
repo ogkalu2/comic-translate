@@ -171,6 +171,9 @@ class EventHandler:
         blk_item, rect_item = self.viewer.sel_rot_item()
         sel_item = blk_item or rect_item
 
+        if isinstance(sel_item, TextBlockItem) and sel_item.editing_mode:
+            return False
+
         if not sel_item:
             return False
 
@@ -194,6 +197,8 @@ class EventHandler:
     def _press_handle_resize(self, event, scene_pos) -> bool:
         blk_item, rect_item = self.viewer.sel_rot_item()
         sel_item = blk_item or rect_item
+        if isinstance(sel_item, TextBlockItem) and sel_item.editing_mode:
+            return False
         if sel_item and self.viewer.interaction_manager._in_resize_area(sel_item, scene_pos):
             local_pos = sel_item.mapFromScene(scene_pos)
             handle = self.viewer.interaction_manager.get_resize_handle(sel_item, local_pos)
@@ -215,6 +220,8 @@ class EventHandler:
     def _press_handle_rotation(self, event, scene_pos) -> bool:
         blk_item, rect_item = self.viewer.sel_rot_item()
         sel_item = blk_item or rect_item
+        if isinstance(sel_item, TextBlockItem) and sel_item.editing_mode:
+            return False
         if sel_item and self.viewer.interaction_manager._in_rotate_ring(sel_item, scene_pos):
             angle = sel_item.rotation()
             inner_rect = sel_item.boundingRect()
@@ -283,6 +290,10 @@ class EventHandler:
     def _move_handle_item_interaction(self, scene_pos) -> bool:
         blk_item, rect_item = self.viewer.sel_rot_item()
         sel_item = blk_item or rect_item
+
+        if isinstance(sel_item, TextBlockItem) and sel_item.editing_mode:
+            return False
+
         if not sel_item: 
             return False
 
