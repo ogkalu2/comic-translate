@@ -1,6 +1,7 @@
-from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, QApplication
+from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
+     QApplication, QWidget, QStyleOptionGraphicsItem
 from PySide6.QtGui import QFont, QCursor, QColor, \
-     QTextCharFormat, QTextBlockFormat, QTextCursor
+     QTextCharFormat, QTextBlockFormat, QTextCursor, QPainter
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math, copy
 from dataclasses import dataclass
@@ -320,7 +321,12 @@ class TextBlockItem(QGraphicsTextItem):
         
         self.update()
 
-    def paint(self, painter, option, widget=None):
+    def paint(   
+        self, 
+        painter: QPainter, 
+        option: QStyleOptionGraphicsItem, 
+        widget: QWidget = None
+    ):
 
         # Then handle any selection outlines
         if self.selection_outlines:
