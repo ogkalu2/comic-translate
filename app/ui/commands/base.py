@@ -237,6 +237,7 @@ class PatchCommandBase:
     def create_patch_item(properties, viewer: ImageViewer):
         x, y, w, h = properties['bbox']
         img = cv2.imread(properties['png_path']) if 'png_path' in properties else properties['cv2_img']
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         qimg = QtGui.QImage(img.data, w, h, img.strides[0],
                             QtGui.QImage.Format.Format_RGB888)
         pix  = QtGui.QPixmap.fromImage(qimg)

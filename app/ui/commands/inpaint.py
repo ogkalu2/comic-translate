@@ -31,7 +31,9 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
                                    os.path.basename(file_path))
             os.makedirs(sub_dir, exist_ok=True)
             png_path = os.path.join(sub_dir, f"patch_{uuid.uuid4().hex[:8]}_{idx}.png")
-            Image.fromarray(cv2.cvtColor(cv2_patch, cv2.COLOR_RGB2BGR)).save(png_path)
+            # cv2_patch is produced by the inpainter in RGB color order.
+            # Save directly with PIL (which expects RGB) to preserve correct channel order.
+            Image.fromarray(cv2_patch).save(png_path)
 
             # compute a composite hash of the image and its bounding box for deduplication
             with open(png_path, 'rb') as f:
