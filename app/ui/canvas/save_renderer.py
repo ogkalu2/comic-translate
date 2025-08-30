@@ -212,6 +212,10 @@ class ImageSaveRenderer:
             # Extract data from the patch dict
             x, y, w, h = patch['bbox']
             patch_image = cv2.imread(patch['png_path']) if 'png_path' in patch else patch['cv2_img']
+
+            # Convert BGR patch to RGB for proper QImage conversion
+            if len(patch_image.shape) == 3:
+                patch_image = cv2.cvtColor(patch_image, cv2.COLOR_BGR2RGB)
             
             # Convert patch to QImage
             patch_qimage = self.cv2_to_qimage(patch_image)
