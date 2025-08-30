@@ -41,6 +41,7 @@ def main():
             ct.thread_load_project(project_file)
 
     ct.show()
+    ct.setWindowIcon(icon)
     
     # Start the event loop
     sys.exit(app.exec())
