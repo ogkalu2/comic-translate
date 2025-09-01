@@ -21,7 +21,7 @@ from ..dayu_widgets.collapse import MCollapse
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
-font_folder_path = os.path.join(project_root, 'fonts')
+font_folder_path = os.path.join(project_root, 'resources', 'fonts')
 
 class SettingsPageUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
