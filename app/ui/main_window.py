@@ -600,7 +600,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.brush_eraser_slider = MSlider()
 
         self.brush_eraser_slider.setMinimum(1)
-        self.brush_eraser_slider.setMaximum(50)
+        self.brush_eraser_slider.setMaximum(100)
         self.brush_eraser_slider.setValue(10)
         self.brush_eraser_slider.setToolTip(self.tr("Brush/Eraser Size Slider"))
         self.brush_eraser_slider.valueChanged.connect(self.set_brush_eraser_size)
