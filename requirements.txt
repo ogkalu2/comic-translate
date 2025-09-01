@@ -2,7 +2,6 @@ opencv_python
 setuptools
 scikit-image>=0.25.2
 PySide6>=6.8.0
-dayu-path>=0.5.2
 msgpack>=1.1.0
 requests>=2.31.0
 pdfplumber>=0.11.5

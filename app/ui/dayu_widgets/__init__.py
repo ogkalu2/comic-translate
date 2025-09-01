@@ -64,7 +64,6 @@ from .progress_bar import MProgressBar
 from .progress_circle import MProgressCircle
 from .push_button import MPushButton
 from .radio_button import MRadioButton
-from .sequence_file import MSequenceFile
 from .slider import MSlider
 from .spin_box import MDateEdit
 from .spin_box import MDateTimeEdit
