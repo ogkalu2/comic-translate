@@ -1,9 +1,10 @@
 import os
 from PySide6 import QtCore, QtGui, QtSvg
 
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-svg_root = os.path.abspath(os.path.join(current_file_dir, '..'))
-rot_svg_path = os.path.join(svg_root, 'dayu_widgets/static/rotate-arrow-top.svg')
+# Use dayu_widgets' utility to locate static resources (supports resources/static)
+from ..dayu_widgets import utils as dayu_utils
+
+rot_svg_path = dayu_utils.get_static_file('rotate-arrow-top.svg')
 
 class RotateHandleCursors:
     def __init__(self, size=24):

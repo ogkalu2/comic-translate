@@ -9,8 +9,21 @@ import os
 import sys
 
 
-DEFAULT_STATIC_FOLDER = os.path.join(sys.modules[__name__].__path__[0], "static")
-CUSTOM_STATIC_FOLDERS = []
+# Compute repo root relative to this package (app/ui/dayu_widgets -> project root).
+_package_dir = os.path.dirname(__file__)
+# go up three levels: app/ui/dayu_widgets -> app/ui -> app -> project root
+_repo_root = os.path.abspath(os.path.join(_package_dir, '..', '..', '..'))
+_resources_static = os.path.join(_repo_root, 'resources', 'static')
+
+# Use resources/static as the default static folder since we moved the files there
+# Fall back to the package static folder if resources/static doesn't exist
+if os.path.exists(_resources_static):
+    DEFAULT_STATIC_FOLDER = _resources_static
+    CUSTOM_STATIC_FOLDERS = []
+else:
+    # Fallback to original package static folder
+    DEFAULT_STATIC_FOLDER = os.path.join(sys.modules[__name__].__path__[0], "static")
+    CUSTOM_STATIC_FOLDERS = [_resources_static]
 # Import local modules
 from .theme import MTheme
 
