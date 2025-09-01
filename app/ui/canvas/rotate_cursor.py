@@ -1,8 +1,5 @@
-import os
 from PySide6 import QtCore, QtGui, QtSvg
-
-# Use dayu_widgets' utility to locate static resources (supports resources/static)
-from ..dayu_widgets import utils as dayu_utils
+from app.ui.dayu_widgets import utils as dayu_utils
 
 rot_svg_path = dayu_utils.get_static_file('rotate-arrow-top.svg')
 
