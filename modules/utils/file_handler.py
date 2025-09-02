@@ -57,11 +57,8 @@ class FileHandler:
                     basename = os.path.splitext(os.path.basename(name))[0]
                     ext = os.path.splitext(os.path.basename(name))[1]
                 sanitized_path = os.path.join(dir_name, basename + ext)
-                try:
-                    shutil.copy(image_path, sanitized_path)
-                    image_path = sanitized_path
-                except IOError as e:
-                    print(f"An error occurred while copying or deleting the file: {e}")
+                shutil.copy(image_path, sanitized_path)
+                image_path = sanitized_path
             sanitized_paths.append(image_path)
 
         return sanitized_paths
