@@ -86,7 +86,7 @@ manga_ocr_data = {
 }
 
 pororo_data = {
-    'url': 'https://twg.kakaocdn.net/pororo/ko/models/misc/',
+    'url': 'https://huggingface.co/ogkalu/pororo/resolve/main/',
     'files': ['craft.pt', 'brainocr.pt', 'ocr-opt.txt'],
     'sha256_pre_calculated': [
         '4a5efbfb48b4081100544e75e1e2b57f8de3d84f213004b14b85fd4b3748db17',
