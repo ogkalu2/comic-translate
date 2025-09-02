@@ -36,9 +36,12 @@ class DetectionEngine(ABC):
         """
         pass
         
-    def create_text_blocks(self, image: np.ndarray, 
-                          text_boxes: np.ndarray,
-                          bubble_boxes: Optional[np.ndarray] = None) -> list[TextBlock]:
+    def create_text_blocks(
+        self, 
+        image: np.ndarray, 
+        text_boxes: np.ndarray,
+        bubble_boxes: Optional[np.ndarray] = None
+    ) -> list[TextBlock]:
         
         text_boxes = filter_and_fix_bboxes(text_boxes, image.shape)
         bubble_boxes = filter_and_fix_bboxes(bubble_boxes, image.shape)
