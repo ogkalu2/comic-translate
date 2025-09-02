@@ -6,20 +6,26 @@ MIT License
 
 import cv2
 import numpy as np
-from skimage import io
 
 
 def load_image(img_file):
-    img = io.imread(img_file)  # RGB order
-    if img.shape[0] == 2:
-        img = img[0]
+    img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+    if img is None:
+        raise FileNotFoundError(f"Image not found or cannot be read: {img_file}")
+
+    # Grayscale
     if len(img.shape) == 2:
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    if img.shape[2] == 4:
-        img = img[:, :, :3]
-    img = np.array(img)
+    else:
+        channels = img.shape[2]
+        if channels == 4:
+            # BGRA -> RGB
+            img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
+        else:
+            # BGR -> RGB
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    return img
+    return np.array(img)
 
 
 def normalize_mean_variance(
