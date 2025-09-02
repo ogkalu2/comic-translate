@@ -9,24 +9,21 @@ import numpy as np
 
 
 def load_image(img_file):
-    img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+    img = cv2.imread(img_file)
+
     if img is None:
-        raise FileNotFoundError(f"Image not found or cannot be read: {img_file}")
+        raise IOError(f"Could not read image file: {img_file}")
 
-    # Grayscale
-    if len(img.shape) == 2:
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    if img.shape[0] == 2: 
+        img = img[0]
+    if len(img.shape) == 2: # This check is now less likely as cv2.imread converts grayscale to 3-channel
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    else:
-        channels = img.shape[2]
-        if channels == 4:
-            # BGRA -> RGB
-            img = cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
-        else:
-            # BGR -> RGB
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    return np.array(img)
-
+    if img.shape[2] == 4: # cv2.imread strips the alpha channel by default
+        img = img[:, :, :3]
+    
+    return img
 
 def normalize_mean_variance(
         in_img,
