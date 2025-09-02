@@ -87,18 +87,17 @@ def handle_error(model_path, model_md5, e):
     if _md5 != model_md5:
         try:
             os.remove(model_path)
-            logger.error(
-                f"Model md5: {_md5}, expected md5: {model_md5}, wrong model deleted. Please restart comic-translate."
-            )
-        except:
-            logger.error(
-                f"Model md5: {_md5}, expected md5: {model_md5}, please delete {model_path} and restart comic-translate."
-            )
+            msg = f"Model md5: {_md5}, expected md5: {model_md5}, wrong model deleted. Please restart comic-translate."
+            logger.error(msg)
+            raise RuntimeError(msg)
+        except Exception:
+            msg = f"Model md5: {_md5}, expected md5: {model_md5}, please delete {model_path} and restart comic-translate."
+            logger.error(msg)
+            raise RuntimeError(msg)
     else:
-        logger.error(
-            f"Failed to load model {model_path}"
-        )
-        raise RuntimeError(f"Failed to load model {model_path}: {e}")
+        msg = f"Failed to load model {model_path}: {e}"
+        logger.error(msg)
+        raise RuntimeError(msg)
 
 
 def load_jit_model(url_or_path, device, model_md5: str):
