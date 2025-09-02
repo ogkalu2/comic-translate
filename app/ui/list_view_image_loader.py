@@ -45,13 +45,10 @@ class ImageLoadWorker(QObject):
             
         index, file_path, target_size = self.load_queue.pop(0)
         
-        try:
-            # Load and resize image
-            pixmap = self._load_and_resize_image(file_path, target_size)
-            if pixmap and not pixmap.isNull():
-                self.image_loaded.emit(index, pixmap)
-        except Exception as e:
-            print(f"Error loading image {file_path}: {e}")
+        # Load and resize image
+        pixmap = self._load_and_resize_image(file_path, target_size)
+        if pixmap and not pixmap.isNull():
+            self.image_loaded.emit(index, pixmap)
                 
     def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
         """Load and resize an image to the target size."""

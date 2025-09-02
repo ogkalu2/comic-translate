@@ -58,13 +58,10 @@ class ImageStateController:
 
         # If not in memory and not in history (or failed to load from temp),
         # load from the original file path
-        try:
-            cv2_image = cv2.imread(file_path)
-            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
-            return cv2_image
-        except Exception as e:
-            print(f"Error loading image {file_path}: {str(e)}")
-            return None
+        cv2_image = cv2.imread(file_path)
+        cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+        return cv2_image
+
 
     def clear_state(self):
         # Clear existing image data
