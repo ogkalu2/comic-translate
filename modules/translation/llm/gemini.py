@@ -118,21 +118,18 @@ class GeminiTranslation(BaseLLMTranslation):
         # Extract text from response
         response_data = response.json()
         
-        try:
-            # Extract the generated text from the response
-            candidates = response_data.get("candidates", [])
-            if not candidates:
-                return "No response generated"
-            
-            content = candidates[0].get("content", {})
-            parts = content.get("parts", [])
-            
-            # Concatenate all text parts
-            result = ""
-            for part in parts:
-                if "text" in part:
-                    result += part["text"]
-            
-            return result
-        except (KeyError, IndexError) as e:
-            raise Exception(f"Failed to parse API response: {str(e)}")
+        # Extract the generated text from the response
+        candidates = response_data.get("candidates", [])
+        if not candidates:
+            return "No response generated"
+        
+        content = candidates[0].get("content", {})
+        parts = content.get("parts", [])
+        
+        # Concatenate all text parts
+        result = ""
+        for part in parts:
+            if "text" in part:
+                result += part["text"]
+        
+        return result
