@@ -28,45 +28,41 @@ class GoogleOCR(OCREngine):
         texts_bboxes = []
         texts_string = []
         
-        try:
-            encoded_image = self.encode_image(img)
+        encoded_image = self.encode_image(img)
+        
+        payload = {
+            "requests": [{
+                "image": {"content": encoded_image}, 
+                "features": [{"type": "TEXT_DETECTION"}]
+            }]
+        }
+        
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(
+            "https://vision.googleapis.com/v1/images:annotate",
+            headers=headers,
+            params={"key": self.api_key},
+            data=json.dumps(payload),
+            timeout=10
+        )
+        
+        response.raise_for_status()
+        result = response.json()
+        
+        if 'responses' in result and result['responses'] and 'textAnnotations' in result['responses'][0]:
+            texts = result['responses'][0]['textAnnotations']
             
-            payload = {
-                "requests": [{
-                    "image": {"content": encoded_image}, 
-                    "features": [{"type": "TEXT_DETECTION"}]
-                }]
-            }
-            
-            headers = {"Content-Type": "application/json"}
-            response = requests.post(
-                "https://vision.googleapis.com/v1/images:annotate",
-                headers=headers,
-                params={"key": self.api_key},
-                data=json.dumps(payload),
-                timeout=10
-            )
-            
-            response.raise_for_status()
-            result = response.json()
-            
-            if 'responses' in result and result['responses'] and 'textAnnotations' in result['responses'][0]:
-                texts = result['responses'][0]['textAnnotations']
+            # Skip the first element which contains all text
+            for text in texts[1:]:
+                vertices = text['boundingPoly']['vertices']
                 
-                # Skip the first element which contains all text
-                for text in texts[1:]:
-                    vertices = text['boundingPoly']['vertices']
+                if all('x' in vertex and 'y' in vertex for vertex in vertices):
+                    x1 = vertices[0]['x']
+                    y1 = vertices[0]['y']
+                    x2 = vertices[2]['x']
+                    y2 = vertices[2]['y']
                     
-                    if all('x' in vertex and 'y' in vertex for vertex in vertices):
-                        x1 = vertices[0]['x']
-                        y1 = vertices[0]['y']
-                        x2 = vertices[2]['x']
-                        y2 = vertices[2]['y']
-                        
-                        texts_bboxes.append((x1, y1, x2, y2))
-                        texts_string.append(text['description'])
-                        
-        except Exception as e:
-            print(f"Google OCR error: {str(e)}")
+                    texts_bboxes.append((x1, y1, x2, y2))
+                    texts_string.append(text['description'])
             
         return lists_to_blk_list(blk_list, texts_bboxes, texts_string)
