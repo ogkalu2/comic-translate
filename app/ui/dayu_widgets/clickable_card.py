@@ -225,16 +225,15 @@ class ClickMeta(QtWidgets.QWidget):
         super(ClickMeta, self).mousePressEvent(event)
 
     def set_highlight(self, highlighted):
-        # Get the current background color
-        current_color = self.palette().color(self.backgroundRole())
-        
-        # Create a slightly darker shade for highlight
-        highlight_color = current_color.darker(130)  
+        if not hasattr(self, '_original_background_color'):
+            self._original_background_color = self.palette().color(self.backgroundRole())
         
         if highlighted:
+            highlight_color = self._original_background_color.darker(130)
             self.setStyleSheet(f"background-color: {highlight_color.name()};")
         else:
-            self.setStyleSheet("")
+            self.setStyleSheet(f"background-color: {self._original_background_color.name()};")
+
         self.update()
 
     def set_skipped(self, skipped: bool):
