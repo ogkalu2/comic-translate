@@ -1,9 +1,9 @@
 from PySide6 import QtWidgets
-from PySide6.QtGui import QFontMetrics
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.spin_box import MSpinBox
 from ..dayu_widgets.combo_box import MComboBox
+from .utils import set_combo_box_width
 
 class ExportPage(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -53,7 +53,7 @@ class ExportPage(QtWidgets.QWidget):
             save_label = MLabel(self.tr("Save {file_type} as:").format(file_type=file_type))
             save_combo = MComboBox().small()
             save_combo.addItems(available_file_types)
-            self._set_combo_box_width(save_combo, available_file_types)
+            set_combo_box_width(save_combo, available_file_types)
 
             # Defaults
             if file_type in ['cbr', 'cbt']:
@@ -73,8 +73,3 @@ class ExportPage(QtWidgets.QWidget):
             layout.addLayout(save_layout)
 
         layout.addStretch(1)
-
-    def _set_combo_box_width(self, combo_box: MComboBox, items: list[str], padding: int = 40):
-        metrics = QFontMetrics(combo_box.font())
-        max_width = max(metrics.horizontalAdvance(i) for i in items) if items else 100
-        combo_box.setFixedWidth(max_width + padding)

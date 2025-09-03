@@ -1,14 +1,12 @@
-from typing import List
 from PySide6 import QtWidgets
-from PySide6.QtGui import QFontMetrics
 from ..dayu_widgets.label import MLabel
-from ..dayu_widgets.combo_box import MComboBox
 from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.spin_box import MSpinBox
+from .utils import create_title_and_combo, set_combo_box_width
 
 class ToolsPage(QtWidgets.QWidget):
-    def __init__(self, translators: List[str], ocr_engines: List[str], detectors: List[str],
-                 inpainters: List[str], inpaint_strategy: List[str], parent=None):
+    def __init__(self, translators: list[str], ocr_engines: list[str], detectors: list[str],
+                 inpainters: list[str], inpaint_strategy: list[str], parent=None):
         super().__init__(parent)
         self.translators = translators
         self.ocr_engines = ocr_engines
@@ -18,21 +16,21 @@ class ToolsPage(QtWidgets.QWidget):
 
         layout = QtWidgets.QVBoxLayout(self)
 
-        translator_widget, self.translator_combo = self._create_title_and_combo(self.tr("Translator"), self.translators, h4=True)
-        self._set_combo_box_width(self.translator_combo, self.translators)
+        translator_widget, self.translator_combo = create_title_and_combo(self.tr("Translator"), self.translators, h4=True)
+        set_combo_box_width(self.translator_combo, self.translators)
 
-        ocr_widget, self.ocr_combo = self._create_title_and_combo(self.tr("OCR"), self.ocr_engines, h4=True)
-        self._set_combo_box_width(self.ocr_combo, self.ocr_engines)
+        ocr_widget, self.ocr_combo = create_title_and_combo(self.tr("OCR"), self.ocr_engines, h4=True)
+        set_combo_box_width(self.ocr_combo, self.ocr_engines)
 
-        detector_widget, self.detector_combo = self._create_title_and_combo(self.tr("Text Detector"), self.detectors, h4=True)
-        self._set_combo_box_width(self.detector_combo, self.detectors)
+        detector_widget, self.detector_combo = create_title_and_combo(self.tr("Text Detector"), self.detectors, h4=True)
+        set_combo_box_width(self.detector_combo, self.detectors)
 
         inpainting_label = MLabel(self.tr("Inpainting")).h4()
-        inpainter_widget, self.inpainter_combo = self._create_title_and_combo(self.tr("Inpainter"), self.inpainters, h4=False)
-        self._set_combo_box_width(self.inpainter_combo, self.inpainters)
+        inpainter_widget, self.inpainter_combo = create_title_and_combo(self.tr("Inpainter"), self.inpainters, h4=False)
+        set_combo_box_width(self.inpainter_combo, self.inpainters)
 
-        inpaint_strategy_widget, self.inpaint_strategy_combo = self._create_title_and_combo(self.tr("HD Strategy"), self.inpaint_strategy, h4=False)
-        self._set_combo_box_width(self.inpaint_strategy_combo, self.inpaint_strategy)
+        inpaint_strategy_widget, self.inpaint_strategy_combo = create_title_and_combo(self.tr("HD Strategy"), self.inpaint_strategy, h4=False)
+        set_combo_box_width(self.inpaint_strategy_combo, self.inpaint_strategy)
         self.inpaint_strategy_combo.setCurrentText(self.tr("Resize"))
 
         # HD Strategy detail widgets
@@ -110,21 +108,6 @@ class ToolsPage(QtWidgets.QWidget):
         layout.addStretch(1)
 
         self._update_hd_strategy_widgets(self.inpaint_strategy_combo.currentIndex())
-
-    def _create_title_and_combo(self, title: str, options: List[str], h4: bool = True):
-        w = QtWidgets.QWidget()
-        v = QtWidgets.QVBoxLayout(w)
-        label = MLabel(title).h4() if h4 else MLabel(title)
-        combo = MComboBox().small()
-        combo.addItems(options)
-        v.addWidget(label)
-        v.addWidget(combo)
-        return w, combo
-
-    def _set_combo_box_width(self, combo_box: MComboBox, items: List[str], padding: int = 40):
-        metrics = QFontMetrics(combo_box.font())
-        max_width = max(metrics.horizontalAdvance(i) for i in items) if items else 100
-        combo_box.setFixedWidth(max_width + padding)
 
     def _update_hd_strategy_widgets(self, index: int):
         strategy = self.inpaint_strategy_combo.itemText(index)

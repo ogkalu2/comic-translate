@@ -1,15 +1,15 @@
-from typing import Dict, List
 from PySide6 import QtWidgets, QtCore
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.line_edit import MLineEdit
 from ..dayu_widgets.check_box import MCheckBox
+from .utils import set_label_width
 
 class CredentialsPage(QtWidgets.QWidget):
-    def __init__(self, services: List[str], value_mappings: Dict[str, str], parent=None):
+    def __init__(self, services: list[str], value_mappings: dict[str, str], parent=None):
         super().__init__(parent)
         self.services = services
         self.value_mappings = value_mappings
-        self.credential_widgets: Dict[str, MLineEdit] = {}
+        self.credential_widgets: dict[str, MLineEdit] = {}
 
         # main layout with scroll
         main_layout = QtWidgets.QVBoxLayout(self)
@@ -36,7 +36,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 ocr_api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
                 ocr_api_key_input.setFixedWidth(400)
                 ocr_api_key_prefix = MLabel(self.tr("API Key")).border()
-                self._set_label_width(ocr_api_key_prefix)
+                set_label_width(ocr_api_key_prefix)
                 ocr_api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 ocr_api_key_input.set_prefix_widget(ocr_api_key_prefix)
                 service_layout.addWidget(ocr_api_key_input)
@@ -45,7 +45,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 endpoint_input = MLineEdit()
                 endpoint_input.setFixedWidth(400)
                 endpoint_prefix = MLabel(self.tr("Endpoint URL")).border()
-                self._set_label_width(endpoint_prefix)
+                set_label_width(endpoint_prefix)
                 endpoint_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 endpoint_input.set_prefix_widget(endpoint_prefix)
                 service_layout.addWidget(endpoint_input)
@@ -59,7 +59,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 translator_api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
                 translator_api_key_input.setFixedWidth(400)
                 translator_api_key_prefix = MLabel(self.tr("API Key")).border()
-                self._set_label_width(translator_api_key_prefix)
+                set_label_width(translator_api_key_prefix)
                 translator_api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 translator_api_key_input.set_prefix_widget(translator_api_key_prefix)
                 service_layout.addWidget(translator_api_key_input)
@@ -68,7 +68,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 region_input = MLineEdit()
                 region_input.setFixedWidth(400)
                 region_prefix = MLabel(self.tr("Region")).border()
-                self._set_label_width(region_prefix)
+                set_label_width(region_prefix)
                 region_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 region_input.set_prefix_widget(region_prefix)
                 service_layout.addWidget(region_input)
@@ -79,7 +79,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
                 api_key_input.setFixedWidth(400)
                 api_key_prefix = MLabel(self.tr("API Key")).border()
-                self._set_label_width(api_key_prefix)
+                set_label_width(api_key_prefix)
                 api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 api_key_input.set_prefix_widget(api_key_prefix)
                 service_layout.addWidget(api_key_input)
@@ -88,7 +88,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 endpoint_input = MLineEdit()
                 endpoint_input.setFixedWidth(400)
                 endpoint_prefix = MLabel(self.tr("Endpoint URL")).border()
-                self._set_label_width(endpoint_prefix)
+                set_label_width(endpoint_prefix)
                 endpoint_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 endpoint_input.set_prefix_widget(endpoint_prefix)
                 service_layout.addWidget(endpoint_input)
@@ -97,7 +97,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 model_input = MLineEdit()
                 model_input.setFixedWidth(400)
                 model_prefix = MLabel(self.tr("Model")).border()
-                self._set_label_width(model_prefix)
+                set_label_width(model_prefix)
                 model_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 model_input.set_prefix_widget(model_prefix)
                 service_layout.addWidget(model_input)
@@ -108,7 +108,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
                 api_key_input.setFixedWidth(400)
                 api_key_prefix = MLabel(self.tr("Secret Key")).border()
-                self._set_label_width(api_key_prefix)
+                set_label_width(api_key_prefix)
                 api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 api_key_input.set_prefix_widget(api_key_prefix)
                 service_layout.addWidget(api_key_input)
@@ -117,7 +117,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 folder_id_input = MLineEdit()
                 folder_id_input.setFixedWidth(400)
                 folder_id_prefix = MLabel(self.tr("Folder ID")).border()
-                self._set_label_width(folder_id_prefix)
+                set_label_width(folder_id_prefix)
                 folder_id_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 folder_id_input.set_prefix_widget(folder_id_prefix)
                 service_layout.addWidget(folder_id_input)
@@ -128,7 +128,7 @@ class CredentialsPage(QtWidgets.QWidget):
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
                 api_key_input.setFixedWidth(400)
                 api_key_prefix = MLabel(self.tr("API Key")).border()
-                self._set_label_width(api_key_prefix)
+                set_label_width(api_key_prefix)
                 api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
                 api_key_input.set_prefix_widget(api_key_prefix)
                 service_layout.addWidget(api_key_input)
@@ -147,8 +147,3 @@ class CredentialsPage(QtWidgets.QWidget):
         scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
 
         main_layout.addWidget(scroll_area)
-
-    def _set_label_width(self, label: MLabel, padding: int = 20):
-        metrics = label.fontMetrics()
-        text_width = metrics.horizontalAdvance(label.text())
-        label.setFixedWidth(text_width + padding)

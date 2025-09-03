@@ -1,14 +1,10 @@
 import os
-from typing import List
 from PySide6 import QtWidgets
 from PySide6 import QtCore
-from PySide6.QtGui import QFontMetrics
 
-from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.clickable_card import ClickMeta
 from ..dayu_widgets.divider import MDivider
 from ..dayu_widgets.qt import MPixmap
-from ..dayu_widgets.combo_box import MComboBox
 
 # New imports for refactored pages
 from .personalization_page import PersonalizationPage
@@ -244,13 +240,3 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         # Set the current index of the stacked widget
         self.stacked_widget.setCurrentIndex(index)
-
-    def set_combo_box_width(self, combo_box: MComboBox, items: List[str], padding: int = 40):
-        font_metrics = QFontMetrics(combo_box.font())
-        max_width = max(font_metrics.horizontalAdvance(item) for item in items)
-        combo_box.setFixedWidth(max_width + padding)
-
-    def set_label_width(self, label: MLabel, padding: int = 20):
-        font_metrics = QFontMetrics(label.font())
-        text_width = font_metrics.horizontalAdvance(label.text())
-        label.setFixedWidth(text_width + padding)
