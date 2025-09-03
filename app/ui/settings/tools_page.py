@@ -5,8 +5,15 @@ from ..dayu_widgets.spin_box import MSpinBox
 from .utils import create_title_and_combo, set_combo_box_width
 
 class ToolsPage(QtWidgets.QWidget):
-    def __init__(self, translators: list[str], ocr_engines: list[str], detectors: list[str],
-                 inpainters: list[str], inpaint_strategy: list[str], parent=None):
+    def __init__(
+        self, 
+        translators: list[str], 
+        ocr_engines: list[str], 
+        detectors: list[str],
+        inpainters: list[str], 
+        inpaint_strategy: list[str], 
+        parent=None
+    ):
         super().__init__(parent)
         self.translators = translators
         self.ocr_engines = ocr_engines
