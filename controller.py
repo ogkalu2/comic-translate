@@ -382,7 +382,7 @@ class ComicTranslate(ComicTranslateUI):
         error_msg = f"An error occurred:\n{exctype.__name__}: {value}"
         error_msg_trcbk = f"An error occurred:\n{exctype.__name__}: {value}\n\nTraceback:\n{traceback_str}"
         print(error_msg_trcbk)
-        QtWidgets.QMessageBox.critical(self, "Error", error_msg)
+        Messages.show_error_with_copy(self, self.tr("Error"), error_msg, error_msg_trcbk)
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 
