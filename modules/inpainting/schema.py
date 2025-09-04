@@ -2,9 +2,9 @@
 
 from typing import Optional
 from enum import Enum
+from dataclasses import dataclass
 
 #from PIL.Image import Image
-from pydantic import BaseModel
 
 
 class HDStrategy(str, Enum):
@@ -33,23 +33,21 @@ class HDStrategy(str, Enum):
 #     uni_pc = "uni_pc"
 
 
-class Config(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
-    # # Configs for ldm model
-    # ldm_steps: int = 2
-    # ldm_sampler: str = LDMSampler.plms
-
+@dataclass
+class Config:
     # Configs for zits model
     zits_wireframe: bool = True
 
-    # Configs for High Resolution Strategy(different way to preprocess image)
-    hd_strategy: str  = HDStrategy.ORIGINAL # See HDStrategy Enum
+    # Configs for High Resolution Strategy (different ways to preprocess image)
+    hd_strategy: str = HDStrategy.ORIGINAL  # See HDStrategy Enum
     hd_strategy_crop_margin: int = 512
     # If the longer side of the image is larger than this value, use crop strategy
     hd_strategy_crop_trigger_size: int = 512
     hd_strategy_resize_limit: int = 512
+
+    # # Configs for ldm model
+    # ldm_steps: int = 2
+    # ldm_sampler: str = LDMSampler.plms
 
     # # Configs for Stable Diffusion 1.5
     # prompt: str = ""
