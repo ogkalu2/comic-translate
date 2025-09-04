@@ -23,7 +23,6 @@ from modules.utils.file_handler import FileHandler
 from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
                                          validate_translator
 from modules.utils.download import get_models, mandatory_models, set_download_callback
-from modules.utils.download_hooks import install_third_party_download_hooks
 from modules.detection.utils.general import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
 from modules.rendering.render import pyside_word_wrap
@@ -115,9 +114,6 @@ class ComicTranslate(ComicTranslateUI):
             except Exception:
                 pass
         set_download_callback(_dl_cb)
-        # Also hook common third-party downloaders (HF Hub, torch.hub, paddle, pooch)
-        install_third_party_download_hooks(lambda status, name: self.download_event.emit(status, name))
-
 
     def connect_ui_elements(self):
         # Browsers
