@@ -19,7 +19,6 @@ class RapidOCREngine(OCREngine):
 
     def __init__(self) -> None:
         self._engine = None
-        self._initialized = False
         self._params = {}
 
     def initialize(self, lang: str = 'ch', use_gpu: bool = False) -> None:
@@ -28,44 +27,35 @@ class RapidOCREngine(OCREngine):
         Args:
             lang: Recognition language key for RapidOCR Rec.lang_type.
         """
-        if self._initialized:
-            return
 
-        try:
-            # RapidOCR is the high-level wrapper. It defaults to ONNXRuntime.
-            from rapidocr import RapidOCR, EngineType, LangDet, \
-                LangRec, ModelType, OCRVersion
-            # Prefer robust detection across scripts; use multi-language det
-            # For Chinese we keep Det.lang_type as 'ch'; for others, 'multi'
-            det_lang = LangDet.CH if lang == 'ch' else LangDet.MULTI
-            rec_lang = LangRec.CH if lang == 'ch' else LangRec.CYRILLIC
+        from rapidocr import RapidOCR, EngineType, LangDet, \
+            LangRec, ModelType, OCRVersion
 
-            # Build minimal params; RapidOCR will auto-download models.
-            self._params = {
-                'Det.engine_type': EngineType.TORCH,
-                'Det.lang_type': det_lang,
-                'Det.model_type': ModelType.MOBILE,
-                'Det.ocr_version': OCRVersion.PPOCRV5,
-                'Cls.engine_type': EngineType.TORCH,
-                'Rec.engine_type': EngineType.TORCH,
-                'Rec.lang_type': rec_lang,
-                "Rec.model_type": ModelType.MOBILE,
-                "Rec.ocr_version": OCRVersion.PPOCRV5,
-            }
+        det_lang = LangDet.CH if lang == 'ch' else LangDet.MULTI
+        rec_lang = LangRec.CH if lang == 'ch' else LangRec.CYRILLIC
 
-            if use_gpu and torch.cuda.is_available():
-                self._params.update({
-                    "EngineConfig.torch.use_cuda": True,
-                    "EngineConfig.torch.gpu_id": 0,
-                })
+        # Build minimal params; RapidOCR will auto-download models.
+        self._params = {
+            'Det.engine_type': EngineType.TORCH,
+            'Det.lang_type': det_lang,
+            'Det.model_type': ModelType.MOBILE,
+            'Det.ocr_version': OCRVersion.PPOCRV5,
+            'Cls.engine_type': EngineType.TORCH,
+            'Rec.engine_type': EngineType.TORCH,
+            'Rec.lang_type': rec_lang,
+            "Rec.model_type": ModelType.MOBILE,
+            "Rec.ocr_version": OCRVersion.PPOCRV5,
+        }
 
-            self._engine = RapidOCR(params=self._params)
-            self._initialized = True
-            logger.info("RapidOCR initialized with params: %s", self._params)
-        except Exception as e:
-            logger.error("Failed to initialize RapidOCR: %s", e)
-            self._engine = None
-            self._initialized = False
+        if use_gpu and torch.cuda.is_available():
+            self._params.update({
+                "EngineConfig.torch.use_cuda": True,
+                "EngineConfig.torch.gpu_id": 0,
+            })
+
+        self._engine = RapidOCR(params=self._params)
+        self._initialized = True
+        logger.info("RapidOCR initialized with params: %s", self._params)
 
     def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
         """Run OCR on the image and attach text to blocks.
