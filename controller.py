@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from typing import Callable, Tuple
 
-from PySide6 import QtWidgets
 from PySide6 import QtCore
 from PySide6.QtCore import QCoreApplication, QThreadPool
 from PySide6.QtGui import QUndoGroup, QUndoStack
