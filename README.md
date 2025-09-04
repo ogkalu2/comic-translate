@@ -159,8 +159,7 @@ By Default:
 * [doctr](https://github.com/mindee/doctr) for English, French, German, Dutch, Spanish and Italian.
 * [manga-ocr](https://github.com/kha-white/manga-ocr) for Japanese
 * [Pororo](https://github.com/yunwoong7/korean_ocr_using_pororo) for Korean 
-* [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) for Chinese 
-* [GPT-4o](https://platform.openai.com/docs/guides/vision) for Russian. Paid, Requires an API Key.
+* [RapidOCR](https://github.com/RapidAI/RapidOCR) for Chinese and Russian
 
 Optional:
 
@@ -186,13 +185,13 @@ Wrapped text in bounding boxes obtained from bubbles and text.
 
 ## Acknowledgements
 
-* [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 * [https://github.com/Sanster/lama-cleaner](https://github.com/Sanster/lama-cleaner)
 * [https://huggingface.co/dreMaz](https://huggingface.co/dreMaz)
 * [https://github.com/yunwoong7/korean_ocr_using_pororo](https://github.com/yunwoong7/korean_ocr_using_pororo)
 * [https://github.com/kha-white/manga-ocr](https://github.com/kha-white/manga-ocr)
 * [https://github.com/JaidedAI/EasyOCR](https://github.com/JaidedAI/EasyOCR)
 * [https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
+* [https://github.com/RapidAI/RapidOCR](https://github.com/RapidAI/RapidOCR)
 * [https://github.com/phenom-films/dayu_widgets](https://github.com/phenom-films/dayu_widgets)
 
 

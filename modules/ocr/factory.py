@@ -5,7 +5,7 @@ from .base import OCREngine
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
-from .paddle_ocr import PaddleOCREngine
+from .rapid_ocr import RapidOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCR
@@ -112,8 +112,8 @@ class OCRFactory:
         language_factories = {
             'Japanese': cls._create_manga_ocr,
             'Korean': cls._create_pororo_ocr,
-            'Chinese': lambda s: cls._create_paddle_ocr(s, 'ch'),
-            'Russian': lambda s: cls._create_paddle_ocr(s, 'ru'),
+            'Chinese': lambda s: cls._create_rapid_ocr(s, 'ch'),
+            'Russian': lambda s: cls._create_rapid_ocr(s, 'ru'),
         }
         
         # Check if we have a specific model factory
@@ -166,8 +166,8 @@ class OCRFactory:
         return engine
     
     @staticmethod
-    def _create_paddle_ocr(settings, lang: str) -> OCREngine:
-        engine = PaddleOCREngine()
+    def _create_rapid_ocr(settings, lang: str) -> OCREngine:
+        engine = RapidOCREngine()
         engine.initialize(lang=lang)
         return engine
     
