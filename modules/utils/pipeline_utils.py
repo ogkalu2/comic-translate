@@ -230,13 +230,6 @@ def validate_ocr(main_page, source_lang):
             Messages.show_signup_or_credentials_error(main_page)
             return False
 
-    # Default OCR for Russian uses GPT
-    if source_lang_en == "Russian" and ocr_tool == tr('Default'):
-        service = tr('Open AI GPT')
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main_page)
-            return False
-
     return True
 
 
