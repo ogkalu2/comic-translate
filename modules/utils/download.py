@@ -11,6 +11,29 @@ project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 # Define the base directory for all models
 models_base_dir = os.path.join(project_root, 'models')
 
+# Simple download event callback to integrate with UI if available.
+# The callback signature is: callback(status: str, name: str)
+# status is one of: 'start', 'end'
+_download_event_callback = None
+
+def set_download_callback(callback):
+    """Register a global callback to be notified of model download events.
+
+    Args:
+        callback: Callable(status: str, name: str)
+    """
+    global _download_event_callback
+    _download_event_callback = callback
+
+def notify_download_event(status: str, name: str):
+    """Notify subscribers about a download event without hard dependency on UI."""
+    try:
+        if _download_event_callback:
+            _download_event_callback(status, name)
+    except Exception:
+        # Never allow UI notification failures to break downloads
+        pass
+
 def calculate_sha256_checksum(file_path):
     sha256_hash = hashlib.sha256()
     with open(file_path, "rb") as f:
@@ -20,7 +43,10 @@ def calculate_sha256_checksum(file_path):
     return sha256_hash.hexdigest()
 
 def get_models(data):
-    # Check if the save directory exists; if not, create it
+    """
+    Ensure required model files exist locally; download missing or mismatched files.
+    data keys: url, files, sha256_pre_calculated, save_dir
+    """
     save_dir = data['save_dir']
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
@@ -28,39 +54,39 @@ def get_models(data):
 
     for i, file_name in enumerate(data['files']):
         file_url = f"{data['url']}{file_name}"
-
-        file_path = os.path.join(data['save_dir'], file_name)
+        file_path = os.path.join(save_dir, file_name)
         expected_checksum = data['sha256_pre_calculated'][i]
 
-        # Check if the file already exists
-        if os.path.exists(file_path):
-
-            # If there's an expected checksum, verify it
-            if expected_checksum is not None:
-                calculated_checksum = calculate_sha256_checksum(file_path)
-                if calculated_checksum == expected_checksum:
-                    continue
-                else:
-                    print(f"Checksum mismatch for {file_name}. Expected {expected_checksum}, got {calculated_checksum}. Redownloading...")
-
-        sys.stderr.write('Downloading: "{}" to {}\n'.format(file_url, save_dir))
-        download_url_to_file(file_url, file_path, hash_prefix=None, progress=True)
-
-        if expected_checksum:
+        # If file exists and checksum matches (when given), skip
+        if os.path.exists(file_path) and expected_checksum is not None:
             calculated_checksum = calculate_sha256_checksum(file_path)
             if calculated_checksum == expected_checksum:
-                    logger.info(f"Download model success, sha256: {calculated_checksum}")
+                continue
+            else:
+                print(f"Checksum mismatch for {file_name}. Expected {expected_checksum}, got {calculated_checksum}. Redownloading...")
+
+        # Download the file
+        sys.stderr.write('Downloading: "{}" to {}\n'.format(file_url, save_dir))
+        notify_download_event('start', file_name)
+        download_url_to_file(file_url, file_path, hash_prefix=None, progress=True)
+        notify_download_event('end', file_name)
+
+        # Verify checksum if provided
+        if expected_checksum is not None:
+            calculated_checksum = calculate_sha256_checksum(file_path)
+            if calculated_checksum == expected_checksum:
+                logger.info(f"Download model success, sha256: {calculated_checksum}")
             else:
                 try:
                     os.remove(file_path)
                     logger.error(
                         f"Model sha256: {calculated_checksum}, expected sha256: {expected_checksum}, wrong model deleted. Please restart comic-translate."
                     )
-                except:
+                except Exception:
                     logger.error(
                         f"Model sha256: {calculated_checksum}, expected sha256: {expected_checksum}, please delete {file_path} and restart comic-translate."
                     )
-
+                    
                     raise RuntimeError(
                         f"Model sha256 mismatch for {file_path}: got {calculated_checksum}, expected {expected_checksum}. "
                         "Please delete the file and restart comic-translate or re-download the model."
