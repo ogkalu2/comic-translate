@@ -8,6 +8,7 @@ from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
 from .base import DetectionEngine
 from ..utils.textblock import TextBlock
 from .utils.slicer import ImageSlicer
+from ..utils.device import tensors_to_device
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -49,8 +50,7 @@ class RTDetrV2Detection(DetectionEngine):
             )
             
             # Move model to appropriate device
-            if self.device == 'cuda' and torch.cuda.is_available():
-                self.model = self.model.to('cuda')
+            self.model = self.model.to(self.device)
     
     def detect(self, image: np.ndarray) -> list[TextBlock]:
         # The slicer does not slice images below the width to height threshold
@@ -75,24 +75,19 @@ class RTDetrV2Detection(DetectionEngine):
         
         # Prepare image for model
         inputs = self.processor(images=pil_image, return_tensors="pt")
-        
-        # Move inputs to device
-        if self.device == "cuda" and torch.cuda.is_available():
-            inputs = {k: v.to("cuda") for k, v in inputs.items()}
-        
+        # Move inputs to selected device
+        inputs = tensors_to_device(inputs, self.device)
+
         # Run inference
         with torch.no_grad():
             outputs = self.model(**inputs)
 
         # Post-process results
-        target_sizes = torch.tensor([pil_image.size[::-1]])
-        if self.device == "cuda" and torch.cuda.is_available():
-            target_sizes = target_sizes.to("cuda")
-            
+        target_sizes = torch.tensor([pil_image.size[::-1]], device=self.device)
         results = self.processor.post_process_object_detection(
-            outputs, 
-            target_sizes=target_sizes, 
-            threshold=self.confidence_threshold
+            outputs,
+            target_sizes=target_sizes,
+            threshold=self.confidence_threshold,
         )[0]
 
         # Create bounding boxes for each class

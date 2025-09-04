@@ -15,6 +15,7 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
+from modules.utils.device import resolve_device
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
@@ -160,7 +161,7 @@ class BatchProcessor:
 
             # Use the shared inpainter from the handler
             if self.inpainting.inpainter_cache is None or self.inpainting.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-                device = 'cuda' if settings_page.is_gpu_enabled() else 'cpu'
+                device = resolve_device(settings_page.is_gpu_enabled())
                 inpainter_key = settings_page.get_tool_selection('inpainter')
                 InpainterClass = inpaint_map[inpainter_key]
                 self.inpainting.inpainter_cache = InpainterClass(device)

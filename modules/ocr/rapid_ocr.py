@@ -22,7 +22,7 @@ class RapidOCREngine(OCREngine):
         self._initialized = False
         self._params = {}
 
-    def initialize(self, lang: str = 'ch') -> None:
+    def initialize(self, lang: str = 'ch', use_gpu: bool = False) -> None:
         """Initialize the RapidOCR engine.
 
         Args:
@@ -53,7 +53,7 @@ class RapidOCREngine(OCREngine):
                 "Rec.ocr_version": OCRVersion.PPOCRV5,
             }
 
-            if torch.cuda.is_available():
+            if use_gpu and torch.cuda.is_available():
                 self._params.update({
                     "EngineConfig.torch.use_cuda": True,
                     "EngineConfig.torch.gpu_id": 0,

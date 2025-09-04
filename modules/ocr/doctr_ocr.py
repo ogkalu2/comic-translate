@@ -32,9 +32,8 @@ class DocTROCR(OCREngine):
                 pretrained=True,
             )
 
-            # Move model to appropriate device after creation
-            if device == 'cuda' and torch.cuda.is_available():
-                self.model.cuda().half()
+            # Move model to appropriate device
+            self.model = self.model.to(device)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         # Process whole image with DocTR

@@ -10,6 +10,7 @@ from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
 from .doctr_ocr import DocTROCR
 from .gemini_ocr import GeminiOCR
+from ..utils.device import resolve_device
 
 class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -105,7 +106,7 @@ class OCRFactory:
             'Microsoft OCR': cls._create_microsoft_ocr,
             'Google Cloud Vision': cls._create_google_ocr,
             'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
-            'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model)
+            'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model),
         }
         
         # Language-specific factory functions (for Default model)
@@ -154,7 +155,7 @@ class OCRFactory:
     
     @staticmethod
     def _create_manga_ocr(settings) -> OCREngine:
-        device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
+        device = resolve_device(settings.is_gpu_enabled())
         engine = MangaOCREngine()
         engine.initialize(device=device)
         return engine
@@ -168,12 +169,12 @@ class OCRFactory:
     @staticmethod
     def _create_rapid_ocr(settings, lang: str) -> OCREngine:
         engine = RapidOCREngine()
-        engine.initialize(lang=lang)
+        engine.initialize(lang=lang, use_gpu=settings.is_gpu_enabled())
         return engine
     
     @staticmethod
     def _create_doctr_ocr(settings) -> OCREngine:
-        device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
+        device = resolve_device(settings.is_gpu_enabled())
         engine = DocTROCR()
         engine.initialize(device=device)
         return engine

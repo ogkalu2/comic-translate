@@ -1,5 +1,6 @@
 from .base import DetectionEngine
 from .rtdetr_v2 import RTDetrV2Detection
+from ..utils.device import resolve_device
 
 
 class DetectionEngineFactory:
@@ -43,7 +44,7 @@ class DetectionEngineFactory:
     def _create_rtdetr_v2(settings):
         """Create and initialize RT-DETR-V2 detection engine."""
         engine = RTDetrV2Detection()
-        device = 'cuda' if settings.is_gpu_enabled() else 'cpu'
+        device = resolve_device(settings.is_gpu_enabled())
         engine.initialize(device=device)
         return engine
     

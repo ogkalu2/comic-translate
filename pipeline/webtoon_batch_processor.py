@@ -21,6 +21,7 @@ from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation 
+from modules.utils.device import resolve_device
 from .virtual_page import VirtualPage, VirtualPageCreator, PageStatus
 
 logger = logging.getLogger(__name__)
@@ -290,7 +291,7 @@ class WebtoonBatchProcessor:
 
         # Inpainting processing
         if self.inpainting.inpainter_cache is None or self.inpainting.cached_inpainter_key != self.main_page.settings_page.get_tool_selection('inpainter'):
-            device = 'cuda' if self.main_page.settings_page.is_gpu_enabled() else 'cpu'
+            device = resolve_device(self.main_page.settings_page.is_gpu_enabled())
             inpainter_key = self.main_page.settings_page.get_tool_selection('inpainter')
             InpainterClass = inpaint_map[inpainter_key]
             self.inpainting.inpainter_cache = InpainterClass(device)

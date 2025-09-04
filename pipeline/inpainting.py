@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import logging
 
+from modules.utils.device import resolve_device
 from modules.utils.pipeline_utils import inpaint_map, get_config
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class InpaintingHandler:
             return None
 
         if self.inpainter_cache is None or self.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-            device = 'cuda' if settings_page.is_gpu_enabled() else 'cpu'
+            device = resolve_device(settings_page.is_gpu_enabled())
             inpainter_key = settings_page.get_tool_selection('inpainter')
             InpainterClass = inpaint_map[inpainter_key]
             self.inpainter_cache = InpainterClass(device)
