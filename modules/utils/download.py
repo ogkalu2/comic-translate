@@ -111,6 +111,19 @@ manga_ocr_data = {
     'save_dir': os.path.join(models_base_dir, 'ocr', 'manga-ocr-base')
 }
 
+manga_ocr_onnx_data = {
+    'url': 'https://huggingface.co/mayocream/manga-ocr-onnx/resolve/main/',
+    'files': [
+        'encoder_model.onnx', 'decoder_model.onnx', 'vocab.txt'
+    ],
+    'sha256_pre_calculated': [
+        '15fa8155fe9bc1a7d25d9bb353debaa4def033d0174e907dbd2dd6d995def85f', 
+        'ef7765261e9d1cdc34d89356986c2bbc2a082897f753a89605ae80fdfa61f5e8', 
+        '5cb5c5586d98a2f331d9f8828e4586479b0611bfba5d8c3b6dadffc84d6a36a3', 
+    ],
+    'save_dir': os.path.join(models_base_dir, 'ocr', 'manga-ocr-base-onnx')
+}
+
 pororo_data = {
     'url': 'https://huggingface.co/ogkalu/pororo/resolve/main/',
     'files': ['craft.pt', 'brainocr.pt', 'ocr-opt.txt'],

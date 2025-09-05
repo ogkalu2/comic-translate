@@ -6,7 +6,7 @@ from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
 from .rapid_ocr import RapidOCREngine
-from .manga_ocr.engine import MangaOCREngine
+from .manga_ocr.onnx_engine import MangaOCREngineONNX
 from .pororo.engine import PororoOCREngine
 from .gemini_ocr import GeminiOCR
 from ..utils.device import resolve_device
@@ -160,7 +160,7 @@ class OCRFactory:
     @staticmethod
     def _create_manga_ocr(settings) -> OCREngine:
         device = resolve_device(settings.is_gpu_enabled())
-        engine = MangaOCREngine()
+        engine = MangaOCREngineONNX()
         engine.initialize(device=device)
         return engine
     
