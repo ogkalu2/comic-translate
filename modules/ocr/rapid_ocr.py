@@ -87,10 +87,8 @@ class RapidOCREngine(OCREngine):
             logger.warning("RapidOCR engine is not initialized; skipping OCR.")
             return blk_list
 
-        # RapidOCR accepts ndarray; it internally converts via PIL.
         result = self._engine(img)
 
-        # Defensive: ensure expected attributes exist
         if result is None or not hasattr(result, 'boxes') or not hasattr(result, 'txts'):
             logger.debug("RapidOCR returned empty or unexpected result: %s", type(result))
             return blk_list
@@ -101,7 +99,7 @@ class RapidOCREngine(OCREngine):
         if boxes is None or txts is None or len(txts) == 0:
             return blk_list
 
-        # Convert quadrilateral to axis-aligned bbox for our pipeline
+        # Convert quadrilateral to axis-aligned bbox
         texts_bboxes = []
         texts_string = []
         
