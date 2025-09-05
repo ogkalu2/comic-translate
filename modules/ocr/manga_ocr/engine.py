@@ -1,9 +1,14 @@
 import os
 import numpy as np
+import re
+import jaconv
+from transformers import ViTImageProcessor, AutoTokenizer, \
+    VisionEncoderDecoderModel, GenerationMixin
+import torch
 
-from ..base import OCREngine
-from ...utils.textblock import TextBlock, adjust_text_line_coordinates
-from ...utils.download import get_models, manga_ocr_data
+from modules.ocr.base import OCREngine
+from modules.utils.textblock import TextBlock, adjust_text_line_coordinates
+from modules.utils.download import get_models, manga_ocr_data
 
 
 class MangaOCREngine(OCREngine):
@@ -24,8 +29,6 @@ class MangaOCREngine(OCREngine):
              device: Device to use ('cpu' or 'cuda')
              expansion_percentage: Percentage to expand text bounding boxes
          """
-        
-        from .manga_ocr import MangaOcr
 
         self.device = device
         self.expansion_percentage = expansion_percentage
@@ -57,3 +60,40 @@ class MangaOCREngine(OCREngine):
                 blk.text = ""
                 
         return blk_list
+
+
+# modified from https://github.com/kha-white/manga-ocr/blob/master/manga_ocr/ocr.py
+
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
+manga_ocr_path = os.path.join(project_root, 'models', 'ocr', 'manga-ocr-base')
+
+
+class MangaOcrModel(VisionEncoderDecoderModel, GenerationMixin):
+    pass
+
+class MangaOcr:
+    def __init__(self, pretrained_model_name_or_path=manga_ocr_path, device='cpu'):
+        self.processor = ViTImageProcessor.from_pretrained(pretrained_model_name_or_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path)
+        self.model = MangaOcrModel.from_pretrained(pretrained_model_name_or_path)
+        self.to(device)
+
+    def to(self, device):
+        self.model.to(device)
+
+    @torch.no_grad()
+    def __call__(self, img: np.ndarray):
+        x = self.processor(img, return_tensors="pt").pixel_values.squeeze()
+        x = self.model.generate(x[None].to(self.model.device))[0].cpu()
+        x = self.tokenizer.decode(x, skip_special_tokens=True)
+        x = post_process(x)
+        return x
+
+def post_process(text):
+    text = ''.join(text.split())
+    text = text.replace('…', '...')
+    text = re.sub('[・.]{2,}', lambda x: (x.end() - x.start()) * '.', text)
+    text = jaconv.h2z(text, ascii=True, digit=True)
+
+    return text
