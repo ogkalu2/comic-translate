@@ -8,7 +8,6 @@ from .gpt_ocr import GPTOCR
 from .rapid_ocr import RapidOCREngine
 from .manga_ocr.engine import MangaOCREngine
 from .pororo.engine import PororoOCREngine
-from .doctr_ocr import DocTROCR
 from .gemini_ocr import GeminiOCR
 from ..utils.device import resolve_device
 
@@ -115,6 +114,12 @@ class OCRFactory:
             'Korean': cls._create_pororo_ocr,
             'Chinese': lambda s: cls._create_rapid_ocr(s, 'ch'),
             'Russian': lambda s: cls._create_rapid_ocr(s, 'ru'),
+            'French': lambda s: cls._create_rapid_ocr(s, 'fr'),
+            'English': lambda s: cls._create_rapid_ocr(s, 'en'),
+            'Spanish': lambda s: cls._create_rapid_ocr(s, 'es'),
+            'Italian': lambda s: cls._create_rapid_ocr(s, 'it'),
+            'German': lambda s: cls._create_rapid_ocr(s, 'de'),
+            'Dutch': lambda s: cls._create_rapid_ocr(s, 'nl'),
         }
         
         # Check if we have a specific model factory
@@ -125,8 +130,7 @@ class OCRFactory:
         if ocr_model == 'Default' and source_lang_english in language_factories:
             return language_factories[source_lang_english](settings)
         
-        # Fallback to doctr for any other language
-        return cls._create_doctr_ocr(settings)
+        return 
     
     @staticmethod
     def _create_microsoft_ocr(settings) -> OCREngine:
@@ -170,13 +174,6 @@ class OCRFactory:
     def _create_rapid_ocr(settings, lang: str) -> OCREngine:
         engine = RapidOCREngine()
         engine.initialize(lang=lang, use_gpu=settings.is_gpu_enabled())
-        return engine
-    
-    @staticmethod
-    def _create_doctr_ocr(settings) -> OCREngine:
-        device = resolve_device(settings.is_gpu_enabled())
-        engine = DocTROCR()
-        engine.initialize(device=device)
         return engine
     
     @staticmethod

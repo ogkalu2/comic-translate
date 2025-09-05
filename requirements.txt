@@ -9,7 +9,6 @@ torchvision>=0.21.0
 py7zr>=0.20.8
 rarfile>=4.1
 img2pdf>=0.5.1
-python-doctr>=1.0.0
 azure-ai-vision-imageanalysis>=1.0.0b1
 deepl>=1.16.1
 deep-translator>=1.11.4
