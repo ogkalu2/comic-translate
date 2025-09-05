@@ -56,6 +56,7 @@ class RapidOCREngine(OCREngine):
             'Det.lang_type': det_lang,
             'Det.model_type': ModelType.MOBILE,
             'Det.ocr_version': OCRVersion.PPOCRV5,
+            'Det.use_dilation': False,
 
             'Cls.engine_type': EngineType.ONNXRUNTIME,
             'Cls.model_type': ModelType.MOBILE,
