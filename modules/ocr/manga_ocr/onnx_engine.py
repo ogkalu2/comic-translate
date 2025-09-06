@@ -37,8 +37,7 @@ class MangaOCREngineONNX(OCREngine):
             # ensure models are downloaded
             get_models(manga_ocr_onnx_data)
             model_dir = os.path.join(self.project_root, 'models', 'ocr', 'manga-ocr-base-onnx')
-            use_cuda = (device is not None and 'cuda' in device.lower())
-            self.model = MangaOCRONNX(model_dir, use_cuda=use_cuda)
+            self.model = MangaOCRONNX(model_dir, device=device)
 
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         for blk in blk_list:
@@ -74,23 +73,27 @@ class MangaOCRONNX:
     naming differences. The model expects images resized to 224x224.
     """
 
-    def __init__(self, model_dir: str, use_cuda: bool = False):
+    def __init__(self, model_dir: str, device: str = 'cpu'):
         self.model_dir = model_dir
-        self.use_cuda = use_cuda
+        self.device = device
 
         encoder_path = os.path.join(model_dir, 'encoder_model.onnx')
         decoder_path = os.path.join(model_dir, 'decoder_model.onnx')
         vocab_path = os.path.join(model_dir, 'vocab.txt')
 
-        providers = ["CPUExecutionProvider"]
-        if use_cuda:
-            # prefer CUDA then fall back to CPU
-            providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        providers = None
+        if isinstance(self.device, str) and self.device.lower() == 'cpu':
+            providers = ["CPUExecutionProvider"]
 
-        # create sessions
+        # create sessions; if letting ORT auto-select providers fails, fall back
+        # to CPUExecutionProvider as a safe default.
         try:
-            self.encoder = InferenceSession(encoder_path, providers=providers)
-            self.decoder = InferenceSession(decoder_path, providers=providers)
+            if providers is None:
+                self.encoder = InferenceSession(encoder_path)
+                self.decoder = InferenceSession(decoder_path)
+            else:
+                self.encoder = InferenceSession(encoder_path, providers=providers)
+                self.decoder = InferenceSession(decoder_path, providers=providers)
         except Exception:
             # fallback to CPU only
             self.encoder = InferenceSession(encoder_path, providers=["CPUExecutionProvider"])
