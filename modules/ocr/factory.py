@@ -172,8 +172,10 @@ class OCRFactory:
     
     @staticmethod
     def _create_rapid_ocr(settings, lang: str) -> OCREngine:
+        device = resolve_device(settings.is_gpu_enabled())
+        use_gpu = device != 'cpu'
         engine = RapidOCREngine()
-        engine.initialize(lang=lang, use_gpu=settings.is_gpu_enabled())
+        engine.initialize(lang=lang, use_gpu=use_gpu)
         return engine
     
     @staticmethod
