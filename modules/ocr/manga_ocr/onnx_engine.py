@@ -13,11 +13,6 @@ from modules.utils.download import get_models, manga_ocr_onnx_data
 
 class MangaOCREngineONNX(OCREngine):
     """OCR engine using ONNX-exported MangaOCR models.
-
-    This mirrors the API used by the other engines: call `initialize` to
-    download/load models, then `process_image` will accept an image numpy
-    array (as used elsewhere in the project) and a list of TextBlock and
-    populate the `text` field.
     """
 
     def __init__(self):
