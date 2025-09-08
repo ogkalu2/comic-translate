@@ -1,5 +1,4 @@
 import os, shutil
-from typing import List
 from dataclasses import asdict, is_dataclass
 
 from PySide6 import QtWidgets, QtGui
@@ -21,6 +20,10 @@ TRANSLATOR_MIGRATIONS = {
     "Gemini-2.0-Pro":      "Gemini-2.5-Flash",
     "Gemini-2.5-Pro":      "Gemini-2.5-Flash",
     "Claude-3-Opus":       "Claude-3.7-Sonnet",
+}
+
+INPAINTER_MIGRATIONS = {
+    "MI-GAN": "AOT",
 }
 
 class SettingsPage(QtWidgets.QWidget):
@@ -160,7 +163,7 @@ class SettingsPage(QtWidgets.QWidget):
             'save_keys': self.ui.save_keys_checkbox.isChecked(),
         }
 
-    def import_font(self, file_paths: List[str]):
+    def import_font(self, file_paths: list[str]):
 
         file_paths = [f for f in file_paths 
                       if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
@@ -276,7 +279,8 @@ class SettingsPage(QtWidgets.QWidget):
         translated_ocr = self.ui.reverse_mappings.get(ocr, ocr)
         self.ui.ocr_combo.setCurrentText(translated_ocr)
 
-        inpainter = settings.value('inpainter', 'LaMa')
+        raw_inpainter = settings.value('inpainter', 'LaMa')
+        inpainter = INPAINTER_MIGRATIONS.get(raw_inpainter, raw_inpainter)
         translated_inpainter = self.ui.reverse_mappings.get(inpainter, inpainter)
         self.ui.inpainter_combo.setCurrentText(translated_inpainter)
 
