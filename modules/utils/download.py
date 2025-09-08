@@ -114,6 +114,26 @@ class ModelDownloader:
         return cls.file_paths(model)[0]
 
     @classmethod
+    def get_file_path(cls, model: Union[ModelID, ModelSpec], file_name: str) -> str:
+        """Ensure model is present then return the absolute path for the requested file_name.
+
+        Raises ValueError if the file_name is not part of the model spec.
+        """
+        spec = cls.registry[model] if isinstance(model, ModelID) else model
+        # ensure downloaded
+        cls.get(spec.id)
+        if file_name not in spec.files:
+            raise ValueError(f"File '{file_name}' is not declared for model {spec.id}")
+        return os.path.join(spec.save_dir, file_name)
+
+    @classmethod
+    def file_path_map(cls, model: Union[ModelID, ModelSpec]) -> Dict[str, str]:
+        """Return a dict mapping each declared filename to its absolute path (ensures download)."""
+        spec = cls.registry[model] if isinstance(model, ModelID) else model
+        cls.get(spec.id)
+        return {f: os.path.join(spec.save_dir, f) for f in spec.files}
+
+    @classmethod
     def is_downloaded(cls, model: Union[ModelID, ModelSpec]) -> bool:
         """Return True if all files for the model exist and match provided checksums (when present)."""
         spec = cls.registry[model] if isinstance(model, ModelID) else model
