@@ -2,9 +2,11 @@ import cv2
 import base64
 import json
 import re
+import jieba
+import janome.tokenizer
 import numpy as np
+from pythainlp.tokenize import word_tokenize
 from .textblock import TextBlock
-from typing import List
 
 
 MODEL_MAP = {
@@ -23,7 +25,7 @@ def encode_image_array(img_array: np.ndarray):
     _, img_bytes = cv2.imencode('.png', img_array)
     return base64.b64encode(img_bytes).decode('utf-8')
 
-def get_raw_text(blk_list: List[TextBlock]):
+def get_raw_text(blk_list: list[TextBlock]):
     rw_txts_dict = {}
     for idx, blk in enumerate(blk_list):
         block_key = f"block_{idx}"
@@ -33,7 +35,7 @@ def get_raw_text(blk_list: List[TextBlock]):
     
     return raw_texts_json
 
-def get_raw_translation(blk_list: List[TextBlock]):
+def get_raw_translation(blk_list: list[TextBlock]):
     rw_translations_dict = {}
     for idx, blk in enumerate(blk_list):
         block_key = f"block_{idx}"
@@ -43,7 +45,7 @@ def get_raw_translation(blk_list: List[TextBlock]):
     
     return raw_translations_json
 
-def set_texts_from_json(blk_list: List[TextBlock], json_string: str):
+def set_texts_from_json(blk_list: list[TextBlock], json_string: str):
     match = re.search(r"\{[\s\S]*\}", json_string)
     if match:
         # Extract the JSON string from the matched regular expression
@@ -59,7 +61,7 @@ def set_texts_from_json(blk_list: List[TextBlock], json_string: str):
     else:
         print("No JSON found in the input string.")
 
-def set_upper_case(blk_list: List[TextBlock], upper_case: bool):
+def set_upper_case(blk_list: list[TextBlock], upper_case: bool):
     for blk in blk_list:
         translation = blk.translation
         if translation is None:
@@ -71,31 +73,40 @@ def set_upper_case(blk_list: List[TextBlock], upper_case: bool):
         else:
             blk.translation = translation
 
-def format_translations(blk_list: List[TextBlock], trg_lng_cd: str, upper_case: bool =True):
+def get_chinese_tokens(text):
+    return list(jieba.cut(text, cut_all=False))
+
+def get_japanese_tokens(text):
+    tokenizer = janome.tokenizer.Tokenizer()
+    return [token.surface for token in tokenizer.tokenize(text)]
+
+def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: bool = True):
     for blk in blk_list:
         translation = blk.translation
-        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+        trg_lng_code_lower = trg_lng_cd.lower()
+        seg_result = []
 
-            import stanza
+        if 'zh' in trg_lng_code_lower:
+            seg_result = get_chinese_tokens(translation)
 
-            if trg_lng_cd == 'zh-TW':
-                trg_lng_cd = 'zh-Hant'
-            elif trg_lng_cd == 'zh-CN':
-                trg_lng_cd = 'zh-Hans'
-            else:
-                trg_lng_cd = trg_lng_cd
+        elif 'ja' in trg_lng_code_lower:
+            seg_result = get_japanese_tokens(translation)
 
-            stanza.download(trg_lng_cd, processors='tokenize')
-            nlp = stanza.Pipeline(trg_lng_cd, processors='tokenize')
-            doc = nlp(translation)
-            seg_result = []
-            for sentence in doc.sentences:
-                for word in sentence.words:
-                    seg_result.append(word.text)
-            translation = ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result).lstrip()
-            blk.translation = translation
+        elif 'th' in trg_lng_code_lower:
+            seg_result = word_tokenize(translation)
+
+        if seg_result:
+            blk.translation = ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result).lstrip()
         else:
-            set_upper_case(blk_list, upper_case)
+            # apply casing/formatting for this single block when no segmentation is done
+            if translation is None:
+                continue
+            if upper_case and not translation.isupper():
+                blk.translation = translation.upper()
+            elif not upper_case and translation.isupper():
+                blk.translation = translation.lower().capitalize()
+            else:
+                blk.translation = translation
 
-def is_there_text(blk_list: List[TextBlock]) -> bool:
+def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
