@@ -1,15 +1,15 @@
 import json
 import hashlib
 
+from modules.utils.device import resolve_device
 from .base import OCREngine
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
 from .rapid_ocr import RapidOCREngine
 from .manga_ocr.onnx_engine import MangaOCREngineONNX
-from .pororo.engine import PororoOCREngine
+from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
-from ..utils.device import resolve_device
 
 class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -166,8 +166,9 @@ class OCRFactory:
     
     @staticmethod
     def _create_pororo_ocr(settings) -> OCREngine:
-        engine = PororoOCREngine()
-        engine.initialize()
+        device = resolve_device(settings.is_gpu_enabled())
+        engine = PororoOCREngineONNX()
+        engine.initialize(device=device)
         return engine
     
     @staticmethod

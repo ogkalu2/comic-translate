@@ -3,16 +3,19 @@ This code is adapted from https://github.com/JaidedAI/EasyOCR/blob/8af936ba1b2f3
 """
 
 import math
-
 import numpy as np
-import torch
-import torch.nn.functional as F
-import torch.utils.data
-import torchvision.transforms as transforms
 from PIL import Image
 
-from .model import Model
 from .utils import CTCLabelConverter
+
+# To keep torch as an optional dependency
+try:
+    import importlib
+    torch = importlib.import_module("torch")
+    HAVE_TORCH = True
+except Exception:
+    torch = None
+    HAVE_TORCH = False
 
 
 def contrast_grey(img):
@@ -40,12 +43,26 @@ def adjust_contrast_grey(img, target: float = 0.4):
 class NormalizePAD(object):
 
     def __init__(self, max_size, PAD_type: str = "right"):
+        try:
+            import importlib
+            transforms = importlib.import_module("torchvision.transforms")
+        except Exception:
+            raise ImportError(
+                "torchvision is required to use NormalizePAD. Install torch and torchvision or avoid calling recognition routines that use it."
+            )
         self.toTensor = transforms.ToTensor()
         self.max_size = max_size
         self.max_width_half = math.floor(max_size[2] / 2)
         self.PAD_type = PAD_type
 
     def __call__(self, img):
+        import importlib
+        global torch
+        if torch is None:
+            try:
+                torch = importlib.import_module("torch")
+            except Exception:
+                raise ImportError("torch is required to use NormalizePAD.__call__. Install torch to proceed.")
         img = self.toTensor(img)
         img.sub_(0.5).div_(0.5)
         c, h, w = img.size()
@@ -61,18 +78,32 @@ class NormalizePAD(object):
         return Pad_img
 
 
-class ListDataset(torch.utils.data.Dataset):
+if HAVE_TORCH:
+    class ListDataset(torch.utils.data.Dataset):
 
-    def __init__(self, image_list: list):
-        self.image_list = image_list
-        self.nSamples = len(image_list)
+        def __init__(self, image_list: list):
+            self.image_list = image_list
+            self.nSamples = len(image_list)
 
-    def __len__(self):
-        return self.nSamples
+        def __len__(self):
+            return self.nSamples
 
-    def __getitem__(self, index):
-        img = self.image_list[index]
-        return Image.fromarray(img, "L")
+        def __getitem__(self, index):
+            img = self.image_list[index]
+            return Image.fromarray(img, "L")
+else:
+    # Lightweight fallback so the module can be imported without torch.
+    class ListDataset(object):
+        def __init__(self, image_list: list):
+            self.image_list = image_list
+            self.nSamples = len(image_list)
+
+        def __len__(self):
+            return self.nSamples
+
+        def __getitem__(self, index):
+            img = self.image_list[index]
+            return Image.fromarray(img, "L")
 
 
 class AlignCollate(object):
@@ -84,6 +115,15 @@ class AlignCollate(object):
         self.adjust_contrast = adjust_contrast
 
     def __call__(self, batch):
+        if not HAVE_TORCH:
+            raise ImportError("torch is required to collate recognition images. Install torch to use AlignCollate.")
+        import importlib
+        global torch
+        if torch is None:
+            try:
+                torch = importlib.import_module("torch")
+            except Exception:
+                raise ImportError("torch is required to collate recognition images. Install torch to proceed.")
         batch = filter(lambda x: x is not None, batch)
         images = batch
 
@@ -114,6 +154,17 @@ class AlignCollate(object):
 
 
 def recognizer_predict(model, converter, test_loader, opt2val: dict):
+    if not HAVE_TORCH:
+        raise ImportError("torch is required to run recognizer_predict. Install torch or skip recognition features.")
+    import importlib
+    global torch
+    if torch is None:
+        try:
+            torch = importlib.import_module("torch")
+        except Exception:
+            raise ImportError("torch is required to run recognizer_predict. Install torch to proceed.")
+    F = importlib.import_module("torch.nn.functional")
+
     device = opt2val["device"]
 
     model.eval()
@@ -153,6 +204,18 @@ def get_recognizer(opt2val: dict):
         recognizer: recognition net
         converter: CTCLabelConverter
     """
+    if not HAVE_TORCH:
+        raise ImportError("torch is required to load the recognizer. Install torch to use recognition models.")
+    
+    import importlib
+    global torch
+    if torch is None:
+        try:
+            torch = importlib.import_module("torch")
+        except Exception:
+            raise ImportError("torch is required to load the recognizer. Install torch to proceed.")
+    from .model import Model
+
     # converter
     vocab = opt2val["vocab"]
     converter = CTCLabelConverter(vocab)
@@ -186,6 +249,15 @@ def get_recognizer(opt2val: dict):
 
 
 def get_text(image_list, recognizer, converter, opt2val: dict):
+    if not HAVE_TORCH:
+        raise ImportError("torch is required to extract text with the recognizer. Install torch to use get_text.")
+    import importlib
+    global torch
+    if torch is None:
+        try:
+            torch = importlib.import_module("torch")
+        except Exception:
+            raise ImportError("torch is required to extract text with the recognizer. Install torch to proceed.")
     imgW = opt2val["imgW"]
     imgH = opt2val["imgH"]
     adjust_contrast = opt2val["adjust_contrast"]

@@ -5,10 +5,12 @@ import numpy as np
 import cv2
 from PIL import Image
 from onnxruntime import InferenceSession
+import onnxruntime as ort
+from modules.utils.device import get_providers
 
 from modules.ocr.base import OCREngine
 from modules.utils.textblock import TextBlock, adjust_text_line_coordinates
-from modules.utils.download import get_models, manga_ocr_onnx_data
+from modules.utils.download import ModelDownloader, ModelID
 
 
 class MangaOCREngineONNX(OCREngine):
@@ -34,10 +36,8 @@ class MangaOCREngineONNX(OCREngine):
         self.expansion_percentage = expansion_percentage
 
         if self.model is None:
-            # ensure models are downloaded
-            get_models(manga_ocr_onnx_data)
-            model_dir = os.path.join(self.project_root, 'models', 'ocr', 'manga-ocr-base-onnx')
-            self.model = MangaOCRONNX(model_dir, device=device)
+            ModelDownloader.get(ModelID.MANGA_OCR_BASE_ONNX)
+            self.model = MangaOCRONNX(device=device)
 
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         for blk in blk_list:
@@ -73,31 +73,16 @@ class MangaOCRONNX:
     naming differences. The model expects images resized to 224x224.
     """
 
-    def __init__(self, model_dir: str, device: str = 'cpu'):
-        self.model_dir = model_dir
+    def __init__(self, device: str = 'cpu'):
         self.device = device
 
-        encoder_path = os.path.join(model_dir, 'encoder_model.onnx')
-        decoder_path = os.path.join(model_dir, 'decoder_model.onnx')
-        vocab_path = os.path.join(model_dir, 'vocab.txt')
+        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "encoder_model.onnx")
+        decoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "decoder_model.onnx")
+        vocab_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "vocab.txt")
 
-        providers = None
-        if isinstance(self.device, str) and self.device.lower() == 'cpu':
-            providers = ["CPUExecutionProvider"]
-
-        # create sessions; if letting ORT auto-select providers fails, fall back
-        # to CPUExecutionProvider as a safe default.
-        try:
-            if providers is None:
-                self.encoder = InferenceSession(encoder_path)
-                self.decoder = InferenceSession(decoder_path)
-            else:
-                self.encoder = InferenceSession(encoder_path, providers=providers)
-                self.decoder = InferenceSession(decoder_path, providers=providers)
-        except Exception:
-            # fallback to CPU only
-            self.encoder = InferenceSession(encoder_path, providers=["CPUExecutionProvider"])
-            self.decoder = InferenceSession(decoder_path, providers=["CPUExecutionProvider"])
+        providers = get_providers(self.device)
+        self.encoder = InferenceSession(encoder_path, providers=providers)
+        self.decoder = InferenceSession(decoder_path, providers=providers)
 
         self.vocab = self._load_vocab(vocab_path)
 

@@ -1,8 +1,8 @@
 import numpy as np
 
-from ..base import OCREngine
-from ...utils.textblock import TextBlock, adjust_text_line_coordinates
-from ...utils.download import get_models, pororo_data
+from modules.ocr.base import OCREngine
+from modules.utils.textblock import TextBlock, adjust_text_line_coordinates
+from modules.utils.download import ModelDownloader, ModelID
 
 
 class PororoOCREngine(OCREngine):
@@ -25,7 +25,7 @@ class PororoOCREngine(OCREngine):
 
         self.expansion_percentage = expansion_percentage
         if self.model is None:
-            get_models(pororo_data)
+            ModelDownloader.get(ModelID.PORORO)
             self.model = PororoOcr(lang=lang)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:

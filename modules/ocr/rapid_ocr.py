@@ -1,5 +1,4 @@
 import logging
-import torch
 from typing import List
 import numpy as np
 
@@ -68,7 +67,7 @@ class RapidOCREngine(OCREngine):
             "Rec.ocr_version": OCRVersion.PPOCRV5,
         }
 
-        if use_gpu and torch.cuda.is_available():
+        if use_gpu:
             self._params.update({
                 "EngineConfig.onnxruntime.use_cuda": True,
             })

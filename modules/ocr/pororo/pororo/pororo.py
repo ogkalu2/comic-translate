@@ -9,8 +9,6 @@ import logging
 from typing import Optional
 from ..pororo.tasks.utils.base import PororoTaskBase
 
-import torch
-
 from ..pororo.tasks import (
     PororoOcrFactory,
 )
@@ -57,6 +55,8 @@ class Pororo:
         model: Optional[str] = None,
         **kwargs,
     ) -> PororoTaskBase:
+        import torch
+        
         if task not in SUPPORTED_TASKS:
             raise KeyError("Unknown task {}, available tasks are {}".format(
                 task,

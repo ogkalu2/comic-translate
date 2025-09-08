@@ -6,11 +6,7 @@ from collections import OrderedDict
 
 import cv2
 import numpy as np
-import torch
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
 
-from .craft import CRAFT
 from .craft_utils import adjust_result_coordinates, get_det_boxes
 from .imgproc import normalize_mean_variance, resize_aspect_ratio
 
@@ -28,6 +24,9 @@ def copy_state_dict(state_dict):
 
 
 def test_net(image: np.ndarray, net, opt2val: dict):
+    import torch
+    from torch.autograd import Variable
+
     canvas_size = opt2val["canvas_size"]
     mag_ratio = opt2val["mag_ratio"]
     text_threshold = opt2val["text_threshold"]
@@ -74,6 +73,10 @@ def test_net(image: np.ndarray, net, opt2val: dict):
 
 
 def get_detector(det_model_ckpt_fp: str, device: str = "cpu"):
+    from .craft import CRAFT
+    import torch
+    import torch.backends.cudnn as cudnn
+
     net = CRAFT()
 
     net.load_state_dict(

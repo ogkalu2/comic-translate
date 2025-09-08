@@ -2,9 +2,11 @@ import abc
 from typing import Optional
 
 import cv2
-import torch
 import numpy as np
-from loguru import logger
+import logging
+from contextlib import nullcontext
+
+logger = logging.getLogger(__name__)
 
 from ..utils.inpainting import (
     boxes_from_mask,
@@ -72,61 +74,71 @@ class InpaintModel:
     def forward_post_process(self, result, image, mask, config):
         return result, image, mask
 
-    @torch.no_grad()
     def __call__(self, image, mask, config: Config):
         """
         images: [H, W, C] RGB, not normalized
         masks: [H, W]
         return: BGR IMAGE
         """
-        inpaint_result = None
-        logger.info(f"hd_strategy: {config.hd_strategy}")
-        if config.hd_strategy == HDStrategy.CROP:
-            if max(image.shape) > config.hd_strategy_crop_trigger_size:
-                logger.info(f"Run crop strategy")
-                boxes = boxes_from_mask(mask)
-                crop_result = []
-                for box in boxes:
-                    crop_image, crop_box = self._run_box(image, mask, box, config)
-                    crop_result.append((crop_image, crop_box))
+        # Only import torch if we're using a torch backend; otherwise avoid dependency
+        backend = getattr(self, 'backend', 'torch')
+        if backend == 'onnx':
+            no_grad_ctx = nullcontext()
+        else:
+            try:
+                import torch  # noqa
+                no_grad_ctx = torch.no_grad()
+            except ImportError as e:
+                raise RuntimeError("Torch backend selected but torch is not installed. Install torch or use backend='onnx'.") from e
+        with no_grad_ctx:
+            inpaint_result = None
+            logger.info(f"hd_strategy: {config.hd_strategy}")
+            if config.hd_strategy == HDStrategy.CROP:
+                if max(image.shape) > config.hd_strategy_crop_trigger_size:
+                    logger.info(f"Run crop strategy")
+                    boxes = boxes_from_mask(mask)
+                    crop_result = []
+                    for box in boxes:
+                        crop_image, crop_box = self._run_box(image, mask, box, config)
+                        crop_result.append((crop_image, crop_box))
 
-                inpaint_result = image[:, :, ::-1]
-                for crop_image, crop_box in crop_result:
-                    x1, y1, x2, y2 = crop_box
-                    inpaint_result[y1:y2, x1:x2, :] = crop_image
+                    inpaint_result = image[:, :, ::-1]
+                    for crop_image, crop_box in crop_result:
+                        x1, y1, x2, y2 = crop_box
+                        inpaint_result[y1:y2, x1:x2, :] = crop_image
 
-        elif config.hd_strategy == HDStrategy.RESIZE:
-            if max(image.shape) > config.hd_strategy_resize_limit:
-                origin_size = image.shape[:2]
-                downsize_image = resize_max_size(
-                    image, size_limit=config.hd_strategy_resize_limit
-                )
-                downsize_mask = resize_max_size(
-                    mask, size_limit=config.hd_strategy_resize_limit
-                )
+            elif config.hd_strategy == HDStrategy.RESIZE:
+                if max(image.shape) > config.hd_strategy_resize_limit:
+                    origin_size = image.shape[:2]
+                    downsize_image = resize_max_size(
+                        image, size_limit=config.hd_strategy_resize_limit
+                    )
+                    downsize_mask = resize_max_size(
+                        mask, size_limit=config.hd_strategy_resize_limit
+                    )
 
-                logger.info(
-                    f"Run resize strategy, origin size: {image.shape} forward size: {downsize_image.shape}"
-                )
-                inpaint_result = self._pad_forward(
-                    downsize_image, downsize_mask, config
-                )
+                    logger.info(
+                        f"Run resize strategy, origin size: {image.shape} forward size: {downsize_image.shape}"
+                    )
+                    inpaint_result = self._pad_forward(
+                        downsize_image, downsize_mask, config
+                    )
 
-                # only paste masked area result
-                inpaint_result = cv2.resize(
-                    inpaint_result,
-                    (origin_size[1], origin_size[0]),
-                    interpolation=cv2.INTER_CUBIC,
-                )
-                original_pixel_indices = mask < 127
-                inpaint_result[original_pixel_indices] = image[:, :, ::-1][
-                    original_pixel_indices
-                ]
+                    # only paste masked area result
+                    inpaint_result = cv2.resize(
+                        inpaint_result,
+                        (origin_size[1], origin_size[0]),
+                        interpolation=cv2.INTER_CUBIC,
+                    )
+                    original_pixel_indices = mask < 127
+                    inpaint_result[original_pixel_indices] = image[:, :, ::-1][
+                        original_pixel_indices
+                    ]
 
-        if inpaint_result is None:
-            inpaint_result = self._pad_forward(image, mask, config)
+            if inpaint_result is None:
+                inpaint_result = self._pad_forward(image, mask, config)
 
-        return inpaint_result
+            return inpaint_result
 
     def _crop_box(self, image, mask, box, config: Config):
         """
@@ -257,23 +269,32 @@ class InpaintModel:
 
 
 class DiffusionInpaintModel(InpaintModel):
-    @torch.no_grad()
     def __call__(self, image, mask, config: Config):
         """
         images: [H, W, C] RGB, not normalized
         masks: [H, W]
         return: BGR IMAGE
         """
-        # boxes = boxes_from_mask(mask)
-        if config.use_croper:
-            crop_img, crop_mask, (l, t, r, b) = self._apply_cropper(image, mask, config)
-            crop_image = self._scaled_pad_forward(crop_img, crop_mask, config)
-            inpaint_result = image[:, :, ::-1]
-            inpaint_result[t:b, l:r, :] = crop_image
+        backend = getattr(self, 'backend', 'torch')
+        if backend == 'onnx':
+            no_grad_ctx = nullcontext()
         else:
-            inpaint_result = self._scaled_pad_forward(image, mask, config)
+            try:
+                import torch  # noqa
+                no_grad_ctx = torch.no_grad()
+            except ImportError as e:
+                raise RuntimeError("Torch backend selected but torch is not installed. Install torch or use backend='onnx'.") from e
+        with no_grad_ctx:
+            # boxes = boxes_from_mask(mask)
+            if config.use_croper:
+                crop_img, crop_mask, (l, t, r, b) = self._apply_cropper(image, mask, config)
+                crop_image = self._scaled_pad_forward(crop_img, crop_mask, config)
+                inpaint_result = image[:, :, ::-1]
+                inpaint_result[t:b, l:r, :] = crop_image
+            else:
+                inpaint_result = self._scaled_pad_forward(image, mask, config)
 
-        return inpaint_result
+            return inpaint_result
 
     def _scaled_pad_forward(self, image, mask, config: Config):
         longer_side_length = int(config.sd_scale * max(image.shape[:2]))

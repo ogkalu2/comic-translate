@@ -8,7 +8,7 @@ import torch
 
 from modules.ocr.base import OCREngine
 from modules.utils.textblock import TextBlock, adjust_text_line_coordinates
-from modules.utils.download import get_models, manga_ocr_data
+from modules.utils.download import ModelDownloader, ModelID
 
 
 class MangaOCREngine(OCREngine):
@@ -33,7 +33,7 @@ class MangaOCREngine(OCREngine):
         self.device = device
         self.expansion_percentage = expansion_percentage
         if self.model is None:
-            get_models(manga_ocr_data)
+            ModelDownloader.get(ModelID.MANGA_OCR_BASE)
             manga_ocr_path = os.path.join(self.project_root, 'models/ocr/manga-ocr-base')
             self.model = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
         

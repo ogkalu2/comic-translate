@@ -3,18 +3,18 @@
 import io
 import os
 import sys
-from typing import List, Optional
-
-from urllib.parse import urlparse
 import cv2
-from PIL import Image, ImageOps, PngImagePlugin
-import numpy as np
-import torch
-#from ..inpainting.const import MPS_SUPPORT_MODELS
-from loguru import logger
-from torch.hub import download_url_to_file, get_dir
+import logging
 import hashlib
+import numpy as np
+from typing import List, Optional
+from urllib.parse import urlparse
+from PIL import Image, ImageOps, PngImagePlugin
+
+from .download_file import download_url_to_file
 from .download import notify_download_event
+
+logger = logging.getLogger(__name__)
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
@@ -28,6 +28,7 @@ def md5sum(filename):
 
 
 # def switch_mps_device(model_name, device):
+#     import torch
 #     if model_name not in MPS_SUPPORT_MODELS and str(device) == "mps":
 #         logger.info(f"{model_name} not support mps, switch to cpu")
 #         return torch.device("cpu")
@@ -109,22 +110,20 @@ def handle_error(model_path, model_md5, e):
         raise RuntimeError(msg)
 
 
-def load_jit_model(url_or_path, device, model_md5: str):
-    if os.path.exists(url_or_path):
-        model_path = url_or_path
-    else:
-        model_path = download_model(url_or_path, model_md5)
-
+def load_jit_model(model_path: str, device):
+    """Load a TorchScript model from an existing local path.
+    """
+    import torch
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"JIT model file not found: {model_path}")
     logger.info(f"Loading model from: {model_path}")
-    try:
-        model = torch.jit.load(model_path, map_location="cpu").to(device)
-    except Exception as e:
-        handle_error(model_path, model_md5, e)
+    model = torch.jit.load(model_path, map_location="cpu").to(device)
     model.eval()
     return model
 
 
-def load_model(model: torch.nn.Module, url_or_path, device, model_md5):
+def load_model(model, url_or_path, device, model_md5):
+    import torch
     if os.path.exists(url_or_path):
         model_path = url_or_path
     else:

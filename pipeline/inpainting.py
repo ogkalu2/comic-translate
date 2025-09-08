@@ -38,7 +38,7 @@ class InpaintingHandler:
             device = resolve_device(settings_page.is_gpu_enabled())
             inpainter_key = settings_page.get_tool_selection('inpainter')
             InpainterClass = inpaint_map[inpainter_key]
-            self.inpainter_cache = InpainterClass(device)
+            self.inpainter_cache = InpainterClass(device, backend='onnx')
             self.cached_inpainter_key = inpainter_key
 
         config = get_config(settings_page)

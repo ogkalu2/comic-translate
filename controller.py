@@ -21,7 +21,7 @@ from modules.utils.textblock import TextBlock
 from modules.utils.file_handler import FileHandler
 from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
                                          validate_translator
-from modules.utils.download import get_models, mandatory_models, set_download_callback
+from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
 from modules.detection.utils.general import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
 from modules.rendering.render import pyside_word_wrap
@@ -38,8 +38,8 @@ from app.controllers.webtoons import WebtoonController
 from collections import deque
 
 
-for model in mandatory_models:
-    get_models(model)
+# Ensure any pre-declared mandatory models
+ensure_mandatory_models()
 
 class ComicTranslate(ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)

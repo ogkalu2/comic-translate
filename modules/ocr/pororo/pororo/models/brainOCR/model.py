@@ -54,8 +54,12 @@ class Model(nn.Module):
             opt2val,
         )
         self.FeatureExtraction_output = output_channel  # int(imgH/16-1) * 512
-        self.AdaptiveAvgPool = nn.AdaptiveAvgPool2d(
-            (None, 1))  # Transform final (imgH/16-1) -> 1
+        # NOTE (ONNX): Original implementation used AdaptiveAvgPool2d((None, 1)) on a permuted
+        # tensor to collapse the last spatial dimension to 1 while preserving width steps.
+        # ONNX export fails because output_size contains a dynamic None. We instead perform
+        # an explicit mean reduction over the height dimension later in forward(), which is
+        # mathematically equivalent for average pooling over that full dimension and is
+        # ONNX-friendly (maps to ReduceMean).
 
         # Sequence modeling
         if SequenceModeling == "BiLSTM":
@@ -99,10 +103,11 @@ class Model(nn.Module):
 
         # Feature extraction stage
         visual_feature = self.FeatureExtraction(
-            x)  # (b, output_channel=512, h=3, w)
-        visual_feature = self.AdaptiveAvgPool(visual_feature.permute(
-            0, 3, 1, 2))  # (b, w, channel=512, h=1)
-        visual_feature = visual_feature.squeeze(3)  # (b, w, channel=512)
+            x)  # (b, 512, h, w)
+        # Average over height dimension (original code permuted then adaptive-pooled width->1).
+        # Here we reduce height directly, producing (b, 512, w), then permute to (b, w, 512).
+        visual_feature = visual_feature.mean(dim=2)  # (b, 512, w)
+        visual_feature = visual_feature.permute(0, 2, 1)  # (b, w, 512)
 
         # Sequence modeling stage
         self.SequenceModeling.eval()

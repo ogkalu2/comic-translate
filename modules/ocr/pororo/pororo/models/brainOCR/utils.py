@@ -8,9 +8,14 @@ from urllib.request import urlretrieve
 
 import cv2
 import numpy as np
-import torch
+try:
+    import importlib
+    torch = importlib.import_module("torch")
+    HAVE_TORCH = True
+except Exception:
+    torch = None
+    HAVE_TORCH = False
 from PIL import Image
-from torch import Tensor
 
 from .imgproc import load_image
 
@@ -307,9 +312,11 @@ class CTCLabelConverter(object):
         concatenated_text = "".join(texts)
         indices = [self.char2idx[char] for char in concatenated_text]
 
-        return torch.IntTensor(indices), torch.IntTensor(lengths)
-
-    def decode_greedy(self, indices: Tensor, lengths: Tensor):
+        if HAVE_TORCH:
+            return torch.IntTensor(indices), torch.IntTensor(lengths)
+        # fallback: return numpy int32 arrays when torch is not available
+        return np.array(indices, dtype=np.int32), np.array(lengths, dtype=np.int32)
+    def decode_greedy(self, indices, lengths):
         """convert text-index into text-label.
 
         :param indices (1D int32 Tensor): [N*length,]
@@ -319,14 +326,18 @@ class CTCLabelConverter(object):
         texts = []
         index = 0
         for length in lengths:
+            # ensure length is a native int for slicing
+            length = int(length)
             text = indices[index:index + length]
 
             chars = []
             for i in range(length):
-                if (text[i] != self.ignored_index) and (
-                        not (i > 0 and text[i - 1] == text[i])
+                # convert element to int (works for torch tensors, numpy scalars, and ints)
+                val = int(text[i])
+                if (val != self.ignored_index) and (
+                        not (i > 0 and int(text[i - 1]) == val)
                 ):  # removing repeated characters and blank (and separator).
-                    chars.append(self.idx2char[text[i].item()])
+                    chars.append(self.idx2char[val])
             texts.append("".join(chars))
             index += length
         return texts

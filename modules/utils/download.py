@@ -61,6 +61,7 @@ class ModelID(Enum):
     MIGAN_PIPELINE_ONNX = "migan-pipeline-v2"
     MIGAN_ONNX = "migan-onnx"
     MIGAN_JIT = "migan-traced"
+    RTDETRV2_ONNX = "rtdetr-v2-onnx"
 
 
 @dataclass(frozen=True)
@@ -220,7 +221,7 @@ def _download_spec(spec: ModelSpec):
 # Registry population
 def _register_defaults():
     ModelDownloader.register(ModelSpec(
-        id=ModelID.MANGA_OCR_BASE,
+        id=Models.OCR.MANGA_OCR.BASE,
         url='https://huggingface.co/kha-white/manga-ocr-base/resolve/main/',
         files=[
             'pytorch_model.bin', 'config.json', 'preprocessor_config.json',
@@ -334,6 +335,14 @@ def _register_defaults():
         files=['migan.onnx'],
         sha256=[''],  # md5
         save_dir=os.path.join(models_base_dir, 'inpainting')
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.RTDETRV2_ONNX,
+        url='https://huggingface.co/ogkalu/comic-text-and-bubble-detector/resolve/main/',
+        files=['detector.onnx'],
+        sha256=['065744e91c0594ad8663aa8b870ce3fb27222942eded5a3cc388ce23421bd195'], 
+        save_dir=os.path.join(models_base_dir, 'detection')
     ))
 
 _register_defaults()

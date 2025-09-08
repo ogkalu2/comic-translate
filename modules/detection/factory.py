@@ -1,5 +1,5 @@
 from .base import DetectionEngine
-from .rtdetr_v2 import RTDetrV2Detection
+from .rtdetr_v2_onnx import RTDetrV2ONNXDetection
 from ..utils.device import resolve_device
 
 
@@ -29,21 +29,21 @@ class DetectionEngineFactory:
         
         # Map model names to factory methods
         engine_factories = {
-            'RT-DETR-v2': cls._create_rtdetr_v2,
+            'RT-DETR-v2': cls._create_rtdetr_v2_onnx,
         }
         
         # Get the appropriate factory method, defaulting to RT-DETR-V2
-        factory_method = engine_factories.get(model_name, cls._create_rtdetr_v2)
-        
+        factory_method = engine_factories.get(model_name, cls._create_rtdetr_v2_onnx)
+
         # Create and cache the engine
         engine = factory_method(settings)
         cls._engines[cache_key] = engine
         return engine
-    
+
     @staticmethod
-    def _create_rtdetr_v2(settings):
-        """Create and initialize RT-DETR-V2 detection engine."""
-        engine = RTDetrV2Detection()
+    def _create_rtdetr_v2_onnx(settings):
+        """Create and initialize RT-DETR-V2 ONNX detection engine."""
+        engine = RTDetrV2ONNXDetection()
         device = resolve_device(settings.is_gpu_enabled())
         engine.initialize(device=device)
         return engine

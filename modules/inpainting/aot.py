@@ -1,21 +1,16 @@
-import os
 import cv2
 import numpy as np
-import torch
+import onnxruntime as ort
+from modules.utils.device import get_providers
 
 from .base import InpaintModel
 from .schema import Config
 
-from ..utils.inpainting import (
-    get_cache_path_by_url,
+from modules.utils.inpainting import (
     load_jit_model,
 )
+from modules.utils.download import ModelDownloader, ModelID
 
-AOT_MODEL_URL = os.environ.get(
-    "AOT_MODEL_URL",
-    "https://huggingface.co/ogkalu/aot-inpainting-jit/resolve/main/aot_traced.pt",
-)
-AOT_MODEL_MD5 = os.environ.get("AOT_MODEL_MD5", "5ecdac562c1d56267468fc4fbf80db27")
 
 class AOT(InpaintModel):
     name = "aot"
@@ -24,11 +19,20 @@ class AOT(InpaintModel):
     max_size = 1024
 
     def init_model(self, device, **kwargs):
-        self.model = load_jit_model(AOT_MODEL_URL, device, AOT_MODEL_MD5)
-		
+        self.backend = kwargs.get("backend")
+        if self.backend == "onnx":
+            ModelDownloader.get(ModelID.AOT_ONNX)
+            onnx_path = ModelDownloader.primary_path(ModelID.AOT_ONNX)
+            providers = get_providers(device)
+            self.session = ort.InferenceSession(onnx_path, providers=providers)
+        else:
+            ModelDownloader.get(ModelID.AOT_JIT)
+            local_path = ModelDownloader.primary_path(ModelID.AOT_JIT)
+            self.model = load_jit_model(local_path, device)
+
     @staticmethod
     def is_downloaded() -> bool:
-        return os.path.exists(get_cache_path_by_url(AOT_MODEL_URL))
+        return ModelDownloader.is_downloaded(ModelID.AOT_JIT)
 
     def forward(self, image, mask, config: Config):
         """Input image and output image have same size
@@ -50,26 +54,38 @@ class AOT(InpaintModel):
             image = resize_keep_aspect(image, self.max_size)
             mask = resize_keep_aspect(mask, self.max_size)
             
-        # Convert to torch tensors with correct normalization
-        img_torch = torch.from_numpy(image).permute(2, 0, 1).unsqueeze_(0).float() / 127.5 - 1.0
-        mask_torch = torch.from_numpy(mask).unsqueeze_(0).unsqueeze_(0).float() / 255.0
-        mask_torch[mask_torch < 0.5] = 0
-        mask_torch[mask_torch >= 0.5] = 1
-        
-        # Move tensors to the appropriate device
-        img_torch = img_torch.to(self.device)
-        mask_torch = mask_torch.to(self.device)
-        
-        # Apply mask to input image
-        img_torch = img_torch * (1 - mask_torch)
-        
-        # Run inference
-        with torch.no_grad():
-            img_inpainted_torch = self.model(img_torch, mask_torch)
-        
-        # Post-process result
-        img_inpainted = ((img_inpainted_torch.cpu().squeeze_(0).permute(1, 2, 0).numpy() + 1.0) * 127.5)
-        img_inpainted = (np.clip(np.round(img_inpainted), 0, 255)).astype(np.uint8)
+        backend = getattr(self, 'backend', 'torch')
+        if backend == 'onnx':
+            # Pure numpy preprocessing
+            img_np = (image.astype(np.float32) / 127.5) - 1.0  # HWC -> later CHW
+            mask_np = (mask.astype(np.float32) / 255.0)
+            mask_np = (mask_np >= 0.5).astype(np.float32)
+            # Apply mask (zero-out masked area like torch variant)
+            img_np = img_np * (1 - mask_np[..., None])  # broadcast over channels
+            # Convert to NCHW
+            img_nchw = np.transpose(img_np, (2, 0, 1))[np.newaxis, ...]
+            mask_nchw = mask_np[np.newaxis, np.newaxis, ...]
+            ort_inputs = {
+                self.session.get_inputs()[0].name: img_nchw,
+                self.session.get_inputs()[1].name: mask_nchw,
+            }
+            out = self.session.run(None, ort_inputs)[0]  # (1,3,H,W) in [-1,1]
+            img_inpainted = ((out[0].transpose(1, 2, 0) + 1.0) * 127.5)
+            img_inpainted = (np.clip(np.round(img_inpainted), 0, 255)).astype(np.uint8)
+        else:
+            # Torch preprocessing path
+            import torch  # noqa
+            img_torch = torch.from_numpy(image).permute(2, 0, 1).unsqueeze_(0).float() / 127.5 - 1.0
+            mask_torch = torch.from_numpy(mask).unsqueeze_(0).unsqueeze_(0).float() / 255.0
+            mask_torch[mask_torch < 0.5] = 0
+            mask_torch[mask_torch >= 0.5] = 1
+            img_torch = img_torch.to(self.device)
+            mask_torch = mask_torch.to(self.device)
+            img_torch = img_torch * (1 - mask_torch)
+            with torch.no_grad():
+                img_inpainted_torch = self.model(img_torch, mask_torch)
+            img_inpainted = ((img_inpainted_torch.cpu().squeeze_(0).permute(1, 2, 0).numpy() + 1.0) * 127.5)
+            img_inpainted = (np.clip(np.round(img_inpainted), 0, 255)).astype(np.uint8)
         
         # Ensure output dimensions match input
         new_shape = img_inpainted.shape[:2]
