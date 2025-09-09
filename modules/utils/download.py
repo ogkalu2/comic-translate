@@ -221,7 +221,7 @@ def _download_spec(spec: ModelSpec):
 # Registry population
 def _register_defaults():
     ModelDownloader.register(ModelSpec(
-        id=Models.OCR.MANGA_OCR.BASE,
+        id=ModelID.MANGA_OCR_BASE,
         url='https://huggingface.co/kha-white/manga-ocr-base/resolve/main/',
         files=[
             'pytorch_model.bin', 'config.json', 'preprocessor_config.json',
