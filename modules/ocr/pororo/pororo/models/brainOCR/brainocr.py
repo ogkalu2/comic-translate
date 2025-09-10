@@ -145,7 +145,7 @@ class Reader(object):
             crop_img = cv2.resize(
                 img_cv_grey,
                 (max_width, imgH),
-                interpolation=Image.LANCZOS,
+                interpolation=cv2.INTER_AREA,
             )
             image_list = [([[0, 0], [x_max, 0], [x_max, y_max],
                             [0, y_max]], crop_img)]

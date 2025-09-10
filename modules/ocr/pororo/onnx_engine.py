@@ -96,7 +96,7 @@ class PororoOCREngineONNX(OCREngine):  # type: ignore
             y_max, x_max = img_cv_grey.shape
             ratio = x_max / y_max
             max_width = int(imgH * ratio)
-            crop_img = cv2.resize(img_cv_grey, (max_width, imgH), interpolation=Image.LANCZOS)
+            crop_img = cv2.resize(img_cv_grey, (max_width, imgH), interpolation=cv2.INTER_AREA)
             image_list = [([[0, 0], [x_max, 0], [x_max, y_max], [0, y_max]], crop_img)]
         else:
             image_list, _ = get_image_list(horizontal_list, free_list, img_cv_grey, model_height=imgH)
