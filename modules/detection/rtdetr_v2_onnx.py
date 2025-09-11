@@ -43,6 +43,7 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         self.confidence_threshold = confidence_threshold
 
         os.makedirs(self.model_dir, exist_ok=True)
+        hf_hub_download(repo_id=self.repo_name, filename='config.json')
         file_path = hf_hub_download(repo_id=self.repo_name, filename='detector.onnx')
         providers = get_providers(self.device)
         self.session = ort.InferenceSession(file_path, providers=providers)
