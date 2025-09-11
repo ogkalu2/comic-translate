@@ -35,6 +35,7 @@ class ToolsPage(QtWidgets.QWidget):
         inpainting_label = MLabel(self.tr("Inpainting")).h4()
         inpainter_widget, self.inpainter_combo = create_title_and_combo(self.tr("Inpainter"), self.inpainters, h4=False)
         set_combo_box_width(self.inpainter_combo, self.inpainters)
+        self.inpainter_combo.setCurrentText(self.tr("AOT"))
 
         inpaint_strategy_widget, self.inpaint_strategy_combo = create_title_and_combo(self.tr("HD Strategy"), self.inpaint_strategy, h4=False)
         set_combo_box_width(self.inpaint_strategy_combo, self.inpaint_strategy)
