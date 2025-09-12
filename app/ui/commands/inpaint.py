@@ -1,9 +1,10 @@
-import os, cv2
+import os
 import hashlib
 import uuid
 from PySide6.QtGui import QUndoCommand
 from .base import PatchCommandBase
 from PIL import Image
+import imkit as imk
 
 class PatchInsertCommand(QUndoCommand, PatchCommandBase):
     """
@@ -23,17 +24,17 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
         for idx, patch in enumerate(patches):
             # Extract data from patch dictionary
             bbox = patch['bbox']
-            cv2_patch = patch['cv2_img']
+            patch_img = patch['image']
 
-            # spill every cv2 patch to a temp PNG (if not already on disk)
+            # spill every image patch to a temp PNG (if not already on disk)
             sub_dir = os.path.join(ct.temp_dir,
                                    "inpaint_patches",
                                    os.path.basename(file_path))
             os.makedirs(sub_dir, exist_ok=True)
             png_path = os.path.join(sub_dir, f"patch_{uuid.uuid4().hex[:8]}_{idx}.png")
-            # cv2_patch is produced by the inpainter in RGB color order.
+            # patch_img is produced by the inpainter in RGB color order.
             # Save directly with PIL (which expects RGB) to preserve correct channel order.
-            Image.fromarray(cv2_patch).save(png_path)
+            Image.fromarray(patch_img).save(png_path)
 
             # compute a composite hash of the image and its bounding box for deduplication
             with open(png_path, 'rb') as f:
@@ -81,10 +82,10 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
 
             # only load into memory if being displayed
             if self.display:
-                cv_img = cv2.imread(prop['png_path'])
+                img_data = imk.read_image(prop['png_path'])
                 mem_list.append({
                     'bbox': prop['bbox'],
-                    'cv2_img': cv_img,
+                    'image': img_data,
                     'hash': prop['hash']
                 })
 

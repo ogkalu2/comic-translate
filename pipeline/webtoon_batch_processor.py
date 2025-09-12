@@ -1,10 +1,11 @@
 import os
 import json
-import cv2
 import shutil
 import logging
 import requests
+import traceback
 import numpy as np
+import imkit as imk
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
@@ -74,14 +75,18 @@ class WebtoonBatchProcessor:
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
-        cv2.imwrite(os.path.join(path, f"{base_name}_translated{extension}"), image)
+        imk.write_image(os.path.join(path, f"{base_name}_translated{extension}"), image)
 
-    def log_skipped_image(self, directory, timestamp, image_path, reason=""):
+    def log_skipped_image(self, directory, timestamp, image_path, reason="", full_traceback=""):
         skipped_file = os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt")
         os.makedirs(os.path.dirname(skipped_file), exist_ok=True)
         with open(skipped_file, 'a', encoding='UTF-8') as file:
             file.write(image_path + "\n")
-            file.write(reason + "\n\n")
+            file.write(reason + "\n")
+            if full_traceback:
+                file.write("Full Traceback:\n")
+                file.write(full_traceback + "\n")
+            file.write("\n")
 
     def _create_virtual_chunk_image(self, vpage1: VirtualPage, vpage2: VirtualPage) -> Tuple[np.ndarray, List[Dict]]:
         """
@@ -97,7 +102,7 @@ class WebtoonBatchProcessor:
         # Handle self-paired virtual pages (single virtual page processing)
         if vpage1.virtual_id == vpage2.virtual_id:
             # Load the physical image
-            img = cv2.imread(vpage1.physical_page_path)
+            img = imk.read_image(vpage1.physical_page_path)
             
             if img is None:
                 logger.error(f"Failed to load image: {vpage1.physical_page_path}")
@@ -125,8 +130,8 @@ class WebtoonBatchProcessor:
         
         # Handle different virtual pages (original logic)
         # Load the physical images
-        img1 = cv2.imread(vpage1.physical_page_path)
-        img2 = cv2.imread(vpage2.physical_page_path)
+        img1 = imk.read_image(vpage1.physical_page_path)
+        img2 = imk.read_image(vpage2.physical_page_path)
         
         if img1 is None or img2 is None:
             logger.error(f"Failed to load images: {vpage1.physical_page_path}, {vpage2.physical_page_path}")
@@ -278,7 +283,7 @@ class WebtoonBatchProcessor:
                 else:
                     err_msg = str(e)
                 
-                logger.error(f"OCR failed for virtual chunk {chunk_id}: {err_msg}")
+                logger.exception(f"OCR failed for virtual chunk {chunk_id}: {err_msg}")
                 # Emit a signal to the UI for both affected physical pages
                 self.main_page.image_skipped.emit(vpage1.physical_page_path, "OCR Chunk Failed", err_msg)
                 self.main_page.image_skipped.emit(vpage2.physical_page_path, "OCR Chunk Failed", err_msg)
@@ -305,7 +310,7 @@ class WebtoonBatchProcessor:
         config = get_config(self.main_page.settings_page)
         mask = generate_mask(combined_image, blk_list)
         inpaint_input_img = self.inpainting.inpainter_cache(combined_image, mask, config)
-        inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img)
+        inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
         
         # Progress update: Inpainting execution completed
         self.main_page.progress_update.emit(current_physical_page, total_images, 4, 10, False)
@@ -344,7 +349,7 @@ class WebtoonBatchProcessor:
                 else:
                     err_msg = str(e)
                     
-                logger.error(f"Translation failed for virtual chunk {chunk_id}: {err_msg}")
+                logger.exception(f"Translation failed for virtual chunk {chunk_id}: {err_msg}")
                 self.main_page.image_skipped.emit(vpage1.physical_page_path, "Translation Chunk Failed", err_msg)
                 self.main_page.image_skipped.emit(vpage2.physical_page_path, "Translation Chunk Failed", err_msg)
                 # Clear translations on failure
@@ -462,7 +467,7 @@ class WebtoonBatchProcessor:
             Dictionary mapping virtual_page_id -> list of patch data dictionaries
         """
         # Find contours in the mask
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = imk.find_contours(mask)
 
         if not contours:
             return {}
@@ -471,7 +476,7 @@ class WebtoonBatchProcessor:
         patches_by_virtual_page = defaultdict(list)
 
         for i, c in enumerate(contours):
-            x, y, w, h = cv2.boundingRect(c)
+            x, y, w, h = imk.bounding_rect(c)
             patch_bottom = y + h
 
             # Find which virtual page(s) this patch overlaps
@@ -522,7 +527,7 @@ class WebtoonBatchProcessor:
                     # Create patch data
                     patch_data = {
                         'bbox': [physical_x, physical_y, physical_width, physical_height],
-                        'cv2_img': clipped_patch.copy(),
+                        'image': clipped_patch.copy(),
                         'page_index': vpage.physical_page_index,
                         'file_path': vpage.physical_page_path,
                         'scene_pos': [scene_x, scene_y]
@@ -865,7 +870,7 @@ class WebtoonBatchProcessor:
         logger.info(f"Starting final render process for page {page_idx} at path: {image_path}")
 
         # Start with the ORIGINAL, un-inpainted image.
-        image = cv2.imread(image_path)
+        image = imk.read_image(image_path)
 
         if image is None:
             logger.error(f"Failed to load physical image for rendering: {image_path}")
@@ -906,8 +911,8 @@ class WebtoonBatchProcessor:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
             # The image on the renderer is inpainted but has no text yet. Perfect time to save.
-            cleaned_image_bgr = cv2.cvtColor(renderer.render_to_image(), cv2.COLOR_RGB2BGR)
-            cv2.imwrite(os.path.join(path, f"{base_name}_cleaned{extension}"), cleaned_image_bgr)
+            cleaned_image_rgb = renderer.render_to_image()  # Already in RGB format
+            imk.write_image(os.path.join(path, f"{base_name}_cleaned{extension}"), cleaned_image_rgb)
 
         # Get final block list for text exports
         blk_list = self.main_page.image_states[image_path].get('blk_list', [])
@@ -985,12 +990,12 @@ class WebtoonBatchProcessor:
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
                         break
                 
-                image = cv2.imread(image_path)
+                image = imk.read_image(image_path)
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                 self.log_skipped_image(directory, timestamp, image_path, "User-skipped")
                 continue
             
-            image = cv2.imread(image_path)
+            image = imk.read_image(image_path)
             if image is None:
                 logger.error(f"Failed to load image: {image_path}")
                 continue
@@ -1054,7 +1059,7 @@ class WebtoonBatchProcessor:
                     self.virtual_chunk_results[chunk_id] = chunk_results
                 self.processed_chunks.add(chunk_id)
             except Exception as e:
-                logger.error(f"Error processing virtual chunk {chunk_id}: {e}", exc_info=True)
+                logger.exception(f"Error processing virtual chunk {chunk_id}: {e}", exc_info=True)
                 self.processed_chunks.add(chunk_id)
 
             # Live UI and State Finalization Logic

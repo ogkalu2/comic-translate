@@ -1,4 +1,4 @@
-# import cv2
+# import imkit as imk
 # import numpy as np
 # import platform
 # from PIL import ImageFont, ImageDraw, Image
@@ -9,7 +9,7 @@
 #     plt.figure(figsize=figsize)
 
 #     if type(img) is str:
-#         img = cv2.imread(img)
+#         img = imk.read_image(img)
 
 #     if type(img) == list:
 #         if type(title) == list:
@@ -22,9 +22,9 @@
 
 #         for i in range(len(img)):
 #             if len(img[i].shape) <= 2:
-#                 rgbImg = cv2.cvtColor(img[i], cv2.COLOR_GRAY2RGB)
+#                 rgbImg = np.stack([img[i], img[i], img[i]], axis=2)  # Convert grayscale to RGB
 #             else:
-#                 rgbImg = cv2.cvtColor(img[i], cv2.COLOR_BGR2RGB)
+#                 rgbImg = img[i]  # Already in RGB format
 
 #             plt.subplot(1, len(img), i + 1), plt.imshow(rgbImg)
 #             plt.title(titles[i])
@@ -33,9 +33,9 @@
 #         plt.show()
 #     else:
 #         if len(img.shape) < 3:
-#             rgbImg = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+#             rgbImg = np.stack([img, img, img], axis=2)  # Convert grayscale to RGB
 #         else:
-#             rgbImg = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#             rgbImg = img  # Already in RGB format
 
 #         plt.imshow(rgbImg)
 #         plt.title(title)
@@ -45,8 +45,8 @@
 
 # def put_text(image, text, x, y, color=(0, 255, 0), font_size=22):
 #     if type(image) == np.ndarray:
-#         color_coverted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-#         image = Image.fromarray(color_coverted)
+#         # Image is already in RGB format, no conversion needed
+#         image = Image.fromarray(image)
 
 #     if platform.system() == 'Darwin':
 #         font = 'AppleGothic.ttf'
@@ -60,6 +60,5 @@
 #     draw.text((x, y), text, font=image_font, fill=color)
 
 #     numpy_image = np.array(image)
-#     opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
-
-#     return opencv_image
+#     # Return RGB image (no BGR conversion needed)
+#     return numpy_image

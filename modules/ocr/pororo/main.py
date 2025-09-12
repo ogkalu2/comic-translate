@@ -1,4 +1,3 @@
-import cv2
 from .pororo import Pororo
 from .pororo.pororo import SUPPORTED_TASKS
 #from .utils.image_util import plt_imshow, put_text
@@ -48,10 +47,16 @@ class PororoOcr:
 
     # def show_img_with_ocr(self):
     #     if isinstance(self.img_path, str):
-    #         img = cv2.imread(self.img_path)
+    #         # img = imk.read_image(self.img_path)  
+    #         from PIL import Image
+    #         img = np.array(Image.open(self.img_path))
     #     else:
     #         img = self.img_path
-    #     roi_img = img.copy()
+    #     
+    #     # Convert to PIL Image for drawing
+    #     from PIL import Image, ImageDraw
+    #     pil_img = Image.fromarray(img)
+    #     draw = ImageDraw.Draw(pil_img)
 
     #     for text_result in self.ocr_result['bounding_poly']:
     #         text = text_result['description']
@@ -71,14 +76,20 @@ class PororoOcr:
     #         bottomRight = pts[2]
     #         bottomLeft = pts[3]
 
-    #         cv2.line(roi_img, topLeft, topRight, (0, 255, 0), 2)
-    #         cv2.line(roi_img, topRight, bottomRight, (0, 255, 0), 2)
-    #         cv2.line(roi_img, bottomRight, bottomLeft, (0, 255, 0), 2)
-    #         cv2.line(roi_img, bottomLeft, topLeft, (0, 255, 0), 2)
+    #         draw.line([topLeft, topRight], fill=(0, 255, 0), width=2)
+    #         draw.line([topRight, bottomRight], fill=(0, 255, 0), width=2)
+    #         draw.line([bottomRight, bottomLeft], fill=(0, 255, 0), width=2)
+    #         draw.line([bottomLeft, topLeft], fill=(0, 255, 0), width=2)
+    #         
+    #         # Convert back to numpy for put_text function
+    #         roi_img = np.array(pil_img)
     #         roi_img = put_text(roi_img, text, topLeft[0], topLeft[1] - 20, font_size=15)
+    #         pil_img = Image.fromarray(roi_img)
+    #         draw = ImageDraw.Draw(pil_img)
 
     #         # print(text)
 
+    #     roi_img = np.array(pil_img)
     #     plt_imshow(["Original", "ROI"], [img, roi_img], figsize=(16, 10))
 
 

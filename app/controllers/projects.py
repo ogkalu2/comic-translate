@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import os
-import cv2
 import shutil
 import tempfile
 from typing import TYPE_CHECKING
 from dataclasses import asdict, is_dataclass
+import imkit as imk
 
 from PySide6 import QtWidgets
 from PySide6.QtCore import QSettings
@@ -50,10 +50,9 @@ class ProjectController:
                 # PASS 2: Render each page using the complete state map
                 for page_idx, file_path in enumerate(self.main.image_files):
                     bname = os.path.basename(file_path)
-                    cv2_img = self.main.load_image(file_path)
-                    bgr_cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_RGB2BGR)
+                    rgb_img = self.main.load_image(file_path)
 
-                    renderer = ImageSaveRenderer(bgr_cv2_img)
+                    renderer = ImageSaveRenderer(rgb_img)
                     
                     # Use the pre-built, up-to-date state for this page.
                     viewer_state = all_pages_current_state[file_path]['viewer_state']
@@ -72,10 +71,9 @@ class ProjectController:
                 # Regular mode: use original logic
                 for file_path in self.main.image_files:
                     bname = os.path.basename(file_path)
-                    cv2_img = self.main.load_image(file_path)
-                    bgr_cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_RGB2BGR)
+                    rgb_img = self.main.load_image(file_path)
 
-                    renderer = ImageSaveRenderer(bgr_cv2_img)
+                    renderer = ImageSaveRenderer(rgb_img)
                     viewer_state = self.main.image_states[file_path]['viewer_state']
                     renderer.apply_patches(self.main.image_patches.get(file_path, []))
                     renderer.add_state_to_image(viewer_state)
@@ -103,8 +101,8 @@ class ProjectController:
         else:
             # For the last page, calculate its end based on its image height
             file_path = self.main.image_files[page_idx]
-            cv2_img = self.main.load_image(file_path)
-            page_y_end = page_y_start + cv2_img.shape[0]
+            rgb_img = self.main.load_image(file_path)
+            page_y_end = page_y_start + rgb_img.shape[0]
         
         text_items_data = []
         
@@ -202,10 +200,10 @@ class ProjectController:
             self.main.default_error_handler
         )
 
-    def _display_image_and_set_mode(self, cv2_image, index: int):
+    def _display_image_and_set_mode(self, rgb_image, index: int):
         """Display the image and then set the appropriate mode."""
         # First display the image normally
-        self.main.image_ctrl.display_image_from_loaded(cv2_image, index, switch_page=False)
+        self.main.image_ctrl.display_image_from_loaded(rgb_image, index, switch_page=False)
         
         # Now that the UI is ready, activate webtoon mode
         if self.main.webtoon_mode:

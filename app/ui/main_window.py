@@ -771,7 +771,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # If an image exists, compute scaled cursor size and update the active
         # drawing manager cursor so the immediate cursor reflects the slider.
         if self.image_viewer.hasPhoto():
-            image = self.image_viewer.get_cv2_image()
+            image = self.image_viewer.get_image_array()
             if image is not None:
                 h, w = image.shape[:2]
                 scaled_size = self.scale_size(size, w, h)

@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import msgpack
-import cv2
 import os
 import tempfile
 import zipfile
 import shutil
 from typing import TYPE_CHECKING
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import imkit as imk
 from .parsers import ProjectEncoder, ProjectDecoder, ensure_string_keys
 
 if TYPE_CHECKING:
@@ -219,12 +219,10 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
             usage_type = usage[0]
             if usage_type == 'image_data':
                 file_path = usage[1]
-                img = cv2.imread(img_path)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                img = imk.read_image(img_path)
                 image_data[file_path] = img
             elif usage_type == 'in_memory_history':
-                img = cv2.imread(img_path)
-                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                img = imk.read_image(img_path)
                 file_path, idx = usage[1], usage[2]
                 in_memory_history.setdefault(file_path, [])
                 history = in_memory_history[file_path]

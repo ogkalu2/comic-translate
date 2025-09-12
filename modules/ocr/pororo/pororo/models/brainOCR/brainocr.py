@@ -12,9 +12,9 @@ import ast
 from logging import getLogger
 from typing import List
 
-import cv2
 import numpy as np
 from PIL import Image
+import imkit as imk
 
 from .detection import get_detector, get_textbox
 from .recognition import get_recognizer, get_text
@@ -142,10 +142,10 @@ class Reader(object):
             y_max, x_max = img_cv_grey.shape
             ratio = x_max / y_max
             max_width = int(imgH * ratio)
-            crop_img = cv2.resize(
+            crop_img = imk.resize(
                 img_cv_grey,
                 (max_width, imgH),
-                interpolation=cv2.INTER_AREA,
+                mode=Image.Resampling.LANCZOS,
             )
             image_list = [([[0, 0], [x_max, 0], [x_max, y_max],
                             [0, y_max]], crop_img)]

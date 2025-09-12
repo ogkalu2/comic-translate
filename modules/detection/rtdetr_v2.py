@@ -1,6 +1,6 @@
 import os
-import cv2
 import torch
+import imkit as imk
 import numpy as np
 from PIL import Image
 from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
@@ -71,7 +71,7 @@ class RTDetrV2Detection(DetectionEngine):
             Tuple of (bubble_boxes, text_boxes) as numpy arrays
         """
         # Convert OpenCV image (BGR) to PIL image (RGB)
-        pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        pil_image = Image.fromarray(image)  # image is already in RGB format
         
         # Prepare image for model
         inputs = self.processor(images=pil_image, return_tensors="pt")

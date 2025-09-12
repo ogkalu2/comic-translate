@@ -221,9 +221,9 @@ class ImageViewer(QGraphicsView):
             )
         return point
 
-    def get_cv2_image(self, paint_all=False, include_patches=True):
+    def get_image_array(self, paint_all=False, include_patches=True):
         """
-        Get CV2 image data. In webtoon mode, returns the visible area image.
+        Get image array data. In webtoon mode, returns the visible area image.
         In regular mode, returns the single photo image with optional patches/scene items.
         """
         if not self.hasPhoto():
@@ -292,7 +292,7 @@ class ImageViewer(QGraphicsView):
         else:
             qimage = self.photo.pixmap().toImage()
 
-        # Convert QImage to cv2 image
+        # Convert QImage to image
         qimage = qimage.convertToFormat(QtGui.QImage.Format.Format_RGB888)
         width = qimage.width()
         height = qimage.height()
@@ -317,14 +317,14 @@ class ImageViewer(QGraphicsView):
 
         return arr
     
-    def qimage_from_cv2(self, cv2_img: np.ndarray):
-        height, width, channel = cv2_img.shape
+    def qimage_from_array(self, img_array: np.ndarray):
+        height, width, channel = img_array.shape
         bytes_per_line = 3 * width
-        qimage = QtGui.QImage(cv2_img.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
+        qimage = QtGui.QImage(img_array.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
         return qimage
 
-    def display_cv2_image(self, cv2_img: np.ndarray):
-        qimage = self.qimage_from_cv2(cv2_img)
+    def display_image_array(self, img_array: np.ndarray):
+        qimage = self.qimage_from_array(img_array)
         pixmap = QtGui.QPixmap.fromImage(qimage)
         self.clear_scene()
         self.setPhoto(pixmap)

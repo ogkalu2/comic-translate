@@ -3,8 +3,9 @@ import numpy as np
 from typing import Optional
 
 from ..utils.textblock import TextBlock
-from .utils.general import does_rectangle_fit, do_rectangles_overlap, \
-      filter_and_fix_bboxes, merge_overlapping_boxes
+from .utils.geometry import does_rectangle_fit, do_rectangles_overlap, \
+    merge_overlapping_boxes
+from .utils.content import filter_and_fix_bboxes
 
 
 class DetectionEngine(ABC):

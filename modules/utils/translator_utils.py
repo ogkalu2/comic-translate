@@ -1,4 +1,3 @@
-import cv2
 import base64
 import json
 import re
@@ -7,6 +6,7 @@ import janome.tokenizer
 import numpy as np
 from pythainlp.tokenize import word_tokenize
 from .textblock import TextBlock
+import imkit as imk
 
 
 MODEL_MAP = {
@@ -22,7 +22,7 @@ MODEL_MAP = {
 }
 
 def encode_image_array(img_array: np.ndarray):
-    _, img_bytes = cv2.imencode('.png', img_array)
+    img_bytes = imk.encode_image(img_array, ".png")
     return base64.b64encode(img_bytes).decode('utf-8')
 
 def get_raw_text(blk_list: list[TextBlock]):

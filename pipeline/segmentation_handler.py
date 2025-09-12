@@ -1,5 +1,5 @@
 import logging
-from modules.detection.utils.general import get_inpaint_bboxes
+from modules.detection.utils.content import get_inpaint_bboxes
 from .webtoon_utils import (
     filter_and_convert_visible_blocks, 
     restore_original_block_coordinates,

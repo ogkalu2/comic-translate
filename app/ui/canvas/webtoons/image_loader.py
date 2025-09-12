@@ -3,6 +3,7 @@ from typing import Set, Optional
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem
 from PySide6.QtCore import QTimer, QRectF, Qt
 from PySide6.QtGui import QPixmap, QColor, QPen, QBrush, QImage, QPainter
+import imkit as imk
 
 
 class LazyImageLoader:
@@ -25,7 +26,7 @@ class LazyImageLoader:
         # Loaded content tracking (Owner of this data)
         self.loaded_pages: Set[int] = set()
         self.image_items: dict[int, QGraphicsPixmapItem] = {}  # page_index -> item
-        self.image_data: dict[int, np.ndarray] = {}  # page_index -> cv2 image
+        self.image_data: dict[int, np.ndarray] = {}  # page_index -> RGB image
         self.placeholder_items: dict[int, QGraphicsRectItem] = {}  # page_index -> placeholder
         
         # Timers for debounced loading
@@ -124,16 +125,14 @@ class LazyImageLoader:
         
         try:
             # Load the actual image
-            import cv2
             file_path = self.image_file_paths[page_idx]
-            cv2_img = cv2.imread(file_path)
+            img = imk.read_image(file_path)
             
-            if cv2_img is not None:
-                cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+            if img is not None:
                 
                 # Convert to QPixmap
-                h, w, c = cv2_img.shape
-                qimage = self.viewer.qimage_from_cv2(cv2_img)
+                h, w, c = img.shape
+                qimage = self.viewer.qimage_from_array(img)
                 pixmap = QPixmap.fromImage(qimage)
                 
                 # Create graphics item
@@ -158,16 +157,16 @@ class LazyImageLoader:
                 
                 self._scene.addItem(item)
                 self.image_items[page_idx] = item
-                self.image_data[page_idx] = cv2_img
+                self.image_data[page_idx] = img
                 self.loaded_pages.add(page_idx)
                 
                 # Also store in main controller's image_data for compatibility
                 if self.main_controller and hasattr(self.main_controller, 'image_data'):
-                    self.main_controller.image_data[file_path] = cv2_img
+                    self.main_controller.image_data[file_path] = img
                 
                 # Notify webtoon manager that image is loaded (for scene item loading)
                 if self.webtoon_manager and hasattr(self.webtoon_manager, 'on_image_loaded'):
-                    self.webtoon_manager.on_image_loaded(page_idx, cv2_img)
+                    self.webtoon_manager.on_image_loaded(page_idx, img)
                 
                 # If this is the current page being loaded, ensure proper view setup
                 if page_idx == self.layout_manager.current_page_index and len(self.loaded_pages) == 1:
@@ -399,10 +398,7 @@ class LazyImageLoader:
             })
             current_y += h_img
         
-        import cv2
-        combined_img = cv2.cvtColor(combined_img, cv2.COLOR_BGR2RGB)
-            
-        return  combined_img, mappings
+        return combined_img, mappings
 
     def _render_page_with_scene_items(self, page_index: int, base_image: np.ndarray, 
                                      paint_all: bool, include_patches: bool, 
@@ -503,7 +499,7 @@ class LazyImageLoader:
             # Just use the base image
             return base_image[int(crop_top):int(crop_bottom), :]
 
-        # Convert QImage to cv2 image
+        # Convert QImage to RGB numpy array
         qimage = qimage.convertToFormat(QImage.Format.Format_RGB888)
         width = qimage.width()
         height = qimage.height()
@@ -517,12 +513,11 @@ class LazyImageLoader:
         # Reshape to correct dimensions
         arr = arr.reshape((height, width, 3))
         
-        # Convert from BGR to RGB (QImage uses RGB format, cv2 expects BGR)
-        import cv2
-        cv2_img = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+        # QImage uses RGB format, which matches our RGB workflow
+        img = arr
         
         # Crop to the visible portion
-        cropped_image = cv2_img[int(crop_top):int(crop_bottom), :]
+        cropped_image = img[int(crop_top):int(crop_bottom), :]
         
         return cropped_image
 
@@ -673,8 +668,7 @@ class LazyImageLoader:
             new_heights = []
             for file_path in new_file_paths:
                 try:
-                    import cv2
-                    img = cv2.imread(file_path)
+                    img = imk.read_image(file_path)
                     estimated_height = img.shape[0] if img is not None else 1000
                 except:
                     estimated_height = 1000

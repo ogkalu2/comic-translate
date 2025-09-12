@@ -1,4 +1,6 @@
 opencv_python
+mahotas>=1.4.18
+numpy>=2.2.6
 setuptools
 PySide6>=6.8.0
 msgpack>=1.1.0
@@ -14,7 +16,7 @@ jieba>=0.42.1
 janome>=0.5.0
 pythainlp>=5.1.2
 jaconv>=0.3.4
+huggingface-hub>=0.34.4
 wget>=3.2
-largestinteriorrectangle>=0.2.0
 rapidocr>=3.3.1
 onnxruntime>=1.22.1

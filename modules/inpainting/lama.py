@@ -1,6 +1,6 @@
 import os
-import cv2
 import numpy as np
+import imkit as imk
 import onnxruntime as ort
 from ..utils.device import get_providers
 
@@ -56,7 +56,7 @@ class LaMa(InpaintModel):
             inpainted = self.session.run(None, ort_inputs)[0]
             cur_res = inpainted[0].transpose(1, 2, 0)
             cur_res = np.clip(cur_res * 255, 0, 255).astype("uint8")
-            cur_res = cv2.cvtColor(cur_res, cv2.COLOR_RGB2BGR)
+            # cur_res is already in RGB format
             return cur_res
         else:
             import torch  # noqa
@@ -65,6 +65,6 @@ class LaMa(InpaintModel):
             inpainted_image = self.model(image_t, mask_t)
             cur_res = inpainted_image[0].permute(1, 2, 0).detach().cpu().numpy()
             cur_res = np.clip(cur_res * 255, 0, 255).astype("uint8")
-            cur_res = cv2.cvtColor(cur_res, cv2.COLOR_RGB2BGR)
+            # cur_res is already in RGB format
             return cur_res
     

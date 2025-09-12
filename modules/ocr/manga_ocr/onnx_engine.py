@@ -2,7 +2,6 @@ import os
 import re
 import jaconv
 import numpy as np
-import cv2
 from PIL import Image
 from onnxruntime import InferenceSession
 import onnxruntime as ort
@@ -122,7 +121,7 @@ class MangaOCRONNX:
 
         # convert BGR->RGB and to PIL
         if isinstance(img, np.ndarray):
-            img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            img = Image.fromarray(img)  # img is already in RGB format
         elif isinstance(img, Image.Image):
             img = img
         else:

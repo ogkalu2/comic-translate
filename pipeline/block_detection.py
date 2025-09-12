@@ -106,7 +106,7 @@ class BlockDetectionHandler:
             else:
                 # Regular single image mode
                 current_page = None
-                image = self.main_page.image_viewer.get_cv2_image()
+                image = self.main_page.image_viewer.get_image_array()
                 blk_list = self.block_detector_cache.detect(image)
                 return blk_list, load_rects, current_page
 

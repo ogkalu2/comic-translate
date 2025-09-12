@@ -2,16 +2,19 @@ import cv2
 import numpy as np
 import os
 import base64
-
-from .textblock import TextBlock, sort_textblock_rectangles
-from ..detection.utils.general import does_rectangle_fit, is_mostly_contained, \
-                                      get_inpaint_bboxes
-from ..inpainting.lama import LaMa
-from ..inpainting.mi_gan import MIGAN
-from ..inpainting.aot import AOT
-from ..inpainting.schema import Config
-from app.ui.messages import Messages
 from PySide6.QtCore import Qt
+
+import imkit as imk
+from .textblock import TextBlock, sort_textblock_rectangles
+from modules.detection.utils.geometry import does_rectangle_fit, is_mostly_contained
+from modules.detection.utils.content import get_inpaint_bboxes
+from modules.detection.utils.geometry import outer_outline
+from modules.inpainting.lama import LaMa
+from modules.inpainting.mi_gan import MIGAN
+from modules.inpainting.aot import AOT
+from modules.inpainting.schema import Config
+from app.ui.messages import Messages
+
 
 
 language_codes = {
@@ -73,7 +76,7 @@ def rgba2hex(rgba_list):
     return "#{:02x}{:02x}{:02x}{:02x}".format(r, g, b, a)
 
 def encode_image_array(img_array: np.ndarray):
-    _, img_bytes = cv2.imencode('.png', img_array)
+    img_bytes = imk.encode_image(img_array, ".png")
     return base64.b64encode(img_bytes).decode('utf-8')
 
 def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_string: list):  
@@ -96,6 +99,7 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
             blk.text = ' '.join(text for bbox, text in sorted_entries)
 
     return blk_list
+
 
 def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
     """
@@ -130,15 +134,15 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
             y1i = int((y1 - min_y) / ds)
             x2i = int((x2 - min_x) / ds)
             y2i = int((y2 - min_y) / ds)
-            cv2.rectangle(small, (x1i, y1i), (x2i, y2i), 255, -1)
+            small = imk.rectangle(small, (x1i, y1i), (x2i, y2i), 255, -1)
 
         # 4) Close small mask to bridge gaps
         KSIZE = 15
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
-        closed = cv2.morphologyEx(small, cv2.MORPH_CLOSE, kernel)
+        kernel = imk.get_structuring_element(imk.MORPH_RECT, (KSIZE, KSIZE))
+        closed = imk.morphology_ex(small, imk.MORPH_CLOSE, kernel)
 
         # 5) Extract all contours
-        contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = imk.find_contours(closed)
         if not contours:
             continue
 
@@ -157,7 +161,7 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
 
         # 7) Create per-block mask and fill all polygons
         block_mask = np.zeros((h, w), dtype=np.uint8)
-        cv2.fillPoly(block_mask, polys, 255)
+        block_mask = imk.fill_poly(block_mask, polys, 255)
 
         # 8) Determine dilation kernel size
         kernel_size = default_padding
@@ -186,10 +190,10 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
 
         # 9) Dilate the block mask
         dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
-        dilated = cv2.dilate(block_mask, dil_kernel, iterations=4)
+        dilated = imk.dilate(block_mask, dil_kernel, iterations=4)
 
         # 10) Combine with global mask
-        mask = cv2.bitwise_or(mask, dilated)
+        mask = np.bitwise_or(mask, dilated)
 
     return mask
 

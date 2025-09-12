@@ -1,5 +1,4 @@
 import os
-import cv2
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
@@ -55,7 +54,7 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         return self.create_text_blocks(image, text_boxes, bubble_boxes)
 
     def _detect_single_image(self, image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        pil_image = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        pil_image = Image.fromarray(image)  # image is already in RGB format
 
         # preprocess to (1,3,H,W) float32
         im_resized = pil_image.resize((640, 640))

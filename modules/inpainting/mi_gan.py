@@ -1,6 +1,7 @@
 import os
-import cv2
 import onnxruntime as ort
+import imkit as imk
+from PIL import Image
 import numpy as np
 
 from ..utils.inpainting import (
@@ -62,20 +63,20 @@ class MIGAN(InpaintModel):
                 inpaint_result = self._pad_forward(resize_image, resize_mask, config)
 
                 # only paste masked area result
-                inpaint_result = cv2.resize(
+                inpaint_result = imk.resize(
                     inpaint_result,
                     (origin_size[1], origin_size[0]),
-                    interpolation=cv2.INTER_CUBIC,
+                    mode=Image.Resampling.BICUBIC,
                 )
 
                 original_pixel_indices = crop_mask < 127
-                inpaint_result[original_pixel_indices] = crop_image[:, :, ::-1][
+                inpaint_result[original_pixel_indices] = crop_image[
                     original_pixel_indices
                 ]
 
                 crop_result.append((inpaint_result, crop_box))
 
-            inpaint_result = image[:, :, ::-1].copy()
+            inpaint_result = image.copy()
             for crop_image, crop_box in crop_result:
                 x1, y1, x2, y2 = crop_box
                 inpaint_result[y1:y2, x1:x2, :] = crop_image
@@ -91,7 +92,6 @@ class MIGAN(InpaintModel):
 
         backend = getattr(self, 'backend', 'torch')
         if backend == 'onnx' and getattr(self, 'use_pipeline', False):
-            print('Pipeline onnx')
             # Pipeline model expects uint8 RGB image and uint8 grayscale mask
             # Convert mask to binary (255 for known, 0 for masked)
             binary_mask = np.where(mask > 120, 0, 255).astype(np.uint8)  # Invert: 0=masked, 255=known
@@ -115,7 +115,7 @@ class MIGAN(InpaintModel):
                 print(f"[MIGAN ONNX] Feeding image shape {img_nchw.shape} mask shape {mask_nchw.shape} orig mask shape {mask.shape}")
             out = self.session.run(None, ort_inputs)[0]  # Should be (1, 3, H, W) uint8 RGB
             out_img = np.transpose(out[0], (1, 2, 0))  # Convert to (H, W, 3)
-            cur_res = cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR)
+            cur_res = out_img  # Keep in RGB format
             return cur_res
         elif backend == 'onnx':
             # Original exported model path (preprocessing required)
@@ -130,7 +130,7 @@ class MIGAN(InpaintModel):
             ort_inputs = {self.session.get_inputs()[0].name: concat}
             out = self.session.run(None, ort_inputs)[0]  # (1,3,H,W) in [-1,1]
             out_img = np.clip((out.transpose(0, 2, 3, 1) * 127.5 + 127.5).round(), 0, 255).astype(np.uint8)[0]
-            cur_res = cv2.cvtColor(out_img, cv2.COLOR_RGB2BGR)
+            cur_res = out_img  # Keep in RGB format
             return cur_res
         else:
             # Torch path
@@ -151,5 +151,5 @@ class MIGAN(InpaintModel):
                 .to(torch.uint8)
             )
             output = output[0].cpu().numpy()
-            cur_res = cv2.cvtColor(output, cv2.COLOR_RGB2BGR)
+            cur_res = output  # Keep in RGB format
             return cur_res

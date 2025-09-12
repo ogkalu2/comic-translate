@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+import imkit as imk
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
@@ -40,7 +40,7 @@ class MicrosoftOCR(OCREngine):
         texts_bboxes = []
         texts_string = []
         
-        image_buffer = cv2.imencode('.jpg', img)[1].tobytes()
+        image_buffer = imk.encode_image(img, 'jpg')
         result = self.client.analyze(
             image_data=image_buffer, 
             visual_features=[VisualFeatures.READ]

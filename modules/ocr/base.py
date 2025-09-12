@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
-import cv2
 import base64
+import imkit as imk
 
 from ..utils.textblock import TextBlock
 
@@ -59,7 +59,5 @@ class OCREngine(ABC):
         Returns:
             Base64 encoded image string
         """
-        success, img_buffer = cv2.imencode(ext, image)
-        if not success:
-            raise Exception("Failed to encode image")
+        img_buffer = imk.encode_image(image, ext.lstrip('.'))
         return base64.b64encode(img_buffer).decode('utf-8')

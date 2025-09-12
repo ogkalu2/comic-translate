@@ -1,8 +1,8 @@
 from typing import Any
 import numpy as np
 from abc import abstractmethod
-import cv2
 import base64
+import imkit as imk
 
 from ..base import LLMTranslation
 from ...utils.textblock import TextBlock
@@ -89,9 +89,7 @@ class BaseLLMTranslation(LLMTranslation):
             Tuple of (Base64 encoded string, mime_type)
         """
         # Direct encoding from numpy/cv2 format to bytes
-        success, buffer = cv2.imencode(ext, image)
-        if not success:
-            raise ValueError(f"Failed to encode image with format {ext}")
+        buffer = imk.encode_image(image, ext.lstrip('.'))
         
         # Convert to base64
         img_str = base64.b64encode(buffer).decode('utf-8')

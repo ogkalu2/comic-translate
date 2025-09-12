@@ -19,7 +19,7 @@ class TranslationHandler:
         target_lang = self.main_page.t_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.blk_list:
             settings_page = self.main_page.settings_page
-            image = self.main_page.image_viewer.get_cv2_image()
+            image = self.main_page.image_viewer.get_image_array()
             extra_context = settings_page.get_llm_settings()['extra_context']
             translator_key = settings_page.get_tool_selection('translator')
 

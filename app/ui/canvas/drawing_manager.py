@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 import math
 from typing import List, Dict
@@ -8,9 +7,10 @@ from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, QCursor, QPixmap, QImage, QPainter
 
-from ..commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, \
+from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, \
                             SegmentBoxesCommand, EraseUndoCommand
-from ..commands.base import PathCommandBase as pcb
+from app.ui.commands.base import PathCommandBase as pcb
+import imkit as imk
 
 
 class DrawingManager:
@@ -299,12 +299,13 @@ class DrawingManager:
         human_mask = qimage_to_np(human_qimg)
         gen_mask = qimage_to_np(gen_qimg)
 
+        # Dilate using backend (ksize approximated by kernel size)
         kernel = np.ones((5,5), np.uint8)
-        human_mask = cv2.dilate(human_mask, kernel, iterations=2)
-        gen_mask = cv2.dilate(gen_mask, kernel, iterations=3)
+        human_mask = imk.dilate(human_mask, kernel, iterations=2)
+        gen_mask = imk.dilate(gen_mask, kernel, iterations=3)
 
-        final_mask = cv2.bitwise_or(human_mask, gen_mask)
-        
+        # Combine masks (bitwise_or equivalent)
+        final_mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         return final_mask
     
     def draw_segmentation_lines(self, bboxes):
@@ -330,16 +331,16 @@ class DrawingManager:
             y1i = int((y1 - min_y) / ds)
             x2i = int((x2 - min_x) / ds)
             y2i = int((y2 - min_y) / ds)
-            cv2.rectangle(mask, (x1i, y1i), (x2i, y2i), 255, -1)
+            mask = imk.rectangle(mask, (x1i, y1i), (x2i, y2i), 255, -1)
 
         # 4) Morphological closing to bridge small gaps
         KSIZE = 15
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (KSIZE, KSIZE))
-        mask_closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        kernel = imk.get_structuring_element(imk.MORPH_RECT, (KSIZE, KSIZE))
+        mask_closed = imk.morphology_ex(mask, imk.MORPH_CLOSE, kernel)
 
         # 5) Grab all external contours
-        contours, _ = cv2.findContours(
-            mask_closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        contours, _ = imk.find_contours(
+            mask_closed
         )
         if not contours:
             return

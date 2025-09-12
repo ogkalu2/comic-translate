@@ -4,8 +4,8 @@ Patch Manager for Webtoon Mode
 Handles inpaint patches loading/unloading in webtoon mode with lazy loading.
 """
 
-import cv2
 from typing import List, Dict
+import imkit as imk
 from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QGraphicsPixmapItem
 
@@ -76,11 +76,11 @@ class PatchManager:
                         mem_list = self.main_controller.in_memory_patches.setdefault(file_path, [])
                         if not any(p['hash'] == prop['hash'] for p in mem_list):
                             # Load image for in-memory storage
-                            cv_img = cv2.imread(patch_data['png_path'])
+                            cv_img = imk.read_image(patch_data['png_path'])
                             if cv_img is not None:
                                 mem_prop = {
                                     'bbox': patch_data['bbox'],
-                                    'cv2_img': cv_img,
+                                    'image': cv_img,
                                     'hash': patch_data['hash']
                                 }
                                 mem_list.append(mem_prop)

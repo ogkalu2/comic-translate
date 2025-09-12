@@ -1,16 +1,16 @@
 import numpy as np
-import cv2
 import tempfile
 from PIL import Image
 from PySide6.QtGui import QUndoCommand
+import imkit as imk
 
 
 class SetImageCommand(QUndoCommand):
-    def __init__(self, parent, file_path: str, cv2_img: np.ndarray, 
+    def __init__(self, parent, file_path: str, img_array: np.ndarray, 
                  display: bool = True):
         super().__init__()
         self.ct = parent
-        self.update_image_history(file_path, cv2_img)
+        self.update_image_history(file_path, img_array)
         self.first = True
         self.display_first_time = display
 
@@ -28,8 +28,8 @@ class SetImageCommand(QUndoCommand):
                 self.ct.image_history[file_path] = [file_path]
                 
             current_index = self.ct.current_history_index[file_path]
-            cv2_img = self.get_img(file_path, current_index)
-            self.ct.image_viewer.display_cv2_image(cv2_img)
+            img_array = self.get_img(file_path, current_index)
+            self.ct.image_viewer.display_image_array(img_array)
             self.first = False
 
         if self.ct.curr_img_idx >= 0:
@@ -47,10 +47,10 @@ class SetImageCommand(QUndoCommand):
                 current_index += 1
                 self.ct.current_history_index[file_path] = current_index
 
-                cv2_img = self.get_img(file_path, current_index)
+                img_array = self.get_img(file_path, current_index)
 
-                self.ct.image_data[file_path] = cv2_img
-                self.ct.image_viewer.display_cv2_image(cv2_img)
+                self.ct.image_data[file_path] = img_array
+                self.ct.image_viewer.display_image_array(img_array)
 
     def undo(self):
         if self.ct.curr_img_idx >= 0:
@@ -69,17 +69,17 @@ class SetImageCommand(QUndoCommand):
                 current_index -= 1
                 self.ct.current_history_index[file_path] = current_index
                 
-                cv2_img = self.get_img(file_path, current_index)
+                img_array = self.get_img(file_path, current_index)
 
-                self.ct.image_data[file_path] = cv2_img
-                self.ct.image_viewer.display_cv2_image(cv2_img)
+                self.ct.image_data[file_path] = img_array
+                self.ct.image_viewer.display_image_array(img_array)
 
    
-    def update_image_history(self, file_path: str, cv2_img: np.ndarray):
+    def update_image_history(self, file_path: str, img_array: np.ndarray):
         im = self.ct.load_image(file_path)
 
-        if not np.array_equal(im, cv2_img):
-            self.ct.image_data[file_path] = cv2_img
+        if not np.array_equal(im, img_array):
+            self.ct.image_data[file_path] = img_array
             
             # Update file path history
             history = self.ct.image_history[file_path]
@@ -90,7 +90,7 @@ class SetImageCommand(QUndoCommand):
             
             # # Save new image to temp file and add to history
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', dir=self.ct.temp_dir)
-            pil_image = Image.fromarray(cv2_img)
+            pil_image = Image.fromarray(img_array)
             pil_image.save(temp_file.name)
             temp_file.close()
 
@@ -100,15 +100,14 @@ class SetImageCommand(QUndoCommand):
             if self.ct.in_memory_history.get(file_path, []):
                 in_mem_history = self.ct.in_memory_history[file_path]
                 del in_mem_history[current_index + 1:]
-                in_mem_history.append(cv2_img.copy())
+                in_mem_history.append(img_array.copy())
 
             self.ct.current_history_index[file_path] = len(history) - 1
 
     def get_img(self, file_path, current_index):
         if self.ct.in_memory_history.get(file_path, []):
-            cv2_img = self.ct.in_memory_history[file_path][current_index]
+            img_array = self.ct.in_memory_history[file_path][current_index]
         else:
-            cv2_img = cv2.imread(self.ct.image_history[file_path][current_index])
-            cv2_img = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
+            img_array = imk.read_image(self.ct.image_history[file_path][current_index])
 
-        return cv2_img
+        return img_array

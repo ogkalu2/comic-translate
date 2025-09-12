@@ -1,9 +1,11 @@
 import os
 import json
-import cv2
 import shutil
 import requests
 import logging
+import traceback
+import imkit as imk
+import time
 from datetime import datetime
 from typing import List
 from PySide6.QtGui import QColor
@@ -47,13 +49,34 @@ class BatchProcessor:
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
-        cv2.imwrite(os.path.join(path, f"{base_name}_translated{extension}"), image)
+        imk.write_image(os.path.join(path, f"{base_name}_translated{extension}"), image)
 
-    def log_skipped_image(self, directory, timestamp, image_path, reason=""):
+    def emit_progress(self, index, total, step, steps, change_name):
+        """Wrapper around main_page.progress_update.emit that logs a human-readable stage."""
+        stage_map = {
+            0: 'start-image',
+            1: 'text-block-detection',
+            2: 'ocr-processing',
+            3: 'pre-inpaint-setup',
+            4: 'generate-mask',
+            5: 'inpainting',
+            7: 'translation',
+            9: 'text-rendering-prepare',
+            10: 'save-and-finish',
+        }
+        stage_name = stage_map.get(step, f'stage-{step}')
+        logger.info(f"Progress: image_index={index}/{total} step={step}/{steps} ({stage_name}) change_name={change_name}")
+        self.main_page.progress_update.emit(index, total, step, steps, change_name)
+
+    def log_skipped_image(self, directory, timestamp, image_path, reason="", full_traceback=""):
         skipped_file = os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt")
         with open(skipped_file, 'a', encoding='UTF-8') as file:
             file.write(image_path + "\n")
-            file.write(reason + "\n\n")
+            file.write(reason + "\n")
+            if full_traceback:
+                file.write("Full Traceback:\n")
+                file.write(full_traceback + "\n")
+            file.write("\n")
 
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
@@ -65,7 +88,7 @@ class BatchProcessor:
             file_on_display = self.main_page.image_files[self.main_page.curr_img_idx]
 
             # index, step, total_steps, change_name
-            self.main_page.progress_update.emit(index, total_images, 0, 10, True)
+            self.emit_progress(index, total_images, 0, 10, True)
 
             settings_page = self.main_page.settings_page
             source_lang = self.main_page.image_states[image_path]['source_lang']
@@ -88,7 +111,7 @@ class BatchProcessor:
                         directory = os.path.dirname(archive_path)
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
 
-            image = cv2.imread(image_path)
+            image = imk.read_image(image_path)
 
             # skip UI-skipped images
             state = self.main_page.image_states.get(image_path, {})
@@ -98,7 +121,7 @@ class BatchProcessor:
                 continue
 
             # Text Block Detection
-            self.main_page.progress_update.emit(index, total_images, 1, 10, False)
+            self.emit_progress(index, total_images, 1, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
@@ -109,7 +132,7 @@ class BatchProcessor:
             
             blk_list = self.block_detection.block_detector_cache.detect(image)
 
-            self.main_page.progress_update.emit(index, total_images, 2, 10, False)
+            self.emit_progress(index, total_images, 2, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
@@ -139,11 +162,12 @@ class BatchProcessor:
                     else:
                         err_msg = str(e)
 
-                    logger.error(err_msg)
+                    logger.exception(f"OCR processing failed: {err_msg}")
                     reason = f"OCR: {err_msg}"
+                    full_traceback = traceback.format_exc()
                     self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                     self.main_page.image_skipped.emit(image_path, "OCR", err_msg)
-                    self.log_skipped_image(directory, timestamp, image_path, reason)
+                    self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
                     continue
             else:
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
@@ -151,7 +175,7 @@ class BatchProcessor:
                 self.log_skipped_image(directory, timestamp, image_path, "No text blocks detected")
                 continue
 
-            self.main_page.progress_update.emit(index, total_images, 3, 10, False)
+            self.emit_progress(index, total_images, 3, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
@@ -164,33 +188,41 @@ class BatchProcessor:
                 device = resolve_device(settings_page.is_gpu_enabled())
                 inpainter_key = settings_page.get_tool_selection('inpainter')
                 InpainterClass = inpaint_map[inpainter_key]
+                logger.info("pre-inpaint: initializing inpainter '%s' on device %s", inpainter_key, device)
+                t0 = time.time()
                 self.inpainting.inpainter_cache = InpainterClass(device, backend='onnx')
                 self.inpainting.cached_inpainter_key = inpainter_key
+                t1 = time.time()
+                logger.info("pre-inpaint: inpainter initialized in %.2fs", t1 - t0)
 
             config = get_config(settings_page)
+            logger.info("pre-inpaint: generating mask (blk_list=%d blocks)", len(blk_list))
+            t0 = time.time()
             mask = generate_mask(image, blk_list)
+            t1 = time.time()
+            logger.info("pre-inpaint: mask generated in %.2fs (mask shape=%s)", t1 - t0, getattr(mask, 'shape', None))
 
-            self.main_page.progress_update.emit(index, total_images, 4, 10, False)
+            self.emit_progress(index, total_images, 4, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
 
             inpaint_input_img = self.inpainting.inpainter_cache(image, mask, config)
-            inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img)
+            inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
 
             # Saving cleaned image
             patches = self.inpainting.get_inpainted_patches(mask, inpaint_input_img)
             self.main_page.patches_processed.emit(patches, image_path)
 
-            inpaint_input_img = cv2.cvtColor(inpaint_input_img, cv2.COLOR_BGR2RGB)
+            # inpaint_input_img is already in RGB format
 
             if export_settings['export_inpainted_image']:
                 path = os.path.join(directory, f"comic_translate_{timestamp}", "cleaned_images", archive_bname)
                 if not os.path.exists(path):
                     os.makedirs(path, exist_ok=True)
-                cv2.imwrite(os.path.join(path, f"{base_name}_cleaned{extension}"), inpaint_input_img)
+                imk.write_image(os.path.join(path, f"{base_name}_cleaned{extension}"), inpaint_input_img)
 
-            self.main_page.progress_update.emit(index, total_images, 5, 10, False)
+            self.emit_progress(index, total_images, 5, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
@@ -220,11 +252,12 @@ class BatchProcessor:
                 else:
                     err_msg = str(e)
 
-                logger.error(err_msg)
+                logger.exception(f"Translation failed: {err_msg}")
                 reason = f"Translator: {err_msg}"
+                full_traceback = traceback.format_exc()
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                 self.main_page.image_skipped.emit(image_path, "Translator", err_msg)
-                self.log_skipped_image(directory, timestamp, image_path, reason)
+                self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
                 continue
 
             entire_raw_text = get_raw_text(blk_list)
@@ -244,9 +277,11 @@ class BatchProcessor:
                 # Handle invalid JSON
                 error_message = str(e)
                 reason = f"Translator: JSONDecodeError: {error_message}"
+                logger.exception(reason)
+                full_traceback = traceback.format_exc()
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                 self.main_page.image_skipped.emit(image_path, "Translator", error_message)
-                self.log_skipped_image(directory, timestamp, image_path, reason)
+                self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
                 continue
 
             if export_settings['export_raw_text']:
@@ -263,7 +298,7 @@ class BatchProcessor:
                 file = open(os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_translated.txt"), 'w', encoding='UTF-8')
                 file.write(entire_translated_text)
 
-            self.main_page.progress_update.emit(index, total_images, 7, 10, False)
+            self.emit_progress(index, total_images, 7, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
@@ -346,7 +381,7 @@ class BatchProcessor:
                 'push_to_stack': True
                 })
             
-            self.main_page.progress_update.emit(index, total_images, 9, 10, False)
+            self.emit_progress(index, total_images, 9, 10, False)
             if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                 self.main_page.current_worker = None
                 break
@@ -371,7 +406,7 @@ class BatchProcessor:
             renderer.add_state_to_image(viewer_state)
             renderer.save_image(sv_pth)
 
-            self.main_page.progress_update.emit(index, total_images, 10, 10, False)
+            self.emit_progress(index, total_images, 10, 10, False)
 
         archive_info_list = self.main_page.file_handler.archive_info
         if archive_info_list:
@@ -379,7 +414,7 @@ class BatchProcessor:
             for archive_index, archive in enumerate(archive_info_list):
                 archive_index_input = total_images + archive_index
 
-                self.main_page.progress_update.emit(archive_index_input, total_images, 1, 3, True)
+                self.emit_progress(archive_index_input, total_images, 1, 3, True)
                 if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                     self.main_page.current_worker = None
                     break
@@ -393,7 +428,7 @@ class BatchProcessor:
                 save_dir = os.path.join(archive_directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
                 check_from = os.path.join(archive_directory, f"comic_translate_{timestamp}")
 
-                self.main_page.progress_update.emit(archive_index_input, total_images, 2, 3, True)
+                self.emit_progress(archive_index_input, total_images, 2, 3, True)
                 if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                     self.main_page.current_worker = None
                     break
@@ -403,7 +438,7 @@ class BatchProcessor:
                 make(save_as_ext=save_as_ext, input_dir=save_dir, 
                     output_dir=archive_directory, output_base_name=output_base_name)
 
-                self.main_page.progress_update.emit(archive_index_input, total_images, 3, 3, True)
+                self.emit_progress(archive_index_input, total_images, 3, 3, True)
                 if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
                     self.main_page.current_worker = None
                     break

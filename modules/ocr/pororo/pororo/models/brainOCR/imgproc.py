@@ -4,31 +4,29 @@ Copyright (c) 2019-present NAVER Corp.
 MIT License
 """
 
-import cv2
 import numpy as np
+import imkit as imk
 
 
 def load_image(img_file):
-    img = cv2.imread(img_file)
+    img = imk.read_image(img_file)
 
     if img is None:
         raise IOError(f"Could not read image file: {img_file}")
 
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
     if img.shape[0] == 2: 
         img = img[0]
-    if len(img.shape) == 2: # This check is now less likely as cv2.imread converts grayscale to 3-channel
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    if len(img.shape) == 2: # Convert grayscale to RGB
+        img = np.stack([img, img, img], axis=2)
     if img.shape[2] == 4: # cv2.imread strips the alpha channel by default
         img = img[:, :, :3]
     
     return img
 
 def normalize_mean_variance(
-        in_img,
-        mean=(0.485, 0.456, 0.406),
-        variance=(0.229, 0.224, 0.225),
+    in_img,
+    mean=(0.485, 0.456, 0.406),
+    variance=(0.229, 0.224, 0.225),
 ):
     # should be RGB order
     img = in_img.copy().astype(np.float32)
@@ -74,7 +72,7 @@ def resize_aspect_ratio(
     ratio = target_size / max(height, width)
 
     target_h, target_w = int(height * ratio), int(width * ratio)
-    proc = cv2.resize(img, (target_w, target_h), interpolation=interpolation)
+    proc = imk.resize(img, (target_w, target_h), mode=interpolation)
 
     # make canvas and paste image
     target_h32, target_w32 = target_h, target_w
@@ -89,9 +87,3 @@ def resize_aspect_ratio(
     size_heatmap = (int(target_w / 2), int(target_h / 2))
 
     return resized, ratio, size_heatmap
-
-
-def cvt2heatmap_img(img):
-    img = (np.clip(img, 0, 1) * 255).astype(np.uint8)
-    img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
-    return img

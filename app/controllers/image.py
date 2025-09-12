@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-import cv2
+import imkit as imk
 from PIL import Image
 import numpy as np
 from typing import TYPE_CHECKING, List
@@ -50,17 +50,15 @@ class ImageStateController:
             current_temp_path = self.main.image_history[file_path][current_index]
             
             # Load the image from the temp file
-            cv2_image = cv2.imread(current_temp_path)
-            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+            rgb_image = imk.read_image(current_temp_path)
             
-            if cv2_image is not None:
-                return cv2_image
+            if rgb_image is not None:
+                return rgb_image
 
         # If not in memory and not in history (or failed to load from temp),
         # load from the original file path
-        cv2_image = cv2.imread(file_path)
-        cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
-        return cv2_image
+        rgb_image = imk.read_image(file_path)
+        return rgb_image
 
 
     def clear_state(self):
@@ -167,11 +165,11 @@ class ImageStateController:
         else:
             self.thread_load_images(paths)
 
-    def on_initial_image_loaded(self, cv2_image: np.ndarray):
-        if cv2_image is not None:
-            self.main.image_data[self.main.image_files[0]] = cv2_image
+    def on_initial_image_loaded(self, rgb_image: np.ndarray):
+        if rgb_image is not None:
+            self.main.image_data[self.main.image_files[0]] = rgb_image
             self.main.image_history[self.main.image_files[0]] = [self.main.image_files[0]]
-            self.main.in_memory_history[self.main.image_files[0]] = [cv2_image.copy()]
+            self.main.in_memory_history[self.main.image_files[0]] = [rgb_image.copy()]
             self.main.current_history_index[self.main.image_files[0]] = 0
             self.save_image_state(self.main.image_files[0])
 
@@ -440,14 +438,14 @@ class ImageStateController:
             if card:
                 card.set_skipped(skip_status)
 
-    def display_image_from_loaded(self, cv2_image, index: int, switch_page: bool = True):
+    def display_image_from_loaded(self, rgb_image, index: int, switch_page: bool = True):
         file_path = self.main.image_files[index]
-        self.main.image_data[file_path] = cv2_image
+        self.main.image_data[file_path] = rgb_image
         
         # Initialize history for new images
         if file_path not in self.main.image_history:
             self.main.image_history[file_path] = [file_path]
-            self.main.in_memory_history[file_path] = [cv2_image.copy()]
+            self.main.in_memory_history[file_path] = [rgb_image.copy()]
             self.main.current_history_index[file_path] = 0
 
         self.display_image(index, switch_page)
@@ -462,12 +460,12 @@ class ImageStateController:
 
                 self.main.in_memory_patches.pop(oldest_image, None)
 
-    def set_cv2_image(self, cv2_img: np.ndarray, push: bool = True):
+    def set_image(self, rgb_img: np.ndarray, push: bool = True):
         if self.main.curr_img_idx >= 0:
             file_path = self.main.image_files[self.main.curr_img_idx]
             
             # Push the command to the appropriate stack
-            command = SetImageCommand(self.main, file_path, cv2_img)
+            command = SetImageCommand(self.main, file_path, rgb_img)
             if push:
                 self.main.undo_group.activeStack().push(command)
             else:
@@ -481,16 +479,16 @@ class ImageStateController:
             if match:
                 prop = {
                     'bbox': saved['bbox'],
-                    'cv2_img': match['cv2_img'],
+                    'image': match['image'],
                     'hash': saved['hash']
                 }
             else:
                 # load into memory
-                cv_img = cv2.imread(saved['png_path'])
+                rgb_img = imk.read_image(saved['png_path'])
                 prop = {
-                    'bbox':     saved['bbox'],
-                    'cv2_img':  cv_img,
-                    'hash':     saved['hash']
+                    'bbox': saved['bbox'],
+                    'image': rgb_img,
+                    'hash': saved['hash']
                 }
                 self.main.in_memory_patches[file_path].append(prop)
             
@@ -504,7 +502,7 @@ class ImageStateController:
             final_rgb, _ = self.main.image_viewer.get_visible_area_image(paint_all=True)
         else:
             # In regular mode, get the current single image
-            final_rgb = self.main.image_viewer.get_cv2_image(paint_all=True)
+            final_rgb = self.main.image_viewer.get_image_array(paint_all=True)
         
         pil_img = Image.fromarray(final_rgb)
         
@@ -537,9 +535,9 @@ class ImageStateController:
             self.save_image_state(current_file)
 
     def load_image_state(self, file_path: str):
-        cv2_image = self.main.image_data[file_path]
+        rgb_image = self.main.image_data[file_path]
 
-        self.set_cv2_image(cv2_image, push=False) 
+        self.set_image(rgb_image, push=False) 
         if file_path in self.main.image_states:
             state = self.main.image_states[file_path]
             push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
@@ -607,7 +605,7 @@ class ImageStateController:
         current_batch_file = self.main.selected_batch[index] if self.main.selected_batch else self.main.image_files[index]
         
         if current_batch_file == file_on_display:
-            self.set_cv2_image(image)
+            self.set_image(image)
         else:
             command = SetImageCommand(self.main, image_path, image, False)
             self.main.undo_stacks[current_batch_file].push(command)

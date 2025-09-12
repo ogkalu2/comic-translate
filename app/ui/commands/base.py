@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import numpy as np
-import cv2
 from typing import TypedDict, TYPE_CHECKING
 from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, Qt
 from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import QRectF, QPointF
 from PySide6 import QtGui, QtWidgets
+import imkit as imk
 
 from ..canvas.text.text_item_properties import TextItemProperties
 from modules.utils.textblock import TextBlock
@@ -236,8 +236,7 @@ class PatchCommandBase:
     @staticmethod
     def create_patch_item(properties, viewer: ImageViewer):
         x, y, w, h = properties['bbox']
-        img = cv2.imread(properties['png_path']) if 'png_path' in properties else properties['cv2_img']
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = imk.read_image(properties['png_path']) if 'png_path' in properties else properties['image']
         qimg = QtGui.QImage(img.data, w, h, img.strides[0],
                             QtGui.QImage.Format.Format_RGB888)
         pix  = QtGui.QPixmap.fromImage(qimg)

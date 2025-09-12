@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+import imkit as imk
 
 from .orientation import infer_orientation, infer_reading_order, \
     infer_text_direction
@@ -175,8 +175,8 @@ def merge_items_in_line(line: list) -> list[list[int]]:
         return []
     
     # Use minimum area rectangle to get the best fitting rotated rectangle
-    rect = cv2.minAreaRect(pts_np)
-    box = cv2.boxPoints(rect)
+    rect = imk.min_area_rect(pts_np)
+    box = imk.box_points(rect)
     return [[int(x), int(y)] for x, y in box]
 
 

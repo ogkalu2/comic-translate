@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
-import cv2
 import numpy as np
 from PIL import Image
+import imkit as imk
 import onnxruntime as ort
 from typing import Optional
 
@@ -69,7 +69,7 @@ class PororoOCREngineONNX(OCREngine):  # type: ignore
         img_resized, target_ratio, _ = resize_aspect_ratio(
             image,
             canvas_size,
-            interpolation=cv2.INTER_LINEAR,
+            interpolation=Image.Resampling.BILINEAR,
             mag_ratio=mag_ratio,
         )
         ratio_h = ratio_w = 1 / target_ratio
@@ -96,7 +96,7 @@ class PororoOCREngineONNX(OCREngine):  # type: ignore
             y_max, x_max = img_cv_grey.shape
             ratio = x_max / y_max
             max_width = int(imgH * ratio)
-            crop_img = cv2.resize(img_cv_grey, (max_width, imgH), interpolation=cv2.INTER_AREA)
+            crop_img = imk.resize(img_cv_grey, (max_width, imgH), mode=Image.Resampling.LANCZOS)
             image_list = [([[0, 0], [x_max, 0], [x_max, y_max], [0, y_max]], crop_img)]
         else:
             image_list, _ = get_image_list(horizontal_list, free_list, img_cv_grey, model_height=imgH)

@@ -524,7 +524,7 @@ class TextController:
                               min_font_size)
 
     def on_render_complete(self, rendered_image: np.ndarray):
-        # self.main.set_cv2_image(rendered_image) 
+        # self.main.set_image(rendered_image) 
         self.main.loading.setVisible(False)
         self.main.enable_hbutton_group()
         self.main.undo_group.activeStack().endMacro()

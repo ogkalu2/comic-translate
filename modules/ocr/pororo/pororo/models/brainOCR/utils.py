@@ -6,8 +6,9 @@ import math
 import os
 from urllib.request import urlretrieve
 
-import cv2
 import numpy as np
+import imkit as imk
+from PIL import Image
 try:
     import importlib
     torch = importlib.import_module("torch")
@@ -378,8 +379,8 @@ def four_point_transform(image, rect):
     )
 
     # compute the perspective transform matrix and then apply it
-    M = cv2.getPerspectiveTransform(rect, dst)
-    warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+    M = imk.get_perspective_transform(rect, dst)
+    warped = imk.warp_perspective(image, M, (maxWidth, maxHeight))
 
     return warped
 
@@ -521,10 +522,10 @@ def get_image_list(horizontal_list: list,
         rect = np.array(box, dtype="float32")
         transformed_img = four_point_transform(img, rect)
         ratio = transformed_img.shape[1] / transformed_img.shape[0]
-        crop_img = cv2.resize(
+        crop_img = imk.resize(
             transformed_img,
             (int(model_height * ratio), model_height),
-            interpolation=cv2.INTER_AREA,
+            mode=Image.Resampling.LANCZOS,
         )
         # box : [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
         image_list.append((box, crop_img))
@@ -541,10 +542,10 @@ def get_image_list(horizontal_list: list,
         width = x_max - x_min
         height = y_max - y_min
         ratio = width / height
-        crop_img = cv2.resize(
+        crop_img = imk.resize(
             crop_img,
             (int(model_height * ratio), model_height),
-            interpolation=cv2.INTER_AREA,
+            mode=Image.Resampling.LANCZOS,
         )
         image_list.append((
             [
@@ -709,28 +710,27 @@ def reformat_input(image):
                     length=50,
                 ),
             )
-            img_cv_grey = cv2.imread(tmp, cv2.IMREAD_GRAYSCALE)
+            img_cv_grey = imk.to_gray(imk.read_image(tmp))
             os.remove(tmp)
         else:
-            img_cv_grey = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
+            img_cv_grey = imk.to_gray(imk.read_image(image))
             image = os.path.expanduser(image)
         img = load_image(image)  # can accept URL
     elif type(image) == bytes:
         nparr = np.frombuffer(image, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img = imk.decode_image(nparr)  # Already in RGB format
+        img_cv_grey = imk.to_gray(img)
 
     elif type(image) == np.ndarray:
         if len(image.shape) == 2:  # grayscale
             img_cv_grey = image
-            img = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+            img = np.stack([image, image, image], axis=2)  # Convert grayscale to RGB
         elif len(image.shape) == 3 and image.shape[2] == 3:  # BGRscale
             img = image
-            img_cv_grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            img_cv_grey = imk.to_gray(image)
         elif len(image.shape) == 3 and image.shape[2] == 4:  # RGBAscale
             img = image[:, :, :3]
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # img is already in RGB format, no conversion needed
+            img_cv_grey = imk.to_gray(img)
 
     return img, img_cv_grey

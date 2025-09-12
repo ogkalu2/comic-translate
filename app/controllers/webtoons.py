@@ -151,10 +151,10 @@ class WebtoonController:
         manager = self.image_viewer.webtoon_manager
         
         # Consolidate image data back to main controller
-        for page_idx, cv2_img in manager.image_data.items():
+        for page_idx, img_array in manager.image_data.items():
             if page_idx < len(self.image_files):
                 file_path = self.image_files[page_idx]
-                self.main.image_data[file_path] = cv2_img
+                self.main.image_data[file_path] = img_array
         
         # Save all currently visible scene items to their appropriate page states
         # This is crucial to ensure items from multiple pages are saved correctly

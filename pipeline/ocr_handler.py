@@ -17,7 +17,7 @@ class OCRHandler:
     def OCR_image(self, single_block: bool = False):
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
-            image = self.main_page.image_viewer.get_cv2_image()
+            image = self.main_page.image_viewer.get_image_array()
             ocr_model = self.main_page.settings_page.get_tool_selection('ocr')
             cache_key = self.cache_manager._get_ocr_cache_key(image, source_lang, ocr_model)
             

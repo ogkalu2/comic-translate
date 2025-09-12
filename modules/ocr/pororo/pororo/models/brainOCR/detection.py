@@ -4,8 +4,8 @@ This code is adapted from https://github.com/JaidedAI/EasyOCR/blob/master/easyoc
 
 from collections import OrderedDict
 
-import cv2
 import numpy as np
+from PIL import Image
 
 from .craft_utils import adjust_result_coordinates, get_det_boxes
 from .imgproc import normalize_mean_variance, resize_aspect_ratio
@@ -36,7 +36,7 @@ def test_net(image: np.ndarray, net, opt2val: dict):
 
     # resize
     img_resized, target_ratio, size_heatmap = resize_aspect_ratio(
-        image, canvas_size, interpolation=cv2.INTER_LINEAR, mag_ratio=mag_ratio)
+        image, canvas_size, interpolation=Image.Resampling.BILINEAR, mag_ratio=mag_ratio)
     ratio_h = ratio_w = 1 / target_ratio
 
     # preprocessing

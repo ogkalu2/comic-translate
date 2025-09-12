@@ -7,7 +7,7 @@ from PySide6.QtCore import QRectF, QPointF
 from app.ui.canvas.rectangle import MoveableRectItem
 from app.ui.commands.box import AddRectangleCommand, BoxesChangeCommand
 
-from modules.detection.utils.general import do_rectangles_overlap
+from modules.detection.utils.geometry import do_rectangles_overlap
 from modules.utils.textblock import TextBlock
 
 if TYPE_CHECKING:

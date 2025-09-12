@@ -53,8 +53,8 @@ class WebtoonLayoutManager:
             for i in range(sample_size):
                 # Quick metadata-only load for size estimation
                 try:
-                    import cv2
-                    img = cv2.imread(file_paths[i])
+                    import imkit as imk
+                    img = imk.read_image(file_paths[i])
                     if img is not None:
                         h, w = img.shape[:2]
                         sample_widths.append(w)

@@ -22,7 +22,7 @@ from modules.utils.file_handler import FileHandler
 from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
                                          validate_translator
 from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
-from modules.detection.utils.general import get_inpaint_bboxes
+from modules.detection.utils.content import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
 from modules.rendering.render import pyside_word_wrap
 from modules.utils.pipeline_utils import get_language_code, is_close
@@ -62,7 +62,7 @@ class ComicTranslate(ComicTranslateUI):
         self.image_states = {}
         self.image_data = {}  # Store the latest version of each image
         self.image_history = {}  # Store file path history for all images
-        self.in_memory_history = {}  # Store cv2 image history for recent images
+        self.in_memory_history = {}  # Store image history for recent images
         self.current_history_index = {}  # Current position in the history for each image
         self.displayed_images = set()  # Set to track displayed images
         self.image_patches = {}  # Store patches for each image
@@ -670,7 +670,7 @@ class ComicTranslate(ComicTranslateUI):
                     )
                 else:
                     def compute_all_bboxes():
-                        image = self.image_viewer.get_cv2_image()
+                        image = self.image_viewer.get_image_array()
                         results = []
                         for blk in self.blk_list:
                             bboxes = get_inpaint_bboxes(blk.xyxy, image)

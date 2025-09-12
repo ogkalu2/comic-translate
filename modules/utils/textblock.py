@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np
-import cv2
 import copy
+from PIL import Image, ImageDraw
 from collections import defaultdict, deque
 from ..detection.utils.text_lines import group_items_into_lines
 
@@ -177,46 +177,77 @@ def sort_textblock_rectangles(
     return out
 
 def visualize_textblocks(canvas, blk_list: List[TextBlock]):
+    """Visualize text blocks using PIL."""
+    # Convert numpy array to PIL Image
+    if isinstance(canvas, np.ndarray):
+        if canvas.dtype != np.uint8:
+            canvas = canvas.astype(np.uint8)
+        if len(canvas.shape) == 3:
+            pil_image = Image.fromarray(canvas)
+        else:
+            pil_image = Image.fromarray(canvas, mode='L').convert('RGB')
+    else:
+        pil_image = canvas
+    
+    draw = ImageDraw.Draw(pil_image)
     lw = max(round(sum(canvas.shape) / 2 * 0.003), 2)  # line width
+    
     for i, blk in enumerate(blk_list):
         bx1, by1, bx2, by2 = blk.xyxy
-        cv2.rectangle(canvas, (bx1, by1), (bx2, by2), (127, 255, 127), lw)
+        # Draw rectangle
+        draw.rectangle([bx1, by1, bx2, by2], outline=(127, 255, 127), width=lw)
+        
+        # Draw line numbers and polygons (simplified)
         for j, line in enumerate(blk.lines):
-            cv2.putText(canvas, str(j), line[0], cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255,127,0), 1)
-            cv2.polylines(canvas, [line], True, (0,127,255), 2)
-        # cv2.polylines(canvas, [blk.min_rect], True, (127,127,0), 2)
-        cv2.putText(canvas, str(i), (bx1, by1 + lw), 0, lw / 3, (255,127,127), max(lw-1, 1), cv2.LINE_AA)
-        #center = [int((bx1 + bx2)/2), int((by1 + by2)/2)]
-        # cv2.putText(canvas, 'a: %.2f' % blk.angle, [bx1, center[1]], cv2.FONT_HERSHEY_SIMPLEX, 1, (127,127,255), 2)
-        #cv2.putText(canvas, 'x: %s' % bx1, [bx1, center[1] + 30], cv2.FONT_HERSHEY_SIMPLEX, 1, (127,127,255), 2)
-        #cv2.putText(canvas, 'y: %s' % by1, [bx1, center[1] + 60], cv2.FONT_HERSHEY_SIMPLEX, 1, (127,127,255), 2)
-    return canvas
+            if len(line) > 0:
+                draw.text(line[0], str(j), fill=(255, 127, 0))
+                # Draw polygon outline (simplified as lines between points)
+                if len(line) > 1:
+                    for k in range(len(line)):
+                        start_point = tuple(line[k])
+                        end_point = tuple(line[(k + 1) % len(line)])
+                        draw.line([start_point, end_point], fill=(0, 127, 255), width=2)
+        
+        # Draw block index
+        draw.text((bx1, by1 + lw), str(i), fill=(255, 127, 127))
+    
+    # Convert back to numpy array
+    return np.array(pil_image)
 
 def visualize_speech_bubbles(canvas, blk_list: List[TextBlock]):
+    """Visualize speech bubbles using PIL."""
+    # Convert numpy array to PIL Image
+    if isinstance(canvas, np.ndarray):
+        if canvas.dtype != np.uint8:
+            canvas = canvas.astype(np.uint8)
+        if len(canvas.shape) == 3:
+            pil_image = Image.fromarray(canvas)
+        else:
+            pil_image = Image.fromarray(canvas, mode='L').convert('RGB')
+    else:
+        pil_image = canvas
+    
+    draw = ImageDraw.Draw(pil_image)
     lw = max(round(sum(canvas.shape) / 2 * 0.003), 2)  # line width
 
     # Define a color for each class
     class_colors = {
-        'text_free': (255, 0, 0),   # Blue color for class_name_1
-        'text_bubble': (0, 255, 0),   # Green color for class_name_2
+        'text_free': (255, 0, 0),   # Red color for text_free
+        'text_bubble': (0, 255, 0),   # Green color for text_bubble
     }
 
     for blk in blk_list:
-        bx1, by1, bx2, by2 = blk.bubble_xyxy
+        if blk.bubble_xyxy is not None:
+            bx1, by1, bx2, by2 = blk.bubble_xyxy
 
-        # Select the color for the current class
-        color = class_colors.get(blk.text_class, (127, 255, 127))  # Default color if class not found
+            # Select the color for the current class
+            color = class_colors.get(blk.text_class, (127, 255, 127))  # Default color if class not found
 
-        # Draw the bounding box with the selected color
-        cv2.rectangle(canvas, (bx1, by1), (bx2, by2), color, lw)
+            # Draw the bounding box with the selected color
+            draw.rectangle([bx1, by1, bx2, by2], outline=color, width=lw)
 
-        #label = f"{conf * 100:.2f}%"  # e.g., '0: text_bubble 95.43%'
-        #(text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, lw / 6, max(lw - 1, 1))
-        # Draw the label
-        #cv2.rectangle(canvas, (bx1, by1 - text_height - baseline - 3), (bx1 + text_width, by1), color, -1)
-        #cv2.putText(canvas, label, (bx1, by1 - baseline), cv2.FONT_HERSHEY_SIMPLEX, lw / 6, (255, 255, 255), max(lw - 1, 1), cv2.LINE_AA)
-
-    return canvas
+    # Convert back to numpy array
+    return np.array(pil_image)
 
 def adjust_text_line_coordinates(coords, width_expansion_percentage: int, height_expansion_percentage: int, img: np.ndarray):
     top_left_x, top_left_y, bottom_right_x, bottom_right_y = coords

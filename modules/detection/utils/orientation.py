@@ -1,5 +1,5 @@
-import cv2
 import numpy as np
+import imkit as imk
 
 def _vote_spread_ratio(centers: np.ndarray) -> tuple[int, int]:
     """Vote based on overall spread ratio of text distribution."""
@@ -179,7 +179,7 @@ def _vote_projection_profile_poly(polygons: list[np.ndarray]) -> tuple[int, int]
             gy = (cnt[:, 1] - y_min) / h_total * (gh - 1)
             pts = np.stack([np.clip(np.round(gx), 0, gw - 1),
                             np.clip(np.round(gy), 0, gh - 1)], axis=1).astype(np.int32)
-            cv2.fillPoly(mask, [pts], 1)
+            imk.fill_poly(mask, [pts], 1)
 
         row_sums = mask.sum(axis=1).astype(float)
         col_sums = mask.sum(axis=0).astype(float)
@@ -267,7 +267,7 @@ def _prepare_items(items):
             continue
         cnt = np.asarray(poly, dtype=np.float32)
         polys.append(cnt)
-        rect = cv2.minAreaRect(cnt)
+        rect = imk.min_area_rect(cnt)
         (cx, cy), (w, h), _ = rect
         centers_list.append([cx, cy])
         widths.append(max(float(w), 1.0))

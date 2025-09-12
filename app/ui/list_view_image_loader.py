@@ -1,6 +1,7 @@
 import os
-import cv2
 from typing import Set
+import imkit as imk
+from PIL import Image
 from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QListWidget
@@ -53,16 +54,12 @@ class ImageLoadWorker(QObject):
     def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
         """Load and resize an image to the target size."""
         try:
-            # Use OpenCV to load the image for better performance
-            cv2_image = cv2.imread(file_path)
-            if cv2_image is None:
+            image = imk.read_image(file_path)
+            if image is None:
                 return QPixmap()
-                
-            # Convert from BGR to RGB
-            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
             
             # Resize maintaining aspect ratio
-            height, width = cv2_image.shape[:2]
+            height, width = image.shape[:2]
             target_width, target_height = target_size.width(), target_size.height()
             
             # Calculate scaling factor to fit within target size
@@ -73,7 +70,7 @@ class ImageLoadWorker(QObject):
             new_width = int(width * scale)
             new_height = int(height * scale)
             
-            resized_image = cv2.resize(cv2_image, (new_width, new_height), interpolation=cv2.INTER_AREA)
+            resized_image = imk.resize(image, (new_width, new_height), mode=Image.Resampling.LANCZOS)
             
             # Convert to QPixmap
             h, w, ch = resized_image.shape

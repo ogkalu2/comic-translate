@@ -227,7 +227,7 @@ class LazyWebtoonManager:
         return self.image_loader.image_file_paths
 
     # Event handling methods (called from the enhanced controller)
-    def on_image_loaded(self, page_idx: int, cv2_img: np.ndarray):
+    def on_image_loaded(self, page_idx: int, img_array: np.ndarray):
         """Handle when an image is loaded - load scene items for this page."""
         self.scene_item_manager.load_page_scene_items(page_idx)
 
@@ -277,8 +277,8 @@ class LazyWebtoonManager:
         if hasattr(self, 'enhanced_controller') and self.enhanced_controller:
             self.enhanced_controller._on_lazy_manager_ready()
 
-    def get_cv2_image(self, page_index: int = None) -> np.ndarray:
-        """Get CV2 image data for a specific page."""
+    def get_image_array(self, page_index: int = None) -> np.ndarray:
+        """Get image array data for a specific page."""
         page_index = page_index if page_index is not None else self.layout_manager.current_page_index
         return self.image_loader.get_image_data(page_index)
         

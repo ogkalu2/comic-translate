@@ -1,5 +1,5 @@
 from PySide6 import QtCore, QtGui, QtWidgets
-import cv2
+import imkit as imk
 from PIL import Image
 import numpy as np
 import os
@@ -7,11 +7,11 @@ from .text_item import TextBlockItem
 from .text.text_item_properties import TextItemProperties
 
 class ImageSaveRenderer:
-    def __init__(self, cv2_image):
-        self.cv2_image = cv2_image
+    def __init__(self, image: np.ndarray):
+        self.rgb_image = image
         self.scene = QtWidgets.QGraphicsScene()
 
-        self.qimage = self.cv2_to_qimage(cv2_image)
+        self.qimage = self.img_array_to_qimage(image)
         # Create a QGraphicsPixmapItem with the QPixmap
         self.pixmap = QtGui.QPixmap.fromImage(self.qimage)
         self.pixmap_item = QtWidgets.QGraphicsPixmapItem(self.pixmap)
@@ -23,12 +23,10 @@ class ImageSaveRenderer:
         self.scene.addItem(self.pixmap_item)
 
 
-    def cv2_to_qimage(self, cv2_img):
-        # Convert BGR to RGB
-        rgb_image = cv2.cvtColor(cv2_img, cv2.COLOR_BGR2RGB)
-        height, width, channel = rgb_image.shape
+    def img_array_to_qimage(self, rgb_img: np.ndarray) -> QtGui.QImage:
+        height, width, channel = rgb_img.shape
         bytes_per_line = channel * width
-        return QtGui.QImage(rgb_image.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
+        return QtGui.QImage(rgb_img.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
 
     def add_state_to_image(self, state, page_idx=None, main_page=None):
         # Add spanning text items if we have the context to do so
@@ -75,14 +73,10 @@ class ImageSaveRenderer:
         the intended visible area are positioned off-canvas and are clipped by
         the renderer.
         """
-        import cv2  # Import here to avoid circular imports
-
         existing_text_items = viewer_state.get('text_items_state', [])
 
         current_image_path = main_page.image_files[page_idx]
-        current_image = cv2.imread(current_image_path)
-        if current_image is None:
-            return
+        current_image = imk.read_image(current_image_path)
         current_page_height = current_image.shape[0]
 
         for other_page_idx, other_image_path in enumerate(main_page.image_files):
@@ -96,9 +90,7 @@ class ImageSaveRenderer:
             if abs(page_gap) != 1:  # Only check adjacent pages
                 continue
 
-            other_image = cv2.imread(other_image_path)
-            if other_image is None:
-                continue
+            other_image = imk.read_image(other_image_path)
             other_page_height = other_image.shape[0]
             other_viewer_state = main_page.image_states[other_image_path].get('viewer_state', {})
             other_text_items = other_viewer_state.get('text_items_state', [])
@@ -165,7 +157,7 @@ class ImageSaveRenderer:
                             QtCore.Qt.AspectRatioMode.KeepAspectRatio, 
                             QtCore.Qt.TransformationMode.SmoothTransformation)
 
-        # Convert QImage to cv2 image
+        # Convert QImage to RGB numpy array
         qimage = qimage.convertToFormat(QtGui.QImage.Format.Format_RGB888)
         width = qimage.width()
         height = qimage.height()
@@ -211,10 +203,14 @@ class ImageSaveRenderer:
         for patch in patches:
             # Extract data from the patch dict
             x, y, w, h = patch['bbox']
-            patch_image = cv2.imread(patch['png_path']) if 'png_path' in patch else patch['cv2_img']
+            if 'png_path' in patch:
+                patch_image = imk.read_image(patch['png_path'])
+            else:
+                # Handle direct image data (expected to be RGB format)
+                patch_image = patch['image']
             
             # Convert patch to QImage
-            patch_qimage = self.cv2_to_qimage(patch_image)
+            patch_qimage = self.img_array_to_qimage(patch_image)
             patch_pixmap = QtGui.QPixmap.fromImage(patch_qimage)
             
             # Create a pixmap item for the patch

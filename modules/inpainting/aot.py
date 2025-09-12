@@ -1,5 +1,6 @@
-import cv2
 import numpy as np
+import imkit as imk
+from PIL import Image
 import onnxruntime as ort
 from modules.utils.device import get_providers
 
@@ -90,10 +91,10 @@ class AOT(InpaintModel):
         # Ensure output dimensions match input
         new_shape = img_inpainted.shape[:2]
         if new_shape[0] != im_h or new_shape[1] != im_w:
-            img_inpainted = cv2.resize(img_inpainted, (im_w, im_h), interpolation=cv2.INTER_LINEAR)
+            img_inpainted = imk.resize(img_inpainted, (im_w, im_h), mode=Image.Resampling.BILINEAR)
         
         # Convert to BGR for return
-        img_inpainted = cv2.cvtColor(img_inpainted, cv2.COLOR_RGB2BGR)
+        # img_inpainted is already in RGB format
         
         return img_inpainted
 
@@ -101,7 +102,7 @@ def resize_keep_aspect(img, target_size):
     max_dim = max(img.shape[:2])  
     scale = target_size / max_dim  
     new_size = (round(img.shape[1] * scale), round(img.shape[0] * scale))  
-    return cv2.resize(img, new_size, interpolation=cv2.INTER_LINEAR_EXACT)
+    return imk.resize(img, new_size, mode=Image.Resampling.BILINEAR)
     
 
 

@@ -1,16 +1,15 @@
-import cv2
 import numpy as np
 from typing import Tuple, List
 
 from PIL import Image, ImageFont, ImageDraw
 from PySide6.QtGui import QFont, QTextDocument,\
-      QTextCursor, QTextBlockFormat, QTextOption, QFontDatabase
-from PySide6.QtWidgets import QApplication
+      QTextCursor, QTextBlockFormat, QTextOption
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
 
 from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
-from ..detection.utils.general import make_bubble_mask, bubble_interior_bounds
+from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 
 from dataclasses import dataclass
@@ -32,21 +31,15 @@ class TextRenderingSettings:
     line_spacing: str
     direction: Qt.LayoutDirection
 
-def cv2_to_pil(cv2_image: np.ndarray):
-    # Convert color channels from BGR to RGB
-    rgb_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
-    # Convert the NumPy array to a PIL Image
+def array_to_pil(rgb_image: np.ndarray):
+    # Image is already in RGB format, just convert to PIL
     pil_image = Image.fromarray(rgb_image)
     return pil_image
 
-def pil_to_cv2(pil_image: Image):
-    # Convert the PIL image to a numpy array
+def pil_to_array(pil_image: Image):
+    # Convert the PIL image to a numpy array (already in RGB)
     numpy_image = np.array(pil_image)
-    
-    # PIL images are in RGB by default, OpenCV uses BGR, so convert the color space
-    cv2_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
-    
-    return cv2_image
+    return numpy_image
 
 def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
                   roi_width, roi_height, align: str, spacing, init_font_size: int, min_font_size: int = 10):
@@ -106,7 +99,7 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str,
     return mutable_message, font_size
 
 def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 40, min_font_size=10, outline: bool = True):
-    image = cv2_to_pil(image)
+    image = array_to_pil(image)
     draw = ImageDraw.Draw(image)
 
     font = ImageFont.truetype(font_pth, size=init_font_size)
@@ -137,8 +130,7 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
                 draw.multiline_text((tbbox_top_left[0] + dx, tbbox_top_left[1] + dy), translation, font=font, fill="#FFF", align=blk.alignment, spacing=1)
         draw.multiline_text(tbbox_top_left, translation, colour, font, align=blk.alignment, spacing=1)
         
-    image = pil_to_cv2(image)
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = pil_to_array(image)  # Already in RGB format
     return image
 
 def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):

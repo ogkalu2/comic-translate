@@ -1,8 +1,9 @@
 import abc
 from typing import Optional
 
-import cv2
 import numpy as np
+import imkit as imk
+from PIL import Image
 import logging
 from contextlib import nullcontext
 
@@ -68,7 +69,7 @@ class InpaintModel:
         result, image, mask = self.forward_post_process(result, image, mask, config)
 
         mask = mask[:, :, np.newaxis]
-        result = result * (mask / 255) + image[:, :, ::-1] * (1 - (mask / 255))
+        result = result * (mask / 255) + image * (1 - (mask / 255))
         return result
 
     def forward_post_process(self, result, image, mask, config):
@@ -102,7 +103,7 @@ class InpaintModel:
                         crop_image, crop_box = self._run_box(image, mask, box, config)
                         crop_result.append((crop_image, crop_box))
 
-                    inpaint_result = image[:, :, ::-1]
+                    inpaint_result = image
                     for crop_image, crop_box in crop_result:
                         x1, y1, x2, y2 = crop_box
                         inpaint_result[y1:y2, x1:x2, :] = crop_image
@@ -125,13 +126,13 @@ class InpaintModel:
                     )
 
                     # only paste masked area result
-                    inpaint_result = cv2.resize(
+                    inpaint_result = imk.resize(
                         inpaint_result,
                         (origin_size[1], origin_size[0]),
-                        interpolation=cv2.INTER_CUBIC,
+                        mode=Image.Resampling.BICUBIC,
                     )
                     original_pixel_indices = mask < 127
-                    inpaint_result[original_pixel_indices] = image[:, :, ::-1][
+                    inpaint_result[original_pixel_indices] = image[
                         original_pixel_indices
                     ]
 
@@ -225,10 +226,10 @@ class InpaintModel:
 
             lookup = self._calculate_lookup(source_cdf, reference_cdf)
 
-            transformed_channels.append(cv2.LUT(source_channel, lookup))
+            transformed_channels.append(imk.lut(source_channel, lookup))
 
-        result = cv2.merge(transformed_channels)
-        result = cv2.convertScaleAbs(result)
+        result = imk.merge_channels(transformed_channels)
+        result = imk.convert_scale_abs(result)
 
         return result
 
@@ -289,7 +290,7 @@ class DiffusionInpaintModel(InpaintModel):
             if config.use_croper:
                 crop_img, crop_mask, (l, t, r, b) = self._apply_cropper(image, mask, config)
                 crop_image = self._scaled_pad_forward(crop_img, crop_mask, config)
-                inpaint_result = image[:, :, ::-1]
+                inpaint_result = image
                 inpaint_result[t:b, l:r, :] = crop_image
             else:
                 inpaint_result = self._scaled_pad_forward(image, mask, config)
@@ -307,13 +308,13 @@ class DiffusionInpaintModel(InpaintModel):
             )
         inpaint_result = self._pad_forward(downsize_image, downsize_mask, config)
         # only paste masked area result
-        inpaint_result = cv2.resize(
+        inpaint_result = imk.resize(
             inpaint_result,
             (origin_size[1], origin_size[0]),
-            interpolation=cv2.INTER_CUBIC,
+            mode=Image.Resampling.BICUBIC,
         )
         original_pixel_indices = mask < 127
-        inpaint_result[original_pixel_indices] = image[:, :, ::-1][
+        inpaint_result[original_pixel_indices] = image[
             original_pixel_indices
         ]
         return inpaint_result

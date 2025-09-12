@@ -1,6 +1,6 @@
-import cv2
 import numpy as np
 import logging
+import imkit as imk
 
 from modules.utils.device import resolve_device
 from modules.utils.pipeline_utils import inpaint_map, get_config
@@ -27,9 +27,7 @@ class InpaintingHandler:
             image, mappings = image_viewer.get_visible_area_image()
         else:
             # Regular mode - get the full image
-            image = image_viewer.get_cv2_image()
-
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  
+            image = image_viewer.get_image_array()
 
         if image is None or mask is None:
             return None
@@ -43,7 +41,7 @@ class InpaintingHandler:
 
         config = get_config(settings_page)
         inpaint_input_img = self.inpainter_cache(image, mask, config)
-        inpaint_input_img = cv2.convertScaleAbs(inpaint_input_img) 
+        inpaint_input_img = imk.convert_scale_abs(inpaint_input_img) 
 
         return inpaint_input_img
 
@@ -62,7 +60,7 @@ class InpaintingHandler:
                     # Remove page-specific keys for the patch command but keep scene_pos for webtoon mode
                     clean_patch = {
                         'bbox': patch['bbox'],
-                        'cv2_img': patch['cv2_img']
+                        'image': patch['image']
                     }
                     # Add scene position info for webtoon mode positioning
                     if 'scene_pos' in patch:
@@ -83,8 +81,7 @@ class InpaintingHandler:
 
     def get_inpainted_patches(self, mask: np.ndarray, inpainted_image: np.ndarray):
         # slice mask into bounding boxes
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
-                                    cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = imk.find_contours(mask)
         patches = []
         # Handle webtoon mode vs regular mode
         if self.main_page.webtoon_mode:
@@ -94,7 +91,7 @@ class InpaintingHandler:
                 return patches
                 
             for i, c in enumerate(contours):
-                x, y, w, h = cv2.boundingRect(c)
+                x, y, w, h = imk.bounding_rect(c)
                 patch_bottom = y + h
 
                 # Find all pages that this patch overlaps with
@@ -127,7 +124,7 @@ class InpaintingHandler:
                     
                     patches.append({
                         'bbox': [x, int(page_local_y), w, clipped_height],
-                        'cv2_img': clipped_patch.copy(),
+                        'image': clipped_patch.copy(),
                         'page_index': mapping['page_index'],
                         'file_path': self.main_page.image_files[mapping['page_index']],
                         'scene_pos': [x, scene_y]  # Store correct scene position for webtoon mode
@@ -135,11 +132,11 @@ class InpaintingHandler:
         else:
             # Regular mode - original behavior
             for c in contours:
-                x, y, w, h = cv2.boundingRect(c)
+                x, y, w, h = imk.bounding_rect(c)
                 patch = inpainted_image[y:y+h, x:x+w]
                 patches.append({
                     'bbox': [x, y, w, h],
-                    'cv2_img': patch.copy(),
+                    'image': patch.copy(),
                 })
                 
         return patches

@@ -5,8 +5,8 @@ MIT License
 
 import math
 
-import cv2
 import numpy as np
+import imkit as imk
 
 
 def warp_coord(Minv, pt):
@@ -23,18 +23,18 @@ def get_det_boxes_core(textmap, linkmap, text_threshold, link_threshold,
     img_h, img_w = textmap.shape
 
     # labeling method
-    ret, text_score = cv2.threshold(textmap, low_text, 1, 0)
-    ret, link_score = cv2.threshold(linkmap, link_threshold, 1, 0)
+    ret, text_score = imk.threshold(textmap, low_text, 1, 0)
+    ret, link_score = imk.threshold(linkmap, link_threshold, 1, 0)
 
     text_score_comb = np.clip(text_score + link_score, 0, 1)
-    nLabels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+    nLabels, labels, stats, centroids = imk.connected_components_with_stats(
         text_score_comb.astype(np.uint8), connectivity=4)
 
     det = []
     mapper = []
     for k in range(1, nLabels):
         # size filtering
-        size = stats[k, cv2.CC_STAT_AREA]
+        size = stats[k, imk.CC_STAT_AREA]
         if size < 10:
             continue
 
@@ -47,8 +47,8 @@ def get_det_boxes_core(textmap, linkmap, text_threshold, link_threshold,
         segmap[labels == k] = 255
         segmap[np.logical_and(link_score == 1,
                               text_score == 0)] = 0  # remove link area
-        x, y = stats[k, cv2.CC_STAT_LEFT], stats[k, cv2.CC_STAT_TOP]
-        w, h = stats[k, cv2.CC_STAT_WIDTH], stats[k, cv2.CC_STAT_HEIGHT]
+        x, y = stats[k, imk.CC_STAT_LEFT], stats[k, imk.CC_STAT_TOP]
+        w, h = stats[k, imk.CC_STAT_WIDTH], stats[k, imk.CC_STAT_HEIGHT]
         niter = int(math.sqrt(size * min(w, h) / (w * h)) * 2)
         sx, ex, sy, ey = x - niter, x + w + niter + 1, y - niter, y + h + niter + 1
         # boundary check
@@ -60,17 +60,18 @@ def get_det_boxes_core(textmap, linkmap, text_threshold, link_threshold,
             ex = img_w
         if ey >= img_h:
             ey = img_h
-        kernel = cv2.getStructuringElement(
-            cv2.MORPH_RECT,
+
+        kernel = imk.get_structuring_element(
+            imk.MORPH_RECT,
             (1 + niter, 1 + niter),
         )
-        segmap[sy:ey, sx:ex] = cv2.dilate(segmap[sy:ey, sx:ex], kernel)
+        segmap[sy:ey, sx:ex] = imk.dilate(segmap[sy:ey, sx:ex], kernel)
 
         # make box
         np_contours = (np.roll(np.array(np.where(segmap != 0)), 1,
                                axis=0).transpose().reshape(-1, 2))
-        rectangle = cv2.minAreaRect(np_contours)
-        box = cv2.boxPoints(rectangle)
+        rectangle = imk.min_area_rect(np_contours)
+        box = imk.box_points(rectangle)
 
         # align diamond-shape
         w, h = np.linalg.norm(box[0] - box[1]), np.linalg.norm(box[1] - box[2])
@@ -110,12 +111,11 @@ def get_poly_core(boxes, labels, mapper, linkmap):
 
         # warp image
         tar = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
-        M = cv2.getPerspectiveTransform(box, tar)
-        word_label = cv2.warpPerspective(
+        M = imk.get_perspective_transform(box, tar)
+        word_label = imk.warp_perspective(
             labels,
             M,
-            (w, h),
-            flags=cv2.INTER_NEAREST,
+            (w, h)
         )
         try:
             Minv = np.linalg.inv(M)
@@ -225,7 +225,7 @@ def get_poly_core(boxes, labels, mapper, linkmap):
                 line_img = np.zeros(word_label.shape, dtype=np.uint8)
                 dy = grad_s * dx
                 p = np.array(new_pp[0]) - np.array([dx, dy, dx, dy])
-                cv2.line(
+                line_img = imk.line(
                     line_img,
                     (int(p[0]), int(p[1])),
                     (int(p[2]), int(p[3])),
@@ -240,7 +240,7 @@ def get_poly_core(boxes, labels, mapper, linkmap):
                 line_img = np.zeros(word_label.shape, dtype=np.uint8)
                 dy = grad_e * dx
                 p = np.array(new_pp[-1]) + np.array([dx, dy, dx, dy])
-                cv2.line(
+                line_img = imk.line(
                     line_img,
                     (int(p[0]), int(p[1])),
                     (int(p[2]), int(p[3])),
