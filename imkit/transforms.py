@@ -79,6 +79,9 @@ def _monotone_chain(points):
     Input Nx2 array, returns hull vertices CCW (no duplicate last point).
     """
     pts = np.asarray(points, dtype=np.float64)
+    # Handle OpenCV-style contour format (N, 1, 2) -> (N, 2)
+    if pts.ndim == 3 and pts.shape[1] == 1:
+        pts = pts[:, 0, :]
     if pts.shape[0] <= 1:
         return pts.copy()
     # sort lexicographically by x then y
