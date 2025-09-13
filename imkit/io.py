@@ -36,6 +36,8 @@ def encode_image(array: np.ndarray, ext: str = ".png", **kwargs) -> bytes:
     if fmt in ("JPEG", "JPG"):
         save_kwargs.setdefault("quality", kwargs.get("quality", 95))
         save_kwargs.setdefault("optimize", True)
+        # PIL only recognizes 'JPEG', not 'JPG'
+        fmt = "JPEG" if fmt == "JPG" else fmt
     if fmt == "PNG":
         # Pillow uses 0 (no compression) to 9. Mirror cv2.IMWRITE_PNG_COMPRESSION default 3.
         save_kwargs.setdefault("compress_level", kwargs.get("compress_level", 3))
