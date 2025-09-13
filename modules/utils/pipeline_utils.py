@@ -7,7 +7,6 @@ import imkit as imk
 from .textblock import TextBlock, sort_textblock_rectangles
 from modules.detection.utils.geometry import does_rectangle_fit, is_mostly_contained
 from modules.detection.utils.content import get_inpaint_bboxes
-from modules.detection.utils.geometry import outer_outline
 from modules.inpainting.lama import LaMa
 from modules.inpainting.mi_gan import MIGAN
 from modules.inpainting.aot import AOT
