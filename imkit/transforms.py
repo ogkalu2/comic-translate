@@ -9,13 +9,13 @@ from .utils import ensure_uint8_rgb
 
 
 def to_gray(img: np.ndarray) -> np.ndarray:
-    """Ensure image is grayscale uint8 for mahotas."""
+    """Grayscale conversion using Pillow."""
     if img.ndim == 3:
-        # Mahotas expects uint8 for rgb2gray
         if img.dtype != np.uint8:
             img = img.astype(np.uint8)
-        # Convert to grayscale AND ensure the output is uint8
-        return mh.colors.rgb2gray(img, dtype=np.uint8)
+        pil_img = Image.fromarray(img)
+        gray = pil_img.convert("L")  # Pillow grayscale
+        return np.array(gray, dtype=np.uint8)
     elif img.dtype != np.uint8:
         return img.astype(np.uint8)
     return img.copy()
