@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-import string
 from .archives import extract_archive
 
 class FileHandler:
@@ -28,7 +27,6 @@ class FileHandler:
                 
                 extracted_files = extract_archive(path, temp_dir)
                 image_paths = [f for f in extracted_files if f.lower().endswith(('.jpg', '.jpeg', '.png', '.webp', '.bmp'))]
-                image_paths = self.sanitize_and_copy_files(image_paths)
                 
                 all_image_paths.extend(image_paths)               
                 self.archive_info.append({
@@ -37,28 +35,7 @@ class FileHandler:
                     'temp_dir': temp_dir
                 })
             else:
-                path = self.sanitize_and_copy_files([path])[0]
                 all_image_paths.append(path)
         
         self.file_paths = self.file_paths + all_image_paths if extend else all_image_paths
         return all_image_paths
-
-    def sanitize_and_copy_files(self, file_paths: list[str]):
-        sanitized_paths = []
-        for image_path in file_paths:
-            if not image_path.isascii():
-                name = ''.join(c for c in image_path if c in string.printable)
-                dir_name = ''.join(c for c in os.path.dirname(image_path) if c in string.printable)
-                os.makedirs(dir_name, exist_ok=True)
-                if os.path.splitext(os.path.basename(name))[1] == '':
-                    basename = ""
-                    ext = os.path.splitext(os.path.basename(name))[0]
-                else:
-                    basename = os.path.splitext(os.path.basename(name))[0]
-                    ext = os.path.splitext(os.path.basename(name))[1]
-                sanitized_path = os.path.join(dir_name, basename + ext)
-                shutil.copy(image_path, sanitized_path)
-                image_path = sanitized_path
-            sanitized_paths.append(image_path)
-
-        return sanitized_paths
