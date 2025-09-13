@@ -119,6 +119,8 @@ class OCRFactory:
             'English': lambda s: cls._create_ppocr(s, 'en'),
             'Spanish': lambda s: cls._create_ppocr(s, 'latin'),
             'Italian': lambda s: cls._create_ppocr(s, 'latin'),
+            'German': lambda s: cls._create_ppocr(s, 'latin'),
+            'Dutch': lambda s: cls._create_ppocr(s, 'latin'),
         }
         
         # Check if we have a specific model factory
@@ -171,9 +173,10 @@ class OCRFactory:
         return engine
     
     @staticmethod
-    def _create_rapid_ocr(settings, lang: str) -> OCREngine:
     def _create_ppocr(settings, lang: str) -> OCREngine:
         device = resolve_device(settings.is_gpu_enabled())
+        engine = PPOCRv5Engine()
+        engine.initialize(lang=lang, device=device)
         return engine
     
     @staticmethod
