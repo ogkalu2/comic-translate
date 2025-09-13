@@ -6,7 +6,7 @@ from .base import OCREngine
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
-from .rapid_ocr import RapidOCREngine
+from .ppocr import PPOCRv5Engine
 from .manga_ocr.onnx_engine import MangaOCREngineONNX
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
@@ -111,15 +111,14 @@ class OCRFactory:
         # Language-specific factory functions (for Default model)
         language_factories = {
             'Japanese': cls._create_manga_ocr,
-            'Korean': cls._create_pororo_ocr,
-            'Chinese': lambda s: cls._create_rapid_ocr(s, 'ch'),
-            'Russian': lambda s: cls._create_rapid_ocr(s, 'ru'),
-            'French': lambda s: cls._create_rapid_ocr(s, 'fr'),
-            'English': lambda s: cls._create_rapid_ocr(s, 'en'),
-            'Spanish': lambda s: cls._create_rapid_ocr(s, 'es'),
-            'Italian': lambda s: cls._create_rapid_ocr(s, 'it'),
-            'German': lambda s: cls._create_rapid_ocr(s, 'de'),
-            'Dutch': lambda s: cls._create_rapid_ocr(s, 'nl'),
+            # 'Korean': cls._create_pororo_ocr,
+            'Korean': lambda s: cls._create_ppocr(s, 'ko'),
+            'Chinese': lambda s: cls._create_ppocr(s, 'ch'),
+            'Russian': lambda s: cls._create_ppocr(s, 'ru'),
+            'French': lambda s: cls._create_ppocr(s, 'latin'),
+            'English': lambda s: cls._create_ppocr(s, 'en'),
+            'Spanish': lambda s: cls._create_ppocr(s, 'latin'),
+            'Italian': lambda s: cls._create_ppocr(s, 'latin'),
         }
         
         # Check if we have a specific model factory
@@ -173,10 +172,8 @@ class OCRFactory:
     
     @staticmethod
     def _create_rapid_ocr(settings, lang: str) -> OCREngine:
+    def _create_ppocr(settings, lang: str) -> OCREngine:
         device = resolve_device(settings.is_gpu_enabled())
-        use_gpu = device != 'cpu'
-        engine = RapidOCREngine()
-        engine.initialize(lang=lang, use_gpu=use_gpu)
         return engine
     
     @staticmethod
