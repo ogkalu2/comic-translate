@@ -111,8 +111,7 @@ class OCRFactory:
         # Language-specific factory functions (for Default model)
         language_factories = {
             'Japanese': cls._create_manga_ocr,
-            # 'Korean': cls._create_pororo_ocr,
-            'Korean': lambda s: cls._create_ppocr(s, 'ko'),
+            'Korean': cls._create_pororo_ocr,
             'Chinese': lambda s: cls._create_ppocr(s, 'ch'),
             'Russian': lambda s: cls._create_ppocr(s, 'ru'),
             'French': lambda s: cls._create_ppocr(s, 'latin'),
