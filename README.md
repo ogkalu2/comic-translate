@@ -101,10 +101,8 @@ uv add -r requirements.txt --compile-bytecode
 
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
-uv remove torch torchvision
-uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
+uv pip install onnxruntime-gpu
 ```
-Note: The 126 in cu126 represents the CUDA version - 12.6. Replace 126 with your CUDA version (or the version closest to yours). E.g 118 if you are running CUDA 11.8
 
 ## Usage
 In the comic-translate directory, run
@@ -150,16 +148,16 @@ You can set your API Keys by going to Settings > Credentials
 
 ## How it works
 ### Speech Bubble Detection and Text Segmentation
-[speech-bubble-detector](https://huggingface.co/ogkalu/comic-speech-bubble-detector-yolov8m), [text-segmenter](https://huggingface.co/ogkalu/comic-text-segmenter-yolov8m). Two yolov8m models trained on 8k and 3k images of comics (Manga, Webtoons, Western) respectively. 
+[bubble-and-text-detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector). RT-DETR-v2 model trained on 11k images of comics (Manga, Webtoons, Western).
+Algorithmic segmentation based on the boxes provided from the detection model.
 
 <img src="https://i.imgur.com/TlzVH3j.jpg" width="49%"> <img src="https://i.imgur.com/h18XrYT.jpg" width="49%"> 
 
 ### OCR
 By Default:
-* [doctr](https://github.com/mindee/doctr) for English, French, German, Dutch, Spanish and Italian.
 * [manga-ocr](https://github.com/kha-white/manga-ocr) for Japanese
 * [Pororo](https://github.com/yunwoong7/korean_ocr_using_pororo) for Korean 
-* [RapidOCR](https://github.com/RapidAI/RapidOCR) for Chinese and Russian
+* [PPOCRv5](https://www.paddleocr.ai/main/en/version3.x/algorithm/PP-OCRv5/PP-OCRv5.html) for Everything Else
 
 Optional:
 
@@ -169,13 +167,15 @@ These can be used for any of the supported languages. An API Key is required.
 * [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
 
 ### Inpainting
-A [Manga/Anime finetuned](https://huggingface.co/dreMaz/AnimeMangaInpainting) [lama](https://github.com/advimman/lama) checkpoint to remove text detected by the segmenter. Implementation courtsey of [lama-cleaner](https://github.com/Sanster/lama-cleaner)
+To remove the segmented text
+* A [Manga/Anime finetuned](https://huggingface.co/dreMaz/AnimeMangaInpainting) [lama](https://github.com/advimman/lama) checkpoint. Implementation courtsey of [lama-cleaner](https://github.com/Sanster/lama-cleaner)
+* [AOT-GAN](https://arxiv.org/abs/2104.01431) based model by [zyddnys](https://github.com/zyddnys)
 
 <img src="https://i.imgur.com/cVVGVXp.jpg" width="49%"> <img src="https://i.imgur.com/bLkPyqG.jpg" width="49%">
 
 ### Translation
-Currently, this supports using GPT-4o, GPT-4o mini, DeepL, Claude-3-Opus, Claude-3.5-Sonnet, Claude-3-Haiku, 
-Gemini-1.5-Flash, Gemini-1.5-Pro, Yandex, Google Translate and Microsoft Translator.
+Currently, this supports using GPT-4.1, DeepL, Claude-3, 
+Gemini-2.5, Yandex, Google Translate and Microsoft Azure Translator.
 
 All LLMs are fed the entire page text to aid translations. 
 There is also the Option to provide the Image itself for further context. 
