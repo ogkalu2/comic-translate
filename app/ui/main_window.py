@@ -125,9 +125,16 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.main_layout.addLayout(nav_rail_layout)
         self.main_layout.addWidget(MDivider(orientation=QtCore.Qt.Vertical))
 
-        # Create main content
+        # Create main content and a stacked container so switching pages
+        # doesn't add/remove widgets (which can change window size)
         self.main_content_widget = self._create_main_content()
-        self.main_layout.addWidget(self.main_content_widget)
+        self._center_stack = QtWidgets.QStackedWidget()
+        self._center_stack.addWidget(self.main_content_widget)
+        # settings_page already created in __init__, add it to the stack
+        self._center_stack.addWidget(self.settings_page)
+        # show main content by default
+        self._center_stack.setCurrentWidget(self.main_content_widget)
+        self.main_layout.addWidget(self._center_stack)
 
     def _create_nav_rail(self):
         nav_rail_layout = QtWidgets.QVBoxLayout()
@@ -672,24 +679,14 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
     def show_settings_page(self):
         if not self.settings_page:
             self.settings_page = SettingsPage(self)
-        
-        # Remove the main content widget
-        self.main_layout.removeWidget(self.main_content_widget)
-        self.main_content_widget.hide()
-        
-        # Add the settings page
-        self.main_layout.addWidget(self.settings_page)
-        self.settings_page.show()
+        # Switch to the settings page inside the center stack. Using
+        # QStackedWidget avoids changing the layout size when toggling.
+        self._center_stack.setCurrentWidget(self.settings_page)
 
     def show_main_page(self):
         if self.settings_page:
-            # Remove the settings page
-            self.main_layout.removeWidget(self.settings_page)
-            self.settings_page.hide()
-        
-        # Add back the main content widget
-        self.main_layout.addWidget(self.main_content_widget)
-        self.main_content_widget.show()
+            # Switch back to the main content in the center stack
+            self._center_stack.setCurrentWidget(self.main_content_widget)
 
     def apply_theme(self, theme: str):
         if theme == self.settings_page.ui.tr("Light"):

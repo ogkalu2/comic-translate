@@ -11,7 +11,7 @@ class CredentialsPage(QtWidgets.QWidget):
         self.value_mappings = value_mappings
         self.credential_widgets: dict[str, MLineEdit] = {}
 
-        # main layout with scroll
+        # main layout (no internal scroll here — outer settings scroll handles it)
         main_layout = QtWidgets.QVBoxLayout(self)
         content_layout = QtWidgets.QVBoxLayout()
 
@@ -138,12 +138,4 @@ class CredentialsPage(QtWidgets.QWidget):
             content_layout.addSpacing(20)
 
         content_layout.addStretch(1)
-
-        scroll_area = QtWidgets.QScrollArea()
-        scroll_widget = QtWidgets.QWidget()
-        scroll_widget.setLayout(content_layout)
-        scroll_area.setWidget(scroll_widget)
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setFrameShape(QtWidgets.QFrame.NoFrame)
-
-        main_layout.addWidget(scroll_area)
+        main_layout.addLayout(content_layout)

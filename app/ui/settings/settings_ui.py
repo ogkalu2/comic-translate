@@ -19,6 +19,34 @@ current_file_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
 font_folder_path = os.path.join(project_root, 'resources', 'fonts')
 
+class CurrentPageStack(QtWidgets.QStackedWidget):
+    """A QStackedWidget that reports size based on the current page only.
+    This ensures the scroll area uses only the active page's size and
+    avoids empty scroll space from larger sibling pages.
+    """
+    def sizeHint(self):
+        w = self.currentWidget()
+        if w is not None:
+            # Use the current page's hint without forcing a resize,
+            # to avoid constraining horizontal expansion.
+            return w.sizeHint()
+        return super().sizeHint()
+
+    def minimumSizeHint(self):
+        w = self.currentWidget()
+        if w is not None:
+            return w.minimumSizeHint()
+        return super().minimumSizeHint()
+
+    def hasHeightForWidth(self):
+        w = self.currentWidget()
+        return w.hasHeightForWidth() if w is not None else False
+
+    def heightForWidth(self, width):
+        w = self.currentWidget()
+        return w.heightForWidth(width) if w is not None else -1
+
+
 class SettingsPageUI(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(SettingsPageUI, self).__init__(parent)
@@ -121,9 +149,12 @@ class SettingsPageUI(QtWidgets.QWidget):
         self._init_ui()
 
     def _init_ui(self):
-        self.stacked_widget = QtWidgets.QStackedWidget()
-
-        navbar_layout = self._create_navbar()
+        self.stacked_widget = CurrentPageStack()
+        # Ensure the right content can expand horizontally
+        self.stacked_widget.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Preferred,
+        )
 
         # Instantiate each page widget and keep references as attributes
         self.personalization_page = PersonalizationPage(
@@ -201,15 +232,47 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.stacked_widget.addWidget(self.export_page)
 
         settings_layout = QtWidgets.QHBoxLayout()
-        settings_layout.addLayout(navbar_layout)
+        
+        # Create a separate scroll area for the left navbar
+        navbar_scroll = QtWidgets.QScrollArea()
+        navbar_scroll.setWidget(self._create_navbar_widget())
+        navbar_scroll.setWidgetResizable(True)
+        navbar_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        navbar_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        navbar_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # Keep navbar at a reasonable width without over-constraining layout
+        navbar_scroll.setMinimumWidth(200)
+        navbar_scroll.setMaximumWidth(260)
+        
+        settings_layout.addWidget(navbar_scroll)
         settings_layout.addWidget(MDivider(orientation=QtCore.Qt.Orientation.Vertical))
-        settings_layout.addWidget(self.stacked_widget, 1)
+
+        # Make only the right-side content scrollable so the left navbar
+        # remains fixed and doesn't scroll when the content is scrolled.
+        self.content_scroll = QtWidgets.QScrollArea()
+        self.content_scroll.setWidget(self.stacked_widget)
+        self.content_scroll.setWidgetResizable(True)
+        self.content_scroll.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.content_scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.content_scroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # Allow the scroll area to take available space
+        self.content_scroll.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding,
+            QtWidgets.QSizePolicy.Policy.Expanding,
+        )
+        settings_layout.addWidget(self.content_scroll, 1)
         settings_layout.setContentsMargins(3, 3, 3, 3)
+
+        # Connect to stacked widget page changes to ensure scroll area recalculates
+        self.stacked_widget.currentChanged.connect(self._on_page_changed)
 
         self.setLayout(settings_layout)
 
-    def _create_navbar(self):
-        navbar_layout = QtWidgets.QVBoxLayout()
+    def _create_navbar_widget(self):
+        """Create the navbar as a widget that can be scrolled."""
+        navbar_widget = QtWidgets.QWidget()
+        navbar_layout = QtWidgets.QVBoxLayout(navbar_widget)
+        navbar_layout.setContentsMargins(5, 5, 5, 5)
 
         for index, setting in enumerate([
             {"title": self.tr("Personalization"), "avatar": MPixmap(".svg")},
@@ -226,7 +289,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.nav_cards.append(nav_card)
 
         navbar_layout.addStretch(1)
-        return navbar_layout
+        return navbar_widget
 
     def on_nav_clicked(self, index: int, clicked_nav: ClickMeta):
         # Remove highlight from the previously highlighted nav item
@@ -239,3 +302,17 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         # Set the current index of the stacked widget
         self.stacked_widget.setCurrentIndex(index)
+        # Update geometry so scroll range recalculates for the new page
+        self.stacked_widget.updateGeometry()
+        # Reset scroll position to top for a better UX
+        self.content_scroll.verticalScrollBar().setValue(0)
+
+    def _on_page_changed(self, index):
+        """Handle page changes to ensure scroll area recalculates properly."""
+        # Force the stacked widget to update its size hint
+        self.stacked_widget.updateGeometry()
+        # Force the scroll area to recalculate
+        self.content_scroll.widget().updateGeometry()
+        self.content_scroll.updateGeometry()
+        # Reset scroll position
+        self.content_scroll.verticalScrollBar().setValue(0)

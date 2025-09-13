@@ -38,8 +38,11 @@ class SettingsPage(QtWidgets.QWidget):
         self._setup_connections()
         self._loading_settings = False
 
+        # Use the Settings UI directly; inner content is scrollable on the
+        # right side (see settings_ui.py). This keeps the left navbar fixed.
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.ui)
+        layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
     def _setup_connections(self):
