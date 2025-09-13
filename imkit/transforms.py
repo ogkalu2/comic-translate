@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import mahotas as mh
 from PIL import Image, ImageDraw, ImageFilter
-from typing import Optional
+from typing import Optional, Sequence
 from .utils import ensure_uint8_rgb
 
 
@@ -282,7 +282,7 @@ def box_points(rect: tuple) -> np.ndarray:
 
 def fill_poly(
     image: np.ndarray,
-    polygon: np.ndarray,
+    pts: Sequence[np.ndarray],
     color: int = 1
 ) -> np.ndarray:
     """
@@ -292,21 +292,24 @@ def fill_poly(
     Args:
         image (np.ndarray): The canvas (image) on which to draw. This is
                             modified in-place by mahotas.
-        polygon (np.ndarray): A NumPy array representing the polygon in
-                                  the cv2 format (N, 1, 2) and integer dtype.
+        polygon (Sequence[np.ndarray]): A list/sequence of polygons to fill.
+                               Each polygon is a NumPy array representing the polygon in
+                               the cv2 format (N, 1, 2) and integer dtype.
         color (int, optional): The color value to fill the polygon with.
                                Defaults to 1.
     """
-    # Reshape the polygon from (N, 1, 2) to (N, 2)
-    # This removes the extra dimension.
-    reshaped_poly = polygon.reshape(-1, 2)
+    
+    for polygon in pts:
+        # Reshape the polygon from (N, 1, 2) to (N, 2)
+        # This removes the extra dimension.
+        reshaped_poly = polygon.reshape(-1, 2)
 
-    # Swap x and y coordinates to convert from (x, y) to (y, x)
-    mahotas_poly = reshaped_poly[:, ::-1]
+        # Swap x and y coordinates to convert from (x, y) to (y, x)
+        mahotas_poly = reshaped_poly[:, ::-1]
 
-    # mahotas.polygon.fill_polygon expects a list of (y,x) tuples
-    mahotas_poly_list = list(map(tuple, mahotas_poly))
-    mh.polygon.fill_polygon(mahotas_poly_list, image, color=color)
+        # mahotas.polygon.fill_polygon expects a list of (y,x) tuples
+        mahotas_poly_list = list(map(tuple, mahotas_poly))
+        mh.polygon.fill_polygon(mahotas_poly_list, image, color=color)
 
     return image
 
