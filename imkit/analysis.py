@@ -251,40 +251,44 @@ def draw_contours(
 
 def get_perspective_transform(src: np.ndarray, dst: np.ndarray) -> np.ndarray:
     """
-    Calculates the 3x3 perspective transform matrix from 4 source and
-    4 destination points using NumPy.
-
-    Args:
-        src (np.ndarray): Coordinates of 4 source points (4x2).
-        dst (np.ndarray): Coordinates of 4 destination points (4x2).
-
-    Returns:
-        np.ndarray: The 3x3 transformation matrix.
+    Calculates the 3x3 perspective transform matrix using a vectorized
+    NumPy implementation.
     """
     if src.shape != (4, 2) or dst.shape != (4, 2):
         raise ValueError("Source and destination must be 4x2 arrays.")
 
     # A is the 8x8 matrix
     A = np.zeros((8, 8))
-    # b is the 8x1 vector
-    b = np.zeros((8, 1))
+    
+    # Unpack source and destination points
+    xs, ys = src[:, 0], src[:, 1]
+    xd, yd = dst[:, 0], dst[:, 1]
 
-    for i in range(4):
-        x, y = src[i]
-        xp, yp = dst[i]
+    # Fill the even rows of A
+    A[::2, 0] = xs
+    A[::2, 1] = ys
+    A[::2, 2] = 1
+    A[::2, 6] = -xs * xd
+    A[::2, 7] = -ys * xd
 
-        A[2*i]   = [x, y, 1, 0, 0, 0, -x*xp, -y*xp]
-        A[2*i+1] = [0, 0, 0, x, y, 1, -x*yp, -y*yp]
-        b[2*i]   = xp
-        b[2*i+1] = yp
+    # Fill the odd rows of A
+    A[1::2, 3] = xs
+    A[1::2, 4] = ys
+    A[1::2, 5] = 1
+    A[1::2, 6] = -xs * yd
+    A[1::2, 7] = -ys * yd
+    
+    # b is the 8x1 vector, which is just the destination points flattened
+    b = dst.ravel()
 
     # Solve for the 8 unknowns
     try:
+        # Use solve, which is generally faster and more stable for this
         h = np.linalg.solve(A, b)
     except np.linalg.LinAlgError:
         raise ValueError("Matrix is singular, cannot compute perspective transform.")
 
-    # Reshape h into the 3x3 matrix H
+    # Reshape h into the 3x3 matrix H (the last element is 1)
     H = np.append(h, 1).reshape((3, 3))
     return H
 
@@ -316,3 +320,47 @@ def warp_perspective(image: np.ndarray, matrix: np.ndarray, output_size: tuple) 
     )
 
     return np.array(transformed)
+
+
+def mean(src: np.ndarray, mask: np.ndarray | None = None) -> tuple:
+    """
+    Compute mean value similar to cv2.mean(), returning a 4-element tuple.
+
+    Args:
+        src (np.ndarray): The input array (image).
+        mask (np.ndarray, optional): An optional 8-bit, single-channel mask.
+                                     Pixels corresponding to non-zero mask values
+                                     are included in the mean calculation.
+
+    Returns:
+        tuple: A 4-element tuple containing the mean of each channel, or zeros
+               for channels not present in the input.
+    """
+    a = np.asarray(src)
+    num_channels = a.shape[2] if a.ndim == 3 else 1
+    mean_values = np.zeros(4, dtype=np.float64)
+
+    if mask is None:
+        if a.ndim == 2:
+            mean_values[0] = a.mean()
+        else:
+            mean_values[:num_channels] = a.mean(axis=(0, 1))
+    else:
+        m = (np.asarray(mask) > 0)
+        
+        # If no pixels are masked, return all zeros
+        if not m.any():
+            return tuple(mean_values)
+
+        if a.ndim == 2:
+            mean_values[0] = a[m].mean()
+        else:
+            # Reshape the mask to broadcast across all channels
+            m_3d = m[..., np.newaxis]
+            # Use boolean indexing on the 3D array
+            masked_pixels = a[m_3d.repeat(num_channels, axis=2)]
+            # Reshape back and calculate the mean for each channel
+            masked_pixels = masked_pixels.reshape(-1, num_channels)
+            mean_values[:num_channels] = masked_pixels.mean(axis=0)
+
+    return tuple(mean_values)

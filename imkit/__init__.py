@@ -63,6 +63,7 @@ from .analysis import (
     draw_contours,
     get_perspective_transform,
     warp_perspective,
+    mean,
 )
 
 # Re-export all functions for the imk.function_name pattern
@@ -121,4 +122,5 @@ __all__ = [
     'draw_contours',
     'get_perspective_transform',
     'warp_perspective',
+    'mean',
 ]
