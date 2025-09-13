@@ -19,7 +19,7 @@ class EventHandler:
 
     def handle_mouse_press(self, event: QtGui.QMouseEvent):
         scene_pos = self.viewer.mapToScene(event.position().toPoint())
-        clicked_item = self.viewer.itemAt(event.pos())
+        clicked_item = self._resolve_top_level_item(self.viewer.itemAt(event.pos()))
         
         # Delegate page change detection to the appropriate manager
         if self.viewer.webtoon_mode:
@@ -54,7 +54,10 @@ class EventHandler:
                     self._press_handle_new_box(scene_pos)
                     return # Stop further processing
 
-            self._press_handle_deselection(clicked_item)
+            # If we're interacting with a text item in editing mode, let Qt handle text selection/caret
+            if isinstance(clicked_item, TextBlockItem) and clicked_item.editing_mode:
+                QtWidgets.QGraphicsView.mousePressEvent(self.viewer, event)
+                return
 
         if event.button() == Qt.MiddleButton:
             self._press_handle_pan(event)
@@ -176,6 +179,13 @@ class EventHandler:
         return False
 
     # Event Handler Helpers 
+
+    def _resolve_top_level_item(self, item):
+        """Walk up the parent chain to find a top-level TextBlockItem or MoveableRectItem."""
+        cur = item
+        while cur is not None and not isinstance(cur, (TextBlockItem, MoveableRectItem, QGraphicsPixmapItem)):
+            cur = cur.parentItem()
+        return cur
 
     def _is_on_image(self, scene_pos: QPointF) -> bool:
         if self.viewer.webtoon_mode:

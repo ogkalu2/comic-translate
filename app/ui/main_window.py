@@ -742,11 +742,12 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             elif tool_name is not None:
                 button.setChecked(True)
 
-        # If tool_name is None, uncheck all buttons
+        # If tool_name is None, uncheck all buttons and keep viewer in NoDrag
         if not tool_name:
             for button in self.tool_buttons.values():
                 button.setChecked(False)
-            self.image_viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.ScrollHandDrag)
+            # Let ImageViewer manage drag mode; default is NoDrag unless Pan is active
+            self.image_viewer.setDragMode(QtWidgets.QGraphicsView.DragMode.NoDrag)
 
     def set_brush_eraser_size(self, size: int):
         try:

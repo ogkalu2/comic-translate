@@ -52,7 +52,8 @@ class ImageViewer(QGraphicsView):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.viewport().setAttribute(Qt.WidgetAttribute.WA_AcceptTouchEvents, True)
         self.viewport().grabGesture(Qt.GestureType.PanGesture)
-        self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
+        # Default to NoDrag; only enable ScrollHandDrag when explicit 'pan' tool is active
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
         
         # State
         self.empty = True
