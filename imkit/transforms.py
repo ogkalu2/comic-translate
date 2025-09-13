@@ -23,13 +23,8 @@ def to_gray(img: np.ndarray) -> np.ndarray:
 
 def gaussian_blur(array: np.ndarray, radius: float = 1.0) -> np.ndarray:
     """Apply Gaussian blur to an image array."""
-    from .utils import ensure_uint8_rgb
     im = Image.fromarray(ensure_uint8_rgb(array))
     return np.array(im.filter(ImageFilter.GaussianBlur(radius=radius)))
-
-# def gaussian_blur(array: np.ndarray, sigma: float = 0) -> np.ndarray:
-#     """Apply Gaussian blur to an image array."""
-#     return mh.gaussian_filter(array, sigma=sigma)
 
 
 def resize(
@@ -38,7 +33,6 @@ def resize(
     mode: Image.Resampling = Image.Resampling.LANCZOS
 ) -> np.ndarray:
     """Resize an image array to the specified size."""
-    from .utils import ensure_uint8_rgb
     w, h = size
     im = Image.fromarray(ensure_uint8_rgb(image))
     im = im.resize((w, h), resample=mode)
