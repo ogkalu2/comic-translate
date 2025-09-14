@@ -11,6 +11,7 @@ from .hyphen_textwrap import wrap as hyphen_wrap
 from ..utils.textblock import TextBlock
 from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
+from modules.detection.utils.geometry import shrink_bbox
 
 from dataclasses import dataclass
 
@@ -140,21 +141,10 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
     
     for blk in blk_list:
         if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
-            bx1, by1, bx2, by2 = blk.bubble_xyxy
-            bubble_clean_frame = inpainted_img[by1:by2, bx1:bx2]
-            bubble_mask = make_bubble_mask(bubble_clean_frame)
-            text_draw_bounds = bubble_interior_bounds(bubble_mask)
             
-            if text_draw_bounds is None:
-                continue
 
+            text_draw_bounds = shrink_bbox(blk.bubble_xyxy, shrink_percent=0.15)
             bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
-
-            bdx1 += bx1
-            bdy1 += by1
-
-            bdx2 += bx1
-            bdy2 += by1
 
             if blk.source_lang == 'ja':
                 blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
