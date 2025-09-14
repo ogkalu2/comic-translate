@@ -141,21 +141,11 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
     
     for blk in blk_list:
         if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
-            
 
             text_draw_bounds = shrink_bbox(blk.bubble_xyxy, shrink_percent=0.15)
             bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
-
-            if blk.source_lang == 'ja':
-                blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
-                adjust_blks_size(blk_list, img, -5, -5)
-            else:
-                tx1, ty1, tx2, ty2  = blk.xyxy
-
-                nx1 = max(bdx1, tx1)
-                nx2 = min(bdx2, tx2)
-                
-                blk.xyxy[:] = [nx1, ty1, nx2, ty2]
+            blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
+            adjust_blks_size(blk_list, img, -5, -5)
 
     return blk_list
 

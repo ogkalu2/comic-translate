@@ -283,7 +283,7 @@ def find_polygons_in_textblock(
 
 def shrink_bbox(
     bubble_bbox: BBox, 
-    shrink_percent: float = 0.15
+    shrink_percent: float = 0.12
 ) -> BBox:
     """
     Finds an interior bounding box by shrinking the given bounding box.
