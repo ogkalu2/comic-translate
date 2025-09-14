@@ -86,8 +86,7 @@ class DBPostProcessor:
 		pts = box.copy()
 		pts[:, 0] -= xmin
 		pts[:, 1] -= ymin
-		# imk.fill_poly expects (N,1,2)
-		imk.fill_poly(mask, pts.reshape(-1, 1, 2).astype(np.int32), color=1)
+		mask = imk.fill_poly(mask, pts.reshape(-1, 1, 2).astype(np.int32), color=1)
 		region = bitmap[ymin:ymax + 1, xmin:xmax + 1]
 		return imk.mean(region, mask)[0]
 
@@ -100,7 +99,7 @@ class DBPostProcessor:
 		mask = np.zeros((ymax - ymin + 1, xmax - xmin + 1), dtype=np.uint8)
 		pts[:, 0] -= xmin
 		pts[:, 1] -= ymin
-		imk.fill_poly(mask, pts.reshape(-1, 1, 2).astype(np.int32), color=1)
+		mask = imk.fill_poly(mask, pts.reshape(-1, 1, 2).astype(np.int32), color=1)
 		region = bitmap[ymin:ymax + 1, xmin:xmax + 1]
 		return imk.mean(region, mask)[0]
 

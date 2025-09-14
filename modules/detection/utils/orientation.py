@@ -179,7 +179,7 @@ def _vote_projection_profile_poly(polygons: list[np.ndarray]) -> tuple[int, int]
             gy = (cnt[:, 1] - y_min) / h_total * (gh - 1)
             pts = np.stack([np.clip(np.round(gx), 0, gw - 1),
                             np.clip(np.round(gy), 0, gh - 1)], axis=1).astype(np.int32)
-            imk.fill_poly(mask, [pts], 1)
+            mask = imk.fill_poly(mask, [pts], 1)
 
         row_sums = mask.sum(axis=1).astype(float)
         col_sums = mask.sum(axis=0).astype(float)
