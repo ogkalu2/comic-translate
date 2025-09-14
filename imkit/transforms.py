@@ -268,8 +268,10 @@ def fill_poly(
     draw = ImageDraw.Draw(pil_img)
     
     for poly in pts:
-        points_list = [tuple(p) for p in poly]
-        draw.polygon(points_list, fill=color)
+        # Convert the (N, 1, 2) or (N, 2) numpy array to a list of (x, y) tuples
+        points_list = tuple(map(tuple, poly.reshape(-1, 2)))
+        if len(points_list) > 1: # A polygon needs at least 2 points to be a line
+            draw.polygon(points_list, fill=color)
 
     return np.array(pil_img)
 
