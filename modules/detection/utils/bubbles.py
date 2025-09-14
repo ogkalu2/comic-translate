@@ -70,7 +70,7 @@ def make_bubble_mask(frame: np.ndarray) -> np.ndarray:
 
 def bubble_interior_bounds(
     frame_mask: np.ndarray, 
-    shrink_percent: float = 0.07
+    shrink_percent: float = 0.15
 ) -> Optional[tuple[int, int, int, int]]:
     """
     Finds an interior bounding box for a bubble from its binary mask 
