@@ -29,6 +29,7 @@ from .transforms import (
     connected_components_with_stats,
     line,
     rectangle,
+    add_weighted,
 )
 
 # Constants to match cv2 connected components stats indices
@@ -90,6 +91,7 @@ __all__ = [
     'connected_components_with_stats',
     'line',
     'rectangle',
+    'add_weighted',
     
     # Constants
     'CC_STAT_LEFT',

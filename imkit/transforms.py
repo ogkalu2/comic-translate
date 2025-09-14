@@ -525,3 +525,44 @@ def rectangle(
         draw.rectangle([pt1, pt2], outline=pil_color, width=thickness)
 
     return np.array(img_pil)
+
+
+def add_weighted(
+    src1: np.ndarray, 
+    alpha: float, 
+    src2: np.ndarray, 
+    beta: float, 
+    gamma: float
+) -> np.ndarray:
+    """
+    Implements cv2.addWeighted() using NumPy.
+
+    Args:
+        src1 (np.ndarray): First input array.
+        alpha (float): Weight for the first array elements.
+        src2 (np.ndarray): Second input array.
+        beta (float): Weight for the second array elements.
+        gamma (float): Scalar added to the weighted sum.
+
+    Returns:
+        np.ndarray: The weighted sum of the two arrays, with the same data type
+                    as the input arrays, and values clipped to the valid range.
+    """
+    # Ensure src1 and src2 have the same dimensions and data type.
+    if src1.shape != src2.shape:
+        raise ValueError("Input arrays must have the same shape.")
+
+    # Perform the weighted sum using NumPy.
+    # Arithmetic operations will be performed on floats to prevent overflow
+    # before the final saturation.
+    weighted_sum = (alpha * src1.astype(np.float64) +
+                    beta * src2.astype(np.float64) +
+                    gamma)
+
+    # Re-cast to the original data type and clip values to handle saturation.
+    # This prevents the modulo arithmetic behavior of standard NumPy integer operations.
+    output = np.clip(weighted_sum,
+                     np.iinfo(src1.dtype).min,
+                     np.iinfo(src1.dtype).max)
+
+    return output.astype(src1.dtype)
