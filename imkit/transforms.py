@@ -4,7 +4,7 @@ from __future__ import annotations
 import numpy as np
 import mahotas as mh
 from PIL import Image, ImageDraw, ImageFilter
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 from .utils import ensure_uint8_rgb
 
 
@@ -246,66 +246,32 @@ def box_points(rect: tuple) -> np.ndarray:
     return box.astype(np.float32)
 
 
-# def fill_poly(
-#     img_np: np.ndarray, 
-#     pts: Sequence[np.ndarray], 
-#     color: Union[int, tuple]
-# ) -> np.ndarray:
-#     """
-#     A PIL-based replacement for cv2.fillPoly.
-
-#     Args:
-#         img_np (np.ndarray): The input image as a NumPy array.
-#         pts (Sequence[np.ndarray]): A list/sequence of polygons to fill. Each polygon
-#                                     is a NumPy array of shape (num_points, 2).
-#         color (Union[int, tuple]): The fill color. An integer for grayscale images,
-#                                    or a tuple like (R, G, B) for color.
-
-#     Returns:
-#         np.ndarray: The image with the polygons filled, as a NumPy array.
-#     """
-#     pil_img = Image.fromarray(img_np)
-#     draw = ImageDraw.Draw(pil_img)
-    
-#     for poly in pts:
-#         points_list = [tuple(p) for p in poly]
-#         draw.polygon(points_list, fill=color)
-
-#     return np.array(pil_img)
-
-
 def fill_poly(
-    image: np.ndarray,
-    pts: Sequence[np.ndarray],
-    color: int = 1
+    img_np: np.ndarray, 
+    pts: Sequence[np.ndarray], 
+    color: Union[int, tuple]
 ) -> np.ndarray:
     """
-    Fills a polygon on an image using mahotas, after converting the polygon
-    from the cv2 format.
+    A PIL-based replacement for cv2.fillPoly.
 
     Args:
-        image (np.ndarray): The canvas (image) on which to draw. This is
-                            modified in-place by mahotas.
-        polygon (Sequence[np.ndarray]): A list/sequence of polygons to fill.
-                               Each polygon is a NumPy array representing the polygon in
-                               the cv2 format (N, 1, 2) and integer dtype.
-        color (int, optional): The color value to fill the polygon with.
-                               Defaults to 1.
+        img_np (np.ndarray): The input image as a NumPy array.
+        pts (Sequence[np.ndarray]): A list/sequence of polygons to fill. Each polygon
+                                    is a NumPy array of shape (num_points, 2).
+        color (Union[int, tuple]): The fill color. An integer for grayscale images,
+                                   or a tuple like (R, G, B) for color.
+
+    Returns:
+        np.ndarray: The image with the polygons filled, as a NumPy array.
     """
+    pil_img = Image.fromarray(img_np)
+    draw = ImageDraw.Draw(pil_img)
     
-    for polygon in pts:
-        # Reshape the polygon from (N, 1, 2) to (N, 2)
-        # This removes the extra dimension.
-        reshaped_poly = polygon.reshape(-1, 2)
+    for poly in pts:
+        points_list = [tuple(p) for p in poly]
+        draw.polygon(points_list, fill=color)
 
-        # Swap x and y coordinates to convert from (x, y) to (y, x)
-        mahotas_poly = reshaped_poly[:, ::-1]
-
-        # mahotas.polygon.fill_polygon expects a list of (y,x) tuples
-        mahotas_poly_list = list(map(tuple, mahotas_poly))
-        mh.polygon.fill_polygon(mahotas_poly_list, image, color=color)
-
-    return image
+    return np.array(pil_img)
 
 
 def connected_components(image: np.ndarray, connectivity: int = 4) -> tuple:
