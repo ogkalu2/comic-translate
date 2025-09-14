@@ -94,19 +94,22 @@ class DrawingManager:
         new_path = QPainterPath()
         
         brush_color = QColor(item.brush().color().name(QColor.HexArgb))
-        if brush_color == "#80ff0000":  # Generated stroke
-            precise_erase_path = QPainterPath()
-            for i in range(36):
-                angle = i * 10 * math.pi / 180
-                point = QPointF(pos.x() + self.eraser_size * math.cos(angle),
-                                pos.y() + self.eraser_size * math.sin(angle))
-                if i == 0: precise_erase_path.moveTo(point)
-                else: precise_erase_path.lineTo(point)
-            precise_erase_path.closeSubpath()
+        if brush_color == "#80ff0000":  # Generated (filled) segmentation path
+            # Map erase shape into item's local coordinates to ensure robust boolean ops
+            try:
+                local_erase_path = item.mapFromScene(erase_path)
+            except Exception:
+                # Fallback: translate by item position if mapping isn't available
+                local_erase_path = QPainterPath(erase_path)
+                local_erase_path.translate(-item.pos().x(), -item.pos().y())
 
-            intersected_path = path.intersected(precise_erase_path)
-            if not intersected_path.isEmpty():
-                new_path = path.subtracted(intersected_path)
+            # Ensure consistent fill rule for robust subtraction of filled polygons
+            path.setFillRule(Qt.FillRule.WindingFill)
+            local_erase_path.setFillRule(Qt.FillRule.WindingFill)
+
+            result = path.subtracted(local_erase_path)
+            if not result.isEmpty():
+                new_path = result
         else: # Human-drawn stroke
             element_count = path.elementCount()
             i = 0
@@ -347,6 +350,8 @@ class DrawingManager:
 
         # 6) Build a single QPainterPath merging all contours
         path = QtGui.QPainterPath()
+        # Use winding fill rule so boolean ops (subtract/intersect) behave predictably
+        path.setFillRule(Qt.FillRule.WindingFill)
         for cnt in contours:
             pts = cnt.squeeze(1)
             if pts.ndim != 2 or pts.shape[0] < 3:
