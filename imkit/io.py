@@ -4,6 +4,7 @@ from __future__ import annotations
 from io import BytesIO
 import numpy as np
 from PIL import Image
+from .utils import ensure_uint8
 
 
 def read_image(path: str) -> np.ndarray:
@@ -19,14 +20,12 @@ def read_image(path: str) -> np.ndarray:
 
 def write_image(path: str, array: np.ndarray) -> None:
     """Write a numpy array as an image file."""
-    from .utils import ensure_uint8
     im = Image.fromarray(ensure_uint8(array))
     im.save(path)
 
 
 def encode_image(array: np.ndarray, ext: str = ".png", **kwargs) -> bytes:
     """Encode a numpy array as image bytes."""
-    from .utils import ensure_uint8
     if not ext.startswith('.'):
         ext = '.' + ext
     fmt = ext.lstrip('.').upper()
