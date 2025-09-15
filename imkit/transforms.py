@@ -5,7 +5,7 @@ import numpy as np
 import mahotas as mh
 from PIL import Image, ImageDraw, ImageFilter
 from typing import Optional, Sequence, Union
-from .utils import ensure_uint8_rgb
+from .utils import ensure_uint8
 
 
 def to_gray(img: np.ndarray) -> np.ndarray:
@@ -23,7 +23,7 @@ def to_gray(img: np.ndarray) -> np.ndarray:
 
 def gaussian_blur(array: np.ndarray, radius: float = 1.0) -> np.ndarray:
     """Apply Gaussian blur to an image array."""
-    im = Image.fromarray(ensure_uint8_rgb(array))
+    im = Image.fromarray(ensure_uint8(array))
     return np.array(im.filter(ImageFilter.GaussianBlur(radius=radius)))
 
 
@@ -34,7 +34,7 @@ def resize(
 ) -> np.ndarray:
     """Resize an image array to the specified size."""
     w, h = size
-    im = Image.fromarray(ensure_uint8_rgb(image))
+    im = Image.fromarray(ensure_uint8(image))
     im = im.resize((w, h), resample=mode)
     return np.array(im)
 
@@ -68,7 +68,7 @@ def merge_channels(channels: list) -> np.ndarray:
     return np.stack(channels, axis=-1)
 
 
-def _monotone_chain(points):
+def _monotone_chain(points: np.ndarray) -> np.ndarray:
     """Andrew's monotone chain convex hull. 
     Input Nx2 array, returns hull vertices CCW (no duplicate last point).
     """
@@ -390,7 +390,13 @@ def connected_components_with_stats(image: np.ndarray, connectivity: int = 4) ->
     return num_labels, labeled, stats, centroids
 
 
-def line(image: np.ndarray, pt1: tuple, pt2: tuple, color: int, thickness: int = 1) -> np.ndarray:
+def line(
+    image: np.ndarray, 
+    pt1: tuple, 
+    pt2: tuple, 
+    color: int, 
+    thickness: int = 1
+) -> np.ndarray:
     """
     Draw a line on an image using PIL.
     Replaces cv2.line functionality.
@@ -406,14 +412,18 @@ def line(image: np.ndarray, pt1: tuple, pt2: tuple, color: int, thickness: int =
         Image with line drawn
     """
     
-    pil_image = Image.fromarray(ensure_uint8_rgb(image))
+    pil_image = Image.fromarray(ensure_uint8(image))
     draw = ImageDraw.Draw(pil_image)
     draw.line([pt1, pt2], fill=color, width=thickness)
 
     return np.array(pil_image)
 
 
-def convert_scale_abs(array: np.ndarray, alpha: float = 1.0, beta: float = 0.0) -> np.ndarray:
+def convert_scale_abs(
+    array: np.ndarray, 
+    alpha: float = 1.0, 
+    beta: float = 0.0
+) -> np.ndarray:
     """
     Convert array to absolute values with scaling.
     Replaces cv2.convertScaleAbs functionality.
@@ -436,7 +446,12 @@ def convert_scale_abs(array: np.ndarray, alpha: float = 1.0, beta: float = 0.0) 
     return clipped.astype(np.uint8)
 
 
-def threshold(array: np.ndarray, thresh: float, maxval: float = 255, thresh_type: int = 0) -> tuple[float, np.ndarray]:
+def threshold(
+    array: np.ndarray, 
+    thresh: float, 
+    maxval: float = 255, 
+    thresh_type: int = 0
+) -> tuple[float, np.ndarray]:
     """
     Apply threshold to an array.
     Replaces cv2.threshold functionality.
@@ -502,7 +517,7 @@ def rectangle(
         np.ndarray: The modified image as a numpy array.
     """
     # Create an ImageDraw object
-    img_pil = Image.fromarray(ensure_uint8_rgb(image))
+    img_pil = Image.fromarray(ensure_uint8(image))
     draw = ImageDraw.Draw(img_pil)
     
     # Normalize color to what PIL expects depending on image mode.

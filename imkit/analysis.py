@@ -3,12 +3,10 @@
 from __future__ import annotations
 import numpy as np
 from PIL import Image, ImageDraw
-import mahotas as mh
-from .transforms import to_gray
 
 
 
-# neighbors in clockwise order (as in your code)
+# neighbors in clockwise order
 _NEIGH = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
 # 3x3 lookup table for neighbor index: NEI_MAP[dy+1, dx+1] -> index 0..7
 _NEI_MAP = np.full((3, 3), -1, dtype=np.int8)
@@ -22,8 +20,14 @@ def _as_mask(img, threshold: int = 0):
     # use uint8 or bool; uint8 keeps parity with many libs
     return (a > threshold).astype(np.uint8)
 
-def _trace_border_fast(pad_mask: np.ndarray, start_i: int, start_j: int, prev_i: int, prev_j: int,
-                       max_steps: int = 2_000_000) -> np.ndarray:
+def _trace_border_fast(
+    pad_mask: np.ndarray, 
+    start_i: int, 
+    start_j: int, 
+    prev_i: int, 
+    prev_j: int,
+    max_steps: int = 2_000_000
+) -> np.ndarray:
     """
     findContours-style border tracing that matches OpenCV ordering (Suzuki-style start tests + tracing).
     Returns list of contours, each an (N,1,2) int array of (x,y) coordinates.
@@ -293,7 +297,11 @@ def get_perspective_transform(src: np.ndarray, dst: np.ndarray) -> np.ndarray:
     return H
 
 
-def warp_perspective(image: np.ndarray, matrix: np.ndarray, output_size: tuple) -> np.ndarray:
+def warp_perspective(
+    image: np.ndarray, 
+    matrix: np.ndarray, 
+    output_size: tuple
+) -> np.ndarray:
     """
     Performs a perspective warp using PIL/Pillow.
     
