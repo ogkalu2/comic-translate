@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtGui
 from PySide6.QtCore import QEvent, QLineF, Qt, QPointF
 from PySide6.QtGui import QTransform, QEventPoint
-from PySide6.QtWidgets import QGraphicsPixmapItem
+from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsPathItem
 
 from .text_item import TextBlockItem, TextBlockState
 from .rectangle import MoveableRectItem, RectState
@@ -181,9 +181,10 @@ class EventHandler:
     # Event Handler Helpers 
 
     def _resolve_top_level_item(self, item):
-        """Walk up the parent chain to find a top-level TextBlockItem or MoveableRectItem."""
+        """Walk up the parent chain to find a top-level TextBlockItem, MoveableRectItem, or QGraphicsPathItem."""
         cur = item
-        while cur is not None and not isinstance(cur, (TextBlockItem, MoveableRectItem, QGraphicsPixmapItem)):
+        while cur is not None and not isinstance(
+            cur, (TextBlockItem, MoveableRectItem, QGraphicsPixmapItem, QGraphicsPathItem)):
             cur = cur.parentItem()
         return cur
 
@@ -275,6 +276,15 @@ class EventHandler:
         if clicked_item is None or isinstance(clicked_item, QGraphicsPixmapItem):
             self.viewer.clear_text_edits.emit()
             self.viewer.deselect_all()
+        elif isinstance(clicked_item, QGraphicsPathItem):
+            # When clicking on a path item (brush stroke/segmentation), only deselect other items
+            # but don't clear text edits or call deselect_all
+            for item in self.viewer._scene.items():
+                if isinstance(item, (TextBlockItem, MoveableRectItem)):
+                    if isinstance(item, TextBlockItem): 
+                        item.handleDeselection()
+                    else: 
+                        self.viewer.deselect_rect(item)
         else:
             for item in self.viewer._scene.items():
                 if isinstance(item, (TextBlockItem, MoveableRectItem)) and item != clicked_item:
