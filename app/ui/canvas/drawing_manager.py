@@ -48,8 +48,22 @@ class DrawingManager:
             self.current_path_item.setZValue(0.8)  
         
         elif self.viewer.current_tool == 'eraser':
-            self.before_erase_state = [pcb.save_path_properties(item) for item in
-                                       self._scene.items() if isinstance(item, QGraphicsPathItem)]
+            # Capture the current state before starting erase operation
+            self.before_erase_state = []
+            try:
+                photo_item = getattr(self.viewer, 'photo', None)
+                for item in self._scene.items():
+                    if (isinstance(item, QGraphicsPathItem) and 
+                        item != photo_item and
+                        hasattr(item, 'path')):  # Ensure item has path method
+                        props = pcb.save_path_properties(item)
+                        if props:  # Only add valid properties
+                            self.before_erase_state.append(props)
+            except Exception as e:
+                print(f"Warning: Error capturing before_erase_state: {e}")
+                import traceback
+                traceback.print_exc()
+                self.before_erase_state = []
 
     def continue_stroke(self, scene_pos: QPointF):
         """Continues an existing drawing or erasing stroke."""
@@ -70,12 +84,34 @@ class DrawingManager:
                 self.viewer.command_emitted.emit(command)
 
         if self.viewer.current_tool == 'eraser':
-            self.after_erase_state = [pcb.save_path_properties(item) for item in
-                                      self._scene.items() if isinstance(item, QGraphicsPathItem)]
-            command = EraseUndoCommand(self.viewer, self.before_erase_state, self.after_erase_state)
-            self.viewer.command_emitted.emit(command)
-            self.before_erase_state.clear()
-            self.after_erase_state.clear()
+            # Capture the current state after erase operation
+            self.after_erase_state = []
+            try:
+                photo_item = getattr(self.viewer, 'photo', None)
+                for item in self._scene.items():
+                    if (isinstance(item, QGraphicsPathItem) and 
+                        item != photo_item and
+                        hasattr(item, 'path')):  # Ensure item has path method
+                        props = pcb.save_path_properties(item)
+                        if props:  # Only add valid properties
+                            self.after_erase_state.append(props)
+            except Exception as e:
+                print(f"Warning: Error capturing after_erase_state: {e}")
+                import traceback
+                traceback.print_exc()
+                self.after_erase_state = []
+            
+            # Only create undo command if we have valid before/after states
+            if hasattr(self, 'before_erase_state'):
+                # Create copies of the lists before passing them to avoid clearing issues
+                before_copy = list(self.before_erase_state)
+                after_copy = list(self.after_erase_state)
+                command = EraseUndoCommand(self.viewer, before_copy, after_copy)
+                self.viewer.command_emitted.emit(command)
+                self.before_erase_state.clear()
+                self.after_erase_state.clear()
+            else:
+                print("Warning: No before_erase_state found, skipping undo command creation")
         
         self.current_path = None
         self.current_path_item = None
