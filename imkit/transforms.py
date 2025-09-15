@@ -107,11 +107,9 @@ def min_area_rect(points, assume_hull=False):
             including some quirks for degenerate 1- and 2-point inputs.
 
     Returns:
-        rect, box
-            rect = ((cx, cy), (w, h), angle) with same convention as cv2.minAreaRect:
-                    - angle in [0, 90) degrees  
-                    - width/height correspond to the edges, no forced ordering
-            box = (4,2) array of corner points in the same order as cv2.boxPoints
+        rect = ((cx, cy), (w, h), angle) with same convention as cv2.minAreaRect:
+                - angle in [0, 90) degrees  
+                - width/height correspond to the edges, no forced ordering
     """
     pts = np.asarray(points, dtype=np.float64)
     if pts.size == 0:
