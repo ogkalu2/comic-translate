@@ -21,7 +21,7 @@ def dilate(mask: np.ndarray, kernel: np.ndarray, iterations: int = 1) -> np.ndar
     
     Args:
         mask: Input mask
-        kernel: Either an integer kernel size or a 2D numpy array kernel
+        kernel: a 2D numpy array kernel
         iterations: Number of iterations
     """
     se = (kernel > 0).astype(bool)
