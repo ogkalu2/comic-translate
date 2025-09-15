@@ -152,9 +152,7 @@ def min_area_rect(points, assume_hull=False):
             angle -= 180.0  # cv2 consistently subtracts 180° from arctan2 result
 
         rect = ((cx, cy), (width, height), angle)
-        # degenerate box
-        box = np.array([[x0, y0], [x1, y1], [x1, y1], [x0, y0]], dtype=np.float32)
-        return rect, box
+        return rect
 
     # edges
     # Consider each edge direction from the hull as a candidate rectangle orientation
@@ -218,17 +216,7 @@ def min_area_rect(points, assume_hull=False):
 
     rect = (tuple(center), (width, height), angle)
 
-    # Construct box corners (like cv2.boxPoints) from the chosen orientation
-    R = np.column_stack((best_ux, best_uy))  # rotation matrix
-    corners_rot = np.array([
-        [min_x[k], min_y[k]],
-        [min_x[k], max_y[k]],
-        [max_x[k], max_y[k]],
-        [max_x[k], min_y[k]]
-    ])
-    box = corners_rot.dot(R.T).astype(np.float32)
-
-    return rect, box
+    return rect
 
 
 def box_points(rect: tuple) -> np.ndarray:
