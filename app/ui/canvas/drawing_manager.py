@@ -1,5 +1,4 @@
 import numpy as np
-import math
 from typing import List, Dict
 
 from PySide6 import QtWidgets, QtCore, QtGui
