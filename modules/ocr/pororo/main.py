@@ -7,10 +7,23 @@ warnings.filterwarnings('ignore')
 
 
 class PororoOcr:
-    def __init__(self, model: str = "brainocr", lang: str = "ko", **kwargs):
+    def __init__(
+        self, 
+        model: str = 'brainocr', 
+        lang: str = "ko", 
+        device: str = 'cpu', 
+        **kwargs
+    ):
         self.model = model
         self.lang = lang
-        self._ocr = Pororo(task="ocr", lang=lang, model=model, **kwargs)
+        self.device = device
+        self._ocr = Pororo(
+            task="ocr", 
+            lang=lang, 
+            model=model, 
+            device=device, 
+            **kwargs
+        )
         self.img_path = None
         self.ocr_result = {}
 

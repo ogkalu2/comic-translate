@@ -11,22 +11,30 @@ class PororoOCREngine(OCREngine):
     def __init__(self):
         self.model = None
         self.expansion_percentage = 5
+        self.device = None
         
-    def initialize(self, lang: str = 'ko', expansion_percentage: int = 5) -> None:
+    def initialize(
+        self, 
+        lang: str = 'ko', 
+        expansion_percentage: int = 5, 
+        device: str = 'cpu'
+    ) -> None:
         """
         Initialize the PororoOCR engine.
         
         Args:
             lang: Language code for OCR model - default is 'ko' (Korean)
             expansion_percentage: Percentage to expand text bounding boxes
+            device: Device to run the model on ('cpu', 'cuda', etc.). If None, auto-detects.
         """
 
         from .main import PororoOcr
 
         self.expansion_percentage = expansion_percentage
+        self.device = device
         if self.model is None:
             ModelDownloader.get(ModelID.PORORO)
-            self.model = PororoOcr(lang=lang)
+            self.model = PororoOcr(lang=lang, device=device)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         for blk in blk_list:
