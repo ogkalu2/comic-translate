@@ -128,7 +128,7 @@ class BatchProcessor:
 
             # Use the shared block detector from the handler
             if self.block_detection.block_detector_cache is None:
-                self.block_detection.block_detector_cache = TextBlockDetector(self.main_page.settings_page)
+                self.block_detection.block_detector_cache = TextBlockDetector(settings_page)
             
             blk_list = self.block_detection.block_detector_cache.detect(image)
 
@@ -139,8 +139,9 @@ class BatchProcessor:
 
             if blk_list:
                 # Get ocr cache key for batch processing
-                ocr_model = self.main_page.settings_page.get_tool_selection('ocr')
-                cache_key = self.cache_manager._get_ocr_cache_key(image, source_lang, ocr_model)
+                ocr_model = settings_page.get_tool_selection('ocr')
+                device = resolve_device(settings_page.is_gpu_enabled())
+                cache_key = self.cache_manager._get_ocr_cache_key(image, source_lang, ocr_model, device)
                 # Use the shared OCR processor from the handler
                 self.ocr_handler.ocr.initialize(self.main_page, source_lang)
                 try:

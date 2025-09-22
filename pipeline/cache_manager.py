@@ -34,10 +34,12 @@ class CacheManager:
             fallback_data = shape_str.encode() + str(image.dtype).encode() if hasattr(image, 'dtype') else b'fallback'
             return hashlib.md5(fallback_data).hexdigest()
 
-    def _get_ocr_cache_key(self, image, source_lang, ocr_model):
+    def _get_ocr_cache_key(self, image, source_lang, ocr_model, device=None):
         """Generate cache key for OCR results"""
         image_hash = self._generate_image_hash(image)
-        return (image_hash, ocr_model, source_lang)
+        if device is None:
+            device = "unknown"
+        return (image_hash, ocr_model, source_lang, device)
 
     def _get_block_id(self, block):
         """Generate a unique identifier for a text block based on its position"""

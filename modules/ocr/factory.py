@@ -69,8 +69,12 @@ class OCRFactory:
 
         # Always grab credentials for this service (if any)
         creds = settings.get_credentials(ocr_key)
+        device = resolve_device(settings.is_gpu_enabled())
+
         if creds:
             extras["credentials"] = creds
+        if device:
+            extras["device"] = device
 
         # The LLM OCR engines currently don't use the settings in the LLMs tab
         # so exclude this for now
