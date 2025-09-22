@@ -52,7 +52,7 @@ class OCRFactory:
         # 1) if we already made it, return it
         if cache_key in cls._engines:
             return cls._engines[cache_key]
-        
+
         engine = cls._create_new_engine(settings, source_lang_english, ocr_model, backend)
         cls._engines[cache_key] = engine
         return engine
