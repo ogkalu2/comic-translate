@@ -4,37 +4,82 @@ from typing import Any, Mapping, Optional
 import onnxruntime as ort
 
 
-def resolve_device(use_gpu: bool) -> str:
-    """Return the best available device string.
+def torch_available() -> bool:
+    """Check if torch is available without raising import errors."""
+    try:
+        import torch
+        return True
+    except ImportError:
+        return False
 
-    Priority when use_gpu is True:
-    We resolve device without by inspecting available
-    ONNXRuntime providers.
+
+def resolve_device(use_gpu: bool, backend: str = "onnx") -> str:
+    """Return the best available device string for the specified backend.
+
+    Args:
+        use_gpu: Whether to use GPU acceleration
+        backend: Backend to use ('onnx' or 'torch')
+
+    Returns:
+        Device string compatible with the specified backend
     """
     if not use_gpu:
         return "cpu"
 
+    if backend.lower() == "torch":
+        return _resolve_torch_device(fallback_to_onnx=True)
+    else:
+        return _resolve_onnx_device()
+
+
+def _resolve_torch_device(fallback_to_onnx: bool = False) -> str:
+    """Resolve the best available PyTorch device."""
+    try:
+        import torch
+    except ImportError:
+        # Torch not available, fallback to ONNX resolution if requested
+        if fallback_to_onnx:
+            return _resolve_onnx_device()
+        return "cpu"
+
+    # Check for MPS (Apple Silicon)
+    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        return "mps"
+
+    # Check for CUDA
+    if torch.cuda.is_available():
+        return "cuda"
+
+    # Check for XPU (Intel GPU)
+    try:
+        if hasattr(torch, 'xpu') and torch.xpu.is_available():
+            return "xpu"
+    except Exception:
+        pass
+
+    # Fallback to CPU
+    return "cpu"
+
+
+def _resolve_onnx_device() -> str:
+    """Resolve the best available ONNX device."""
     providers = ort.get_available_providers() 
 
     if not providers:
         return "cpu"
 
-    # Prefer CUDA when available
     if "CUDAExecutionProvider" in providers:
         return "cuda"
 
-    # CoreML (Apple) - available as 'CoreMLExecutionProvider'
     if "CoreMLExecutionProvider" in providers:
         return "coreml"
     
     if "ROCMExecutionProvider" in providers:
         return "rocm"
 
-    # XNNPACK (mobile/CPU optimized) - appear as 'XnnpackExecutionProvider'
     if "XnnpackExecutionProvider" in providers:
         return "xnnpack"
 
-    # OpenVINO / other accelerators
     if "OpenVINOExecutionProvider" in providers:
         return "openvino"
 

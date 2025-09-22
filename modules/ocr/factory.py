@@ -1,7 +1,7 @@
 import json
 import hashlib
 
-from modules.utils.device import resolve_device
+from modules.utils.device import resolve_device, torch_available
 from .base import OCREngine
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
@@ -22,7 +22,13 @@ class OCRFactory:
     }
     
     @classmethod
-    def create_engine(cls, settings, source_lang_english: str, ocr_model: str) -> OCREngine:
+    def create_engine(
+        cls, 
+        settings, 
+        source_lang_english: str, 
+        ocr_model: str, 
+        backend: str = 'onnx'
+    ) -> OCREngine:
         """
         Create or retrieve an appropriate OCR engine based on settings.
         
@@ -30,26 +36,35 @@ class OCRFactory:
             settings: Settings object with OCR configuration
             source_lang_english: Source language in English
             ocr_model: OCR model to use
+            backend: Backend to use ('onnx' or 'torch')
             
         Returns:
             Appropriate OCR engine instance
         """
-        # Create a cache key based on model and language
-        cache_key = cls._create_cache_key(ocr_model, source_lang_english, settings)
-        
-        # Return cached engine if available
+        # build cache key
+        cache_key = cls._create_cache_key(
+            ocr_model, 
+            source_lang_english, 
+            settings, 
+            backend
+        )
+
+        # 1) if we already made it, return it
         if cache_key in cls._engines:
             return cls._engines[cache_key]
         
-        # Create engine based on model or language
-        engine = cls._create_new_engine(settings, source_lang_english, ocr_model)
+        engine = cls._create_new_engine(settings, source_lang_english, ocr_model, backend)
         cls._engines[cache_key] = engine
         return engine
     
     @classmethod
-    def _create_cache_key(cls, ocr_key: str,
-                        source_lang: str,
-                        settings) -> str:
+    def _create_cache_key(
+        cls, 
+        ocr_key: str,
+        source_lang: str,
+        settings, 
+        backend: str = 'onnx'
+    ) -> str:
         """
         Build a cache key for all ocr engines.
 
@@ -62,14 +77,13 @@ class OCRFactory:
         - If no dynamic values are found, falls back to a simple key
           based on ocr and source language.
         """
-        base = f"{ocr_key}_{source_lang}"
+        base = f"{ocr_key}_{source_lang}_{backend}"
 
         # Gather any dynamic bits we care about:
         extras = {}
 
-        # Always grab credentials for this service (if any)
         creds = settings.get_credentials(ocr_key)
-        device = resolve_device(settings.is_gpu_enabled())
+        device = resolve_device(settings.is_gpu_enabled(), backend)
 
         if creds:
             extras["credentials"] = creds
@@ -101,7 +115,13 @@ class OCRFactory:
         return f"{base}_{digest}"
     
     @classmethod
-    def _create_new_engine(cls, settings, source_lang_english: str, ocr_model: str) -> OCREngine:
+    def _create_new_engine(
+        cls, 
+        settings, 
+        source_lang_english: str, 
+        ocr_model: str, 
+        backend: str = 'onnx'
+    ) -> OCREngine:
         """Create a new OCR engine instance based on model and language."""
         
         # Model-specific factory functions
@@ -114,8 +134,8 @@ class OCRFactory:
         
         # Language-specific factory functions (for Default model)
         language_factories = {
-            'Japanese': cls._create_manga_ocr,
-            'Korean': cls._create_pororo_ocr,
+            'Japanese': lambda s: cls._create_manga_ocr(s, backend),
+            'Korean': lambda s: cls._create_pororo_ocr(s, backend),
             'Chinese': lambda s: cls._create_ppocr(s, 'ch'),
             'Russian': lambda s: cls._create_ppocr(s, 'ru'),
             'French': lambda s: cls._create_ppocr(s, 'latin'),
@@ -162,22 +182,37 @@ class OCRFactory:
         return engine
     
     @staticmethod
-    def _create_manga_ocr(settings) -> OCREngine:
-        device = resolve_device(settings.is_gpu_enabled())
-        engine = MangaOCREngineONNX()
-        engine.initialize(device=device)
+    def _create_manga_ocr(settings, backend: str = 'onnx') -> OCREngine:
+        device = resolve_device(settings.is_gpu_enabled(), backend)
+        
+        if backend.lower() == 'torch' and torch_available():
+            from .manga_ocr.engine import MangaOCREngine
+            engine = MangaOCREngine()
+            engine.initialize(device=device)
+        else:
+            engine = MangaOCREngineONNX()
+            engine.initialize(device=device)
+        
         return engine
     
     @staticmethod
-    def _create_pororo_ocr(settings) -> OCREngine:
-        device = resolve_device(settings.is_gpu_enabled())
-        engine = PororoOCREngineONNX()
-        engine.initialize(device=device)
+    def _create_pororo_ocr(settings, backend: str = 'onnx') -> OCREngine:
+        device = resolve_device(settings.is_gpu_enabled(), backend)
+        
+        if backend.lower() == 'torch' and torch_available():
+            from .pororo.engine import PororoOCREngine
+            engine = PororoOCREngine()
+            engine.initialize(device=device)
+        else:
+            engine = PororoOCREngineONNX()
+            engine.initialize(device=device)
+        
         return engine
     
     @staticmethod
     def _create_ppocr(settings, lang: str) -> OCREngine:
-        device = resolve_device(settings.is_gpu_enabled())
+        # PPOCRv5 only supports ONNX backend
+        device = resolve_device(settings.is_gpu_enabled(), 'onnx')
         engine = PPOCRv5Engine()
         engine.initialize(lang=lang, device=device)
         return engine
