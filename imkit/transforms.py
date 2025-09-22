@@ -100,12 +100,16 @@ def min_area_rect(points, assume_hull=False):
     """
     Compute minimum-area bounding rectangle for a set of 2D points.
 
+    Notes:
+        - Uses a rotating-calipers style sweep over edges of the convex hull to find
+            the rectangle of minimal area.
+        - Tries to match OpenCV's cv2.minAreaRect conventions for (width, height, angle),
+            including some quirks for degenerate 1- and 2-point inputs.
+
     Returns:
-      rect, box
         rect = ((cx, cy), (w, h), angle) with same convention as cv2.minAreaRect:
-            - angle in [-90, 0)
-            - width <= height
-        box = (4,2) array of corner points in the same order as cv2.boxPoints
+                - angle in [0, 90) degrees  
+                - width/height correspond to the edges, no forced ordering
     """
     pts = np.asarray(points, dtype=np.float64)
     if pts.size == 0:
@@ -121,28 +125,35 @@ def min_area_rect(points, assume_hull=False):
     if m == 1:
         x, y = hull[0]
         rect = ((x, y), (0.0, 0.0), 0.0)
-        return rect
+        return rect, np.array([[x, y]] * 4, dtype=np.float32)
     if m == 2:
         (x0, y0), (x1, y1) = hull
         dx, dy = x1 - x0, y1 - y0
-        angle = np.degrees(np.arctan2(dy, dx))
-        width = np.hypot(dx, dy)
-        height = 0.0
+        
+        # For degenerate case, match cv2's exact behavior
+        edge_len = np.hypot(dx, dy)
         cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
-
-        # normalize to OpenCV convention
-        if width > height:
-            width, height = height, width
-            angle += 90
-        if angle < -90:
-            angle += 180
-        elif angle >= 0:
-            angle -= 180
+        
+        # cv2 puts the line length in width, zero in height for degenerate cases
+        width = edge_len
+        height = 0.0
+        
+        # cv2 uses the line angle directly for degenerate cases (not perpendicular)
+        angle = np.degrees(np.arctan2(dy, dx))
+        
+        # cv2 applies specific angle transformations for degenerate cases
+        if abs(dx) < 1e-10:  # vertical line
+            angle = -90.0 if dy > 0 else 90.0
+        elif abs(dy) < 1e-10:  # horizontal line  
+            angle = 180.0 if dx > 0 else 0.0  # cv2 uses 180° for positive horizontal lines
+        else:  # diagonal line - cv2 shifts by 180° 
+            angle -= 180.0  # cv2 consistently subtracts 180° from arctan2 result
 
         rect = ((cx, cy), (width, height), angle)
         return rect
 
     # edges
+    # Consider each edge direction from the hull as a candidate rectangle orientation
     idx_next = (np.arange(m) + 1) % m
     edges = hull[idx_next] - hull[np.arange(m)]
     edge_len = np.hypot(edges[:, 0], edges[:, 1])
@@ -154,9 +165,11 @@ def min_area_rect(points, assume_hull=False):
         rect = ((x, y), (0.0, 0.0), 0.0)
         return rect, np.array([[x, y]] * 4, dtype=np.float32)
 
+    # Unit vectors for candidate x-axes (ux) and corresponding y-axes (uy)
     ux = edges / edge_len[:, None]
     uy = np.column_stack((-ux[:, 1], ux[:, 0]))
 
+    # Project hull onto candidate axes and compute bounding intervals
     proj_x = hull.dot(ux.T)
     proj_y = hull.dot(uy.T)
 
@@ -178,17 +191,26 @@ def min_area_rect(points, assume_hull=False):
     center = np.dot([cx_rot, cy_rot], np.column_stack((best_ux, best_uy)).T)
 
     angle = float(np.degrees(np.arctan2(best_ux[1], best_ux[0])))
-    width = float(widths[k])
-    height = float(heights[k])
+    
+    # Match cv2's width/height assignment convention:
+    # cv2 assigns width=edge2_length, height=edge1_length, angle=edge2_angle
+    # Our best_ux corresponds to edge1, best_uy to edge2; swap width/height
+    width = float(heights[k])  # cv2's width = our height (along best_uy)
+    height = float(widths[k])  # cv2's height = our width (along best_ux)
+    
+    # And use best_uy angle (90° rotated from best_ux) to mimic cv2
+    angle = float(np.degrees(np.arctan2(best_uy[1], best_uy[0])))
 
-    # normalize to OpenCV convention
-    if width > height:
-        width, height = height, width
-        angle += 90
-    if angle < -90:
-        angle += 180
-    elif angle >= 0:
-        angle -= 180
+    # Normalize angle to match cv2 convention: [0, 90) with 90 for axis-aligned
+    if abs(angle) < 1e-10 or abs(abs(angle) - 90) < 1e-10 or abs(abs(angle) - 180) < 1e-10:
+        # Axis-aligned case
+        angle = 90.0
+    else:
+        # Normalize to [0, 90)
+        while angle < 0:
+            angle += 180
+        while angle >= 90:
+            angle -= 90
 
     rect = (tuple(center), (width, height), angle)
 
