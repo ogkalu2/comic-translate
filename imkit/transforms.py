@@ -125,7 +125,7 @@ def min_area_rect(points, assume_hull=False):
     if m == 1:
         x, y = hull[0]
         rect = ((x, y), (0.0, 0.0), 0.0)
-        return rect, np.array([[x, y]] * 4, dtype=np.float32)
+        return rect
     if m == 2:
         (x0, y0), (x1, y1) = hull
         dx, dy = x1 - x0, y1 - y0
@@ -163,7 +163,7 @@ def min_area_rect(points, assume_hull=False):
     if edges.shape[0] == 0:
         x, y = hull[0]
         rect = ((x, y), (0.0, 0.0), 0.0)
-        return rect, np.array([[x, y]] * 4, dtype=np.float32)
+        return rect
 
     # Unit vectors for candidate x-axes (ux) and corresponding y-axes (uy)
     ux = edges / edge_len[:, None]
