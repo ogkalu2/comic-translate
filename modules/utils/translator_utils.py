@@ -18,7 +18,8 @@ MODEL_MAP = {
     "Claude-3.5-Haiku": "claude-3-5-haiku-20241022",
     "Gemini-2.0-Flash": "gemini-2.0-flash",
     "Gemini-2.5-Flash": "gemini-2.5-flash",
-    "Gemini-2.5-Pro": "gemini-2.5-pro"
+    "Gemini-2.5-Pro": "gemini-2.5-pro",
+    "Grok-4": "grok-4-0709",
 }
 
 def encode_image_array(img_array: np.ndarray):
