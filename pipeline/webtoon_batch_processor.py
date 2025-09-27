@@ -722,6 +722,11 @@ class WebtoonBatchProcessor:
         alignment = self.main_page.button_to_alignment[render_settings.alignment_id]
         direction = render_settings.direction
         
+        # Get target language code for formatting
+        target_lang = self.main_page.image_states[image_path]['target_lang']
+        target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
+        trg_lng_cd = get_language_code(target_lang_en)
+        
         page_y_position_in_scene = 0
         if webtoon_manager and vpage.physical_page_index < len(webtoon_manager.image_positions):
             page_y_position_in_scene = webtoon_manager.image_positions[vpage.physical_page_index]
@@ -763,9 +768,6 @@ class WebtoonBatchProcessor:
 
             # Store for final save (always do this)
             # Language-specific formatting for State Storage
-            target_lang = self.main_page.image_states[image_path]['target_lang']
-            target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
-            trg_lng_cd = get_language_code(target_lang_en)
 
             # Use TextItemProperties for consistent text item creation
             text_props = TextItemProperties(
