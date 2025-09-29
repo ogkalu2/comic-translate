@@ -124,14 +124,15 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
         # 2) Down-sample factor to limit mask size
         ds = max(1.0, max(roi_w, roi_h) / LONG_EDGE)
         mw, mh = int(roi_w / ds) + 2, int(roi_h / ds) + 2
+        pad_offset = 1
 
-        # 3) Paint bboxes into small mask
+        # 3) Paint bboxes into small mask with padding offset
         small = np.zeros((mh, mw), dtype=np.uint8)
         for x1, y1, x2, y2 in bboxes:
-            x1i = int((x1 - min_x) / ds)
-            y1i = int((y1 - min_y) / ds)
-            x2i = int((x2 - min_x) / ds)
-            y2i = int((y2 - min_y) / ds)
+            x1i = int((x1 - min_x) / ds) + pad_offset
+            y1i = int((y1 - min_y) / ds) + pad_offset
+            x2i = int((x2 - min_x) / ds) + pad_offset
+            y2i = int((y2 - min_y) / ds) + pad_offset
             small = imk.rectangle(small, (x1i, y1i), (x2i, y2i), 255, -1)
 
         # 4) Close small mask to bridge gaps
@@ -150,7 +151,7 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
             pts = cnt.squeeze(1)
             if pts.ndim != 2 or pts.shape[0] < 3:
                 continue
-            pts_f = (pts.astype(np.float32) * ds)
+            pts_f = (pts.astype(np.float32) - pad_offset) * ds
             pts_f[:, 0] += min_x
             pts_f[:, 1] += min_y
             polys.append(pts_f.astype(np.int32))
