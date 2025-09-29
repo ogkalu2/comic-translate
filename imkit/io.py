@@ -10,9 +10,7 @@ from .utils import ensure_uint8
 def read_image(path: str) -> np.ndarray:
     """Read an image file and return as RGB numpy array."""
     im = Image.open(path)
-    if im.mode in ("RGBA", "P"):  # convert palette/alpha
-        im = im.convert("RGB")
-    elif im.mode not in ("RGB", "L"):
+    if im.mode != "RGB":
         im = im.convert("RGB")
     arr = np.array(im)
     return arr
