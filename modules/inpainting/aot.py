@@ -33,7 +33,7 @@ class AOT(InpaintModel):
 
     @staticmethod
     def is_downloaded() -> bool:
-        return ModelDownloader.is_downloaded(ModelID.AOT_JIT)
+        return ModelDownloader.is_downloaded(ModelID.AOT_ONNX)
 
     def forward(self, image, mask, config: Config):
         """Input image and output image have same size
