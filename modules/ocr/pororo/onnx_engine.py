@@ -24,7 +24,7 @@ from .pororo.models.brainOCR.utils import get_image_list
 from .pororo.models.brainOCR.utils import reformat_input, get_paragraph, diff
 
 
-class PororoOCREngineONNX(OCREngine):  # type: ignore
+class PororoOCREngineONNX(OCREngine):
     """Runs Pororo OCR fully with ONNXRuntime."""
 
     def __init__(self):
