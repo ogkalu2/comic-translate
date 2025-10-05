@@ -12,6 +12,7 @@ class ToolsPage(QtWidgets.QWidget):
         detectors: list[str],
         inpainters: list[str], 
         inpaint_strategy: list[str], 
+                image_enhancers: list[str] | None = None,
         parent=None
     ):
         super().__init__(parent)
@@ -20,11 +21,15 @@ class ToolsPage(QtWidgets.QWidget):
         self.detectors = detectors
         self.inpainters = inpainters
         self.inpaint_strategy = inpaint_strategy
+    self.image_enhancers = image_enhancers if image_enhancers is not None else ["None", "Basic", "Waifu2x"]            
+        
 
         layout = QtWidgets.QVBoxLayout(self)
 
         translator_widget, self.translator_combo = create_title_and_combo(self.tr("Translator"), self.translators, h4=True)
         set_combo_box_width(self.translator_combo, self.translators)
+        enhancer_widget, self.image_enhancer_combo = create_title_and_combo(self.tr("Image Enhancer"), self.image_enhancers, h4=True)
+        set_combo_box_width(self.image_enhancer_combo, self.image_enhancers)
 
         ocr_widget, self.ocr_combo = create_title_and_combo(self.tr("OCR"), self.ocr_engines, h4=True)
         set_combo_box_width(self.ocr_combo, self.ocr_engines)
@@ -102,6 +107,7 @@ class ToolsPage(QtWidgets.QWidget):
         self.use_gpu_checkbox = MCheckBox(self.tr("Use GPU"))
 
         layout.addWidget(translator_widget)
+        layout.addWidget(enhancer_widget)
         layout.addSpacing(10)
         layout.addWidget(detector_widget)
         layout.addSpacing(10)
