@@ -62,10 +62,12 @@ class TextBlockDetector:
         # retrieve an enhancer or to enhance the image should not interrupt
         # detection.  Any errors are logged in the enhancement module.
         try:
-            enhancer_name = None
-            if hasattr(self.settings, "get_tool_selection"):
-                enhancer_name = self.settings.get_tool_selection("image_enhancer")
-            enhancer = get_enhancer(enhancer_name)
+            enhancer_config = None
+            if hasattr(self.settings, "get_image_enhancer_settings"):
+                enhancer_config = self.settings.get_image_enhancer_settings()
+            elif hasattr(self.settings, "get_tool_selection"):
+                enhancer_config = self.settings.get_tool_selection("image_enhancer")
+            enhancer = get_enhancer(enhancer_config)
             if enhancer:
                 img = enhancer(img)
         except Exception:
