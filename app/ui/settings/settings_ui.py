@@ -121,6 +121,23 @@ class SettingsPageUI(QtWidgets.QWidget):
             # Detector mappings
             "RT-DETR-v2": "RT-DETR-v2",
 
+            # Image enhancer mappings
+            self.tr("Disabled"): "disabled",
+            self.tr("Waifu2x NCNN Vulkan (CLI)"): "waifu2x-ncnn-vulkan",
+            self.tr("Waifu2x Converter (Python)"): "waifu2x-converter",
+            self.tr("Waifu2x Unlimited (Web API)"): "waifu2x-unlimited",
+            self.tr("CUnet (Anime Art)"): "models-cunet",
+            self.tr("UpConv-7 Anime"): "models-upconv_7_anime_style_art_rgb",
+            self.tr("UpConv-7 Photo"): "models-upconv_7_photo",
+            self.tr("Disable"): "-1",
+            self.tr("Low"): "0",
+            self.tr("Medium"): "1",
+            self.tr("High"): "2",
+            self.tr("Highest"): "3",
+            self.tr("1x"): "1",
+            self.tr("2x"): "2",
+            self.tr("4x"): "4",
+
             # HD Strategy mappings
             self.tr("Resize"): "Resize",
             self.tr("Original"): "Original",
@@ -186,6 +203,16 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         # Tools
         self.translator_combo = self.tools_page.translator_combo
+        self.image_enhancer_combo = self.tools_page.image_enhancer_combo
+        self.image_enhancer_engine_combo = self.tools_page.image_enhancer_engine_combo
+        self.image_enhancer_model_combo = self.tools_page.image_enhancer_model_combo
+        self.image_enhancer_noise_combo = self.tools_page.image_enhancer_noise_combo
+        self.image_enhancer_scale_combo = self.tools_page.image_enhancer_scale_combo
+        self.image_enhancer_tta_checkbox = self.tools_page.image_enhancer_tta_checkbox
+        self.image_enhancer_keep_size_checkbox = (
+            self.tools_page.image_enhancer_keep_size_checkbox
+        )
+        self.image_enhancer_tile_spinbox = self.tools_page.image_enhancer_tile_spinbox
         self.ocr_combo = self.tools_page.ocr_combo
         self.detector_combo = self.tools_page.detector_combo
         self.inpainter_combo = self.tools_page.inpainter_combo

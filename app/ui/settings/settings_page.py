@@ -76,9 +76,35 @@ class SettingsPage(QtWidgets.QWidget):
             'translator': self.ui.translator_combo,
             'ocr': self.ui.ocr_combo,
             'inpainter': self.ui.inpainter_combo,
-            'detector': self.ui.detector_combo
+            'detector': self.ui.detector_combo,
         }
-        return tool_combos[tool_type].currentText()
+        if tool_type == 'image_enhancer':
+            selected = self.ui.image_enhancer_engine_combo.currentText()
+        else:
+            selected = tool_combos[tool_type].currentText()
+        return self.ui.value_mappings.get(selected, selected)
+
+    def get_image_enhancer_settings(self) -> dict:
+        engine_text = self.ui.image_enhancer_engine_combo.currentText()
+        model_text = self.ui.image_enhancer_model_combo.currentText()
+        noise_text = self.ui.image_enhancer_noise_combo.currentText()
+        scale_text = self.ui.image_enhancer_scale_combo.currentText()
+
+        engine = self.ui.value_mappings.get(engine_text, engine_text)
+        model = self.ui.value_mappings.get(model_text, model_text)
+        noise = self.ui.value_mappings.get(noise_text, noise_text)
+        scale = self.ui.value_mappings.get(scale_text, scale_text)
+
+        return {
+            'engine': engine,
+            'model': model,
+            'noise': noise,
+            'scale': scale,
+            'tta': self.ui.image_enhancer_tta_checkbox.isChecked(),
+            'keep_size': self.ui.image_enhancer_keep_size_checkbox.isChecked(),
+            'tile_size': self.ui.image_enhancer_tile_spinbox.value(),
+            'format': 'png',
+        }
 
     def is_gpu_enabled(self):
         return self.ui.use_gpu_checkbox.isChecked()
@@ -156,6 +182,7 @@ class SettingsPage(QtWidgets.QWidget):
                 'translator': self.get_tool_selection('translator'),
                 'ocr': self.get_tool_selection('ocr'),
                 'detector': self.get_tool_selection('detector'),
+                'image_enhancer': self.get_image_enhancer_settings(),
                 'inpainter': self.get_tool_selection('inpainter'),
                 'use_gpu': self.is_gpu_enabled(),
                 'hd_strategy': self.get_hd_strategy_settings()
@@ -272,6 +299,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
+        tool_groups = settings.childGroups()
         raw_translator = settings.value('translator', 'GPT-4.1')
         translator = TRANSLATOR_MIGRATIONS.get(raw_translator, raw_translator)
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
@@ -290,6 +318,38 @@ class SettingsPage(QtWidgets.QWidget):
         detector = settings.value('detector', 'RT-DETR-V2')
         translated_detector = self.ui.reverse_mappings.get(detector, detector)
         self.ui.detector_combo.setCurrentText(translated_detector)
+
+        if 'image_enhancer' in tool_groups:
+            settings.beginGroup('image_enhancer')
+            engine = settings.value('engine', 'waifu2x-ncnn-vulkan')
+            model = settings.value('model', 'models-cunet')
+            noise = settings.value('noise', '1')
+            scale = settings.value('scale', '2')
+            tta = settings.value('tta', False, type=bool)
+            keep_size = settings.value('keep_size', True, type=bool)
+            tile_size = settings.value('tile_size', 0, type=int)
+            settings.endGroup()
+        else:
+            engine = settings.value('image_enhancer', 'waifu2x-ncnn-vulkan')
+            model = 'models-cunet'
+            noise = '1'
+            scale = '2'
+            tta = False
+            keep_size = True
+            tile_size = 0
+
+        translated_engine = self.ui.reverse_mappings.get(engine, engine)
+        translated_model = self.ui.reverse_mappings.get(model, model)
+        translated_noise = self.ui.reverse_mappings.get(str(noise), str(noise))
+        translated_scale = self.ui.reverse_mappings.get(str(scale), str(scale))
+
+        self.ui.image_enhancer_engine_combo.setCurrentText(translated_engine)
+        self.ui.image_enhancer_model_combo.setCurrentText(translated_model)
+        self.ui.image_enhancer_noise_combo.setCurrentText(translated_noise)
+        self.ui.image_enhancer_scale_combo.setCurrentText(translated_scale)
+        self.ui.image_enhancer_tta_checkbox.setChecked(bool(tta))
+        self.ui.image_enhancer_keep_size_checkbox.setChecked(bool(keep_size))
+        self.ui.image_enhancer_tile_spinbox.setValue(int(tile_size))
 
         self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
 
