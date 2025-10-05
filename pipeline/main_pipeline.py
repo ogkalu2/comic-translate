@@ -1,4 +1,7 @@
 import logging
+from typing import Any, Dict, Optional
+
+import numpy as np
 
 from pipeline.cache_manager import CacheManager
 from pipeline.block_detection import BlockDetectionHandler
@@ -56,6 +59,74 @@ class ComicTranslatePipeline:
     def on_blk_detect_complete(self, result):
         """Handle completion of block detection."""
         self.block_detection.on_blk_detect_complete(result)
+
+    def enhance_current_image(self) -> Dict[str, Any]:
+        """Enhance the currently displayed image using the configured enhancer."""
+
+        result: Dict[str, Any] = {"image": None, "engine": None, "changed": False}
+
+        viewer = getattr(self.main_page, "image_viewer", None)
+        if viewer is None or not getattr(viewer, "hasPhoto", lambda: False)():
+            return result
+
+        image = viewer.get_image_array()
+        if image is None:
+            return result
+
+        settings_obj = getattr(self.main_page, "settings_page", None)
+        enhancer_settings: Optional[Dict[str, Any]] = None
+        keep_size = True
+        if settings_obj and hasattr(settings_obj, "get_image_enhancer_settings"):
+            try:
+                enhancer_settings = settings_obj.get_image_enhancer_settings()
+            except Exception:
+                enhancer_settings = None
+
+        if isinstance(enhancer_settings, dict):
+            keep_size = bool(enhancer_settings.get("keep_size", True))
+            result["engine"] = enhancer_settings.get("engine")
+        elif isinstance(enhancer_settings, str):
+            result["engine"] = enhancer_settings
+
+        try:
+            from modules.enhancement import get_enhancer  # type: ignore
+        except Exception:
+            return result
+
+        enhancer = get_enhancer(enhancer_settings)
+        if enhancer is None:
+            return result
+
+        try:
+            enhanced = enhancer(image)
+        except Exception:
+            # Surface the failure by returning the default payload; the controller will
+            # rely on the queued error handler to notify the user.
+            raise
+
+        if enhanced is None:
+            return result
+
+        enhanced_array = np.asarray(enhanced)
+        if enhanced_array.dtype != np.uint8:
+            enhanced_array = np.clip(enhanced_array, 0, 255).astype(np.uint8)
+
+        if keep_size and enhanced_array.shape[:2] != image.shape[:2]:
+            try:
+                from PIL import Image as PILImage
+
+                pil_img = PILImage.fromarray(enhanced_array)
+                enhanced_array = np.array(
+                    pil_img.resize((image.shape[1], image.shape[0]), PILImage.LANCZOS)
+                )
+            except Exception:
+                # If resizing fails, keep the enhancer output as-is.
+                pass
+
+        changed = not np.array_equal(enhanced_array, image)
+        result["image"] = enhanced_array if changed else None
+        result["changed"] = changed
+        return result
 
     # Inpainting methods (delegate to inpainting)
     def manual_inpaint(self):
