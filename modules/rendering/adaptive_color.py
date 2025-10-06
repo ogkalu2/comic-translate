@@ -8,6 +8,7 @@ from typing import Optional
 import numpy as np
 
 from ..utils.textblock import TextBlock
+from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
 
 
 @dataclass
@@ -134,6 +135,66 @@ def extract_patch_statistics(patch: np.ndarray) -> dict:
     }
 
 
+def _clamp_bounds(
+    bounds: tuple[int, int, int, int],
+    width: int,
+    height: int,
+) -> tuple[int, int, int, int]:
+    x1, y1, x2, y2 = bounds
+    x1 = max(0, min(width, int(round(x1))))
+    y1 = max(0, min(height, int(round(y1))))
+    x2 = max(x1, min(width, int(round(x2))))
+    y2 = max(y1, min(height, int(round(y2))))
+    return x1, y1, x2, y2
+
+
+def _interior_from_segmentation(
+    blk: TextBlock,
+    bbox: tuple[int, int, int, int],
+) -> Optional[tuple[int, int, int, int]]:
+    pts = getattr(blk, "segm_pts", None)
+    if pts is None or len(pts) == 0:
+        return None
+
+    try:
+        pts_arr = np.asarray(pts, dtype=np.int32)
+        if pts_arr.ndim != 2 or pts_arr.shape[1] != 2:
+            return None
+    except Exception:
+        return None
+
+    x1, y1, x2, y2 = bbox
+    local = pts_arr.copy()
+    local[:, 0] -= x1
+    local[:, 1] -= y1
+
+    min_x = max(0, int(np.min(local[:, 0])))
+    min_y = max(0, int(np.min(local[:, 1])))
+    max_x = int(np.max(local[:, 0]))
+    max_y = int(np.max(local[:, 1]))
+
+    if max_x <= min_x or max_y <= min_y:
+        return None
+
+    return (min_x, min_y, max_x, max_y)
+
+
+def _interior_via_mask(patch: np.ndarray) -> Optional[tuple[int, int, int, int]]:
+    try:
+        mask = make_bubble_mask(patch)
+    except Exception:
+        return None
+
+    if mask is None or mask.size == 0:
+        return None
+
+    if mask.ndim == 3:
+        mask = mask[..., 0]
+
+    interior = bubble_interior_bounds(mask > 0)
+    return interior
+
+
 def sample_block_background(
     image: np.ndarray,
     blk: TextBlock,
@@ -144,45 +205,51 @@ def sample_block_background(
     if image is None:
         return None
 
-    h, w = image.shape[:2]
+    height, width = image.shape[:2]
     if getattr(blk, "bubble_xyxy", None) is not None:
-        x1, y1, x2, y2 = blk.bubble_xyxy
+        bbox = tuple(blk.bubble_xyxy)
     else:
-        x1, y1, x2, y2 = blk.xyxy
+        bbox = tuple(blk.xyxy)
 
-    x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-    width = max(0, x2 - x1)
-    height = max(0, y2 - y1)
-    if width <= 2 or height <= 2:
+    x1, y1, x2, y2 = _clamp_bounds(bbox, width, height)
+    region_w = x2 - x1
+    region_h = y2 - y1
+    if region_w <= 2 or region_h <= 2:
         return None
 
-    dx = int(width * shrink_ratio)
-    dy = int(height * shrink_ratio)
-
-    rx1 = max(0, x1 + dx)
-    ry1 = max(0, y1 + dy)
-    rx2 = min(w, x2 - dx)
-    ry2 = min(h, y2 - dy)
-
-    if rx2 <= rx1 or ry2 <= ry1:
-        if shrink_ratio > 0:
-            # Attempt a full-box sample when the shrunken region collapses.
-            rx1, ry1, rx2, ry2 = x1, y1, x2, y2
-            if rx2 <= rx1 or ry2 <= ry1:
-                return None
-        else:
-            return None
-
-    patch = image[ry1:ry2, rx1:rx2]
+    patch = image[y1:y2, x1:x2]
     if patch.size == 0:
-        if shrink_ratio > 0:
-            patch = image[y1:y2, x1:x2]
-            if patch.size == 0:
-                return None
-        else:
-            return None
+        return None
 
-    return patch
+    interior = _interior_from_segmentation(blk, (x1, y1, x2, y2))
+    if interior is None and getattr(blk, "text_class", "") == "text_bubble":
+        interior = _interior_via_mask(patch)
+
+    if interior is not None:
+        ix1, iy1, ix2, iy2 = interior
+        ix1 = max(0, min(region_w, ix1))
+        iy1 = max(0, min(region_h, iy1))
+        ix2 = max(ix1 + 1, min(region_w, ix2))
+        iy2 = max(iy1 + 1, min(region_h, iy2))
+        patch = patch[iy1:iy2, ix1:ix2]
+
+    if patch.size == 0:
+        return None
+
+    if shrink_ratio > 0:
+        inner_w = patch.shape[1]
+        inner_h = patch.shape[0]
+        dx = int(inner_w * shrink_ratio)
+        dy = int(inner_h * shrink_ratio)
+        if dx > 0 or dy > 0:
+            sx1 = dx
+            sy1 = dy
+            sx2 = inner_w - dx
+            sy2 = inner_h - dy
+            if sx2 > sx1 and sy2 > sy1:
+                patch = patch[sy1:sy2, sx1:sx2]
+
+    return patch if patch.size else None
 
 
 def determine_text_outline_colors(
