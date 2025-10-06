@@ -12,11 +12,16 @@ APIs when available.
 
 from __future__ import annotations
 
+import io
 import json
 import logging
+import platform
 import shutil
 import subprocess
 import tempfile
+import urllib.error
+import urllib.request
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Optional
@@ -136,12 +141,8 @@ def get_enhancer(config: Any) -> Optional[Enhancer]:
 def enhance_waifu2x_ncnn(img: np.ndarray, cfg: Waifu2xConfig) -> np.ndarray:
     """Run the official ``waifu2x-ncnn-vulkan`` CLI with the given settings."""
 
-    binary = shutil.which("waifu2x-ncnn-vulkan") or shutil.which("waifu2x-ncnn-vulkan.exe")
+    binary = _ensure_waifu2x_binary()
     if not binary:
-        logger.error(
-            "waifu2x-ncnn-vulkan executable not found. Install it from "
-            "https://github.com/nihui/waifu2x-ncnn-vulkan/releases and ensure it is on the PATH."
-        )
         return img
 
     arr = _ensure_uint8(img)
@@ -183,6 +184,7 @@ def enhance_waifu2x_ncnn(img: np.ndarray, cfg: Waifu2xConfig) -> np.ndarray:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                cwd=Path(binary).parent,
             )
             if completed.stdout:
                 logger.debug("waifu2x stdout: %s", completed.stdout.strip())
@@ -208,6 +210,114 @@ def enhance_waifu2x_ncnn(img: np.ndarray, cfg: Waifu2xConfig) -> np.ndarray:
             enhanced = enhanced.resize(pil_img.size, Image.LANCZOS)
 
         return np.array(enhanced)
+
+
+def _ensure_waifu2x_binary() -> Optional[str]:
+    """Return a usable waifu2x binary, attempting an automatic install if needed."""
+
+    binary = shutil.which("waifu2x-ncnn-vulkan") or shutil.which("waifu2x-ncnn-vulkan.exe")
+    if binary:
+        return binary
+
+    tag = "20250915"
+    cache_dir = Path.home() / ".cache" / "comic-translater" / "waifu2x" / tag
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    binary_name = "waifu2x-ncnn-vulkan.exe" if platform.system().lower().startswith("win") else "waifu2x-ncnn-vulkan"
+    cached_binary = _find_cached_binary(cache_dir, binary_name)
+    if cached_binary:
+        return str(cached_binary)
+
+    asset_url = _select_waifu2x_asset(tag)
+    if not asset_url:
+        logger.error(
+            "waifu2x-ncnn-vulkan executable not available. Please install it from %s manually.",
+            f"https://github.com/nihui/waifu2x-ncnn-vulkan/releases/tag/{tag}",
+        )
+        return None
+
+    try:
+        with urllib.request.urlopen(asset_url, timeout=60) as response:
+            payload = response.read()
+    except urllib.error.URLError as exc:
+        logger.error("Failed to download waifu2x-ncnn-vulkan from %s: %s", asset_url, exc)
+        return None
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+            archive.extractall(cache_dir)
+    except zipfile.BadZipFile as exc:
+        logger.error("Failed to unpack waifu2x-ncnn-vulkan archive: %s", exc)
+        return None
+
+    cached_binary = _find_cached_binary(cache_dir, binary_name)
+    if not cached_binary:
+        logger.error(
+            "Downloaded waifu2x-ncnn-vulkan archive did not contain %s", binary_name
+        )
+        return None
+
+    try:
+        cached_binary.chmod(cached_binary.stat().st_mode | 0o111)
+    except OSError:
+        logger.debug("Unable to update execute permissions for %s", cached_binary)
+
+    logger.info("Installed waifu2x-ncnn-vulkan to %s", cached_binary)
+    return str(cached_binary)
+
+
+def _find_cached_binary(root: Path, binary_name: str) -> Optional[Path]:
+    """Locate a previously extracted waifu2x binary inside ``root``."""
+
+    direct_path = root / binary_name
+    if direct_path.exists():
+        return direct_path
+
+    for path in root.rglob(binary_name):
+        if path.is_file():
+            return path
+
+    return None
+
+
+def _select_waifu2x_asset(tag: str) -> Optional[str]:
+    """Select the appropriate waifu2x asset download URL for the current system."""
+
+    api_url = f"https://api.github.com/repos/nihui/waifu2x-ncnn-vulkan/releases/tags/{tag}"
+    try:
+        with urllib.request.urlopen(api_url, timeout=30) as response:
+            release_data = json.load(response)
+    except urllib.error.URLError as exc:
+        logger.error("Failed to query waifu2x release metadata: %s", exc)
+        return None
+
+    assets = release_data.get("assets") or []
+    if not assets:
+        logger.error("No downloadable waifu2x assets found in release %s", tag)
+        return None
+
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    def _matches(asset_name: str) -> bool:
+        name = asset_name.lower()
+        if name.endswith(".zip"):
+            if system.startswith("win") and "windows" in name:
+                return True
+            if system == "darwin" and "mac" in name:
+                return True
+            if system == "linux" and ("linux" in name or "ubuntu" in name):
+                if "arm" in machine:
+                    return "arm" in name
+                return "arm" not in name
+        return False
+
+    for asset in assets:
+        asset_name = asset.get("name") or ""
+        if _matches(asset_name):
+            return asset.get("browser_download_url")
+
+    return None
 
 
 def enhance_waifu2x_python(img: np.ndarray, cfg: Waifu2xConfig) -> np.ndarray:
