@@ -136,12 +136,21 @@ class ComicTranslate(ComicTranslateUI):
         self.webtoon_toggle.clicked.connect(self.webtoon_ctrl.toggle_webtoon_mode)
 
         # Connect buttons from button_groups
-        self.hbutton_group.get_button_group().buttons()[0].clicked.connect(lambda: self.block_detect())
-        self.hbutton_group.get_button_group().buttons()[1].clicked.connect(self.ocr)
-        self.hbutton_group.get_button_group().buttons()[2].clicked.connect(self.translate_image)
-        self.hbutton_group.get_button_group().buttons()[3].clicked.connect(self.load_segmentation_points)
-        self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
-        self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.text_ctrl.render_text)
+        workflow_buttons = self.hbutton_group.get_button_group().buttons()
+        if workflow_buttons:
+            workflow_buttons[0].clicked.connect(self.enhance_image)
+        if len(workflow_buttons) > 1:
+            workflow_buttons[1].clicked.connect(lambda: self.block_detect())
+        if len(workflow_buttons) > 2:
+            workflow_buttons[2].clicked.connect(self.ocr)
+        if len(workflow_buttons) > 3:
+            workflow_buttons[3].clicked.connect(self.translate_image)
+        if len(workflow_buttons) > 4:
+            workflow_buttons[4].clicked.connect(self.load_segmentation_points)
+        if len(workflow_buttons) > 5:
+            workflow_buttons[5].clicked.connect(self.inpaint_and_set)
+        if len(workflow_buttons) > 6:
+            workflow_buttons[6].clicked.connect(self.text_ctrl.render_text)
 
         self.undo_tool_group.get_button_group().buttons()[0].clicked.connect(self.undo_group.undo)
         self.undo_tool_group.get_button_group().buttons()[1].clicked.connect(self.undo_group.redo)
@@ -470,10 +479,44 @@ class ComicTranslate(ComicTranslateUI):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(True)
 
+    def enhance_image(self):
+        if not self.image_viewer.hasPhoto():
+            return
+
+        self.text_ctrl.clear_text_edits()
+        self.loading.setVisible(True)
+        self.disable_hbutton_group()
+
+        self.run_threaded(
+            self.pipeline.enhance_current_image,
+            self._on_image_enhanced,
+            self.default_error_handler,
+            self.on_manual_finished,
+        )
+
+    def _on_image_enhanced(self, result):
+        if not result:
+            return
+
+        enhanced_image = result.get("image") if isinstance(result, dict) else None
+        changed = bool(result.get("changed")) if isinstance(result, dict) else False
+
+        if not changed or enhanced_image is None:
+            return
+
+        stack = self.undo_group.activeStack()
+        if stack is not None:
+            stack.beginMacro('enhance_image')
+
+        self.image_ctrl.set_image(enhanced_image)
+
+        if stack is not None:
+            stack.endMacro()
+
     def block_detect(self, load_rects: bool = True):
         self.loading.setVisible(True)
         self.disable_hbutton_group()
-        self.run_threaded(self.pipeline.detect_blocks, self.pipeline.on_blk_detect_complete, 
+        self.run_threaded(self.pipeline.detect_blocks, self.pipeline.on_blk_detect_complete,
                           self.default_error_handler, self.on_manual_finished, load_rects)
 
     def finish_ocr_translate(self, single_block=False):
