@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import numpy as np
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
@@ -45,6 +45,91 @@ class TextController:
         text_item.text_changed.connect(self.update_text_block_from_item)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
+
+    def _get_current_base_image(self) -> Optional[np.ndarray]:
+        """Return a copy of the original image for the active page."""
+
+        idx = getattr(self.main, "curr_img_idx", -1)
+        if idx is None or idx < 0:
+            return None
+
+        if not self.main.image_files or idx >= len(self.main.image_files):
+            return None
+
+        file_path = self.main.image_files[idx]
+        base_image = self.main.image_data.get(file_path)
+        if base_image is None:
+            return None
+
+        try:
+            return np.array(base_image, copy=True)
+        except Exception:
+            logger.exception("Failed to copy base image for adaptive colours")
+            return None
+
+    @staticmethod
+    def _image_covers_blocks(
+        image: Optional[np.ndarray], blocks: Iterable[TextBlock]
+    ) -> bool:
+        """Ensure every block lies within the provided image bounds."""
+
+        if image is None or getattr(image, "size", 0) == 0:
+            return False
+
+        height, width = image.shape[:2]
+        for blk in blocks:
+            if getattr(blk, "xyxy", None) is None:
+                continue
+
+            try:
+                x1, y1, x2, y2 = (int(v) for v in blk.xyxy)
+            except Exception:
+                return False
+
+            if x1 < 0 or y1 < 0:
+                return False
+            if x2 > width or y2 > height:
+                return False
+
+        return True
+
+    def _prepare_background_image(
+        self,
+        blocks: Iterable[TextBlock],
+        render_settings: TextRenderingSettings,
+    ) -> Optional[np.ndarray]:
+        """Collect a background image aligned with block coordinates."""
+
+        if not getattr(render_settings, "auto_font_color", True):
+            return None
+
+        background_image = None
+        try:
+            background_image = self.main.image_viewer.get_image_array(
+                paint_all=True, include_patches=True
+            )
+            if background_image is None:
+                background_image = self.main.image_viewer.get_image_array(
+                    paint_all=True, include_patches=False
+                )
+            if background_image is None:
+                background_image = self.main.image_viewer.get_image_array()
+            if background_image is not None:
+                background_image = background_image.copy()
+        except Exception:
+            logger.exception("Failed to capture background for adaptive colours")
+            background_image = None
+
+        base_image = self._get_current_base_image()
+
+        if background_image is None:
+            return base_image
+
+        if not self._image_covers_blocks(background_image, blocks) and base_image is not None:
+            if self._image_covers_blocks(base_image, blocks):
+                return base_image
+
+        return background_image
 
     def clear_text_edits(self):
         self.main.curr_tblock = None
@@ -497,25 +582,7 @@ class TextController:
 
             render_settings = self.render_settings()
             upper = render_settings.upper_case
-
-            auto_font_color = getattr(render_settings, "auto_font_color", True)
-            background_image = None
-            if auto_font_color:
-                try:
-                    background_image = self.main.image_viewer.get_image_array(
-                        paint_all=True, include_patches=True
-                    )
-                    if background_image is None:
-                        background_image = self.main.image_viewer.get_image_array(
-                            paint_all=True, include_patches=False
-                        )
-                    if background_image is None:
-                        background_image = self.main.image_viewer.get_image_array()
-                    if background_image is not None:
-                        background_image = background_image.copy()
-                except Exception:
-                    logger.exception("Failed to capture background for adaptive colours")
-                    background_image = None
+            background_image = self._prepare_background_image(new_blocks, render_settings)
 
             target_lang = self.main.t_combo.currentText()
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
