@@ -313,6 +313,17 @@ def manual_wrap(
     default_text_color = render_settings.color or "#000000"
     default_outline_color = render_settings.outline_color or "#FFFFFF"
 
+    if auto_font_color and background_image is None:
+        # Fall back to the base page image when the caller does not provide an
+        # explicit sampling surface. This keeps adaptive colours working even
+        # if the UI thread could not capture an augmented view of the page.
+        try:
+            text_ctrl = getattr(main_page, "text_ctrl", None)
+            if text_ctrl is not None and hasattr(text_ctrl, "_get_current_base_image"):
+                background_image = text_ctrl._get_current_base_image()
+        except Exception:
+            background_image = None
+
     font_family = render_settings.font_family
     line_spacing = float(render_settings.line_spacing)
     outline_width = float(render_settings.outline_width)

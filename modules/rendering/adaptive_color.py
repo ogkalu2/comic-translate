@@ -101,6 +101,11 @@ def extract_patch_statistics(patch: np.ndarray) -> dict:
     if patch is None or patch.size == 0:
         return {}
 
+    if patch.ndim == 2:
+        patch = np.stack([patch] * 3, axis=-1)
+    elif patch.ndim == 3 and patch.shape[2] >= 4:
+        patch = patch[..., :3]
+
     patch_float = patch.astype(np.float32) / 255.0
 
     luminance = (
@@ -160,11 +165,22 @@ def sample_block_background(
     ry2 = min(h, y2 - dy)
 
     if rx2 <= rx1 or ry2 <= ry1:
-        return None
+        if shrink_ratio > 0:
+            # Attempt a full-box sample when the shrunken region collapses.
+            rx1, ry1, rx2, ry2 = x1, y1, x2, y2
+            if rx2 <= rx1 or ry2 <= ry1:
+                return None
+        else:
+            return None
 
     patch = image[ry1:ry2, rx1:rx2]
     if patch.size == 0:
-        return None
+        if shrink_ratio > 0:
+            patch = image[y1:y2, x1:x2]
+            if patch.size == 0:
+                return None
+        else:
+            return None
 
     return patch
 

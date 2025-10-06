@@ -103,33 +103,35 @@ class TextController:
         if not getattr(render_settings, "auto_font_color", True):
             return None
 
-        background_image = None
+        viewer_image = None
         try:
-            background_image = self.main.image_viewer.get_image_array(
+            viewer_image = self.main.image_viewer.get_image_array(
                 paint_all=True, include_patches=True
             )
-            if background_image is None:
-                background_image = self.main.image_viewer.get_image_array(
+            if viewer_image is None:
+                viewer_image = self.main.image_viewer.get_image_array(
                     paint_all=True, include_patches=False
                 )
-            if background_image is None:
-                background_image = self.main.image_viewer.get_image_array()
-            if background_image is not None:
-                background_image = background_image.copy()
+            if viewer_image is None:
+                viewer_image = self.main.image_viewer.get_image_array()
+            if viewer_image is not None:
+                viewer_image = viewer_image.copy()
         except Exception:
             logger.exception("Failed to capture background for adaptive colours")
-            background_image = None
+            viewer_image = None
 
         base_image = self._get_current_base_image()
 
-        if background_image is None:
+        # Prefer the unmodified base image because block coordinates are derived
+        # from the original detection resolution. Fall back to the viewer capture
+        # only when the base image is unavailable or does not cover the blocks.
+        if base_image is not None and self._image_covers_blocks(base_image, blocks):
             return base_image
 
-        if not self._image_covers_blocks(background_image, blocks) and base_image is not None:
-            if self._image_covers_blocks(base_image, blocks):
-                return base_image
+        if viewer_image is not None and self._image_covers_blocks(viewer_image, blocks):
+            return viewer_image
 
-        return background_image
+        return base_image if base_image is not None else viewer_image
 
     def clear_text_edits(self):
         self.main.curr_tblock = None
