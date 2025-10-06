@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 
 from ..utils.textblock import TextBlock
 from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
@@ -47,7 +48,13 @@ class TextColorClassifier:
 
         mean_lum = stats["mean_luminance"]
         median_lum = stats["median_luminance"]
-        reference_lum = 0.6 * median_lum + 0.4 * mean_lum
+        background_lum = stats.get("background_luminance", median_lum)
+        alt_cluster = stats.get("secondary_luminance", 1.0 - background_lum)
+
+        # Blend dominant luminance with the median so that extreme sampling
+        # artefacts (for example, residual lettering) do not entirely override
+        # the underlying bubble tone.
+        reference_lum = 0.5 * background_lum + 0.5 * median_lum
 
         contrast_white = contrast_ratio(reference_lum, 1.0)
         contrast_black = contrast_ratio(reference_lum, 0.0)
@@ -55,20 +62,38 @@ class TextColorClassifier:
         if contrast_white == contrast_black == 0:
             return None
 
-        if contrast_white > contrast_black:
+        preferred = None
+        if background_lum <= 0.42:
+            preferred = "light"
+        elif background_lum >= 0.58:
+            preferred = "dark"
+
+        forced_choice = preferred is not None
+
+        if preferred == "light":
             text_hex = "#FFFFFF"
             text_lum = 1.0
-            probability_light = 1.0
+            probability_light = 0.75
+            contrast = contrast_white
+        elif preferred == "dark":
+            text_hex = "#000000"
+            text_lum = 0.0
+            probability_light = 0.25
+            contrast = contrast_black
+        elif contrast_white > contrast_black:
+            text_hex = "#FFFFFF"
+            text_lum = 1.0
+            probability_light = 0.5 + 0.5 * _soft_probability(contrast_white, contrast_black)
             contrast = contrast_white
         else:
             text_hex = "#000000"
             text_lum = 0.0
-            probability_light = 0.0
+            probability_light = 0.5 - 0.5 * _soft_probability(contrast_black, contrast_white)
             contrast = contrast_black
 
         # When both options are below the WCAG target, bias towards the
         # alternative colour if it closes the gap even slightly.
-        if contrast < self.min_contrast:
+        if contrast < self.min_contrast and not forced_choice:
             alt_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
             alt_lum = 0.0 if text_lum == 1.0 else 1.0
             alt_contrast = contrast_ratio(reference_lum, alt_lum)
@@ -78,14 +103,25 @@ class TextColorClassifier:
                 probability_light = 1.0 - probability_light
                 contrast = alt_contrast
 
-        outline_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
+        # Prefer an outline that contrasts with both the chosen text colour and
+        # the predicted foreground cluster (which often corresponds to the
+        # original lettering colour remaining in the patch).
+        if abs(alt_cluster - background_lum) < 0.08:
+            outline_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
+        elif alt_cluster >= 0.5:
+            outline_hex = "#000000"
+        else:
+            outline_hex = "#FFFFFF"
+
+        if outline_hex.lower() == text_hex.lower():
+            outline_hex = "#FFFFFF" if text_hex == "#000000" else "#000000"
 
         return AdaptiveColorDecision(
             text_hex=text_hex,
             outline_hex=outline_hex,
             probability_light=probability_light,
             contrast_ratio=contrast,
-            background_luminance=mean_lum,
+            background_luminance=background_lum,
         )
 
 
@@ -118,21 +154,157 @@ def extract_patch_statistics(patch: np.ndarray) -> dict:
     if luminance.size == 0:
         return {}
 
-    # Use trimmed statistics to reduce the influence of outlines or artefacts
-    flattened = luminance.reshape(-1)
-    trimmed = np.sort(flattened)
-    if trimmed.size > 20:
-        lower = int(trimmed.size * 0.1)
-        upper = int(trimmed.size * 0.9)
-        trimmed = trimmed[lower:upper]
+    smooth_values, _ = _separate_background_and_foreground(luminance)
 
-    mean_l = float(np.mean(trimmed))
-    median_l = float(np.median(trimmed))
+    if smooth_values.size == 0:
+        smooth_values = luminance.reshape(-1)
+
+    trimmed = _trim_extremes(smooth_values)
+    mean_l = float(np.mean(trimmed)) if trimmed.size else float(np.mean(smooth_values))
+    median_l = float(np.median(trimmed)) if trimmed.size else float(np.median(smooth_values))
+    dominant, secondary = _dominant_components(trimmed if trimmed.size else smooth_values)
 
     return {
         "mean_luminance": mean_l,
         "median_luminance": median_l,
+        "background_luminance": float(dominant),
+        "secondary_luminance": float(secondary if not np.isnan(secondary) else dominant),
     }
+
+
+def _soft_probability(primary: float, secondary: float) -> float:
+    """Convert contrast differences to a soft confidence score."""
+
+    denom = max(primary + secondary, 1e-6)
+    score = (primary - secondary) / denom
+    return float(max(0.0, min(1.0, score)))
+
+
+def _trim_extremes(values: np.ndarray, lower: float = 0.05, upper: float = 0.95) -> np.ndarray:
+    if values.size == 0:
+        return values
+
+    sorted_vals = np.sort(values.reshape(-1))
+    if sorted_vals.size < 5:
+        return sorted_vals
+
+    low_idx = int(sorted_vals.size * lower)
+    high_idx = int(sorted_vals.size * upper)
+    if high_idx <= low_idx:
+        return sorted_vals
+
+    return sorted_vals[low_idx:high_idx]
+
+
+def _median_filter(array: np.ndarray, size: int = 5) -> np.ndarray:
+    if array.ndim != 2:
+        raise ValueError("Median filter expects a 2D array")
+
+    height, width = array.shape
+    eff_size = min(size, height, width)
+    if eff_size < 1:
+        return array.copy()
+    if eff_size % 2 == 0:
+        eff_size = max(1, eff_size - 1)
+    if eff_size <= 1:
+        return array.copy()
+
+    pad = eff_size // 2
+    padded = np.pad(array, pad_width=pad, mode="edge")
+    windows = sliding_window_view(padded, (eff_size, eff_size))
+    return np.median(windows, axis=(-2, -1))
+
+
+def _separate_background_and_foreground(luminance: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Return likely background values and the remaining luminance samples."""
+
+    flattened = luminance.reshape(-1)
+    if flattened.size == 0:
+        return flattened, flattened
+
+    try:
+        median_map = _median_filter(luminance, size=5)
+    except ValueError:
+        median_map = np.full_like(luminance, np.median(flattened))
+
+    diff = np.abs(luminance - median_map)
+    diff_flat = diff.reshape(-1)
+
+    grad_y, grad_x = np.gradient(luminance)
+    gradient = np.hypot(grad_x, grad_y)
+    gradient_flat = gradient.reshape(-1)
+
+    background_mask = None
+    if diff_flat.size:
+        thresh = np.percentile(diff_flat, 55)
+        background_mask = diff_flat <= thresh
+
+    gradient_mask = None
+    if gradient_flat.size:
+        grad_thresh = np.percentile(gradient_flat, 60)
+        gradient_mask = gradient_flat <= grad_thresh
+
+    if background_mask is None and gradient_mask is None:
+        return flattened, flattened
+
+    if background_mask is None:
+        mask = gradient_mask
+    elif gradient_mask is None:
+        mask = background_mask
+    else:
+        mask = background_mask & gradient_mask
+
+    if not np.any(mask):
+        # Fall back to the more permissive mask if the intersection removes
+        # everything (common for very small patches).
+        mask = background_mask if np.any(background_mask) else gradient_mask
+
+    if mask is None or not np.any(mask):
+        return flattened, flattened
+
+    background_values = flattened[mask]
+    foreground_values = flattened[~mask] if np.any(~mask) else background_values
+    return background_values, foreground_values
+
+
+def _dominant_components(values: np.ndarray) -> Tuple[float, float]:
+    if values.size == 0:
+        return 0.0, 0.0
+
+    flattened = values.reshape(-1).astype(np.float32)
+    if flattened.size > 4096:
+        rng = np.random.default_rng(seed=42)
+        flattened = rng.choice(flattened, size=4096, replace=False)
+
+    min_val = float(flattened.min())
+    max_val = float(flattened.max())
+    if np.isclose(min_val, max_val, atol=1e-3):
+        return min_val, max_val
+
+    centers = np.array([min_val, max_val], dtype=np.float32)
+    labels = np.zeros_like(flattened, dtype=np.int32)
+
+    for _ in range(8):
+        distances = np.abs(flattened[:, None] - centers[None, :])
+        new_labels = np.argmin(distances, axis=1)
+        if np.array_equal(new_labels, labels):
+            break
+        labels = new_labels
+        for idx in range(2):
+            members = flattened[labels == idx]
+            if members.size:
+                centers[idx] = float(np.mean(members))
+
+    counts = np.array([(labels == idx).sum() for idx in range(2)])
+    if counts.sum() == 0:
+        return float(centers[0]), float(centers[1])
+
+    dominant_idx = int(np.argmax(counts))
+    secondary_idx = 1 - dominant_idx
+
+    dominant = float(centers[dominant_idx])
+    secondary = float(centers[secondary_idx]) if counts[secondary_idx] else dominant
+    return dominant, secondary
 
 
 def _clamp_bounds(
@@ -237,6 +409,7 @@ def sample_block_background(
         return None
 
     if shrink_ratio > 0:
+        original_patch = patch
         inner_w = patch.shape[1]
         inner_h = patch.shape[0]
         dx = int(inner_w * shrink_ratio)
@@ -247,7 +420,11 @@ def sample_block_background(
             sx2 = inner_w - dx
             sy2 = inner_h - dy
             if sx2 > sx1 and sy2 > sy1:
-                patch = patch[sy1:sy2, sx1:sx2]
+                trimmed_patch = patch[sy1:sy2, sx1:sx2]
+                if trimmed_patch.shape[0] >= 3 and trimmed_patch.shape[1] >= 3:
+                    patch = trimmed_patch
+                else:
+                    patch = original_patch
 
     return patch if patch.size else None
 
