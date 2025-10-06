@@ -17,6 +17,10 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
+from modules.rendering.adaptive_color import (
+    TextColorClassifier,
+    determine_text_outline_colors,
+)
 from modules.utils.device import resolve_device
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
@@ -44,6 +48,11 @@ class BatchProcessor:
         self.block_detection = block_detection_handler
         self.inpainting = inpainting_handler
         self.ocr_handler = ocr_handler
+        try:
+            self.text_color_classifier = TextColorClassifier()
+        except FileNotFoundError as err:
+            logger.warning("Adaptive colour model unavailable: %s", err)
+            self.text_color_classifier = None
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
@@ -312,20 +321,26 @@ class BatchProcessor:
             get_best_render_area(blk_list, image, inpaint_input_img)
 
             font = render_settings.font_family
-            font_color = QColor(render_settings.color)
+            default_text_color = QColor(render_settings.color)
 
             max_font_size = render_settings.max_font_size
             min_font_size = render_settings.min_font_size
-            line_spacing = float(render_settings.line_spacing) 
+            line_spacing = float(render_settings.line_spacing)
             outline_width = float(render_settings.outline_width)
-            outline_color = QColor(render_settings.outline_color) 
+            default_outline_color = QColor(render_settings.outline_color)
             bold = render_settings.bold
             italic = render_settings.italic
             underline = render_settings.underline
             alignment_id = render_settings.alignment_id
             alignment = self.main_page.button_to_alignment[alignment_id]
             direction = render_settings.direction
-                
+            auto_font_color = getattr(render_settings, 'auto_font_color', True)
+            background_for_sampling = (
+                inpaint_input_img
+                if inpaint_input_img is not None and getattr(inpaint_input_img, 'size', 0) != 0
+                else image
+            )
+
             text_items_state = []
             for blk in blk_list:
                 x1, y1, width, height = blk.xywh
@@ -338,7 +353,38 @@ class BatchProcessor:
                                                         line_spacing, outline_width, bold, italic, underline,
                                                         alignment, direction, max_font_size, min_font_size)
                 
-                # Display text if on current page  
+                decision = None
+                text_color = default_text_color
+                outline_color = default_outline_color
+                if auto_font_color and self.text_color_classifier and background_for_sampling is not None:
+                    try:
+                        decision = determine_text_outline_colors(
+                            background_for_sampling, blk, self.text_color_classifier
+                        )
+                    except Exception:
+                        logger.exception("Adaptive colour inference failed for block")
+                        decision = None
+
+                if decision:
+                    blk.font_color = decision.text_hex
+                    blk.outline_color = decision.outline_hex
+                    text_color = QColor(decision.text_hex)
+                    outline_color = QColor(decision.outline_hex)
+                else:
+                    if not getattr(blk, 'font_color', ''):
+                        blk.font_color = default_text_color.name()
+                    text_color = QColor(blk.font_color)
+                    if getattr(blk, 'outline_color', ''):
+                        outline_color = QColor(blk.outline_color)
+                    elif render_settings.outline:
+                        blk.outline_color = default_outline_color.name()
+                        outline_color = QColor(blk.outline_color)
+                    else:
+                        outline_color = default_outline_color
+
+                outline_enabled = render_settings.outline or bool(decision) or bool(getattr(blk, 'outline_color', ''))
+
+                # Display text if on current page with adaptive colours applied
                 if image_path == file_on_display:
                     self.main_page.blk_rendered.emit(translation, font_size, blk)
 
@@ -351,10 +397,10 @@ class BatchProcessor:
                     text=translation,
                     font_family=font,
                     font_size=font_size,
-                    text_color=font_color,
+                    text_color=text_color,
                     alignment=alignment,
                     line_spacing=line_spacing,
-                    outline_color=outline_color,
+                    outline_color=outline_color if outline_enabled else None,
                     outline_width=outline_width,
                     bold=bold,
                     italic=italic,
@@ -366,11 +412,11 @@ class BatchProcessor:
                     width=width,
                     direction=direction,
                     selection_outlines=[
-                        OutlineInfo(0, len(translation), 
-                        outline_color, 
-                        outline_width, 
+                        OutlineInfo(0, len(translation),
+                        outline_color,
+                        outline_width,
                         OutlineType.Full_Document)
-                    ] if outline else [],
+                    ] if outline_enabled else [],
                 )
                 text_items_state.append(text_props.to_dict())
 
