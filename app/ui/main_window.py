@@ -190,6 +190,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         project_action = self.tool_menu.addAction(MIcon("ct-file-icon.svg"), self.tr("Project File"))
         project_action.triggered.connect(self.project_browser_button.clicked)
 
+        self.tool_menu.addSeparator()
+        self.import_wfwf_action = self.tool_menu.addAction(
+            MIcon("cloud_line.svg"), self.tr("Import from WFWF")
+        )
+
         # Rest of the code remains the same
         self.save_browser = MClickSaveFileToolButton()
         save_file_types = [("Images", ["png", "jpg", "jpeg", "webp", "bmp"])]
