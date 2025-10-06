@@ -37,6 +37,8 @@ from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
 from collections import deque
 
+from app.utils.project_processing import import_from_wfwf as import_from_wfwf_util
+
 
 # Ensure any pre-declared mandatory models
 ensure_mandatory_models()
@@ -166,6 +168,9 @@ class ComicTranslate(ComicTranslateUI):
         self.change_all_blocks_size_inc.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
         self.delete_button.clicked.connect(self.delete_selected_box)
 
+        if getattr(self, "import_wfwf_action", None):
+            self.import_wfwf_action.triggered.connect(self.import_from_wfwf)
+
         # Connect text edit widgets
         self.s_text_edit.textChanged.connect(self.text_ctrl.update_text_block)
         self.t_text_edit.textChanged.connect(self.text_ctrl.update_text_block_from_edit)
@@ -208,6 +213,10 @@ class ComicTranslate(ComicTranslateUI):
 
         # New project and safety confirmations
         self.new_project_button.clicked.connect(self._on_new_project_clicked)
+
+    def import_from_wfwf(self) -> None:
+        """Open the WFWF import dialog and load the resulting project."""
+        import_from_wfwf_util(self)
 
     def _guarded_thread_load_images(self, paths: list[str]):
         """Wrap thread_load_images with unsaved-project confirmation and clear state."""

@@ -4,6 +4,7 @@ setuptools
 PySide6>=6.8.0
 msgpack>=1.1.0
 requests>=2.31.0
+beautifulsoup4>=4.12.3
 pdfplumber>=0.11.5
 py7zr>=0.20.8
 rarfile>=4.1
