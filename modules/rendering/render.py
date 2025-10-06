@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from PIL import Image, ImageFont, ImageDraw
 from PySide6.QtGui import QFont, QTextDocument,\
@@ -300,29 +300,28 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
 
     # return mutable_message, font_size
 
-def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing,
-                outline_width, bold, italic, underline, alignment, direction,
-                init_font_size: int = 40, min_font_size: int = 10):
+def manual_wrap(
+    main_page,
+    blk_list: List[TextBlock],
+    render_settings: TextRenderingSettings,
+    alignment,
+    background_image: Optional[np.ndarray] = None,
+):
 
     classifier = _get_text_color_classifier()
-    render_settings = main_page.render_settings()
-    auto_font_color = getattr(render_settings, 'auto_font_color', True)
-    default_text_color = render_settings.color
-    default_outline_color = render_settings.outline_color
-    background_image = None
-    if auto_font_color and classifier:
-        try:
-            background_image = main_page.image_viewer.get_image_array(
-                paint_all=True, include_patches=True
-            )
-            if background_image is None:
-                background_image = main_page.image_viewer.get_image_array(
-                    paint_all=True, include_patches=False
-                )
-            if background_image is None:
-                background_image = main_page.image_viewer.get_image_array()
-        except Exception:
-            background_image = None
+    auto_font_color = getattr(render_settings, "auto_font_color", True)
+    default_text_color = render_settings.color or "#000000"
+    default_outline_color = render_settings.outline_color or "#FFFFFF"
+
+    font_family = render_settings.font_family
+    line_spacing = float(render_settings.line_spacing)
+    outline_width = float(render_settings.outline_width)
+    bold = render_settings.bold
+    italic = render_settings.italic
+    underline = render_settings.underline
+    direction = render_settings.direction
+    init_font_size = render_settings.max_font_size
+    min_font_size = render_settings.min_font_size
 
     for blk in blk_list:
         x1, y1, width, height = blk.xywh

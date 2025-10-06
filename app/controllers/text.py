@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import logging
 import numpy as np
 from typing import TYPE_CHECKING
 
@@ -17,6 +18,8 @@ from modules.rendering.render import TextRenderingSettings, manual_wrap
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
     get_layout_direction, is_close
 from modules.utils.translator_utils import format_translations
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -495,13 +498,24 @@ class TextController:
             render_settings = self.render_settings()
             upper = render_settings.upper_case
 
-            line_spacing = float(self.main.line_spacing_dropdown.currentText())
-            font_family = self.main.font_dropdown.currentText()
-            outline_width = float(self.main.outline_width_dropdown.currentText())
-
-            bold = self.main.bold_button.isChecked()
-            italic = self.main.italic_button.isChecked()
-            underline = self.main.underline_button.isChecked()
+            auto_font_color = getattr(render_settings, "auto_font_color", True)
+            background_image = None
+            if auto_font_color:
+                try:
+                    background_image = self.main.image_viewer.get_image_array(
+                        paint_all=True, include_patches=True
+                    )
+                    if background_image is None:
+                        background_image = self.main.image_viewer.get_image_array(
+                            paint_all=True, include_patches=False
+                        )
+                    if background_image is None:
+                        background_image = self.main.image_viewer.get_image_array()
+                    if background_image is not None:
+                        background_image = background_image.copy()
+                except Exception:
+                    logger.exception("Failed to capture background for adaptive colours")
+                    background_image = None
 
             target_lang = self.main.t_combo.currentText()
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
@@ -511,18 +525,13 @@ class TextController:
             lambda: format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper)
             )
 
-            min_font_size = self.main.settings_page.get_min_font_size()
-            max_font_size = self.main.settings_page.get_max_font_size()
-
             align_id = self.main.alignment_tool_group.get_dayu_checked()
             alignment = self.main.button_to_alignment[align_id]
-            direction = render_settings.direction
 
             self.main.undo_group.activeStack().beginMacro('text_items_rendered')
             self.main.run_threaded(manual_wrap, self.on_render_complete, self.main.default_error_handler,
-                              None, self.main, new_blocks, font_family, line_spacing, outline_width,
-                              bold, italic, underline, alignment, direction, max_font_size,
-                              min_font_size)
+                              None, self.main, new_blocks, render_settings, alignment,
+                              background_image)
 
     def on_render_complete(self, rendered_image: np.ndarray):
         # self.main.set_image(rendered_image) 
