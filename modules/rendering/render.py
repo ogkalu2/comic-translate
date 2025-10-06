@@ -312,7 +312,15 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
     background_image = None
     if auto_font_color and classifier:
         try:
-            background_image = main_page.image_viewer.get_image_array(paint_all=True, include_patches=True)
+            background_image = main_page.image_viewer.get_image_array(
+                paint_all=True, include_patches=True
+            )
+            if background_image is None:
+                background_image = main_page.image_viewer.get_image_array(
+                    paint_all=True, include_patches=False
+                )
+            if background_image is None:
+                background_image = main_page.image_viewer.get_image_array()
         except Exception:
             background_image = None
 

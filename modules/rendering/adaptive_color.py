@@ -1,11 +1,9 @@
-"""Adaptive text colour selection powered by a lightweight logistic model."""
+"""Utilities for choosing legible text/outline colours from bubble backgrounds."""
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 
@@ -14,7 +12,7 @@ from ..utils.textblock import TextBlock
 
 @dataclass
 class AdaptiveColorDecision:
-    """Result of the adaptive colour classifier."""
+    """Result of the adaptive colour heuristic."""
 
     text_hex: str
     outline_hex: str
@@ -23,50 +21,18 @@ class AdaptiveColorDecision:
     background_luminance: float
 
 
-def _default_model_path() -> Path:
-    return Path(__file__).resolve().parents[2] / "resources" / "models" / "text_color_classifier.json"
-
-
 class TextColorClassifier:
-    """Predicts whether light or dark text should be used on a patch."""
+    """Contrast-ratio based selector for bubble-safe colours.
 
-    def __init__(self, model_path: Optional[Path] = None):
-        self.model_path = Path(model_path) if model_path else _default_model_path()
-        self._load_model()
+    The implementation favours white or black text depending on which colour
+    provides the stronger WCAG contrast ratio against the sampled bubble
+    interior.  This approach mirrors the behaviour demonstrated in many
+    professionally lettered webtoons while avoiding the brittleness of a
+    learned model.
+    """
 
-    def _load_model(self):
-        if not self.model_path.exists():
-            raise FileNotFoundError(
-                f"Adaptive text colour model not found at {self.model_path}. "
-                "Run tools/train_text_color_model.py to generate it."
-            )
-
-        with self.model_path.open("r", encoding="utf-8") as fh:
-            payload = json.load(fh)
-
-        self.feature_mean = np.asarray(payload["feature_mean"], dtype=np.float32)
-        self.feature_std = np.asarray(payload["feature_std"], dtype=np.float32)
-        # Guard against zero variance features
-        self.feature_std = np.where(self.feature_std < 1e-6, 1.0, self.feature_std)
-        self.weights = np.asarray(payload["weights"], dtype=np.float32)
-        self.bias = float(payload["bias"])
-        self.feature_names = payload.get("feature_names", [])
-
-    @staticmethod
-    def _sigmoid(x: np.ndarray) -> np.ndarray:
-        return 1.0 / (1.0 + np.exp(-x))
-
-    def predict_probability(self, features: np.ndarray) -> float:
-        """Return probability of using light text for the provided features."""
-
-        if features.shape[0] != self.feature_mean.shape[0]:
-            raise ValueError(
-                f"Expected {self.feature_mean.shape[0]} features, received {features.shape[0]}"
-            )
-
-        normalised = (features - self.feature_mean) / self.feature_std
-        score = float(np.dot(self.weights, normalised) + self.bias)
-        return float(self._sigmoid(score))
+    def __init__(self, min_contrast: float = 4.5):
+        self.min_contrast = float(min_contrast)
 
     def decide(self, patch: np.ndarray) -> Optional[AdaptiveColorDecision]:
         """Analyse a patch and return the most legible text/outline colours."""
@@ -74,27 +40,42 @@ class TextColorClassifier:
         if patch is None or patch.size == 0:
             return None
 
-        features, stats = extract_patch_features(patch)
-        if features is None:
+        stats = extract_patch_statistics(patch)
+        if not stats:
             return None
 
-        probability_light = self.predict_probability(features)
-        background_lum = stats["mean_luminance"]
+        mean_lum = stats["mean_luminance"]
+        median_lum = stats["median_luminance"]
+        reference_lum = 0.6 * median_lum + 0.4 * mean_lum
 
-        text_hex = "#FFFFFF" if probability_light >= 0.5 else "#000000"
-        text_lum = 1.0 if text_hex == "#FFFFFF" else 0.0
-        contrast = contrast_ratio(background_lum, text_lum)
+        contrast_white = contrast_ratio(reference_lum, 1.0)
+        contrast_black = contrast_ratio(reference_lum, 0.0)
 
-        # Fallback to the alternate colour when contrast is insufficient.
-        alternate_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
-        alternate_lum = 0.0 if text_hex == "#FFFFFF" else 1.0
-        alternate_contrast = contrast_ratio(background_lum, alternate_lum)
+        if contrast_white == contrast_black == 0:
+            return None
 
-        if contrast < 4.5 and alternate_contrast > contrast:
-            text_hex = alternate_hex
-            text_lum = alternate_lum
-            contrast = alternate_contrast
-            probability_light = 1.0 - probability_light
+        if contrast_white > contrast_black:
+            text_hex = "#FFFFFF"
+            text_lum = 1.0
+            probability_light = 1.0
+            contrast = contrast_white
+        else:
+            text_hex = "#000000"
+            text_lum = 0.0
+            probability_light = 0.0
+            contrast = contrast_black
+
+        # When both options are below the WCAG target, bias towards the
+        # alternative colour if it closes the gap even slightly.
+        if contrast < self.min_contrast:
+            alt_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
+            alt_lum = 0.0 if text_lum == 1.0 else 1.0
+            alt_contrast = contrast_ratio(reference_lum, alt_lum)
+            if alt_contrast > contrast:
+                text_hex = alt_hex
+                text_lum = alt_lum
+                probability_light = 1.0 - probability_light
+                contrast = alt_contrast
 
         outline_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
 
@@ -103,7 +84,7 @@ class TextColorClassifier:
             outline_hex=outline_hex,
             probability_light=probability_light,
             contrast_ratio=contrast,
-            background_luminance=background_lum,
+            background_luminance=mean_lum,
         )
 
 
@@ -114,11 +95,11 @@ def contrast_ratio(background_lum: float, text_lum: float) -> float:
     return (l1 + 0.05) / (l2 + 0.05)
 
 
-def extract_patch_features(patch: np.ndarray) -> Tuple[Optional[np.ndarray], dict]:
-    """Extract luminance and texture features from an RGB patch."""
+def extract_patch_statistics(patch: np.ndarray) -> dict:
+    """Compute luminance statistics that drive the contrast heuristic."""
 
     if patch is None or patch.size == 0:
-        return None, {}
+        return {}
 
     patch_float = patch.astype(np.float32) / 255.0
 
@@ -128,32 +109,24 @@ def extract_patch_features(patch: np.ndarray) -> Tuple[Optional[np.ndarray], dic
         + 0.0722 * patch_float[..., 2]
     )
 
-    mean_l = float(np.mean(luminance))
-    std_l = float(np.std(luminance))
-    min_l = float(np.min(luminance))
-    max_l = float(np.max(luminance))
-    range_l = max_l - min_l
+    if luminance.size == 0:
+        return {}
 
-    # HSV conversion for saturation/value estimation
-    maxc = np.max(patch_float, axis=2)
-    minc = np.min(patch_float, axis=2)
-    delta = maxc - minc
-    saturation = np.where(maxc > 0, delta / np.maximum(maxc, 1e-6), 0.0)
-    mean_s = float(np.mean(saturation))
-    mean_v = float(np.mean(maxc))
+    # Use trimmed statistics to reduce the influence of outlines or artefacts
+    flattened = luminance.reshape(-1)
+    trimmed = np.sort(flattened)
+    if trimmed.size > 20:
+        lower = int(trimmed.size * 0.1)
+        upper = int(trimmed.size * 0.9)
+        trimmed = trimmed[lower:upper]
 
-    gy, gx = np.gradient(luminance)
-    grad = np.sqrt(gx ** 2 + gy ** 2)
-    edge_strength = float(np.mean(grad))
+    mean_l = float(np.mean(trimmed))
+    median_l = float(np.median(trimmed))
 
-    features = np.array(
-        [mean_l, std_l, range_l, mean_s, mean_v, edge_strength], dtype=np.float32
-    )
-    stats = {
+    return {
         "mean_luminance": mean_l,
+        "median_luminance": median_l,
     }
-
-    return features, stats
 
 
 def sample_block_background(
