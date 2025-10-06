@@ -14,17 +14,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-import platform
 import shutil
-import stat
 import subprocess
 import tempfile
-import urllib.error
-import urllib.request
-import zipfile
 from dataclasses import dataclass
-from io import BytesIO
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -34,90 +27,6 @@ from PIL import Image
 logger = logging.getLogger(__name__)
 
 Enhancer = Callable[[np.ndarray], np.ndarray]
-
-_WAIFU2X_NCNN_PATH: Optional[str] = None
-_WAIFU2X_NCNN_RESOLVED = False
-_WAIFU2X_NCNN_MISSING_WARNED = False
-
-_WAIFU2X_RELEASE_API = "https://api.github.com/repos/nihui/waifu2x-ncnn-vulkan/releases/latest"
-_WAIFU2X_FALLBACK_RELEASES: tuple[dict[str, Any], ...] = (
-    {
-        "tag_name": "20250915",
-        "assets": [
-            {
-                "name": "waifu2x-ncnn-vulkan-20250915-linux.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250915/waifu2x-ncnn-vulkan-20250915-linux.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20250915-macos.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250915/waifu2x-ncnn-vulkan-20250915-macos.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20250915-windows.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250915/waifu2x-ncnn-vulkan-20250915-windows.zip",
-            },
-        ],
-    },
-    {
-        "tag_name": "20250802",
-        "assets": [
-            {
-                "name": "waifu2x-ncnn-vulkan-20250802-linux.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250802/waifu2x-ncnn-vulkan-20250802-linux.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20250802-macos.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250802/waifu2x-ncnn-vulkan-20250802-macos.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20250802-windows.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250802/waifu2x-ncnn-vulkan-20250802-windows.zip",
-            },
-        ],
-    },
-    {
-        "tag_name": "20250504",
-        "assets": [
-            {
-                "name": "waifu2x-ncnn-vulkan-20250504-ubuntu.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250504/waifu2x-ncnn-vulkan-20250504-ubuntu.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20250504-macos.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250504/waifu2x-ncnn-vulkan-20250504-macos.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20250504-windows.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20250504/waifu2x-ncnn-vulkan-20250504-windows.zip",
-            },
-        ],
-    },
-    {
-        "tag_name": "20220728",
-        "assets": [
-            {
-                "name": "waifu2x-ncnn-vulkan-20220728-ubuntu.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-ubuntu.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20220728-macos.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-macos.zip",
-            },
-            {
-                "name": "waifu2x-ncnn-vulkan-20220728-windows.zip",
-                "browser_download_url": "https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-windows.zip",
-            },
-        ],
-    },
-)
-
-_PLATFORM_SUFFIX_ALIASES: dict[str, tuple[str, ...]] = {
-    "linux": ("linux", "ubuntu"),
-    "windows": ("windows",),
-    "macos": ("macos", "osx"),
-}
-_CACHE_ENV_OVERRIDE = "COMIC_TRANSLATER_CACHE_DIR"
-_DEFAULT_CACHE_ROOT = Path.home() / ".cache" / "comic_translater" / "waifu2x"
 
 
 @dataclass(frozen=True)
@@ -189,203 +98,6 @@ def _ensure_uint8(img: np.ndarray) -> np.ndarray:
     return img
 
 
-def _resolve_waifu2x_ncnn_binary() -> Optional[str]:
-    """Locate the waifu2x-ncnn-vulkan executable once per process."""
-
-    global _WAIFU2X_NCNN_PATH, _WAIFU2X_NCNN_RESOLVED
-
-    if not _WAIFU2X_NCNN_RESOLVED:
-        binary = shutil.which("waifu2x-ncnn-vulkan") or shutil.which("waifu2x-ncnn-vulkan.exe")
-        if not binary:
-            binary = _ensure_downloaded_waifu2x_ncnn()
-        _WAIFU2X_NCNN_PATH = binary
-        _WAIFU2X_NCNN_RESOLVED = True
-        if binary:
-            logger.debug("Resolved waifu2x-ncnn-vulkan binary at %s", binary)
-
-    return _WAIFU2X_NCNN_PATH
-
-
-def _waifu2x_cache_root() -> Path:
-    override = os.getenv(_CACHE_ENV_OVERRIDE)
-    if override:
-        return Path(override).expanduser()
-    return _DEFAULT_CACHE_ROOT
-
-
-def _detect_platform_asset() -> Optional[tuple[str, str]]:
-    system = platform.system().lower()
-    if system.startswith("linux"):
-        return "linux", "waifu2x-ncnn-vulkan"
-    if system.startswith("windows"):
-        return "windows", "waifu2x-ncnn-vulkan.exe"
-    if system.startswith("darwin") or system.startswith("mac"):
-        return "macos", "waifu2x-ncnn-vulkan"
-    logger.warning("Automatic waifu2x download is not supported on platform '%s'", platform.system())
-    return None
-
-
-def _find_cached_binary(root: Path, binary_name: str) -> Optional[Path]:
-    if not root.exists():
-        return None
-    for candidate in root.rglob(binary_name):
-        if candidate.is_file():
-            return candidate
-    return None
-
-
-def _ensure_downloaded_waifu2x_ncnn() -> Optional[str]:
-    platform_info = _detect_platform_asset()
-    if not platform_info:
-        return None
-
-    platform_suffix, binary_name = platform_info
-    cache_root = _waifu2x_cache_root()
-    cache_root.mkdir(parents=True, exist_ok=True)
-
-    cached = _find_cached_binary(cache_root, binary_name)
-    if cached:
-        return str(cached)
-
-    release = _fetch_latest_release()
-    asset: Optional[dict[str, Any]] = None
-    version_tag = "latest"
-    used_fallback = False
-
-    if release:
-        asset = _select_release_asset(release, platform_suffix)
-        version_tag = str(release.get("tag_name") or version_tag)
-
-    if not asset:
-        asset, version_tag = _fallback_release_asset(platform_suffix)
-        used_fallback = True
-        if not asset:
-            logger.error("No waifu2x asset available for platform '%s'", platform_suffix)
-            return None
-
-    target_dir = cache_root / version_tag
-    target_dir.mkdir(parents=True, exist_ok=True)
-
-    try:
-        archive_bytes = _download_asset(asset)
-    except Exception as exc:  # pragma: no cover - network errors
-        logger.error("Failed to download waifu2x package: %s", exc)
-        archive_bytes = None
-
-    if not archive_bytes and not used_fallback:
-        asset, version_tag = _fallback_release_asset(platform_suffix)
-        used_fallback = True
-        if asset:
-            target_dir = cache_root / version_tag
-            target_dir.mkdir(parents=True, exist_ok=True)
-            try:
-                archive_bytes = _download_asset(asset)
-            except Exception as exc:  # pragma: no cover - network errors
-                logger.error("Failed to download waifu2x package: %s", exc)
-                archive_bytes = None
-
-    if not archive_bytes:
-        return None
-
-    try:
-        _extract_archive(archive_bytes, target_dir)
-    except Exception as exc:  # pragma: no cover - archive errors
-        logger.error("Failed to extract waifu2x package: %s", exc)
-        return None
-
-    cached = _find_cached_binary(target_dir, binary_name)
-    if cached:
-        _make_executable(cached)
-        return str(cached)
-
-    logger.error("Downloaded waifu2x package did not contain '%s'", binary_name)
-    return None
-
-
-def _fallback_release_asset(platform_suffix: str) -> tuple[Optional[dict[str, Any]], str]:
-    """Return a known-good release asset when the GitHub API cannot be reached."""
-
-    for release in _WAIFU2X_FALLBACK_RELEASES:
-        asset = _select_release_asset(release, platform_suffix)
-        if asset:
-            logger.info(
-                "Falling back to bundled waifu2x release %s for platform '%s'",
-                release.get("tag_name", ""),
-                platform_suffix,
-            )
-            return dict(asset), str(release.get("tag_name") or "latest")
-    return None, "latest"
-
-
-def _fetch_latest_release() -> Optional[dict[str, Any]]:
-    try:
-        with urllib.request.urlopen(_WAIFU2X_RELEASE_API, timeout=15) as response:
-            data = response.read()
-    except urllib.error.URLError as exc:  # pragma: no cover - network errors
-        logger.error("Unable to query waifu2x releases: %s", exc)
-        return None
-
-    try:
-        return json.loads(data.decode("utf-8"))
-    except json.JSONDecodeError as exc:
-        logger.error("Failed to decode waifu2x release metadata: %s", exc)
-        return None
-
-
-def _select_release_asset(release: dict[str, Any], platform_suffix: str) -> Optional[dict[str, Any]]:
-    assets = release.get("assets") or []
-    suffixes = _PLATFORM_SUFFIX_ALIASES.get(platform_suffix, (platform_suffix,))
-    for asset in assets:
-        name = str(asset.get("name") or "")
-        for suffix in suffixes:
-            if name.endswith(f"{suffix}.zip"):
-                return asset
-    return None
-
-
-def _download_asset(asset: dict[str, Any]) -> Optional[bytes]:
-    url = asset.get("browser_download_url")
-    name = asset.get("name")
-    if not url or not name:
-        return None
-
-    logger.info("Downloading waifu2x package %s", name)
-    try:
-        with urllib.request.urlopen(url, timeout=60) as response:
-            data = response.read()
-    except urllib.error.URLError as exc:  # pragma: no cover - network errors
-        logger.error("Failed to download %s: %s", url, exc)
-        return None
-
-    return data
-
-
-def _extract_archive(archive_bytes: bytes, target_dir: Path) -> None:
-    with zipfile.ZipFile(BytesIO(archive_bytes)) as zf:
-        zf.extractall(target_dir)
-
-
-def _make_executable(path: Path) -> None:
-    try:
-        mode = path.stat().st_mode
-        path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    except OSError:  # pragma: no cover - permission issues
-        logger.debug("Unable to adjust permissions for %s", path)
-
-
-def _warn_missing_waifu2x() -> None:
-    """Emit a user-facing warning once when the CLI cannot be located."""
-
-    global _WAIFU2X_NCNN_MISSING_WARNED
-
-    if not _WAIFU2X_NCNN_MISSING_WARNED:
-        logger.warning(
-            "waifu2x-ncnn-vulkan executable not available. Automatic download failed; install it manually from %s and ensure it is on the PATH.",
-            "https://github.com/nihui/waifu2x-ncnn-vulkan/releases",
-        )
-        _WAIFU2X_NCNN_MISSING_WARNED = True
-
-
 def get_enhancer(config: Any) -> Optional[Enhancer]:
     """Return an enhancer callable based on the supplied configuration."""
 
@@ -400,13 +112,8 @@ def get_enhancer(config: Any) -> Optional[Enhancer]:
         "waifu2x ncnn vulkan",
         "waifu2x_ncnn_vulkan",
     }:
-        binary = _resolve_waifu2x_ncnn_binary()
-        if not binary:
-            _warn_missing_waifu2x()
-            return None
-
         def _enhance(img: np.ndarray, *, _cfg: Waifu2xConfig = cfg) -> np.ndarray:
-            return enhance_waifu2x_ncnn(img, _cfg, binary=binary)
+            return enhance_waifu2x_ncnn(img, _cfg)
 
         return _enhance
 
@@ -426,17 +133,15 @@ def get_enhancer(config: Any) -> Optional[Enhancer]:
     return None
 
 
-def enhance_waifu2x_ncnn(
-    img: np.ndarray,
-    cfg: Waifu2xConfig,
-    *,
-    binary: Optional[str] = None,
-) -> np.ndarray:
+def enhance_waifu2x_ncnn(img: np.ndarray, cfg: Waifu2xConfig) -> np.ndarray:
     """Run the official ``waifu2x-ncnn-vulkan`` CLI with the given settings."""
 
-    binary_path = binary or _resolve_waifu2x_ncnn_binary()
-    if not binary_path:
-        _warn_missing_waifu2x()
+    binary = shutil.which("waifu2x-ncnn-vulkan") or shutil.which("waifu2x-ncnn-vulkan.exe")
+    if not binary:
+        logger.error(
+            "waifu2x-ncnn-vulkan executable not found. Install it from "
+            "https://github.com/nihui/waifu2x-ncnn-vulkan/releases and ensure it is on the PATH."
+        )
         return img
 
     arr = _ensure_uint8(img)
@@ -449,7 +154,7 @@ def enhance_waifu2x_ncnn(
         pil_img.save(input_path, format="PNG")
 
         cmd = [
-            binary_path,
+            binary,
             "-i",
             str(input_path),
             "-o",
@@ -471,8 +176,6 @@ def enhance_waifu2x_ncnn(
 
         logger.debug("Executing waifu2x-ncnn-vulkan: %s", " ".join(cmd))
 
-        cwd = str(Path(binary_path).parent)
-
         try:
             completed = subprocess.run(
                 cmd,
@@ -480,7 +183,6 @@ def enhance_waifu2x_ncnn(
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                cwd=cwd,
             )
             if completed.stdout:
                 logger.debug("waifu2x stdout: %s", completed.stdout.strip())
