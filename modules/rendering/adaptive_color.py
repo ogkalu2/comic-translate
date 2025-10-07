@@ -46,75 +46,62 @@ class TextColorClassifier:
         if not stats:
             return None
 
-        mean_lum = stats["mean_luminance"]
-        median_lum = stats["median_luminance"]
-        background_lum = stats.get("background_luminance", median_lum)
-        alt_cluster = stats.get("secondary_luminance", 1.0 - background_lum)
+        background_lum = stats.get("background_luminance", stats["median_luminance"])
+        background_rgb = stats.get("background_rgb")
 
-        # Blend dominant luminance with the median so that extreme sampling
-        # artefacts (for example, residual lettering) do not entirely override
-        # the underlying bubble tone.
-        reference_lum = 0.5 * background_lum + 0.5 * median_lum
-
-        contrast_white = contrast_ratio(reference_lum, 1.0)
-        contrast_black = contrast_ratio(reference_lum, 0.0)
-
-        if contrast_white == contrast_black == 0:
+        if background_rgb is None:
             return None
 
-        preferred = None
-        if background_lum <= 0.42:
-            preferred = "light"
-        elif background_lum >= 0.58:
-            preferred = "dark"
+        prefer_light = background_lum <= 0.5
+        target_rgb = np.ones(3, dtype=np.float32) if prefer_light else np.zeros(3, dtype=np.float32)
 
-        forced_choice = preferred is not None
+        text_rgb, mix = _solve_mix_for_contrast(
+            base_rgb=background_rgb,
+            reference_lum=background_lum,
+            target_rgb=target_rgb,
+            min_contrast=self.min_contrast,
+        )
 
-        if preferred == "light":
-            text_hex = "#FFFFFF"
-            text_lum = 1.0
-            probability_light = 0.75
-            contrast = contrast_white
-        elif preferred == "dark":
-            text_hex = "#000000"
-            text_lum = 0.0
-            probability_light = 0.25
-            contrast = contrast_black
-        elif contrast_white > contrast_black:
-            text_hex = "#FFFFFF"
-            text_lum = 1.0
-            probability_light = 0.5 + 0.5 * _soft_probability(contrast_white, contrast_black)
-            contrast = contrast_white
-        else:
-            text_hex = "#000000"
-            text_lum = 0.0
-            probability_light = 0.5 - 0.5 * _soft_probability(contrast_black, contrast_white)
-            contrast = contrast_black
+        mix_floor = 0.6 if background_lum <= 0.5 else 0.45
+        if mix < mix_floor:
+            text_rgb = background_rgb * (1.0 - mix_floor) + target_rgb * mix_floor
+            mix = mix_floor
 
-        # When both options are below the WCAG target, bias towards the
-        # alternative colour if it closes the gap even slightly.
-        if contrast < self.min_contrast and not forced_choice:
-            alt_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
-            alt_lum = 0.0 if text_lum == 1.0 else 1.0
-            alt_contrast = contrast_ratio(reference_lum, alt_lum)
-            if alt_contrast > contrast:
-                text_hex = alt_hex
-                text_lum = alt_lum
-                probability_light = 1.0 - probability_light
-                contrast = alt_contrast
+        text_lum = _relative_luminance(text_rgb)
+        contrast = contrast_ratio(background_lum, text_lum)
 
-        # Prefer an outline that contrasts with both the chosen text colour and
-        # the predicted foreground cluster (which often corresponds to the
-        # original lettering colour remaining in the patch).
-        if abs(alt_cluster - background_lum) < 0.08:
-            outline_hex = "#000000" if text_hex == "#FFFFFF" else "#FFFFFF"
-        elif alt_cluster >= 0.5:
-            outline_hex = "#000000"
-        else:
-            outline_hex = "#FFFFFF"
+        # If contrast is still under the target, fall back to the pure extreme.
+        if contrast < self.min_contrast:
+            text_rgb = target_rgb
+            text_lum = _relative_luminance(text_rgb)
+            contrast = contrast_ratio(background_lum, text_lum)
+
+        probability_light = 0.75 if text_lum >= background_lum else 0.25
+
+        outline_target = np.zeros(3, dtype=np.float32) if text_lum >= background_lum else np.ones(3, dtype=np.float32)
+        outline_rgb, outline_mix = _solve_mix_for_contrast(
+            base_rgb=background_rgb,
+            reference_lum=text_lum,
+            target_rgb=outline_target,
+            min_contrast=max(3.0, self.min_contrast - 1.0),
+        )
+
+        outline_floor = 0.35 if text_lum >= background_lum else 0.3
+        if outline_mix < outline_floor:
+            outline_rgb = background_rgb * (1.0 - outline_floor) + outline_target * outline_floor
+
+        outline_lum = _relative_luminance(outline_rgb)
+        outline_contrast = contrast_ratio(text_lum, outline_lum)
+
+        if outline_contrast < 1.5:
+            outline_rgb = outline_target
+            outline_lum = _relative_luminance(outline_rgb)
+
+        text_hex = _rgb_to_hex(text_rgb)
+        outline_hex = _rgb_to_hex(outline_rgb)
 
         if outline_hex.lower() == text_hex.lower():
-            outline_hex = "#FFFFFF" if text_hex == "#000000" else "#000000"
+            outline_hex = "#000000" if text_lum >= background_lum else "#FFFFFF"
 
         return AdaptiveColorDecision(
             text_hex=text_hex,
@@ -130,6 +117,55 @@ def contrast_ratio(background_lum: float, text_lum: float) -> float:
 
     l1, l2 = max(background_lum, text_lum), min(background_lum, text_lum)
     return (l1 + 0.05) / (l2 + 0.05)
+
+
+def _relative_luminance(rgb: np.ndarray) -> float:
+    rgb = np.clip(np.asarray(rgb, dtype=np.float32), 0.0, 1.0)
+    return float(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2])
+
+
+def _solve_mix_for_contrast(
+    base_rgb: np.ndarray,
+    reference_lum: float,
+    target_rgb: np.ndarray,
+    min_contrast: float,
+) -> Tuple[np.ndarray, float]:
+    """Blend the base colour toward the target until contrast is satisfied."""
+
+    base_rgb = np.clip(np.asarray(base_rgb, dtype=np.float32), 0.0, 1.0)
+    target_rgb = np.clip(np.asarray(target_rgb, dtype=np.float32), 0.0, 1.0)
+
+    base_lum = _relative_luminance(base_rgb)
+    if contrast_ratio(reference_lum, base_lum) >= min_contrast:
+        return base_rgb, 0.0
+
+    low, high = 0.0, 1.0
+    best = None
+    best_mix = 1.0
+
+    for _ in range(24):
+        mid = (low + high) / 2.0
+        candidate = base_rgb * (1.0 - mid) + target_rgb * mid
+        cand_lum = _relative_luminance(candidate)
+        ratio = contrast_ratio(reference_lum, cand_lum)
+        if ratio >= min_contrast:
+            best = candidate
+            best_mix = mid
+            high = mid
+        else:
+            low = mid
+
+    if best is None:
+        best = target_rgb
+        best_mix = 1.0
+
+    return best, best_mix
+
+
+def _rgb_to_hex(rgb: np.ndarray) -> str:
+    rgb = np.clip(np.asarray(rgb, dtype=np.float32), 0.0, 1.0)
+    values = np.round(rgb * 255.0).astype(np.int32)
+    return "#" + "".join(f"{val:02X}" for val in values)
 
 
 def extract_patch_statistics(patch: np.ndarray) -> dict:
@@ -154,30 +190,36 @@ def extract_patch_statistics(patch: np.ndarray) -> dict:
     if luminance.size == 0:
         return {}
 
-    smooth_values, _ = _separate_background_and_foreground(luminance)
+    smooth_values, _, background_mask = _separate_background_and_foreground(luminance)
 
     if smooth_values.size == 0:
         smooth_values = luminance.reshape(-1)
 
     trimmed = _trim_extremes(smooth_values)
-    mean_l = float(np.mean(trimmed)) if trimmed.size else float(np.mean(smooth_values))
-    median_l = float(np.median(trimmed)) if trimmed.size else float(np.median(smooth_values))
-    dominant, secondary = _dominant_components(trimmed if trimmed.size else smooth_values)
+    reference_values = trimmed if trimmed.size else smooth_values
+    mean_l = float(np.mean(reference_values)) if reference_values.size else float(np.mean(smooth_values))
+    median_l = float(np.median(reference_values)) if reference_values.size else float(np.median(smooth_values))
+    dominant, secondary = _dominant_components(reference_values if reference_values.size else smooth_values)
+
+    rgb_flat = patch_float.reshape(-1, 3)
+    if background_mask is not None and background_mask.size == luminance.size:
+        mask_flat = background_mask.reshape(-1)
+        background_rgb = rgb_flat[mask_flat]
+    else:
+        background_rgb = rgb_flat
+
+    if background_rgb.size == 0:
+        background_rgb = rgb_flat
+
+    background_rgb = np.mean(background_rgb, axis=0) if background_rgb.size else np.array([0.5, 0.5, 0.5], dtype=np.float32)
 
     return {
         "mean_luminance": mean_l,
         "median_luminance": median_l,
         "background_luminance": float(dominant),
         "secondary_luminance": float(secondary if not np.isnan(secondary) else dominant),
+        "background_rgb": background_rgb.astype(np.float32),
     }
-
-
-def _soft_probability(primary: float, secondary: float) -> float:
-    """Convert contrast differences to a soft confidence score."""
-
-    denom = max(primary + secondary, 1e-6)
-    score = (primary - secondary) / denom
-    return float(max(0.0, min(1.0, score)))
 
 
 def _trim_extremes(values: np.ndarray, lower: float = 0.05, upper: float = 0.95) -> np.ndarray:
@@ -215,12 +257,14 @@ def _median_filter(array: np.ndarray, size: int = 5) -> np.ndarray:
     return np.median(windows, axis=(-2, -1))
 
 
-def _separate_background_and_foreground(luminance: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Return likely background values and the remaining luminance samples."""
+def _separate_background_and_foreground(
+    luminance: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray]]:
+    """Return likely background values, foreground values, and a background mask."""
 
     flattened = luminance.reshape(-1)
     if flattened.size == 0:
-        return flattened, flattened
+        return flattened, flattened, None
 
     try:
         median_map = _median_filter(luminance, size=5)
@@ -245,7 +289,7 @@ def _separate_background_and_foreground(luminance: np.ndarray) -> Tuple[np.ndarr
         gradient_mask = gradient_flat <= grad_thresh
 
     if background_mask is None and gradient_mask is None:
-        return flattened, flattened
+        return flattened, flattened, None
 
     if background_mask is None:
         mask = gradient_mask
@@ -260,11 +304,15 @@ def _separate_background_and_foreground(luminance: np.ndarray) -> Tuple[np.ndarr
         mask = background_mask if np.any(background_mask) else gradient_mask
 
     if mask is None or not np.any(mask):
-        return flattened, flattened
+        return flattened, flattened, None
 
     background_values = flattened[mask]
     foreground_values = flattened[~mask] if np.any(~mask) else background_values
-    return background_values, foreground_values
+    try:
+        mask_full = mask.reshape(luminance.shape)
+    except ValueError:
+        mask_full = np.broadcast_to(mask, luminance.shape)
+    return background_values, foreground_values, mask_full
 
 
 def _dominant_components(values: np.ndarray) -> Tuple[float, float]:

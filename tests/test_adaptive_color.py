@@ -14,14 +14,26 @@ def _make_block(x1, y1, x2, y2, segm_pts=None):
     )
 
 
+def _hex_to_rgb(hex_color: str) -> np.ndarray:
+    hex_color = hex_color.lstrip("#")
+    return np.array([int(hex_color[i : i + 2], 16) for i in (0, 2, 4)], dtype=np.float32) / 255.0
+
+
+def _relative_luminance(rgb: np.ndarray) -> float:
+    return float(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2])
+
+
 def test_classifier_prefers_light_text_on_dark_background():
     classifier = TextColorClassifier()
     dark_patch = np.zeros((20, 20, 3), dtype=np.uint8)
     decision = classifier.decide(dark_patch)
 
     assert decision is not None
-    assert decision.text_hex == "#FFFFFF"
-    assert decision.outline_hex == "#000000"
+    text_rgb = _hex_to_rgb(decision.text_hex)
+    outline_rgb = _hex_to_rgb(decision.outline_hex)
+    assert _relative_luminance(text_rgb) > 0.55
+    assert _relative_luminance(outline_rgb) < 0.15
+    assert decision.contrast_ratio >= 4.5
 
 
 def test_classifier_prefers_dark_text_on_light_background():
@@ -30,8 +42,11 @@ def test_classifier_prefers_dark_text_on_light_background():
     decision = classifier.decide(light_patch)
 
     assert decision is not None
-    assert decision.text_hex == "#000000"
-    assert decision.outline_hex == "#FFFFFF"
+    text_rgb = _hex_to_rgb(decision.text_hex)
+    outline_rgb = _hex_to_rgb(decision.outline_hex)
+    assert _relative_luminance(text_rgb) < 0.45
+    assert _relative_luminance(outline_rgb) > 0.75
+    assert decision.contrast_ratio >= 3.5
 
 
 def test_classifier_ignores_foreground_text_when_background_is_dark():
@@ -43,8 +58,10 @@ def test_classifier_ignores_foreground_text_when_background_is_dark():
     decision = classifier.decide(bubble)
 
     assert decision is not None
-    assert decision.text_hex == "#FFFFFF"
-    assert decision.outline_hex == "#000000"
+    text_rgb = _hex_to_rgb(decision.text_hex)
+    outline_rgb = _hex_to_rgb(decision.outline_hex)
+    assert _relative_luminance(text_rgb) > _relative_luminance(outline_rgb)
+    assert decision.contrast_ratio >= 3.5
 
 
 def test_classifier_handles_light_background_with_dark_foreground_noise():
@@ -55,8 +72,10 @@ def test_classifier_handles_light_background_with_dark_foreground_noise():
     decision = classifier.decide(bubble)
 
     assert decision is not None
-    assert decision.text_hex == "#000000"
-    assert decision.outline_hex == "#FFFFFF"
+    text_rgb = _hex_to_rgb(decision.text_hex)
+    outline_rgb = _hex_to_rgb(decision.outline_hex)
+    assert _relative_luminance(text_rgb) < _relative_luminance(outline_rgb)
+    assert decision.contrast_ratio >= 4.0
 
 
 def test_sample_block_background_fallback_when_shrink_collapses():
