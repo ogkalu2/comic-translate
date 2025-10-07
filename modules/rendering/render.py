@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from PIL import Image, ImageFont, ImageDraw
 from PySide6.QtGui import QFont, QTextDocument,\
@@ -12,8 +12,21 @@ from ..utils.textblock import TextBlock
 from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
+from .adaptive_color import TextColorClassifier, determine_text_outline_colors
 
 from dataclasses import dataclass
+
+_ADAPTIVE_CLASSIFIER = None
+
+
+def _get_text_color_classifier():
+    global _ADAPTIVE_CLASSIFIER
+    if _ADAPTIVE_CLASSIFIER is None:
+        try:
+            _ADAPTIVE_CLASSIFIER = TextColorClassifier()
+        except FileNotFoundError:
+            _ADAPTIVE_CLASSIFIER = None
+    return _ADAPTIVE_CLASSIFIER
 
 @dataclass
 class TextRenderingSettings:
@@ -31,6 +44,7 @@ class TextRenderingSettings:
     underline: bool
     line_spacing: str
     direction: Qt.LayoutDirection
+    auto_font_color: bool = True
 
 def array_to_pil(rgb_image: np.ndarray):
     # Image is already in RGB format, just convert to PIL
@@ -286,10 +300,40 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
 
     # return mutable_message, font_size
 
-def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
-                outline_width, bold, italic, underline, alignment, direction, 
-                init_font_size: int = 40, min_font_size: int = 10):
-    
+def manual_wrap(
+    main_page,
+    blk_list: List[TextBlock],
+    render_settings: TextRenderingSettings,
+    alignment,
+    background_image: Optional[np.ndarray] = None,
+):
+
+    classifier = _get_text_color_classifier()
+    auto_font_color = getattr(render_settings, "auto_font_color", True)
+    default_text_color = render_settings.color or "#000000"
+    default_outline_color = render_settings.outline_color or "#FFFFFF"
+
+    if auto_font_color and background_image is None:
+        # Fall back to the base page image when the caller does not provide an
+        # explicit sampling surface. This keeps adaptive colours working even
+        # if the UI thread could not capture an augmented view of the page.
+        try:
+            text_ctrl = getattr(main_page, "text_ctrl", None)
+            if text_ctrl is not None and hasattr(text_ctrl, "_get_current_base_image"):
+                background_image = text_ctrl._get_current_base_image()
+        except Exception:
+            background_image = None
+
+    font_family = render_settings.font_family
+    line_spacing = float(render_settings.line_spacing)
+    outline_width = float(render_settings.outline_width)
+    bold = render_settings.bold
+    italic = render_settings.italic
+    underline = render_settings.underline
+    direction = render_settings.direction
+    init_font_size = render_settings.max_font_size
+    min_font_size = render_settings.min_font_size
+
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
 
@@ -297,10 +341,25 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
         if not translation or len(translation) == 1:
             continue
 
+        decision = None
+        if auto_font_color and classifier and background_image is not None:
+            try:
+                decision = determine_text_outline_colors(background_image, blk, classifier)
+            except Exception:
+                decision = None
+
+        if decision:
+            blk.font_color = decision.text_hex
+            blk.outline_color = decision.outline_hex
+        else:
+            blk.font_color = blk.font_color or default_text_color
+            if not getattr(blk, 'outline_color', ''):
+                blk.outline_color = default_outline_color if render_settings.outline else ''
+
         translation, font_size = pyside_word_wrap(translation, font_family, width, height,
                                                  line_spacing, outline_width, bold, italic, underline,
                                                  alignment, direction, init_font_size, min_font_size)
-        
+
         main_page.blk_rendered.emit(translation, font_size, blk)
 
 

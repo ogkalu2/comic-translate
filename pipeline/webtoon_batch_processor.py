@@ -18,6 +18,10 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
 from modules.utils.translator_utils import format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
+from modules.rendering.adaptive_color import (
+    TextColorClassifier,
+    determine_text_outline_colors,
+)
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
@@ -67,6 +71,15 @@ class WebtoonBatchProcessor:
         self.physical_page_results = defaultdict(list)  # physical_page_index -> merged results
         self.physical_page_status = defaultdict(lambda: PageStatus.UNPROCESSED)
         self.final_patches_for_save = defaultdict(list)
+
+        try:
+            self.text_color_classifier = TextColorClassifier()
+        except FileNotFoundError as err:
+            logger.warning("Adaptive colour model unavailable: %s", err)
+            self.text_color_classifier = None
+
+        self.virtual_page_backgrounds = defaultdict(list)
+        self.physical_page_cache = {}
         
         # Edge detection settings
         self.edge_threshold = 50  # pixels from edge to consider as "near edge"
@@ -182,8 +195,32 @@ class WebtoonBatchProcessor:
                 'virtual_height': h2
             }
         ]
-        
+
         return combined_image, mapping_data
+
+    def _load_virtual_page_background(self, vpage: VirtualPage) -> Optional[np.ndarray]:
+        """Load and cache the cropped physical page used for adaptive colouring."""
+
+        if vpage.physical_page_path not in self.physical_page_cache:
+            image = imk.read_image(vpage.physical_page_path)
+            if image is None:
+                logger.warning(
+                    "Failed to load physical page %s for adaptive colour sampling",
+                    vpage.physical_page_path,
+                )
+                self.physical_page_cache[vpage.physical_page_path] = None
+            else:
+                self.physical_page_cache[vpage.physical_page_path] = image
+
+        image = self.physical_page_cache.get(vpage.physical_page_path)
+        if image is None:
+            return None
+
+        crop = image[vpage.crop_top:vpage.crop_bottom, :]
+        if crop.size == 0:
+            return None
+
+        return crop.copy()
 
     def _detect_edge_blocks_virtual(self, combined_image: np.ndarray, vpage1: VirtualPage, vpage2: VirtualPage) -> Tuple[List[TextBlock], bool]:
         """
@@ -374,13 +411,25 @@ class WebtoonBatchProcessor:
         if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
             return None
         
+        virtual_page_backgrounds = {}
+        for mapping in mapping_data:
+            vpage = mapping['virtual_page']
+            y_start = max(0, mapping['combined_y_start'])
+            y_end = min(inpaint_input_img.shape[0], mapping['combined_y_end'])
+            x_offset = max(0, mapping.get('x_offset', 0))
+            width = mapping.get('virtual_width', inpaint_input_img.shape[1])
+            x_end = min(inpaint_input_img.shape[1], x_offset + width)
+            if y_end > y_start and x_end > x_offset:
+                virtual_page_backgrounds[vpage.virtual_id] = inpaint_input_img[y_start:y_end, x_offset:x_end].copy()
+
         if not virtual_page_blocks and not virtual_page_patches:
             logger.info(f"No results (blocks or patches) for virtual chunk {chunk_id}")
             return None
 
         return {
             'blocks': virtual_page_blocks,
-            'patches': virtual_page_patches
+            'patches': virtual_page_patches,
+            'backgrounds': virtual_page_backgrounds,
         }
 
     def _convert_blocks_to_virtual_coordinates(self, blk_list: List[TextBlock], 
@@ -714,14 +763,29 @@ class WebtoonBatchProcessor:
 
         # Prepare render settings
         render_settings = self.main_page.render_settings()
-        font, font_color = render_settings.font_family, QColor(render_settings.color)
+        font = render_settings.font_family
+        default_text_color = QColor(render_settings.color)
         max_font_size, min_font_size = render_settings.max_font_size, render_settings.min_font_size
         line_spacing, outline_width = float(render_settings.line_spacing), float(render_settings.outline_width)
-        outline_color, outline = QColor(render_settings.outline_color), render_settings.outline
+        default_outline_color = QColor(render_settings.outline_color)
+        outline = render_settings.outline
         bold, italic, underline = render_settings.bold, render_settings.italic, render_settings.underline
         alignment = self.main_page.button_to_alignment[render_settings.alignment_id]
         direction = render_settings.direction
-        
+        auto_font_color = getattr(render_settings, 'auto_font_color', True)
+
+        backgrounds = self.virtual_page_backgrounds.get(vpage.virtual_id, [])
+        background_image = None
+        if backgrounds:
+            background_image = max(
+                (bg for bg in backgrounds if bg is not None and bg.size > 0),
+                key=lambda arr: arr.shape[0] * arr.shape[1],
+                default=None,
+            )
+
+        if background_image is None and auto_font_color:
+            background_image = self._load_virtual_page_background(vpage)
+
         # Get target language code for formatting
         target_lang = self.main_page.image_states[image_path]['target_lang']
         target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
@@ -744,15 +808,44 @@ class WebtoonBatchProcessor:
             translation, font_size = pyside_word_wrap(translation, font, width, height,
                                                       line_spacing, outline_width, bold, italic, underline,
                                                       alignment, direction, max_font_size, min_font_size)
-            
+
             if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                 translation = translation.replace(' ', '')
+
+            decision = None
+            text_color = default_text_color
+            outline_color = default_outline_color
+            if auto_font_color and self.text_color_classifier and background_image is not None:
+                try:
+                    decision = determine_text_outline_colors(background_image, blk_virtual, self.text_color_classifier)
+                except Exception:
+                    logger.exception("Adaptive colour inference failed for virtual page %s", vpage.virtual_id)
+                    decision = None
+
+            if decision:
+                blk_virtual.font_color = decision.text_hex
+                blk_virtual.outline_color = decision.outline_hex
+                text_color = QColor(decision.text_hex)
+                outline_color = QColor(decision.outline_hex)
+            else:
+                if not getattr(blk_virtual, 'font_color', ''):
+                    blk_virtual.font_color = default_text_color.name()
+                text_color = QColor(blk_virtual.font_color)
+                if getattr(blk_virtual, 'outline_color', ''):
+                    outline_color = QColor(blk_virtual.outline_color)
+                elif outline:
+                    blk_virtual.outline_color = default_outline_color.name()
+                    outline_color = QColor(blk_virtual.outline_color)
+                else:
+                    outline_color = default_outline_color
+
+            outline_enabled = outline or bool(decision) or bool(getattr(blk_virtual, 'outline_color', ''))
 
             render_blk = blk_virtual.deep_copy()
             render_blk.xyxy = list(physical_coords)
             if render_blk.bubble_xyxy:
                 render_blk.bubble_xyxy = vpage.virtual_to_physical_coords(render_blk.bubble_xyxy)
-            
+
             # Convert to scene coordinates for correct placement
             render_blk.xyxy[1] += page_y_position_in_scene
             render_blk.xyxy[3] += page_y_position_in_scene
@@ -761,6 +854,8 @@ class WebtoonBatchProcessor:
                 render_blk.bubble_xyxy[3] += page_y_position_in_scene
 
             render_blk.translation = translation
+            render_blk.font_color = blk_virtual.font_color
+            render_blk.outline_color = blk_virtual.outline_color
 
             if should_emit_live:
                 self.main_page.blk_rendered.emit(translation, font_size, render_blk)
@@ -774,10 +869,10 @@ class WebtoonBatchProcessor:
                 text=translation,
                 font_family=font,
                 font_size=font_size,
-                text_color=font_color,
+                text_color=text_color,
                 alignment=alignment,
                 line_spacing=line_spacing,
-                outline_color=outline_color,
+                outline_color=outline_color if outline_enabled else None,
                 outline_width=outline_width,
                 bold=bold,
                 italic=italic,
@@ -790,13 +885,13 @@ class WebtoonBatchProcessor:
                 direction=direction,
                 selection_outlines=[
                     OutlineInfo(
-                        0, 
-                        len(translation), 
-                        outline_color, 
-                        outline_width, 
+                        0,
+                        len(translation),
+                        outline_color,
+                        outline_width,
                         OutlineType.Full_Document
                     )
-                ] if outline else [],
+                ] if outline_enabled else [],
             )
             text_items_state.append(text_props.to_dict())
             page_blk_list.append(render_blk)
@@ -970,6 +1065,8 @@ class WebtoonBatchProcessor:
         self.physical_page_status.clear()
         self.processed_chunks = set()
         self.virtual_page_to_chunks = defaultdict(list)
+        self.virtual_page_backgrounds.clear()
+        self.physical_page_cache.clear()
 
         # Step 1: Create virtual pages for all physical pages
         all_virtual_pages = []
@@ -1059,6 +1156,9 @@ class WebtoonBatchProcessor:
                 chunk_results = self._process_virtual_chunk(vpage1, vpage2, chunk_id, timestamp, physical_pages_in_chunk, total_images)
                 if chunk_results:
                     self.virtual_chunk_results[chunk_id] = chunk_results
+                    for v_id, background in chunk_results.get('backgrounds', {}).items():
+                        if background is not None:
+                            self.virtual_page_backgrounds[v_id].append(background)
                 self.processed_chunks.add(chunk_id)
             except Exception as e:
                 logger.exception(f"Error processing virtual chunk {chunk_id}: {e}", exc_info=True)

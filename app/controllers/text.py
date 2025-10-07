@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import copy
+import logging
 import numpy as np
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Optional
 
 from PySide6 import QtCore
 from PySide6.QtGui import QColor
@@ -17,6 +18,8 @@ from modules.rendering.render import TextRenderingSettings, manual_wrap
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
     get_layout_direction, is_close
 from modules.utils.translator_utils import format_translations
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -43,6 +46,93 @@ class TextController:
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
 
+    def _get_current_base_image(self) -> Optional[np.ndarray]:
+        """Return a copy of the original image for the active page."""
+
+        idx = getattr(self.main, "curr_img_idx", -1)
+        if idx is None or idx < 0:
+            return None
+
+        if not self.main.image_files or idx >= len(self.main.image_files):
+            return None
+
+        file_path = self.main.image_files[idx]
+        base_image = self.main.image_data.get(file_path)
+        if base_image is None:
+            return None
+
+        try:
+            return np.array(base_image, copy=True)
+        except Exception:
+            logger.exception("Failed to copy base image for adaptive colours")
+            return None
+
+    @staticmethod
+    def _image_covers_blocks(
+        image: Optional[np.ndarray], blocks: Iterable[TextBlock]
+    ) -> bool:
+        """Ensure every block lies within the provided image bounds."""
+
+        if image is None or getattr(image, "size", 0) == 0:
+            return False
+
+        height, width = image.shape[:2]
+        for blk in blocks:
+            if getattr(blk, "xyxy", None) is None:
+                continue
+
+            try:
+                x1, y1, x2, y2 = (int(v) for v in blk.xyxy)
+            except Exception:
+                return False
+
+            if x1 < 0 or y1 < 0:
+                return False
+            if x2 > width or y2 > height:
+                return False
+
+        return True
+
+    def _prepare_background_image(
+        self,
+        blocks: Iterable[TextBlock],
+        render_settings: TextRenderingSettings,
+    ) -> Optional[np.ndarray]:
+        """Collect a background image aligned with block coordinates."""
+
+        if not getattr(render_settings, "auto_font_color", True):
+            return None
+
+        viewer_image = None
+        try:
+            viewer_image = self.main.image_viewer.get_image_array(
+                paint_all=True, include_patches=True
+            )
+            if viewer_image is None:
+                viewer_image = self.main.image_viewer.get_image_array(
+                    paint_all=True, include_patches=False
+                )
+            if viewer_image is None:
+                viewer_image = self.main.image_viewer.get_image_array()
+            if viewer_image is not None:
+                viewer_image = viewer_image.copy()
+        except Exception:
+            logger.exception("Failed to capture background for adaptive colours")
+            viewer_image = None
+
+        base_image = self._get_current_base_image()
+
+        # Prefer the unmodified base image because block coordinates are derived
+        # from the original detection resolution. Fall back to the viewer capture
+        # only when the base image is unavailable or does not cover the blocks.
+        if base_image is not None and self._image_covers_blocks(base_image, blocks):
+            return base_image
+
+        if viewer_image is not None and self._image_covers_blocks(viewer_image, blocks):
+            return viewer_image
+
+        return base_image if base_image is not None else viewer_image
+
     def clear_text_edits(self):
         self.main.curr_tblock = None
         self.main.curr_tblock_item = None
@@ -61,14 +151,15 @@ class TextController:
 
         render_settings = self.render_settings()
         font_family = render_settings.font_family
-        text_color_str = render_settings.color
+        text_color_str = blk.font_color if getattr(blk, 'font_color', '') else render_settings.color
         text_color = QColor(text_color_str)
 
         id = render_settings.alignment_id
         alignment = self.main.button_to_alignment[id]
         line_spacing = float(render_settings.line_spacing)
-        outline_color_str = render_settings.outline_color
-        outline_color = QColor(outline_color_str) if self.main.outline_checkbox.isChecked() else None
+        outline_color_str = blk.outline_color if getattr(blk, 'outline_color', '') else render_settings.outline_color
+        outline_enabled = render_settings.outline or bool(getattr(blk, 'outline_color', ''))
+        outline_color = QColor(outline_color_str) if outline_enabled else None
         outline_width = float(render_settings.outline_width)
         bold = render_settings.bold
         italic = render_settings.italic
@@ -493,14 +584,7 @@ class TextController:
 
             render_settings = self.render_settings()
             upper = render_settings.upper_case
-
-            line_spacing = float(self.main.line_spacing_dropdown.currentText())
-            font_family = self.main.font_dropdown.currentText()
-            outline_width = float(self.main.outline_width_dropdown.currentText())
-
-            bold = self.main.bold_button.isChecked()
-            italic = self.main.italic_button.isChecked()
-            underline = self.main.underline_button.isChecked()
+            background_image = self._prepare_background_image(new_blocks, render_settings)
 
             target_lang = self.main.t_combo.currentText()
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
@@ -510,18 +594,13 @@ class TextController:
             lambda: format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper)
             )
 
-            min_font_size = self.main.settings_page.get_min_font_size()
-            max_font_size = self.main.settings_page.get_max_font_size()
-
             align_id = self.main.alignment_tool_group.get_dayu_checked()
             alignment = self.main.button_to_alignment[align_id]
-            direction = render_settings.direction
 
             self.main.undo_group.activeStack().beginMacro('text_items_rendered')
             self.main.run_threaded(manual_wrap, self.on_render_complete, self.main.default_error_handler,
-                              None, self.main, new_blocks, font_family, line_spacing, outline_width,
-                              bold, italic, underline, alignment, direction, max_font_size,
-                              min_font_size)
+                              None, self.main, new_blocks, render_settings, alignment,
+                              background_image)
 
     def on_render_complete(self, rendered_image: np.ndarray):
         # self.main.set_image(rendered_image) 
