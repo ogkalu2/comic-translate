@@ -182,6 +182,35 @@ def test_block_colour_analysis_uses_background_hue_for_outline():
     assert hue_diff < 0.12
 
 
+def test_colour_analysis_discards_light_halo_and_darkens_outline():
+    background_colour = (70, 140, 220)
+    img = np.full((180, 240, 3), background_colour, dtype=np.uint8)
+    x1, y1, x2, y2 = 70, 60, 170, 120
+    img[y1:y2, x1:x2] = (250, 250, 250)
+    img[y1 - 2 : y2 + 2, x1 - 2 : x2 + 2] = np.where(
+        np.all(img[y1 - 2 : y2 + 2, x1 - 2 : x2 + 2] == background_colour, axis=-1)[..., None],
+        (230, 230, 240),
+        img[y1 - 2 : y2 + 2, x1 - 2 : x2 + 2],
+    )
+
+    block = TextBlock(text_bbox=np.array([x1 - 2, y1 - 2, x2 + 2, y2 + 2]))
+
+    analysis = analyse_block_colors(img, block)
+
+    assert analysis is not None
+    assert analysis.fill_rgb is not None
+    assert np.linalg.norm(np.array(analysis.fill_rgb) - np.array([250, 250, 250])) < 10
+    assert analysis.stroke_rgb is not None
+    stroke_lum = relative_luminance(analysis.stroke_rgb)
+    background_lum = relative_luminance(background_colour)
+    assert stroke_lum < background_lum - 0.01
+    stroke_hsv = colorsys.rgb_to_hsv(*((np.array(analysis.stroke_rgb) / 255.0).tolist()))
+    background_hsv = colorsys.rgb_to_hsv(*((np.array(background_colour) / 255.0).tolist()))
+    hue_gap = abs(stroke_hsv[0] - background_hsv[0])
+    hue_gap = min(hue_gap, 1.0 - hue_gap)
+    assert hue_gap < 0.12
+
+
 def test_preferred_stroke_size_honours_existing_style_override():
     settings = _render_settings(outline_width="0")
     style_state = StyleState(stroke_size=3)

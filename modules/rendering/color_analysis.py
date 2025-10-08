@@ -71,12 +71,9 @@ def _background_outline_candidates(background_rgb: Optional[ColorTuple]) -> Tupl
 
     base = tuple(int(max(0, min(255, v))) for v in background_rgb)
     variants = {base}
-    for factor in (0.12, 0.2, 0.35, 0.5):
+    # Generate a gradient of progressively darker tones that keep the same hue.
+    for factor in (0.1, 0.18, 0.28, 0.4, 0.55, 0.7, 0.85):
         variants.add(_adjust_lightness(base, factor, lighten=False))
-    # Bright variants are only used as an emergency fallback for very dark
-    # backgrounds where "darker than background" would collapse to pure black.
-    for factor in (0.08, 0.18):
-        variants.add(_adjust_lightness(base, factor, lighten=True))
     return tuple(variants)
 
 
@@ -95,9 +92,8 @@ def _infer_stroke_from_background(
 
     bg_candidates = _background_outline_candidates(background_rgb)
     preferred: Optional[ColorTuple] = None
-    preferred_score = -1.0
-    darker_candidates: list[ColorTuple] = []
-    lighter_fallbacks: list[ColorTuple] = []
+    darker_candidates: list[Tuple[float, ColorTuple]] = []
+    relaxed_candidates: list[Tuple[float, ColorTuple]] = []
     for candidate in bg_candidates:
         if background_rgb is not None and candidate == background_rgb:
             continue
@@ -106,29 +102,60 @@ def _infer_stroke_from_background(
         contrast_with_fill = _contrast_ratio(fill_lum, cand_lum)
         contrast_with_bg = _contrast_ratio(bg_lum, cand_lum) if bg_lum is not None else None
 
-        if contrast_with_fill < 2.5:
+        if contrast_with_fill < 2.3:
             continue
-        if contrast_with_bg is not None and contrast_with_bg < 1.4:
+
+        if bg_lum is not None and cand_lum >= bg_lum:
+            continue
+
+        if bg_lum is not None and bg_lum > 0.25 and cand_lum < bg_lum * 0.2:
+            continue
+
+        if contrast_with_bg is not None and contrast_with_bg < 1.2:
             continue
 
         distance_to_fill = np.linalg.norm(cand_arr - fill_arr)
-        if distance_to_fill < 12:
+        if distance_to_fill < 18:
             continue
-        distance_to_bg = np.linalg.norm(cand_arr - bg_arr) if bg_arr is not None else 0.0
-        harmony = -0.0035 * distance_to_bg
-        score = min(contrast_with_fill, contrast_with_bg or contrast_with_fill) + harmony
 
-        if bg_lum is not None and cand_lum < bg_lum - 0.015:
+        distance_to_bg = np.linalg.norm(cand_arr - bg_arr) if bg_arr is not None else 0.0
+        colour_similarity = max(0.0, 1.0 - distance_to_bg / 220.0)
+        darkness_delta = (bg_lum - cand_lum) if bg_lum is not None else 0.0
+        darkness_bonus = min(max(darkness_delta, 0.0) * 0.8, 0.8)
+        base_contrast = min(contrast_with_fill, contrast_with_bg or contrast_with_fill)
+        base_contrast = min(base_contrast, 3.0)
+        score = base_contrast + darkness_bonus + colour_similarity
+
+        if bg_lum is None or cand_lum <= bg_lum - 0.02:
             darker_candidates.append((score, candidate))
         else:
-            lighter_fallbacks.append((score, candidate))
+            relaxed_candidates.append((score, candidate))
 
-    for candidate_list in (darker_candidates, lighter_fallbacks):
+    for candidate_list in (darker_candidates, relaxed_candidates):
         for score, candidate in sorted(candidate_list, key=lambda item: item[0], reverse=True):
-            preferred_score = score
             preferred = candidate
             break
         if preferred is not None:
+            break
+
+    if preferred is None and background_rgb is not None:
+        # Try progressively darker variants even if they fail the strict contrast
+        # thresholds. This keeps the outline distinct from the text colour while
+        # still respecting the background hue.
+        for factor in (0.3, 0.45, 0.6, 0.75, 0.9):
+            candidate = _adjust_lightness(background_rgb, factor, lighten=False)
+            cand_lum = relative_luminance(candidate)
+            if bg_lum is not None and cand_lum >= bg_lum:
+                continue
+            contrast_with_fill = _contrast_ratio(fill_lum, cand_lum)
+            if contrast_with_fill < 1.6:
+                continue
+            distance_to_fill = np.linalg.norm(np.array(candidate, dtype=np.float32) - fill_arr)
+            if distance_to_fill < 18:
+                continue
+            if bg_arr is not None and np.linalg.norm(np.array(candidate, dtype=np.float32) - bg_arr) > 190:
+                continue
+            preferred = candidate
             break
 
     if preferred is not None:
@@ -308,12 +335,12 @@ def analyse_group_colors(
     elif stroke_rgb is not None:
         if bg_rgb is not None:
             bg_distance = np.linalg.norm(np.array(stroke_rgb) - np.array(bg_rgb))
-            if bg_distance < 12:
+            if bg_distance < 12 or (stroke_lum is not None and stroke_lum >= bg_lum - 0.01):
                 stroke_rgb = None
                 stroke_lum = None
         if stroke_rgb is not None and fill_rgb is not None:
             distance = np.linalg.norm(np.array(stroke_rgb) - np.array(fill_rgb))
-            if distance < 18 and bg_rgb is not None:
+            if distance < 24 and bg_rgb is not None:
                 inferred = _infer_stroke_from_background(fill_rgb, bg_rgb)
                 if inferred is not None:
                     stroke_rgb = inferred
