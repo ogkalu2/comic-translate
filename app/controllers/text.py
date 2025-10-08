@@ -14,7 +14,8 @@ from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 
 from modules.utils.textblock import TextBlock
-from modules.rendering.render import TextRenderingSettings, manual_wrap
+from modules.rendering.render import manual_wrap
+from modules.rendering.settings import TextRenderingSettings
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
     get_layout_direction, is_close
 from modules.utils.translator_utils import format_translations
@@ -165,22 +166,47 @@ class TextController:
 
         render_settings = self.render_settings()
         font_family = render_settings.font_family
+        style_state = getattr(blk, "style_state", None)
+
         text_color_str = blk.font_color if getattr(blk, 'font_color', '') else render_settings.color
-        text_color = QColor(text_color_str)
+        if style_state and style_state.fill is not None:
+            text_color = QColor(*style_state.fill)
+        else:
+            text_color = QColor(text_color_str)
 
         id = render_settings.alignment_id
         alignment = self.main.button_to_alignment[id]
         line_spacing = float(render_settings.line_spacing)
-        outline_color_str = blk.outline_color if getattr(blk, 'outline_color', '') else render_settings.outline_color
-        outline_enabled = render_settings.outline or bool(getattr(blk, 'outline_color', ''))
-        outline_color = QColor(outline_color_str) if outline_enabled else None
-        outline_width = float(render_settings.outline_width)
+        try:
+            configured_outline_width = float(render_settings.outline_width)
+        except (TypeError, ValueError):
+            configured_outline_width = 0.0
+
+        outline_color = None
+        outline_width = configured_outline_width
+        outline_enabled = False
+
+        if style_state and style_state.stroke is not None and style_state.stroke_enabled:
+            outline_color = QColor(*style_state.stroke)
+            outline_enabled = True
+            if style_state.stroke_size is not None and style_state.stroke_size > 0:
+                outline_width = float(style_state.stroke_size)
+            elif outline_width <= 0:
+                outline_width = 1.0
+        elif getattr(blk, 'outline_color', ''):
+            outline_color = QColor(blk.outline_color)
+            outline_enabled = True
+            if outline_width <= 0:
+                outline_width = 1.0
+        elif render_settings.outline:
+            outline_color = QColor(render_settings.outline_color)
+            outline_enabled = True
+            if outline_width <= 0:
+                outline_width = 1.0
         bold = render_settings.bold
         italic = render_settings.italic
         underline = render_settings.underline
         direction = render_settings.direction
-
-        style_state = getattr(blk, "style_state", None)
 
         properties = TextItemProperties(
             text=text,
@@ -189,7 +215,7 @@ class TextController:
             text_color=text_color,
             alignment=alignment,
             line_spacing=line_spacing,
-            outline_color=outline_color,
+            outline_color=outline_color if outline_enabled else None,
             outline_width=outline_width,
             bold=bold,
             italic=italic,

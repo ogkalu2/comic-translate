@@ -13,8 +13,9 @@ from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
 from ..utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 from .adaptive_color import TextColorClassifier, determine_text_outline_colors
-
-from dataclasses import dataclass
+from .color_analysis import analyse_block_colors
+from .settings import TextRenderingSettings, preferred_stroke_size as _preferred_stroke_size
+from schemas.style_state import StyleState
 
 _ADAPTIVE_CLASSIFIER = None
 
@@ -28,24 +29,9 @@ def _get_text_color_classifier():
             _ADAPTIVE_CLASSIFIER = None
     return _ADAPTIVE_CLASSIFIER
 
-@dataclass
-class TextRenderingSettings:
-    alignment_id: int
-    font_family: str
-    min_font_size: int
-    max_font_size: int
-    color: str
-    upper_case: bool
-    outline: bool
-    outline_color: str
-    outline_width: str
-    bold: bool
-    italic: bool
-    underline: bool
-    line_spacing: str
-    direction: Qt.LayoutDirection
-    auto_font_color: bool = True
 
+def _rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
+    return "#" + "".join(f"{max(0, min(255, int(v))):02X}" for v in rgb)
 def array_to_pil(rgb_image: np.ndarray):
     # Image is already in RGB format, just convert to PIL
     pil_image = Image.fromarray(rgb_image)
@@ -341,20 +327,62 @@ def manual_wrap(
         if not translation or len(translation) == 1:
             continue
 
-        decision = None
-        if auto_font_color and classifier and background_image is not None:
+        detected = False
+        analysis = None
+        if auto_font_color and background_image is not None:
             try:
-                decision = determine_text_outline_colors(background_image, blk, classifier)
+                analysis = analyse_block_colors(background_image, blk)
             except Exception:
-                decision = None
+                analysis = None
 
-        if decision:
-            blk.font_color = decision.text_hex
-            blk.outline_color = decision.outline_hex
-        else:
-            blk.font_color = blk.font_color or default_text_color
-            if not getattr(blk, 'outline_color', ''):
-                blk.outline_color = default_outline_color if render_settings.outline else ''
+        if analysis and analysis.fill_rgb is not None:
+            style_state = getattr(blk, "style_state", None)
+            if isinstance(style_state, StyleState):
+                style_state = style_state.copy()
+            else:
+                style_state = StyleState()
+            style_state.auto_color = False
+            style_state.fill = tuple(int(v) for v in analysis.fill_rgb)
+            blk.font_color = _rgb_to_hex(analysis.fill_rgb)
+            if analysis.stroke_rgb is not None:
+                blk.outline_color = _rgb_to_hex(analysis.stroke_rgb)
+                style_state.stroke = tuple(int(v) for v in analysis.stroke_rgb)
+                style_state.stroke_enabled = True
+                style_state.stroke_size = _preferred_stroke_size(
+                    render_settings, style_state, analysis.stroke_inferred
+                )
+                if analysis.stroke_inferred:
+                    style_state.metadata["stroke_inferred"] = True
+            else:
+                style_state.stroke_enabled = False
+                style_state.stroke = None
+                style_state.stroke_size = None
+            blk.style_state = style_state
+            if analysis.stroke_inferred and analysis.stroke_rgb is not None:
+                setattr(blk, "stroke_inferred", True)
+            elif getattr(blk, 'outline_color', ''):
+                pass
+            elif render_settings.outline:
+                blk.outline_color = default_outline_color
+            else:
+                blk.outline_color = ''
+            detected = True
+
+        if not detected:
+            decision = None
+            if auto_font_color and classifier and background_image is not None:
+                try:
+                    decision = determine_text_outline_colors(background_image, blk, classifier)
+                except Exception:
+                    decision = None
+
+            if decision:
+                blk.font_color = decision.text_hex
+                blk.outline_color = decision.outline_hex
+            else:
+                blk.font_color = blk.font_color or default_text_color
+                if not getattr(blk, 'outline_color', ''):
+                    blk.outline_color = default_outline_color if render_settings.outline else ''
 
         translation, font_size = pyside_word_wrap(translation, font_family, width, height,
                                                  line_spacing, outline_width, bold, italic, underline,

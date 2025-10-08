@@ -19,6 +19,7 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
 from modules.utils.translator_utils import format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
+from modules.rendering.color_analysis import analyse_block_colors
 from schemas.style_state import StyleState
 from modules.rendering.auto_style import AutoStyleEngine
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
@@ -829,15 +830,46 @@ class WebtoonBatchProcessor:
                 no_stroke_on_plain=True,
             )
 
+            detected_analysis = None
+            if base_style.auto_color and background_image is not None:
+                try:
+                    detected_analysis = analyse_block_colors(background_image, blk_virtual)
+                except Exception:
+                    detected_analysis = None
+
+            if (
+                base_style.auto_color
+                and detected_analysis is not None
+                and detected_analysis.fill_rgb is not None
+            ):
+                base_style.auto_color = False
+                base_style.fill = tuple(int(v) for v in detected_analysis.fill_rgb)
+                if detected_analysis.stroke_rgb is not None:
+                    base_style.stroke = tuple(int(v) for v in detected_analysis.stroke_rgb)
+                    base_style.stroke_enabled = True
+                    base_style.stroke_size = None
+                    if detected_analysis.stroke_inferred:
+                        base_style.metadata["stroke_inferred"] = True
+                else:
+                    base_style.stroke = None
+                    base_style.stroke_enabled = False
+                    base_style.stroke_size = None
+
             if not base_style.auto_color:
-                base_style.fill = tuple(default_text_color.getRgb()[:3])
+                if base_style.fill is None:
+                    base_style.fill = tuple(default_text_color.getRgb()[:3])
                 if outline:
-                    base_style.stroke = tuple(default_outline_color.getRgb()[:3])
+                    if base_style.stroke is None:
+                        base_style.stroke = tuple(default_outline_color.getRgb()[:3])
                     base_style.stroke_enabled = True
                     try:
                         base_style.stroke_size = max(1, int(round(float(outline_width))))
                     except Exception:
                         base_style.stroke_size = 1
+                else:
+                    base_style.stroke = None
+                    base_style.stroke_enabled = False
+                    base_style.stroke_size = None
 
             try:
                 style_state = (
