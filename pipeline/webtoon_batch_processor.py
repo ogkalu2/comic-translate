@@ -844,7 +844,7 @@ class WebtoonBatchProcessor:
             ):
                 base_style.auto_color = False
                 base_style.fill = tuple(int(v) for v in detected_analysis.fill_rgb)
-                if outline and detected_analysis.stroke_rgb is not None:
+                if detected_analysis.stroke_rgb is not None:
                     base_style.stroke = tuple(int(v) for v in detected_analysis.stroke_rgb)
                     base_style.stroke_enabled = True
                     base_style.stroke_size = None

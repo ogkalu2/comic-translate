@@ -14,6 +14,7 @@ from ..utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 from .adaptive_color import TextColorClassifier, determine_text_outline_colors
 from .color_analysis import analyse_block_colors
+from schemas.style_state import StyleState
 
 from dataclasses import dataclass
 
@@ -355,9 +356,25 @@ def manual_wrap(
                 analysis = None
 
         if analysis and analysis.fill_rgb is not None:
+            style_state = getattr(blk, "style_state", None)
+            if isinstance(style_state, StyleState):
+                style_state = style_state.copy()
+            else:
+                style_state = StyleState()
+            style_state.auto_color = False
+            style_state.fill = tuple(int(v) for v in analysis.fill_rgb)
             blk.font_color = _rgb_to_hex(analysis.fill_rgb)
             if analysis.stroke_rgb is not None:
                 blk.outline_color = _rgb_to_hex(analysis.stroke_rgb)
+                style_state.stroke = tuple(int(v) for v in analysis.stroke_rgb)
+                style_state.stroke_enabled = True
+                if analysis.stroke_inferred:
+                    style_state.metadata["stroke_inferred"] = True
+            else:
+                style_state.stroke_enabled = False
+                style_state.stroke = None
+            style_state.stroke_size = style_state.stroke_size or None
+            blk.style_state = style_state
             if analysis.stroke_inferred and analysis.stroke_rgb is not None:
                 setattr(blk, "stroke_inferred", True)
             elif getattr(blk, 'outline_color', ''):

@@ -9,7 +9,10 @@ from modules.rendering.color_analysis import (
     analyse_group_colors,
 )
 from modules.layout.grouping import TextGroup
+import colorsys
+
 from modules.utils.textblock import TextBlock
+from modules.utils.wcag import relative_luminance
 
 
 def _analysis(**kwargs):
@@ -132,3 +135,27 @@ def test_block_colour_analysis_infers_stroke_when_low_contrast():
     assert analysis.stroke_inferred is True
     assert analysis.fill_rgb is not None
     assert np.linalg.norm(np.array(analysis.fill_rgb) - np.array(analysis.stroke_rgb)) > 10
+
+
+def test_block_colour_analysis_uses_background_hue_for_outline():
+    text_colour = (250, 250, 250)
+    background_colour = (40, 160, 220)
+    image, bbox = _synthetic_text_image(text_colour, background_colour)
+
+    block = TextBlock(text_bbox=np.array(bbox))
+
+    analysis = analyse_block_colors(image, block)
+
+    assert analysis is not None
+    assert analysis.stroke_rgb is not None
+    assert analysis.stroke_inferred is True
+    stroke = np.array(analysis.stroke_rgb, dtype=np.float32)
+    background = np.array(background_colour, dtype=np.float32)
+    fill = np.array(text_colour, dtype=np.float32)
+    assert np.linalg.norm(stroke - fill) > 80
+    assert relative_luminance(tuple(int(v) for v in stroke)) < relative_luminance(tuple(int(v) for v in background))
+    stroke_hue = colorsys.rgb_to_hsv(*(stroke / 255.0))[0]
+    background_hue = colorsys.rgb_to_hsv(*(background / 255.0))[0]
+    hue_diff = abs(stroke_hue - background_hue)
+    hue_diff = min(hue_diff, 1.0 - hue_diff)
+    assert hue_diff < 0.12

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import colorsys
 from dataclasses import dataclass
 from typing import Optional, Sequence, Tuple
 
@@ -53,6 +54,29 @@ def _contrast_ratio(l1: float, l2: float) -> float:
     return (higher + 0.05) / (lower + 0.05)
 
 
+def _adjust_lightness(rgb: ColorTuple, factor: float, lighten: bool) -> ColorTuple:
+    r, g, b = (c / 255.0 for c in rgb)
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    if lighten:
+        new_l = min(1.0, l + (1.0 - l) * factor)
+    else:
+        new_l = max(0.0, l * (1.0 - factor))
+    nr, ng, nb = colorsys.hls_to_rgb(h, new_l, s)
+    return (int(round(nr * 255.0)), int(round(ng * 255.0)), int(round(nb * 255.0)))
+
+
+def _background_outline_candidates(background_rgb: Optional[ColorTuple]) -> Tuple[ColorTuple, ...]:
+    if background_rgb is None:
+        return tuple()
+
+    base = tuple(int(max(0, min(255, v))) for v in background_rgb)
+    variants = {base}
+    for factor in (0.15, 0.25, 0.4, 0.55):
+        variants.add(_adjust_lightness(base, factor, lighten=False))
+        variants.add(_adjust_lightness(base, factor, lighten=True))
+    return tuple(variants)
+
+
 def _infer_stroke_from_background(
     fill_rgb: Optional[ColorTuple],
     background_rgb: Optional[ColorTuple],
@@ -60,31 +84,67 @@ def _infer_stroke_from_background(
     if fill_rgb is None:
         return None
 
-    candidates: Sequence[ColorTuple]
-    if background_rgb is not None:
-        candidates = ((0, 0, 0), (255, 255, 255))
-    else:
-        fill_lum = relative_luminance(fill_rgb)
-        return (0, 0, 0) if fill_lum > 0.5 else (255, 255, 255)
+    fill_arr = np.array(fill_rgb, dtype=np.float32)
+    bg_arr = np.array(background_rgb, dtype=np.float32) if background_rgb is not None else None
 
     fill_lum = relative_luminance(fill_rgb)
     bg_lum = relative_luminance(background_rgb) if background_rgb is not None else None
 
+    bg_candidates = _background_outline_candidates(background_rgb)
+    preferred: Optional[ColorTuple] = None
+    preferred_score = -1.0
+    for candidate in bg_candidates:
+        if background_rgb is not None and candidate == background_rgb:
+            continue
+        cand_arr = np.array(candidate, dtype=np.float32)
+        cand_lum = relative_luminance(candidate)
+        contrast_with_fill = _contrast_ratio(fill_lum, cand_lum)
+        contrast_with_bg = _contrast_ratio(bg_lum, cand_lum) if bg_lum is not None else None
+
+        if contrast_with_fill < 2.5:
+            continue
+        if contrast_with_bg is not None and contrast_with_bg < 1.4:
+            continue
+
+        distance_to_fill = np.linalg.norm(cand_arr - fill_arr)
+        if distance_to_fill < 12:
+            continue
+        distance_to_bg = np.linalg.norm(cand_arr - bg_arr) if bg_arr is not None else 0.0
+        harmony = -0.0035 * distance_to_bg
+        score = min(contrast_with_fill, contrast_with_bg or contrast_with_fill) + harmony
+
+        if score > preferred_score:
+            preferred_score = score
+            preferred = candidate
+
+    if preferred is not None:
+        return preferred
+
+    candidates: Sequence[ColorTuple] = ((0, 0, 0), (255, 255, 255))
     best: Optional[ColorTuple] = None
     best_score = -1.0
     for candidate in candidates:
         cand_lum = relative_luminance(candidate)
         contrast_with_fill = _contrast_ratio(fill_lum, cand_lum)
-        if bg_lum is not None:
-            contrast_with_bg = _contrast_ratio(bg_lum, cand_lum)
-            score = min(contrast_with_fill, contrast_with_bg)
-        else:
-            score = contrast_with_fill
+        contrast_with_bg = (
+            _contrast_ratio(bg_lum, cand_lum) if bg_lum is not None else contrast_with_fill
+        )
+        score = min(contrast_with_fill, contrast_with_bg)
         if score > best_score:
             best = candidate
             best_score = score
 
-    return best
+    if best is not None:
+        return best
+
+    if background_rgb is not None:
+        return _adjust_lightness(
+            background_rgb,
+            0.5,
+            lighten=relative_luminance(background_rgb) <= 0.5,
+        )
+
+    return (0, 0, 0) if fill_lum > 0.5 else (255, 255, 255)
 
 
 def _choose_text_mask(gray: np.ndarray, polygon_mask: np.ndarray) -> np.ndarray:
