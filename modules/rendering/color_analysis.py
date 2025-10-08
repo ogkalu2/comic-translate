@@ -71,8 +71,11 @@ def _background_outline_candidates(background_rgb: Optional[ColorTuple]) -> Tupl
 
     base = tuple(int(max(0, min(255, v))) for v in background_rgb)
     variants = {base}
-    for factor in (0.15, 0.25, 0.4, 0.55):
+    for factor in (0.12, 0.2, 0.35, 0.5):
         variants.add(_adjust_lightness(base, factor, lighten=False))
+    # Bright variants are only used as an emergency fallback for very dark
+    # backgrounds where "darker than background" would collapse to pure black.
+    for factor in (0.08, 0.18):
         variants.add(_adjust_lightness(base, factor, lighten=True))
     return tuple(variants)
 
@@ -93,6 +96,8 @@ def _infer_stroke_from_background(
     bg_candidates = _background_outline_candidates(background_rgb)
     preferred: Optional[ColorTuple] = None
     preferred_score = -1.0
+    darker_candidates: list[ColorTuple] = []
+    lighter_fallbacks: list[ColorTuple] = []
     for candidate in bg_candidates:
         if background_rgb is not None and candidate == background_rgb:
             continue
@@ -113,9 +118,18 @@ def _infer_stroke_from_background(
         harmony = -0.0035 * distance_to_bg
         score = min(contrast_with_fill, contrast_with_bg or contrast_with_fill) + harmony
 
-        if score > preferred_score:
+        if bg_lum is not None and cand_lum < bg_lum - 0.015:
+            darker_candidates.append((score, candidate))
+        else:
+            lighter_fallbacks.append((score, candidate))
+
+    for candidate_list in (darker_candidates, lighter_fallbacks):
+        for score, candidate in sorted(candidate_list, key=lambda item: item[0], reverse=True):
             preferred_score = score
             preferred = candidate
+            break
+        if preferred is not None:
+            break
 
     if preferred is not None:
         return preferred
