@@ -29,6 +29,7 @@ class ColorAnalysis:
     core_pixel_count: int
     stroke_pixel_count: int
     background_pixel_count: int
+    stroke_inferred: bool = False
 
 
 def _median_rgb(values: np.ndarray) -> Optional[ColorTuple]:
@@ -44,6 +45,46 @@ def _auto_threshold(gray: np.ndarray) -> float:
     if flat.size == 0:
         return 0.0
     return float(mh.thresholding.otsu(flat.astype(np.uint8)))
+
+
+def _contrast_ratio(l1: float, l2: float) -> float:
+    higher = max(l1, l2)
+    lower = min(l1, l2)
+    return (higher + 0.05) / (lower + 0.05)
+
+
+def _infer_stroke_from_background(
+    fill_rgb: Optional[ColorTuple],
+    background_rgb: Optional[ColorTuple],
+) -> Optional[ColorTuple]:
+    if fill_rgb is None:
+        return None
+
+    candidates: Sequence[ColorTuple]
+    if background_rgb is not None:
+        candidates = ((0, 0, 0), (255, 255, 255))
+    else:
+        fill_lum = relative_luminance(fill_rgb)
+        return (0, 0, 0) if fill_lum > 0.5 else (255, 255, 255)
+
+    fill_lum = relative_luminance(fill_rgb)
+    bg_lum = relative_luminance(background_rgb) if background_rgb is not None else None
+
+    best: Optional[ColorTuple] = None
+    best_score = -1.0
+    for candidate in candidates:
+        cand_lum = relative_luminance(candidate)
+        contrast_with_fill = _contrast_ratio(fill_lum, cand_lum)
+        if bg_lum is not None:
+            contrast_with_bg = _contrast_ratio(bg_lum, cand_lum)
+            score = min(contrast_with_fill, contrast_with_bg)
+        else:
+            score = contrast_with_fill
+        if score > best_score:
+            best = candidate
+            best_score = score
+
+    return best
 
 
 def _choose_text_mask(gray: np.ndarray, polygon_mask: np.ndarray) -> np.ndarray:
@@ -177,6 +218,42 @@ def analyse_group_colors(
     stroke_lum = relative_luminance(stroke_rgb) if stroke_rgb else None
     bg_lum = relative_luminance(bg_rgb) if bg_rgb else None
 
+    stroke_inferred = False
+    if fill_lum is not None and bg_lum is not None:
+        fill_bg_contrast = _contrast_ratio(fill_lum, bg_lum)
+    else:
+        fill_bg_contrast = None
+
+    if stroke_rgb is None and fill_rgb is not None:
+        if fill_bg_contrast is None or fill_bg_contrast < 3.0:
+            inferred = _infer_stroke_from_background(fill_rgb, bg_rgb)
+            if inferred is not None:
+                stroke_rgb = inferred
+                stroke_lum = relative_luminance(stroke_rgb)
+                stroke_inferred = True
+    elif stroke_rgb is not None:
+        if bg_rgb is not None:
+            bg_distance = np.linalg.norm(np.array(stroke_rgb) - np.array(bg_rgb))
+            if bg_distance < 12:
+                stroke_rgb = None
+                stroke_lum = None
+        if stroke_rgb is not None and fill_rgb is not None:
+            distance = np.linalg.norm(np.array(stroke_rgb) - np.array(fill_rgb))
+            if distance < 18 and bg_rgb is not None:
+                inferred = _infer_stroke_from_background(fill_rgb, bg_rgb)
+                if inferred is not None:
+                    stroke_rgb = inferred
+                    stroke_lum = relative_luminance(stroke_rgb)
+                    stroke_inferred = True
+
+    if stroke_rgb is None and fill_rgb is not None:
+        if fill_bg_contrast is None or fill_bg_contrast < 3.0:
+            inferred = _infer_stroke_from_background(fill_rgb, bg_rgb)
+            if inferred is not None:
+                stroke_rgb = inferred
+                stroke_lum = relative_luminance(stroke_rgb)
+                stroke_inferred = True
+
     plain_white = False
     plain_black = False
     if bg_rgb is not None:
@@ -200,6 +277,7 @@ def analyse_group_colors(
         core_pixel_count=int(core.sum()),
         stroke_pixel_count=int(stroke_ring.sum()),
         background_pixel_count=int(background_ring.sum()),
+        stroke_inferred=stroke_inferred,
     )
 
 

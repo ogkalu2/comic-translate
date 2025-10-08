@@ -25,6 +25,7 @@ def _analysis(**kwargs):
         core_pixel_count=200,
         stroke_pixel_count=120,
         background_pixel_count=400,
+        stroke_inferred=False,
     )
     defaults.update(kwargs)
     return ColorAnalysis(**defaults)
@@ -115,3 +116,19 @@ def test_block_colour_analysis_matches_expected_fill():
     detected = np.array(analysis.fill_rgb)
     expected = np.array(text_colour)
     assert np.linalg.norm(detected - expected) < 60
+
+
+def test_block_colour_analysis_infers_stroke_when_low_contrast():
+    text_colour = (180, 180, 180)
+    background_colour = (200, 200, 200)
+    image, bbox = _synthetic_text_image(text_colour, background_colour)
+
+    block = TextBlock(text_bbox=np.array(bbox))
+
+    analysis = analyse_block_colors(image, block)
+
+    assert analysis is not None
+    assert analysis.stroke_rgb is not None
+    assert analysis.stroke_inferred is True
+    assert analysis.fill_rgb is not None
+    assert np.linalg.norm(np.array(analysis.fill_rgb) - np.array(analysis.stroke_rgb)) > 10

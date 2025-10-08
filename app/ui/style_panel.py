@@ -117,31 +117,41 @@ class StylePanel(QtWidgets.QFrame):
         align_row.addStretch()
         main_layout.addLayout(align_row)
 
-        color_row = QtWidgets.QHBoxLayout()
-        self.text_color_btn = _ColorSwatchButton("Text")
-        self.stroke_color_btn = _ColorSwatchButton("Stroke")
-        self.bg_color_btn = _ColorSwatchButton("Background")
-        color_row.addWidget(self.text_color_btn)
-        color_row.addWidget(self.stroke_color_btn)
-        color_row.addWidget(self.bg_color_btn)
-        main_layout.addLayout(color_row)
+        text_row = QtWidgets.QHBoxLayout()
+        text_label = QtWidgets.QLabel("Text")
+        text_label.setMinimumWidth(70)
+        self.text_color_btn = _ColorSwatchButton("Colour")
+        text_row.addWidget(text_label)
+        text_row.addWidget(self.text_color_btn, 1)
+        main_layout.addLayout(text_row)
 
         stroke_row = QtWidgets.QHBoxLayout()
+        self.stroke_toggle = QtWidgets.QCheckBox("Stroke")
+        self.stroke_toggle.setChecked(False)
+        self.stroke_color_btn = _ColorSwatchButton("Colour")
         self.stroke_slider = QtWidgets.QSlider(Qt.Horizontal)
         self.stroke_slider.setRange(0, 12)
         self.stroke_slider.setValue(0)
         self.stroke_label = QtWidgets.QLabel("Stroke 0 px")
+        stroke_row.addWidget(self.stroke_toggle)
+        stroke_row.addWidget(self.stroke_color_btn)
         stroke_row.addWidget(self.stroke_label)
-        stroke_row.addWidget(self.stroke_slider)
+        stroke_row.addWidget(self.stroke_slider, 1)
         main_layout.addLayout(stroke_row)
 
-        bg_opts_row = QtWidgets.QHBoxLayout()
+        background_row = QtWidgets.QHBoxLayout()
         self.bg_toggle = QtWidgets.QCheckBox("Background")
+        self.bg_color_btn = _ColorSwatchButton("Colour")
+        background_row.addWidget(self.bg_toggle)
+        background_row.addWidget(self.bg_color_btn)
+        background_row.addStretch()
+        main_layout.addLayout(background_row)
+
+        border_row = QtWidgets.QHBoxLayout()
         self.border_toggle = QtWidgets.QCheckBox("Border")
-        bg_opts_row.addWidget(self.bg_toggle)
-        bg_opts_row.addWidget(self.border_toggle)
-        bg_opts_row.addStretch()
-        main_layout.addLayout(bg_opts_row)
+        border_row.addWidget(self.border_toggle)
+        border_row.addStretch()
+        main_layout.addLayout(border_row)
 
         alpha_row = QtWidgets.QHBoxLayout()
         self.bg_alpha_slider = QtWidgets.QSlider(Qt.Horizontal)
@@ -188,6 +198,7 @@ class StylePanel(QtWidgets.QFrame):
 
         self.auto_color_toggle.toggled.connect(self._on_auto_color_toggled)
         self.stroke_slider.valueChanged.connect(self._on_stroke_size_changed)
+        self.stroke_toggle.toggled.connect(self._on_stroke_toggle)
         self.bg_toggle.toggled.connect(self._on_bg_toggle)
         self.border_toggle.toggled.connect(self._on_border_toggle)
         self.bg_alpha_slider.valueChanged.connect(self._on_bg_alpha_changed)
@@ -237,6 +248,9 @@ class StylePanel(QtWidgets.QFrame):
     def _on_stroke_color_changed(self, color: QColor) -> None:
         if self._blocked:
             return
+        if not self.stroke_toggle.isChecked():
+            self.stroke_toggle.setChecked(True)
+            return
         self._style.stroke = (color.red(), color.green(), color.blue())
         self._style.stroke_enabled = True
         if self.stroke_slider.value() == 0:
@@ -251,9 +265,37 @@ class StylePanel(QtWidgets.QFrame):
             self.bg_toggle.setChecked(True)
         self._emit_style()
 
+    def _on_stroke_toggle(self, checked: bool) -> None:
+        if self._blocked:
+            return
+        if checked and self.auto_color_toggle.isChecked():
+            self.auto_color_toggle.setChecked(False)
+        self._style.stroke_enabled = checked
+        if checked:
+            current = self.stroke_color_btn.color()
+            if self._style.stroke is None:
+                self._style.stroke = (current.red(), current.green(), current.blue())
+            if self.stroke_slider.value() == 0:
+                self.stroke_slider.setValue(max(1, int(round(self._style.font_size / 18 if self._style.font_size else 1))))
+        else:
+            self._style.stroke_enabled = False
+            if self._style.auto_color:
+                self._style.stroke = None
+                self._style.stroke_size = None
+            if self.stroke_slider.value() != 0:
+                self.stroke_slider.setValue(0)
+        self._refresh_enabled_state()
+        self._emit_style()
+
     def _on_stroke_size_changed(self, value: int) -> None:
         self.stroke_label.setText(f"Stroke {value} px")
         if self._blocked:
+            return
+        if value > 0 and not self.stroke_toggle.isChecked():
+            self.stroke_toggle.setChecked(True)
+            return
+        if value == 0 and self.stroke_toggle.isChecked():
+            self.stroke_toggle.setChecked(False)
             return
         self._style.stroke_size = value if value > 0 else None
         self._style.stroke_enabled = value > 0 and self._style.stroke is not None
@@ -263,6 +305,8 @@ class StylePanel(QtWidgets.QFrame):
         if self._blocked:
             return
         self._style.bg_enabled = checked
+        if not checked and self.border_toggle.isChecked():
+            self.border_toggle.setChecked(False)
         self._refresh_enabled_state()
         self._emit_style()
 
@@ -300,12 +344,15 @@ class StylePanel(QtWidgets.QFrame):
     def _refresh_enabled_state(self) -> None:
         manual_enabled = not self.auto_color_toggle.isChecked()
         self.text_color_btn.setEnabled(manual_enabled)
-        self.stroke_color_btn.setEnabled(manual_enabled)
-        stroke_controls = manual_enabled or (self._style.stroke is not None)
-        self.stroke_slider.setEnabled(stroke_controls)
+        stroke_allowed = manual_enabled or self._style.stroke_enabled or self._style.stroke is not None
+        self.stroke_toggle.setEnabled(stroke_allowed or self.stroke_toggle.isChecked())
+        stroke_active = stroke_allowed and self.stroke_toggle.isChecked()
+        self.stroke_color_btn.setEnabled(stroke_active)
+        self.stroke_slider.setEnabled(stroke_active)
         self.bg_color_btn.setEnabled(self.bg_toggle.isChecked())
         alpha_enabled = self.bg_toggle.isChecked()
         self.bg_alpha_slider.setEnabled(alpha_enabled)
+        self.border_toggle.setEnabled(alpha_enabled)
         self.padding_slider.setEnabled(alpha_enabled or self.border_toggle.isChecked())
         self.radius_slider.setEnabled(alpha_enabled or self.border_toggle.isChecked())
 
@@ -330,6 +377,7 @@ class StylePanel(QtWidgets.QFrame):
                 self.text_color_btn.setColor(QColor(*self._style.fill))
             if self._style.stroke is not None:
                 self.stroke_color_btn.setColor(QColor(*self._style.stroke))
+            self.stroke_toggle.setChecked(bool(self._style.stroke_enabled))
             if self._style.bg_color is not None:
                 self.bg_color_btn.setColor(QColor(*self._style.bg_color))
             self.stroke_slider.setValue(int(self._style.stroke_size or 0))
@@ -354,6 +402,7 @@ class StylePanel(QtWidgets.QFrame):
         try:
             self._style = StyleState()
             self.auto_color_toggle.setChecked(True)
+            self.stroke_toggle.setChecked(False)
             self.stroke_slider.setValue(0)
             self.stroke_label.setText("Stroke 0 px")
             self.bg_toggle.setChecked(False)

@@ -108,6 +108,9 @@ def decide_style(
 
     if state.stroke_size is None:
         auto_size = max(1, min(int(round(state.font_size / config.stroke_factor)), config.stroke_max_size))
+        if analysis is not None and analysis.stroke_inferred:
+            auto_size = max(auto_size, 2)
+            state.metadata["stroke_inferred"] = True
         state.stroke_size = auto_size
 
     return state

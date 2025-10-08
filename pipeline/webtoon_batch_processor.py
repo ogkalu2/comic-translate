@@ -848,6 +848,8 @@ class WebtoonBatchProcessor:
                     base_style.stroke = tuple(int(v) for v in detected_analysis.stroke_rgb)
                     base_style.stroke_enabled = True
                     base_style.stroke_size = None
+                    if detected_analysis.stroke_inferred:
+                        base_style.metadata["stroke_inferred"] = True
                 else:
                     base_style.stroke = None
                     base_style.stroke_enabled = False

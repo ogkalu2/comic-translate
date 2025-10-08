@@ -358,6 +358,8 @@ def manual_wrap(
             blk.font_color = _rgb_to_hex(analysis.fill_rgb)
             if analysis.stroke_rgb is not None:
                 blk.outline_color = _rgb_to_hex(analysis.stroke_rgb)
+            if analysis.stroke_inferred and analysis.stroke_rgb is not None:
+                setattr(blk, "stroke_inferred", True)
             elif getattr(blk, 'outline_color', ''):
                 pass
             elif render_settings.outline:
