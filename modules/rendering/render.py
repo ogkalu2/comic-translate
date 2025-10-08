@@ -14,9 +14,8 @@ from ..utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 from .adaptive_color import TextColorClassifier, determine_text_outline_colors
 from .color_analysis import analyse_block_colors
+from .settings import TextRenderingSettings, preferred_stroke_size as _preferred_stroke_size
 from schemas.style_state import StyleState
-
-from dataclasses import dataclass
 
 _ADAPTIVE_CLASSIFIER = None
 
@@ -33,25 +32,6 @@ def _get_text_color_classifier():
 
 def _rgb_to_hex(rgb: Tuple[int, int, int]) -> str:
     return "#" + "".join(f"{max(0, min(255, int(v))):02X}" for v in rgb)
-
-@dataclass
-class TextRenderingSettings:
-    alignment_id: int
-    font_family: str
-    min_font_size: int
-    max_font_size: int
-    color: str
-    upper_case: bool
-    outline: bool
-    outline_color: str
-    outline_width: str
-    bold: bool
-    italic: bool
-    underline: bool
-    line_spacing: str
-    direction: Qt.LayoutDirection
-    auto_font_color: bool = True
-
 def array_to_pil(rgb_image: np.ndarray):
     # Image is already in RGB format, just convert to PIL
     pil_image = Image.fromarray(rgb_image)
@@ -368,12 +348,15 @@ def manual_wrap(
                 blk.outline_color = _rgb_to_hex(analysis.stroke_rgb)
                 style_state.stroke = tuple(int(v) for v in analysis.stroke_rgb)
                 style_state.stroke_enabled = True
+                style_state.stroke_size = _preferred_stroke_size(
+                    render_settings, style_state, analysis.stroke_inferred
+                )
                 if analysis.stroke_inferred:
                     style_state.metadata["stroke_inferred"] = True
             else:
                 style_state.stroke_enabled = False
                 style_state.stroke = None
-            style_state.stroke_size = style_state.stroke_size or None
+                style_state.stroke_size = None
             blk.style_state = style_state
             if analysis.stroke_inferred and analysis.stroke_rgb is not None:
                 setattr(blk, "stroke_inferred", True)

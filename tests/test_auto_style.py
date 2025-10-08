@@ -1,5 +1,6 @@
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from PySide6.QtCore import Qt
 
 from schemas.style_state import StyleState
 from modules.rendering.decisions import decide_style, AutoStyleConfig
@@ -8,6 +9,7 @@ from modules.rendering.color_analysis import (
     analyse_block_colors,
     analyse_group_colors,
 )
+from modules.rendering.settings import preferred_stroke_size as _preferred_stroke_size, TextRenderingSettings
 from modules.layout.grouping import TextGroup
 import colorsys
 
@@ -32,6 +34,25 @@ def _analysis(**kwargs):
     )
     defaults.update(kwargs)
     return ColorAnalysis(**defaults)
+
+
+def _render_settings(outline_width: str = "0", outline: bool = False) -> TextRenderingSettings:
+    return TextRenderingSettings(
+        alignment_id=0,
+        font_family="Test",
+        min_font_size=16,
+        max_font_size=24,
+        color="#FFFFFF",
+        upper_case=False,
+        outline=outline,
+        outline_color="#000000",
+        outline_width=outline_width,
+        bold=False,
+        italic=False,
+        underline=False,
+        line_spacing="1.2",
+        direction=Qt.LayoutDirection.LeftToRight,
+    )
 
 
 def test_plain_white_prefers_black_text_without_stroke():
@@ -159,3 +180,21 @@ def test_block_colour_analysis_uses_background_hue_for_outline():
     hue_diff = abs(stroke_hue - background_hue)
     hue_diff = min(hue_diff, 1.0 - hue_diff)
     assert hue_diff < 0.12
+
+
+def test_preferred_stroke_size_honours_existing_style_override():
+    settings = _render_settings(outline_width="0")
+    style_state = StyleState(stroke_size=3)
+    assert _preferred_stroke_size(settings, style_state, stroke_inferred=False) == 3
+
+
+def test_preferred_stroke_size_uses_configured_width_when_present():
+    settings = _render_settings(outline_width="4")
+    style_state = StyleState()
+    assert _preferred_stroke_size(settings, style_state, stroke_inferred=False) == 4
+
+
+def test_preferred_stroke_size_promotes_inferred_outline_when_config_zero():
+    settings = _render_settings(outline_width="0")
+    style_state = StyleState()
+    assert _preferred_stroke_size(settings, style_state, stroke_inferred=True) == 2
