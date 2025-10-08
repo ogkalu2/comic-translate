@@ -390,6 +390,8 @@ class BatchProcessor:
                     logger.exception("Auto style inference failed for block")
                     style_state = base_style
 
+                blk.style_state = style_state.copy()
+
                 if style_state.fill is not None:
                     text_color = QColor(*style_state.fill)
                     blk.font_color = _rgb_to_hex(style_state.fill)
@@ -446,6 +448,7 @@ class BatchProcessor:
                         outline_width_value,
                         OutlineType.Full_Document)
                     ] if outline_enabled else [],
+                    style_state=style_state.copy() if isinstance(style_state, StyleState) else None,
                 )
                 text_items_state.append(text_props.to_dict())
 

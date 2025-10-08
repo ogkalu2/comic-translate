@@ -387,18 +387,19 @@ class ImageViewer(QGraphicsView):
         # Create the TextBlockItem with the most up-to-date construction logic
         # Based on the load_state function which has the most complete setup
         item = TextBlockItem(
-            text=properties.text, 
+            text=properties.text,
             font_family=properties.font_family,
-            font_size=properties.font_size, 
+            font_size=properties.font_size,
             render_color=properties.text_color,
-            alignment=properties.alignment, 
+            alignment=properties.alignment,
             line_spacing=properties.line_spacing,
-            outline_color=properties.outline_color, 
+            outline_color=properties.outline_color,
             outline_width=properties.outline_width,
-            bold=properties.bold, 
-            italic=properties.italic, 
+            bold=properties.bold,
+            italic=properties.italic,
             underline=properties.underline,
             direction=properties.direction,
+            style_state=properties.style_state,
         )
         
         # Apply width if specified
@@ -422,6 +423,8 @@ class ImageViewer(QGraphicsView):
         
         # Update the item
         item.update()
+        if properties.style_state:
+            item.apply_style_state(properties.style_state)
 
         # Add to scene and track
         self._scene.addItem(item)

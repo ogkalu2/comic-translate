@@ -18,11 +18,14 @@ from modules.rendering.render import TextRenderingSettings, manual_wrap
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
     get_layout_direction, is_close
 from modules.utils.translator_utils import format_translations
+from modules.rendering.auto_style import AutoStyleEngine
+from schemas.style_state import StyleState
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
+    from app.ui.style_panel import StylePanel
 
 class TextController:
     def __init__(self, main: ComicTranslate):
@@ -38,6 +41,17 @@ class TextController:
             self.main.outline_width_dropdown,
             self.main.outline_checkbox
         ]
+
+        self.auto_style_engine = AutoStyleEngine()
+        self.style_panel: Optional[StylePanel] = getattr(self.main, "style_panel", None)
+        self._style_panel_updating = False
+
+        if self.style_panel is not None:
+            self.style_panel.styleChanged.connect(self.on_style_panel_changed)
+            self.style_panel.reanalyseRequested.connect(self.reanalyse_current_block_style)
+            self.style_panel.fontChanged.connect(self.on_font_dropdown_change)
+            self.style_panel.fontSizeChanged.connect(lambda size: self.on_font_size_change(str(size)))
+            self.style_panel.alignmentChanged.connect(self._on_style_panel_alignment)
 
     def connect_text_item_signals(self, text_item: TextBlockItem):
         text_item.item_selected.connect(self.on_text_item_selected)
@@ -166,6 +180,8 @@ class TextController:
         underline = render_settings.underline
         direction = render_settings.direction
 
+        style_state = getattr(blk, "style_state", None)
+
         properties = TextItemProperties(
             text=text,
             font_family=font_family,
@@ -181,10 +197,13 @@ class TextController:
             direction=direction,
             position=(blk.xyxy[0], blk.xyxy[1]),
             rotation=blk.angle,
+            style_state=style_state.copy() if style_state else None,
         )
-        
+
         text_item = self.main.image_viewer.add_text_item(properties)
         text_item.set_plain_text(text)
+        if style_state:
+            text_item.apply_style_state(style_state)
 
         command = AddTextItemCommand(self.main, text_item)
         self.main.push_command(command)
@@ -218,6 +237,8 @@ class TextController:
 
     def on_text_item_deselected(self):
         self.clear_text_edits()
+        if self.style_panel:
+            self.style_panel.clear_style()
 
     def update_text_block(self):
         if self.main.curr_tblock:
@@ -281,6 +302,8 @@ class TextController:
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):
         if self.main.curr_tblock_item and font_family:
+            if self.main.font_dropdown.currentText() != font_family:
+                self.main.font_dropdown.setCurrentText(font_family)
             old_item = copy.copy(self.main.curr_tblock_item)
             font_size = int(self.main.font_size_dropdown.currentText())
             self.main.curr_tblock_item.set_font(font_family, font_size)
@@ -288,14 +311,53 @@ class TextController:
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
 
+            if self.main.curr_tblock_item.style_state:
+                style = self.main.curr_tblock_item.style_state.copy()
+                style.font_family = font_family
+                style.font_size = int(font_size)
+                self.main.curr_tblock_item.apply_style_state(style)
+                if self.main.curr_tblock:
+                    self.main.curr_tblock.style_state = style.copy()
+                if self.style_panel and not self._style_panel_updating:
+                    self._style_panel_updating = True
+                    try:
+                        self.style_panel.set_style(
+                            style,
+                            font_family,
+                            int(font_size),
+                            self._alignment_to_name(self.main.curr_tblock_item.alignment),
+                        )
+                    finally:
+                        self._style_panel_updating = False
+
     def on_font_size_change(self, font_size: str):
         if self.main.curr_tblock_item and font_size:
+            if self.main.font_size_dropdown.currentText() != font_size:
+                self.main.font_size_dropdown.setCurrentText(font_size)
             old_item = copy.copy(self.main.curr_tblock_item)
             font_size = float(font_size)
             self.main.curr_tblock_item.set_font_size(font_size)
 
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
+
+            if self.main.curr_tblock_item.style_state:
+                style = self.main.curr_tblock_item.style_state.copy()
+                style.font_size = int(font_size)
+                self.main.curr_tblock_item.apply_style_state(style)
+                if self.main.curr_tblock:
+                    self.main.curr_tblock.style_state = style.copy()
+                if self.style_panel and not self._style_panel_updating:
+                    self._style_panel_updating = True
+                    try:
+                        self.style_panel.set_style(
+                            style,
+                            self.main.curr_tblock_item.font_family,
+                            int(font_size),
+                            self._alignment_to_name(self.main.curr_tblock_item.alignment),
+                        )
+                    finally:
+                        self._style_panel_updating = False
 
     def on_line_spacing_change(self, line_spacing: str):
         if self.main.curr_tblock_item and line_spacing:
@@ -319,6 +381,25 @@ class TextController:
 
                 command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
                 self.main.push_command(command)
+
+                if self.main.curr_tblock_item.style_state:
+                    style = self.main.curr_tblock_item.style_state.copy()
+                    style.fill = (font_color.red(), font_color.green(), font_color.blue())
+                    style.auto_color = False
+                    self.main.curr_tblock_item.apply_style_state(style)
+                    if self.main.curr_tblock:
+                        self.main.curr_tblock.style_state = style.copy()
+                    if self.style_panel and not self._style_panel_updating:
+                        self._style_panel_updating = True
+                        try:
+                            self.style_panel.set_style(
+                                style,
+                                self.main.curr_tblock_item.font_family,
+                                int(self.main.curr_tblock_item.font_size),
+                                self._alignment_to_name(self.main.curr_tblock_item.alignment),
+                            )
+                        finally:
+                            self._style_panel_updating = False
 
     def left_align(self):
         if self.main.curr_tblock_item:
@@ -387,6 +468,26 @@ class TextController:
                 command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
                 self.main.push_command(command)
 
+                if self.main.curr_tblock_item.style_state:
+                    style = self.main.curr_tblock_item.style_state.copy()
+                    style.stroke = (outline_color.red(), outline_color.green(), outline_color.blue())
+                    style.stroke_enabled = True
+                    style.stroke_size = style.stroke_size or int(round(outline_width))
+                    self.main.curr_tblock_item.apply_style_state(style)
+                    if self.main.curr_tblock:
+                        self.main.curr_tblock.style_state = style.copy()
+                    if self.style_panel and not self._style_panel_updating:
+                        self._style_panel_updating = True
+                        try:
+                            self.style_panel.set_style(
+                                style,
+                                self.main.curr_tblock_item.font_family,
+                                int(self.main.curr_tblock_item.font_size),
+                                self._alignment_to_name(self.main.curr_tblock_item.alignment),
+                            )
+                        finally:
+                            self._style_panel_updating = False
+
     def on_outline_width_change(self, outline_width):
         if self.main.curr_tblock_item and self.main.outline_checkbox.isChecked():
             old_item = copy.copy(self.main.curr_tblock_item)
@@ -397,6 +498,152 @@ class TextController:
 
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
+
+            if self.main.curr_tblock_item.style_state:
+                style = self.main.curr_tblock_item.style_state.copy()
+                if color.isValid():
+                    style.stroke = (color.red(), color.green(), color.blue())
+                style.stroke_enabled = True
+                style.stroke_size = int(round(outline_width))
+                self.main.curr_tblock_item.apply_style_state(style)
+                if self.main.curr_tblock:
+                    self.main.curr_tblock.style_state = style.copy()
+                if self.style_panel and not self._style_panel_updating:
+                    self._style_panel_updating = True
+                    try:
+                        self.style_panel.set_style(
+                            style,
+                            self.main.curr_tblock_item.font_family,
+                            int(self.main.curr_tblock_item.font_size),
+                            self._alignment_to_name(self.main.curr_tblock_item.alignment),
+                        )
+                    finally:
+                        self._style_panel_updating = False
+
+    @staticmethod
+    def _alignment_to_name(alignment: QtCore.Qt.AlignmentFlag) -> str:
+        if alignment == QtCore.Qt.AlignmentFlag.AlignCenter:
+            return "center"
+        if alignment == QtCore.Qt.AlignmentFlag.AlignRight:
+            return "right"
+        if alignment == QtCore.Qt.AlignmentFlag.AlignJustify:
+            return "justify"
+        return "left"
+
+    @staticmethod
+    def _name_to_alignment(name: str) -> QtCore.Qt.AlignmentFlag:
+        mapping = {
+            "left": QtCore.Qt.AlignmentFlag.AlignLeft,
+            "center": QtCore.Qt.AlignmentFlag.AlignCenter,
+            "right": QtCore.Qt.AlignmentFlag.AlignRight,
+            "justify": QtCore.Qt.AlignmentFlag.AlignJustify,
+        }
+        return mapping.get(name, QtCore.Qt.AlignmentFlag.AlignLeft)
+
+    @staticmethod
+    def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
+        return "#" + "".join(f"{channel:02X}" for channel in rgb)
+
+    def _on_style_panel_alignment(self, alignment: str) -> None:
+        if self._style_panel_updating:
+            return
+        if not self.main.curr_tblock_item:
+            return
+
+        align_flag = self._name_to_alignment(alignment)
+        old_item = copy.copy(self.main.curr_tblock_item)
+        self.main.curr_tblock_item.set_alignment(align_flag)
+        command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
+        self.main.push_command(command)
+
+        if self.style_panel and not self._style_panel_updating:
+            self._style_panel_updating = True
+            try:
+                self.style_panel.set_style(
+                    self.main.curr_tblock_item.style_state,
+                    self.main.curr_tblock_item.font_family,
+                    int(self.main.curr_tblock_item.font_size),
+                    alignment,
+                )
+            finally:
+                self._style_panel_updating = False
+
+    def on_style_panel_changed(self, state: StyleState) -> None:
+        if self._style_panel_updating:
+            return
+        if not self.main.curr_tblock_item:
+            return
+
+        style_copy = state.copy()
+        style_copy.font_family = self.main.curr_tblock_item.font_family
+        style_copy.font_size = int(self.main.curr_tblock_item.font_size)
+        style_copy.text_align = self._alignment_to_name(self.main.curr_tblock_item.alignment)
+
+        self.main.curr_tblock_item.apply_style_state(style_copy)
+
+        if self.main.curr_tblock:
+            self.main.curr_tblock.style_state = style_copy.copy()
+            if style_copy.fill is not None:
+                self.main.curr_tblock.font_color = self._rgb_to_hex(style_copy.fill)
+            else:
+                self.main.curr_tblock.font_color = ''
+            if style_copy.stroke is not None and style_copy.stroke_enabled:
+                self.main.curr_tblock.outline_color = self._rgb_to_hex(style_copy.stroke)
+            else:
+                self.main.curr_tblock.outline_color = ''
+
+        if style_copy.fill is not None:
+            color = QColor(*style_copy.fill)
+            self.main.block_font_color_button.setStyleSheet(
+                f"background-color: {color.name()}; border: none; border-radius: 5px;"
+            )
+            self.main.block_font_color_button.setProperty('selected_color', color.name())
+        if style_copy.stroke is not None and style_copy.stroke_enabled:
+            color = QColor(*style_copy.stroke)
+            self.main.outline_font_color_button.setStyleSheet(
+                f"background-color: {color.name()}; border: none; border-radius: 5px;"
+            )
+            self.main.outline_font_color_button.setProperty('selected_color', color.name())
+            self.main.outline_checkbox.setChecked(True)
+        elif not style_copy.stroke_enabled:
+            self.main.outline_checkbox.setChecked(False)
+
+        self.main.image_viewer.viewport().update()
+
+    def reanalyse_current_block_style(self) -> None:
+        if not self.main.curr_tblock or not self.main.curr_tblock_item:
+            return
+
+        render_settings = self.render_settings()
+        background = self._prepare_background_image([self.main.curr_tblock], render_settings)
+        if background is None:
+            logger.warning("Unable to capture background for style re-analysis")
+            return
+
+        base_style = self.main.curr_tblock.style_state.copy() if self.main.curr_tblock.style_state else StyleState()
+        base_style.font_family = self.main.curr_tblock_item.font_family
+        base_style.font_size = int(self.main.curr_tblock_item.font_size)
+        base_style.text_align = self._alignment_to_name(self.main.curr_tblock_item.alignment)
+
+        try:
+            new_state = self.auto_style_engine.style_for_block(background, self.main.curr_tblock, base_style)
+        except Exception:
+            logger.exception("Failed to re-analyse style for block")
+            return
+
+        self._style_panel_updating = True
+        try:
+            if self.style_panel:
+                self.style_panel.set_style(
+                    new_state,
+                    self.main.curr_tblock_item.font_family,
+                    int(self.main.curr_tblock_item.font_size),
+                    self._alignment_to_name(self.main.curr_tblock_item.alignment),
+                )
+        finally:
+            self._style_panel_updating = False
+
+        self.on_style_panel_changed(new_state)
 
     def toggle_outline_settings(self, state):
         enabled = True if state == 2 else False
@@ -491,6 +738,32 @@ class TextController:
         finally:
             self.unblock_text_item_widgets(self.widgets_to_block)
 
+        if self.style_panel and text_item:
+            style = getattr(text_item, "style_state", None)
+            if style is None and self.main.curr_tblock and self.main.curr_tblock.style_state:
+                style = self.main.curr_tblock.style_state
+            if style is None:
+                style = StyleState(
+                    font_family=text_item.font_family,
+                    font_size=int(text_item.font_size),
+                    text_align=self._alignment_to_name(text_item.alignment),
+                )
+            else:
+                style = style.copy()
+                style.font_family = text_item.font_family
+                style.font_size = int(text_item.font_size)
+                style.text_align = self._alignment_to_name(text_item.alignment)
+            self._style_panel_updating = True
+            try:
+                self.style_panel.set_style(
+                    style,
+                    text_item.font_family,
+                    int(text_item.font_size),
+                    self._alignment_to_name(text_item.alignment),
+                )
+            finally:
+                self._style_panel_updating = False
+
     def set_values_from_highlight(self, item_highlighted = None):
 
         self.block_text_item_widgets(self.widgets_to_block)
@@ -553,6 +826,33 @@ class TextController:
 
         finally:
             self.unblock_text_item_widgets(self.widgets_to_block)
+
+        if self.style_panel and item_highlighted:
+            alignment = item_highlighted.get('alignment', QtCore.Qt.AlignmentFlag.AlignLeft)
+            style = StyleState(
+                font_family=item_highlighted.get('font_family', ''),
+                font_size=int(item_highlighted.get('font_size', 32) or 32),
+                text_align=self._alignment_to_name(alignment),
+            )
+            text_color = item_highlighted.get('text_color')
+            if text_color:
+                color = QColor(text_color)
+                style.fill = (color.red(), color.green(), color.blue())
+            outline_color = item_highlighted.get('outline_color')
+            if outline_color:
+                color = QColor(outline_color)
+                style.stroke = (color.red(), color.green(), color.blue())
+                style.stroke_enabled = True
+            self._style_panel_updating = True
+            try:
+                self.style_panel.set_style(
+                    style,
+                    style.font_family,
+                    style.font_size,
+                    style.text_align,
+                )
+            finally:
+                self._style_panel_updating = False
 
     # Rendering
     def render_text(self):

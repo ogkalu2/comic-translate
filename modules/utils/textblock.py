@@ -4,6 +4,7 @@ import copy
 from PIL import Image, ImageDraw
 from collections import defaultdict, deque
 from ..detection.utils.text_lines import group_items_into_lines
+from schemas.style_state import StyleState
 
 class TextBlock(object):
     """
@@ -56,6 +57,11 @@ class TextBlock(object):
         self.max_font_size = max_font_size
         self.font_color = font_color
         self.outline_color = outline_color
+        style_state = kwargs.get("style_state")
+        if isinstance(style_state, StyleState):
+            self.style_state: StyleState | None = style_state
+        else:
+            self.style_state = None
 
     @property
     def xywh(self):
@@ -106,7 +112,8 @@ class TextBlock(object):
         new_block.max_font_size = self.max_font_size
         new_block.font_color = self.font_color
         new_block.outline_color = self.outline_color
-        
+        new_block.style_state = self.style_state.copy() if self.style_state else None
+
         return new_block
 
 def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:

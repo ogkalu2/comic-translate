@@ -849,6 +849,8 @@ class WebtoonBatchProcessor:
                 logger.exception("Auto style inference failed for virtual page %s", vpage.virtual_id)
                 style_state = base_style
 
+            blk_virtual.style_state = style_state.copy()
+
             if style_state.fill is not None:
                 text_color = QColor(*style_state.fill)
                 blk_virtual.font_color = _rgb_to_hex(style_state.fill)
@@ -887,6 +889,7 @@ class WebtoonBatchProcessor:
             render_blk.translation = translation
             render_blk.font_color = blk_virtual.font_color
             render_blk.outline_color = blk_virtual.outline_color
+            render_blk.style_state = style_state.copy()
 
             if should_emit_live:
                 self.main_page.blk_rendered.emit(translation, font_size, render_blk)
@@ -923,6 +926,7 @@ class WebtoonBatchProcessor:
                         OutlineType.Full_Document
                     )
                 ] if outline_enabled else [],
+                style_state=style_state.copy() if isinstance(style_state, StyleState) else None,
             )
             text_items_state.append(text_props.to_dict())
             page_blk_list.append(render_blk)

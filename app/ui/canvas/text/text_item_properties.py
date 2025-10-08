@@ -3,6 +3,8 @@ from typing import Optional, List, Any
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
 
+from schemas.style_state import StyleState
+
 @dataclass
 class TextItemProperties:
     """Dataclass for TextBlockItem properties to reduce duplication in construction"""
@@ -31,6 +33,7 @@ class TextItemProperties:
     
     # Advanced properties
     selection_outlines: list = field(default_factory=list)
+    style_state: Optional[StyleState] = None
             
     @classmethod
     def from_dict(cls, data: dict) -> 'TextItemProperties':
@@ -84,7 +87,9 @@ class TextItemProperties:
         
         # Advanced
         props.selection_outlines = data.get('selection_outlines', [])
-        
+        if 'style_state' in data:
+            props.style_state = StyleState.from_dict(data.get('style_state'))
+
         return props
     
     @classmethod
@@ -120,7 +125,10 @@ class TextItemProperties:
         
         # Advanced properties
         props.selection_outlines = getattr(item, 'selection_outlines', []).copy()
-        
+        props.style_state = getattr(item, 'style_state', None)
+        if props.style_state is not None:
+            props.style_state = props.style_state.copy()
+
         return props
     
     def to_dict(self) -> dict:
@@ -145,4 +153,5 @@ class TextItemProperties:
             'width': self.width,
             'vertical': self.vertical,
             'selection_outlines': self.selection_outlines,
+            'style_state': self.style_state.to_dict() if isinstance(self.style_state, StyleState) else None,
         }

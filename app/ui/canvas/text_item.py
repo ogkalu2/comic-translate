@@ -1,11 +1,24 @@
+from __future__ import annotations
+
 from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
      QApplication, QWidget, QStyleOptionGraphicsItem
-from PySide6.QtGui import QFont, QCursor, QColor, \
-     QTextCharFormat, QTextBlockFormat, QTextCursor, QPainter
+from PySide6.QtGui import (
+    QFont,
+    QCursor,
+    QColor,
+    QTextCharFormat,
+    QTextBlockFormat,
+    QTextCursor,
+    QPainter,
+    QPainterPath,
+    QPen,
+)
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math, copy
 from dataclasses import dataclass
 from enum import Enum
+
+from schemas.style_state import StyleState
 
 @dataclass
 class TextBlockState:
@@ -42,19 +55,22 @@ class TextBlockItem(QGraphicsTextItem):
     text_highlighted = Signal(dict)
     change_undo = Signal(TextBlockState, TextBlockState)
     
-    def __init__(self, 
-             text = "", 
-             font_family = "", 
-             font_size = 20, 
-             render_color = QColor(0, 0, 0), 
-             alignment = Qt.AlignmentFlag.AlignCenter, 
-             line_spacing = 1.2, 
-             outline_color = QColor(255, 255, 255), 
-             outline_width = 1,
-             bold=False, 
-             italic=False, 
-             underline=False,
-             direction=Qt.LayoutDirection.LeftToRight):
+    def __init__(
+        self,
+        text="",
+        font_family="",
+        font_size=20,
+        render_color=QColor(0, 0, 0),
+        alignment=Qt.AlignmentFlag.AlignCenter,
+        line_spacing=1.2,
+        outline_color=QColor(255, 255, 255),
+        outline_width=1,
+        bold=False,
+        italic=False,
+        underline=False,
+        direction=Qt.LayoutDirection.LeftToRight,
+        style_state: StyleState | None = None,
+    ):
 
         super().__init__(text)
         self.text_color = render_color
@@ -88,6 +104,16 @@ class TextBlockItem(QGraphicsTextItem):
 
         self.selection_outlines = []
 
+        self.background_enabled = False
+        self.background_color = QColor(255, 255, 255)
+        self.background_alpha = 0
+        self.border_enabled = False
+        self.border_radius = 0
+        self.border_padding = 0
+        self.border_color = QColor(0, 0, 0)
+
+        self.style_state: StyleState = style_state.copy() if style_state else StyleState()
+
         self.setAcceptHoverEvents(True)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
         self.setFlag(QGraphicsTextItem.GraphicsItemFlag.ItemIsMovable, True)
@@ -100,6 +126,8 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Set the initial text direction
         self._apply_text_direction()
+        if style_state:
+            self.apply_style_state(style_state)
 
     def _apply_text_direction(self):
         text_option = self.document().defaultTextOption()
@@ -321,12 +349,37 @@ class TextBlockItem(QGraphicsTextItem):
         
         self.update()
 
-    def paint(   
-        self, 
-        painter: QPainter, 
-        option: QStyleOptionGraphicsItem, 
+    def paint(
+        self,
+        painter: QPainter,
+        option: QStyleOptionGraphicsItem,
         widget: QWidget = None
     ):
+
+        if self.background_enabled or self.border_enabled:
+            painter.save()
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+            rect = self.boundingRect().adjusted(
+                -self.border_padding,
+                -self.border_padding,
+                self.border_padding,
+                self.border_padding,
+            )
+            path = QPainterPath()
+            radius = max(0, float(self.border_radius))
+            path.addRoundedRect(rect, radius, radius)
+
+            if self.background_enabled:
+                bg = QColor(self.background_color)
+                bg.setAlpha(max(0, min(255, int(self.background_alpha))))
+                painter.fillPath(path, bg)
+
+            if self.border_enabled:
+                border = QColor(self.border_color)
+                border.setAlpha(255)
+                painter.setPen(QPen(border, 1.2))
+                painter.drawPath(path)
+            painter.restore()
 
         # Then handle any selection outlines
         if self.selection_outlines:
@@ -366,6 +419,36 @@ class TextBlockItem(QGraphicsTextItem):
         # Draw the normal text on top
         super().paint(painter, option, widget)
 
+    def apply_style_state(self, style_state: StyleState):
+        """Apply a :class:`StyleState` to this text item."""
+
+        self.style_state = style_state.copy()
+
+        if style_state.fill is not None:
+            self.set_color(QColor(*style_state.fill))
+
+        stroke_color = QColor(*style_state.stroke) if style_state.stroke is not None else None
+        if style_state.stroke_enabled and stroke_color is not None:
+            stroke_width = style_state.stroke_size if style_state.stroke_size is not None else self.outline_width
+            self.set_outline(stroke_color, stroke_width)
+        else:
+            self.set_outline(None, self.outline_width)
+
+        self.background_enabled = bool(style_state.bg_enabled)
+        if style_state.bg_color is not None:
+            self.background_color = QColor(*style_state.bg_color)
+        self.background_alpha = int(style_state.bg_alpha)
+        self.border_enabled = bool(style_state.border_enabled)
+        self.border_radius = int(style_state.border_radius)
+        self.border_padding = int(style_state.border_padding)
+        # Use stroke colour as border if explicit bg isn't set to avoid dull edges.
+        if style_state.stroke is not None:
+            self.border_color = QColor(*style_state.stroke)
+        else:
+            self.border_color = QColor(*style_state.bg_color) if style_state.bg_color is not None else QColor(0, 0, 0)
+
+        self.update()
+
     def set_bold(self, state):
         if not self.textCursor().hasSelection():
             self.bold = state
@@ -391,6 +474,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.set_line_spacing(self.line_spacing)
         self.update_text_width()
         self.set_alignment(self.alignment)
+        if self.style_state:
+            self.apply_style_state(self.style_state)
 
     def mouseDoubleClickEvent(self, event):
         if not self.editing_mode:

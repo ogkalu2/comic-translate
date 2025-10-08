@@ -49,10 +49,19 @@ def _choose_text_mask(gray: np.ndarray, polygon_mask: np.ndarray) -> np.ndarray:
     interior_pixels = gray[polygon_mask]
     if interior_pixels.size == 0:
         return np.zeros_like(gray, dtype=bool)
+
     threshold = _auto_threshold(interior_pixels)
     darker = np.logical_and(gray <= threshold, polygon_mask)
     lighter = np.logical_and(gray >= threshold, polygon_mask)
-    return darker if darker.sum() >= lighter.sum() else lighter
+
+    candidate = darker if darker.sum() >= lighter.sum() else lighter
+    if candidate.sum() == 0:
+        return candidate
+
+    # Use a quick morphological close to patch small gaps so erosion works better.
+    closed = dilate(candidate, 1)
+    closed = np.logical_and(erode(closed, 1), polygon_mask)
+    return closed if closed.sum() > 0 else candidate
 
 
 def analyse_group_colors(
@@ -88,13 +97,19 @@ def analyse_group_colors(
 
     core = erode(text_mask, 1)
     if core.sum() < min_core_pixels:
-        core = text_mask
+        core = erode(text_mask, 0)
 
-    stroke_candidates = np.logical_and(dilate(core, 1), mask)
-    stroke_ring = np.logical_and(stroke_candidates, np.logical_not(core))
+    stroke_ring = np.logical_and(text_mask, np.logical_not(core))
+    if stroke_ring.sum() < min_core_pixels // 4:
+        expanded = dilate(text_mask, 1)
+        stroke_ring = np.logical_and(expanded, np.logical_not(core))
+
     background_ring = ring(mask, 0, ring_radius)
+    text_guard = dilate(text_mask, 1)
+    background_ring = np.logical_and(background_ring, np.logical_not(text_guard))
     if background_ring.sum() < min_core_pixels:
         background_ring = ring(mask, 1, max(ring_radius, 3))
+        background_ring = np.logical_and(background_ring, np.logical_not(text_guard))
 
     fill_rgb = _median_rgb(patch[core])
     stroke_rgb = _median_rgb(patch[stroke_ring]) if stroke_ring.any() else None

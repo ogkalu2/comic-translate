@@ -26,6 +26,7 @@ from .dayu_widgets.menu import MMenu
 from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
 from .list_view import PageListView
+from .style_panel import StylePanel
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -520,10 +521,12 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         rendering_divider_top = MDivider()
         rendering_divider_bottom = MDivider()
+        self.style_panel = StylePanel(self)
         text_render_layout.addWidget(rendering_divider_top)
         text_render_layout.addLayout(font_settings_layout)
         text_render_layout.addLayout(main_text_settings_layout)
         text_render_layout.addLayout(outline_settings_layout)
+        text_render_layout.addWidget(self.style_panel)
         text_render_layout.addWidget(rendering_divider_bottom)
 
         # Tools Layout
@@ -817,6 +820,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Check if font_input is a file path
         if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
             QFontDatabase.addApplicationFont(font_input)
+            if hasattr(self, "style_panel") and self.style_panel:
+                self.style_panel.set_available_fonts(QFontDatabase().families())
 
     def get_color(self):
         default_color = QtGui.QColor('#000000')
