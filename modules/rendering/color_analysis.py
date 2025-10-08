@@ -51,12 +51,69 @@ def _choose_text_mask(gray: np.ndarray, polygon_mask: np.ndarray) -> np.ndarray:
         return np.zeros_like(gray, dtype=bool)
 
     threshold = _auto_threshold(interior_pixels)
-    darker = np.logical_and(gray <= threshold, polygon_mask)
-    lighter = np.logical_and(gray >= threshold, polygon_mask)
+    darker = np.logical_and(gray < threshold, polygon_mask)
+    lighter = np.logical_and(gray > threshold, polygon_mask)
 
-    candidate = darker if darker.sum() >= lighter.sum() else lighter
+    dark_count = int(darker.sum())
+    light_count = int(lighter.sum())
+
+    def percentile_alternatives() -> list[np.ndarray]:
+        if not interior_pixels.size:
+            return []
+        low_thresh = np.percentile(interior_pixels, 15)
+        high_thresh = np.percentile(interior_pixels, 85)
+        alt_darker = np.logical_and(gray <= low_thresh, polygon_mask)
+        alt_lighter = np.logical_and(gray >= high_thresh, polygon_mask)
+        return [alt for alt in (alt_darker, alt_lighter) if alt.any()]
+
+    def pick_best_alternative(alts: Sequence[np.ndarray]) -> Optional[np.ndarray]:
+        scored = []
+        for alt in alts:
+            count = int(alt.sum())
+            if count == 0:
+                continue
+            mean_val = float(np.mean(gray[alt]))
+            diff = abs(mean_val - threshold)
+            scored.append((diff, count, alt))
+        if not scored:
+            return None
+        scored.sort(key=lambda item: (item[0], item[1]))
+        return scored[0][2]
+
+    candidate: Optional[np.ndarray] = None
+    other: Optional[np.ndarray] = None
+
+    # Prefer the mask with fewer pixels – glyphs usually occupy the minority of
+    # the polygon – but ensure we still return something sensible if the
+    # heuristic fails (e.g. extremely small crops or noisy backgrounds).
+    if dark_count and light_count:
+        if dark_count < light_count:
+            candidate = darker
+            other = lighter
+        else:
+            candidate = lighter
+            other = darker
+        total = dark_count + light_count
+        if candidate.sum() > total * 0.7 and other is not None:
+            candidate = other
+    elif dark_count:
+        candidate = darker
+    elif light_count:
+        candidate = lighter
+    else:
+        candidate = pick_best_alternative(percentile_alternatives())
+        if candidate is None:
+            return np.zeros_like(gray, dtype=bool)
+
     if candidate.sum() == 0:
         return candidate
+
+    polygon_pixels = int(polygon_mask.sum())
+    if polygon_pixels and candidate.sum() > polygon_pixels * 0.85:
+        alternatives = [alt for alt in percentile_alternatives() if alt.sum() < candidate.sum()]
+        replacement = pick_best_alternative(alternatives)
+        if replacement is not None:
+            candidate = replacement
 
     # Use a quick morphological close to patch small gaps so erosion works better.
     closed = dilate(candidate, 1)

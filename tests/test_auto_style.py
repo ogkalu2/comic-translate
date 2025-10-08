@@ -1,6 +1,11 @@
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
 from schemas.style_state import StyleState
 from modules.rendering.decisions import decide_style, AutoStyleConfig
-from modules.rendering.color_analysis import ColorAnalysis
+from modules.rendering.color_analysis import ColorAnalysis, analyse_group_colors
+from modules.layout.grouping import TextGroup
+from modules.utils.textblock import TextBlock
 
 
 def _analysis(**kwargs):
@@ -44,3 +49,49 @@ def test_contrast_enforced_when_background_close():
     assert result.fill in ((0, 0, 0), (255, 255, 255))
     assert result.stroke is not None
     assert result.stroke_size >= 1
+
+
+def _rect_group(x1, y1, x2, y2):
+    block = TextBlock(text_bbox=np.array([x1, y1, x2, y2]))
+    polygon = np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2]], dtype=np.float32)
+    return TextGroup(blocks=[block], polygon=polygon, bbox=(x1, y1, x2, y2))
+
+
+def _synthetic_text_image(text_color, background_color):
+    img = Image.new("RGB", (160, 120), background_color)
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.load_default()
+    position = (40, 40)
+    bbox = draw.textbbox(position, "Hi", font=font)
+    draw.text(position, "Hi", fill=text_color, font=font)
+    return np.array(img, dtype=np.uint8), bbox
+
+
+def test_colour_analysis_prefers_minority_dark_text():
+    image, bbox = _synthetic_text_image((30, 160, 40), (255, 255, 255))
+    group = _rect_group(*bbox)
+
+    analysis = analyse_group_colors(image, group)
+
+    assert analysis is not None
+    fill = np.array(analysis.fill_rgb)
+    expected = np.array((30, 160, 40))
+    background = np.array(analysis.background_rgb)
+    assert np.linalg.norm(fill - expected) < 40
+    assert np.linalg.norm(fill - background) > 30
+    assert analysis.background_rgb != analysis.fill_rgb
+
+
+def test_colour_analysis_handles_light_text_on_dark_background():
+    image, bbox = _synthetic_text_image((240, 210, 80), (10, 10, 10))
+    group = _rect_group(*bbox)
+
+    analysis = analyse_group_colors(image, group)
+
+    assert analysis is not None
+    fill = np.array(analysis.fill_rgb)
+    expected = np.array((240, 210, 80))
+    background = np.array(analysis.background_rgb)
+    assert np.linalg.norm(fill - expected) < 80
+    assert np.linalg.norm(fill - expected) < np.linalg.norm(background - expected)
+    assert np.linalg.norm(fill - background) > 60
