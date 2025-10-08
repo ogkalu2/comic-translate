@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 from typing import List
 from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
 
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
@@ -17,10 +18,8 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
-from modules.rendering.adaptive_color import (
-    TextColorClassifier,
-    determine_text_outline_colors,
-)
+from schemas.style_state import StyleState
+from modules.rendering.auto_style import AutoStyleEngine
 from modules.utils.device import resolve_device
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
@@ -28,6 +27,20 @@ from app.ui.canvas.save_renderer import ImageSaveRenderer
 
 
 logger = logging.getLogger(__name__)
+
+
+def _alignment_to_name(alignment: Qt.AlignmentFlag) -> str:
+    if alignment == Qt.AlignmentFlag.AlignCenter:
+        return "center"
+    if alignment == Qt.AlignmentFlag.AlignRight:
+        return "right"
+    if alignment == Qt.AlignmentFlag.AlignJustify:
+        return "justify"
+    return "left"
+
+
+def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
+    return "#" + "".join(f"{channel:02X}" for channel in rgb)
 
 
 class BatchProcessor:
@@ -48,11 +61,7 @@ class BatchProcessor:
         self.block_detection = block_detection_handler
         self.inpainting = inpainting_handler
         self.ocr_handler = ocr_handler
-        try:
-            self.text_color_classifier = TextColorClassifier()
-        except FileNotFoundError as err:
-            logger.warning("Adaptive colour model unavailable: %s", err)
-            self.text_color_classifier = None
+        self.auto_style_engine = AutoStyleEngine()
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
@@ -352,37 +361,57 @@ class BatchProcessor:
                 translation, font_size = pyside_word_wrap(translation, font, width, height,
                                                         line_spacing, outline_width, bold, italic, underline,
                                                         alignment, direction, max_font_size, min_font_size)
-                
-                decision = None
-                text_color = default_text_color
-                outline_color = default_outline_color
-                if auto_font_color and self.text_color_classifier and background_for_sampling is not None:
-                    try:
-                        decision = determine_text_outline_colors(
-                            background_for_sampling, blk, self.text_color_classifier
-                        )
-                    except Exception:
-                        logger.exception("Adaptive colour inference failed for block")
-                        decision = None
 
-                if decision:
-                    blk.font_color = decision.text_hex
-                    blk.outline_color = decision.outline_hex
-                    text_color = QColor(decision.text_hex)
-                    outline_color = QColor(decision.outline_hex)
+                base_style = StyleState(
+                    font_family=font,
+                    font_size=int(round(font_size)),
+                    text_align=_alignment_to_name(alignment),
+                    auto_color=bool(auto_font_color),
+                    no_stroke_on_plain=True,
+                )
+
+                if not base_style.auto_color:
+                    base_style.fill = tuple(default_text_color.getRgb()[:3])
+                    if render_settings.outline:
+                        base_style.stroke = tuple(default_outline_color.getRgb()[:3])
+                        base_style.stroke_enabled = True
+                        try:
+                            base_style.stroke_size = max(1, int(round(float(outline_width))))
+                        except Exception:
+                            base_style.stroke_size = 1
+
+                try:
+                    style_state = (
+                        self.auto_style_engine.style_for_block(background_for_sampling, blk, base_style)
+                        if base_style.auto_color and background_for_sampling is not None
+                        else base_style
+                    )
+                except Exception:
+                    logger.exception("Auto style inference failed for block")
+                    style_state = base_style
+
+                if style_state.fill is not None:
+                    text_color = QColor(*style_state.fill)
+                    blk.font_color = _rgb_to_hex(style_state.fill)
                 else:
                     if not getattr(blk, 'font_color', ''):
                         blk.font_color = default_text_color.name()
                     text_color = QColor(blk.font_color)
-                    if getattr(blk, 'outline_color', ''):
-                        outline_color = QColor(blk.outline_color)
-                    elif render_settings.outline:
-                        blk.outline_color = default_outline_color.name()
-                        outline_color = QColor(blk.outline_color)
-                    else:
-                        outline_color = default_outline_color
 
-                outline_enabled = render_settings.outline or bool(decision) or bool(getattr(blk, 'outline_color', ''))
+                outline_color = None
+                outline_width_value = outline_width
+                if style_state.stroke_enabled and style_state.stroke is not None:
+                    outline_color = QColor(*style_state.stroke)
+                    blk.outline_color = _rgb_to_hex(style_state.stroke)
+                    if style_state.stroke_size is not None:
+                        outline_width_value = float(style_state.stroke_size)
+                elif not base_style.auto_color and render_settings.outline:
+                    outline_color = QColor(default_outline_color)
+                    blk.outline_color = default_outline_color.name()
+                else:
+                    blk.outline_color = ''
+
+                outline_enabled = outline_color is not None
 
                 # Display text if on current page with adaptive colours applied
                 if image_path == file_on_display:
@@ -401,7 +430,7 @@ class BatchProcessor:
                     alignment=alignment,
                     line_spacing=line_spacing,
                     outline_color=outline_color if outline_enabled else None,
-                    outline_width=outline_width,
+                    outline_width=outline_width_value,
                     bold=bold,
                     italic=italic,
                     underline=underline,
@@ -414,7 +443,7 @@ class BatchProcessor:
                     selection_outlines=[
                         OutlineInfo(0, len(translation),
                         outline_color,
-                        outline_width,
+                        outline_width_value,
                         OutlineType.Full_Document)
                     ] if outline_enabled else [],
                 )

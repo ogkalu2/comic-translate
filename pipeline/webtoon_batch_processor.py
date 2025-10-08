@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 from PySide6.QtGui import QColor
+from PySide6.QtCore import Qt
 
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
@@ -18,10 +19,8 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
 from modules.utils.translator_utils import format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
-from modules.rendering.adaptive_color import (
-    TextColorClassifier,
-    determine_text_outline_colors,
-)
+from schemas.style_state import StyleState
+from modules.rendering.auto_style import AutoStyleEngine
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
@@ -30,6 +29,20 @@ from modules.utils.device import resolve_device
 from .virtual_page import VirtualPage, VirtualPageCreator, PageStatus
 
 logger = logging.getLogger(__name__)
+
+
+def _alignment_to_name(alignment: Qt.AlignmentFlag) -> str:
+    if alignment == Qt.AlignmentFlag.AlignCenter:
+        return "center"
+    if alignment == Qt.AlignmentFlag.AlignRight:
+        return "right"
+    if alignment == Qt.AlignmentFlag.AlignJustify:
+        return "justify"
+    return "left"
+
+
+def _rgb_to_hex(rgb: tuple[int, int, int]) -> str:
+    return "#" + "".join(f"{channel:02X}" for channel in rgb)
 
 
 class WebtoonBatchProcessor:
@@ -72,11 +85,7 @@ class WebtoonBatchProcessor:
         self.physical_page_status = defaultdict(lambda: PageStatus.UNPROCESSED)
         self.final_patches_for_save = defaultdict(list)
 
-        try:
-            self.text_color_classifier = TextColorClassifier()
-        except FileNotFoundError as err:
-            logger.warning("Adaptive colour model unavailable: %s", err)
-            self.text_color_classifier = None
+        self.auto_style_engine = AutoStyleEngine()
 
         self.virtual_page_backgrounds = defaultdict(list)
         self.physical_page_cache = {}
@@ -812,34 +821,56 @@ class WebtoonBatchProcessor:
             if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                 translation = translation.replace(' ', '')
 
-            decision = None
-            text_color = default_text_color
-            outline_color = default_outline_color
-            if auto_font_color and self.text_color_classifier and background_image is not None:
-                try:
-                    decision = determine_text_outline_colors(background_image, blk_virtual, self.text_color_classifier)
-                except Exception:
-                    logger.exception("Adaptive colour inference failed for virtual page %s", vpage.virtual_id)
-                    decision = None
+            base_style = StyleState(
+                font_family=font,
+                font_size=int(round(font_size)),
+                text_align=_alignment_to_name(alignment),
+                auto_color=bool(auto_font_color),
+                no_stroke_on_plain=True,
+            )
 
-            if decision:
-                blk_virtual.font_color = decision.text_hex
-                blk_virtual.outline_color = decision.outline_hex
-                text_color = QColor(decision.text_hex)
-                outline_color = QColor(decision.outline_hex)
+            if not base_style.auto_color:
+                base_style.fill = tuple(default_text_color.getRgb()[:3])
+                if outline:
+                    base_style.stroke = tuple(default_outline_color.getRgb()[:3])
+                    base_style.stroke_enabled = True
+                    try:
+                        base_style.stroke_size = max(1, int(round(float(outline_width))))
+                    except Exception:
+                        base_style.stroke_size = 1
+
+            try:
+                style_state = (
+                    self.auto_style_engine.style_for_block(background_image, blk_virtual, base_style)
+                    if base_style.auto_color and background_image is not None
+                    else base_style
+                )
+            except Exception:
+                logger.exception("Auto style inference failed for virtual page %s", vpage.virtual_id)
+                style_state = base_style
+
+            if style_state.fill is not None:
+                text_color = QColor(*style_state.fill)
+                blk_virtual.font_color = _rgb_to_hex(style_state.fill)
             else:
                 if not getattr(blk_virtual, 'font_color', ''):
                     blk_virtual.font_color = default_text_color.name()
                 text_color = QColor(blk_virtual.font_color)
-                if getattr(blk_virtual, 'outline_color', ''):
-                    outline_color = QColor(blk_virtual.outline_color)
-                elif outline:
-                    blk_virtual.outline_color = default_outline_color.name()
-                    outline_color = QColor(blk_virtual.outline_color)
-                else:
-                    outline_color = default_outline_color
 
-            outline_enabled = outline or bool(decision) or bool(getattr(blk_virtual, 'outline_color', ''))
+            outline_color = None
+            outline_width_value = outline_width
+            if style_state.stroke_enabled and style_state.stroke is not None:
+                outline_color = QColor(*style_state.stroke)
+                blk_virtual.outline_color = _rgb_to_hex(style_state.stroke)
+                if style_state.stroke_size is not None:
+                    outline_width_value = float(style_state.stroke_size)
+            elif not base_style.auto_color and outline:
+                outline_color = QColor(default_outline_color)
+                blk_virtual.outline_color = default_outline_color.name()
+            else:
+                blk_virtual.outline_color = ''
+
+            outline_enabled = outline_color is not None
 
             render_blk = blk_virtual.deep_copy()
             render_blk.xyxy = list(physical_coords)
@@ -873,7 +904,7 @@ class WebtoonBatchProcessor:
                 alignment=alignment,
                 line_spacing=line_spacing,
                 outline_color=outline_color if outline_enabled else None,
-                outline_width=outline_width,
+                outline_width=outline_width_value,
                 bold=bold,
                 italic=italic,
                 underline=underline,
@@ -888,7 +919,7 @@ class WebtoonBatchProcessor:
                         0,
                         len(translation),
                         outline_color,
-                        outline_width,
+                        outline_width_value,
                         OutlineType.Full_Document
                     )
                 ] if outline_enabled else [],
