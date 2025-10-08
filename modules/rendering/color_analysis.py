@@ -9,6 +9,7 @@ import mahotas as mh
 import numpy as np
 
 from modules.layout.grouping import TextGroup
+from modules.utils.textblock import TextBlock
 from modules.utils.masks import dilate, erode, polygon_to_mask, ring
 from modules.utils.wcag import relative_luminance
 
@@ -202,4 +203,63 @@ def analyse_group_colors(
     )
 
 
-__all__ = ["ColorAnalysis", "analyse_group_colors"]
+def _block_polygon(block: TextBlock) -> Optional[np.ndarray]:
+    """Return a polygon suitable for colour analysis for a block."""
+
+    pts = getattr(block, "segm_pts", None)
+    if pts is not None:
+        try:
+            arr = np.asarray(pts, dtype=np.float32).reshape(-1, 2)
+            if arr.size >= 6:
+                return arr
+        except Exception:
+            pass
+
+    bbox = getattr(block, "xyxy", None)
+    if bbox is None or len(bbox) != 4:
+        return None
+
+    x1, y1, x2, y2 = bbox
+    return np.array(
+        [[float(x1), float(y1)], [float(x2), float(y1)], [float(x2), float(y2)], [float(x1), float(y2)]],
+        dtype=np.float32,
+    )
+
+
+def analyse_block_colors(
+    image: np.ndarray,
+    block: TextBlock,
+    ring_radius: int = 6,
+    min_core_pixels: int = 50,
+) -> Optional[ColorAnalysis]:
+    """Analyse the colours of an individual :class:`TextBlock`."""
+
+    if block is None:
+        return None
+
+    bbox = getattr(block, "xyxy", None)
+    if bbox is None or len(bbox) != 4:
+        return None
+
+    try:
+        x1, y1, x2, y2 = (int(round(v)) for v in bbox)
+    except Exception:
+        return None
+
+    if x2 <= x1 or y2 <= y1:
+        return None
+
+    polygon = _block_polygon(block)
+    if polygon is None or polygon.size < 6:
+        return None
+
+    group = TextGroup(blocks=[block], polygon=polygon, bbox=(x1, y1, x2, y2))
+    return analyse_group_colors(
+        image,
+        group,
+        ring_radius=ring_radius,
+        min_core_pixels=min_core_pixels,
+    )
+
+
+__all__ = ["ColorAnalysis", "analyse_group_colors", "analyse_block_colors"]

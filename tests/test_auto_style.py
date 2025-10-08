@@ -3,7 +3,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 from schemas.style_state import StyleState
 from modules.rendering.decisions import decide_style, AutoStyleConfig
-from modules.rendering.color_analysis import ColorAnalysis, analyse_group_colors
+from modules.rendering.color_analysis import (
+    ColorAnalysis,
+    analyse_block_colors,
+    analyse_group_colors,
+)
 from modules.layout.grouping import TextGroup
 from modules.utils.textblock import TextBlock
 
@@ -95,3 +99,19 @@ def test_colour_analysis_handles_light_text_on_dark_background():
     assert np.linalg.norm(fill - expected) < 80
     assert np.linalg.norm(fill - expected) < np.linalg.norm(background - expected)
     assert np.linalg.norm(fill - background) > 60
+
+
+def test_block_colour_analysis_matches_expected_fill():
+    text_colour = (120, 40, 200)
+    background_colour = (240, 240, 240)
+    image, bbox = _synthetic_text_image(text_colour, background_colour)
+
+    block = TextBlock(text_bbox=np.array(bbox))
+
+    analysis = analyse_block_colors(image, block)
+
+    assert analysis is not None
+    assert analysis.fill_rgb is not None
+    detected = np.array(analysis.fill_rgb)
+    expected = np.array(text_colour)
+    assert np.linalg.norm(detected - expected) < 60
