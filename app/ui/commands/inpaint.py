@@ -3,7 +3,6 @@ import hashlib
 import uuid
 from PySide6.QtGui import QUndoCommand
 from .base import PatchCommandBase
-from PIL import Image
 import imkit as imk
 
 class PatchInsertCommand(QUndoCommand, PatchCommandBase):
@@ -32,9 +31,7 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
                                    os.path.basename(file_path))
             os.makedirs(sub_dir, exist_ok=True)
             png_path = os.path.join(sub_dir, f"patch_{uuid.uuid4().hex[:8]}_{idx}.png")
-            # patch_img is produced by the inpainter in RGB color order.
-            # Save directly with PIL (which expects RGB) to preserve correct channel order.
-            Image.fromarray(patch_img).save(png_path)
+            imk.write_image(png_path, patch_img)
 
             # compute a composite hash of the image and its bounding box for deduplication
             with open(png_path, 'rb') as f:

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import imkit as imk
-from PIL import Image
 import numpy as np
 from typing import TYPE_CHECKING, List
 from PySide6 import QtCore, QtWidgets, QtGui
@@ -513,19 +512,8 @@ class ImageStateController:
         else:
             # In regular mode, get the current single image
             final_rgb = self.main.image_viewer.get_image_array(paint_all=True)
-        
-        pil_img = Image.fromarray(final_rgb)
-        
-        settings = QtCore.QSettings("ComicLabs", "ComicTranslate")
-        settings.beginGroup('export')
-        jpeg_quality = settings.value('jpeg_quality', 95, type=int)
-        settings.endGroup()
-        
-        file_ext = os.path.splitext(file_path)[1].lower()
-        if file_ext in ['.jpg', '.jpeg']:
-            pil_img.save(file_path, quality=jpeg_quality, optimize=True)
-        else:
-            pil_img.save(file_path)
+
+        imk.write_image(file_path, final_rgb)
 
     def save_image_state(self, file: str):
         # For regular mode only

@@ -29,7 +29,6 @@ INPAINTER_MIGRATIONS = {
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
     font_imported = Signal(str)
-    jpeg_quality_changed = Signal(int)
 
     def __init__(self, parent=None):
         super(SettingsPage, self).__init__(parent)
@@ -50,20 +49,9 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         self.ui.lang_combo.currentTextChanged.connect(self.on_language_changed)
         self.ui.font_browser.sig_files_changed.connect(self.import_font)
-        self.ui.jpeg_quality_spinbox.valueChanged.connect(self.on_jpeg_quality_changed)
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
-
-    def on_jpeg_quality_changed(self, value: int):
-        if not self._loading_settings:  # Avoid emitting during initial load
-            # Save the setting immediately
-            settings = QSettings("ComicLabs", "ComicTranslate")
-            settings.beginGroup('export')
-            settings.setValue('jpeg_quality', value)
-            settings.endGroup()
-            # Emit signal for any listeners
-            self.jpeg_quality_changed.emit(value)
 
     def get_language(self):
         return self.ui.lang_combo.currentText()
@@ -97,7 +85,6 @@ class SettingsPage(QtWidgets.QWidget):
             'export_raw_text': self.ui.raw_text_checkbox.isChecked(),
             'export_translated_text': self.ui.translated_text_checkbox.isChecked(),
             'export_inpainted_image': self.ui.inpainted_image_checkbox.isChecked(),
-            'jpeg_quality': self.ui.jpeg_quality_spinbox.value(),
             'save_as': {}
         }
         for file_type in self.ui.from_file_types:
@@ -323,7 +310,6 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.raw_text_checkbox.setChecked(settings.value('export_raw_text', False, type=bool))
         self.ui.translated_text_checkbox.setChecked(settings.value('export_translated_text', False, type=bool))
         self.ui.inpainted_image_checkbox.setChecked(settings.value('export_inpainted_image', False, type=bool))
-        self.ui.jpeg_quality_spinbox.setValue(settings.value('jpeg_quality', 95, type=int))
         settings.beginGroup('save_as')
         for file_type in ['.pdf', '.epub', '.cbr', '.cbz', '.cb7', '.cbt']:
             self.ui.export_widgets[f'{file_type}_save_as'].setCurrentText(settings.value(file_type, file_type[1:]))

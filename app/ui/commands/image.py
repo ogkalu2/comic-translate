@@ -1,6 +1,5 @@
 import numpy as np
 import tempfile
-from PIL import Image
 from PySide6.QtGui import QUndoCommand
 import imkit as imk
 
@@ -90,8 +89,7 @@ class SetImageCommand(QUndoCommand):
             
             # # Save new image to temp file and add to history
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png', dir=self.ct.temp_dir)
-            pil_image = Image.fromarray(img_array)
-            pil_image.save(temp_file.name)
+            imk.write_image(temp_file.name, img_array)
             temp_file.close()
 
             history.append(temp_file.name)

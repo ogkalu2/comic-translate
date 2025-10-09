@@ -1,6 +1,7 @@
 """Image I/O operations for the imkit module."""
 
 from __future__ import annotations
+import os
 from io import BytesIO
 import numpy as np
 from PIL import Image
@@ -19,22 +20,36 @@ def read_image(path: str) -> np.ndarray:
 def write_image(path: str, array: np.ndarray) -> None:
     """Write a numpy array as an image file."""
     im = Image.fromarray(ensure_uint8(array))
-    im.save(path)
+    save_kwargs: dict[str, object] = {}
+
+    ext = os.path.splitext(path)[1].lower()
+    if ext in {".jpg", ".jpeg"}:
+        try:
+            im.save(path, quality="keep", **save_kwargs)
+            return
+        except (ValueError, OSError):
+            pass
+
+    im.save(path, **save_kwargs)
 
 
 def encode_image(array: np.ndarray, ext: str = ".png", **kwargs) -> bytes:
     """Encode a numpy array as image bytes."""
     if not ext.startswith('.'):
         ext = '.' + ext
+
     fmt = ext.lstrip('.').upper()
     im = Image.fromarray(ensure_uint8(array))
     buf = BytesIO()
     save_kwargs = {}
-    if fmt in ("JPEG", "JPG"):
-        save_kwargs.setdefault("quality", kwargs.get("quality", 95))
-        save_kwargs.setdefault("optimize", True)
-        # PIL only recognizes 'JPEG', not 'JPG'
-        fmt = "JPEG" if fmt == "JPG" else fmt
+
+    fmt = "JPEG" if fmt == "JPG" else fmt
+    if fmt == "JPEG":
+        try:
+            im.save(buf, format=fmt, quality="keep", **save_kwargs)
+            return buf.getvalue()
+        except (ValueError, OSError):
+            pass
     if fmt == "PNG":
         # Pillow uses 0 (no compression) to 9. Mirror cv2.IMWRITE_PNG_COMPRESSION default 3.
         save_kwargs.setdefault("compress_level", kwargs.get("compress_level", 3))

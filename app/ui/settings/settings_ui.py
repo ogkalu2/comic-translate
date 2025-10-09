@@ -219,7 +219,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.raw_text_checkbox = self.export_page.raw_text_checkbox
         self.translated_text_checkbox = self.export_page.translated_text_checkbox
         self.inpainted_image_checkbox = self.export_page.inpainted_image_checkbox
-        self.jpeg_quality_spinbox = self.export_page.jpeg_quality_spinbox
         self.export_widgets = self.export_page.export_widgets
         self.from_file_types = self.export_page.from_file_types
 

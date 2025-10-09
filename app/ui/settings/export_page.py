@@ -1,7 +1,6 @@
 from PySide6 import QtWidgets
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.check_box import MCheckBox
-from ..dayu_widgets.spin_box import MSpinBox
 from ..dayu_widgets.combo_box import MComboBox
 from .utils import set_combo_box_width
 
@@ -22,23 +21,6 @@ class ExportPage(QtWidgets.QWidget):
         layout.addWidget(self.raw_text_checkbox)
         layout.addWidget(self.translated_text_checkbox)
         layout.addWidget(self.inpainted_image_checkbox)
-
-        # JPEG Quality
-        layout.addSpacing(20)
-        jpeg_quality_label = MLabel(self.tr("JPEG Quality")).h4()
-        layout.addWidget(jpeg_quality_label)
-
-        jpeg_quality_layout = QtWidgets.QHBoxLayout()
-        self.jpeg_quality_spinbox = MSpinBox()
-        self.jpeg_quality_spinbox.setRange(1, 100)
-        self.jpeg_quality_spinbox.setValue(95)
-        self.jpeg_quality_spinbox.setSuffix("%")
-        self.jpeg_quality_spinbox.setFixedWidth(80)
-
-        jpeg_quality_layout.addWidget(MLabel(self.tr("Quality:")))
-        jpeg_quality_layout.addWidget(self.jpeg_quality_spinbox)
-        jpeg_quality_layout.addStretch(1)
-        layout.addLayout(jpeg_quality_layout)
 
         # File format conversion
         layout.addSpacing(20)

@@ -147,17 +147,24 @@ def numpy_to_bytes(image_numpy: np.ndarray, ext: str) -> bytes:
 def pil_to_bytes(pil_img, ext: str, quality: int = 95, exif_infos={}) -> bytes:
     with io.BytesIO() as output:
         kwargs = {k: v for k, v in exif_infos.items() if v is not None}
-        if ext == "png" and "parameters" in kwargs:
+        ext_lower = ext.lower()
+        if ext_lower == "png" and "parameters" in kwargs:
             pnginfo_data = PngImagePlugin.PngInfo()
             pnginfo_data.add_text("parameters", kwargs["parameters"])
             kwargs["pnginfo"] = pnginfo_data
 
-        pil_img.save(
-            output,
-            format=ext,
-            quality=quality,
-            **kwargs,
-        )
+        if ext_lower in {"jpg", "jpeg"}:
+            try:
+                pil_img.save(output, format=ext, quality="keep", **kwargs)
+            except (ValueError, OSError):
+                pil_img.save(output, format=ext, **kwargs)
+        else:
+            pil_img.save(
+                output, 
+                format=ext, 
+                quality=quality, 
+                **kwargs
+            )
         image_bytes = output.getvalue()
     return image_bytes
 
