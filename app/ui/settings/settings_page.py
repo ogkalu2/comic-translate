@@ -19,7 +19,9 @@ TRANSLATOR_MIGRATIONS = {
     "Gemini-2.0-Flash":    "Gemini-2.5-Flash",
     "Gemini-2.0-Pro":      "Gemini-2.5-Flash",
     "Gemini-2.5-Pro":      "Gemini-2.5-Flash",
-    "Claude-3-Opus":       "Claude-4-Sonnet",
+    "Claude-3-Opus":       "Claude-4.5-Sonnet",
+    "Claude-4-Sonnet":     "Claude-4.5-Sonnet",
+    "Claude-3-Haiku":    "Claude-3.5-Haiku",
 }
 
 INPAINTER_MIGRATIONS = {
