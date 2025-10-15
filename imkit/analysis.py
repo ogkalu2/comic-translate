@@ -324,7 +324,7 @@ def warp_perspective(
         output_size,
         Image.Transform.PERSPECTIVE,
         data=coeffs,
-        resample=Image.Resampling.BILINEAR  # High-quality resampling
+        resample=Image.Resampling.BICUBIC
     )
 
     return np.array(transformed)
