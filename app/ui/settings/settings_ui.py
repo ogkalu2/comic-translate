@@ -65,7 +65,7 @@ class SettingsPageUI(QtWidgets.QWidget):
                                     self.tr("Google Gemini"), self.tr("DeepL"), self.tr("Anthropic Claude"), self.tr("Yandex")]
         
         self.supported_translators = [self.tr("GPT-4.1"), self.tr("GPT-4.1-mini"), self.tr("DeepL"), 
-                                    self.tr("Claude-4.5-Sonnet"), self.tr("Claude-3.5-Haiku"),
+                                    self.tr("Claude-4.5-Sonnet"), self.tr("Claude-4.5-Haiku"),
                                     self.tr("Gemini-2.5-Flash"), self.tr("Yandex"), self.tr("Google Translate"),
                                     self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
         
@@ -102,7 +102,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("GPT-4.1-mini"): "GPT-4.1-mini",
             self.tr("DeepL"): "DeepL",
             self.tr("Claude-4.5-Sonnet"): "Claude-4.5-Sonnet",
-            self.tr("Claude-3.5-Haiku"): "Claude-3.5-Haiku",
+            self.tr("Claude-4.5-Haiku"): "Claude-4.5-Haiku",
             self.tr("Gemini-2.5-Flash"): "Gemini-2.5-Flash",
             self.tr("Gemini-2.5-Pro"): "Gemini-2.5-Pro",
             self.tr("Yandex"): "Yandex",
