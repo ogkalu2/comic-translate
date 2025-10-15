@@ -66,17 +66,25 @@ class ModelID(Enum):
     # PPOCRv5 Detection Models
     PPOCR_V5_DET_MOBILE = "ppocr-v5-det-mobile"
     PPOCR_V5_DET_SERVER = "ppocr-v5-det-server"
+    PPOCR_V5_DET_MOBILE_TORCH = "ppocr-v5-det-mobile-torch"
     
     # PPOCRv5 Recognition Models - Chinese
-    PPOCR_V5_REC_CH_MOBILE = "ppocr-v5-rec-ch-mobile"
-    PPOCR_V5_REC_CH_SERVER = "ppocr-v5-rec-ch-server"
+    PPOCR_V5_REC_MOBILE = "ppocr-v5-rec-ch-mobile"
+    PPOCR_V5_REC_SERVER = "ppocr-v5-rec-ch-server"
+    PPOCR_V5_REC_MOBILE_TORCH = "ppocr-v5-rec-ch-mobile-torch"
     
     # PPOCRv5 Recognition Models - Other Languages
     PPOCR_V5_REC_EN_MOBILE = "ppocr-v5-rec-en-mobile"
     PPOCR_V5_REC_KOREAN_MOBILE = "ppocr-v5-rec-korean-mobile"
     PPOCR_V5_REC_LATIN_MOBILE = "ppocr-v5-rec-latin-mobile"
     PPOCR_V5_REC_ESLAV_MOBILE = "ppocr-v5-rec-eslav-mobile"
-    
+
+    # PPOCRv5 Recognition Models - Torch versions (if needed)
+    PPOCR_V5_REC_EN_MOBILE_TORCH = "ppocr-v5-rec-en-mobile-torch"
+    PPOCR_V5_REC_KOREAN_MOBILE_TORCH = "ppocr-v5-rec-korean-mobile-torch"
+    PPOCR_V5_REC_LATIN_MOBILE_TORCH = "ppocr-v5-rec-latin-mobile-torch"
+    PPOCR_V5_REC_ESLAV_MOBILE_TORCH = "ppocr-v5-rec-eslav-mobile-torch"
+
     # PPOCRv4 Classifier
     PPOCR_V4_CLS = "ppocr-v4-cls"
 
@@ -402,6 +410,15 @@ def _register_defaults():
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
+    # PPOCRv5 Detection/Recognition Models - Torch
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V5_DET_MOBILE_TORCH,
+        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/torch/PP-OCRv5/det/',
+        files=['ch_PP-OCRv5_det_mobile_infer.pth'],
+        sha256=['df848ed5060bac4d0f6e58572aea97d92e909a8a87cf292849237b0e84f6ffdb'],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
+    ))
+
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_DET_SERVER,
         url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/det/',
@@ -412,7 +429,7 @@ def _register_defaults():
 
     # PPOCRv5 Recognition Models - Chinese
     ModelDownloader.register(ModelSpec(
-        id=ModelID.PPOCR_V5_REC_CH_MOBILE,
+        id=ModelID.PPOCR_V5_REC_MOBILE,
         url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
         files=['ch_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_dict.txt'],
         sha256=['5825fc7ebf84ae7a412be049820b4d86d77620f204a041697b0494669b1742c5', None],
@@ -423,7 +440,18 @@ def _register_defaults():
     ))
 
     ModelDownloader.register(ModelSpec(
-        id=ModelID.PPOCR_V5_REC_CH_SERVER,
+        id=ModelID.PPOCR_V5_REC_MOBILE_TORCH,
+        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/torch/PP-OCRv5/rec/',
+        files=['ch_PP-OCRv5_rec_mobile_infer.pth', 'ppocrv5_dict.txt'],
+        sha256=['d20ee8dac2ca63e2d1989b02ecc42595c71d61bf8dd8c8ddc5ad2ee68e7b5be2', None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
+        additional_urls={
+            'ppocrv5_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
+        }
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V5_REC_SERVER,
         url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
         files=['ch_PP-OCRv5_rec_server_infer.onnx', 'ppocrv5_dict.txt'],
         sha256=['e09385400eaaaef34ceff54aeb7c4f0f1fe014c27fa8b9905d4709b65746562a', None],
@@ -442,6 +470,51 @@ def _register_defaults():
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx'),
         additional_urls={
             'ppocrv5_en_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/en_PP-OCRv5_rec_mobile_infer/ppocrv5_en_dict.txt'
+        }
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V5_REC_EN_MOBILE_TORCH,
+        url='https://huggingface.co/ogkalu/ppocr-v5-torch/resolve/main/',
+        files=['en_PP-OCRv5_mobile_rec.pth', 'ppocrv5_en_dict.txt'],
+        sha256=['4795b81d685f569e8862dc71e774aa65a6f5c06bd1e9c03459a8f2b46ad576d9', None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
+        additional_urls={
+            'ppocrv5_en_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/en_PP-OCRv5_rec_mobile_infer/ppocrv5_en_dict.txt'
+        }
+    ))
+
+    # PPOCRv5 Recognition Models - Torch versions (other languages)
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V5_REC_KOREAN_MOBILE_TORCH,
+        url='https://huggingface.co/ogkalu/ppocr-v5-torch/resolve/main/',
+        files=['korean_PP-OCRv5_mobile_rec.pth', 'ppocrv5_korean_dict.txt'],
+        sha256=['74cf26bd1c10d65812d43aadefc877f240c3f532936f912b46f27791a1e2684e', None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
+        additional_urls={
+            'ppocrv5_korean_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile_infer/ppocrv5_korean_dict.txt'
+        }
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V5_REC_LATIN_MOBILE_TORCH,
+        url='https://huggingface.co/ogkalu/ppocr-v5-torch/resolve/main/',
+        files=['latin_PP-OCRv5_mobile_rec.pth', 'ppocrv5_latin_dict.txt'],
+        sha256=['bb830312c306489f20fd2f974d9c502e58b1cfe90c7c0dcc0f4871303a04d613', None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
+        additional_urls={
+            'ppocrv5_latin_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile_infer/ppocrv5_latin_dict.txt'
+        }
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V5_REC_ESLAV_MOBILE_TORCH,
+        url='https://huggingface.co/ogkalu/ppocr-v5-torch/resolve/main/',
+        files=['eslav_PP-OCRv5_mobile_rec.pth', 'ppocrv5_eslav_dict.txt'],
+        sha256=['ecff6dfccf1ba1a9c0ff615f73c9504615fff4ecfed745355c957940f12f728d', None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
+        additional_urls={
+            'ppocrv5_eslav_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/eslav_PP-OCRv5_rec_mobile_infer/ppocrv5_eslav_dict.txt'
         }
     ))
 

@@ -14,7 +14,7 @@ from .postprocessing import DBPostProcessor, CTCLabelDecoder
 
 
 LANG_TO_REC_MODEL: dict[str, ModelID] = {
-	'ch': ModelID.PPOCR_V5_REC_CH_MOBILE,
+	'ch': ModelID.PPOCR_V5_REC_MOBILE,
 	'en': ModelID.PPOCR_V5_REC_EN_MOBILE,
 	'ko': ModelID.PPOCR_V5_REC_KOREAN_MOBILE,
 	'latin': ModelID.PPOCR_V5_REC_LATIN_MOBILE,
@@ -107,7 +107,8 @@ class PPOCRv5Engine(OCREngine):
 			if logits.ndim == 3 and logits.shape[1] > logits.shape[2]:
 				# If output is (N, C, T), transpose to (N, T, C)
 				logits = np.transpose(logits, (0, 2, 1))
-			dec_texts, dec_confs = self.decoder(logits, prob_threshold=0.3)
+			# Match PaddleOCR behavior: do not drop characters by per-step prob threshold
+			dec_texts, dec_confs = self.decoder(logits, prob_threshold=0.0)
 			for oi, t, s in zip(idxs, dec_texts, dec_confs):
 				texts[oi] = t
 				confs[oi] = float(s)

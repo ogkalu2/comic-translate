@@ -62,7 +62,6 @@ class DBPostProcessor:
 
 	@staticmethod
 	def _min_box(contour: np.ndarray) -> Tuple[np.ndarray, float]:
-		# imk expects raw points and returns rect; get box corners
 		rect = imk.min_area_rect(contour)
 		pts = imk.box_points(rect)
 		pts = sorted(list(pts), key=lambda p: p[0])

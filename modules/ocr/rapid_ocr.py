@@ -33,7 +33,7 @@ class RapidOCREngine(OCREngine):
         det_lang = LangDet.CH
 
         lang_map = {
-            'en': LangRec.LATIN,
+            'en': LangRec.EN,
             'fr': LangRec.LATIN,
             'es': LangRec.LATIN,
             'it': LangRec.LATIN,
