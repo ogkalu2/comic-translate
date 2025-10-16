@@ -57,6 +57,7 @@ class ModelID(Enum):
     LAMA_ONNX = "lama-manga-dynamic"
     AOT_JIT = "aot-traced"
     AOT_ONNX = "aot-onnx"
+    AOT_TORCH = "aot-torch"
     LAMA_JIT = "anime-manga-big-lama"
     MIGAN_PIPELINE_ONNX = "migan-pipeline-v2"
     MIGAN_ONNX = "migan-onnx"
@@ -364,6 +365,15 @@ def _register_defaults():
         url='https://huggingface.co/ogkalu/aot-inpainting/resolve/main/',
         files=['aot.onnx'],
         sha256=['ffd39ed8e2a275869d3b49180d030f0d8b8b9c2c20ed0e099ecd207201f0eada'],
+        save_dir=os.path.join(models_base_dir, 'inpainting')
+    ))
+
+    # Inpainting: AOT PyTorch
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.AOT_TORCH,
+        url='https://huggingface.co/ogkalu/aot-inpainting/resolve/main/',
+        files=['inpainting.ckpt'],
+        sha256=['878d541c68648969bc1b042a6e997f3a58e49b6c07c5636ad55130736977149f'],
         save_dir=os.path.join(models_base_dir, 'inpainting')
     ))
 
