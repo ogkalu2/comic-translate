@@ -355,7 +355,7 @@ def _register_defaults():
         id=ModelID.AOT_JIT,
         url='https://huggingface.co/ogkalu/aot-inpainting/resolve/main/',
         files=['aot_traced.pt'],
-        sha256=['5ecdac562c1d56267468fc4fbf80db27'], # md5
+        sha256=['552d9ad440258fa14907fc2492cf172c51983760c4619861f8b7b362a762af0b'],
         save_dir=os.path.join(models_base_dir, 'inpainting')
     ))
 
