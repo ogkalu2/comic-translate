@@ -6,12 +6,8 @@ from PIL import Image, ImageDraw
 
 
 
-# neighbors in clockwise order
-_NEIGH = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
-# 3x3 lookup table for neighbor index: NEI_MAP[dy+1, dx+1] -> index 0..7
-_NEI_MAP = np.full((3, 3), -1, dtype=np.int8)
-for idx, (di, dj) in enumerate(_NEIGH):
-    _NEI_MAP[di + 1, dj + 1] = idx
+DI_ARR = np.array([-1, -1, 0, 1, 1, 1, 0, -1], dtype=np.int32)
+DJ_ARR = np.array([ 0,  1, 1, 1, 0,-1,-1, -1], dtype=np.int32)
 
 def _as_mask(img, threshold: int = 0):
     a = np.asarray(img)
@@ -21,136 +17,132 @@ def _as_mask(img, threshold: int = 0):
     return (a > threshold).astype(np.uint8)
 
 def _trace_border_fast(
-    pad_mask: np.ndarray, 
+    m: memoryview,
+    W: int, 
     start_i: int, 
     start_j: int, 
-    prev_i: int, 
-    prev_j: int,
     max_steps: int = 2_000_000
 ) -> np.ndarray:
-    """
-    findContours-style border tracing that matches OpenCV ordering (Suzuki-style start tests + tracing).
-    Returns list of contours, each an (N,1,2) int array of (x,y) coordinates.
-    Roughly equivalent to cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE).
+    # Local hoists
+    OFF = (-W, -W + 1, 1, W + 1, W, W - 1, -1, -W - 1)
+    mv = m; o = OFF
 
-    Parameters
-    ----------
-    img : array-like
-        Grayscale or 2D array-like image (or already a boolean mask). Values > threshold are foreground.
-    threshold : int
-        Threshold to create binary mask.
-    """
-    NEI = _NEIGH
-    NEI_MAP = _NEI_MAP
+    start_pos = start_i * W + start_j
 
-    p_i = start_i; p_j = start_j
-    b_i = prev_i; b_j = prev_j
+    # mark "start-candidate consumed" if left neighbor is background
+    if mv[start_pos - 1] == 0:
+        mv[start_pos] = 2
 
-    # store coords in separate lists (faster than repeatedly creating tuples)
-    xs = [p_j - 1]
-    ys = [p_i - 1]
+    # initial backtrack idx for "entered from left" = index of (0, -1) which is 6 in your ordering
+    b_idx = 6
 
-    # find first neighbor q
-    di = b_i - p_i; dj = b_j - p_j
-    # bounds safe because di,dj in {-1,0,1}
-    b_idx = int(NEI_MAP[di + 1, dj + 1]) if (0 <= di + 1 < 3 and 0 <= dj + 1 < 3) else 7
-    search_start = (b_idx + 1) & 7
+    # find first neighbor
+    s = (b_idx + 1) & 7
+    p = start_pos
+    if   mv[p + o[s]]:             q_idx = s
+    elif mv[p + o[(s + 1) & 7]]:   q_idx = (s + 1) & 7
+    elif mv[p + o[(s + 2) & 7]]:   q_idx = (s + 2) & 7
+    elif mv[p + o[(s + 3) & 7]]:   q_idx = (s + 3) & 7
+    elif mv[p + o[(s + 4) & 7]]:   q_idx = (s + 4) & 7
+    elif mv[p + o[(s + 5) & 7]]:   q_idx = (s + 5) & 7
+    elif mv[p + o[(s + 6) & 7]]:   q_idx = (s + 6) & 7
+    elif mv[p + o[(s + 7) & 7]]:   q_idx = (s + 7) & 7
+    else:
+        # isolated pixel
+        out = np.empty((1, 2), dtype=np.int32)
+        out[0, 0] = start_j - 1
+        out[0, 1] = start_i - 1
+        return out
 
-    found = False
-    for k in range(8):
-        idx = (search_start + k) & 7
-        ndi, ndj = NEI[idx]
-        ni = p_i + ndi; nj = p_j + ndj
-        if pad_mask[ni, nj]:
-            q_i, q_j = ni, nj
-            found = True
-            break
-    if not found:
-        return np.vstack((np.array(xs, dtype=int), np.array(ys, dtype=int))).T
+    # prepare chain accumulation
+    codes = bytearray()
+    pos = p + o[q_idx]
+    first_next_pos = pos
+    codes.append(q_idx)
+    b_idx = (q_idx + 4) & 7
 
-    xs.append(q_j - 1); ys.append(q_i - 1)
-    b_i, b_j = p_i, p_j
-    p_i, p_j = q_i, q_j
-    first_next_i, first_next_j = p_i, p_j
-
-    steps = 0
+    steps = 1
     while True:
+        if steps > max_steps: break
+        # mark start-candidate if left neighbor is background
+        if mv[pos - 1] == 0:
+            mv[pos] = 2
+
+        s = (b_idx + 1) & 7
+        p = pos
+        # neighbor scan (unrolled)
+        if   mv[p + o[s]]:             q_idx = s
+        elif mv[p + o[(s + 1) & 7]]:   q_idx = (s + 1) & 7
+        elif mv[p + o[(s + 2) & 7]]:   q_idx = (s + 2) & 7
+        elif mv[p + o[(s + 3) & 7]]:   q_idx = (s + 3) & 7
+        elif mv[p + o[(s + 4) & 7]]:   q_idx = (s + 4) & 7
+        elif mv[p + o[(s + 5) & 7]]:   q_idx = (s + 5) & 7
+        elif mv[p + o[(s + 6) & 7]]:   q_idx = (s + 6) & 7
+        elif mv[p + o[(s + 7) & 7]]:   q_idx = (s + 7) & 7
+        else:
+            break
+
+        next_pos = p + o[q_idx]
+
+        # OpenCV/Suzuki termination: back at start, and next equals first_next
+        if p == start_pos and next_pos == first_next_pos:
+            break
+
+        codes.append(q_idx)
+        pos = next_pos
+        b_idx = (q_idx + 4) & 7
         steps += 1
-        if steps > max_steps:
-            break
 
-        di = b_i - p_i; dj = b_j - p_j
-        b_idx = int(NEI_MAP[di + 1, dj + 1]) if (0 <= di + 1 < 3 and 0 <= dj + 1 < 3) else 7
-        search_start = (b_idx + 1) & 7
+    # reconstruct coordinates
+    if not codes:
+        out = np.empty((1, 2), dtype=np.int32)
+        out[0, 0] = start_j - 1
+        out[0, 1] = start_i - 1
+        return out
 
-        found_q = False
-        for k in range(8):
-            idx = (search_start + k) & 7
-            ndi, ndj = NEI[idx]
-            ni = p_i + ndi; nj = p_j + ndj
-            if pad_mask[ni, nj]:
-                q_i, q_j = ni, nj
-                found_q = True
-                break
-        if not found_q:
-            break
-
-        # termination
-        if (p_i == start_i and p_j == start_j and q_i == first_next_i and q_j == first_next_j):
-            break
-
-        # append if different from last appended
-        if q_j - 1 != xs[-1] or q_i - 1 != ys[-1]:
-            xs.append(q_j - 1); ys.append(q_i - 1)
-
-        b_i, b_j = p_i, p_j
-        p_i, p_j = q_i, q_j
-
-    return np.vstack((np.array(xs, dtype=int), np.array(ys, dtype=int))).T
-
+    code_arr = np.frombuffer(codes, dtype=np.uint8)
+    # map directions to steps and cumsum
+    dx = DJ_ARR[code_arr]
+    dy = DI_ARR[code_arr]
+    out = np.empty((code_arr.size + 1, 2), dtype=np.int32)
+    out[0, 0] = start_j - 1
+    out[0, 1] = start_i - 1
+    out[1:, 0] = out[0, 0] + np.cumsum(dx, dtype=np.int32)
+    out[1:, 1] = out[0, 1] + np.cumsum(dy, dtype=np.int32)
+    return out
 
 def find_contours(img, threshold: int = 0):
-    mask = _as_mask(img, threshold)
-    # pad once to avoid bounds checks
-    p = np.pad(mask, 1, mode='constant', constant_values=0).astype(np.uint8)
-    visited = np.zeros_like(p, dtype=bool)
+    m = _as_mask(img, threshold)              # produce 0/1 uint8
+    if m.dtype != np.uint8:
+        m = m.astype(np.uint8, copy=False)
+
+    p = np.pad(m, 1, mode='constant', constant_values=0)
+    p_u8 = p  # already uint8
+    H, W = p.shape
+
+    center = p_u8[1:-1, 1:-1]
+    left   = p_u8[1:-1, :-2]
+    start_mask = center & (1 - left)
+    starts_flat = np.flatnonzero(start_mask)
+
+    mv = memoryview(p_u8).cast('B')
+
     contours = []
+    W0 = W - 2
+    for k in starts_flat:
+        r = k // W0
+        c = k - r * W0
+        i = 1 + r
+        j = 1 + c
+        pos = i * W + j
 
-    # vectorized start detection on the inner region (avoids scanning every pixel in Python)
-    center = p[1:-1, 1:-1]
-    left = p[1:-1, :-2]
-    right = p[1:-1, 2:]
-    outer = (center == 1) & (left == 0)
-    hole  = (center == 1) & (right == 0)
-    start_mask = outer | hole
-    starts = np.column_stack(np.nonzero(start_mask))  # row, col in inner coords
-    if starts.size == 0:
-        return [], None
-    # convert to padded coordinates
-    starts[:, 0] += 1
-    starts[:, 1] += 1
-
-    for i, j in starts:
-        if visited[i, j]:
-            continue
-        if p[i, j] != 1:
-            continue
-        if p[i, j - 1] == 0:
-            prev_i, prev_j = i, j - 1
-        elif p[i, j + 1] == 0:
-            prev_i, prev_j = i, j + 1
-        else:
+        # still pristine?
+        if mv[pos] != 1:
             continue
 
-        contour = _trace_border_fast(p, int(i), int(j), int(prev_i), int(prev_j))
+        contour = _trace_border_fast(mv, W, int(i), int(j))
         if contour.size == 0:
             continue
-
-        # vectorized marking of visited
-        xs = contour[:, 0].astype(np.intp)
-        ys = contour[:, 1].astype(np.intp)
-        visited[ys + 1, xs + 1] = True
-
         contours.append(contour.reshape(-1, 1, 2))
 
     return contours, None
