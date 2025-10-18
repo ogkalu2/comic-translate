@@ -283,29 +283,36 @@ def find_polygons_in_textblock(
 
 def shrink_bbox(
     bubble_bbox: BBox, 
-    shrink_percent: float = 0.12
+    shrink_percent: float = 0.05
 ) -> BBox:
     """
-    Finds an interior bounding box by shrinking the given bounding box.
+    Finds an interior bounding box by shrinking the given bounding box uniformly from the center.
     
     Args:
         bubble_bbox: The bubble bounding box (x1, y1, x2, y2)
-        shrink_percent: The percentage to shrink the bounding box by on each side.
+        shrink_percent: The percentage to shrink the bounding box by (0.03 = 3% smaller on each side).
     
     Returns:
         A tuple (x1, y1, x2, y2) for the interior bounds.
     """
     x1, y1, x2, y2 = bubble_bbox
     
+    # Calculate center and dimensions
+    center_x = (x1 + x2) / 2
+    center_y = (y1 + y2) / 2
     width = x2 - x1
     height = y2 - y1
     
-    # Shrink the box to get an "interior" rectangle
-    dx = int(width * shrink_percent)
-    dy = int(height * shrink_percent)
+    # Scale down dimensions uniformly
+    scale_factor = 1.0 - shrink_percent
+    new_width = width * scale_factor
+    new_height = height * scale_factor
     
-    ix1, iy1 = x1 + dx, y1 + dy
-    ix2, iy2 = x2 - dx, y2 - dy
+    # Calculate new coordinates centered at the same point
+    ix1 = int(center_x - new_width / 2)
+    iy1 = int(center_y - new_height / 2)
+    ix2 = int(center_x + new_width / 2)
+    iy2 = int(center_y + new_height / 2)
     
     # Ensure the shrunk box still has a positive area
     if ix2 <= ix1 or iy2 <= iy1:
