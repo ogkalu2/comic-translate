@@ -112,6 +112,19 @@ def _trace_border_fast(
     return out
 
 def find_contours(img, threshold: int = 0):
+    """
+        findContours-style border tracing that matches OpenCV ordering (Suzuki-style start tests + tracing).
+        Returns list of contours, each an (N,1,2) int array of (x,y) coordinates.
+        Roughly equivalent to cv2.findContours(img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE).
+
+        Parameters
+        ----------
+        img : array-like
+            Grayscale or 2D array-like image (or already a boolean mask). Values > threshold are foreground.
+        threshold : int
+            Threshold to create binary mask.
+        """
+    
     m = _as_mask(img, threshold)              # produce 0/1 uint8
     if m.dtype != np.uint8:
         m = m.astype(np.uint8, copy=False)
