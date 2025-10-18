@@ -8,9 +8,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from .hyphen_textwrap import wrap as hyphen_wrap
-from ..utils.textblock import TextBlock
-from ..detection.utils.bubbles import make_bubble_mask, bubble_interior_bounds
-from ..utils.textblock import adjust_blks_size
+from modules.utils.textblock import TextBlock
+from modules.utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 
 from dataclasses import dataclass
