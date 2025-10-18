@@ -295,7 +295,7 @@ class ProjectController:
         self.main.alignment_tool_group.set_dayu_checked(alignment)
 
         self.main.font_dropdown.setCurrentText(settings.value('font_family', ''))
-        min_font_size = settings.value('min_font_size', 12)  # Default value is 12
+        min_font_size = settings.value('min_font_size', 5)  # Default value is 5
         max_font_size = settings.value('max_font_size', 40) # Default value is 40
         self.main.settings_page.ui.min_font_spinbox.setValue(int(min_font_size))
         self.main.settings_page.ui.max_font_spinbox.setValue(int(max_font_size))
