@@ -11,6 +11,7 @@ from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
 from .llm.custom import CustomTranslation
+from .llm.grok import GrokTranslation
 
 
 class TranslationFactory:
@@ -32,6 +33,7 @@ class TranslationFactory:
         "Claude": ClaudeTranslation,
         "Gemini": GeminiTranslation,
         "Deepseek": DeepseekTranslation,
+        "Grok": GrokTranslation,
         "Custom": CustomTranslation
     }
     
