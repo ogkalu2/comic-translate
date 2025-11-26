@@ -3,6 +3,7 @@ import hashlib
 
 from modules.utils.device import resolve_device, torch_available
 from .base import OCREngine
+from .local_ocr import LocalOCR
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
@@ -19,6 +20,7 @@ class OCRFactory:
     LLM_ENGINE_IDENTIFIERS = {
         "GPT": GPTOCR,
         "Gemini": GeminiOCR,
+        "Custom": LocalOCR,
     }
     
     @classmethod
@@ -130,6 +132,7 @@ class OCRFactory:
             'Google Cloud Vision': cls._create_google_ocr,
             'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
             'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model),
+            'Custom': cls._create_custom_ocr,
         }
         
         # Language-specific factory functions (for Default model)
@@ -179,6 +182,16 @@ class OCRFactory:
         api_key = credentials.get('api_key', '')
         engine = GPTOCR()
         engine.initialize(api_key=api_key, model=model)
+        return engine
+
+    @staticmethod
+    def _create_custom_ocr(settings) -> OCREngine:
+        # Prefer dedicated Custom OCR credentials, merge missing fields from shared Custom
+        credentials = settings.get_credentials(settings.ui.tr("Custom"))
+        api_base_url = credentials.get('api_url', '')
+        model = credentials.get('model', '')
+        engine = LocalOCR()
+        engine.initialize(model=model, api_base_url=api_base_url)
         return engine
     
     @staticmethod

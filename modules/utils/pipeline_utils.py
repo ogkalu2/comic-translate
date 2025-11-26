@@ -233,6 +233,20 @@ def validate_ocr(main_page, source_lang):
             Messages.show_signup_or_credentials_error(main_page)
             return False
 
+    # Gemini OCR
+    elif ocr_tool == tr('Gemini-2.0-Flash'):
+        service = tr('Google Gemini')
+        if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+
+    # Custom OCR (OpenAI-compatible)
+    elif ocr_tool == tr('Custom'):
+        service = tr('Custom')
+        if not has_access(service, 'api_url') or not has_access(service, 'model'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+
     return True
 
 
@@ -280,6 +294,12 @@ def validate_translator(main_page, source_lang, target_lang):
     elif "Claude" in translator_tool:
         service = tr('Anthropic Claude')
         if not has_access(service, 'api_key'):
+            Messages.show_signup_or_credentials_error(main_page)
+            return False
+    
+    elif translator_tool == tr("Custom"):
+        service = tr("Custom")
+        if not has_access(service, 'api_url') or not has_access(service, 'model'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
 
