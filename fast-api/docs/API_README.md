@@ -30,18 +30,28 @@ cd comic-translate
 pip install -r requirements.txt
 ```
 
-3. **Download required models** (if needed):
-The application will automatically download required models on first use.
+3. **Download required models** (optional):
+```bash
+# Pre-download models for faster first requests
+python fast-api/scripts/download_models.py
+```
+The application will automatically download required models on first use if not pre-downloaded.
 
 ## Running the Server
 
 ### Quick Start
 
 ```bash
-python run_server.py
+# From the project root
+python fast-api/run_server.py
+
+# Or using uv (recommended)
+uv run python fast-api/run_server.py
 ```
 
 The server will start on `http://localhost:8000`
+
+> **Note**: All API-related code is now located in the `fast-api/` directory for better organization.
 
 ### Configuration
 

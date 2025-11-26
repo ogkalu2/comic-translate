@@ -1,11 +1,6 @@
 """
-DEPRECATED: This file has been moved to fast-api/app/services/manga_service.py
-
 Business logic layer for manga translation operations.
 Handles detection, OCR, translation, and inpainting without GUI dependencies.
-
-This file is kept for backward compatibility but will be removed in a future version.
-Import from fast_api.app.services.manga_service instead.
 """
 
 import logging

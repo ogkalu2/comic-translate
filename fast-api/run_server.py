@@ -1,14 +1,19 @@
 """
 Startup script for the Manga Translation API server.
-Run this file to start the FastAPI server.
+Run this file to start the FastAPI server from the fast-api folder.
 """
 
 import sys
 import os
 import logging
 
-# Add project root to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Get paths
+fast_api_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(fast_api_dir)
+
+# Add both to Python path
+sys.path.insert(0, project_root)  # For config, modules, etc.
+sys.path.insert(0, fast_api_dir)  # For app package
 
 import uvicorn
 from config.settings import settings
@@ -34,7 +39,7 @@ def main():
     logger.info(f"Default Inpainter: {settings.default_inpainter}")
     
     uvicorn.run(
-        "server:app",
+        "app.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.reload,

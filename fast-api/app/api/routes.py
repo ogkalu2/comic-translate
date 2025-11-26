@@ -1,62 +1,30 @@
 """
-FastAPI Backend Server for Manga Image Translation
-Provides REST API endpoints for detection, OCR, translation, and inpainting
+API routes for manga translation operations.
 """
 
 import logging
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-import uvicorn
+from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from typing import Optional
 import numpy as np
 from PIL import Image
 import io
-import base64
 
-from services.manga_service import MangaTranslationService
-from models.schemas import (
+from app.models.schemas import (
     DetectionResponse,
     OCRResponse,
     TranslationResponse,
     InpaintingResponse,
     FullPipelineResponse,
-    ErrorResponse
 )
+from app.services.manga_service import MangaTranslationService
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Manga Translation API",
-    description="Backend API for manga image translation with detection, OCR, translation, and inpainting capabilities",
-    version="1.0.0"
-)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Create router
+router = APIRouter()
 
 # Initialize service
 manga_service = MangaTranslationService()
-
-
-def image_to_base64(image: np.ndarray) -> str:
-    """Convert numpy array image to base64 string."""
-    pil_image = Image.fromarray(image)
-    buffer = io.BytesIO()
-    pil_image.save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode()
 
 
 async def load_image_from_upload(file: UploadFile) -> np.ndarray:
@@ -70,7 +38,7 @@ async def load_image_from_upload(file: UploadFile) -> np.ndarray:
         raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     """Root endpoint with API information."""
     return {
@@ -88,13 +56,13 @@ async def root():
     }
 
 
-@app.get("/health")
+@router.get("/health")
 async def health_check():
     """Health check endpoint."""
     return {"status": "healthy", "service": "manga-translation-api"}
 
 
-@app.post("/api/v1/detection", response_model=DetectionResponse)
+@router.post("/api/v1/detection", response_model=DetectionResponse)
 async def detect_text_blocks(
     file: UploadFile = File(..., description="Manga page image"),
     detector: Optional[str] = Form("RT-DETR-V2", description="Detection model to use"),
@@ -123,7 +91,7 @@ async def detect_text_blocks(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/ocr", response_model=OCRResponse)
+@router.post("/api/v1/ocr", response_model=OCRResponse)
 async def perform_ocr(
     file: UploadFile = File(..., description="Manga page image"),
     source_lang: str = Form("Japanese", description="Source language"),
@@ -156,7 +124,7 @@ async def perform_ocr(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/translation", response_model=TranslationResponse)
+@router.post("/api/v1/translation", response_model=TranslationResponse)
 async def translate_text(
     file: UploadFile = File(..., description="Manga page image"),
     source_lang: str = Form("Japanese", description="Source language"),
@@ -193,7 +161,7 @@ async def translate_text(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/inpainting", response_model=InpaintingResponse)
+@router.post("/api/v1/inpainting", response_model=InpaintingResponse)
 async def inpaint_image(
     file: UploadFile = File(..., description="Manga page image"),
     inpainter: Optional[str] = Form("LaMa", description="Inpainting model (LaMa, MI-GAN, AOT)"),
@@ -224,7 +192,7 @@ async def inpaint_image(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/translate", response_model=FullPipelineResponse)
+@router.post("/api/v1/translate", response_model=FullPipelineResponse)
 async def full_translation_pipeline(
     file: UploadFile = File(..., description="Manga page image"),
     source_lang: str = Form("Japanese", description="Source language"),
@@ -266,7 +234,7 @@ async def full_translation_pipeline(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/v1/models")
+@router.get("/api/v1/models")
 async def list_models():
     """
     List available models and their download status.
@@ -385,7 +353,7 @@ async def list_models():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/v1/models/download")
+@router.post("/api/v1/models/download")
 async def download_models(
     categories: Optional[list] = None
 ):
@@ -427,23 +395,3 @@ async def download_models(
     except Exception as e:
         logger.error(f"Error downloading models: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    """Global exception handler."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error", "error": str(exc)}
-    )
-
-
-if __name__ == "__main__":
-    uvicorn.run(
-        "server:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )

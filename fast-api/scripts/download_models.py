@@ -6,6 +6,11 @@ Ensures faster API responses by pre-downloading all models.
 import requests
 import sys
 import time
+import os
+
+# Add project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 
 def check_server(base_url="http://localhost:8000"):
@@ -70,7 +75,9 @@ def main():
         print("✗ Server is not running!")
         print()
         print("Please start the server first:")
-        print("  uv run python run_server.py")
+        print("  python fast-api/run_server.py")
+        print("  or")
+        print("  uv run python fast-api/run_server.py")
         print()
         sys.exit(1)
     
@@ -134,7 +141,7 @@ def main():
         print("  - Check your internet connection")
         print("  - Check server logs for details")
         print("  - Models will auto-download on first use")
-        print("  - Try again with: uv run python download_models.py")
+        print("  - Try again with: python fast-api/scripts/download_models.py")
         print()
     
     # Show final status

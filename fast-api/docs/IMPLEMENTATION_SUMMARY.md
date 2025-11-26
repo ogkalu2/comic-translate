@@ -5,13 +5,19 @@ This document summarizes the transformation of the comic-translate project into 
 
 ## Files Created
 
-### 1. Core Server Files
+### 1. FastAPI Application Structure
 
-#### `server.py` (Main API Server)
-- FastAPI application with comprehensive REST endpoints
-- CORS middleware for cross-origin requests
-- Error handling and logging
-- Endpoints implemented:
+**New Organization**: All API-related code is now in the `fast-api/` directory for better separation from the desktop application.
+
+#### `fast-api/app/main.py` (FastAPI Application)
+- FastAPI application initialization
+- CORS middleware configuration
+- Global exception handling
+- Application factory pattern
+
+#### `fast-api/app/api/routes.py` (API Routes)
+- All REST endpoint implementations
+- Endpoints:
   - `GET /` - Root endpoint with API information
   - `GET /health` - Health check endpoint
   - `POST /api/v1/detection` - Text block detection
@@ -19,16 +25,18 @@ This document summarizes the transformation of the comic-translate project into 
   - `POST /api/v1/translation` - Text translation
   - `POST /api/v1/inpainting` - Text removal/inpainting
   - `POST /api/v1/translate` - Full translation pipeline
+  - `GET /api/v1/models` - List available models
+  - `POST /api/v1/models/download` - Download models
 
-#### `run_server.py` (Server Launcher)
-- Simple startup script
+#### `fast-api/run_server.py` (Server Launcher)
+- Startup script for the API server
 - Loads configuration from settings
 - Initializes logging
-- Starts Uvicorn server
+- Starts Uvicorn with proper module path
 
 ### 2. Service Layer
 
-#### `services/manga_service.py` (Business Logic)
+#### `fast-api/app/services/manga_service.py` (Business Logic)
 - `MangaTranslationService` class - Core service implementation
 - `MockSettingsPage` and `MockMainPage` - Headless operation support
 - Methods for:
@@ -40,12 +48,12 @@ This document summarizes the transformation of the comic-translate project into 
 - Model caching for performance
 - Conversion between TextBlock objects and JSON
 
-#### `services/__init__.py`
-- Package initialization
+#### `fast-api/app/services/__init__.py`
+- Package initialization and exports
 
 ### 3. Data Models
 
-#### `models/schemas.py` (Pydantic Models)
+#### `fast-api/app/models/schemas.py` (Pydantic Models)
 - `TextBlockSchema` - Text block representation
 - `DetectionResponse` - Detection endpoint response
 - `OCRResponse` - OCR endpoint response
@@ -54,10 +62,24 @@ This document summarizes the transformation of the comic-translate project into 
 - `FullPipelineResponse` - Full pipeline response
 - `ErrorResponse` - Error response format
 
-#### `models/__init__.py`
-- Package initialization
+#### `fast-api/app/models/__init__.py`
+- Package initialization and exports
 
-### 4. Configuration
+### 4. Scripts and Utilities
+
+#### `fast-api/scripts/download_models.py` (Model Downloader)
+- Pre-download models before first use
+- Check server status
+- Display download progress
+- Show model availability status
+
+#### `fast-api/scripts/test_client.py` (Test Client)
+- Example client implementation
+- Demonstrates all API endpoints
+- Automated testing of the pipeline
+- Image and result handling
+
+### 5. Configuration
 
 #### `config/settings.py` (Server Configuration)
 - `Settings` class using Pydantic settings
@@ -80,7 +102,7 @@ This document summarizes the transformation of the comic-translate project into 
 - Default values for all settings
 - Comments explaining each setting
 
-### 5. Dependencies
+### 6. Dependencies
 
 #### `requirements-server.txt` (Minimal Backend Dependencies)
 - Backend-only dependencies without GUI components
@@ -97,7 +119,26 @@ This document summarizes the transformation of the comic-translate project into 
   - pydantic-settings>=2.5.0
   - python-multipart>=0.0.9
 
-### 6. Documentation
+### 7. Documentation
+
+#### `fast-api/README.md` (FastAPI Documentation)
+- Overview of the FastAPI backend structure
+- Quick start guide
+- API endpoint summary
+- Development guidelines
+- Contribution instructions
+
+### 8. Legacy Files (Deprecated)
+
+The following files in the project root are now deprecated and kept only for backward compatibility:
+- `server.py` - Moved to `fast-api/app/api/routes.py` and `fast-api/app/main.py`
+- `run_server.py` - Moved to `fast-api/run_server.py`
+- `download_models.py` - Moved to `fast-api/scripts/download_models.py`
+- `test_client.py` - Moved to `fast-api/scripts/test_client.py`
+- `services/manga_service.py` - Moved to `fast-api/app/services/manga_service.py`
+- `models/schemas.py` - Moved to `fast-api/app/models/schemas.py`
+
+### 9. Additional Documentation
 
 #### `API_README.md` (Comprehensive API Documentation)
 - Complete API reference
@@ -150,13 +191,32 @@ This document summarizes the transformation of the comic-translate project into 
 
 ## Architecture Overview
 
+### New Organized Structure
+
 ```
 comic-translate/
-├── server.py                    # FastAPI application
-├── run_server.py               # Server launcher
-├── services/                   # Business logic layer
+├── fast-api/                   # FastAPI backend (isolated)
 │   ├── __init__.py
-│   └── manga_service.py       # Main service implementation
+│   ├── README.md              # FastAPI documentation
+│   ├── run_server.py          # Server launcher
+│   ├── app/                   # Application code
+│   │   ├── __init__.py
+│   │   ├── main.py           # FastAPI app initialization
+│   │   ├── api/              # API routes
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py     # Endpoint implementations
+│   │   ├── models/           # Pydantic schemas
+│   │   │   ├── __init__.py
+│   │   │   └── schemas.py
+│   │   └── services/         # Business logic
+│   │       ├── __init__.py
+│   │       └── manga_service.py
+│   └── scripts/              # Utility scripts
+│       ├── download_models.py
+│       └── test_client.py
+├── app/                       # Desktop GUI application
+├── modules/                   # Core translation modules (shared)
+├── config/                    # Configuration (shared)
 ├── models/                     # Data models
 │   ├── __init__.py
 │   └── schemas.py             # Pydantic schemas

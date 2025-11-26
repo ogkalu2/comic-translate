@@ -1,10 +1,13 @@
 import numpy as np
 import requests
+from typing import TYPE_CHECKING
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock, adjust_text_line_coordinates
 from ..utils.translator_utils import MODEL_MAP
-from app.ui.settings.settings_page import SettingsPage
+
+if TYPE_CHECKING:
+    from app.ui.settings.settings_page import SettingsPage
 
 
 class GeminiOCR(OCREngine):
@@ -17,7 +20,7 @@ class GeminiOCR(OCREngine):
         self.api_base_url = "https://generativelanguage.googleapis.com/v1beta/models"
         self.max_output_tokens = 5000
         
-    def initialize(self, settings: SettingsPage, model: str = 'Gemini-2.0-Flash', 
+    def initialize(self, settings: 'SettingsPage', model: str = 'Gemini-2.0-Flash', 
                    expansion_percentage: int = 5) -> None:
         """
         Initialize the Gemini OCR with API key and parameters.

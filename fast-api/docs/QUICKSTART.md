@@ -38,12 +38,12 @@ Edit `.env` to customize settings:
 
 **Using UV (Recommended):**
 ```bash
-uv run python run_server.py
+uv run python fast-api/run_server.py
 ```
 
 **Using standard Python:**
 ```bash
-python run_server.py
+python fast-api/run_server.py
 ```
 
 You should see:
@@ -65,7 +65,7 @@ Open your browser and go to:
 Models auto-download on first use, but you can pre-download them for faster initial responses:
 
 ```bash
-uv run python download_models.py
+uv run python fast-api/scripts/download_models.py
 ```
 
 This downloads ~350-500MB of core models (detection, OCR, inpainting). **First-time API calls will be slow without this step** as models download on demand.
@@ -80,7 +80,7 @@ curl http://localhost:8000/api/v1/models
 ### Method 1: Using the Test Client
 
 ```bash
-uv run python test_client.py path/to/manga_image.jpg
+uv run python fast-api/scripts/test_client.py path/to/manga_image.jpg
 ```
 
 This will run all API endpoints and show the results.

@@ -14,7 +14,9 @@ Now includes a **REST API backend server** for remote manga translation! Perfect
 - Integration with other tools and workflows
 - Headless server deployments
 
-📖 **[Quick Start Guide](QUICKSTART.md)** | 📚 **[Full API Documentation](API_README.md)**
+📖 **[Quick Start Guide](fast-api/docs/QUICKSTART.md)** | 📚 **[Full API Documentation](fast-api/docs/API_README.md)** | 🔄 **[API Reorganization Guide](fast-api/docs/API_REORGANIZATION.md)**
+
+> **Note**: All API code has been reorganized into the `fast-api/` folder for better organization and maintainability. See [API_REORGANIZATION.md](fast-api/docs/API_REORGANIZATION.md) for details.
 
 - [The State of Machine Translation](#the-state-of-machine-translation)
 - [Preview](#comic-samples)
