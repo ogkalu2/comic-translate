@@ -1,0 +1,39 @@
+# Backend Server Requirements (minimal installation without GUI dependencies)
+# Core image processing
+mahotas>=1.4.18
+pillow>=11.0.0
+numpy>=2.2.6
+
+# API server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+python-multipart>=0.0.9
+
+# Utilities
+msgpack>=1.1.0
+requests>=2.31.0
+
+# Translation services
+deepl>=1.16.1
+deep-translator>=1.11.4
+
+# Language processing
+jieba>=0.42.1
+janome>=0.5.0
+pythainlp>=5.1.2
+jaconv>=0.3.4
+
+# ML/AI
+huggingface-hub>=0.34.4
+wget>=3.2
+onnxruntime>=1.22.1
+
+# Geometry processing
+shapely>=2.1.1
+pyclipper>=1.3.0.post6
+six>=1.16.0
+
+# Optional cloud OCR/Translation
+azure-ai-vision-imageanalysis>=1.0.0b1

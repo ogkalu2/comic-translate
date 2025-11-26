@@ -51,6 +51,9 @@ class MangaOCREngineONNX(OCREngine):
                     img,
                 )
 
+            # Convert to integers for slicing
+            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+
             # Validate coordinates
             if x1 < x2 and y1 < y2 and x1 >= 0 and y1 >= 0 and x2 <= img.shape[1] and y2 <= img.shape[0]:
                 cropped_img = img[y1:y2, x1:x2]
