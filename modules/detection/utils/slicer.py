@@ -178,7 +178,8 @@ class ImageSlicer:
         box_list = boxes.tolist()
         class_list = class_ids.tolist() if class_ids is not None else [0] * len(box_list)
         
-        # Calculate distance threshold in pixels
+        # Calculate a global distance threshold in pixels based on full image height.
+        # We'll still cap this per pair to avoid merging far apart boxes on very tall images.
         y_distance_threshold = self.merge_y_distance_threshold * image_height
         
         i = 0
@@ -237,6 +238,13 @@ class ImageSlicer:
                 
                 # Calculate vertical distance between boxes
                 y_dist = min(abs(box1[1] - box2[3]), abs(box1[3] - box2[1]))
+
+                # Cap the allowable vertical gap using the local box heights so that
+                # boxes from very tall images do not merge into a single huge region.
+                local_y_threshold = min(
+                    y_distance_threshold,
+                    max(box1_height, box2_height) * 0.1
+                )
                 
                 # Calculate horizontal overlap
                 x_overlap = max(0, min(box1[2], box2[2]) - max(box1[0], box2[0]))
@@ -247,7 +255,7 @@ class ImageSlicer:
                 
                 # Case 3: Boxes likely part of the same object across slices
                 # More strict conditions to prevent over-merging
-                if (y_dist < y_distance_threshold and  # Close vertically
+                if (y_dist < local_y_threshold and  # Close vertically
                     x_overlap_ratio > self.merge_iou_threshold and  # Sufficient horizontal overlap
                     size_ratio > 0.3 and  # Similar size (prevent merging very different sized boxes)
                     # Check that boxes are not too far apart horizontally

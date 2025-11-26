@@ -50,8 +50,7 @@ class ClaudeTranslation(BaseLLMTranslation):
             "model": self.model,
             "system": system_prompt,
             "temperature": self.temperature,
-            "max_tokens": self.max_tokens,
-            "top_p": self.top_p,
+            "max_tokens": self.max_tokens
         }
         
         # Add messages with text and optionally image
