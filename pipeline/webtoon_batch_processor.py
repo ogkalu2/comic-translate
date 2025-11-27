@@ -296,10 +296,14 @@ class WebtoonBatchProcessor:
 
         # Inpainting processing
         if self.inpainting.inpainter_cache is None or self.inpainting.cached_inpainter_key != self.main_page.settings_page.get_tool_selection('inpainter'):
-            device = resolve_device(self.main_page.settings_page.is_gpu_enabled())
+            backend = 'onnx'
+            device = resolve_device(
+                self.main_page.settings_page.is_gpu_enabled(),
+                backend=backend
+            )
             inpainter_key = self.main_page.settings_page.get_tool_selection('inpainter')
             InpainterClass = inpaint_map[inpainter_key]
-            self.inpainting.inpainter_cache = InpainterClass(device, backend='onnx')
+            self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
             self.inpainting.cached_inpainter_key = inpainter_key
         
         # Progress update: Inpainting setup completed

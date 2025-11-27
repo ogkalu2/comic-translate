@@ -186,12 +186,16 @@ class BatchProcessor:
 
             # Use the shared inpainter from the handler
             if self.inpainting.inpainter_cache is None or self.inpainting.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-                device = resolve_device(settings_page.is_gpu_enabled())
+                backend = 'onnx'
+                device = resolve_device(
+                    settings_page.is_gpu_enabled(),
+                    backend=backend
+                )
                 inpainter_key = settings_page.get_tool_selection('inpainter')
                 InpainterClass = inpaint_map[inpainter_key]
                 logger.info("pre-inpaint: initializing inpainter '%s' on device %s", inpainter_key, device)
                 t0 = time.time()
-                self.inpainting.inpainter_cache = InpainterClass(device, backend='onnx')
+                self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
                 self.inpainting.cached_inpainter_key = inpainter_key
                 t1 = time.time()
                 logger.info("pre-inpaint: inpainter initialized in %.2fs", t1 - t0)
