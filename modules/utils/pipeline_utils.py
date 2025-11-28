@@ -109,7 +109,8 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
     LONG_EDGE = 2048
 
     for blk in blk_list:
-        # Skip blocks with no text or translation
+        # Skip blocks with no text and no translation
+        if not blk.text and not blk.translation:
             continue
         
         bboxes = get_inpaint_bboxes(blk.xyxy, img)
