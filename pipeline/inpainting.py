@@ -33,10 +33,11 @@ class InpaintingHandler:
             return None
 
         if self.inpainter_cache is None or self.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-            device = resolve_device(settings_page.is_gpu_enabled())
+            backend = 'onnx'
+            device = resolve_device(settings_page.is_gpu_enabled(), backend)
             inpainter_key = settings_page.get_tool_selection('inpainter')
             InpainterClass = inpaint_map[inpainter_key]
-            self.inpainter_cache = InpainterClass(device, backend='onnx')
+            self.inpainter_cache = InpainterClass(device, backend=backend)
             self.cached_inpainter_key = inpainter_key
 
         config = get_config(settings_page)
