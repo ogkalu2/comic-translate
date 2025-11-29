@@ -152,6 +152,8 @@ class InpaintModel:
         Returns:
             BGR IMAGE, (l, r, r, b)
         """
+        # Ensure box coordinates are integers
+        box = [int(x) for x in box]
         box_h = box[3] - box[1]
         box_w = box[2] - box[0]
         cx = (box[0] + box[2]) // 2
@@ -244,10 +246,11 @@ class InpaintModel:
         r = l + w
         b = t + h
 
-        l = max(l, 0)
-        r = min(r, img_w)
-        t = max(t, 0)
-        b = min(b, img_h)
+        # Ensure coordinates are integers
+        l = int(max(l, 0))
+        r = int(min(r, img_w))
+        t = int(max(t, 0))
+        b = int(min(b, img_h))
 
         crop_img = image[t:b, l:r, :]
         crop_mask = mask[t:b, l:r]
