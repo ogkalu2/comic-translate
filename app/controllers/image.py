@@ -257,8 +257,13 @@ class ImageStateController:
                     if file_path in self.main.image_states:
                         state = self.main.image_states[file_path]
                         # Only load language settings in webtoon mode
+                        # Block signals to prevent triggering save when loading state
+                        self.main.s_combo.blockSignals(True)
+                        self.main.t_combo.blockSignals(True)
                         self.main.s_combo.setCurrentText(state.get('source_lang', ''))
                         self.main.t_combo.setCurrentText(state.get('target_lang', ''))
+                        self.main.s_combo.blockSignals(False)
+                        self.main.t_combo.blockSignals(False)
                         
                     # Clear text edits
                     self.main.text_ctrl.clear_text_edits()
@@ -546,8 +551,13 @@ class ImageStateController:
 
                 self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
                 self.main.image_viewer.load_state(state['viewer_state'])
+                # Block signals to prevent triggering save when loading state
+                self.main.s_combo.blockSignals(True)
+                self.main.t_combo.blockSignals(True)
                 self.main.s_combo.setCurrentText(state['source_lang'])
                 self.main.t_combo.setCurrentText(state['target_lang'])
+                self.main.s_combo.blockSignals(False)
+                self.main.t_combo.blockSignals(False)
                 self.main.image_viewer.load_brush_strokes(state['brush_strokes'])
 
                 if push_to_stack:
@@ -569,8 +579,13 @@ class ImageStateController:
             else:
                 # New image - just set language preferences and clear everything else
                 self.main.blk_list = []
+                # Block signals to prevent triggering save when loading state
+                self.main.s_combo.blockSignals(True)
+                self.main.t_combo.blockSignals(True)
                 self.main.s_combo.setCurrentText(state.get('source_lang', self.main.s_combo.currentText()))
                 self.main.t_combo.setCurrentText(state.get('target_lang', self.main.t_combo.currentText()))
+                self.main.s_combo.blockSignals(False)
+                self.main.t_combo.blockSignals(False)
                 self.main.image_viewer.clear_rectangles(page_switch=True)
                 self.main.image_viewer.clear_brush_strokes(page_switch=True)
                 self.main.image_viewer.clear_text_items()
