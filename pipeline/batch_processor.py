@@ -97,7 +97,7 @@ class BatchProcessor:
             target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
             
-            base_name = os.path.splitext(os.path.basename(image_path))[0]
+            base_name = os.path.splitext(os.path.basename(image_path))[0].strip()
             extension = os.path.splitext(image_path)[1]
             directory = os.path.dirname(image_path)
 
@@ -109,7 +109,7 @@ class BatchProcessor:
                 for img_pth in images:
                     if img_pth == image_path:
                         directory = os.path.dirname(archive_path)
-                        archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+                        archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
 
             image = imk.read_image(image_path)
 
@@ -426,7 +426,7 @@ class BatchProcessor:
 
                 archive_path = archive['archive_path']
                 archive_ext = os.path.splitext(archive_path)[1]
-                archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+                archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
                 archive_directory = os.path.dirname(archive_path)
                 save_as_ext = f".{save_as_settings[archive_ext.lower()]}"
 

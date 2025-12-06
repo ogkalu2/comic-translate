@@ -883,7 +883,7 @@ class WebtoonBatchProcessor:
             return
 
         # Determine the correct save path and names first for all operations
-        base_name = os.path.splitext(os.path.basename(image_path))[0]
+        base_name = os.path.splitext(os.path.basename(image_path))[0].strip()
         extension = os.path.splitext(image_path)[1]
         directory = os.path.dirname(image_path)
         
@@ -892,7 +892,7 @@ class WebtoonBatchProcessor:
             if image_path in archive['extracted_images']:
                 archive_path = archive['archive_path']
                 directory = os.path.dirname(archive_path)
-                archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+                archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
                 break
         
         # Check if the page should be skipped due to no text blocks
@@ -985,7 +985,7 @@ class WebtoonBatchProcessor:
                 self.physical_page_status[physical_idx] = PageStatus.RENDERED # Mark as done
 
                 # Find archive info for correct save path
-                base_name = os.path.splitext(os.path.basename(image_path))[0]
+                base_name = os.path.splitext(os.path.basename(image_path))[0].strip()
                 extension = os.path.splitext(image_path)[1]
                 directory = os.path.dirname(image_path)
                 archive_bname = ""
@@ -993,7 +993,7 @@ class WebtoonBatchProcessor:
                     if image_path in archive['extracted_images']:
                         archive_path = archive['archive_path']
                         directory = os.path.dirname(archive_path)
-                        archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+                        archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
                         break
                 
                 image = imk.read_image(image_path)
@@ -1131,7 +1131,7 @@ class WebtoonBatchProcessor:
                     break
 
                 archive_path = archive['archive_path']
-                archive_bname = os.path.splitext(os.path.basename(archive_path))[0]
+                archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
                 archive_directory = os.path.dirname(archive_path)
                 archive_ext = os.path.splitext(archive_path)[1]
                 save_as_ext = f".{save_as_settings.get(archive_ext.lower(), 'cbz')}"
