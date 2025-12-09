@@ -7,6 +7,17 @@ English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
 This project was created to utilize the ability of State of the Art (SOTA) Large Language Models (LLMs) like GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to (but not from) Turkish, Polish, Portuguese and Brazillian Portuguese.
 
+### 🆕 API Backend Server
+Now includes a **REST API backend server** for remote manga translation! Perfect for:
+- Building web applications and mobile apps
+- Batch processing manga chapters
+- Integration with other tools and workflows
+- Headless server deployments
+
+📖 **[Quick Start Guide](fast-api/docs/QUICKSTART.md)** | 📚 **[Full API Documentation](fast-api/docs/API_README.md)** | 🔄 **[API Reorganization Guide](fast-api/docs/API_REORGANIZATION.md)**
+
+> **Note**: All API code has been reorganized into the `fast-api/` folder for better organization and maintainability. See [API_REORGANIZATION.md](fast-api/docs/API_REORGANIZATION.md) for details.
+
 - [The State of Machine Translation](#the-state-of-machine-translation)
 - [Preview](#comic-samples)
 - [Getting Started](#installation)

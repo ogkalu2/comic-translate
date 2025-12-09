@@ -1,7 +1,6 @@
 import numpy as np
 import os
 import base64
-from PySide6.QtCore import Qt
 
 import imkit as imk
 from .textblock import TextBlock, sort_textblock_rectangles
@@ -11,7 +10,20 @@ from modules.inpainting.lama import LaMa
 from modules.inpainting.mi_gan import MIGAN
 from modules.inpainting.aot import AOT
 from modules.inpainting.schema import Config
-from app.ui.messages import Messages
+
+# Optional GUI imports - only needed when running with GUI
+try:
+    from PySide6.QtCore import Qt
+    from app.ui.messages import Messages
+    HAS_GUI = True
+except ImportError:
+    HAS_GUI = False
+    Messages = None
+    # Mock Qt for type hints when GUI is not available
+    class Qt:
+        class LayoutDirection:
+            RightToLeft = 1
+            LeftToRight = 0
 
 
 
