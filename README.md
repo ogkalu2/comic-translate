@@ -1,5 +1,7 @@
-# Comic Translate
+# Comic Translate FOR IA_LOCAL Translate EN to FR
 English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md) | [日本語](docs/README_ja.md) | [Português Brasileiro](docs/README_pt-BR.md)
+
+## Link to download more faster Model HuggingFace : https://drive.google.com/file/d/1qFZKsEneE2LXaXPxZaqfCI6c93f8pjnG/view?usp=drive_link
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
@@ -215,6 +217,7 @@ pip install torch transformers easyocr
   - **Ollama** : pour utiliser un modèle LLM via l’API Ollama (local, open source)
 
 ### Utiliser un modèle HuggingFace (Seq2Seq ou CausalLM)
+## - Link to download more faster model  HuggingFace : https://drive.google.com/file/d/1qFZKsEneE2LXaXPxZaqfCI6c93f8pjnG/view?usp=drive_link
 - Déposez le dossier du modèle téléchargé dans un dossier local.
 - Sélectionnez ce dossier via le bouton dans les paramètres.
 - Pour Seq2Seq, le pipeline de traduction HuggingFace sera utilisé.
@@ -267,5 +270,3 @@ Pour toute question ou contribution, ouvrez une issue sur le dépôt GitHub.
 - Pour ajouter vos propres polices, placez les fichiers `.ttf`, `.otf`, `.woff` ou `.woff2` dans le dossier `fonts/`.
 - Vous pouvez ensuite les sélectionner dans les paramètres de rendu du texte (Settings > Font).
 - Exemples de polices incluses : Short Baby, ShadeBlue. Vous pouvez en ajouter d'autres (ComicNeue, Bangers, Roboto, etc).
-
-
