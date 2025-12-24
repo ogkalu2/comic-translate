@@ -101,8 +101,10 @@ uv add -r requirements.txt --compile-bytecode
 
 If you have an NVIDIA GPU, then it is recommended to run
 ```bash
-uv pip install onnxruntime-gpu
+uv remove torch torchvision
+uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cu126
 ```
+Note: The 126 in cu126 represents the CUDA version - 12.6. Replace 126 with your CUDA version (or the version closest to yours). E.g 118 if you are running CUDA 11.8
 
 ## Usage
 In the comic-translate directory, run
@@ -148,16 +150,17 @@ You can set your API Keys by going to Settings > Credentials
 
 ## How it works
 ### Speech Bubble Detection and Text Segmentation
-[bubble-and-text-detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector). RT-DETR-v2 model trained on 11k images of comics (Manga, Webtoons, Western).
-Algorithmic segmentation based on the boxes provided from the detection model.
+[speech-bubble-detector](https://huggingface.co/ogkalu/comic-speech-bubble-detector-yolov8m), [text-segmenter](https://huggingface.co/ogkalu/comic-text-segmenter-yolov8m). Two yolov8m models trained on 8k and 3k images of comics (Manga, Webtoons, Western) respectively. 
 
 <img src="https://i.imgur.com/TlzVH3j.jpg" width="49%"> <img src="https://i.imgur.com/h18XrYT.jpg" width="49%"> 
 
 ### OCR
 By Default:
+* [doctr](https://github.com/mindee/doctr) for English, French, German, Dutch, Spanish and Italian.
 * [manga-ocr](https://github.com/kha-white/manga-ocr) for Japanese
 * [Pororo](https://github.com/yunwoong7/korean_ocr_using_pororo) for Korean 
-* [PPOCRv5](https://www.paddleocr.ai/main/en/version3.x/algorithm/PP-OCRv5/PP-OCRv5.html) for Everything Else
+* [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) for Chinese 
+* [GPT-4o](https://platform.openai.com/docs/guides/vision) for Russian. Paid, Requires an API Key.
 
 Optional:
 
@@ -167,15 +170,13 @@ These can be used for any of the supported languages. An API Key is required.
 * [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
 
 ### Inpainting
-To remove the segmented text
-* A [Manga/Anime finetuned](https://huggingface.co/dreMaz/AnimeMangaInpainting) [lama](https://github.com/advimman/lama) checkpoint. Implementation courtsey of [lama-cleaner](https://github.com/Sanster/lama-cleaner)
-* [AOT-GAN](https://arxiv.org/abs/2104.01431) based model by [zyddnys](https://github.com/zyddnys)
+A [Manga/Anime finetuned](https://huggingface.co/dreMaz/AnimeMangaInpainting) [lama](https://github.com/advimman/lama) checkpoint to remove text detected by the segmenter. Implementation courtsey of [lama-cleaner](https://github.com/Sanster/lama-cleaner)
 
 <img src="https://i.imgur.com/cVVGVXp.jpg" width="49%"> <img src="https://i.imgur.com/bLkPyqG.jpg" width="49%">
 
 ### Translation
-Currently, this supports using GPT-4.1, DeepL, Claude-3, 
-Gemini-2.5, Yandex, Google Translate and Microsoft Azure Translator.
+Currently, this supports using GPT-4o, GPT-4o mini, DeepL, Claude-3-Opus, Claude-3.5-Sonnet, Claude-3-Haiku, 
+Gemini-1.5-Flash, Gemini-1.5-Pro, Yandex, Google Translate and Microsoft Translator.
 
 All LLMs are fed the entire page text to aid translations. 
 There is also the Option to provide the Image itself for further context. 
@@ -185,13 +186,86 @@ Wrapped text in bounding boxes obtained from bubbles and text.
 
 ## Acknowledgements
 
+* [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
 * [https://github.com/Sanster/lama-cleaner](https://github.com/Sanster/lama-cleaner)
 * [https://huggingface.co/dreMaz](https://huggingface.co/dreMaz)
 * [https://github.com/yunwoong7/korean_ocr_using_pororo](https://github.com/yunwoong7/korean_ocr_using_pororo)
 * [https://github.com/kha-white/manga-ocr](https://github.com/kha-white/manga-ocr)
 * [https://github.com/JaidedAI/EasyOCR](https://github.com/JaidedAI/EasyOCR)
 * [https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
-* [https://github.com/RapidAI/RapidOCR](https://github.com/RapidAI/RapidOCR)
 * [https://github.com/phenom-films/dayu_widgets](https://github.com/phenom-films/dayu_widgets)
+
+# Utilisation des modèles IA locaux (Traduction & OCR)
+
+## Prérequis
+
+- Python 3.8+
+- Installez les dépendances nécessaires :
+
+```bash
+pip install torch transformers easyocr
+```
+
+## Traduction locale (HuggingFace, LLM, Ollama)
+
+- Dans les paramètres de l’application, sélectionnez **"Traduction Locale"** comme moteur de traduction.
+- Dans la section "Modèle local (LLM/Traduction)", choisissez le **type de modèle** :
+  - **Seq2Seq (Traduction)** : pour les modèles de traduction HuggingFace (ex : NLLB, MarianMT, Helsinki-NLP, etc.)
+  - **CausalLM (LLM)** : pour les modèles de génération de texte HuggingFace (ex : Llama, Mistral, GPT2, etc.)
+  - **Ollama** : pour utiliser un modèle LLM via l’API Ollama (local, open source)
+
+### Utiliser un modèle HuggingFace (Seq2Seq ou CausalLM)
+- Déposez le dossier du modèle téléchargé dans un dossier local.
+- Sélectionnez ce dossier via le bouton dans les paramètres.
+- Pour Seq2Seq, le pipeline de traduction HuggingFace sera utilisé.
+- Pour CausalLM, le pipeline de génération de texte HuggingFace sera utilisé (prompt : "Traduire en <langue> : <texte>").
+
+### Utiliser un modèle Ollama
+- Installez Ollama sur votre machine : https://ollama.com/
+- Téléchargez un modèle compatible (ex : llama2, mistral, phi3, etc.) avec la commande :
+  ```bash
+  ollama pull mistral
+  ollama pull llama2
+  # etc.
+  ```
+- Dans les paramètres, choisissez "Ollama" comme type de modèle.
+- Renseignez l’URL de l’API Ollama (par défaut : http://localhost:11434) et le nom du modèle (ex : llama2, mistral).
+- Le prompt envoyé à Ollama sera : "Traduire en <langue> : <texte>".
+
+**Remarque :**
+- Vous pouvez utiliser n’importe quel modèle compatible avec le pipeline HuggingFace ou Ollama.
+- Les performances et la qualité dépendent du modèle choisi et de la puissance de votre machine.
+
+## OCR local (EasyOCR)
+
+- Dans les paramètres de l’application, sélectionnez **"EasyOCR"** comme moteur OCR.
+- EasyOCR fonctionne sur CPU par défaut, mais peut utiliser le GPU si activé dans les paramètres.
+- Prend en charge de nombreuses langues (voir la doc EasyOCR pour la liste complète).
+
+## Conseils de performance
+
+- Pour de meilleures performances sur CPU, utilisez les versions optimisées de torch pour votre plateforme.
+- Les modèles sélectionnés sont adaptés à des machines avec moins de 8GB de RAM.
+
+## Limitations
+
+- La première utilisation peut être plus lente (téléchargement et initialisation du modèle).
+- Les performances et la qualité dépendent du modèle choisi et de la puissance de votre machine.
+
+## Dépannage
+
+- Si vous rencontrez des erreurs de mémoire, essayez un modèle plus léger (ex: MarianMT pour des paires de langues spécifiques).
+- Consultez la console pour les messages d’erreur détaillés.
+
+---
+
+Pour toute question ou contribution, ouvrez une issue sur le dépôt GitHub.
+
+## Polices personnalisées et styles
+
+- Plusieurs polices par défaut sont proposées dans l'interface (dossier `fonts/`).
+- Pour ajouter vos propres polices, placez les fichiers `.ttf`, `.otf`, `.woff` ou `.woff2` dans le dossier `fonts/`.
+- Vous pouvez ensuite les sélectionner dans les paramètres de rendu du texte (Settings > Font).
+- Exemples de polices incluses : Short Baby, ShadeBlue. Vous pouvez en ajouter d'autres (ComicNeue, Bangers, Roboto, etc).
 
 

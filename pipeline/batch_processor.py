@@ -340,7 +340,8 @@ class BatchProcessor:
 
                 translation, font_size = pyside_word_wrap(translation, font, width, height,
                                                         line_spacing, outline_width, bold, italic, underline,
-                                                        alignment, direction, max_font_size, min_font_size)
+                                                        alignment, direction, max_font_size, min_font_size,
+                                                        render_settings.margin)
                 
                 # Display text if on current page  
                 if image_path == file_on_display:

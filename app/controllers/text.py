@@ -521,7 +521,7 @@ class TextController:
             self.main.run_threaded(manual_wrap, self.on_render_complete, self.main.default_error_handler,
                               None, self.main, new_blocks, font_family, line_spacing, outline_width,
                               bold, italic, underline, alignment, direction, max_font_size,
-                              min_font_size)
+                              min_font_size, render_settings.margin)
 
     def on_render_complete(self, rendered_image: np.ndarray):
         # self.main.set_image(rendered_image) 
@@ -547,5 +547,6 @@ class TextController:
             italic = self.main.italic_button.isChecked(),
             underline = self.main.underline_button.isChecked(),
             line_spacing = self.main.line_spacing_dropdown.currentText(),
-            direction = direction
+            direction = direction,
+            margin = int(self.main.settings_page.ui.margin_spinbox.value())
         )

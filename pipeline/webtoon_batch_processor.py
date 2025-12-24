@@ -725,6 +725,7 @@ class WebtoonBatchProcessor:
         bold, italic, underline = render_settings.bold, render_settings.italic, render_settings.underline
         alignment = self.main_page.button_to_alignment[render_settings.alignment_id]
         direction = render_settings.direction
+        margin = render_settings.margin
         
         # Get target language code for formatting
         target_lang = self.main_page.image_states[image_path]['target_lang']
@@ -747,7 +748,7 @@ class WebtoonBatchProcessor:
 
             translation, font_size = pyside_word_wrap(translation, font, width, height,
                                                       line_spacing, outline_width, bold, italic, underline,
-                                                      alignment, direction, max_font_size, min_font_size)
+                                                      alignment, direction, max_font_size, min_font_size, margin)
             
             if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                 translation = translation.replace(' ', '')

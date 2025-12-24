@@ -30,6 +30,7 @@ class TextRenderingSettings:
     underline: bool
     line_spacing: str
     direction: Qt.LayoutDirection
+    margin: int
 
 def array_to_pil(rgb_image: np.ndarray):
     # Image is already in RGB format, just convert to PIL
@@ -153,7 +154,8 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
 
 def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int,
                     line_spacing, outline_width, bold, italic, underline,
-                    alignment, direction, init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
+                    alignment, direction, init_font_size: int, min_font_size: int = 10,
+                    margin: int = 0) -> Tuple[str, int]:
     """Break long text to multiple lines, and find the largest point size
         so that all wrapped text fits within the box."""
     
@@ -202,6 +204,11 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
     def wrap_and_size(font_size):
         words = text.split()
         lines = []
+        
+        # Adjust ROI with margin
+        effective_roi_width = max(1, roi_width - 2 * margin)
+        effective_roi_height = max(1, roi_height - 2 * margin)
+
         # build lines greedily
         while words:
             line = words.pop(0)
@@ -209,7 +216,7 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
             while words:
                 test = f"{line} {words[0]}"
                 w, _ = eval_metrics(test, font_size)
-                if w <= roi_width:
+                if w <= effective_roi_width:
                     line = test
                     words.pop(0)
                 else:
@@ -224,11 +231,14 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
     best_text, best_size = text, init_font_size
     found_fit = False
 
+    effective_roi_width = max(1, roi_width - 2 * margin)
+    effective_roi_height = max(1, roi_height - 2 * margin)
+
     lo, hi = min_font_size, init_font_size
     while lo <= hi:
         mid = (lo + hi) // 2
         wrapped, w, h = wrap_and_size(mid)
-        if w <= roi_width and h <= roi_height:
+        if w <= effective_roi_width and h <= effective_roi_height:
             found_fit = True
             best_text, best_size = wrapped, mid
             lo = mid + 1
@@ -289,7 +299,7 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
 
 def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
                 outline_width, bold, italic, underline, alignment, direction, 
-                init_font_size: int = 40, min_font_size: int = 10):
+                init_font_size: int = 40, min_font_size: int = 10, margin: int = 0):
     
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
@@ -300,7 +310,7 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
 
         translation, font_size = pyside_word_wrap(translation, font_family, width, height,
                                                  line_spacing, outline_width, bold, italic, underline,
-                                                 alignment, direction, init_font_size, min_font_size)
+                                                 alignment, direction, init_font_size, min_font_size, margin)
         
         main_page.blk_rendered.emit(translation, font_size, blk)
 

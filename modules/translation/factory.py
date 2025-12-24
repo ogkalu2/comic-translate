@@ -11,6 +11,8 @@ from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
 from .llm.custom import CustomTranslation
+from .local_transformers import LocalTransformersTranslation
+
 
 
 class TranslationFactory:
@@ -23,7 +25,9 @@ class TranslationFactory:
         "Google Translate": GoogleTranslation,
         "Microsoft Translator": MicrosoftTranslation,
         "DeepL": DeepLTranslation,
-        "Yandex": YandexTranslation
+        "Yandex": YandexTranslation,
+        "Traduction Locale": LocalTransformersTranslation,
+        "Local Transformers": LocalTransformersTranslation
     }
     
     # Map LLM identifiers to their engine classes

@@ -56,7 +56,7 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         self.inpainters = ['LaMa', 'AOT']
         self.detectors = ['RT-DETR-v2']
-        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4.1-mini')]
+        self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4.1-mini'), self.tr('EasyOCR')]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
@@ -67,7 +67,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.supported_translators = [self.tr("GPT-4.1"), self.tr("GPT-4.1-mini"), self.tr("DeepL"), 
                                     self.tr("Claude-4.5-Sonnet"), self.tr("Claude-4.5-Haiku"),
                                     self.tr("Gemini-2.5-Flash"), self.tr("Yandex"), self.tr("Google Translate"),
-                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
+                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),
+                                    self.tr("Traduction Locale"), self.tr("Local Transformers")]
         
         self.languages = ['English', '한국어', 'Français', '日本語', 
          '简体中文', '繁體中文', 'русский', 'Deutsch', 
@@ -108,6 +109,8 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Yandex"): "Yandex",
             self.tr("Google Translate"): "Google Translate",
             self.tr("Microsoft Translator"): "Microsoft Translator",
+            self.tr("Traduction Locale"): "Traduction Locale",
+            self.tr("EasyOCR"): "EasyOCR",
 
             # OCR mappings
             self.tr("Default"): "Default",
@@ -214,6 +217,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.max_font_spinbox = self.text_rendering_page.max_font_spinbox
         self.font_browser = self.text_rendering_page.font_browser
         self.uppercase_checkbox = self.text_rendering_page.uppercase_checkbox
+        self.margin_spinbox = self.text_rendering_page.margin_spinbox
 
         # Export
         self.raw_text_checkbox = self.export_page.raw_text_checkbox

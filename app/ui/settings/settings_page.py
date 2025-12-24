@@ -111,8 +111,10 @@ class SettingsPage(QtWidgets.QWidget):
                     'endpoint': _text_or_none("Microsoft Azure_endpoint"),
                 })
             elif service == "Custom":
-                for field in ("api_key", "api_url", "model"):
+                for field in ("api_key", "api_url", "model", "local_transformers_model", "ollama_url", "ollama_model"):
                     creds[field] = _text_or_none(f"Custom_{field}")
+                w_type = self.ui.credential_widgets.get("Custom_local_model_type")
+                creds["local_model_type"] = w_type.currentText() if w_type is not None else "Seq2Seq (Traduction)"
             elif service == "Yandex":
                 creds['api_key'] = _text_or_none("Yandex_api_key")
                 creds['folder_id'] = _text_or_none("Yandex_folder_id")
@@ -139,6 +141,10 @@ class SettingsPage(QtWidgets.QWidget):
         return settings
 
     def get_all_settings(self):
+        local_model_path = self.get_credentials('Custom').get('local_transformers_model', '')
+        local_model_type = self.get_credentials('Custom').get('local_model_type', 'Seq2Seq (Traduction)')
+        ollama_url = self.get_credentials('Custom').get('ollama_url', '')
+        ollama_model = self.get_credentials('Custom').get('ollama_model', '')
         return {
             'language': self.get_language(),
             'theme': self.get_theme(),
@@ -148,12 +154,17 @@ class SettingsPage(QtWidgets.QWidget):
                 'detector': self.get_tool_selection('detector'),
                 'inpainter': self.get_tool_selection('inpainter'),
                 'use_gpu': self.is_gpu_enabled(),
-                'hd_strategy': self.get_hd_strategy_settings()
+                'hd_strategy': self.get_hd_strategy_settings(),
+                'margin': int(self.ui.margin_spinbox.value())
             },
             'llm': self.get_llm_settings(),
             'export': self.get_export_settings(),
             'credentials': self.get_credentials(),
             'save_keys': self.ui.save_keys_checkbox.isChecked(),
+            'local_transformers_model': local_model_path,
+            'local_model_type': local_model_type,
+            'ollama_url': ollama_url,
+            'ollama_model': ollama_model
         }
 
     def import_font(self, file_paths: list[str]):
@@ -236,6 +247,10 @@ class SettingsPage(QtWidgets.QWidget):
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
                     settings.setValue(f"{translated_service}_api_url", cred['api_url'])
                     settings.setValue(f"{translated_service}_model", cred['model'])
+                    settings.setValue(f"{translated_service}_local_transformers_model", cred['local_transformers_model'])
+                    settings.setValue(f"{translated_service}_local_model_type", cred.get('local_model_type', 'Seq2Seq (Traduction)'))
+                    settings.setValue(f"{translated_service}_ollama_url", cred.get('ollama_url', ''))
+                    settings.setValue(f"{translated_service}_ollama_model", cred.get('ollama_model', ''))
                 elif translated_service == "Yandex":
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
                     settings.setValue(f"{translated_service}_folder_id", cred['folder_id'])
@@ -293,6 +308,7 @@ class SettingsPage(QtWidgets.QWidget):
         elif strategy == 'Crop':
             self.ui.crop_margin_spinbox.setValue(settings.value('crop_margin', 512, type=int))
             self.ui.crop_trigger_spinbox.setValue(settings.value('crop_trigger_size', 512, type=int))
+        self.ui.margin_spinbox.setValue(settings.value('margin', 10, type=int))
         settings.endGroup()  # hd_strategy
         settings.endGroup()  # tools
 
@@ -347,9 +363,13 @@ class SettingsPage(QtWidgets.QWidget):
                     self.ui.credential_widgets["Microsoft Azure_region"].setText(settings.value(f"{translated_service}_region_translator", ''))
                     self.ui.credential_widgets["Microsoft Azure_endpoint"].setText(settings.value(f"{translated_service}_endpoint", ''))
                 elif translated_service == "Custom":
-                    self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
-                    self.ui.credential_widgets[f"{translated_service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
-                    self.ui.credential_widgets[f"{translated_service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                    self.ui.credential_widgets[f"{service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
+                    self.ui.credential_widgets[f"{service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
+                    self.ui.credential_widgets[f"{service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                    self.ui.credential_widgets[f"{service}_local_transformers_model"].setText(settings.value(f"{translated_service}_local_transformers_model", ''))
+                    self.ui.credential_widgets[f"{service}_local_model_type"].setCurrentText(settings.value(f"{translated_service}_local_model_type", 'Seq2Seq (Traduction)'))
+                    self.ui.credential_widgets[f"{service}_ollama_url"].setText(settings.value(f"{translated_service}_ollama_url", ''))
+                    self.ui.credential_widgets[f"{service}_ollama_model"].setText(settings.value(f"{translated_service}_ollama_model", ''))
                 elif translated_service == "Yandex":
                     self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
                     self.ui.credential_widgets[f"{translated_service}_folder_id"].setText(settings.value(f"{translated_service}_folder_id", ''))

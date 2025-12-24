@@ -10,6 +10,7 @@ from .ppocr import PPOCRv5Engine
 from .manga_ocr.onnx_engine import MangaOCREngineONNX
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
+from .easy_ocr import EasyOCREngine
 
 class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -130,6 +131,7 @@ class OCRFactory:
             'Google Cloud Vision': cls._create_google_ocr,
             'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
             'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model),
+            'EasyOCR': cls._create_easy_ocr,
         }
         
         # Language-specific factory functions (for Default model)
@@ -221,4 +223,22 @@ class OCRFactory:
     def _create_gemini_ocr(settings, model) -> OCREngine:
         engine = GeminiOCR()
         engine.initialize(settings, model)
+        return engine
+    @staticmethod
+    def _create_easy_ocr(settings) -> OCREngine:
+        from .easy_ocr import EasyOCREngine
+        lang_name = settings.get_language() if hasattr(settings, 'get_language') else 'English'
+        lang_map = getattr(settings, 'lang_mapping', None)
+        if lang_map and lang_name in lang_map:
+            lang_code = lang_map[lang_name]
+        else:
+            fallback = {
+                'English': 'en', 'Français': 'fr', 'Japanese': 'ja', 'Korean': 'ko',
+                '简体中文': 'ch_sim', '繁體中文': 'ch_tra', 'Spanish': 'es', 'German': 'de',
+                'Italian': 'it', 'Russian': 'ru', 'Dutch': 'nl', 'Turkish': 'tr'
+            }
+            lang_code = fallback.get(lang_name, 'en')
+        use_gpu = settings.is_gpu_enabled() if hasattr(settings, 'is_gpu_enabled') else False
+        engine = EasyOCREngine()
+        engine.initialize(languages=[lang_code], use_gpu=use_gpu)
         return engine
