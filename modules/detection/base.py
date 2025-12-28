@@ -5,6 +5,7 @@ from typing import Optional
 from ..utils.textblock import TextBlock
 from .utils.geometry import does_rectangle_fit, do_rectangles_overlap, \
     merge_overlapping_boxes
+from .font.engine import FontEngineFactory
 from .utils.content import filter_and_fix_bboxes
 
 
@@ -13,6 +14,9 @@ class DetectionEngine(ABC):
     Abstract base class for all detection engines.
     Each model implementation should inherit from this class.
     """
+    
+    def __init__(self, settings=None):
+        self.settings = settings
     
     @abstractmethod
     def initialize(self, **kwargs) -> None:
@@ -58,13 +62,35 @@ class DetectionEngine(ABC):
         # Process text boxes
         if len(text_boxes) > 0:
             for txt_idx, txt_box in enumerate(text_boxes):
-                
+                font_attrs = {}
+                # Calculate font attributes using FontEngine
+                try:
+                    x1, y1, x2, y2 = map(int, txt_box)
+                    # Ensure coordinates are within image bounds
+                    h, w = image.shape[:2]
+                    x1 = max(0, x1)
+                    y1 = max(0, y1)
+                    x2 = min(w, x2)
+                    y2 = min(h, y2)
+                    
+                    if x2 > x1 and y2 > y1:
+                        crop = image[y1:y2, x1:x2]
+                        font_engine = FontEngineFactory.create_engine(self.settings, backend='onnx')
+                        font_attrs = font_engine.process(crop)
+                except Exception as e:
+                    print(f"Failed to detect font attributes for text block {txt_idx}: {e}")
+
+                direction = font_attrs.get('direction', '')
+                text_color = tuple(font_attrs.get('text_color', ()))
+
                 # If no bubble boxes, all text is free text
                 if len(bubble_boxes) == 0:
                     text_blocks.append(
                         TextBlock(
                             text_bbox=txt_box,
                             text_class='text_free',
+                            direction=direction,
+                            font_color=text_color,
                         )
                     )
                     continue
@@ -79,6 +105,8 @@ class DetectionEngine(ABC):
                                 text_bbox=txt_box,
                                 bubble_bbox=bble_box,
                                 text_class='text_bubble',
+                                direction=direction,
+                                font_color=text_color,
                             )
                         )
                         text_matched[txt_idx] = True  
@@ -90,6 +118,8 @@ class DetectionEngine(ABC):
                                 text_bbox=txt_box,
                                 bubble_bbox=bble_box,
                                 text_class='text_bubble',
+                                direction=direction,
+                                font_color=text_color,
                             )
                         )
                         text_matched[txt_idx] = True  
@@ -100,6 +130,8 @@ class DetectionEngine(ABC):
                         TextBlock(
                             text_bbox=txt_box,
                             text_class='text_free',
+                            direction=direction,
+                            font_color=text_color,
                         )
                     )
         

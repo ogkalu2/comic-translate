@@ -15,7 +15,7 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import TextRenderingSettings, manual_wrap
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
-    get_layout_direction, is_close
+    get_layout_direction, is_close, get_smart_text_color
 from modules.utils.translator_utils import format_translations
 
 if TYPE_CHECKING:
@@ -63,6 +63,9 @@ class TextController:
         font_family = render_settings.font_family
         text_color_str = render_settings.color
         text_color = QColor(text_color_str)
+
+        # Smart Color Override
+        text_color = get_smart_text_color(blk.font_color, text_color)
 
         id = render_settings.alignment_id
         alignment = self.main.button_to_alignment[id]

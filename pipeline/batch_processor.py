@@ -13,7 +13,8 @@ from PySide6.QtGui import QColor
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.textblock import sort_blk_list
-from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask, get_language_code, is_directory_empty
+from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask, \
+    get_language_code, is_directory_empty, get_smart_text_color
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
@@ -349,6 +350,9 @@ class BatchProcessor:
                 # Language-specific formatting for state storage
                 if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                     translation = translation.replace(' ', '')
+
+                # Smart Color Override
+                font_color = get_smart_text_color(blk.font_color, font_color)
 
                 # Use TextItemProperties for consistent text item creation
                 text_props = TextItemProperties(

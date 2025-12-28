@@ -26,7 +26,8 @@ class TextBlock(object):
                  target_lang: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
-                 font_color: str = "",
+                 font_color: tuple = (),
+                 direction: str = "",
                  **kwargs) -> None:
         
         self.xyxy = text_bbox
@@ -54,6 +55,7 @@ class TextBlock(object):
         self.min_font_size = min_font_size
         self.max_font_size = max_font_size
         self.font_color = font_color
+        self.direction = direction
 
     @property
     def xywh(self):
@@ -67,7 +69,7 @@ class TextBlock(object):
     
     @property
     def source_lang_direction(self):
-        if self.source_lang == 'ja':
+        if self.direction == 'vertical':
             return 'ver_rtl'
         else:
             return 'hor_ltr'

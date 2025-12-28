@@ -54,10 +54,10 @@ class DetectionEngineFactory:
         
         if backend.lower() == 'torch' and torch_available():
             from .rtdetr_v2 import RTDetrV2Detection
-            engine = RTDetrV2Detection()
+            engine = RTDetrV2Detection(settings)
             engine.initialize(device=device)
         else:
-            engine = RTDetrV2ONNXDetection()
+            engine = RTDetrV2ONNXDetection(settings)
             engine.initialize(device=device)
         
         return engine

@@ -18,7 +18,8 @@ class RTDetrV2ONNXDetection(DetectionEngine):
     """RT-DETR-V2 ONNX backend detection engine.
     """
 
-    def __init__(self):
+    def __init__(self, settings=None):
+        super().__init__(settings)
         self.session = None
         self.device = 'cpu'
         self.confidence_threshold = 0.3
