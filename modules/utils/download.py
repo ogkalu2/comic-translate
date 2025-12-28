@@ -89,6 +89,10 @@ class ModelID(Enum):
     # PPOCRv4 Classifier
     PPOCR_V4_CLS = "ppocr-v4-cls"
 
+    # Font Detection
+    FONT_DETECTOR_ONNX = "font-detector-onnx"
+    FONT_DETECTOR_TORCH = "font-detector-torch"
+
 
 @dataclass(frozen=True)
 class ModelSpec:
@@ -604,6 +608,24 @@ def _register_defaults():
         files=['ch_ppocr_mobile_v2.0_cls_infer.onnx'],
         sha256=['e47acedf663230f8863ff1ab0e64dd2d82b838fceb5957146dab185a89d6215c'],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
+    ))
+
+    # Font Detection
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.FONT_DETECTOR_ONNX,
+        url='https://huggingface.co/ogkalu/yuzumarker-font-detection-onnx/resolve/main/',
+        files=['font-detector.onnx'],
+        sha256=['99dd351e94f06e31397113602ae000a24c1d38ad76275066e844a0c836f75d4f'],
+        save_dir=os.path.join(models_base_dir, 'detection', 'font')
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.FONT_DETECTOR_TORCH,
+        url='https://huggingface.co/gyrojeff/YuzuMarker.FontDetection/resolve/main/',
+        files=['name%3D4x-epoch%3D84-step%3D1649340.ckpt'],
+        sha256=['9053615071c31978a3988143c9a3bdec8da53e269a8f84b5908d6f15747a1a81'],
+        save_dir=os.path.join(models_base_dir, 'detection', 'font'),
+        save_as={'name%3D4x-epoch%3D84-step%3D1649340.ckpt': 'font-detector.ckpt'}
     ))
 
 _register_defaults()
