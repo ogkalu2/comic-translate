@@ -233,7 +233,7 @@ class FontEngineFactory:
     _engines = {}
 
     @classmethod
-    def create_engine(cls, settings, backend='torch') -> FontEngine:
+    def create_engine(cls, settings, backend='onnx') -> FontEngine:
         device = resolve_device(settings.is_gpu_enabled() if settings else True, backend)
         cache_key = f"{backend}_{device}"
         
