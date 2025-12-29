@@ -7,7 +7,8 @@ import onnxruntime as ort
 try:
     import torch
     from torchvision import transforms
-    from .model import FontDetector, ResNet18Regressor, ResNet34Regressor, ResNet50Regressor, ResNet101Regressor, DeepFontBaseline
+    from .model import FontDetector, ResNet18Regressor, ResNet34Regressor, \
+        ResNet50Regressor, ResNet101Regressor, DeepFontBaseline
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
