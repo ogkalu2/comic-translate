@@ -1,5 +1,6 @@
 # Trình dịch truyện tranh
 <img src="https://i.imgur.com/QUVK6mK.png">
+[English](../README.md) | [한국어](README_ko.md) | [Français](README_fr.md) | [简体中文](README_zh-CN.md) | [日本語](README_ja.md) | [Português Brasileiro](README_pt-BR.md) | Tiếng Việt
 
 ## Giới thiệu
 Hiện nay có rất nhiều trình dịch truyện tranh một cách tự động. Tuy nhiên, rất ít phần mềm hỗ trợ tốt các thể loại truyện tranh khác bằng nhiều ngôn ngữ khác.
