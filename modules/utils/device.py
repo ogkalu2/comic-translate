@@ -119,15 +119,38 @@ def get_providers(device: Optional[str] = None) -> list[str]:
     """Return a provider list for ONNXRuntime.
 
     Rules:
-    - If device is the string 'cpu' (case-insensitive) -> return ['CPUExecutionProvider']
-    - Otherwise return ort.get_available_providers() if non-empty, else fall back to ['CPUExecutionProvider']
+    - If device is 'cpu', return ['CPUExecutionProvider']
+    - If device specifies a GPU type, prioritize the corresponding provider
+    - Otherwise return all available providers
     """
     try:
         available = ort.get_available_providers()
     except Exception:
         available = []
 
-    if device and isinstance(device, str) and device.lower() == 'cpu':
+    if not available:
         return ['CPUExecutionProvider']
 
-    return available if available else ['CPUExecutionProvider']
+    if not device:
+        return available
+
+    device_lower = device.lower()
+    
+    # Force CPU
+    if device_lower == 'cpu':
+        return ['CPUExecutionProvider']
+    
+    # Map device types to their corresponding ONNX providers
+    device_provider_map = {
+        'cuda': 'CUDAExecutionProvider',
+        'coreml': 'CoreMLExecutionProvider',
+        'rocm': 'ROCMExecutionProvider',
+    }
+    
+    # Prioritize the provider for the specified device
+    target_provider = device_provider_map.get(device_lower)
+    if target_provider and target_provider in available:
+        # Put target provider first, then add others as fallback
+        return [target_provider] + [p for p in available if p != target_provider]
+
+    return available
