@@ -24,7 +24,10 @@ def main():
     app = QApplication(sys.argv)
     
     # Set the application icon
-    icon = QIcon(":/icons/window_icon.png")  
+    # icon = QIcon(":/icons/window_icon.png")  
+    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    icon_path = os.path.join(current_file_dir, 'resources', 'icon.png')
+    icon = QIcon(icon_path)
     app.setWindowIcon(icon)
 
     settings = QSettings("ComicLabs", "ComicTranslate")
