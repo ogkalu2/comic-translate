@@ -206,6 +206,7 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
     return mask
 
 def validate_ocr(main_page, source_lang):
+    """Ensure either API credentials are set or the user is authenticated."""
     settings_page = main_page.settings_page
     tr = settings_page.ui.tr
     settings = settings_page.get_all_settings()
@@ -215,9 +216,12 @@ def validate_ocr(main_page, source_lang):
 
     # Helper to check authentication or credential
     def has_access(service, key_field):
-        return bool(credentials.get(service, {}).get(key_field))
+        return settings_page.is_logged_in() or bool(credentials.get(service, {}).get(key_field))
+
     # Helper to check authentication or presence of multiple credential fields
     def has_all_credentials(service, keys):
+        if settings_page.is_logged_in():
+            return True
         creds = credentials.get(service, {})
         return all(creds.get(k) for k in keys)
 
@@ -246,6 +250,7 @@ def validate_ocr(main_page, source_lang):
 
 
 def validate_translator(main_page, source_lang, target_lang):
+    """Ensure either API credentials are set or the user is authenticated, plus check compatibility."""
     settings_page = main_page.settings_page
     tr = settings_page.ui.tr
     settings = settings_page.get_all_settings()
@@ -253,7 +258,7 @@ def validate_translator(main_page, source_lang, target_lang):
     translator_tool = settings['tools']['translator']
 
     def has_access(service, key_field):
-        return bool(credentials.get(service, {}).get(key_field))
+        return settings_page.is_logged_in() or bool(credentials.get(service, {}).get(key_field))
 
     # Credential checks
     if translator_tool == tr("DeepL"):

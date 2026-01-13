@@ -1,11 +1,23 @@
 import os, shutil
+import socket
+from typing import Any, Optional
+import logging
 from dataclasses import asdict, is_dataclass
+import json
 
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtCore import Signal, QSettings
+from PySide6.QtCore import Signal, QSettings, QCoreApplication, QUrl, QTimer
 from PySide6.QtGui import QFont, QFontDatabase
+from PySide6.QtWebEngineWidgets import QWebEngineView 
+from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
 
 from .settings_ui import SettingsPageUI
+from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
+    EMAIL_KEY, TIER_KEY, CREDITS_KEY
+from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
+
+
+logger = logging.getLogger(__name__)
 
 # Dictionary to map old model names to the newest versions in settings
 OCR_MIGRATIONS = {
@@ -29,9 +41,43 @@ INPAINTER_MIGRATIONS = {
     "MI-GAN": "AOT",
 }
 
+class LoginWebViewDialog(QtWidgets.QDialog):
+    """A simple dialog to host the QWebEngineView for login."""
+    closed_manually = Signal()
+    def __init__(self, url: str, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(QCoreApplication.translate("LoginWebViewDialog", "Sign In"))
+        self.resize(500, 600)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(0,0,0,0)
+
+        self.web_view = QWebEngineView()
+        self.profile = QWebEngineProfile(parent=self.web_view) 
+        page = QWebEnginePage(self.profile, self.web_view)
+        self.web_view.setPage(page)
+        layout.addWidget(self.web_view)
+        self.web_view.load(QUrl(url))
+
+    def closeEvent(self, event):
+        logger.debug("LoginWebViewDialog closeEvent triggered.")
+        # Stop any pending load
+        self.web_view.stop()
+        # If a page exists, schedule its deletion
+        page = self.web_view.page()
+        if page:
+            page.deleteLater()
+            self.web_view.setPage(None)
+        # Schedule deletion of the profile explicitly
+        if self.profile:
+            self.profile.deleteLater()
+        logger.debug("Closing login web view dialog.")
+        super().closeEvent(event)
+
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
     font_imported = Signal(str)
+    login_state_changed = Signal(bool)
 
     def __init__(self, parent=None):
         super(SettingsPage, self).__init__(parent)
@@ -40,18 +86,50 @@ class SettingsPage(QtWidgets.QWidget):
         self._setup_connections()
         self._loading_settings = False
 
+        self.login_dialog: Optional[LoginWebViewDialog] = None
+        self._pricing_refresh_timer: Optional[QTimer] = None
+        self._pricing_refresh_attempts: int = 0
+        self._pricing_refresh_baseline: Optional[Any] = None
+        self.auth_client = AuthClient(API_BASE_URL, FRONTEND_BASE_URL)
+        self.auth_client.auth_success.connect(self.handle_auth_success)
+        self.auth_client.auth_error.connect(self.handle_auth_error)
+        self.auth_client.auth_cancelled.connect(self.handle_auth_cancelled)
+        self.auth_client.request_login_view.connect(self.show_login_view)
+        self.auth_client.logout_success.connect(self.handle_logout_success)
+        self.auth_client.session_check_finished.connect(self.handle_session_check_finished)
+
+        self.user_email: Optional[str] = None
+        self.user_tier: Optional[str] = None
+        self.user_credits: Optional[Any] = None
+
         # Use the Settings UI directly; inner content is scrollable on the
         # right side (see settings_ui.py). This keeps the left navbar fixed.
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.ui)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
+        self._refresh_credits_on_startup()
+
+    def _is_online(self) -> bool:
+        try:
+            socket.create_connection(("8.8.8.8", 53), 2)
+            return True
+        except OSError:
+            return False
+
+    def _refresh_credits_on_startup(self):
+        """If there’s a network and an existing login, fetch fresh credits."""
+        if self._is_online() and self.auth_client.validate_token():
+            self.auth_client.fetch_user_info()
 
     def _setup_connections(self):
         # Connect signals to slots
         self.ui.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         self.ui.lang_combo.currentTextChanged.connect(self.on_language_changed)
         self.ui.font_browser.sig_files_changed.connect(self.import_font)
+        self.ui.sign_in_button.clicked.connect(self.start_sign_in)
+        self.ui.buy_credits_button.clicked.connect(self.open_pricing_page)
+        self.ui.sign_out_button.clicked.connect(self.sign_out)
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
@@ -137,6 +215,14 @@ class SettingsPage(QtWidgets.QWidget):
             settings['crop_trigger_size'] = self.ui.crop_trigger_spinbox.value()
 
         return settings
+    
+    def get_user_info(self):
+        """Returns the current user information."""
+        return {
+            'email': self.user_email,
+            'tier': self.user_tier,
+            'credits': self.user_credits
+        }
 
     def get_all_settings(self):
         return {
@@ -154,6 +240,7 @@ class SettingsPage(QtWidgets.QWidget):
             'export': self.get_export_settings(),
             'credentials': self.get_credentials(),
             'save_keys': self.ui.save_keys_checkbox.isChecked(),
+            'user_info': self.get_user_info()
         }
 
     def import_font(self, file_paths: list[str]):
@@ -357,7 +444,65 @@ class SettingsPage(QtWidgets.QWidget):
                     self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()
 
+        # ADDED: Load user info and update account view 
+        self._load_user_info_from_settings()
+        self._update_account_view()
+        # Emit initial login state
+        self.login_state_changed.emit(self.is_logged_in())
+
+        # Check session validity if logged in
+        if self.is_logged_in():
+            self.auth_client.check_session_async()
+        # END Load user info 
+
         self._loading_settings = False
+
+    # ADDED: Methods to load/save user info specifically
+    def _load_user_info_from_settings(self):
+        """Loads user information from QSettings."""
+        logger.debug("Loading user info from settings...")
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup(USER_INFO_GROUP)
+        self.user_email = settings.value(EMAIL_KEY, None)
+        self.user_tier = settings.value(TIER_KEY, None)
+        self.user_credits = settings.value(CREDITS_KEY, None)
+        # If credits are stored as JSON string, parse into dict
+        if isinstance(self.user_credits, str):
+            try:
+                self.user_credits = json.loads(self.user_credits)
+            except Exception:
+                logger.debug("Credits not JSON-encoded; keeping original value.")
+        settings.endGroup()
+        logger.debug(f"Loaded user info: Email={self.user_email}, Tier={self.user_tier}, Credits={self.user_credits}")
+
+    def _save_user_info_to_settings(self):
+        """Saves current user information to QSettings."""
+        logger.debug(f"Saving user info to settings: Email={self.user_email}, Tier={self.user_tier}, Credits={self.user_credits}")
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup(USER_INFO_GROUP)
+        if self.user_email:
+            settings.setValue(EMAIL_KEY, self.user_email)
+        else:
+            settings.remove(EMAIL_KEY)
+
+        if self.user_tier is not None:
+             settings.setValue(TIER_KEY, self.user_tier)
+        else:
+             settings.remove(TIER_KEY)
+
+        if self.user_credits is not None:
+             if isinstance(self.user_credits, dict):
+                 try:
+                     settings.setValue(CREDITS_KEY, json.dumps(self.user_credits))
+                 except Exception:
+                     logger.warning("Failed to serialize credits dict; storing raw.")
+                     settings.setValue(CREDITS_KEY, self.user_credits)
+             else:
+                 settings.setValue(CREDITS_KEY, self.user_credits)
+        else:
+             settings.remove(CREDITS_KEY)
+        settings.endGroup()
+        logger.debug("User info saved.")
 
     def on_language_changed(self, new_language):
         if not self._loading_settings:  
@@ -388,6 +533,296 @@ class SettingsPage(QtWidgets.QWidget):
         
         # If not a file path or loading failed, treat as font family name
         return font_input
+    
+    # Authentication Flow Methods 
+
+    def start_sign_in(self):
+        """Initiates the authentication flow."""
+        logger.info("Sign In button clicked.")
+        # Disable button to prevent multiple clicks
+        self.ui.sign_in_button.setEnabled(False)
+        self.ui.sign_in_button.setText(self.tr("Signing In..."))
+        try:
+            self.auth_client.start_auth_flow()
+        except Exception as e:
+            logger.error(f"Error starting auth flow: {e}", exc_info=True)
+            self.handle_auth_error(self.tr("Failed to initiate sign-in process."))
+            # Re-enable button on immediate failure
+            self.ui.sign_in_button.setEnabled(True)
+            self.ui.sign_in_button.setText(self.tr("Sign In"))
+
+
+    def show_login_view(self, url: str):
+        """Creates and shows the QWebEngineView dialog."""
+        logger.info(f"Showing login view for URL: {url}")
+        # Close existing dialog if any
+        if self.login_dialog and self.login_dialog.isVisible():
+            # Ensure proper cleanup if replacing an existing dialog
+            self.login_dialog.close() # Triggers closeEvent
+
+        # Create and show the new dialog
+        self.login_dialog = LoginWebViewDialog(url, self)
+        # --- ADDED: Connect finished signal ---
+        # Connect finished signal to handle closure regardless of how it happened
+        self.login_dialog.finished.connect(self.on_login_dialog_closed)
+        self.login_dialog.show()
+
+    def on_login_dialog_closed(self, result_code: int):
+        """
+        Handle cleanup or state changes when the login dialog is closed.
+        result_code is QDialog.Accepted or QDialog.Rejected.
+        """
+        logger.debug(f"Login dialog closed with result code: {result_code}")
+        dialog = self.login_dialog # Keep temporary reference if needed for logging/state
+        self.login_dialog = None # Clear the main reference immediately
+
+        # Check if the dialog was closed *without* success (i.e., manually or rejected)
+        # AND if the user is not already logged in (auth_success might have just run)
+        if result_code != QtWidgets.QDialog.Accepted and not self.is_logged_in():
+            logger.info("Login dialog closed without success, cancelling auth flow.")
+            # Tell the auth client to stop the local server and cleanup
+            self.auth_client.cancel_auth_flow()
+            # Note: cancel_auth_flow emits auth_error("cancelled by user..."),
+            # which triggers handle_auth_error, resetting the button.
+        elif result_code == QtWidgets.QDialog.Accepted:
+             logger.debug("Login dialog closed with Accepted code (likely due to auth_success).")
+        else: # Dialog closed but user is already logged in (edge case?)
+             logger.debug("Login dialog closed, but user is already logged in. No cancellation needed.")
+             # Ensure button state is correct if somehow it wasn't updated
+             self._update_account_view()
+
+    def open_pricing_page(self):
+        """Open the pricing page in the system browser."""
+        if not self.is_logged_in():
+            QtWidgets.QMessageBox.information(
+                self,
+                self.tr("Sign In Required"),
+                self.tr("Please sign in to purchase or manage credits.")
+            )
+            return
+        pricing_url = f"{FRONTEND_BASE_URL}/pricing?source=desktop"
+        if QtGui.QDesktopServices.openUrl(QUrl(pricing_url)):
+            self._start_pricing_refresh_watch()
+        else:
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Unable to Open Browser"),
+                self.tr("Please open the pricing page in your browser: {url}").format(url=pricing_url),
+            )
+
+    def _start_pricing_refresh_watch(self):
+        """Poll for updated credits after launching external checkout."""
+        if self._pricing_refresh_timer is None:
+            self._pricing_refresh_timer = QTimer(self)
+            self._pricing_refresh_timer.setInterval(15000)
+            self._pricing_refresh_timer.timeout.connect(self._poll_pricing_refresh)
+
+        self._pricing_refresh_attempts = 0
+        self._pricing_refresh_baseline = self.user_credits
+        self._pricing_refresh_timer.start()
+
+    def _stop_pricing_refresh_watch(self):
+        if self._pricing_refresh_timer and self._pricing_refresh_timer.isActive():
+            self._pricing_refresh_timer.stop()
+
+    def _poll_pricing_refresh(self):
+        self._pricing_refresh_attempts += 1
+        self.auth_client.check_session_async()
+        if self._pricing_refresh_attempts >= 20:
+            self._stop_pricing_refresh_watch()
+
+    def handle_auth_success(self, user_info: dict):
+        """Handles successful authentication."""
+        logger.info(f"Authentication successful. User info received: {user_info}")
+        manual = bool(self.login_dialog)
+        # Close the login web view dialog *if it exists and is still visible*
+        if self.login_dialog:
+            logger.debug("Auth success: Closing login dialog.")
+            # Use accept() to ensure the finished signal emits Accepted
+            self.login_dialog.accept()
+            # self.login_dialog = None # This is now handled in on_login_dialog_closed
+        else:
+            logger.debug("Auth success: Login dialog was already closed or never opened.")
+
+        # Store user info
+        self.user_email = user_info.get('email')
+        self.user_tier = user_info.get('tier')
+        self.user_credits = user_info.get('credits')
+        if self._pricing_refresh_baseline is not None and self.user_credits != self._pricing_refresh_baseline:
+            self._stop_pricing_refresh_watch()
+            self._pricing_refresh_baseline = None
+
+        # Save user info to QSettings
+        self._save_user_info_to_settings()
+
+        # Update the Account page UI
+        self._update_account_view()
+
+        # Emit state change signal
+        self.login_state_changed.emit(True)
+
+        # Optionally show a success message
+        if manual:
+            QtWidgets.QMessageBox.information(
+                self, 
+                self.tr("Success"), 
+                self.tr("Successfully signed in as {email}.").format(email=self.user_email)
+            )
+
+    def handle_auth_error(self, error_message: str):
+        """Handles authentication errors."""
+        # REMOVED: if "cancelled by user" not in error_message:
+        logger.error(f"Authentication error: {error_message}") # Now always logs as error
+
+        manual = bool(self.login_dialog)
+        # Close the login web view dialog *if it exists and is still visible*
+        if self.login_dialog:
+            logger.debug("Auth error: Closing login dialog.")
+            self.login_dialog.reject()
+            # self.login_dialog = None # Handled in on_login_dialog_closed
+        else:
+            logger.debug("Auth error: Login dialog was already closed or never opened.")
+
+        # Update account view should handle showing/hiding widgets and resetting buttons
+        self._update_account_view()
+
+        # Show error message to the user
+        if manual:
+            QtWidgets.QMessageBox.warning(
+                self, 
+                self.tr("Sign In Error"), 
+                self.tr("Authentication failed: {error}").format(error=error_message)
+            )
+
+    def handle_auth_cancelled(self):
+        """Handles the signal emitted when the auth flow is cancelled by the user."""
+        logger.info("Authentication flow cancelled by user.")
+        # The login dialog should already be closing or closed by this point.
+        # Ensure the UI reflects the logged-out state correctly.
+        self._update_account_view()
+        # Explicitly ensure sign-in button is reset, although _update_account_view should handle it.
+        if not self.is_logged_in():
+            self.ui.sign_in_button.setEnabled(True)
+            self.ui.sign_in_button.setText(self.tr("Sign In"))
+
+    def sign_out(self):
+        """Initiates the sign-out process."""
+        logger.info("Sign Out button clicked.")
+        # Confirmation dialog
+        reply = QtWidgets.QMessageBox.question(
+            self, self.tr("Confirm Sign Out"),
+            self.tr("Are you sure you want to sign out?"),
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No
+        )
+
+        if reply == QtWidgets.QMessageBox.Yes:
+            self.ui.sign_out_button.setEnabled(False)
+            self.ui.sign_out_button.setText(self.tr("Signing Out..."))
+            # AuthClient handles token/setting clearing and emits logout_success
+            self.auth_client.logout()
+        else:
+            logger.debug("Sign out cancelled by user.")
+
+    def handle_logout_success(self):
+        """Handles successful logout completion from AuthClient."""
+        logger.info("Logout successful.")
+        self._stop_pricing_refresh_watch()
+        self._pricing_refresh_baseline = None
+        # Clear local state variables
+        self.user_email = None
+        self.user_tier = None
+        self.user_credits = None
+
+        # Update the Account page UI
+        self._update_account_view()
+
+        # Re-enable sign out button (it will be hidden by _update_account_view,
+        # but good practice to reset state)
+        self.ui.sign_out_button.setEnabled(True)
+        self.ui.sign_out_button.setText(self.tr("Sign Out"))
+
+        # Emit state change signal
+        self.login_state_changed.emit(False)
+
+        # Optionally show message
+        # QtWidgets.QMessageBox.information(self, self.tr("Signed Out"), self.tr("You have been signed out."))
+
+    def handle_session_check_finished(self, is_valid: bool):
+        """Handles the result of the background session check."""
+        if not is_valid:
+            logger.warning("Session check failed (invalid token or refresh failed). Signing out.")
+            
+            # Alert the user about the expiration
+            QtWidgets.QMessageBox.warning(
+                self,
+                self.tr("Session Expired"),
+                self.tr("Your session has expired. Please sign in again.")
+            )
+
+            # We can call logout directly. AuthClient.logout() emits logout_success,
+            # which updates the UI via handle_logout_success.
+            self.auth_client.logout()
+        else:
+            logger.info("Session check passed.")
+
+    def _update_account_view(self):
+        """Updates the UI elements on the Account page based on login state."""
+        logger.debug(f"Updating account view. Logged in: {self.is_logged_in()}")
+        if self.is_logged_in():
+            self.ui.account_page.show_logged_in()
+            self.ui.email_value_label.setText(self.user_email or self.tr("N/A"))
+            self.ui.tier_value_label.setText(str(self.user_tier) if self.user_tier is not None else self.tr("N/A"))
+            # Format credits display (supports dict or legacy int)
+            credits_text = self.tr("N/A")
+            if isinstance(self.user_credits, dict):
+                sub = self.user_credits.get('subscription')
+                one = self.user_credits.get('one_time')
+                total = self.user_credits.get('total')
+                parts = []
+                if sub is not None:
+                    parts.append(f"{self.tr('Subscription')}: {sub}")
+                if one is not None:
+                    parts.append(f"{self.tr('One-time')}: {one}")
+                if total is not None:
+                    parts.append(f"{self.tr('Total')}: {total}")
+                if parts:
+                    credits_text = " | ".join(parts)
+            elif self.user_credits is not None:
+                credits_text = f"{self.tr('Total')}: {self.user_credits}"
+            self.ui.credits_value_label.setText(credits_text)
+            self.ui.buy_credits_button.setEnabled(True)
+            self.ui.buy_credits_button.show()
+            # Ensure sign out button is enabled when view is shown
+            self.ui.sign_out_button.setEnabled(True)
+            self.ui.sign_out_button.setText(self.tr("Sign Out"))
+        else:
+            self.ui.account_page.show_logged_out()
+            # Ensure sign in button is enabled when view is shown
+            self.ui.buy_credits_button.setEnabled(False)
+            self.ui.buy_credits_button.hide()
+            self.ui.sign_in_button.setEnabled(True)
+            self.ui.sign_in_button.setText(self.tr("Sign In"))
+
+        # Update geometry to recalculate scroll area size after state change
+        if hasattr(self.ui, 'content_scroll'):
+            self.ui.content_scroll.updateGeometry()
+
+    def is_logged_in(self) -> bool:
+        """Checks if user info indicates a logged-in state."""
+        return self.auth_client.is_authenticated()
+    
+    def closeEvent(self, event):
+        """Ensure login dialog is closed when the settings page itself closes."""
+        logger.debug("SettingsPage closeEvent triggered.")
+        if self.login_dialog:
+            logger.info("Closing active login dialog because SettingsPage is closing.")
+            # Closing the dialog will trigger its finished signal,
+            # which calls on_login_dialog_closed, potentially cancelling the auth flow.
+            self.login_dialog.close()
+        self._stop_pricing_refresh_watch()
+        super().closeEvent(event)
+    
 
 
 

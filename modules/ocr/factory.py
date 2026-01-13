@@ -1,7 +1,9 @@
 import json
 import hashlib
+import keyring
 
 from modules.utils.device import resolve_device, torch_available
+from app.account.config import KEYRING_SERVICE_NAME, KEYRING_USERNAME
 from .base import OCREngine
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
@@ -10,6 +12,8 @@ from .ppocr import PPOCRv5Engine
 from .manga_ocr.onnx_engine import MangaOCREngineONNX
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
+from .user_ocr import UserOCR
+
 
 class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
@@ -53,6 +57,18 @@ class OCRFactory:
         if cache_key in cls._engines:
             return cls._engines[cache_key]
 
+        # 2) For account holders using a remote  model
+        token = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USERNAME)
+        if token and (
+            ocr_model in UserOCR.LLM_OCR_KEYS
+            or ocr_model in UserOCR.FULL_PAGE_OCR_KEYS
+        ):
+            engine = UserOCR()
+            engine.initialize(settings, source_lang_english, ocr_model)
+            cls._engines[cache_key] = engine
+            return engine
+
+        # 3) otherwise fall back to the local factories
         engine = cls._create_new_engine(settings, source_lang_english, ocr_model, backend)
         cls._engines[cache_key] = engine
         return engine
@@ -136,14 +152,14 @@ class OCRFactory:
         language_factories = {
             'Japanese': lambda s: cls._create_manga_ocr(s, backend),
             'Korean': lambda s: cls._create_pororo_ocr(s, backend),
-            'Chinese': lambda s: cls._create_ppocr(s, 'ch'),
-            'Russian': lambda s: cls._create_ppocr(s, 'ru'),
-            'French': lambda s: cls._create_ppocr(s, 'latin'),
-            'English': lambda s: cls._create_ppocr(s, 'en'),
-            'Spanish': lambda s: cls._create_ppocr(s, 'latin'),
-            'Italian': lambda s: cls._create_ppocr(s, 'latin'),
-            'German': lambda s: cls._create_ppocr(s, 'latin'),
-            'Dutch': lambda s: cls._create_ppocr(s, 'latin'),
+            'Chinese': lambda s: cls._create_ppocr(s, 'ch', backend),
+            'Russian': lambda s: cls._create_ppocr(s, 'ru', backend),
+            'French': lambda s: cls._create_ppocr(s, 'latin', backend),
+            'English': lambda s: cls._create_ppocr(s, 'en', backend),
+            'Spanish': lambda s: cls._create_ppocr(s, 'latin', backend),
+            'Italian': lambda s: cls._create_ppocr(s, 'latin', backend),
+            'German': lambda s: cls._create_ppocr(s, 'latin', backend),
+            'Dutch': lambda s: cls._create_ppocr(s, 'latin', backend),
         }
         
         # Check if we have a specific model factory
@@ -210,11 +226,17 @@ class OCRFactory:
         return engine
     
     @staticmethod
-    def _create_ppocr(settings, lang: str) -> OCREngine:
-        # PPOCRv5 only supports ONNX backend
-        device = resolve_device(settings.is_gpu_enabled(), 'onnx')
-        engine = PPOCRv5Engine()
-        engine.initialize(lang=lang, device=device)
+    def _create_ppocr(settings, lang: str, backend: str = 'onnx') -> OCREngine:
+        device = resolve_device(settings.is_gpu_enabled(), backend)
+        if backend.lower() == 'torch' and torch_available():
+            from .ppocr.torch.engine import PPOCRv5TorchEngine
+            device = resolve_device(settings.is_gpu_enabled(), 'torch')
+            engine = PPOCRv5TorchEngine()
+            engine.initialize(lang=lang, device=device)
+        else:
+            engine = PPOCRv5Engine()
+            engine.initialize(lang=lang, device=device)
+        
         return engine
     
     @staticmethod

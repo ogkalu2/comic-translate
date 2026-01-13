@@ -1,3 +1,4 @@
+import keyring
 import json
 import hashlib
 
@@ -11,6 +12,7 @@ from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
 from .llm.custom import CustomTranslation
+from .user import UserTranslator, KEYRING_SERVICE_NAME, KEYRING_USERNAME 
 
 
 class TranslationFactory:
@@ -65,10 +67,10 @@ class TranslationFactory:
         engine = engine_class()
         
         # Initialize with appropriate parameters
-        if translator_key in cls.TRADITIONAL_ENGINES:
-            engine.initialize(settings, source_lang, target_lang)
-        else:
+        if translator_key not in cls.TRADITIONAL_ENGINES or isinstance(engine, UserTranslator):
             engine.initialize(settings, source_lang, target_lang, translator_key)
+        else:
+            engine.initialize(settings, source_lang, target_lang)
         
         # Cache the engine
         cls._engines[cache_key] = engine
@@ -77,6 +79,11 @@ class TranslationFactory:
     @classmethod
     def _get_engine_class(cls, translator_key: str):
         """Get the appropriate engine class based on translator key."""
+
+        access_token = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USERNAME)
+        if access_token and translator_key not in ['Custom']:
+            return UserTranslator
+
         # First check if it's a traditional translation engine (exact match)
         if translator_key in cls.TRADITIONAL_ENGINES:
             return cls.TRADITIONAL_ENGINES[translator_key]
