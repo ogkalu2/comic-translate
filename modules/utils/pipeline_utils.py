@@ -301,11 +301,7 @@ def validate_translator(main_page, source_lang, target_lang):
     unsupported = {
         tr("DeepL"): [
             main_page.tr('Thai'),
-            main_page.tr('Vietnamese')
         ],
-        tr("Google Translate"): [
-            main_page.tr('Brazilian Portuguese')
-        ]
     }
     unsupported_langs = unsupported.get(translator_tool, [])
     if target_lang in unsupported_langs:

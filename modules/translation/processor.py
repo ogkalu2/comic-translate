@@ -63,7 +63,6 @@ class Translator:
             self.settings.ui.tr("Claude-4.5-Haiku"): "Claude-4.5-Haiku",
             self.settings.ui.tr("Gemini-2.5-Flash"): "Gemini-2.5-Flash",
             self.settings.ui.tr("Gemini-2.5-Pro"): "Gemini-2.5-Pro",
-            self.settings.ui.tr("Google Translate"): "Google Translate",
             self.settings.ui.tr("Microsoft Translator"): "Microsoft Translator",
             self.settings.ui.tr("DeepL"): "DeepL",
             self.settings.ui.tr("Yandex"): "Yandex"

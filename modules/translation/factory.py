@@ -3,7 +3,6 @@ import json
 import hashlib
 
 from .base import TranslationEngine
-from .google import GoogleTranslation
 from .microsoft import MicrosoftTranslation
 from .deepl import DeepLTranslation
 from .yandex import YandexTranslation
@@ -22,7 +21,6 @@ class TranslationFactory:
     
     # Map traditional translation services to their engine classes
     TRADITIONAL_ENGINES = {
-        "Google Translate": GoogleTranslation,
         "Microsoft Translator": MicrosoftTranslation,
         "DeepL": DeepLTranslation,
         "Yandex": YandexTranslation
@@ -37,8 +35,6 @@ class TranslationFactory:
         "Custom": CustomTranslation
     }
     
-    # Default engines for fallback
-    DEFAULT_TRADITIONAL_ENGINE = GoogleTranslation
     DEFAULT_LLM_ENGINE = GPTTranslation
     
     @classmethod

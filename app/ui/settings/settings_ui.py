@@ -65,10 +65,15 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.credential_services = [self.tr("Custom"), self.tr("Deepseek"), self.tr("Open AI GPT"), self.tr("Microsoft Azure"), self.tr("Google Cloud"), 
                                     self.tr("Google Gemini"), self.tr("DeepL"), self.tr("Anthropic Claude"), self.tr("Yandex")]
         
-        self.supported_translators = [self.tr("GPT-4.1"), self.tr("GPT-4.1-mini"), self.tr("DeepL"), 
-                                    self.tr("Claude-4.5-Sonnet"), self.tr("Claude-4.5-Haiku"),
-                                    self.tr("Gemini-2.5-Flash"), self.tr("Yandex"), self.tr("Google Translate"),
-                                    self.tr("Microsoft Translator"), self.tr("Deepseek-v3"), self.tr("Custom"),]
+        self.supported_translators = [
+            self.tr("GPT-4.1"),
+            self.tr("GPT-4.1-mini"),
+            self.tr("Claude-4.5-Sonnet"),
+            self.tr("Claude-4.5-Haiku"),
+            self.tr("Gemini-2.5-Flash"),
+            self.tr("Deepseek-v3"),
+            self.tr("Custom"),
+        ]
         
         self.languages = ['English', '한국어', 'Français', '日本語', 
          '简体中文', '繁體中文', 'русский', 'Deutsch', 
@@ -107,7 +112,6 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Gemini-2.5-Flash"): "Gemini-2.5-Flash",
             self.tr("Gemini-2.5-Pro"): "Gemini-2.5-Pro",
             self.tr("Yandex"): "Yandex",
-            self.tr("Google Translate"): "Google Translate",
             self.tr("Microsoft Translator"): "Microsoft Translator",
 
             # OCR mappings

@@ -174,8 +174,8 @@ To remove the segmented text
 <img src="https://i.imgur.com/cVVGVXp.jpg" width="49%"> <img src="https://i.imgur.com/bLkPyqG.jpg" width="49%">
 
 ### Translation
-Currently, this supports using GPT-4.1, DeepL, Claude-3, 
-Gemini-2.5, Yandex, Google Translate and Microsoft Azure Translator.
+Currently, this supports using GPT-4.1, Claude-4.5, 
+Gemini-2.5.
 
 All LLMs are fed the entire page text to aid translations. 
 There is also the Option to provide the Image itself for further context. 
