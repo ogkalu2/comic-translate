@@ -13,7 +13,7 @@ from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
 
 from .settings_ui import SettingsPageUI
 from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
-    EMAIL_KEY, TIER_KEY, CREDITS_KEY
+    EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
 from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
 
 
@@ -101,6 +101,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.user_email: Optional[str] = None
         self.user_tier: Optional[str] = None
         self.user_credits: Optional[Any] = None
+        self.user_monthly_credits: Optional[int] = None
 
         # Use the Settings UI directly; inner content is scrollable on the
         # right side (see settings_ui.py). This keeps the left navbar fixed.
@@ -221,7 +222,8 @@ class SettingsPage(QtWidgets.QWidget):
         return {
             'email': self.user_email,
             'tier': self.user_tier,
-            'credits': self.user_credits
+            'credits': self.user_credits,
+            'monthly_credits': self.user_monthly_credits
         }
 
     def get_all_settings(self):
@@ -466,6 +468,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.user_email = settings.value(EMAIL_KEY, None)
         self.user_tier = settings.value(TIER_KEY, None)
         self.user_credits = settings.value(CREDITS_KEY, None)
+        self.user_monthly_credits = settings.value(MONTHLY_CREDITS_KEY, None)
         # If credits are stored as JSON string, parse into dict
         if isinstance(self.user_credits, str):
             try:
@@ -489,6 +492,11 @@ class SettingsPage(QtWidgets.QWidget):
              settings.setValue(TIER_KEY, self.user_tier)
         else:
              settings.remove(TIER_KEY)
+
+        if self.user_monthly_credits is not None:
+             settings.setValue(MONTHLY_CREDITS_KEY, self.user_monthly_credits)
+        else:
+             settings.remove(MONTHLY_CREDITS_KEY)
 
         if self.user_credits is not None:
              if isinstance(self.user_credits, dict):
@@ -648,6 +656,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.user_email = user_info.get('email')
         self.user_tier = user_info.get('tier')
         self.user_credits = user_info.get('credits')
+        self.user_monthly_credits = user_info.get('monthly_credits')
         if self._pricing_refresh_baseline is not None and self.user_credits != self._pricing_refresh_baseline:
             self._stop_pricing_refresh_watch()
             self._pricing_refresh_baseline = None
@@ -733,6 +742,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.user_email = None
         self.user_tier = None
         self.user_credits = None
+        self.user_monthly_credits = None
 
         # Update the Account page UI
         self._update_account_view()
@@ -772,7 +782,26 @@ class SettingsPage(QtWidgets.QWidget):
         if self.is_logged_in():
             self.ui.account_page.show_logged_in()
             self.ui.email_value_label.setText(self.user_email or self.tr("N/A"))
-            self.ui.tier_value_label.setText(str(self.user_tier) if self.user_tier is not None else self.tr("N/A"))
+            
+            # Format tier display to show credits/month if available
+            tier_display = str(self.user_tier) if self.user_tier is not None else self.tr("N/A")
+            
+            try:
+                monthly = int(self.user_monthly_credits or 0)
+                if monthly > 0:
+                    if monthly >= 1000 and monthly % 1000 == 0:
+                        tier_display = f"{monthly // 1000}k {self.tr('credits/month')}"
+                    else:
+                        tier_display = f"{monthly:,} {self.tr('credits/month')}"
+                else:
+                    # If 0 or None, default to "Free" to match site behavior
+                    tier_display = "Free"
+            except (ValueError, TypeError):
+                # Fallback to existing tier name if parsing fails
+                pass
+            
+            self.ui.tier_value_label.setText(tier_display)
+            
             # Format credits display (supports dict or legacy int)
             credits_text = self.tr("N/A")
             if isinstance(self.user_credits, dict):

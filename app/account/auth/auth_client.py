@@ -15,6 +15,7 @@ USER_INFO_GROUP = "user_info"
 EMAIL_KEY = "email"
 TIER_KEY = "tier"
 CREDITS_KEY = "credits"
+MONTHLY_CREDITS_KEY = "monthly_credits"
 
 class SessionCheckThread(QThread):
     """Thread to validate the session in the background."""
