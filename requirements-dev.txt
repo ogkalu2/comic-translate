@@ -1,2 +1,0 @@
--r requirements.txt
-pytest-qt==4.4.0
