@@ -5,7 +5,7 @@ import numpy as np
 from typing import TYPE_CHECKING
 
 from PySide6 import QtCore
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QTextCursor
 
 from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.box import AddTextItemCommand
@@ -143,7 +143,7 @@ class TextController:
 
         if self.main.curr_tblock_item and self.main.curr_tblock_item in self.main.image_viewer._scene.items():
             cursor_position = self.main.t_text_edit.textCursor().position()
-            self.main.curr_tblock_item.setPlainText(new_text)
+            self._apply_text_item_text_delta(self.main.curr_tblock_item, new_text)
 
             # Restore cursor position
             cursor = self.main.t_text_edit.textCursor()
@@ -156,6 +156,50 @@ class TextController:
             self.main.t_text_edit.blockSignals(True)
             self.main.t_text_edit.setPlainText(new_text)
             self.main.t_text_edit.blockSignals(False)
+
+    def _apply_text_item_text_delta(self, text_item: TextBlockItem, new_text: str):
+        old_text = text_item.toPlainText()
+        if old_text == new_text:
+            return
+
+        prefix = 0
+        max_prefix = min(len(old_text), len(new_text))
+        while prefix < max_prefix and old_text[prefix] == new_text[prefix]:
+            prefix += 1
+
+        suffix = 0
+        max_suffix = min(len(old_text) - prefix, len(new_text) - prefix)
+        while suffix < max_suffix and old_text[-(suffix + 1)] == new_text[-(suffix + 1)]:
+            suffix += 1
+
+        old_mid_end = len(old_text) - suffix
+        new_mid_end = len(new_text) - suffix
+        old_mid = old_text[prefix:old_mid_end]
+        new_mid = new_text[prefix:new_mid_end]
+
+        doc = text_item.document()
+        cursor = QTextCursor(doc)
+        insert_format = None
+
+        if old_text:
+            if prefix < len(old_text):
+                cursor.setPosition(prefix)
+                insert_format = cursor.charFormat()
+            elif prefix > 0:
+                cursor.setPosition(prefix - 1)
+                insert_format = cursor.charFormat()
+
+        cursor.beginEditBlock()
+        if old_mid:
+            cursor.setPosition(prefix)
+            cursor.setPosition(prefix + len(old_mid), QTextCursor.KeepAnchor)
+            cursor.removeSelectedText()
+        if new_mid:
+            cursor.setPosition(prefix)
+            if insert_format is not None:
+                cursor.setCharFormat(insert_format)
+            cursor.insertText(new_mid)
+        cursor.endEditBlock()
 
     def save_src_trg(self):
         source_lang = self.main.s_combo.currentText()
