@@ -253,13 +253,14 @@ class ClickMeta(QtWidgets.QWidget):
         # If a cover is visible it sits above content and controls the width/height mainly
         cover_size = self._cover_label.size() if self._cover_label.isVisible() else QtCore.QSize(0, 0)
 
-        # Avatar dimensions: only count if avatar widget is visible
-        if self._avatar.isVisible():
-            if self._avatar_size:
-                avatar_width, avatar_height = self._avatar_size
-            else:
-                av_hint = self._avatar.sizeHint()
-                avatar_width, avatar_height = av_hint.width(), av_hint.height()
+        # Avatar dimensions:
+        # If avatar_size is known, reserve space for it even if not visible/loaded yet.
+        # This prevents layout jumps when images load in.
+        if self._avatar_size:
+            avatar_width, avatar_height = self._avatar_size
+        elif self._avatar.isVisible():
+            av_hint = self._avatar.sizeHint()
+            avatar_width, avatar_height = av_hint.width(), av_hint.height()
         else:
             avatar_width = 0
             avatar_height = 0
