@@ -51,6 +51,7 @@ class ComicTranslate(ComicTranslateUI):
 
     def __init__(self, parent=None):
         super(ComicTranslate, self).__init__(parent)
+        self.setWindowTitle("Project1.ctpr[*]")
 
         self.blk_list: list[TextBlock] = []   
         self.curr_tblock: TextBlock = None

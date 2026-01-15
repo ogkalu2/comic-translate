@@ -145,6 +145,7 @@ class ProjectController:
 
     def run_save_proj(self, file_name, post_save_callback=None):
         self.main.project_file = file_name
+        self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.loading.setVisible(True)
         self.main.disable_hbutton_group()
         save_failed = {'value': False}
@@ -230,6 +231,7 @@ class ProjectController:
 
     def thread_load_project(self, file_name):
         self.main.image_ctrl.clear_state()
+        self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.run_threaded(
             self.load_project, 
             self.load_state_to_ui,

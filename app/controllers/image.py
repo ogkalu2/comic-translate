@@ -62,6 +62,7 @@ class ImageStateController:
 
     def clear_state(self):
         # Clear existing image data
+        self.main.setWindowTitle("Project1.ctpr[*]")
         self.main.image_files = []
         self.main.image_states.clear()
         self.main.image_data.clear()
