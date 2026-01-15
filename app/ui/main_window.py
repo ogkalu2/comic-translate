@@ -258,6 +258,8 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
     def _confirm_start_new_project(self) -> bool:
         """Ask for confirmation if there's unsaved work."""
         try:
+            if hasattr(self, 'text_ctrl'):
+                self.text_ctrl._commit_pending_text_command()
             if hasattr(self, "has_unsaved_changes"):
                 has_unsaved = bool(self.has_unsaved_changes())
             else:

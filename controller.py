@@ -818,6 +818,10 @@ class ComicTranslate(ComicTranslateUI):
             super().keyPressEvent(event)
 
     def closeEvent(self, event):
+        try:
+            self.text_ctrl._commit_pending_text_command()
+        except Exception:
+            pass
         if not getattr(self, "_skip_close_prompt", False):
             if self.has_unsaved_changes():
                 reply = QtWidgets.QMessageBox.question(

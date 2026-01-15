@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor, QTextCursor
 
 from app.ui.commands.textformat import TextFormatCommand
 from app.ui.commands.box import AddTextItemCommand, ResizeBlocksCommand
+from app.ui.commands.text_edit import TextEditCommand
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 
@@ -35,13 +36,23 @@ class TextController:
             self.main.outline_width_dropdown,
             self.main.outline_checkbox
         ]
+        self._text_change_timer = QtCore.QTimer(self.main)
+        self._text_change_timer.setSingleShot(True)
+        self._text_change_timer.setInterval(400)
+        self._text_change_timer.timeout.connect(self._commit_pending_text_command)
+        self._pending_text_command = None
+        self._last_item_text = {}
+        self._last_item_html = {}
+        self._suspend_text_command = False
 
     def connect_text_item_signals(self, text_item: TextBlockItem):
         text_item.item_selected.connect(self.on_text_item_selected)
         text_item.item_deselected.connect(self.on_text_item_deselected)
-        text_item.text_changed.connect(self.update_text_block_from_item)
+        text_item.text_changed.connect(lambda text, ti=text_item: self.update_text_block_from_item(ti, text))
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
+        self._last_item_text[text_item] = text_item.toPlainText()
+        self._last_item_html[text_item] = text_item.document().toHtml()
 
     def clear_text_edits(self):
         self.main.curr_tblock = None
@@ -102,7 +113,10 @@ class TextController:
         self.main.push_command(command)
 
     def on_text_item_selected(self, text_item: TextBlockItem):
+        self._commit_pending_text_command()
         self.main.curr_tblock_item = text_item
+        self._last_item_text[text_item] = text_item.toPlainText()
+        self._last_item_html[text_item] = text_item.document().toHtml()
 
         x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
         rotation = text_item.rotation()
@@ -129,6 +143,7 @@ class TextController:
         self.set_values_for_blk_item(text_item)
 
     def on_text_item_deselected(self):
+        self._commit_pending_text_command()
         self.clear_text_edits()
 
     def update_text_block(self):
@@ -154,20 +169,25 @@ class TextController:
             cursor = self.main.t_text_edit.textCursor()
             cursor.setPosition(cursor_position)
             self.main.t_text_edit.setTextCursor(cursor)
-        if (old_translation is not None and old_translation != new_text) or (
-            old_item_text is not None and old_item_text != new_text
+        if (old_translation is None or old_translation == new_text) and (
+            old_item_text is None or old_item_text == new_text
         ):
-            self.main.mark_project_dirty()
+            return
 
-    def update_text_block_from_item(self, new_text: str):
-        if self.main.curr_tblock and new_text:
-            changed = self.main.curr_tblock.translation != new_text
-            self.main.curr_tblock.translation = new_text
+    def update_text_block_from_item(self, text_item: TextBlockItem, new_text: str):
+        if self._suspend_text_command:
+            return
+        blk = self._find_text_block_for_item(text_item)
+        if blk:
+            blk.translation = new_text
+
+        if self.main.curr_tblock_item == text_item:
+            self.main.curr_tblock = blk
             self.main.t_text_edit.blockSignals(True)
             self.main.t_text_edit.setPlainText(new_text)
             self.main.t_text_edit.blockSignals(False)
-            if changed:
-                self.main.mark_project_dirty()
+
+        self._schedule_text_change_command(text_item, new_text, blk)
 
     def _apply_text_item_text_delta(self, text_item: TextBlockItem, new_text: str):
         old_text = text_item.toPlainText()
@@ -250,6 +270,109 @@ class TextController:
         else:
             command.redo()
             self.main.mark_project_dirty()
+
+    def _find_text_block_for_item(self, text_item: TextBlockItem) -> TextBlock | None:
+        if not text_item:
+            return None
+
+        x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
+        rotation = text_item.rotation()
+
+        return next(
+            (
+                blk for blk in self.main.blk_list
+                if is_close(blk.xyxy[0], x1, 5)
+                and is_close(blk.xyxy[1], y1, 5)
+                and is_close(blk.angle, rotation, 1)
+            ),
+            None
+        )
+
+    def _schedule_text_change_command(self, text_item: TextBlockItem, new_text: str, blk: TextBlock | None):
+        if self._suspend_text_command:
+            return
+
+        pending = self._pending_text_command
+        if pending and pending['item'] is not text_item:
+            self._commit_pending_text_command()
+            pending = None
+
+        new_html = text_item.document().toHtml()
+        if pending is None:
+            old_text = self._last_item_text.get(text_item, new_text)
+            old_html = self._last_item_html.get(text_item, new_html)
+            if old_text == new_text:
+                self._last_item_text[text_item] = new_text
+                self._last_item_html[text_item] = new_html
+                return
+            pending = {
+                'item': text_item,
+                'old_text': old_text,
+                'new_text': new_text,
+                'old_html': old_html,
+                'new_html': new_html,
+                'blk': blk,
+            }
+            self._pending_text_command = pending
+        else:
+            pending['new_text'] = new_text
+            pending['new_html'] = new_html
+            pending['blk'] = blk
+
+        self._last_item_text[text_item] = new_text
+        self._last_item_html[text_item] = new_html
+        self._text_change_timer.start()
+
+    def _commit_pending_text_command(self):
+        if not self._pending_text_command:
+            return
+        self._text_change_timer.stop()
+        pending = self._pending_text_command
+        self._pending_text_command = None
+
+        if pending['old_text'] == pending['new_text']:
+            return
+
+        command = TextEditCommand(
+            self.main,
+            pending['item'],
+            pending['old_text'],
+            pending['new_text'],
+            old_html=pending.get('old_html'),
+            new_html=pending.get('new_html'),
+            blk=pending['blk']
+        )
+        stack = self.main.undo_group.activeStack()
+        if stack:
+            stack.push(command)
+        else:
+            command.redo()
+            self.main.mark_project_dirty()
+
+    def apply_text_from_command(self, text_item: TextBlockItem, text: str,
+                                html: str | None = None, blk: TextBlock | None = None):
+        self._suspend_text_command = True
+        try:
+            if text_item and text_item in self.main.image_viewer._scene.items():
+                if html is not None:
+                    if text_item.document().toHtml() != html:
+                        text_item.document().setHtml(html)
+                elif text_item.toPlainText() != text:
+                    text_item.set_plain_text(text)
+            if blk is None:
+                blk = self._find_text_block_for_item(text_item)
+            if blk:
+                blk.translation = text
+            if self.main.curr_tblock_item == text_item:
+                self.main.curr_tblock = blk
+                self.main.t_text_edit.blockSignals(True)
+                self.main.t_text_edit.setPlainText(text)
+                self.main.t_text_edit.blockSignals(False)
+        finally:
+            self._suspend_text_command = False
+        if text_item:
+            self._last_item_text[text_item] = text
+            self._last_item_html[text_item] = text_item.document().toHtml()
 
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):
