@@ -4,7 +4,7 @@ from PySide6.QtGui import QIcon, QFont
 from PySide6.QtCore import QSettings, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication  
 from controller import ComicTranslate
-from app.translations import ct_translations
+from resources.translations import ct_translations
 
 def main():
     
@@ -52,28 +52,18 @@ def main():
 def get_system_language():
     locale = QLocale.system().name()  # Returns something like "en_US" or "zh_CN"
     
-    # Special handling for Chinese
     if locale.startswith('zh_'):
-        if locale in ['zh_CN', 'zh_SG']:
-            return '简体中文'
-        elif locale in ['zh_TW', 'zh_HK']:
-            return '繁體中文'
-    
-    # For other languages, we can still use the first part of the locale
+        return '简体中文'
+
     lang_code = locale.split('_')[0]
     
-    # Map the system language code to your application's language names
     lang_map = {
-        'en': 'English',
         'ko': '한국어',
         'fr': 'Français',
-        'ja': '日本語',
         'ru': 'русский',
         'de': 'Deutsch',
-        'nl': 'Nederlands',
         'es': 'Español',
         'it': 'Italiano',
-        'tr': 'Türkçe'
     }
     
     return lang_map.get(lang_code, 'English')  # Default to English if not found
@@ -81,22 +71,22 @@ def get_system_language():
 def load_translation(app, language: str):
     translator = QTranslator(app)
     lang_code = {
-        'English': 'en',
         '한국어': 'ko',
         'Français': 'fr',
-        '日本語': 'ja',
         '简体中文': 'zh_CN',
-        '繁體中文': 'zh_TW',
         'русский': 'ru',
         'Deutsch': 'de',
-        'Nederlands': 'nl',
         'Español': 'es',
         'Italiano': 'it',
-        'Türkçe': 'tr'
-    }.get(language, 'en')
+    }.get(language)
+
+    if not lang_code:
+        return
 
     # Load the translation file
-    # if translator.load(f"ct_{lang_code}", "app/translations/compiled"):
+    # current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    # tr_dir = os.path.join(current_file_dir, 'resources', 'translations', 'compiled')
+    # if translator.load(f"ct_{lang_code}", tr_dir):
     #     app.installTranslator(translator)
     # else:
     #     print(f"Failed to load translation for {language}")
