@@ -8,7 +8,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from app.ui.dayu_widgets.clickable_card import ClickMeta
 from app.ui.dayu_widgets.message import MMessage
-from app.ui.commands.image import SetImageCommand
+from app.ui.commands.image import SetImageCommand, ToggleSkipImagesCommand
 from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
 from app.ui.commands.box import AddTextItemCommand
@@ -443,27 +443,29 @@ class ImageStateController:
             file_names: List of file names to update
             skip_status: If True, mark as skipped; if False, mark as not skipped
         """
+        file_paths = []
         for name in file_names:
-            # find full path
             path = next((p for p in self.main.image_files if os.path.basename(p) == name), None)
-            if not path:
-                continue
+            if path:
+                file_paths.append(path)
 
-            # update skip status in state dictionary
-            self.main.image_states.get(path, {})['skip'] = skip_status
+        if not file_paths:
+            return
 
-            # update item appearance
-            idx = self.main.image_files.index(path)
-            item = self.main.page_list.item(idx)
-            fnt = item.font()
-            fnt.setStrikeOut(skip_status)
-            item.setFont(fnt)
+        changed = False
+        for path in file_paths:
+            if self.main.image_states.get(path, {}).get('skip', False) != skip_status:
+                changed = True
+                break
+        if not changed:
+            return
 
-            # update card 
-            card = self.main.page_list.itemWidget(item)
-            if card:
-                card.set_skipped(skip_status)
-        if file_names:
+        command = ToggleSkipImagesCommand(self.main, file_paths, skip_status)
+        stack = self.main.undo_group.activeStack()
+        if stack:
+            stack.push(command)
+        else:
+            command.redo()
             self.main.mark_project_dirty()
 
     def display_image_from_loaded(self, rgb_image, index: int, switch_page: bool = True):

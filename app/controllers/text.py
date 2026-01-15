@@ -8,7 +8,7 @@ from PySide6 import QtCore
 from PySide6.QtGui import QColor, QTextCursor
 
 from app.ui.commands.textformat import TextFormatCommand
-from app.ui.commands.box import AddTextItemCommand
+from app.ui.commands.box import AddTextItemCommand, ResizeBlocksCommand
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 
@@ -243,14 +243,13 @@ class TextController:
     def change_all_blocks_size(self, diff: int):
         if len(self.main.blk_list) == 0:
             return
-        updated_blk_list = []
-        for blk in self.main.blk_list:
-            blk_rect = tuple(blk.xyxy)
-            blk.xyxy[:] = [blk_rect[0] - diff, blk_rect[1] - diff, blk_rect[2] + diff, blk_rect[3] + diff]
-            updated_blk_list.append(blk)
-        self.main.blk_list = updated_blk_list
-        self.main.pipeline.load_box_coords(self.main.blk_list)
-        self.main.mark_project_dirty()
+        command = ResizeBlocksCommand(self.main, self.main.blk_list, diff)
+        stack = self.main.undo_group.activeStack()
+        if stack:
+            stack.push(command)
+        else:
+            command.redo()
+            self.main.mark_project_dirty()
 
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):

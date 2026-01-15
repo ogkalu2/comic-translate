@@ -5,6 +5,7 @@ from PySide6.QtCore import QRectF, QPointF
 from .base import RectCommandBase
 from ..canvas.rectangle import MoveableRectItem
 from ..canvas.text_item import TextBlockItem
+from pipeline.webtoon_utils import get_first_visible_block
 
 
 class AddRectangleCommand(QUndoCommand, RectCommandBase):
@@ -95,6 +96,64 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
                 item.setTransformOriginPoint(QPointF(*new_tr_origin))
                 item.setPos(new_xyxy[0], new_xyxy[1])
                 item.setRotation(new_angle)
+
+
+class ResizeBlocksCommand(QUndoCommand):
+    def __init__(self, main_page, blk_list, diff: int):
+        super().__init__()
+        self.main = main_page
+        self.blk_list = blk_list
+        self.blocks = list(blk_list)
+        self.old_xyxy = [blk.xyxy.copy() for blk in self.blocks]
+        self.new_xyxy = [
+            [
+                old[0] - diff,
+                old[1] - diff,
+                old[2] + diff,
+                old[3] + diff,
+            ]
+            for old in self.old_xyxy
+        ]
+
+    def _refresh_rectangles(self):
+        viewer = self.main.image_viewer
+        if self.main.webtoon_mode:
+            viewer.clear_rectangles_in_visible_area()
+        else:
+            viewer.clear_rectangles(page_switch=True)
+
+        if not viewer.hasPhoto() or not self.main.blk_list:
+            return
+
+        for blk in self.main.blk_list:
+            x1, y1, x2, y2 = blk.xyxy
+            rect = QRectF(0, 0, x2 - x1, y2 - y1)
+            transform_origin = QPointF(*blk.tr_origin_point) if blk.tr_origin_point else None
+            rect_item = viewer.add_rectangle(rect, QPointF(x1, y1), blk.angle, transform_origin)
+            self.main.connect_rect_item_signals(rect_item)
+
+        if self.main.webtoon_mode:
+            first_block = get_first_visible_block(self.main.blk_list, viewer)
+            if first_block is None:
+                first_block = self.main.blk_list[0]
+        else:
+            first_block = self.main.blk_list[0]
+
+        rect = self.main.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
+        viewer.select_rectangle(rect)
+        self.main.set_tool('box')
+
+    def _apply(self, coords):
+        for blk, xyxy in zip(self.blocks, coords):
+            if blk in self.blk_list:
+                blk.xyxy[:] = xyxy
+        self._refresh_rectangles()
+
+    def redo(self):
+        self._apply(self.new_xyxy)
+
+    def undo(self):
+        self._apply(self.old_xyxy)
             
 class ClearRectsCommand(QUndoCommand, RectCommandBase):
     def __init__(self, viewer):

@@ -109,3 +109,43 @@ class SetImageCommand(QUndoCommand):
             img_array = imk.read_image(self.ct.image_history[file_path][current_index])
 
         return img_array
+
+
+class ToggleSkipImagesCommand(QUndoCommand):
+    def __init__(self, main, file_paths: list[str], skip_status: bool):
+        super().__init__()
+        self.main = main
+        self.file_paths = file_paths
+        self.new_status = skip_status
+        self.old_status = {
+            path: main.image_states.get(path, {}).get('skip', False)
+            for path in file_paths
+        }
+
+    def _apply_status(self, file_path: str, skip_status: bool):
+        if file_path not in self.main.image_states:
+            return
+        self.main.image_states[file_path]['skip'] = skip_status
+
+        try:
+            idx = self.main.image_files.index(file_path)
+        except ValueError:
+            return
+
+        item = self.main.page_list.item(idx)
+        if item:
+            fnt = item.font()
+            fnt.setStrikeOut(skip_status)
+            item.setFont(fnt)
+
+        card = self.main.page_list.itemWidget(item) if item else None
+        if card:
+            card.set_skipped(skip_status)
+
+    def redo(self):
+        for file_path in self.file_paths:
+            self._apply_status(file_path, self.new_status)
+
+    def undo(self):
+        for file_path in self.file_paths:
+            self._apply_status(file_path, self.old_status.get(file_path, False))
