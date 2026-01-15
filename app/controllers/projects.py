@@ -143,12 +143,24 @@ class ProjectController:
 
         return file_name
 
-    def run_save_proj(self, file_name):
+    def run_save_proj(self, file_name, post_save_callback=None):
         self.main.project_file = file_name
         self.main.loading.setVisible(True)
         self.main.disable_hbutton_group()
-        self.main.run_threaded(self.save_project, None,
-                                self.main.default_error_handler, self.main.on_manual_finished, file_name)
+        save_failed = {'value': False}
+
+        def on_error(error_tuple):
+            save_failed['value'] = True
+            self.main.default_error_handler(error_tuple)
+
+        def on_finished():
+            self.main.on_manual_finished()
+            if not save_failed['value']:
+                self.main.set_project_clean()
+                if post_save_callback:
+                    post_save_callback()
+
+        self.main.run_threaded(self.save_project, None, on_error, on_finished, file_name)
         
     def save_current_state(self):
         if self.main.webtoon_mode:
@@ -158,7 +170,7 @@ class ProjectController:
         else:
             self.main.image_ctrl.save_current_image_state()
 
-    def thread_save_project(self):
+    def thread_save_project(self, post_save_callback=None) -> bool:
         file_name = ""
         self.save_current_state()
         if self.main.project_file:
@@ -167,13 +179,17 @@ class ProjectController:
             file_name = self.launch_save_proj_dialog()
 
         if file_name:
-            self.run_save_proj(file_name)
+            self.run_save_proj(file_name, post_save_callback)
+            return True
+        return False
 
-    def thread_save_as_project(self):
+    def thread_save_as_project(self, post_save_callback=None) -> bool:
         file_name = self.launch_save_proj_dialog()
         if file_name:
             self.save_current_state()
-            self.run_save_proj(file_name)
+            self.run_save_proj(file_name, post_save_callback)
+            return True
+        return False
 
     def save_project(self, file_name):
         save_state_to_proj_file(self.main, file_name)
@@ -191,6 +207,7 @@ class ProjectController:
 
         for file in self.main.image_files:
             stack = QUndoStack(self.main)
+            stack.cleanChanged.connect(self.main._update_window_modified)
             self.main.undo_stacks[file] = stack
             self.main.undo_group.addStack(stack)
 
@@ -209,6 +226,7 @@ class ProjectController:
         if self.main.webtoon_mode:
             self.main.webtoon_toggle.setChecked(True)
             self.main.webtoon_ctrl.switch_to_webtoon_mode()
+        self.main.set_project_clean()
 
     def thread_load_project(self, file_name):
         self.main.image_ctrl.clear_state()

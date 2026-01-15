@@ -135,13 +135,18 @@ class TextController:
         if self.main.curr_tblock:
             self.main.curr_tblock.text = self.main.s_text_edit.toPlainText()
             self.main.curr_tblock.translation = self.main.t_text_edit.toPlainText()
+            self.main.mark_project_dirty()
 
     def update_text_block_from_edit(self):
         new_text = self.main.t_text_edit.toPlainText()
+        old_translation = None
+        old_item_text = None
         if self.main.curr_tblock:
+            old_translation = self.main.curr_tblock.translation
             self.main.curr_tblock.translation = new_text
 
         if self.main.curr_tblock_item and self.main.curr_tblock_item in self.main.image_viewer._scene.items():
+            old_item_text = self.main.curr_tblock_item.toPlainText()
             cursor_position = self.main.t_text_edit.textCursor().position()
             self._apply_text_item_text_delta(self.main.curr_tblock_item, new_text)
 
@@ -149,13 +154,20 @@ class TextController:
             cursor = self.main.t_text_edit.textCursor()
             cursor.setPosition(cursor_position)
             self.main.t_text_edit.setTextCursor(cursor)
+        if (old_translation is not None and old_translation != new_text) or (
+            old_item_text is not None and old_item_text != new_text
+        ):
+            self.main.mark_project_dirty()
 
     def update_text_block_from_item(self, new_text: str):
         if self.main.curr_tblock and new_text:
+            changed = self.main.curr_tblock.translation != new_text
             self.main.curr_tblock.translation = new_text
             self.main.t_text_edit.blockSignals(True)
             self.main.t_text_edit.setPlainText(new_text)
             self.main.t_text_edit.blockSignals(False)
+            if changed:
+                self.main.mark_project_dirty()
 
     def _apply_text_item_text_delta(self, text_item: TextBlockItem, new_text: str):
         old_text = text_item.toPlainText()
@@ -216,12 +228,17 @@ class TextController:
         t_text_option.setTextDirection(t_direction)
         self.main.t_text_edit.document().setDefaultTextOption(t_text_option)
 
+        if self.main.curr_img_idx >= 0:
+            self.main.mark_project_dirty()
+
     def set_src_trg_all(self):
         source_lang = self.main.s_combo.currentText()
         target_lang = self.main.t_combo.currentText()
         for image_path in self.main.image_files:
             self.main.image_states[image_path]['source_lang'] = source_lang
             self.main.image_states[image_path]['target_lang'] = target_lang
+        if self.main.image_files:
+            self.main.mark_project_dirty()
 
     def change_all_blocks_size(self, diff: int):
         if len(self.main.blk_list) == 0:
@@ -233,6 +250,7 @@ class TextController:
             updated_blk_list.append(blk)
         self.main.blk_list = updated_blk_list
         self.main.pipeline.load_box_coords(self.main.blk_list)
+        self.main.mark_project_dirty()
 
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):

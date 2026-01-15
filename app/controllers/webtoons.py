@@ -249,6 +249,7 @@ class WebtoonController:
             success = self.switch_to_webtoon_mode()
             if success:
                 self.main.webtoon_mode = True
+                self.main.mark_project_dirty()
             else:
                 # Failed to switch, revert toggle
                 self.main.webtoon_toggle.blockSignals(True)
@@ -258,3 +259,4 @@ class WebtoonController:
             # Switch back to regular mode
             self.main.webtoon_mode = False
             self.switch_to_regular_mode()
+            self.main.mark_project_dirty()

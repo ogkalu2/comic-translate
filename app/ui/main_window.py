@@ -52,7 +52,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
         super(ComicTranslateUI, self).__init__(parent)
-        self.setWindowTitle("Comic Translate")
+        self.setWindowTitle("Comic Translate[*]")
         
         screen = QtWidgets.QApplication.primaryScreen()
         geo = screen.geometry()
@@ -256,9 +256,12 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         return nav_rail_layout
 
     def _confirm_start_new_project(self) -> bool:
-        """Ask for confirmation if there's unsaved work (no project file but images are loaded)."""
+        """Ask for confirmation if there's unsaved work."""
         try:
-            has_unsaved = (getattr(self, 'project_file', None) is None) and bool(getattr(self, 'image_files', []))
+            if hasattr(self, "has_unsaved_changes"):
+                has_unsaved = bool(self.has_unsaved_changes())
+            else:
+                has_unsaved = (getattr(self, 'project_file', None) is None) and bool(getattr(self, 'image_files', []))
         except Exception:
             has_unsaved = False
 
@@ -266,7 +269,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             reply = QtWidgets.QMessageBox.question(
                 self,
                 self.tr("Start New Project"),
-                self.tr("Your current project is not saved, are you sure you want to start a new project?"),
+                self.tr("Your current project has unsaved changes. Start a new project?"),
                 QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
                 QtWidgets.QMessageBox.StandardButton.No
             )

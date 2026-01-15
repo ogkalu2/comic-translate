@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from typing import Callable, Tuple
 
-from PySide6 import QtCore
+from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QCoreApplication, QThreadPool
 from PySide6.QtGui import QUndoGroup, QUndoStack
 
@@ -76,6 +76,8 @@ class ComicTranslate(ComicTranslateUI):
         self.undo_stacks: dict[str, QUndoStack] = {}
         self.project_file = None
         self.temp_dir = tempfile.mkdtemp()
+        self._manual_dirty = False
+        self._skip_close_prompt = False
 
         self.pipeline = ComicTranslatePipeline(self)
         self.file_handler = FileHandler()
@@ -222,6 +224,41 @@ class ComicTranslate(ComicTranslateUI):
     def apply_inpaint_patches(self, patches): return self.image_ctrl.apply_inpaint_patches(patches)
     def render_settings(self): return self.text_ctrl.render_settings()
     def load_image(self, file_path: str) -> np.ndarray: return self.image_ctrl.load_image(file_path)
+
+    def _any_undo_dirty(self) -> bool:
+        for stack in self.undo_stacks.values():
+            try:
+                if stack and not stack.isClean():
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def has_unsaved_changes(self) -> bool:
+        return bool(self._manual_dirty) or self._any_undo_dirty()
+
+    def mark_project_dirty(self):
+        self._manual_dirty = True
+        self._update_window_modified()
+
+    def set_project_clean(self):
+        self._manual_dirty = False
+        for stack in self.undo_stacks.values():
+            try:
+                stack.setClean()
+            except Exception:
+                continue
+        self._update_window_modified()
+
+    def _update_window_modified(self):
+        try:
+            self.setWindowModified(self.has_unsaved_changes())
+        except Exception:
+            pass
+
+    def _finish_close_after_save(self):
+        self._skip_close_prompt = True
+        self.close()
 
     def push_command(self, command):
         if self.undo_group.activeStack():
@@ -781,6 +818,30 @@ class ComicTranslate(ComicTranslateUI):
             super().keyPressEvent(event)
 
     def closeEvent(self, event):
+        if not getattr(self, "_skip_close_prompt", False):
+            if self.has_unsaved_changes():
+                reply = QtWidgets.QMessageBox.question(
+                    self,
+                    self.tr("Unsaved Changes"),
+                    self.tr("Save changes to this file?"),
+                    QtWidgets.QMessageBox.StandardButton.Save
+                    | QtWidgets.QMessageBox.StandardButton.Discard
+                    | QtWidgets.QMessageBox.StandardButton.Cancel,
+                    QtWidgets.QMessageBox.StandardButton.Save
+                )
+
+                if reply == QtWidgets.QMessageBox.StandardButton.Save:
+                    self.project_ctrl.thread_save_project(
+                        post_save_callback=self._finish_close_after_save
+                    )
+                    event.ignore()
+                    return
+                if reply == QtWidgets.QMessageBox.StandardButton.Cancel:
+                    event.ignore()
+                    return
+        else:
+            self._skip_close_prompt = False
+
         # Save all settings when the application is closed
         self.settings_page.save_settings()
         self.project_ctrl.save_main_page_settings()
