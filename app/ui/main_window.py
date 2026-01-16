@@ -268,14 +268,15 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             has_unsaved = False
 
         if has_unsaved:
-            reply = QtWidgets.QMessageBox.question(
-                self,
-                self.tr("Start New Project"),
-                self.tr("Your current project has unsaved changes. Start a new project?"),
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
-                QtWidgets.QMessageBox.StandardButton.No
-            )
-            return reply == QtWidgets.QMessageBox.StandardButton.Yes
+            msg_box = QtWidgets.QMessageBox(self)
+            msg_box.setIcon(QtWidgets.QMessageBox.Question)
+            msg_box.setWindowTitle(self.tr("Start New Project"))
+            msg_box.setText(self.tr("Your current project has unsaved changes. Start a new project?"))
+            yes_btn = msg_box.addButton(self.tr("Yes"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+            no_btn = msg_box.addButton(self.tr("No"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+            msg_box.setDefaultButton(no_btn)
+            msg_box.exec()
+            return msg_box.clickedButton() == yes_btn
         return True
 
     def show_tool_menu(self):

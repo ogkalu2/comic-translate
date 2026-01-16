@@ -516,13 +516,32 @@ class SettingsPage(QtWidgets.QWidget):
         if not self._loading_settings:  
             self.show_restart_dialog()
 
-    def show_restart_dialog(self):
+    def _show_message_box(self, icon: QtWidgets.QMessageBox.Icon, title: str, text: str):
         msg_box = QtWidgets.QMessageBox(self)
-        msg_box.setWindowTitle(self.tr("Restart Required"))
-        msg_box.setText(self.tr("Please restart the application for the language changes to take effect."))
-        msg_box.setIcon(QtWidgets.QMessageBox.Information)
-        msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        msg_box.setIcon(icon)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        ok_btn = msg_box.addButton(self.tr("OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        msg_box.setDefaultButton(ok_btn)
         msg_box.exec()
+
+    def _ask_yes_no(self, title: str, text: str, default_yes: bool = False) -> bool:
+        msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setIcon(QtWidgets.QMessageBox.Icon.Question)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        yes_btn = msg_box.addButton(self.tr("Yes"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        no_btn = msg_box.addButton(self.tr("No"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        msg_box.setDefaultButton(yes_btn if default_yes else no_btn)
+        msg_box.exec()
+        return msg_box.clickedButton() == yes_btn
+
+    def show_restart_dialog(self):
+        self._show_message_box(
+            QtWidgets.QMessageBox.Icon.Information,
+            self.tr("Restart Required"),
+            self.tr("Please restart the application for the language changes to take effect.")
+        )
 
     def get_min_font_size(self):
         return int(self.ui.min_font_spinbox.value())
@@ -602,8 +621,8 @@ class SettingsPage(QtWidgets.QWidget):
     def open_pricing_page(self):
         """Open the pricing page in the system browser."""
         if not self.is_logged_in():
-            QtWidgets.QMessageBox.information(
-                self,
+            self._show_message_box(
+                QtWidgets.QMessageBox.Information,
                 self.tr("Sign In Required"),
                 self.tr("Please sign in to purchase or manage credits.")
             )
@@ -612,10 +631,10 @@ class SettingsPage(QtWidgets.QWidget):
         if QtGui.QDesktopServices.openUrl(QUrl(pricing_url)):
             self._start_pricing_refresh_watch()
         else:
-            QtWidgets.QMessageBox.warning(
-                self,
+            self._show_message_box(
+                QtWidgets.QMessageBox.Warning,
                 self.tr("Unable to Open Browser"),
-                self.tr("Please open the pricing page in your browser: {url}").format(url=pricing_url),
+                self.tr("Please open the pricing page in your browser: {url}").format(url=pricing_url)
             )
 
     def _start_pricing_refresh_watch(self):
@@ -672,9 +691,9 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Optionally show a success message
         if manual:
-            QtWidgets.QMessageBox.information(
-                self, 
-                self.tr("Success"), 
+            self._show_message_box(
+                QtWidgets.QMessageBox.Information,
+                self.tr("Success"),
                 self.tr("Successfully signed in as {email}.").format(email=self.user_email)
             )
 
@@ -697,9 +716,9 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Show error message to the user
         if manual:
-            QtWidgets.QMessageBox.warning(
-                self, 
-                self.tr("Sign In Error"), 
+            self._show_message_box(
+                QtWidgets.QMessageBox.Warning,
+                self.tr("Sign In Error"),
                 self.tr("Authentication failed: {error}").format(error=error_message)
             )
 
@@ -718,14 +737,11 @@ class SettingsPage(QtWidgets.QWidget):
         """Initiates the sign-out process."""
         logger.info("Sign Out button clicked.")
         # Confirmation dialog
-        reply = QtWidgets.QMessageBox.question(
-            self, self.tr("Confirm Sign Out"),
+        if self._ask_yes_no(
+            self.tr("Confirm Sign Out"),
             self.tr("Are you sure you want to sign out?"),
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-            QtWidgets.QMessageBox.No
-        )
-
-        if reply == QtWidgets.QMessageBox.Yes:
+            default_yes=False
+        ):
             self.ui.sign_out_button.setEnabled(False)
             self.ui.sign_out_button.setText(self.tr("Signing Out..."))
             # AuthClient handles token/setting clearing and emits logout_success
@@ -764,8 +780,8 @@ class SettingsPage(QtWidgets.QWidget):
             logger.warning("Session check failed (invalid token or refresh failed). Signing out.")
             
             # Alert the user about the expiration
-            QtWidgets.QMessageBox.warning(
-                self,
+            self._show_message_box(
+                QtWidgets.QMessageBox.Icon.Warning,
                 self.tr("Session Expired"),
                 self.tr("Your session has expired. Please sign in again.")
             )

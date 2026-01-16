@@ -80,10 +80,10 @@ class Messages:
         except Exception:
             pass
 
-        copy_btn = msg.addButton(QCoreApplication.translate("Messages", "Copy"), QtWidgets.QMessageBox.ActionRole)
-        # Add standard buttons so the window has a RejectRole (Close) and AcceptRole (Ok)
-        msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Close)
-        msg.setDefaultButton(QtWidgets.QMessageBox.Ok)
+        copy_btn = msg.addButton(QCoreApplication.translate("Messages", "Copy"), QtWidgets.QMessageBox.ButtonRole.ActionRole)
+        ok_btn = msg.addButton(QCoreApplication.translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton(QCoreApplication.translate("Messages", "Close"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        msg.setDefaultButton(ok_btn)
         msg.exec()
 
         if msg.clickedButton() == copy_btn:

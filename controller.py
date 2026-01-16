@@ -825,23 +825,24 @@ class ComicTranslate(ComicTranslateUI):
             pass
         if not getattr(self, "_skip_close_prompt", False):
             if self.has_unsaved_changes():
-                reply = QtWidgets.QMessageBox.question(
-                    self,
-                    self.tr("Unsaved Changes"),
-                    self.tr("Save changes to this file?"),
-                    QtWidgets.QMessageBox.StandardButton.Save
-                    | QtWidgets.QMessageBox.StandardButton.Discard
-                    | QtWidgets.QMessageBox.StandardButton.Cancel,
-                    QtWidgets.QMessageBox.StandardButton.Save
-                )
+                msg_box = QtWidgets.QMessageBox(self)
+                msg_box.setIcon(QtWidgets.QMessageBox.Question)
+                msg_box.setWindowTitle(self.tr("Unsaved Changes"))
+                msg_box.setText(self.tr("Save changes to this file?"))
+                save_btn = msg_box.addButton(self.tr("Save"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+                msg_box.addButton(self.tr("Discard"), QtWidgets.QMessageBox.ButtonRole.DestructiveRole)
+                cancel_btn = msg_box.addButton(self.tr("Cancel"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+                msg_box.setDefaultButton(save_btn)
+                msg_box.exec()
+                clicked = msg_box.clickedButton()
 
-                if reply == QtWidgets.QMessageBox.StandardButton.Save:
+                if clicked == save_btn:
                     self.project_ctrl.thread_save_project(
                         post_save_callback=self._finish_close_after_save
                     )
                     event.ignore()
                     return
-                if reply == QtWidgets.QMessageBox.StandardButton.Cancel:
+                if clicked == cancel_btn or clicked is None:
                     event.ignore()
                     return
         else:
