@@ -1,10 +1,9 @@
 import os, sys
 import logging
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon
 from PySide6.QtCore import QSettings, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication  
 from controller import ComicTranslate
-from resources.translations import ct_translations
 
 def main():
     
@@ -73,7 +72,7 @@ def load_translation(app, language: str):
     lang_code = {
         '한국어': 'ko',
         'Français': 'fr',
-        '简体中文': 'zh_CN',
+        '简体中文': 'zh-CN',
         'русский': 'ru',
         'Deutsch': 'de',
         'Español': 'es',
@@ -84,17 +83,17 @@ def load_translation(app, language: str):
         return
 
     # Load the translation file
-    # current_file_dir = os.path.dirname(os.path.abspath(__file__))
-    # tr_dir = os.path.join(current_file_dir, 'resources', 'translations', 'compiled')
-    # if translator.load(f"ct_{lang_code}", tr_dir):
-    #     app.installTranslator(translator)
-    # else:
-    #     print(f"Failed to load translation for {language}")
-
-    if translator.load(f":/translations/ct_{lang_code}.qm"):
+    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+    tr_dir = os.path.join(current_file_dir, 'resources', 'translations', 'compiled')
+    if translator.load(f"ct_{lang_code}", tr_dir):
         app.installTranslator(translator)
     else:
         print(f"Failed to load translation for {language}")
+
+    # if translator.load(f":/translations/ct_{lang_code}.qm"):
+    #     app.installTranslator(translator)
+    # else:
+    #     print(f"Failed to load translation for {language}")
 
 if __name__ == "__main__":
     main()
