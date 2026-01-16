@@ -22,8 +22,8 @@ class AccountPage(QtWidgets.QWidget):
         title_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
 
         description_text = self.tr(
-            "Sign in to sync your settings, access potential premium features, "
-            "and manage your usage credits across devices."
+            "Sign in to use Comic Translate, see your credits balance, "
+            "and purchase additional credits."
         )
         description_label = MLabel(description_text)
         description_label.setWordWrap(True)
