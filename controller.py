@@ -830,7 +830,7 @@ class ComicTranslate(ComicTranslateUI):
                 msg_box.setWindowTitle(self.tr("Unsaved Changes"))
                 msg_box.setText(self.tr("Save changes to this file?"))
                 save_btn = msg_box.addButton(self.tr("Save"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
-                msg_box.addButton(self.tr("Discard"), QtWidgets.QMessageBox.ButtonRole.DestructiveRole)
+                msg_box.addButton(self.tr("Don't Save"), QtWidgets.QMessageBox.ButtonRole.DestructiveRole)
                 cancel_btn = msg_box.addButton(self.tr("Cancel"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
                 msg_box.setDefaultButton(save_btn)
                 msg_box.exec()
