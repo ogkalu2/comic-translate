@@ -7,26 +7,26 @@ English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
 This project was created to utilize the ability of State of the Art (SOTA) Large Language Models (LLMs) like GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to (but not from) Turkish, Polish, Portuguese and Brazillian Portuguese.
 
-- [The State of Machine Translation](#the-state-of-machine-translation)
-- [Preview](#comic-samples)
-- [Getting Started](#installation)
-    - [Installation](#installation)
-        - [Python](#python)
-    - [Usage](#usage)
-        - [Tips](#tips)
-    - [API keys](#api-keys)
-        - [Getting API Keys](#getting-api-keys)
-            - [Open AI](#open-ai-gpt)
-            - [Google Cloud Vision](#google-cloud-vision)
-
-- [How it works](#how-it-works)
-    - [Text Detection](#text-detection)
-    - [OCR](#OCR)
+- [Comic Translate](#comic-translate)
+  - [Intro](#intro)
+  - [The State of Machine Translation](#the-state-of-machine-translation)
+  - [Comic Samples](#comic-samples)
+  - [Installation](#installation)
+    - [With poetry](#with-poetry)
+    - [Python](#python)
+  - [Usage](#usage)
+    - [Tips](#tips)
+  - [API Keys](#api-keys)
+    - [Getting API Keys](#getting-api-keys)
+      - [Open AI (GPT)](#open-ai-gpt)
+      - [Google Cloud Vision](#google-cloud-vision)
+  - [How it works](#how-it-works)
+    - [Speech Bubble Detection and Text Segmentation](#speech-bubble-detection-and-text-segmentation)
+    - [OCR](#ocr)
     - [Inpainting](#inpainting)
     - [Translation](#translation)
     - [Text Rendering](#text-rendering)
-
-- [Acknowledgements](#acknowledgements)
+  - [Acknowledgements](#acknowledgements)
 
 ## The State of Machine Translation
 For a couple dozen languages, the best Machine Translator is not Google Translate, Papago or even DeepL, but a SOTA LLM like GPT-4o, and by far. 
@@ -67,6 +67,20 @@ Note: Some of these also have Official English Translations
 <img src="https://i.imgur.com/h51XJx4.jpg" width="49%"> <img src="https://i.imgur.com/sLitjUY.jpg" width="49%">
 
 ## Installation
+### With poetry
+Install poetry on Linux, macOS, Windows (WSL)
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+Clone the repo (or download the folder), navigate to the folder
+```bash
+git clone https://github.com/ogkalu2/comic-translate
+cd comic-translate
+poetry install
+poetry run python comic.py
+```
+
 ### Python
 Install Python 3.12. Tick "Add python.exe to PATH" during the setup.
 ```bash
