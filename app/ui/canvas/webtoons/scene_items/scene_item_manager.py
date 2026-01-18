@@ -227,7 +227,7 @@ class SceneItemManager:
                             temp_doc.setHtml(text_content)
                             plain_text = temp_doc.toPlainText()
                         
-                        blk.text = plain_text
+                        blk.translation = plain_text
                         break
     
     def _is_html(self, text):
