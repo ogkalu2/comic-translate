@@ -477,13 +477,19 @@ class TextItemManager:
 
     def _are_text_items_mergeable(self, item1, item2, existing_group):
         """Check if two text items can be merged (are parts of the same original item clipped in regular mode)."""
+        # Check if items are on adjacent pages first (important for clipped items)
+        ref_page = existing_group[0]['page_idx']
+        test_page = item2['page_idx']
+        if abs(ref_page - test_page) != 1:  # Must be from adjacent pages
+            return False
+        
         # Sort group by Y position to check adjacency
         group_sorted = sorted(existing_group + [item2], key=lambda x: x['scene_pos'].y())
         item2_index = next(i for i, item in enumerate(group_sorted) if item == item2)
-        
-        # Check if item2 is adjacent to any item in the group
+
+        # Tolerance to account for page gaps in webtoon layout
+        tolerance = 50  
         is_adjacent = False
-        tolerance = 20  # Increased tolerance for page boundary clipping
         
         if item2_index > 0:
             prev_item = group_sorted[item2_index - 1]
@@ -504,12 +510,6 @@ class TextItemManager:
         if not is_adjacent:
             return False
         
-        # Check if items are on adjacent pages (important for clipped items)
-        ref_page = existing_group[0]['page_idx']
-        test_page = item2['page_idx']
-        if abs(ref_page - test_page) > 1:  # Only merge items from adjacent pages
-            return False
-        
         # Check similar styling (font, color, etc.)
         ref_item = existing_group[0]['data']
         test_item = item2['data']
@@ -522,7 +522,10 @@ class TextItemManager:
         # Check horizontal alignment (clipped items should have very similar X positions)
         ref_x = existing_group[0]['scene_pos'].x()
         test_x = item2['scene_pos'].x()
-        if abs(ref_x - test_x) > 15:  # Strict alignment for clipped items
+        
+        # Strict alignment for clipped items
+        x_diff = abs(ref_x - test_x)
+        if x_diff > 15:  
             return False
             
         return True
