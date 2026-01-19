@@ -384,13 +384,28 @@ class TextItemManager:
                                         )
                                         scene_items_by_page[page_idx]['text_items'].append(clipped_text_data)
 
+    def _get_plain_text(self, text):
+        """Extract plain text from potential HTML content."""
+        if not text:
+            return ""
+        # Quick check for HTML tags
+        if '<' not in text or '>' not in text:
+            return text
+            
+        # Use QTextDocument to extract plain text
+        doc = QTextDocument()
+        doc.setHtml(text)
+        return doc.toPlainText().strip()
+
     def is_duplicate_text_item(self, new_text_item, existing_text_items, margin=5):
         """Check if a text item is a duplicate of any existing text item within margin."""
         if 'position' not in new_text_item:
             return False
             
         new_x, new_y = new_text_item['position']
-        new_text = new_text_item.get('text', '')
+        new_raw_text = new_text_item.get('text', '')
+        new_plain_text = self._get_plain_text(new_raw_text)
+        
         new_width = new_text_item.get('width', 0)
         new_angle = new_text_item.get('rotation', 0)
         
@@ -399,17 +414,28 @@ class TextItemManager:
                 continue
                 
             ex_x, ex_y = existing_text_item['position']
-            ex_text = existing_text_item.get('text', '')
+            ex_raw_text = existing_text_item.get('text', '')
+            ex_plain_text = self._get_plain_text(ex_raw_text)
+            
             ex_width = existing_text_item.get('width', 0)
             ex_angle = existing_text_item.get('rotation', 0)    
             
             # Check if position is within margin and text matches
+            # We compare plain text to identify the same item even if styling (HTML) changed
             if (abs(new_x - ex_x) <= margin and 
                 abs(new_y - ex_y) <= margin and 
-                abs(new_width - ex_width) <= margin and 
                 abs(new_angle - ex_angle) <= 1.0 and
-                new_text == ex_text):
+                (new_plain_text == ex_plain_text)):
+                
+                # If content matches, we consider it a duplicate.
+                # Note: We ignoring width check if text matches, because styling changes (e.g. bold)
+                # can change width significantly while still being the same item.
                 return True
+                
+            # Fallback: if plain text doesn't match perfectly but everything else does,
+            # it might be the same item with text edit. But we can't be sure.
+            # So we strictly require text match (content-wise).
+            
         return False
     
     def merge_clipped_text_items(self):
@@ -514,7 +540,8 @@ class TextItemManager:
         ref_item = existing_group[0]['data']
         test_item = item2['data']
         
-        style_attrs = ['font_family', 'font_size', 'font_bold', 'font_italic', 'color', 'outline_color']
+        
+        style_attrs = ['font_family', 'font_size', 'bold', 'italic', 'text_color', 'outline_color']
         for attr in style_attrs:
             if ref_item.get(attr) != test_item.get(attr):
                 return False
