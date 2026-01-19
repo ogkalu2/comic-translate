@@ -17,7 +17,7 @@ from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask,
     get_language_code, is_directory_empty, get_smart_text_color
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
-from modules.rendering.render import get_best_render_area, pyside_word_wrap
+from modules.rendering.render import get_best_render_area, pyside_word_wrap, is_vertical_block
 from modules.utils.device import resolve_device
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
@@ -338,10 +338,26 @@ class BatchProcessor:
                 translation = blk.translation
                 if not translation or len(translation) == 1:
                     continue
+                
+                # Determine if this block should use vertical rendering
+                vertical = is_vertical_block(blk, trg_lng_cd)
 
-                translation, font_size = pyside_word_wrap(translation, font, width, height,
-                                                        line_spacing, outline_width, bold, italic, underline,
-                                                        alignment, direction, max_font_size, min_font_size)
+                translation, font_size = pyside_word_wrap(
+                    translation, 
+                    font, 
+                    width, 
+                    height,
+                    line_spacing, 
+                    outline_width, 
+                    bold, 
+                    italic, 
+                    underline,
+                    alignment, 
+                    direction, 
+                    max_font_size, 
+                    min_font_size,
+                    vertical
+                )
                 
                 # Display text if on current page  
                 if image_path == file_on_display:
@@ -373,6 +389,7 @@ class BatchProcessor:
                     transform_origin=blk.tr_origin_point,
                     width=width,
                     direction=direction,
+                    vertical=vertical,
                     selection_outlines=[
                         OutlineInfo(0, len(translation), 
                         outline_color, 

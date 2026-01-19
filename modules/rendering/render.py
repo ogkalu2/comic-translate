@@ -11,6 +11,8 @@ from .hyphen_textwrap import wrap as hyphen_wrap
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
+from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
+from modules.utils.pipeline_utils import get_language_code
 
 from dataclasses import dataclass
 
@@ -40,6 +42,25 @@ def pil_to_array(pil_image: Image):
     # Convert the PIL image to a numpy array (already in RGB)
     numpy_image = np.array(pil_image)
     return numpy_image
+
+def is_vertical_language_code(lang_code: str | None) -> bool:
+    """Return True if the language code should use vertical layout.
+
+    Currently treats Japanese and simplified/traditional Chinese as
+    vertical-capable languages.
+    """
+    if not lang_code:
+        return False
+    code = lang_code.lower()
+    return code in {"zh-cn", "zh-tw", "ja"}
+
+def is_vertical_block(blk, lang_code: str | None) -> bool:
+    """Return True if this block should be rendered vertically.
+
+    A block is considered vertical when its direction flag is "vertical"
+    and the target language code is one of the vertical-capable ones.
+    """
+    return getattr(blk, "direction", "") == "vertical" and is_vertical_language_code(lang_code)
 
 def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
                   roi_width, roi_height, align: str, spacing, init_font_size: int, min_font_size: int = 10):
@@ -151,9 +172,23 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
     return blk_list
 
 
-def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int,
-                    line_spacing, outline_width, bold, italic, underline,
-                    alignment, direction, init_font_size: int, min_font_size: int = 10) -> Tuple[str, int]:
+def pyside_word_wrap(
+    text: str, 
+    font_input: str, 
+    roi_width: int, 
+    roi_height: int,
+    line_spacing: float, 
+    outline_width: float, 
+    bold: bool, 
+    italic: bool, 
+    underline: bool, 
+    alignment: Qt.AlignmentFlag,
+    direction: Qt.LayoutDirection, 
+    init_font_size: int, 
+    min_font_size: int = 10, 
+    vertical: bool = False
+) -> Tuple[str, int]:
+    
     """Break long text to multiple lines, and find the largest point size
         so that all wrapped text fits within the box."""
     
@@ -165,8 +200,8 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
         font.setUnderline(underline)
 
         return font
-    
-    def eval_metrics(txt: str, font_sz: float) -> Tuple[float, float]:
+
+    def eval_metrics(txt: str, font_sz: float, vertical: bool = False) -> Tuple[float, float]:
         """Quick helper function to calculate width/height of text using QTextDocument."""
         
         # Create a QTextDocument
@@ -178,15 +213,24 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
         text_option = QTextOption()
         text_option.setTextDirection(direction)
         doc.setDefaultTextOption(text_option)
-        
-        # Apply line spacing
-        cursor = QTextCursor(doc)
-        cursor.select(QTextCursor.SelectionType.Document)
-        block_format = QTextBlockFormat()
-        spacing = line_spacing * 100
-        block_format.setLineHeight(spacing, QTextBlockFormat.LineHeightTypes.ProportionalHeight.value)
-        block_format.setAlignment(alignment)
-        cursor.mergeBlockFormat(block_format)
+
+        if vertical:
+            layout = VerticalTextDocumentLayout(
+                document=doc,
+                line_spacing=line_spacing
+            )
+
+            doc.setDocumentLayout(layout)
+            layout.update_layout()
+        else:
+            # Apply line spacing
+            cursor = QTextCursor(doc)
+            cursor.select(QTextCursor.SelectionType.Document)
+            block_format = QTextBlockFormat()
+            spacing = line_spacing * 100
+            block_format.setLineHeight(spacing, QTextBlockFormat.LineHeightTypes.ProportionalHeight.value)
+            block_format.setAlignment(alignment)
+            cursor.mergeBlockFormat(block_format)
         
         # Get the size of the document
         size = doc.size()
@@ -208,8 +252,9 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
             # try extending the current line
             while words:
                 test = f"{line} {words[0]}"
-                w, _ = eval_metrics(test, font_size)
-                if w <= roi_width:
+                w, h = eval_metrics(test, font_size, vertical)
+                side, side_roi = (h, roi_height) if vertical else (w, roi_width)
+                if side <= side_roi:
                     line = test
                     words.pop(0)
                 else:
@@ -217,7 +262,7 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
             lines.append(line)
         wrapped = "\n".join(lines)
         # measure wrapped block
-        w, h = eval_metrics(wrapped, font_size)
+        w, h = eval_metrics(wrapped, font_size, vertical)
         return wrapped, w, h
     
     # Initialize
@@ -287,10 +332,24 @@ def pyside_word_wrap(text: str, font_input: str, roi_width: int, roi_height: int
 
     # return mutable_message, font_size
 
-def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spacing, 
-                outline_width, bold, italic, underline, alignment, direction, 
-                init_font_size: int = 40, min_font_size: int = 10):
+def manual_wrap(
+    main_page, 
+    blk_list: List[TextBlock], 
+    font_family: str, 
+    line_spacing: float, 
+    outline_width: float, 
+    bold: bool, 
+    italic: bool, 
+    underline: bool, 
+    alignment: Qt.AlignmentFlag, 
+    direction: Qt.LayoutDirection, 
+    init_font_size: int = 40, 
+    min_font_size: int = 10
+):
     
+    target_lang = main_page.lang_mapping.get(main_page.t_combo.currentText(), None)
+    trg_lng_cd = get_language_code(target_lang)
+
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
 
@@ -298,9 +357,24 @@ def manual_wrap(main_page, blk_list: List[TextBlock], font_family: str, line_spa
         if not translation or len(translation) == 1:
             continue
 
-        translation, font_size = pyside_word_wrap(translation, font_family, width, height,
-                                                 line_spacing, outline_width, bold, italic, underline,
-                                                 alignment, direction, init_font_size, min_font_size)
+        vertical = is_vertical_block(blk, trg_lng_cd)
+
+        translation, font_size = pyside_word_wrap(
+            translation, 
+            font_family, 
+            width, 
+            height,
+            line_spacing, 
+            outline_width, 
+            bold, 
+            italic, 
+            underline,
+            alignment, 
+            direction, 
+            init_font_size, 
+            min_font_size,
+            vertical
+        )
         
         main_page.blk_rendered.emit(translation, font_size, blk)
 

@@ -17,6 +17,7 @@ from modules.utils.textblock import sort_blk_list, TextBlock
 from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask, \
     get_language_code, is_directory_empty, get_smart_text_color
 from modules.utils.translator_utils import format_translations
+from modules.rendering.render import is_vertical_block
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
@@ -746,9 +747,25 @@ class WebtoonBatchProcessor:
             if not translation or len(translation) < 1:
                 continue
 
-            translation, font_size = pyside_word_wrap(translation, font, width, height,
-                                                      line_spacing, outline_width, bold, italic, underline,
-                                                      alignment, direction, max_font_size, min_font_size)
+            # Determine if this block should use vertical rendering
+            vertical = is_vertical_block(blk_virtual, trg_lng_cd)
+
+            translation, font_size = pyside_word_wrap(
+                translation, 
+                font, 
+                width, 
+                height,
+                line_spacing, 
+                outline_width, 
+                bold, 
+                italic, 
+                underline,
+                alignment, 
+                direction, 
+                max_font_size, 
+                min_font_size,
+                vertical
+            )
             
             if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
                 translation = translation.replace(' ', '')
@@ -796,6 +813,7 @@ class WebtoonBatchProcessor:
                 transform_origin=blk_virtual.tr_origin_point if blk_virtual.tr_origin_point else (0, 0),
                 width=width,
                 direction=direction,
+                vertical=vertical,
                 selection_outlines=[
                     OutlineInfo(
                         0, 

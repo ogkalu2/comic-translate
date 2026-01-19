@@ -416,6 +416,9 @@ class ImageViewer(QGraphicsView):
         item.setPos(QPointF(*properties.position))
         item.setRotation(properties.rotation)
         item.setScale(properties.scale)
+
+        item.set_vertical(bool(properties.vertical))
+        item.set_color(properties.text_color)
             
         # Set selection outlines
         item.selection_outlines = properties.selection_outlines.copy()

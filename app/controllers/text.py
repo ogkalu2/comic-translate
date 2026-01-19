@@ -14,7 +14,7 @@ from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 
 from modules.utils.textblock import TextBlock
-from modules.rendering.render import TextRenderingSettings, manual_wrap
+from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
     get_layout_direction, is_close, get_smart_text_color
 from modules.utils.translator_utils import format_translations
@@ -88,6 +88,7 @@ class TextController:
         italic = render_settings.italic
         underline = render_settings.underline
         direction = render_settings.direction
+        vertical = is_vertical_block(blk, trg_lng_cd)
 
         properties = TextItemProperties(
             text=text,
@@ -104,6 +105,7 @@ class TextController:
             direction=direction,
             position=(blk.xyxy[0], blk.xyxy[1]),
             rotation=blk.angle,
+            vertical=vertical,
         )
         
         text_item = self.main.image_viewer.add_text_item(properties)
@@ -705,10 +707,24 @@ class TextController:
             direction = render_settings.direction
 
             self.main.undo_group.activeStack().beginMacro('text_items_rendered')
-            self.main.run_threaded(manual_wrap, self.on_render_complete, self.main.default_error_handler,
-                              None, self.main, new_blocks, font_family, line_spacing, outline_width,
-                              bold, italic, underline, alignment, direction, max_font_size,
-                              min_font_size)
+            self.main.run_threaded(
+                manual_wrap, 
+                self.on_render_complete, 
+                self.main.default_error_handler,
+                None, 
+                self.main, 
+                new_blocks, 
+                font_family, 
+                line_spacing, 
+                outline_width,
+                bold, 
+                italic, 
+                underline, 
+                alignment, 
+                direction, 
+                max_font_size,
+                min_font_size
+            )
 
     def on_render_complete(self, rendered_image: np.ndarray):
         # self.main.set_image(rendered_image) 

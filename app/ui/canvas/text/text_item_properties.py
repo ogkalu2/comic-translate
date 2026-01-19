@@ -50,7 +50,7 @@ class TextItemProperties:
         if 'text_color' in data:
             if isinstance(data['text_color'], QColor):
                 props.text_color = data['text_color']
-            else:
+            elif data['text_color'] is not None:
                 props.text_color = QColor(data['text_color'])
         
         if 'outline_color' in data:

@@ -58,6 +58,7 @@ class ImageSaveRenderer:
             text_item.setPos(QtCore.QPointF(*text_props.position))
             text_item.setRotation(text_props.rotation)
             text_item.setScale(text_props.scale)
+            text_item.set_vertical(bool(text_props.vertical))
             text_item.selection_outlines = text_props.selection_outlines
             text_item.update()
 

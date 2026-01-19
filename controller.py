@@ -24,7 +24,7 @@ from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
 from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
 from modules.detection.utils.content import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
-from modules.rendering.render import pyside_word_wrap
+from modules.rendering.render import pyside_word_wrap, is_vertical_block
 from modules.utils.pipeline_utils import get_language_code, is_close
 from modules.utils.translator_utils import format_translations
 from pipeline.main_pipeline import ComicTranslatePipeline
@@ -622,6 +622,8 @@ class ComicTranslate(ComicTranslateUI):
                 )
                 if not (blk and blk.translation):
                     continue
+                # Determine if this block should use vertical rendering
+                vertical = is_vertical_block(blk, trg_lng_cd)
 
                 wrap_args = (
                     blk.translation,
@@ -637,6 +639,7 @@ class ComicTranslate(ComicTranslateUI):
                     text_item.direction,
                     rs.max_font_size,
                     rs.min_font_size,
+                    vertical,
                 )
 
                 # enqueue the word-wrap

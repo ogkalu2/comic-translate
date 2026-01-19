@@ -6,6 +6,8 @@ from PySide6.QtCore import Qt, QRectF, Signal, QPointF
 import math, copy
 from dataclasses import dataclass
 from enum import Enum
+from .text.vertical_layout import VerticalTextDocumentLayout
+
 
 @dataclass
 class TextBlockState:
@@ -70,6 +72,9 @@ class TextBlockItem(QGraphicsTextItem):
         self.line_spacing = line_spacing
         self.direction = direction
 
+        self.layout = None
+        self.vertical = False
+
         self.selected = False
         self.resizing = False
         self.resize_handle = None
@@ -100,6 +105,71 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Set the initial text direction
         self._apply_text_direction()
+
+    def set_vertical(self, vertical: bool):
+        doc = self.document()
+        is_already_vertical = isinstance(doc.documentLayout(), VerticalTextDocumentLayout)
+
+        if vertical == is_already_vertical:
+            return
+
+        self.vertical = vertical
+
+        # Disconnect signals from the old layout if it's our custom one
+        if is_already_vertical:
+            old_layout = doc.documentLayout()
+            if old_layout:
+                try:
+                    old_layout.size_enlarged.disconnect(self.on_document_enlarged)
+                    old_layout.documentSizeChanged.disconnect(self.setCenterTransform)
+                except (TypeError, RuntimeError): # Already disconnected
+                    pass
+        
+        # Inform the graphics system that the geometry will change
+        self.prepareGeometryChange()
+        current_rect = self.boundingRect()
+
+        # Disable text interaction while changing layout
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        
+        if doc.documentLayout():
+            doc.documentLayout().blockSignals(True)
+
+        if vertical:
+            layout = VerticalTextDocumentLayout(
+                document=doc,
+                line_spacing=self.line_spacing,
+            )
+            self.layout = layout
+            doc.setDocumentLayout(layout)
+            
+            # Connect signals for the new layout
+            layout.size_enlarged.connect(self.on_document_enlarged)
+            layout.documentSizeChanged.connect(self.setCenterTransform)
+            
+            # Initialize layout with the item's current size.
+            # set_max_size enforces the dimensions, but a text item with no 
+            # set text has negligible size, so this can collapse the layout.
+            # Only uncomment if set_vertical runs after plain text is set.
+            # layout.set_max_size(current_rect.width(), current_rect.height())
+            # layout.update_layout()
+
+        else:  # Switching back to horizontal
+            self.layout = None
+            doc.setDocumentLayout(None)  # Qt will restore the default layout.
+            self.setTextWidth(current_rect.width())
+        
+        # After setting the new layout, update the item's state
+        self.setCenterTransform()
+        self.update()
+
+    def setCenterTransform(self):
+        center = self.boundingRect().center()
+        self.setTransformOriginPoint(center)
+
+    def on_document_enlarged(self):
+        self.prepareGeometryChange()
+        self.setCenterTransform()
 
     def _apply_text_direction(self):
         text_option = self.document().defaultTextOption()
@@ -143,9 +213,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.update_text_format('font', font)
 
     def set_font_size(self, font_size):
-        # Ensure minimum font size.
         font_size = max(1, font_size)
-        
         if not self.textCursor().hasSelection():
             self.font_size = font_size
         self.update_text_format('size', font_size)
@@ -331,6 +399,16 @@ class TextBlockItem(QGraphicsTextItem):
         # Then handle any selection outlines
         if self.selection_outlines:
             doc = self.document().clone()
+            
+            # Preserve vertical layout if in vertical mode
+            if self.vertical and self.layout:
+                vertical_layout = VerticalTextDocumentLayout(
+                    document=doc,
+                    line_spacing=self.layout.line_spacing,
+                )
+                doc.setDocumentLayout(vertical_layout)
+                vertical_layout.set_max_size(self.layout.max_width, self.layout.max_height)
+
             painter.save()
             
             # Clear the document first to only show outlined parts
@@ -395,6 +473,11 @@ class TextBlockItem(QGraphicsTextItem):
     def mouseDoubleClickEvent(self, event):
         if not self.editing_mode:
             self.enter_editing_mode()
+            if self.layout:
+                hit = self.layout.hitTest(event.pos(), None)
+                cursor = self.textCursor()
+                cursor.setPosition(hit)
+                self.setTextCursor(cursor)
         super().mouseDoubleClickEvent(event)
 
     def enter_editing_mode(self):
@@ -561,23 +644,23 @@ class TextBlockItem(QGraphicsTextItem):
         new_pos = self.pos() + pos_delta
 
         self.setPos(new_pos)
-        
-        # Update size and font
-        self.setTextWidth(new_rect.width())
 
-        # Update the font size proportionally with minimum size constraint.
-        if original_height > 0:
-            height_ratio = new_rect.height() / original_height
-            new_font_size = self.font_size * height_ratio
-            
-            # Ensure minimum font size of 1pt.
-            min_font_size = 1
-            if new_font_size >= min_font_size:
-                self.font_size = new_font_size
-                self.set_font_size(new_font_size)
-            else:
-                # If font would become invalid, stop the resize.
-                return
+        if self.vertical:
+            if self.layout:
+                self.layout.set_max_size(new_rect.width(), new_rect.height())
+        else: # Horizontal logic
+            self.setTextWidth(new_rect.width())
+            if original_height > 0:
+                height_ratio = new_rect.height() / original_height
+                if height_ratio > 0:
+                    new_font_size = self.font_size * height_ratio
+                    # Ensure minimum font size of 1pt.
+                    if new_font_size >= 1:
+                        self.font_size = new_font_size
+                        self.set_font_size(new_font_size)
+                    else:
+                        # If font would become invalid, stop the resize.
+                        return
 
         self.resize_start = scene_pos
 
