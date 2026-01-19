@@ -133,10 +133,13 @@ class SceneItemManager:
             state = self.main_controller.image_states[file_path]
             viewer_state = state.setdefault('viewer_state', {})
             
-            for rect in viewer_state.get('rectangles', []): all_existing_rects.append((rect, page_idx))
-            for stroke in state.get('brush_strokes', []): all_existing_brush_strokes.append((stroke, page_idx))
-            for blk in state.get('blk_list', []): all_existing_blk_list.append((blk, page_idx))
-            existing_text_items_by_page[page_idx] = viewer_state.get('text_items_state', [])
+            # Only collect existing items if the page is NOT loaded.
+            # For loaded pages, the live scene items are the authoritative source.
+            if not self.image_loader.is_page_loaded(page_idx):   
+                for rect in viewer_state.get('rectangles', []): all_existing_rects.append((rect, page_idx))
+                for stroke in state.get('brush_strokes', []): all_existing_brush_strokes.append((stroke, page_idx))
+                for blk in state.get('blk_list', []): all_existing_blk_list.append((blk, page_idx))
+                existing_text_items_by_page[page_idx] = viewer_state.get('text_items_state', [])
             
             # Clear existing items, they will be repopulated after clipping and redistribution
             viewer_state['rectangles'] = []
