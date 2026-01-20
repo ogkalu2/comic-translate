@@ -38,7 +38,9 @@ class GlyphPlacement:
         is_close = cat == "Pe"
 
         # Rule 1: Punctuation and Symbols that need rotation.
-        if is_open or is_close or eaw in ("Na", "H"):
+        # Exclude alphanumeric characters (letters/numbers) from rotation
+        # even if they are "Narrow" (Na) or "Halfwidth" (H), to support upright Latin/Cyrillic/Thai etc.
+        if is_open or is_close or (eaw in ("Na", "H") and not char.isalnum()):
             # For brackets, alignment is based on open/close status.
             if is_open or is_close:
                 return (PlacementRule.ROTATE_EDGE_ALIGNED, is_open, is_close)
