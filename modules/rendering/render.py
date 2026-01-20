@@ -154,15 +154,16 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
     image = pil_to_array(image)  # Already in RGB format
     return image
 
-def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img):
+def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img=None):
     # Using Speech Bubble detection to find best Text Render Area
-    if inpainted_img is None or inpainted_img.size == 0:
-        return blk_list
+    
+    # if inpainted_img is None or inpainted_img.size == 0:
+    #     return blk_list
     
     for blk in blk_list:
         if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
             
-            if blk.source_lang == 'ja':
+            if blk.source_lang_direction == 'vertical':
                 text_draw_bounds = shrink_bbox(blk.bubble_xyxy, shrink_percent=0.3)
                 bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
                 blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
