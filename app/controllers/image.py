@@ -544,9 +544,11 @@ class ImageStateController:
         if file_path in self.main.image_states:
             state = self.main.image_states[file_path]
             
-            # Skip state loading for newly inserted images (they have empty blk_list)
-            # This prevents loading of viewer state that might contain invalid transform data
-            if state.get('blk_list') or state.get('viewer_state', {}).get('rectangles'):
+            # Skip state loading for newly inserted images (which have empty viewer_state)
+            # This prevents loading of incomplete state or invalid transform data.
+            # As soon as an image is saved once, it will have a populated viewer_state.
+            if state.get('viewer_state'):
+                
                 push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
 
                 self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
