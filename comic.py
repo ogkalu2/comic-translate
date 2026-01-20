@@ -63,6 +63,7 @@ def get_system_language():
         'de': 'Deutsch',
         'es': 'Español',
         'it': 'Italiano',
+        'tr': 'Türkçe',
     }
     
     return lang_map.get(lang_code, 'English')  # Default to English if not found
@@ -77,6 +78,7 @@ def load_translation(app, language: str):
         'Deutsch': 'de',
         'Español': 'es',
         'Italiano': 'it',
+        'Türkçe': 'tr',
     }.get(language)
 
     if not lang_code:
