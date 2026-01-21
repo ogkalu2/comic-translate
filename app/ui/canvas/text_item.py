@@ -81,6 +81,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.resize_start = None
         self.editing_mode = False
         self.last_selection = None 
+        self._drag_selecting = False
+        self._drag_select_anchor = None
 
         # Rotation properties
         self.rot_handle = None
@@ -482,17 +484,21 @@ class TextBlockItem(QGraphicsTextItem):
 
     def mousePressEvent(self, event):
         # Handle single clicks in editing mode for vertical text
-        if self.editing_mode and self.layout:
+        if self.editing_mode and self.layout and event.button() == Qt.MouseButton.LeftButton:
             hit = self.layout.hitTest(event.pos(), None)
             cursor = self.textCursor()
             
             # Check if shift is pressed for selection
             if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                self._drag_select_anchor = cursor.anchor()
                 cursor.setPosition(hit, QTextCursor.MoveMode.KeepAnchor)
             else:
                 cursor.setPosition(hit)
+                self._drag_select_anchor = hit
             
+            self._drag_selecting = True
             self.setTextCursor(cursor)
+            self.setFocus()
             event.accept()
         else:
             super().mousePressEvent(event)
@@ -579,8 +585,29 @@ class TextBlockItem(QGraphicsTextItem):
 
     def mouseMoveEvent(self, event):
         # Resize/rotate/move logic is now handled by EventHandler and QGraphicsView
+        if self.editing_mode and self.layout and (event.buttons() & Qt.MouseButton.LeftButton) and self._drag_selecting:
+            hit = self.layout.hitTest(event.pos(), None)
+            anchor = self._drag_select_anchor
+            if anchor is None:
+                anchor = self.textCursor().anchor()
+
+            cursor = self.textCursor()
+            cursor.setPosition(anchor)
+            cursor.setPosition(hit, QTextCursor.MoveMode.KeepAnchor)
+            self.setTextCursor(cursor)
+            event.accept()
+            return
+
         if self.editing_mode:
             super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.editing_mode and self.layout and event.button() == Qt.MouseButton.LeftButton:
+            self._drag_selecting = False
+            self._drag_select_anchor = None
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event):
         super().contextMenuEvent(event)

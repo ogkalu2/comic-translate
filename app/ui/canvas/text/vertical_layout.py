@@ -256,13 +256,14 @@ class LineLayoutNode:
         char = blk_text[self.effective_char_idx]
         char_style = self.char_style
 
-        # Determine if this character is selected
+        # Determine if any part of this line intersects the current selection.
         selected = False
         if selection:
             sel_start = selection.cursor.selectionStart() - blpos
             sel_end = selection.cursor.selectionEnd() - blpos
-            if sel_start <= self.effective_char_idx < sel_end:
-                selected = True
+            line_start = self.start_char_index_in_block
+            line_end = self.start_char_index_in_block + self.text_len
+            selected = sel_start < line_end and sel_end > line_start
 
         line_width = self.parent_block.chars.get(self.effective_char_idx, CharLayoutInfo(char_style.tight_char_bounds.width())).line_width
         line_text = blk_text[self.qt_line.textStart(): self.qt_line.textStart() + self.qt_line.textLength()]
