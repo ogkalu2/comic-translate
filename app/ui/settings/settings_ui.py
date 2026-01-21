@@ -213,10 +213,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.extra_context = self.llms_page.extra_context
         self.temp_slider = self.llms_page.temp_slider
         self.temp_edit = self.llms_page.temp_edit
-        self.top_p_slider = self.llms_page.top_p_slider
-        self.top_p_edit = self.llms_page.top_p_edit
-        self.max_tokens_slider = self.llms_page.max_tokens_slider
-        self.max_tokens_edit = self.llms_page.max_tokens_edit
 
         # Text rendering
         self.min_font_spinbox = self.text_rendering_page.min_font_spinbox

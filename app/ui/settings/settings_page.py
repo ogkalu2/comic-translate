@@ -158,8 +158,6 @@ class SettingsPage(QtWidgets.QWidget):
             'extra_context': self.ui.extra_context.toPlainText(),
             'image_input_enabled': self.ui.image_checkbox.isChecked(),
             'temperature': float(self.ui.temp_edit.text()),
-            'top_p': float(self.ui.top_p_edit.text()),
-            'max_tokens': int(self.ui.max_tokens_edit.text()),
         }
 
     def get_export_settings(self):
@@ -392,10 +390,6 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.image_checkbox.setChecked(settings.value('image_input_enabled', False, type=bool))
         temp = settings.value('temperature', 1.0, type=float)
         self.ui.temp_edit.setText(f"{temp:.2f}")
-        top_p = settings.value('top_p', 0.95, type=float)
-        self.ui.top_p_edit.setText(f"{top_p:.2f}")
-        max_tokens = settings.value('max_tokens', 4096, type=int)
-        self.ui.max_tokens_edit.setText(str(max_tokens))
         settings.endGroup()
 
         # Load export settings

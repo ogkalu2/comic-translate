@@ -122,8 +122,6 @@ class UserOCR(OCREngine):
         llm_settings = self.settings.get_llm_settings() # Assuming this method exists
         options = {
             "temperature": llm_settings.get('temperature', None), 
-            "max_completion_tokens": llm_settings.get('max_tokens', None), 
-            "top_p": llm_settings.get('top_p', None), 
         }
         # Filter out None values if the API prefers missing keys over null values
         return {k: v for k, v in options.items() if v is not None}
