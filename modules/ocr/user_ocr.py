@@ -127,64 +127,90 @@ class UserOCR(OCREngine):
         return {k: v for k, v in options.items() if v is not None}
 
     def _process_blocks_llm(self, img: np.ndarray, blk_list: List[TextBlock], token: str) -> List[TextBlock]:
-        """Handles OCR for LLM types (GPT, Gemini) by processing block by block."""
+        """
+        Handles OCR for LLM types (GPT, Gemini) by sending a single batch request
+        containing the full image and a list of coordinates for each text block.
+        """
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        llm_options = self._get_llm_options() # Get common options once
+        llm_options = self._get_llm_options()
+
+        # 1. Prepare Validation & Coordinates
+        valid_indices = []
+        coordinates = []
+        
+        h, w = img.shape[:2]
 
         for i, blk in enumerate(blk_list):
-            # Get coordinates for cropping
+            # Determine coordinates to be used
             if blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             elif blk.xyxy is not None:
-                # Maybe slightly expand the direct text line coordinates for better context?
-                # This expansion percentage could be a setting.
-                expansion_percentage = 5 # Example: 5% expansion
+                expansion_percentage = 5 
                 x1, y1, x2, y2 = adjust_text_line_coordinates(
                     blk.xyxy, expansion_percentage, expansion_percentage, img
                 )
             else:
-                logger.warning(f"Block {i} has no coordinates, skipping API call.")
+                logger.warning(f"Block {i} has no coordinates, skipping.")
                 continue
 
-            # Ensure coordinates are valid before cropping
-            h, w = img.shape[:2]
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
+            # Validate coordinates against image bounds
+            x1, y1 = max(0, int(x1)), max(0, int(y1))
+            x2, y2 = min(w, int(x2)), min(h, int(y2))
 
             if x1 >= x2 or y1 >= y2:
-                logger.warning(f"Block {i} has invalid coordinates after clipping: ({x1},{y1},{x2},{y2}). Skipping.")
+                logger.warning(f"Block {i} has invalid coordinates: ({x1},{y1},{x2},{y2}). Skipping.")
                 continue
 
-            # Crop and Encode the specific block
-            cropped_img = img[y1:y2, x1:x2]
-            img_b64 = self.encode_image(cropped_img)
-            if not img_b64:
-                continue # Skip API call if encoding failed
+            valid_indices.append(i)
+            coordinates.append([x1, y1, x2, y2])
 
-            # Prepare Payload for this block
-            payload = {
-                "ocr_name": self.ocr_key,
-                "image_base64": img_b64,
-                "llm_options": llm_options, 
-                "source_language": self.source_lang_english # Optional hint
-            }
+        if not coordinates:
+            logger.info("No valid blocks to process.")
+            return blk_list
 
-            response = requests.post(
-                self.api_url, 
-                headers=headers, 
-                json=payload, 
-                timeout=60
-            ) 
-            response.raise_for_status()
+        # 2. Encode Full Image
+        img_b64 = self.encode_image(img)
+        if not img_b64:
+            logger.error("Failed to encode image for batch processing.")
+            return blk_list
 
-            if response.status_code == 200:
-                response_data = response.json()
-                results = response_data.get('ocr_results', [])
-                if results:
-                    # LLM API should return one result for the cropped image
-                    blk.text = results[0].get('text', '')
-                    credits_info = response_data.get('credits') or response_data.get('credits_remaining')
-                    self.update_credits(credits_info)
+        # 3. Construct Payload
+        payload = {
+            "ocr_name": self.ocr_key,
+            "image_base64": img_b64,
+            "llm_options": llm_options,
+            "source_language": self.source_lang_english,
+            "coordinates": coordinates  # New field for batch processing
+        }
+
+        # 4. Send Single Request
+        response = requests.post(
+            self.api_url,
+            headers=headers,
+            json=payload,
+            timeout=120  
+        )
+        response.raise_for_status()
+
+        if response.status_code == 200:
+            response_data = response.json()
+            results = response_data.get('ocr_results', [])
+
+            # 5. Map Results back to Blocks
+            # We assume the server returns results in the same order as coordinates
+            if len(results) != len(valid_indices):
+                logger.warning(f"Mismatch in result count: sent {len(coordinates)}, received {len(results)}.")
+
+            for idx_in_results, result_item in enumerate(results):
+                # Safely map back if sizes match or iterate up to min length
+                if idx_in_results < len(valid_indices):
+                    original_blk_idx = valid_indices[idx_in_results]
+                    blk = blk_list[original_blk_idx]
+                    blk.text = result_item.get('text', '')
+
+            # Update credits
+            credits_info = response_data.get('credits') or response_data.get('credits_remaining')
+            self.update_credits(credits_info)
 
         return blk_list
 

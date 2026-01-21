@@ -203,7 +203,7 @@ class AuthClient(QObject):
                 token_url, 
                 json=payload,
                 headers=headers, 
-                timeout=10
+                timeout=20
             )
 
             response.raise_for_status()
@@ -375,7 +375,7 @@ class AuthClient(QObject):
                 response = requests.post(
                     signout_url,
                     headers=headers,
-                    timeout=10
+                    timeout=20
                 )
                 response.raise_for_status()
                 logger.info("Backend successfully processed signout notification.")

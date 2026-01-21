@@ -22,6 +22,7 @@ class BaseLLMTranslation(LLMTranslation):
         self.temperature = None
         self.top_p = None
         self.max_tokens = None
+        self.timeout = 30  
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
         """
