@@ -204,8 +204,7 @@ class UserOCR(OCREngine):
         payload = {
             "ocr_name": self.ocr_key,
             "image_base64": img_b64,
-            "source_language": self.source_lang_english # Optional hint
-            # No llm_options needed for these types usually
+            "source_language": self.source_lang_english 
         }
 
         # Single API call for the whole page
