@@ -655,7 +655,7 @@ class SettingsPage(QtWidgets.QWidget):
 
     def handle_auth_success(self, user_info: dict):
         """Handles successful authentication."""
-        logger.info(f"Authentication successful. User info received: {user_info}")
+        # logger.info(f"Authentication successful. User info received: {user_info}")
         manual = bool(self.login_dialog)
         # Close the login web view dialog *if it exists and is still visible*
         if self.login_dialog:
