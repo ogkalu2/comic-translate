@@ -143,6 +143,15 @@ class LineLayoutNode:
             tbr_h = self.char_style.tight_char_bounds.height() + self.char_style.font_metrics.descent()
             self.space_width = self.char_style.space_width
             self.char_width = self.char_style.tight_char_bounds.width()
+        else:
+            # Completely empty blocks (e.g., trailing paragraphs created by Enter) have no fragments,
+            # so we must use the block's char format to reserve a visible line height.
+            self.char_style = CharacterStyle(self.parent_block.qt_block.charFormat())
+            self.space_width = self.char_style.space_width
+            self.char_width = self.char_style.tight_char_bounds.width()
+            self.letter_spacing_offset = self.char_style.tight_char_bounds.height() * (self.context.letter_spacing - 1)
+            tbr_h = self.char_style.tight_char_bounds.height() + self.letter_spacing_offset
+            self.effective_char_idx = -1
 
         self.calculated_height = max(0, tbr_h)
 
@@ -341,6 +350,9 @@ class BlockLayoutNode:
                 char_idx += 1
             it += 1
             frag_idx += 1
+
+        if self.ideal_width < 0:
+            self.ideal_width = CharacterStyle(self.qt_block.charFormat()).tight_char_bounds.width()
 
     def get_char_fontfmt(self, char_idx: int) -> CharacterStyle:
         """Gets the CharacterStyle for a character index within this block."""
