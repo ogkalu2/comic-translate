@@ -15,7 +15,7 @@ from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.textblock import sort_blk_list, TextBlock
 from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask, \
-    get_language_code, is_directory_empty, get_smart_text_color
+    get_language_code, is_directory_empty, get_smart_text_color, is_no_space_lang
 from modules.utils.translator_utils import format_translations
 from modules.rendering.render import is_vertical_block
 from modules.utils.archives import make
@@ -681,7 +681,7 @@ class WebtoonBatchProcessor:
         format_translations(final_blocks, trg_lng_cd, upper_case=render_settings.upper_case)
 
         # Language-specific formatting 
-        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+        if is_no_space_lang(trg_lng_cd):
             for blk in final_blocks:
                 if blk.translation:
                     blk.translation = blk.translation.replace(' ', '')
@@ -767,7 +767,7 @@ class WebtoonBatchProcessor:
                 vertical
             )
             
-            if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+            if is_no_space_lang(trg_lng_cd):
                 translation = translation.replace(' ', '')
 
             # Smart Color Override

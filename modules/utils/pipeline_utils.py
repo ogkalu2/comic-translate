@@ -74,6 +74,16 @@ def get_language_code(lng: str):
     lng_cd = language_codes.get(lng, None)
     return lng_cd
 
+def is_no_space_lang(lang_code: str | None) -> bool:
+    """
+    Check if the language usually does not use spaces between words.
+    Includes: Chinese (zh), Japanese (ja), Thai (th).
+    """
+    if not lang_code:
+        return False
+    code = lang_code.lower()
+    return any(lang in code for lang in ['zh', 'ja', 'th'])
+
 def rgba2hex(rgba_list):
     r,g,b,a = [int(num) for num in rgba_list]
     return "#{:02x}{:02x}{:02x}{:02x}".format(r, g, b, a)
@@ -96,7 +106,8 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
 
         # Sort and join text entries
         sorted_entries = sort_textblock_rectangles(blk_entries, blk.source_lang_direction)
-        if blk.source_lang in ['ja', 'zh']:
+        
+        if is_no_space_lang(blk.source_lang):
             blk.text = ''.join(text for bbox, text in sorted_entries)
         else:
             blk.text = ' '.join(text for bbox, text in sorted_entries)

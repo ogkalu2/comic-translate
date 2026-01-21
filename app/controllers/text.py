@@ -16,7 +16,7 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block
 from modules.utils.pipeline_utils import font_selected, get_language_code, \
-    get_layout_direction, is_close, get_smart_text_color
+    get_layout_direction, is_close, get_smart_text_color, is_no_space_lang
 from modules.utils.translator_utils import format_translations
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ class TextController:
 
         target_lang = self.main.lang_mapping.get(self.main.t_combo.currentText(), None)
         trg_lng_cd = get_language_code(target_lang)
-        if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+        if is_no_space_lang(trg_lng_cd):
             text = text.replace(' ', '')
 
         render_settings = self.render_settings()

@@ -14,7 +14,7 @@ from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.textblock import sort_blk_list
 from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask, \
-    get_language_code, is_directory_empty, get_smart_text_color
+    get_language_code, is_directory_empty, get_smart_text_color, is_no_space_lang
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap, is_vertical_block
@@ -364,7 +364,7 @@ class BatchProcessor:
                     self.main_page.blk_rendered.emit(translation, font_size, blk)
 
                 # Language-specific formatting for state storage
-                if any(lang in trg_lng_cd.lower() for lang in ['zh', 'ja', 'th']):
+                if is_no_space_lang(trg_lng_cd):
                     translation = translation.replace(' ', '')
 
                 # Smart Color Override
