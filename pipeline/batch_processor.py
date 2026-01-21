@@ -13,8 +13,10 @@ from PySide6.QtGui import QColor
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.textblock import sort_blk_list
-from modules.utils.pipeline_utils import inpaint_map, get_config, generate_mask, \
-    get_language_code, is_directory_empty, get_smart_text_color, is_no_space_lang
+from modules.utils.pipeline_config import inpaint_map, get_config
+from modules.utils.image_utils import generate_mask, get_smart_text_color
+from modules.utils.language_utils import get_language_code, is_no_space_lang
+from modules.utils.common_utils import is_directory_empty
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
 from modules.utils.archives import make
 from modules.rendering.render import get_best_render_area, pyside_word_wrap, is_vertical_block

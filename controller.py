@@ -19,13 +19,14 @@ from app.ui.commands.box import DeleteBoxesCommand
 
 from modules.utils.textblock import TextBlock
 from modules.utils.file_handler import FileHandler
-from modules.utils.pipeline_utils import validate_settings, validate_ocr, \
+from modules.utils.pipeline_config import validate_settings, validate_ocr, \
                                          validate_translator
 from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
 from modules.detection.utils.content import get_inpaint_bboxes
 from modules.utils.translator_utils import is_there_text
 from modules.rendering.render import pyside_word_wrap, is_vertical_block
-from modules.utils.pipeline_utils import get_language_code, is_close, is_no_space_lang
+from modules.utils.language_utils import get_language_code, is_no_space_lang
+from modules.utils.common_utils import is_close
 from modules.utils.translator_utils import format_translations
 from pipeline.main_pipeline import ComicTranslatePipeline
 from pipeline.webtoon_utils import get_visible_text_items, get_first_visible_block

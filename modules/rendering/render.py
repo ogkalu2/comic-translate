@@ -12,7 +12,7 @@ from modules.utils.textblock import TextBlock
 from modules.utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
-from modules.utils.pipeline_utils import get_language_code
+from modules.utils.language_utils import get_language_code
 
 from dataclasses import dataclass
 

@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 
 from ..utils.textblock import TextBlock
-from ..utils.pipeline_utils import is_no_space_lang
+from ..utils.language_utils import is_no_space_lang
 
 
 class TranslationEngine(ABC):
@@ -35,7 +35,7 @@ class TranslationEngine(ABC):
         Returns:
             Standardized language code
         """
-        from ..utils.pipeline_utils import get_language_code
+        from ..utils.language_utils import get_language_code
         return get_language_code(language)
     
     def preprocess_text(self, blk_text: str, source_lang_code: str) -> str:

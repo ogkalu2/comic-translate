@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 
 from ..utils.textblock import TextBlock
-from ..utils.pipeline_utils import language_codes
+from ..utils.language_utils import language_codes
 from .factory import OCRFactory
 
 

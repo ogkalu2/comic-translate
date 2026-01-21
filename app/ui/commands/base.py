@@ -12,7 +12,7 @@ from ..canvas.text.text_item_properties import TextItemProperties
 from modules.utils.textblock import TextBlock
 from ..canvas.rectangle import MoveableRectItem
 from ..canvas.text_item import TextBlockItem
-from modules.utils.pipeline_utils import is_close
+from modules.utils.common_utils import is_close
 
 if TYPE_CHECKING:
     from app.ui.canvas.image_viewer import ImageViewer

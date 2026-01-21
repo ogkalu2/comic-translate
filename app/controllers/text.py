@@ -15,8 +15,10 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block
-from modules.utils.pipeline_utils import font_selected, get_language_code, \
-    get_layout_direction, is_close, get_smart_text_color, is_no_space_lang
+from modules.utils.pipeline_config import font_selected
+from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
+from modules.utils.image_utils import get_smart_text_color
+from modules.utils.common_utils import is_close
 from modules.utils.translator_utils import format_translations
 
 if TYPE_CHECKING:

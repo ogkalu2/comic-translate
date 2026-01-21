@@ -6,7 +6,7 @@ import onnxruntime as ort
 
 from ..base import OCREngine
 from modules.utils.textblock import TextBlock
-from modules.utils.pipeline_utils import lists_to_blk_list
+from modules.utils.textblock import lists_to_blk_list
 from modules.utils.device import get_providers
 from modules.utils.download import ModelDownloader, ModelID
 from .preprocessing import det_preprocess, crop_quad, rec_resize_norm

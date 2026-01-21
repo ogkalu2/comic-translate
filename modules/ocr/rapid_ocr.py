@@ -4,7 +4,7 @@ import numpy as np
 
 from .base import OCREngine
 from ..utils.textblock import TextBlock
-from ..utils.pipeline_utils import lists_to_blk_list
+from ..utils.textblock import lists_to_blk_list
 
 logger = logging.getLogger(__name__)
 

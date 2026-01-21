@@ -3,7 +3,7 @@ import logging
 import imkit as imk
 
 from modules.utils.device import resolve_device
-from modules.utils.pipeline_utils import inpaint_map, get_config
+from modules.utils.pipeline_config import inpaint_map, get_config
 
 logger = logging.getLogger(__name__)
 

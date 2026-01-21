@@ -6,7 +6,7 @@ from typing import Any, List, Optional, Dict
 
 from .base import OCREngine 
 from ..utils.textblock import TextBlock 
-from ..utils.pipeline_utils import lists_to_blk_list
+from ..utils.textblock import lists_to_blk_list
 from ..utils.textblock import adjust_text_line_coordinates
 
 from app.account.auth.auth_client import AuthClient
