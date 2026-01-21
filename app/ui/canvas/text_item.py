@@ -504,39 +504,7 @@ class TextBlockItem(QGraphicsTextItem):
             super().mousePressEvent(event)
 
     def keyPressEvent(self, event):
-        if self.editing_mode and event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            cursor = self.textCursor()
-            inherited_char_format = QTextCharFormat(cursor.charFormat())
-            inherited_block_format = cursor.blockFormat()
-            # Use the current character format as the new block's char format so empty paragraphs
-            # keep the same font metrics (Qt can otherwise fall back to a tiny default).
-            inherited_block_char_format = QTextCharFormat(inherited_char_format)
 
-            # Ensure we always carry a valid point size/font for layout metrics.
-            if inherited_block_char_format.fontPointSize() <= 0:
-                inherited_block_char_format.setFontPointSize(max(1, float(self.font_size)))
-            font = inherited_block_char_format.font()
-            if font.pointSizeF() <= 0:
-                font = self.document().defaultFont()
-                if font.pointSizeF() <= 0:
-                    font.setPointSizeF(max(1.0, float(self.font_size)))
-                inherited_block_char_format.setFont(font)
-
-            cursor.beginEditBlock()
-            if cursor.hasSelection():
-                cursor.removeSelectedText()
-
-            # Create a new paragraph that keeps the current paragraph + char formatting.
-            cursor.insertBlock(inherited_block_format, inherited_block_char_format)
-            cursor.setCharFormat(inherited_char_format)
-
-            cursor.endEditBlock()
-            self.setTextCursor(cursor)
-            event.accept()
-            return
-
-        # For vertical text, remap up/down arrows to move character-by-character
-        # In vertical text, "down" means next character (reading direction)
         if self.editing_mode and self.vertical:
             key = event.key()
             modifiers = event.modifiers()
@@ -557,7 +525,38 @@ class TextBlockItem(QGraphicsTextItem):
                 self.setTextCursor(cursor)
                 event.accept()
                 return
-            # Left/Right arrows use default Qt behavior (already working correctly)
+            
+            elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                # Use the current character format as the new block's char format so empty paragraphs
+                # keep the same font metrics (Qt can otherwise fall back to a tiny default).
+                # Currently only necessary for vertical text layouts.
+                cursor = self.textCursor()
+                inherited_char_format = QTextCharFormat(cursor.charFormat())
+                inherited_block_format = cursor.blockFormat()
+                inherited_block_char_format = QTextCharFormat(inherited_char_format)
+
+                # Ensure we always carry a valid point size/font for layout metrics.
+                if inherited_block_char_format.fontPointSize() <= 0:
+                    inherited_block_char_format.setFontPointSize(max(1, float(self.font_size)))
+                font = inherited_block_char_format.font()
+                if font.pointSizeF() <= 0:
+                    font = self.document().defaultFont()
+                    if font.pointSizeF() <= 0:
+                        font.setPointSizeF(max(1.0, float(self.font_size)))
+                    inherited_block_char_format.setFont(font)
+
+                cursor.beginEditBlock()
+                if cursor.hasSelection():
+                    cursor.removeSelectedText()
+
+                # Create a new paragraph that keeps the current paragraph + char formatting.
+                cursor.insertBlock(inherited_block_format, inherited_block_char_format)
+                cursor.setCharFormat(inherited_char_format)
+
+                cursor.endEditBlock()
+                self.setTextCursor(cursor)
+                event.accept()
+                return
         
         # Default handling for all other cases
         super().keyPressEvent(event)
