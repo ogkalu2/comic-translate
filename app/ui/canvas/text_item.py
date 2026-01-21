@@ -480,6 +480,51 @@ class TextBlockItem(QGraphicsTextItem):
                 self.setTextCursor(cursor)
         super().mouseDoubleClickEvent(event)
 
+    def mousePressEvent(self, event):
+        # Handle single clicks in editing mode for vertical text
+        if self.editing_mode and self.layout:
+            hit = self.layout.hitTest(event.pos(), None)
+            cursor = self.textCursor()
+            
+            # Check if shift is pressed for selection
+            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                cursor.setPosition(hit, QTextCursor.MoveMode.KeepAnchor)
+            else:
+                cursor.setPosition(hit)
+            
+            self.setTextCursor(cursor)
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+
+    def keyPressEvent(self, event):
+        # For vertical text, remap up/down arrows to move character-by-character
+        # In vertical text, "down" means next character (reading direction)
+        if self.editing_mode and self.vertical:
+            key = event.key()
+            modifiers = event.modifiers()
+            
+            if key == Qt.Key.Key_Down:
+                # Down arrow in vertical text = move to next character
+                cursor = self.textCursor()
+                move_mode = QTextCursor.MoveMode.KeepAnchor if (modifiers & Qt.KeyboardModifier.ShiftModifier) else QTextCursor.MoveMode.MoveAnchor
+                cursor.movePosition(QTextCursor.MoveOperation.NextCharacter, move_mode)
+                self.setTextCursor(cursor)
+                event.accept()
+                return
+            elif key == Qt.Key.Key_Up:
+                # Up arrow in vertical text = move to previous character
+                cursor = self.textCursor()
+                move_mode = QTextCursor.MoveMode.KeepAnchor if (modifiers & Qt.KeyboardModifier.ShiftModifier) else QTextCursor.MoveMode.MoveAnchor
+                cursor.movePosition(QTextCursor.MoveOperation.PreviousCharacter, move_mode)
+                self.setTextCursor(cursor)
+                event.accept()
+                return
+            # Left/Right arrows use default Qt behavior (already working correctly)
+        
+        # Default handling for all other cases
+        super().keyPressEvent(event)
+
     def enter_editing_mode(self):
         self.editing_mode = True
         self.setCacheMode(QGraphicsItem.CacheMode.NoCache)

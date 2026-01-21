@@ -149,15 +149,29 @@ class LineLayoutNode:
     def calculate_final_geometry(self, y_offset: float, available_height: float) -> float:
         """Calculates final y-offsets for characters based on the line's starting y_offset."""
         self.char_y_offsets = [y_offset]
+        
+        # Add offsets for leading spaces
         for _ in range(self.left_spaces):
             self.char_y_offsets.append(min(available_height - self.calculated_height, self.char_y_offsets[-1] + self.space_width))
-
+        
+        # Add offset for the main character (bottom of the character)
         char_bottom = self.char_y_offsets[-1] + self.calculated_height
         self.char_y_offsets.append(char_bottom)
-
+        
+        # Add offsets for trailing spaces
         for _ in range(self.right_spaces):
             self.char_y_offsets.append(min(self.char_y_offsets[-1] + self.space_width, available_height))
-
+    
+        actual_char_count = self.text_len - self.left_spaces - self.right_spaces
+        if actual_char_count > 1:
+            chars_already_accounted = 1  # The first effective character
+            remaining_chars = actual_char_count - chars_already_accounted
+            
+            for _ in range(remaining_chars):
+                # Each additional character gets the same height as the first
+                next_char_bottom = self.char_y_offsets[-1] + self.calculated_height
+                self.char_y_offsets.append(min(next_char_bottom, available_height))
+        
         line_bottom = self.char_y_offsets[-1]
         self.y_boundary = [self.char_y_offsets[self.left_spaces], line_bottom]
         return line_bottom
@@ -465,24 +479,27 @@ class BlockLayoutNode:
         elif y > line_bottom:
             off = line_info.qt_line.textStart() + line_info.qt_line.textLength()
         else:
-            if line_info.left_spaces > 0 or line_info.right_spaces > 0:
-                y_offsets = line_info.char_y_offsets
+            # Always use char_y_offsets for accurate cursor positioning
+            y_offsets = line_info.char_y_offsets
+            if y_offsets and len(y_offsets) > 1:
+                # Find which character boundary the click is closest to
                 for i, (ytop, ybottom) in enumerate(zip(y_offsets[:-1], y_offsets[1:])):
                     if ytop <= y < ybottom:
                         dis_top, dis_bottom = y - ytop, ybottom - y
                         off = i if dis_top < dis_bottom else i + 1
                         break
                 else:
+                    # If we didn't find a range, we're at or past the last character
                     off = len(y_offsets) - 1
                 off += line_info.start_char_index_in_block
             else:
+                # Fallback for lines without char_y_offsets
                 qt_line = line_info.qt_line
                 off = qt_line.textStart()
-                if qt_line.textLength() != 1:
+                if qt_line.textLength() > 1:
+                    # Simple binary division for fallback case
                     if line_bottom - y < y - line_top:
-                        off += 2
-                    elif qt_line.naturalTextRect().right() - point.x() < point.x() - qt_line.naturalTextRect().left():
-                        off += 1
+                        off += qt_line.textLength()
                 elif line_bottom - y < y - line_top:
                     off += 1
 
