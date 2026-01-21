@@ -22,9 +22,6 @@ class UserOCR(OCREngine):
     Desktop OCR engine that proxies requests to the web API endpoint (/ocr),
     utilizing the user's account credits and server-side OCR engines.
     """
-
-    # Define which OCR keys trigger specific API behaviors
-    # These should match the keys used in your desktop UI and the web API factory
     LLM_OCR_KEYS = {"GPT-4.1-mini", "Gemini-2.0-Flash"} # Add other LLM models here
     FULL_PAGE_OCR_KEYS = {"Microsoft OCR", "Google Cloud Vision"}
 
