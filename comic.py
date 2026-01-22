@@ -1,8 +1,61 @@
 import os, sys
 import logging
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtCore import QSettings, QTranslator, QLocale, Qt
-from PySide6.QtWidgets import QApplication, QSplashScreen
+from PySide6.QtCore import QSettings, QTranslator, QLocale, \
+    Qt, QTimer, QThread, QObject, Signal, Slot
+from PySide6.QtWidgets import QApplication
+from app.ui.splash_screen import SplashScreen
+
+
+class LoadingWorker(QObject):
+    """Worker to load the application in a background thread."""
+    finished = Signal(object)  # Signals when loading is complete with (project_file)
+    failed = Signal()  # Signal when loading fails or is cancelled
+    
+    def __init__(self, icon, selected_language, sys_argv):
+        super().__init__()
+        self.icon = icon
+        self.selected_language = selected_language
+        self.sys_argv = sys_argv
+        self.cancelled = False
+        
+    @Slot()
+    def run(self):
+        """Do the heavy loading in background thread."""
+        try:
+            if self.cancelled or QThread.currentThread().isInterruptionRequested():
+                self.failed.emit()
+                return
+
+            # Pre-import heavy modules while the splash stays interactive.
+            # IMPORTANT: don't create any QWidget/QObject instances here.
+            try:
+                import importlib
+                importlib.import_module("controller")
+            except Exception as e:
+                logging.error(f"Error preloading modules: {e}")
+                self.failed.emit()
+                return
+
+            # Check for file arguments
+            project_file = None
+            for arg in self.sys_argv[1:]:
+                candidate = arg.strip('"')
+                if candidate.lower().endswith(".ctpr") and os.path.exists(candidate):
+                    project_file = candidate
+                    break
+            
+            if self.cancelled or QThread.currentThread().isInterruptionRequested():
+                self.failed.emit()
+                return
+             
+            # Signal completion
+            self.finished.emit(project_file)
+             
+        except Exception as e:
+            logging.error(f"Error during loading: {e}")
+            self.failed.emit()
+
 
 def main():
     
@@ -35,29 +88,70 @@ def main():
     target_w, target_h = 400, 225
     splash_pix = splash_pix.scaled(int(target_w * dpr), int(target_h * dpr), Qt.KeepAspectRatio, Qt.SmoothTransformation)
     splash_pix.setDevicePixelRatio(dpr)
-    splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
-    splash.show()
-    app.processEvents()
-
-    # Import Controller after splash is shown (heavy import)
-    from controller import ComicTranslate
-
+    splash = SplashScreen(splash_pix)
+    
+    # Get language settings
     settings = QSettings("ComicLabs", "ComicTranslate")
     selected_language = settings.value('language', get_system_language())
-    if selected_language != 'English':
-        load_translation(app, selected_language)  
+    
+    # Create worker and thread
+    thread = QThread()
+    worker = LoadingWorker(icon, selected_language, sys.argv)
+    worker.moveToThread(thread)
+    worker.finished.connect(worker.deleteLater)
+    worker.failed.connect(worker.deleteLater)
+    worker.finished.connect(thread.quit)
+    worker.failed.connect(thread.quit)
+    thread.finished.connect(thread.deleteLater)
+    
+    # Connect signals
+    class LoadingCoordinator(QObject):
+        def __init__(self):
+            super().__init__()
 
-    ct = ComicTranslate()
+        @Slot()
+        def on_cancel(self):
+            worker.cancelled = True
+            thread.requestInterruption()
+            thread.quit()
+            splash.close()
+            app.quit()
 
-    # Check for file arguments
-    if len(sys.argv) > 1:
-        project_file = sys.argv[1]
-        if os.path.exists(project_file) and project_file.endswith(".ctpr"):
-            ct.thread_load_project(project_file)
+        @Slot(object)
+        def on_finished(self, project_file):
+            try:
+                # Apply translation before creating any translated widgets.
+                if selected_language != 'English':
+                    load_translation(app, selected_language)
 
-    ct.show()
-    splash.finish(ct)
-    ct.setWindowIcon(icon)
+                from controller import ComicTranslate
+                ct = ComicTranslate()
+                ct.setWindowIcon(icon)
+
+                splash.finish(ct)
+
+                if project_file:
+                    ct.thread_load_project(project_file)
+            except Exception as e:
+                logging.error(f"Error during UI initialization: {e}")
+                splash.close()
+                app.quit()
+
+        @Slot()
+        def on_failed(self):
+            splash.close()
+            app.quit()
+
+    coordinator = LoadingCoordinator()
+    splash.cancelled.connect(coordinator.on_cancel)
+    worker.finished.connect(coordinator.on_finished, Qt.ConnectionType.QueuedConnection)
+    worker.failed.connect(coordinator.on_failed, Qt.ConnectionType.QueuedConnection)
+    thread.started.connect(worker.run)
+    
+    # Show splash and start loading thread
+    splash.show()
+    # Defer starting work until the event loop is running so the splash remains clickable.
+    QTimer.singleShot(0, thread.start)
     
     # Start the event loop
     sys.exit(app.exec())
