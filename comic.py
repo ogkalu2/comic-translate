@@ -1,9 +1,8 @@
 import os, sys
 import logging
-from PySide6.QtGui import QIcon
-from PySide6.QtCore import QSettings, QTranslator, QLocale
-from PySide6.QtWidgets import QApplication  
-from controller import ComicTranslate
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import QSettings, QTranslator, QLocale, Qt
+from PySide6.QtWidgets import QApplication, QSplashScreen
 
 def main():
     
@@ -24,9 +23,24 @@ def main():
     # Set the application icon
     # icon = QIcon(":/icons/window_icon.png")  
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(current_file_dir, 'resources', 'icon.png')
+    icon_path = os.path.join(current_file_dir, 'resources', 'icon.ico')
     icon = QIcon(icon_path)
     app.setWindowIcon(icon)
+
+    # Show Splash Screen
+    splash_pix = QPixmap(os.path.join(current_file_dir, 'resources', 'splash.png'))
+    # High DPI Scaling
+    screen = app.primaryScreen()
+    dpr = screen.devicePixelRatio()
+    target_w, target_h = 400, 225
+    splash_pix = splash_pix.scaled(int(target_w * dpr), int(target_h * dpr), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+    splash_pix.setDevicePixelRatio(dpr)
+    splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+    splash.show()
+    app.processEvents()
+
+    # Import Controller after splash is shown (heavy import)
+    from controller import ComicTranslate
 
     settings = QSettings("ComicLabs", "ComicTranslate")
     selected_language = settings.value('language', get_system_language())
@@ -42,6 +56,7 @@ def main():
             ct.thread_load_project(project_file)
 
     ct.show()
+    splash.finish(ct)
     ct.setWindowIcon(icon)
     
     # Start the event loop
