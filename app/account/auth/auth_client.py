@@ -2,11 +2,12 @@ import secrets
 import logging
 import urllib.parse
 import requests 
-import keyring
+
 from typing import Optional
 from PySide6.QtCore import QObject, Signal, QThread, QSettings 
 from PySide6.QtWidgets import QMessageBox
 from .auth_server import AuthServerThread
+from .token_storage import set_token, get_token, delete_token
 
 logger = logging.getLogger(__name__)
 
@@ -106,100 +107,20 @@ class AuthClient(QObject):
         self.request_login_view.emit(auth_url)
 
 
-    # Token Storage Helpers (Chunking for Windows Limits)
-
-    def _set_token(self, name: str, value: str):
-        """Securely store a token, chunking it if necessary. Fallback to QSettings if keyring fails."""
-        # First, try to clear any existing chunks to avoid stale data
-        self._delete_token(name)
-        
-        # Use a smaller chunk size to be safe (512 chars ~ 512-2048 bytes depending on encoding)
-        chunk_size = 512 
-        chunks = [value[i:i+chunk_size] for i in range(0, len(value), chunk_size)]
-        
-        try:
-            # If it fits in one, just save it normally
-            if len(chunks) == 1:
-                keyring.set_password("comic-translate", name, value)
-                return
-
-            # Otherwise, save counts and chunks
-            keyring.set_password("comic-translate", f"{name}_chunks", str(len(chunks)))
-            for i, chunk in enumerate(chunks):
-                keyring.set_password("comic-translate", f"{name}_chunk_{i}", chunk)
-                
-        except Exception as e:
-            logger.error(f"Keyring storage failed for {name} (Size: {len(value)}): {e}. Falling back to QSettings.")
-            # Fallback: Store in QSettings (Encodings issues handled by QSettings, hopefully)
-            # Note: This is less secure, but allows the app to function.
-            self.settings.setValue(f"auth/{name}", value)
-
-    def _get_token(self, name: str) -> Optional[str]:
-        """Retrieve a token, checking keyring first, then QSettings callback."""
-        # 1. Try generic keyring lookup
-        try:
-            token = keyring.get_password("comic-translate", name)
-            if token:
-                return token
-        except Exception: pass
-        
-        # 2. Try keyring chunks
-        try:
-            chunk_count_str = keyring.get_password("comic-translate", f"{name}_chunks")
-            if chunk_count_str:
-                chunk_count = int(chunk_count_str)
-                assembled_token = ""
-                for i in range(chunk_count):
-                    chunk = keyring.get_password("comic-translate", f"{name}_chunk_{i}")
-                    if chunk is None:
-                        raise ValueError("Missing chunk")
-                    assembled_token += chunk
-                return assembled_token
-        except Exception: pass
-
-        # 3. Fallback: QSettings
-        if self.settings.contains(f"auth/{name}"):
-            return str(self.settings.value(f"auth/{name}"))
-            
-        return None
-
-    def _delete_token(self, name: str):
-        """Delete a token and all its potential chunks (keyring & QSettings)."""
-        # Keyring cleanup
-        try:
-            keyring.delete_password("comic-translate", name)
-        except Exception: pass
-
-        try:
-            chunk_count_str = keyring.get_password("comic-translate", f"{name}_chunks")
-            if chunk_count_str:
-                chunk_count = int(chunk_count_str)
-                keyring.delete_password("comic-translate", f"{name}_chunks")
-                for i in range(chunk_count):
-                    try:
-                        keyring.delete_password("comic-translate", f"{name}_chunk_{i}")
-                    except Exception: pass
-        except Exception: pass
-        
-        # QSettings cleanup
-        if self.settings.contains(f"auth/{name}"):
-            self.settings.remove(f"auth/{name}")
-
-    # End Helpers
 
     def _handle_token_callback(self, access_token: str, refresh_token: str, user_info: dict):
         """Handles the tokens and user info received from the backend via the local server."""
         logger.info("Tokens and user info received callback handled in main client.")
         try:
             # Securely store tokens using helper
-            self._set_token("access_token", access_token)
+            set_token("access_token", access_token)
             
             # Always store refresh token if received
             if refresh_token:
-                self._set_token("refresh_token", refresh_token)
+                set_token("refresh_token", refresh_token)
             else:
                 logger.warning("Refresh token was not received from backend callback.")
-                self._delete_token("refresh_token")
+                delete_token("refresh_token")
 
             logger.info("Tokens stored successfully.")
             self.auth_success.emit(user_info)
@@ -265,8 +186,8 @@ class AuthClient(QObject):
         """Refresh the access token using the stored refresh token."""
         logger.info("Attempting to refresh token...")
         try:
-            refresh_token = self._get_token("refresh_token")
-            access_token = self._get_token("access_token")
+            refresh_token = get_token("refresh_token")
+            access_token = get_token("access_token")
             if not (refresh_token and access_token):
                 logger.warning("Cannot refresh: Tokens not found.")
                 return False
@@ -297,10 +218,10 @@ class AuthClient(QObject):
                 logger.error("Token refresh response missing access_token.")
                 return False
 
-            self._set_token("access_token", new_access_token)
+            set_token("access_token", new_access_token)
             if new_refresh_token:
                 logger.info("Refresh token rotated. Storing new refresh token.")
-                self._set_token("refresh_token", new_refresh_token)
+                set_token("refresh_token", new_refresh_token)
 
             logger.info("Token refreshed successfully.")
             return True
@@ -335,7 +256,7 @@ class AuthClient(QObject):
         # This is a quick check. Validation should happen before sensitive operations.
         logger.debug("Checking for local access token...")
         try:
-            access_token = self._get_token("access_token")
+            access_token = get_token("access_token")
             is_present = bool(access_token)
             logger.debug(f"Access token found: {is_present}")
             return is_present
@@ -358,7 +279,7 @@ class AuthClient(QObject):
         logger.info("Checking access token validity with backend...")
         access_token: Optional[str] = None
         try:
-            access_token = self._get_token("access_token")
+            access_token = get_token("access_token")
             if not access_token:
                 logger.info("No access token found locally. Cannot validate.")
                 return False
@@ -423,19 +344,19 @@ class AuthClient(QObject):
         access_token: Optional[str] = None
         try:
             # Retrieve token *before* deleting it locally
-            access_token = self._get_token("access_token")
+            access_token = get_token("access_token")
         except Exception as e:
             logger.warning(f"Could not retrieve access token for signout notification: {e}")
 
         # Clear local data FIRST
         try:
             logger.debug("Deleting local tokens from keyring...")
-            self._delete_token("access_token")
+            delete_token("access_token")
         except Exception as e:
             # Log error but continue - local logout is priority
             logger.warning(f"Could not delete access token from keyring (might not exist): {e}")
         try:
-            self._delete_token("refresh_token")
+            delete_token("refresh_token")
         except Exception as e:
             # Log error but continue
             logger.warning(f"Could not delete refresh token from keyring (might not exist): {e}")
@@ -489,7 +410,7 @@ class AuthClient(QObject):
     def fetch_user_info(self):
         """Fetch the latest email/tier/credits from the backend and emit auth_success."""
         try:
-            token = self._get_token("access_token")
+            token = get_token("access_token")
             if not token:
                 self.auth_error.emit("No access token available for fetching user info")
                 return

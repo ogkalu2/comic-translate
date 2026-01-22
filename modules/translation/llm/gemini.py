@@ -53,7 +53,6 @@ class GeminiTranslation(BaseLLMTranslation):
         generation_config = {
             "temperature": self.temperature,
             "maxOutputTokens": self.max_tokens,
-            "topP": self.top_p,
             "thinkingConfig": {
                 "thinkingBudget": 0
             },

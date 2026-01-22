@@ -1,4 +1,3 @@
-import keyring
 import json
 import hashlib
 
@@ -11,7 +10,8 @@ from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
 from .llm.custom import CustomTranslation
-from .user import UserTranslator, KEYRING_SERVICE_NAME, KEYRING_USERNAME 
+from .user import UserTranslator
+from app.account.auth.token_storage import get_token
 
 
 class TranslationFactory:
@@ -72,11 +72,12 @@ class TranslationFactory:
         cls._engines[cache_key] = engine
         return engine
     
+
     @classmethod
     def _get_engine_class(cls, translator_key: str):
         """Get the appropriate engine class based on translator key."""
 
-        access_token = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USERNAME)
+        access_token = get_token("access_token")
         if access_token and translator_key not in ['Custom']:
             return UserTranslator
 

@@ -1,5 +1,4 @@
 import requests
-import keyring 
 import base64
 import numpy as np
 import logging
@@ -10,9 +9,9 @@ from .base import TranslationEngine
 from ..utils.textblock import TextBlock 
 
 from app.account.auth.auth_client import AuthClient
+from app.account.auth.token_storage import get_token
 from app.ui.settings.settings_page import SettingsPage
-from app.account.config import WEB_API_TRANSLATE_URL, \
-    KEYRING_SERVICE_NAME, KEYRING_USERNAME
+from app.account.config import WEB_API_TRANSLATE_URL
 
 
 logger = logging.getLogger(__name__)
@@ -59,19 +58,19 @@ class UserTranslator(TranslationEngine):
         return any(identifier in translator_key for identifier in llm_ids)
     
     def _get_access_token(self) -> Optional[str]:
-        """Safely retrieves the access token from keyring."""
+        """Retrieves the access token."""
         try:
             if not self.auth_client.validate_token():
                 logger.error("Access token invalid and refresh failed.")
                 return None
             
-            token = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USERNAME)
+            token = get_token("access_token")
             if not token:
-                logger.warning("Access token not found in keyring.")
+                logger.warning("Access token not found.")
                 return None
             return token
         except Exception as e:
-            logger.error(f"Failed to retrieve access token from keyring: {e}")
+            logger.error(f"Failed to retrieve access token: {e}")
             return None
 
     def translate(self, blk_list: List[TextBlock], image: np.ndarray = None, extra_context: str = "") -> List[TextBlock]:
