@@ -1,10 +1,89 @@
 import os, sys
 import logging
+import hashlib
+import json
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSettings, QTranslator, QLocale, \
-    Qt, QTimer, QThread, QObject, Signal, Slot
+    Qt, QTimer, QThread, QObject, Signal, Slot, QEvent
+from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 from app.ui.splash_screen import SplashScreen
+
+
+def _extract_project_file(argv: list[str]) -> str | None:
+    for arg in argv[1:]:
+        candidate = arg.strip('"')
+        if candidate.lower().endswith(".ctpr") and os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def _single_instance_server_name() -> str:
+    seed = os.path.abspath(__file__).lower().encode("utf-8", errors="ignore")
+    digest = hashlib.sha1(seed).hexdigest()[:12]
+    return f"ComicTranslate-{digest}"
+
+
+def _encode_ipc_message(payload: dict) -> bytes:
+    return (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8", errors="ignore")
+
+
+def _decode_ipc_messages(raw: bytes) -> list[dict]:
+    msgs: list[dict] = []
+    for line in raw.decode("utf-8", errors="ignore").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+            if isinstance(obj, dict):
+                msgs.append(obj)
+                continue
+        except Exception:
+            pass
+        msgs.append({"type": "open", "path": line})
+    return msgs
+
+
+def _try_forward_to_existing_instance(server_name: str, project_file: str | None) -> bool:
+    socket = QLocalSocket()
+    socket.connectToServer(server_name)
+    if not socket.waitForConnected(200):
+        socket.abort()
+        return False
+
+    if project_file:
+        socket.write(_encode_ipc_message({"type": "open", "path": project_file}))
+    else:
+        socket.write(_encode_ipc_message({"type": "activate"}))
+
+    socket.flush()
+    socket.waitForBytesWritten(500)
+    socket.disconnectFromServer()
+    socket.waitForDisconnected(200)
+    return True
+
+
+class OpenRequestRouter(QObject):
+    open_project_requested = Signal(str)
+    activate_requested = Signal()
+
+
+class FileOpenEventFilter(QObject):
+    def __init__(self, router: OpenRequestRouter):
+        super().__init__()
+        self._router = router
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Type.FileOpen:
+            try:
+                path = event.file()
+            except Exception:
+                path = None
+            if path:
+                self._router.open_project_requested.emit(path)
+            return True
+        return False
 
 
 class LoadingWorker(QObject):
@@ -38,13 +117,8 @@ class LoadingWorker(QObject):
                 return
 
             # Check for file arguments
-            project_file = None
-            for arg in self.sys_argv[1:]:
-                candidate = arg.strip('"')
-                if candidate.lower().endswith(".ctpr") and os.path.exists(candidate):
-                    project_file = candidate
-                    break
-            
+            project_file = _extract_project_file(self.sys_argv)
+             
             if self.cancelled or QThread.currentThread().isInterruptionRequested():
                 self.failed.emit()
                 return
@@ -72,7 +146,26 @@ def main():
 
     # Create QApplication directly instead of using the context manager
     app = QApplication(sys.argv)
-    
+
+    router = OpenRequestRouter()
+    app.installEventFilter(FileOpenEventFilter(router))
+
+    # Single-instance behavior (Windows/Linux). macOS typically routes file opens to the
+    # existing instance via QFileOpenEvent, which we also handle above.
+    server_name = _single_instance_server_name()
+    startup_project_file = _extract_project_file(sys.argv)
+
+    # If another instance is already running, forward open/activate then exit.
+    if _try_forward_to_existing_instance(server_name, startup_project_file):
+        sys.exit(0)
+
+    # Become the primary instance: start an IPC server for subsequent launches.
+    server = QLocalServer(app)
+    if not server.listen(server_name):
+        # Likely a stale server (crash). Remove and retry.
+        QLocalServer.removeServer(server_name)
+        server.listen(server_name)
+     
     # Set the application icon
     # icon = QIcon(":/icons/window_icon.png")  
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -108,6 +201,39 @@ def main():
     class LoadingCoordinator(QObject):
         def __init__(self):
             super().__init__()
+            self._ct = None
+            self._pending_project_file: str | None = None
+
+        @Slot(str)
+        def request_open_project(self, path: str):
+            if not path:
+                return
+            if not path.lower().endswith(".ctpr"):
+                return
+            if not os.path.exists(path):
+                return
+            norm = os.path.abspath(path)
+            if self._ct is not None:
+                self._ct.thread_load_project(norm)
+            else:
+                self._pending_project_file = norm
+
+        @Slot()
+        def request_activate(self):
+            if self._ct is not None:
+                try:
+                    self._ct.show()
+                    self._ct.raise_()
+                    self._ct.activateWindow()
+                except Exception:
+                    pass
+            else:
+                try:
+                    splash.show()
+                    splash.raise_()
+                    splash.activateWindow()
+                except Exception:
+                    pass
 
         @Slot()
         def on_cancel(self):
@@ -125,13 +251,15 @@ def main():
                     load_translation(app, selected_language)
 
                 from controller import ComicTranslate
-                ct = ComicTranslate()
-                ct.setWindowIcon(icon)
+                self._ct = ComicTranslate()
+                self._ct.setWindowIcon(icon)
 
-                splash.finish(ct)
+                splash.finish(self._ct)
 
                 if project_file:
-                    ct.thread_load_project(project_file)
+                    self.request_open_project(project_file)
+                elif self._pending_project_file:
+                    self.request_open_project(self._pending_project_file)
             except Exception as e:
                 logging.error(f"Error during UI initialization: {e}")
                 splash.close()
@@ -143,6 +271,26 @@ def main():
             app.quit()
 
     coordinator = LoadingCoordinator()
+    router.open_project_requested.connect(coordinator.request_open_project)
+    router.activate_requested.connect(coordinator.request_activate)
+
+    def _on_ipc_new_connection():
+        while server.hasPendingConnections():
+            sock = server.nextPendingConnection()
+
+            def _read_and_handle(s=sock):
+                raw = s.readAll().data()
+                for msg in _decode_ipc_messages(raw):
+                    msg_type = str(msg.get("type") or "").lower()
+                    if msg_type == "activate":
+                        router.activate_requested.emit()
+                    elif msg_type == "open":
+                        router.open_project_requested.emit(str(msg.get("path") or ""))
+
+            sock.readyRead.connect(_read_and_handle)
+            sock.disconnected.connect(sock.deleteLater)
+
+    server.newConnection.connect(_on_ipc_new_connection)
     splash.cancelled.connect(coordinator.on_cancel)
     worker.finished.connect(coordinator.on_finished, Qt.ConnectionType.QueuedConnection)
     worker.failed.connect(coordinator.on_failed, Qt.ConnectionType.QueuedConnection)
@@ -208,4 +356,3 @@ def load_translation(app, language: str):
 
 if __name__ == "__main__":
     main()
-
