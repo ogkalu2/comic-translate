@@ -525,6 +525,40 @@ class TextBlockItem(QGraphicsTextItem):
                 self.setTextCursor(cursor)
                 event.accept()
                 return
+            elif key in (Qt.Key.Key_Left, Qt.Key.Key_Right) and not (
+                modifiers & (
+                    Qt.KeyboardModifier.ControlModifier
+                    | Qt.KeyboardModifier.AltModifier
+                    | Qt.KeyboardModifier.MetaModifier
+                )
+            ):
+                # Left/Right arrow in vertical text = move between paragraphs (visual columns),
+                # keeping the same in-block offset when possible.
+                cursor = self.textCursor()
+                move_mode = QTextCursor.MoveMode.KeepAnchor if (modifiers & Qt.KeyboardModifier.ShiftModifier) else QTextCursor.MoveMode.MoveAnchor
+
+                # Prefer layout-aware movement (handles wrapped columns).
+                if self.layout and hasattr(self.layout, "move_cursor_between_columns"):
+                    column_delta = 1 if key == Qt.Key.Key_Left else -1
+                    new_pos = self.layout.move_cursor_between_columns(cursor.position(), column_delta)
+                    if new_pos is not None and new_pos != cursor.position():
+                        cursor.setPosition(new_pos, move_mode)
+                        self.setTextCursor(cursor)
+                        event.accept()
+                        return
+
+                # Fallback: treat each QTextBlock as a vertical "line" and move between them.
+                block = cursor.block()
+                target_block = block.next() if key == Qt.Key.Key_Left else block.previous()
+                if target_block.isValid():
+                    offset_in_block = cursor.position() - block.position()
+                    target_offset = min(offset_in_block, max(0, target_block.length() - 1))
+                    new_pos = target_block.position() + target_offset
+                    if new_pos != cursor.position():
+                        cursor.setPosition(new_pos, move_mode)
+                        self.setTextCursor(cursor)
+                        event.accept()
+                        return
             
             elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
                 # Use the current character format as the new block's char format so empty paragraphs

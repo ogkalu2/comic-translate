@@ -1,7 +1,7 @@
 import bisect
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Iterator
+from typing import Iterator, Optional
 
 from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
 from PySide6.QtGui import QTextDocument, QTransform, QPainter, \
@@ -725,6 +725,139 @@ class VerticalTextDocumentLayout(QAbstractTextDocumentLayout):
             self.update.emit()
         self.has_selection = has_selection
         painter.restore()
+
+    def move_cursor_between_columns(self, cursor_pos: int, column_delta: int) -> Optional[int]:
+        """
+        Moves a cursor between visual columns in the vertical layout, attempting to
+        keep the same visual Y position. Returns a new absolute cursor position, or
+        None if movement isn't possible.
+
+        `column_delta`: +1 moves to the next column to the left, -1 moves to the
+        column to the right (matching how this layout places columns right-to-left).
+        """
+        if not self._layout_state.nodes or column_delta == 0:
+            return None
+
+        doc = self.document()
+        block = doc.findBlock(cursor_pos)
+        if not block.isValid():
+            return None
+
+        blk_no = block.blockNumber()
+        if not (0 <= blk_no < len(self._layout_state.nodes)):
+            return None
+
+        block_node = self._layout_state.nodes[blk_no]
+        if not block_node.lines:
+            return None
+
+        pos_in_block = max(0, cursor_pos - block.position())
+
+        # Resolve the current line index within this block.
+        layout = block.layout()
+        qt_line = layout.lineForTextPosition(pos_in_block)
+        line_idx = qt_line.lineNumber() if qt_line.isValid() else 0
+        if not (0 <= line_idx < len(block_node.lines)):
+            # Fallback: scan by character ranges.
+            line_idx = 0
+            for i, line_info in enumerate(block_node.lines):
+                start = line_info.start_char_index_in_block
+                end = start + max(1, line_info.text_len)
+                if start <= pos_in_block < end or (pos_in_block == end and i == len(block_node.lines) - 1):
+                    line_idx = i
+                    break
+
+        cur_line_info = block_node.lines[line_idx]
+        y_idx = pos_in_block - cur_line_info.start_char_index_in_block
+        if 0 <= y_idx < len(cur_line_info.char_y_offsets):
+            desired_y = cur_line_info.char_y_offsets[y_idx]
+        else:
+            desired_y = cur_line_info.y_boundary[0]
+
+        # Group consecutive lines by X (each group is a visual column).
+        lines = block_node.lines
+        groups: list[tuple[float, int, int]] = []
+        tol = 0.01
+        start_idx = 0
+        cur_x = lines[0].qt_line.position().x() if lines[0].qt_line.isValid() else 0.0
+        for i in range(1, len(lines)):
+            x = lines[i].qt_line.position().x() if lines[i].qt_line.isValid() else cur_x
+            if abs(x - cur_x) > tol:
+                groups.append((cur_x, start_idx, i))
+                start_idx = i
+                cur_x = x
+        groups.append((cur_x, start_idx, len(lines)))
+        if not groups:
+            return None
+
+        group_idx = 0
+        for gi, (_, gs, ge) in enumerate(groups):
+            if gs <= line_idx < ge:
+                group_idx = gi
+                break
+
+        target_group_idx = group_idx + (1 if column_delta > 0 else -1)
+
+        target_block_node = block_node
+        if target_group_idx < 0 or target_group_idx >= len(groups):
+            # Cross blocks if we walk past the edge of wrapped columns.
+            target_blk_no = blk_no + (1 if column_delta > 0 else -1)
+            if not (0 <= target_blk_no < len(self._layout_state.nodes)):
+                return None
+            target_block_node = self._layout_state.nodes[target_blk_no]
+            if not target_block_node.lines:
+                return target_block_node.qt_block.position()
+
+            # Rebuild groups for the target block and pick the nearest edge.
+            lines = target_block_node.lines
+            groups = []
+            start_idx = 0
+            cur_x = lines[0].qt_line.position().x() if lines[0].qt_line.isValid() else 0.0
+            for i in range(1, len(lines)):
+                x = lines[i].qt_line.position().x() if lines[i].qt_line.isValid() else cur_x
+                if abs(x - cur_x) > tol:
+                    groups.append((cur_x, start_idx, i))
+                    start_idx = i
+                    cur_x = x
+            groups.append((cur_x, start_idx, len(lines)))
+            target_group_idx = 0 if column_delta > 0 else (len(groups) - 1)
+
+        _, gs, ge = groups[target_group_idx]
+        if ge <= gs:
+            return None
+
+        # Pick the closest line within the target column to the desired Y.
+        best_idx = gs
+        best_dist = float("inf")
+        for i in range(gs, ge):
+            top, bottom = lines[i].y_boundary
+            if top <= desired_y <= bottom:
+                best_idx = i
+                best_dist = 0.0
+                break
+            dist = min(abs(desired_y - top), abs(desired_y - bottom))
+            if dist < best_dist:
+                best_dist = dist
+                best_idx = i
+
+        target_line_info = lines[best_idx]
+        offsets = target_line_info.char_y_offsets
+        if offsets:
+            insert_idx = bisect.bisect_left(offsets, desired_y)
+            if insert_idx <= 0:
+                boundary_idx = 0
+            elif insert_idx >= len(offsets):
+                boundary_idx = len(offsets) - 1
+            else:
+                before = offsets[insert_idx - 1]
+                after = offsets[insert_idx]
+                boundary_idx = insert_idx - 1 if (desired_y - before) <= (after - desired_y) else insert_idx
+        else:
+            boundary_idx = 0
+
+        rel_pos_in_block = target_line_info.start_char_index_in_block + boundary_idx
+        rel_pos_in_block = max(0, min(rel_pos_in_block, target_block_node.qt_block.length() - 1))
+        return target_block_node.qt_block.position() + rel_pos_in_block
 
     def hitTest(self, point: QPointF, accuracy: Qt.HitTestAccuracy) -> int:
         if not self._layout_state.nodes:
