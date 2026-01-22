@@ -95,7 +95,8 @@ class AuthClient(QObject):
         desktop_callback_uri = f"http://localhost:{actual_port}/callback" # Or 127.0.0.1
         params = {
             "request_id": self.current_request_id,
-            "desktop_callback_uri": desktop_callback_uri
+            "desktop_callback_uri": desktop_callback_uri,
+            "prompt": "login"
         }
         login_url = f"{self.frontend_url}/login" 
         auth_url = f"{login_url}?{urllib.parse.urlencode(params)}"

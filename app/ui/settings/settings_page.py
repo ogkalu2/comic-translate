@@ -7,9 +7,7 @@ import json
 
 from PySide6 import QtWidgets, QtGui
 from PySide6.QtCore import Signal, QSettings, QCoreApplication, QUrl, QTimer
-from PySide6.QtGui import QFont, QFontDatabase
-from PySide6.QtWebEngineWidgets import QWebEngineView 
-from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
+from PySide6.QtGui import QFont, QFontDatabase, QDesktopServices
 
 from .settings_ui import SettingsPageUI
 from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
@@ -41,39 +39,6 @@ INPAINTER_MIGRATIONS = {
     "MI-GAN": "AOT",
 }
 
-class LoginWebViewDialog(QtWidgets.QDialog):
-    """A simple dialog to host the QWebEngineView for login."""
-    closed_manually = Signal()
-    def __init__(self, url: str, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle(QCoreApplication.translate("LoginWebViewDialog", "Sign In"))
-        self.resize(500, 600)
-
-        layout = QtWidgets.QVBoxLayout(self)
-        layout.setContentsMargins(0,0,0,0)
-
-        self.web_view = QWebEngineView()
-        self.profile = QWebEngineProfile(parent=self.web_view) 
-        page = QWebEnginePage(self.profile, self.web_view)
-        self.web_view.setPage(page)
-        layout.addWidget(self.web_view)
-        self.web_view.load(QUrl(url))
-
-    def closeEvent(self, event):
-        logger.debug("LoginWebViewDialog closeEvent triggered.")
-        # Stop any pending load
-        self.web_view.stop()
-        # If a page exists, schedule its deletion
-        page = self.web_view.page()
-        if page:
-            page.deleteLater()
-            self.web_view.setPage(None)
-        # Schedule deletion of the profile explicitly
-        if self.profile:
-            self.profile.deleteLater()
-        logger.debug("Closing login web view dialog.")
-        super().closeEvent(event)
-
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
     font_imported = Signal(str)
@@ -86,7 +51,10 @@ class SettingsPage(QtWidgets.QWidget):
         self._setup_connections()
         self._loading_settings = False
 
-        self.login_dialog: Optional[LoginWebViewDialog] = None
+        self.ui = SettingsPageUI(self)
+        self._setup_connections()
+        self._loading_settings = False
+
         self._pricing_refresh_timer: Optional[QTimer] = None
         self._pricing_refresh_attempts: int = 0
         self._pricing_refresh_baseline: Optional[Any] = None
@@ -558,60 +526,48 @@ class SettingsPage(QtWidgets.QWidget):
     
     # Authentication Flow Methods 
 
+    # Authentication Flow Methods 
+
     def start_sign_in(self):
         """Initiates the authentication flow."""
         logger.info("Sign In button clicked.")
-        # Disable button to prevent multiple clicks
-        self.ui.sign_in_button.setEnabled(False)
-        self.ui.sign_in_button.setText(self.tr("Signing In..."))
+        # Change button to Cancel mode
+        self.ui.sign_in_button.setText(self.tr("Cancel"))
+        self.ui.sign_in_button.clicked.disconnect()
+        self.ui.sign_in_button.clicked.connect(self.cancel_sign_in)
+        
         try:
             self.auth_client.start_auth_flow()
         except Exception as e:
             logger.error(f"Error starting auth flow: {e}", exc_info=True)
             self.handle_auth_error(self.tr("Failed to initiate sign-in process."))
-            # Re-enable button on immediate failure
-            self.ui.sign_in_button.setEnabled(True)
-            self.ui.sign_in_button.setText(self.tr("Sign In"))
+            # handle_auth_error will reset the button
 
+    def cancel_sign_in(self):
+        """Cancels the active authentication flow."""
+        logger.info("Cancel Sign In button clicked.")
+        self.auth_client.cancel_auth_flow()
+        # The auth_client will emit auth_cancelled(), which calls handle_auth_cancelled()
+        # handle_auth_cancelled will reset the button
 
     def show_login_view(self, url: str):
-        """Creates and shows the QWebEngineView dialog."""
-        logger.info(f"Showing login view for URL: {url}")
-        # Close existing dialog if any
-        if self.login_dialog and self.login_dialog.isVisible():
-            # Ensure proper cleanup if replacing an existing dialog
-            self.login_dialog.close() # Triggers closeEvent
+        """Opens the login URL in the system browser."""
+        logger.info(f"Opening login URL in system browser: {url}")
+        QDesktopServices.openUrl(QUrl(url))
 
-        # Create and show the new dialog
-        self.login_dialog = LoginWebViewDialog(url, self)
-        # --- ADDED: Connect finished signal ---
-        # Connect finished signal to handle closure regardless of how it happened
-        self.login_dialog.finished.connect(self.on_login_dialog_closed)
-        self.login_dialog.show()
+    def _reset_sign_in_button(self):
+        """Resets the Sign In button to its initial state."""
+        self.ui.sign_in_button.setText(self.tr("Sign In"))
+        self.ui.sign_in_button.setEnabled(True)
+        try:
+            self.ui.sign_in_button.clicked.disconnect()
+        except RuntimeError:
+            pass # No connections to disconnect
+        self.ui.sign_in_button.clicked.connect(self.start_sign_in)
 
-    def on_login_dialog_closed(self, result_code: int):
-        """
-        Handle cleanup or state changes when the login dialog is closed.
-        result_code is QDialog.Accepted or QDialog.Rejected.
-        """
-        logger.debug(f"Login dialog closed with result code: {result_code}")
-        dialog = self.login_dialog # Keep temporary reference if needed for logging/state
-        self.login_dialog = None # Clear the main reference immediately
-
-        # Check if the dialog was closed *without* success (i.e., manually or rejected)
-        # AND if the user is not already logged in (auth_success might have just run)
-        if result_code != QtWidgets.QDialog.Accepted and not self.is_logged_in():
-            logger.info("Login dialog closed without success, cancelling auth flow.")
-            # Tell the auth client to stop the local server and cleanup
-            self.auth_client.cancel_auth_flow()
-            # Note: cancel_auth_flow emits auth_error("cancelled by user..."),
-            # which triggers handle_auth_error, resetting the button.
-        elif result_code == QtWidgets.QDialog.Accepted:
-             logger.debug("Login dialog closed with Accepted code (likely due to auth_success).")
-        else: # Dialog closed but user is already logged in (edge case?)
-             logger.debug("Login dialog closed, but user is already logged in. No cancellation needed.")
-             # Ensure button state is correct if somehow it wasn't updated
-             self._update_account_view()
+    def _on_auth_flow_ended(self):
+        """Common cleanup when auth flow ends (success, error, or cancel)."""
+        self._reset_sign_in_button()
 
     def open_pricing_page(self):
         """Open the pricing page in the system browser."""
@@ -656,15 +612,10 @@ class SettingsPage(QtWidgets.QWidget):
     def handle_auth_success(self, user_info: dict):
         """Handles successful authentication."""
         # logger.info(f"Authentication successful. User info received: {user_info}")
-        manual = bool(self.login_dialog)
-        # Close the login web view dialog *if it exists and is still visible*
-        if self.login_dialog:
-            logger.debug("Auth success: Closing login dialog.")
-            # Use accept() to ensure the finished signal emits Accepted
-            self.login_dialog.accept()
-            # self.login_dialog = None # This is now handled in on_login_dialog_closed
-        else:
-            logger.debug("Auth success: Login dialog was already closed or never opened.")
+        
+        self._on_auth_flow_ended()
+        
+        logger.debug("Auth success: Flow completed.")
 
         # Store user info
         self.user_email = user_info.get('email')
@@ -685,32 +636,25 @@ class SettingsPage(QtWidgets.QWidget):
         self.login_state_changed.emit(True)
 
         # Optionally show a success message
-        if manual:
-            self._show_message_box(
-                QtWidgets.QMessageBox.Information,
-                self.tr("Success"),
-                self.tr("Successfully signed in as {email}.").format(email=self.user_email)
-            )
+        # if self.user_email: 
+        #     self._show_message_box(
+        #         QtWidgets.QMessageBox.Information,
+        #         self.tr("Success"),
+        #         self.tr("Successfully signed in as {email}.").format(email=self.user_email)
+        #     )
 
     def handle_auth_error(self, error_message: str):
         """Handles authentication errors."""
         # REMOVED: if "cancelled by user" not in error_message:
         logger.error(f"Authentication error: {error_message}") # Now always logs as error
 
-        manual = bool(self.login_dialog)
-        # Close the login web view dialog *if it exists and is still visible*
-        if self.login_dialog:
-            logger.debug("Auth error: Closing login dialog.")
-            self.login_dialog.reject()
-            # self.login_dialog = None # Handled in on_login_dialog_closed
-        else:
-            logger.debug("Auth error: Login dialog was already closed or never opened.")
+        self._on_auth_flow_ended()
 
         # Update account view should handle showing/hiding widgets and resetting buttons
         self._update_account_view()
 
         # Show error message to the user
-        if manual:
+        if "cancelled" not in error_message.lower():
             self._show_message_box(
                 QtWidgets.QMessageBox.Warning,
                 self.tr("Sign In Error"),
@@ -720,13 +664,8 @@ class SettingsPage(QtWidgets.QWidget):
     def handle_auth_cancelled(self):
         """Handles the signal emitted when the auth flow is cancelled by the user."""
         logger.info("Authentication flow cancelled by user.")
-        # The login dialog should already be closing or closed by this point.
-        # Ensure the UI reflects the logged-out state correctly.
+        self._on_auth_flow_ended()
         self._update_account_view()
-        # Explicitly ensure sign-in button is reset, although _update_account_view should handle it.
-        if not self.is_logged_in():
-            self.ui.sign_in_button.setEnabled(True)
-            self.ui.sign_in_button.setText(self.tr("Sign In"))
 
     def sign_out(self):
         """Initiates the sign-out process."""
