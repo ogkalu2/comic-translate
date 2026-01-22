@@ -229,7 +229,7 @@ class ProjectController:
             self.main.webtoon_ctrl.switch_to_webtoon_mode()
         self.main.set_project_clean()
 
-    def thread_load_project(self, file_name):
+    def thread_load_project(self, file_name: str):
         self.main.image_ctrl.clear_state()
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.run_threaded(
