@@ -185,7 +185,7 @@ class AuthClient(QObject):
         if self.settings.contains(f"auth/{name}"):
             self.settings.remove(f"auth/{name}")
 
-    # --- End Helpers ---
+    # End Helpers
 
     def _handle_token_callback(self, access_token: str, refresh_token: str, user_info: dict):
         """Handles the tokens and user info received from the backend via the local server."""
