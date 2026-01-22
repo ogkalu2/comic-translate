@@ -214,7 +214,12 @@ def main():
                 return
             norm = os.path.abspath(path)
             if self._ct is not None:
-                self._ct.thread_load_project(norm)
+                try:
+                    if not self._ct._confirm_start_new_project():
+                        return
+                except Exception:
+                    pass
+                self._ct.project_ctrl.thread_load_project(norm)
             else:
                 self._pending_project_file = norm
 
