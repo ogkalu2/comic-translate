@@ -62,8 +62,15 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
-        self.credential_services = [self.tr("Custom"), self.tr("Deepseek"), self.tr("Open AI GPT"), self.tr("Microsoft Azure"), self.tr("Google Cloud"), 
-                                    self.tr("Google Gemini"), self.tr("DeepL"), self.tr("Anthropic Claude"), self.tr("Yandex")]
+        self.credential_services = [
+            self.tr("Custom"), 
+            self.tr("Deepseek"), 
+            self.tr("Open AI GPT"), 
+            self.tr("Microsoft Azure"), 
+            self.tr("Google Cloud"), 
+            self.tr("Google Gemini"), 
+            self.tr("Anthropic Claude")
+        ]
         
         self.supported_translators = [
             self.tr("GPT-4.1"),

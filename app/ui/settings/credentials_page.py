@@ -52,27 +52,28 @@ class CredentialsPage(QtWidgets.QWidget):
                 self.credential_widgets["Microsoft Azure_endpoint"] = endpoint_input
 
                 # Translator
-                translate_label = MLabel(self.tr("Translate")).secondary()
-                service_layout.addWidget(translate_label)
+                # # Translator
+                # translate_label = MLabel(self.tr("Translate")).secondary()
+                # service_layout.addWidget(translate_label)
 
-                translator_api_key_input = MLineEdit()
-                translator_api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
-                translator_api_key_input.setFixedWidth(400)
-                translator_api_key_prefix = MLabel(self.tr("API Key")).border()
-                set_label_width(translator_api_key_prefix)
-                translator_api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-                translator_api_key_input.set_prefix_widget(translator_api_key_prefix)
-                service_layout.addWidget(translator_api_key_input)
-                self.credential_widgets["Microsoft Azure_api_key_translator"] = translator_api_key_input
+                # translator_api_key_input = MLineEdit()
+                # translator_api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
+                # translator_api_key_input.setFixedWidth(400)
+                # translator_api_key_prefix = MLabel(self.tr("API Key")).border()
+                # set_label_width(translator_api_key_prefix)
+                # translator_api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                # translator_api_key_input.set_prefix_widget(translator_api_key_prefix)
+                # service_layout.addWidget(translator_api_key_input)
+                # self.credential_widgets["Microsoft Azure_api_key_translator"] = translator_api_key_input
 
-                region_input = MLineEdit()
-                region_input.setFixedWidth(400)
-                region_prefix = MLabel(self.tr("Region")).border()
-                set_label_width(region_prefix)
-                region_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-                region_input.set_prefix_widget(region_prefix)
-                service_layout.addWidget(region_input)
-                self.credential_widgets["Microsoft Azure_region"] = region_input
+                # region_input = MLineEdit()
+                # region_input.setFixedWidth(400)
+                # region_prefix = MLabel(self.tr("Region")).border()
+                # set_label_width(region_prefix)
+                # region_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                # region_input.set_prefix_widget(region_prefix)
+                # service_layout.addWidget(region_input)
+                # self.credential_widgets["Microsoft Azure_region"] = region_input
 
             elif normalized == "Custom":
                 api_key_input = MLineEdit()

@@ -152,8 +152,8 @@ class SettingsPage(QtWidgets.QWidget):
             if normalized == "Microsoft Azure":
                 creds.update({
                     'api_key_ocr': _text_or_none("Microsoft Azure_api_key_ocr"),
-                    'api_key_translator': _text_or_none("Microsoft Azure_api_key_translator"),
-                    'region_translator': _text_or_none("Microsoft Azure_region"),
+                    # 'api_key_translator': _text_or_none("Microsoft Azure_api_key_translator"),
+                    # 'region_translator': _text_or_none("Microsoft Azure_region"),
                     'endpoint': _text_or_none("Microsoft Azure_endpoint"),
                 })
             elif normalized == "Custom":
@@ -285,8 +285,8 @@ class SettingsPage(QtWidgets.QWidget):
                 translated_service = self.ui.value_mappings.get(service, service)
                 if translated_service == "Microsoft Azure":
                     settings.setValue(f"{translated_service}_api_key_ocr", cred['api_key_ocr'])
-                    settings.setValue(f"{translated_service}_api_key_translator", cred['api_key_translator'])
-                    settings.setValue(f"{translated_service}_region_translator", cred['region_translator'])
+                    # settings.setValue(f"{translated_service}_api_key_translator", cred['api_key_translator'])
+                    # settings.setValue(f"{translated_service}_region_translator", cred['region_translator'])
                     settings.setValue(f"{translated_service}_endpoint", cred['endpoint'])
                 elif translated_service == "Custom":
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
@@ -395,8 +395,8 @@ class SettingsPage(QtWidgets.QWidget):
                 translated_service = self.ui.value_mappings.get(service, service)
                 if translated_service == "Microsoft Azure":
                     self.ui.credential_widgets["Microsoft Azure_api_key_ocr"].setText(settings.value(f"{translated_service}_api_key_ocr", ''))
-                    self.ui.credential_widgets["Microsoft Azure_api_key_translator"].setText(settings.value(f"{translated_service}_api_key_translator", ''))
-                    self.ui.credential_widgets["Microsoft Azure_region"].setText(settings.value(f"{translated_service}_region_translator", ''))
+                    # self.ui.credential_widgets["Microsoft Azure_api_key_translator"].setText(settings.value(f"{translated_service}_api_key_translator", ''))
+                    # self.ui.credential_widgets["Microsoft Azure_region"].setText(settings.value(f"{translated_service}_region_translator", ''))
                     self.ui.credential_widgets["Microsoft Azure_endpoint"].setText(settings.value(f"{translated_service}_endpoint", ''))
                 elif translated_service == "Custom":
                     self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
