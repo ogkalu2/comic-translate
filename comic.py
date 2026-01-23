@@ -175,7 +175,7 @@ def main():
     app.setWindowIcon(icon)
 
     # Show Splash Screen
-    splash_pix = QPixmap(os.path.join(current_file_dir, 'resources', 'splash.png'))
+    splash_pix = QPixmap(os.path.join(current_file_dir, 'resources', 'icons', 'splash.png'))
     # High DPI Scaling
     screen = app.primaryScreen()
     dpr = screen.devicePixelRatio()
