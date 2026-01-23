@@ -1,9 +1,8 @@
 import json
 import hashlib
-import keyring
 
 from modules.utils.device import resolve_device, torch_available
-from app.account.config import KEYRING_SERVICE_NAME, KEYRING_USERNAME
+from app.account.auth.token_storage import get_token
 from .base import OCREngine
 from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
@@ -58,7 +57,7 @@ class OCRFactory:
             return cls._engines[cache_key]
 
         # 2) For account holders using a remote  model
-        token = keyring.get_password(KEYRING_SERVICE_NAME, KEYRING_USERNAME)
+        token = get_token("access_token")
         if token and (
             ocr_model in UserOCR.LLM_OCR_KEYS
             or ocr_model in UserOCR.FULL_PAGE_OCR_KEYS
