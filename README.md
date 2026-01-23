@@ -5,19 +5,18 @@ English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简
 
 ## Intro
 Many Automatic Manga Translators exist. Very few properly support comics of other kinds in other languages. 
-This project was created to utilize the ability of State of the Art (SOTA) Large Language Models (LLMs) like GPT-4 and translate comics from all over the world. Currently, it supports translating to and from English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to (but not from) Turkish, Polish, Portuguese and Brazillian Portuguese.
+This project was created to utilize the ability of State of the Art (SOTA) Large Language Models (LLMs) like GPT and translate comics from all over the world. 
+
+Currently, it supports translating comics from the following languages: English, Korean, Japanese, French, Simplified Chinese, Traditional Chinese, Russian, German, Dutch, Spanish and Italian. It can translate to the above mentioned and more. 
 
 - [The State of Machine Translation](#the-state-of-machine-translation)
 - [Preview](#comic-samples)
 - [Getting Started](#installation)
     - [Installation](#installation)
-        - [Python](#python)
+        - [Download](#download)
+        - [From Source](#from-source)
     - [Usage](#usage)
         - [Tips](#tips)
-    - [API keys](#api-keys)
-        - [Getting API Keys](#getting-api-keys)
-            - [Open AI](#open-ai-gpt)
-            - [Google Cloud Vision](#google-cloud-vision)
 
 - [How it works](#how-it-works)
     - [Text Detection](#text-detection)
@@ -29,7 +28,7 @@ This project was created to utilize the ability of State of the Art (SOTA) Large
 - [Acknowledgements](#acknowledgements)
 
 ## The State of Machine Translation
-For a couple dozen languages, the best Machine Translator is not Google Translate, Papago or even DeepL, but a SOTA LLM like GPT-4o, and by far. 
+For a couple dozen languages, the best Machine Translator is not Google Translate, Papago or even DeepL, but a SOTA LLM like GPT-4, and by far. 
 This is very apparent for distant language pairs (Korean<->English, Japanese<->English etc) where other translators still often devolve into gibberish.
 Excerpt from "The Walking Practice"(보행 연습) by Dolki Min(돌기민)
 ![Model](https://i.imgur.com/72jvLBa.png)
@@ -67,7 +66,12 @@ Note: Some of these also have Official English Translations
 <img src="https://i.imgur.com/h51XJx4.jpg" width="49%"> <img src="https://i.imgur.com/sLitjUY.jpg" width="49%">
 
 ## Installation
-### Python
+### Download
+You can download and install on Windows and Mac from [here](https://www.comic-translate.com/download/). Currently, no GPU support unless from source.
+
+### From Source
+Alternatively, if you'd like to run the source code directly.
+
 Install Python 3.12. Tick "Add python.exe to PATH" during the setup.
 ```bash
 https://www.python.org/downloads/
@@ -125,27 +129,6 @@ In that case, Instructions for [Windows](https://www.windowsdigitals.com/add-fol
 * The Usual Trackpad Gestures work for viewing the Image
 * Right, Left Keys to Navigate Between Images
 
-## API Keys
-To following selections will require access to closed resources and subsequently, API Keys:
-* GPT-4o or 4o-mini for Translation (Paid, about $0.01 USD/Page for 4o)
-* DeepL Translator (Free for 500,000 characters/month)
-* GPT-4o for OCR (Default Option for French, Russian, German, Dutch, Spanish, Italian) (Paid, about $0.02 USD/Page)
-* Microsoft Azure Vision for OCR (Free for 5000 images/month)
-* Google Cloud Vision for OCR (Free for 1000 images/month)
-You can set your API Keys by going to Settings > Credentials
-
-### Getting API Keys
-#### Open AI (GPT)
-* Go to OpenAI's Platform website at [platform.openai.com](https://platform.openai.com/) and sign in with (or create) an OpenAI account.
-* Hover your Mouse over the right taskbar of the page and select "API Keys."
-* Click "Create New Secret Key" to generate a new API key. Copy and store it.
-
-#### Google Cloud Vision 
-* Sign in/Create a [Google Cloud](https://cloud.google.com/) account. Go to [Cloud Resource Manager](https://console.cloud.google.com/cloud-resource-manager) and click "Create Project". Set your project name. 
-* [Select your project here](https://console.cloud.google.com/welcome) then select "Billing" then "Create Account". In the pop-up, "Enable billing account", and accept the offer of a free trial account. Your "Account type" should be individual. Fill in a valid credit card.
-* Enable Google Cloud Vison for your project [here](https://console.cloud.google.com/apis/library/vision.googleapis.com)
-* In the [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials) page, click "Create Credentials" then API Key. Copy and store it.
-
 ## How it works
 ### Speech Bubble Detection and Text Segmentation
 [bubble-and-text-detector](https://huggingface.co/ogkalu/comic-text-and-bubble-detector). RT-DETR-v2 model trained on 11k images of comics (Manga, Webtoons, Western).
@@ -161,7 +144,7 @@ By Default:
 
 Optional:
 
-These can be used for any of the supported languages. An API Key is required.
+These can be used for any of the supported languages.
 
 * [Google Cloud Vision](https://cloud.google.com/vision/docs/ocr)
 * [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
@@ -193,5 +176,3 @@ Wrapped text in bounding boxes obtained from bubbles and text.
 * [https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
 * [https://github.com/RapidAI/RapidOCR](https://github.com/RapidAI/RapidOCR)
 * [https://github.com/phenom-films/dayu_widgets](https://github.com/phenom-films/dayu_widgets)
-
-
