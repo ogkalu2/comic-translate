@@ -5,6 +5,7 @@ import os
 import tempfile
 import zipfile
 import shutil
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import imkit as imk
@@ -12,6 +13,22 @@ from .parsers import ProjectEncoder, ProjectDecoder, ensure_string_keys
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
+
+def _to_archive_relpath(rel_path: str) -> str:
+    """
+    Normalize relative paths stored inside project state.
+
+    We store paths using POSIX separators so project files created on Windows
+    can be loaded on macOS/Linux (and vice versa).
+    """
+    # Keep this strictly relative; callers control the base directory.
+    return str(PurePosixPath(*str(rel_path).replace("\\", "/").split("/")))
+
+def _join_from_archive_relpath(base_dir: str, rel_path: str) -> str:
+    """Join a POSIX-style relative path onto a platform-native base directory."""
+    posix = _to_archive_relpath(rel_path)
+    parts = [p for p in posix.split("/") if p]
+    return os.path.join(base_dir, *parts)
 
 def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
     """
@@ -111,7 +128,8 @@ def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
 
                 state['image_patches'][page_path].append({
                     'bbox': patch['bbox'],
-                    'png_path': os.path.relpath(dst_png, unique_patches_dir),  # <–– relative
+                    # Store POSIX-style separators for cross-platform project loading.
+                    'png_path': _to_archive_relpath(os.path.relpath(dst_png, unique_patches_dir)),
                     'hash': patch['hash'],
                 })     
 
@@ -309,7 +327,7 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
         for page_path, patch_list in saved_patches.items():
             new_list = []
             for p in patch_list:
-                abs_png = os.path.join(unique_patches_dir, p['png_path'])
+                abs_png = _join_from_archive_relpath(unique_patches_dir, p.get('png_path', ''))
                 if os.path.isfile(abs_png):  
                     new_list.append({'bbox': p['bbox'],
                                     'png_path': abs_png,
