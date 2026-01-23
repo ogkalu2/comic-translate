@@ -148,7 +148,8 @@ def main():
     app = QApplication(sys.argv)
 
     router = OpenRequestRouter()
-    app.installEventFilter(FileOpenEventFilter(router))
+    file_open_event_filter = FileOpenEventFilter(router)
+    app.installEventFilter(file_open_event_filter)
 
     # Single-instance behavior (Windows/Linux). macOS typically routes file opens to the
     # existing instance via QFileOpenEvent, which we also handle above.
