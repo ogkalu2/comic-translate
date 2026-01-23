@@ -10,7 +10,3 @@ API_BASE_URL = prod_api_base_url
 FRONTEND_BASE_URL = prod_frontend_base_url
 WEB_API_OCR_URL = f"{API_BASE_URL}/api/v1/ocr"
 WEB_API_TRANSLATE_URL = f"{API_BASE_URL}/api/v1/translate"
-
-# Keyring configuration for storing access tokens
-KEYRING_SERVICE_NAME = "comic-translate" 
-KEYRING_USERNAME = "access_token" 
