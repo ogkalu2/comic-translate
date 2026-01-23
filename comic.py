@@ -170,7 +170,7 @@ def main():
     # Set the application icon
     # icon = QIcon(":/icons/window_icon.png")  
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
-    icon_path = os.path.join(current_file_dir, 'resources', 'icon.ico')
+    icon_path = os.path.join(current_file_dir, 'resources', 'icons', 'icon.ico')
     icon = QIcon(icon_path)
     app.setWindowIcon(icon)
 
