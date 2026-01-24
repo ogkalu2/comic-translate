@@ -196,7 +196,7 @@ def main():
     worker.failed.connect(worker.deleteLater)
     worker.finished.connect(thread.quit)
     worker.failed.connect(thread.quit)
-    thread.finished.connect(thread.deleteLater)
+    # thread.finished.connect(thread.deleteLater) # Removed to avoid RuntimeError on exit check
     
     # Connect signals
     class LoadingCoordinator(QObject):
