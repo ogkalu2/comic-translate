@@ -308,7 +308,15 @@ def main():
     QTimer.singleShot(0, thread.start)
     
     # Start the event loop
-    sys.exit(app.exec())
+    # Start the event loop
+    exec_return = app.exec()
+
+    # Clean up loading thread explicitly to avoid "QThread: Destroyed while thread is still running"
+    if thread.isRunning():
+        thread.quit()
+        thread.wait()
+
+    sys.exit(exec_return)
 
 
 def get_system_language():

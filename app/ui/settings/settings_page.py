@@ -798,6 +798,13 @@ class SettingsPage(QtWidgets.QWidget):
             logger.info("Closing active login dialog because SettingsPage is closing.")
             # Closing the dialog will trigger its finished signal,
             # which calls on_login_dialog_closed, potentially cancelling the auth flow.
+            # self.login_dialog.close() 
+            pass
+
+    def shutdown(self):
+        """Cleanup resources before app exit."""
+        if self.auth_client:
+            self.auth_client.shutdown()
             self.login_dialog.close()
         self._stop_pricing_refresh_watch()
         super().closeEvent(event)

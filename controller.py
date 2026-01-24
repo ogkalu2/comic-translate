@@ -258,6 +258,15 @@ class ComicTranslate(ComicTranslateUI):
         except Exception:
             pass
 
+    def closeEvent(self, event):
+        """Handle execution of cleanup operations on close"""
+        self.settings_page.shutdown()
+        if self._skip_close_prompt:
+             event.accept()
+        else:
+            # Add any other close prompt logic here if needed
+            event.accept()
+
     def _finish_close_after_save(self):
         self._skip_close_prompt = True
         self.close()

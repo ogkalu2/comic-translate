@@ -155,6 +155,29 @@ class AuthClient(QObject):
         self.auth_server_thread = None
         logger.debug("Auth server thread reference cleared.")
 
+    def shutdown(self):
+        """Clean up threads before application exit."""
+        logger.info("Shutting down AuthClient...")
+        
+        # 1. Stop AuthServerThread
+        if self.auth_server_thread:
+            logger.debug("Stopping AuthServerThread...")
+            if self.auth_server_thread.isRunning():
+                self.auth_server_thread.stop_server()
+                self.auth_server_thread.quit()
+                self.auth_server_thread.wait()
+            self.auth_server_thread = None
+
+        # 2. Stop SessionCheckThread
+        if hasattr(self, '_session_check_thread') and self._session_check_thread:
+             logger.debug("Stopping SessionCheckThread...")
+             if self._session_check_thread.isRunning():
+                 self._session_check_thread.quit()
+                 self._session_check_thread.wait()
+             self._session_check_thread = None
+        
+        logger.info("AuthClient shutdown complete.")
+
     def cancel_auth_flow(self):
         """Cancels the currently active authentication flow."""
         logger.info("Attempting to cancel authentication flow.")
