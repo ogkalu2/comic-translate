@@ -22,7 +22,7 @@ class UserOCR(OCREngine):
     Desktop OCR engine that proxies requests to the web API endpoint (/ocr),
     utilizing the user's account credits and server-side OCR engines.
     """
-    LLM_OCR_KEYS = {"GPT-4.1-mini", "Gemini-2.0-Flash"} # Add other LLM models here
+    LLM_OCR_KEYS = {"Gemini-2.0-Flash"} 
     FULL_PAGE_OCR_KEYS = {"Microsoft OCR", "Google Cloud Vision"}
 
     def __init__(self, api_url: str = WEB_API_OCR_URL):
@@ -33,7 +33,7 @@ class UserOCR(OCREngine):
         self.api_url = api_url
         self.settings: SettingsPage = None
         self.ocr_key: str = None 
-        self.source_lang_english: str = None # Store for potential future use or logging
+        self.source_lang_english: str = None 
         self.is_llm_type: bool = False # Flag for block-by-block processing
         self.is_full_page_type: bool = False # Flag for full image processing
         self.auth_client: AuthClient = None
