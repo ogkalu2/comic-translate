@@ -18,27 +18,6 @@ from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
 
 logger = logging.getLogger(__name__)
 
-# Dictionary to map old model names to the newest versions in settings
-OCR_MIGRATIONS = {
-    "GPT-4o":       "GPT-4.1-mini",
-    "Gemini-2.5-Flash": "Gemini-2.0-Flash",
-}
-
-TRANSLATOR_MIGRATIONS = {
-    "GPT-4o":              "GPT-4.1",
-    "GPT-4o mini":         "GPT-4.1-mini",
-    "Gemini-2.0-Flash":    "Gemini-2.5-Flash",
-    "Gemini-2.0-Pro":      "Gemini-2.5-Flash",
-    "Gemini-2.5-Pro":      "Gemini-2.5-Flash",
-    "Claude-3-Opus":       "Claude-4.5-Sonnet",
-    "Claude-4-Sonnet":     "Claude-4.5-Sonnet",
-    "Claude-3-Haiku":    "Claude-4.5-Haiku",
-    "Claude-3.5-Haiku":   "Claude-4.5-Haiku",
-}
-
-INPAINTER_MIGRATIONS = {
-    "MI-GAN": "AOT",
-}
 
 class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
@@ -321,24 +300,33 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        raw_translator = settings.value('translator', 'GPT-4.1')
-        translator = TRANSLATOR_MIGRATIONS.get(raw_translator, raw_translator)
+        translator = settings.value('translator', 'GPT-4.1')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
-        self.ui.translator_combo.setCurrentText(translated_translator)
+        if self.ui.translator_combo.findText(translated_translator) != -1:
+            self.ui.translator_combo.setCurrentText(translated_translator)
+        else:
+            self.ui.translator_combo.setCurrentIndex(-1)
 
-        raw_ocr = settings.value('ocr', 'Default')
-        ocr = OCR_MIGRATIONS.get(raw_ocr, raw_ocr)
+        ocr = settings.value('ocr', 'Default')
         translated_ocr = self.ui.reverse_mappings.get(ocr, ocr)
-        self.ui.ocr_combo.setCurrentText(translated_ocr)
+        if self.ui.ocr_combo.findText(translated_ocr) != -1:
+            self.ui.ocr_combo.setCurrentText(translated_ocr)
+        else:
+            self.ui.ocr_combo.setCurrentIndex(-1)
 
-        raw_inpainter = settings.value('inpainter', 'LaMa')
-        inpainter = INPAINTER_MIGRATIONS.get(raw_inpainter, raw_inpainter)
+        inpainter = settings.value('inpainter', 'LaMa')
         translated_inpainter = self.ui.reverse_mappings.get(inpainter, inpainter)
-        self.ui.inpainter_combo.setCurrentText(translated_inpainter)
+        if self.ui.inpainter_combo.findText(translated_inpainter) != -1:
+            self.ui.inpainter_combo.setCurrentText(translated_inpainter)
+        else:
+            self.ui.inpainter_combo.setCurrentIndex(-1)
 
         detector = settings.value('detector', 'RT-DETR-V2')
         translated_detector = self.ui.reverse_mappings.get(detector, detector)
-        self.ui.detector_combo.setCurrentText(translated_detector)
+        if self.ui.detector_combo.findText(translated_detector) != -1:
+            self.ui.detector_combo.setCurrentText(translated_detector)
+        else:
+            self.ui.detector_combo.setCurrentIndex(-1)
 
         if is_gpu_available():
             self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
@@ -349,7 +337,11 @@ class SettingsPage(QtWidgets.QWidget):
         settings.beginGroup('hd_strategy')
         strategy = settings.value('strategy', 'Resize')
         translated_strategy = self.ui.reverse_mappings.get(strategy, strategy)
-        self.ui.inpaint_strategy_combo.setCurrentText(translated_strategy)
+        if self.ui.inpaint_strategy_combo.findText(translated_strategy) != -1:
+            self.ui.inpaint_strategy_combo.setCurrentText(translated_strategy)
+        else:
+            self.ui.inpaint_strategy_combo.setCurrentIndex(0)
+
         if strategy == 'Resize':
             self.ui.resize_spinbox.setValue(settings.value('resize_limit', 960, type=int))
         elif strategy == 'Crop':

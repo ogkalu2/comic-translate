@@ -55,6 +55,18 @@ class Messages:
         )
 
     @staticmethod
+    def show_missing_tool_error(parent, tool_name):
+        MMessage.error(
+            text=QCoreApplication.translate(
+                "Messages",
+                "No {} selected. Please select a {} in Settings > Tools."
+            ).format(tool_name, tool_name),
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
+    @staticmethod
     def show_insufficient_credits_error(parent, details: str = None):
         """
         Show an error message when the user has insufficient credits.

@@ -42,6 +42,10 @@ def validate_ocr(main_page, source_lang):
         creds = credentials.get(service, {})
         return all(creds.get(k) for k in keys)
 
+    if not ocr_tool:
+        Messages.show_missing_tool_error(main_page, "OCR model")
+        return False
+
     # Microsoft OCR: needs api_key_ocr and endpoint
     if ocr_tool == tr("Microsoft OCR"):
         service = tr("Microsoft Azure")
@@ -73,6 +77,10 @@ def validate_translator(main_page, source_lang, target_lang):
     settings = settings_page.get_all_settings()
     credentials = settings.get('credentials', {})
     translator_tool = settings['tools']['translator']
+
+    if not translator_tool:
+        Messages.show_missing_tool_error(main_page, "Translator")
+        return False
 
     def has_access(service, key_field):
         return settings_page.is_logged_in() or bool(credentials.get(service, {}).get(key_field))
