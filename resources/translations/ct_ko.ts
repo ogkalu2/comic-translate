@@ -941,7 +941,7 @@ Go to Settings &gt; Account to buy more credits.</source>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="533"/>
         <source>Cancel</source>
-        <translation type="unfinished">취소</translation>
+        <translation>취소</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="658"/>

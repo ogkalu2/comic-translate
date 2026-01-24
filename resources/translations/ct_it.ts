@@ -941,7 +941,7 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="533"/>
         <source>Cancel</source>
-        <translation type="unfinished">Annulla</translation>
+        <translation>Annulla</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="658"/>

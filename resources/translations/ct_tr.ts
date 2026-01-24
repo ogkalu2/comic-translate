@@ -52,38 +52,38 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="449"/>
+        <location filename="../../controller.py" line="454"/>
         <source>Error</source>
         <translation>Hata</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="807"/>
-        <location filename="../../controller.py" line="818"/>
+        <location filename="../../controller.py" line="812"/>
+        <location filename="../../controller.py" line="823"/>
         <source>Downloading model file: {filename}</source>
         <translation>Model dosyası indiriliyor: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="849"/>
+        <location filename="../../controller.py" line="854"/>
         <source>Unsaved Changes</source>
         <translation>Kaydedilmemiş Değişiklikler</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="850"/>
+        <location filename="../../controller.py" line="855"/>
         <source>Save changes to this file?</source>
         <translation>Bu dosyadaki değişiklikleri kaydetmek ister misiniz?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="851"/>
+        <location filename="../../controller.py" line="856"/>
         <source>Save</source>
         <translation>Kaydet</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="852"/>
+        <location filename="../../controller.py" line="857"/>
         <source>Don&apos;t Save</source>
         <translation>Kaydetme</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="853"/>
+        <location filename="../../controller.py" line="858"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -640,12 +640,12 @@ back on the Image (for further editing)</source>
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../controller.py" line="772"/>
+        <location filename="../../controller.py" line="777"/>
         <source>Processing:</source>
         <translation>İşleniyor:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="775"/>
+        <location filename="../../controller.py" line="780"/>
         <source>Archiving:</source>
         <translation>Arşivleniyor:</translation>
     </message>
@@ -693,24 +693,29 @@ Bir yazı tipi seçmek veya içe aktarmak için Ayarlar &gt; Metin Renderlama &g
         <translation>Çevirmen seçilen hedef dili desteklemiyor. Lütfen farklı bir dil veya araç seçin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="67"/>
+        <location filename="../../app/ui/messages.py" line="60"/>
+        <source>No {} selected. Please select a {} in Settings &gt; Tools.</source>
+        <translation>Hiçbir {} seçilmedi. Lütfen Ayarlar &gt; Araçlar bölümünden bir {} seçin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="79"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
         <translation>Bu işlemi gerçekleştirmek için yetersiz kredi.
 Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="102"/>
+        <location filename="../../app/ui/messages.py" line="114"/>
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="103"/>
+        <location filename="../../app/ui/messages.py" line="115"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="104"/>
+        <location filename="../../app/ui/messages.py" line="116"/>
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
@@ -759,27 +764,27 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="487"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="485"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="496"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="494"/>
         <source>Yes</source>
         <translation>Evet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="497"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="495"/>
         <source>No</source>
         <translation>Hayır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="505"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="503"/>
         <source>Restart Required</source>
         <translation>Yeniden Başlatma Gerekli</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="506"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="504"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>Dil değişikliklerinin geçerli olması için lütfen uygulamayı yeniden başlatın.</translation>
     </message>
@@ -788,33 +793,33 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
         <translation type="vanished">Giriş Yapılıyor...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="543"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="541"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>Giriş işlemi başlatılamadı.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="560"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="784"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="558"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="782"/>
         <source>Sign In</source>
         <translation>Giriş Yap</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="577"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="575"/>
         <source>Sign In Required</source>
         <translation>Giriş Gerekli</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="578"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="576"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>Kredi satın almak veya yönetmek için lütfen giriş yapın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="587"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="585"/>
         <source>Unable to Open Browser</source>
         <translation>Tarayıcı Açılamıyor</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="588"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="586"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>Lütfen fiyatlandırma sayfasını tarayıcınızda açın: {url}</translation>
     </message>
@@ -827,55 +832,55 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
         <translation type="vanished">{email} olarak başarıyla giriş yapıldı.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="535"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="533"/>
         <source>Cancel</source>
-        <translation type="unfinished">İptal</translation>
+        <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="660"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="658"/>
         <source>Sign In Error</source>
         <translation>Giriş Hatası</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="661"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="659"/>
         <source>Authentication failed: {error}</source>
         <translation>Kimlik doğrulama başarısız: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="675"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
         <source>Confirm Sign Out</source>
         <translation>Çıkışı Onayla</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="676"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
         <source>Are you sure you want to sign out?</source>
         <translation>Çıkış yapmak istediğinizden emin misiniz?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="680"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="678"/>
         <source>Signing Out...</source>
         <translation>Çıkış Yapılıyor...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="703"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="701"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="775"/>
         <source>Sign Out</source>
         <translation>Çıkış Yap</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="719"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="717"/>
         <source>Session Expired</source>
         <translation>Oturum Süresi Doldu</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="720"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="718"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="734"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="737"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="756"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="735"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="754"/>
         <source>N/A</source>
         <translation>Yok</translation>
     </message>
@@ -883,211 +888,210 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
 <context>
     <name>SettingsPageUI</name>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="133"/>
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="134"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="130"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="135"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
         <source>Gemini-2.0-Flash</source>
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Resize</source>
         <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
         <source>Original</source>
         <translation>Orijinal</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="142"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
         <source>Dark</source>
         <translation>Koyu</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="112"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
         <source>Light</source>
         <translation>Açık</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Left</source>
         <translation>Sol</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>Center</source>
         <translation>Orta</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Right</source>
         <translation>Sağ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="87"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
         <source>Custom</source>
         <translation>Özel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="73"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="69"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="74"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="158"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="70"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="159"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="160"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="161"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="162"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="158"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="163"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="79"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="126"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="85"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
         <source>Gemini-2.5-Flash</source>
         <translation>Gemini-2.5-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="86"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
         <source>Deepseek-v3</source>
         <translation>Deepseek-v3</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
         <source>Gemini-2.5-Pro</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="130"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft Translator</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="300"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
         <source>Personalization</source>
         <translation>Kişiselleştirme</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Tools</source>
         <translation>Araçlar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Credentials</source>
         <translation>Kimlik Bilgileri</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="303"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>LLMs</source>
         <translation>LLM&apos;ler</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
         <source>Text Rendering</source>
         <translation>Metin Renderlama</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
         <source>Export</source>
         <translation>Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
@@ -1128,85 +1132,85 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
 <context>
     <name>ToolsPage</name>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="26"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="27"/>
         <source>Translator</source>
         <translation>Çevirmen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="29"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="30"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="32"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="33"/>
         <source>Text Detector</source>
         <translation>Metin Algılayıcı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="35"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
         <source>Inpainting</source>
         <translation>Boyama</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="37"/>
         <source>Inpainter</source>
         <translation>Boyama Aracı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="38"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="39"/>
         <source>AOT</source>
         <translation>AOT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="40"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="41"/>
         <source>HD Strategy</source>
         <translation>HD Stratejisi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="42"/>
-        <location filename="../../app/ui/settings/tools_page.py" line="122"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="43"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="127"/>
         <source>Resize</source>
         <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="52"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="53"/>
         <source>Resize Limit:</source>
         <translation>Yeniden Boyutlandırma Limiti:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="53"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="54"/>
         <source>Resize the longer side of the image to a specific size,
 then do inpainting on the resized image.</source>
         <translation>Görselin uzun kenarını belirli bir boyuta yeniden boyutlandırın,
 sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="69"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="70"/>
         <source>Crop masking area from the original image to do inpainting.</source>
         <translation>Boyama yapmak için orijinal görselden maskeleme alanını kırpın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="71"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="72"/>
         <source>Crop Margin:</source>
         <translation>Kırpma Kenarı:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="81"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="82"/>
         <source>Crop Trigger Size:</source>
         <translation>Kırpma Tetikleme Boyutu:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="102"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="104"/>
         <source>Use GPU</source>
         <translation>GPU Kullan</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="123"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="128"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="124"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="129"/>
         <source>Original</source>
         <translation>Orijinal</translation>
     </message>
@@ -1222,12 +1226,12 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="179"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="161"/>
         <source>Resize</source>
         <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="181"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="163"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>

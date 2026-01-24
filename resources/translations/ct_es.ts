@@ -899,7 +899,7 @@ Ve a Configuración &gt; Cuenta para comprar más créditos.</translation>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="533"/>
         <source>Cancel</source>
-        <translation type="unfinished">Cancelar</translation>
+        <translation>Cancelar</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="658"/>
