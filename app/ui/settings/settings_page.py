@@ -6,7 +6,7 @@ from dataclasses import asdict, is_dataclass
 import json
 
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtCore import Signal, QSettings, QCoreApplication, QUrl, QTimer
+from PySide6.QtCore import Signal, QSettings, QUrl, QTimer
 from PySide6.QtGui import QFont, QFontDatabase, QDesktopServices
 
 from .settings_ui import SettingsPageUI
