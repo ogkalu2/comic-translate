@@ -6,7 +6,7 @@ from typing import Callable, Tuple
 
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QCoreApplication, QThreadPool
-from PySide6.QtGui import QUndoGroup, QUndoStack
+from PySide6.QtGui import QUndoGroup, QUndoStack, QIcon
 
 from app.ui.dayu_widgets.qt import MPixmap
 from app.ui.main_window import ComicTranslateUI
@@ -54,6 +54,11 @@ class ComicTranslate(ComicTranslateUI):
     def __init__(self, parent=None):
         super(ComicTranslate, self).__init__(parent)
         self.setWindowTitle("Project1.ctpr[*]")
+
+        # Explicitly set window icon to ensure it persists after splash screen
+        current_file_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(current_file_dir, 'resources', 'icons', 'icon.ico')
+        self.setWindowIcon(QIcon(icon_path))
 
         self.blk_list: list[TextBlock] = []   
         self.curr_tblock: TextBlock = None
