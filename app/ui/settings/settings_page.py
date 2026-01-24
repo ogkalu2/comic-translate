@@ -68,8 +68,10 @@ class SettingsPage(QtWidgets.QWidget):
 
     def _refresh_credits_on_startup(self):
         """If there’s a network and an existing login, fetch fresh credits."""
-        if self._is_online() and self.auth_client.validate_token():
-            self.auth_client.fetch_user_info()
+        # Avoid blocking the UI thread with network calls and avoid duplicating
+        # `check_session_async()` (which already validates + refreshes user info).
+        if self._is_online() and self.auth_client.is_authenticated():
+            self.auth_client.check_session_async()
 
     def _setup_connections(self):
         # Connect signals to slots

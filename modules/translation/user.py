@@ -3,6 +3,7 @@ import base64
 import numpy as np
 import logging
 import imkit as imk
+import time
 from typing import Any, List, Optional
 
 from .base import TranslationEngine
@@ -36,6 +37,8 @@ class UserTranslator(TranslationEngine):
         self.settings: SettingsPage = None 
         self.is_llm: bool = False
         self.auth_client: AuthClient = None
+        self._session = requests.Session()
+        self._profile_web_api = False
 
     def initialize(self, settings: SettingsPage, source_lang: str, target_lang: str, translator_key: str, **kwargs) -> None:
         """
@@ -86,10 +89,12 @@ class UserTranslator(TranslationEngine):
         Returns:
             List of updated TextBlock objects with translations or error messages.
         """
-        print(f"UserTranslator: Attempting translation via web API ({self.api_url}) for {self.translator_key}")
+        start_t = time.perf_counter()
+        logger.info(f"UserTranslator: Translating via web API ({self.api_url}) for {self.translator_key}")
 
         # 1. Get Access Token
         access_token = self._get_access_token()
+        after_token_t = time.perf_counter()
 
         # 2. Prepare Request Body (matching web API's TranslationRequest)
         texts_payload = []
@@ -110,14 +115,19 @@ class UserTranslator(TranslationEngine):
 
         # 4. Handle Image Encoding (if applicable and provided)
         image_base64_payload = None
-        should_send_image = self.is_llm and image and \
-            llm_options_payload and llm_options_payload.get("image_input_enabled")
-        
+        should_send_image = (
+            self.is_llm
+            and image is not None
+            and llm_options_payload
+            and llm_options_payload.get("image_input_enabled")
+        )
+         
         if should_send_image:
-            # Simple PNG encoding, adjust if needed
-            buffer = imk.encode_image(image, "png")
+            # Use JPEG for significantly smaller payloads than PNG (faster over the wire).
+            buffer = imk.encode_image(image, "jpg")
             image_base64_payload = base64.b64encode(buffer).decode('utf-8')
-            print("UserTranslator: Encoded image for web API request.")
+            logger.debug("UserTranslator: Encoded image for web API request.")
+        after_encode_t = time.perf_counter()
 
         # 5. Construct Full Payload
         request_payload = {
@@ -139,12 +149,13 @@ class UserTranslator(TranslationEngine):
             "Authorization": f"Bearer {access_token}"
         }
 
-        response = requests.post(
+        response = self._session.post(
             self.api_url, 
             headers=headers, 
             json=request_payload, 
             timeout=120
         ) 
+        after_request_t = time.perf_counter()
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -180,6 +191,25 @@ class UserTranslator(TranslationEngine):
                 blk.translation = translations_map.get(block_id, "")
 
             self.update_credits(credits_info)
+
+        if self._profile_web_api:
+            total_t = time.perf_counter() - start_t
+            server_ms = response.headers.get("X-CT-Server-Duration-Ms")
+            logger.info(
+                "UserTranslator timings: token=%.3fs encode=%.3fs http=%.3fs total=%.3fs (texts=%d image=%s server_ms=%s)",
+                after_token_t - start_t,
+                after_encode_t - after_token_t,
+                after_request_t - after_encode_t,
+                total_t,
+                len(blk_list),
+                "yes" if should_send_image else "no",
+                server_ms,
+            )
+            print(
+                f"UserTranslator timings: token={after_token_t - start_t:.3f}s "
+                f"encode={after_encode_t - after_token_t:.3f}s http={after_request_t - after_encode_t:.3f}s "
+                f"total={total_t:.3f}s (texts={len(blk_list)} image={'yes' if should_send_image else 'no'} server_ms={server_ms})"
+            )
 
         return blk_list
     

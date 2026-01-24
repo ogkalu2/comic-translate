@@ -2,6 +2,8 @@ import secrets
 import logging
 import urllib.parse
 import requests 
+import threading
+import time
 
 from typing import Optional
 from PySide6.QtCore import QObject, Signal, QThread, QSettings 
@@ -49,6 +51,19 @@ class AuthClient(QObject):
         self.current_request_id: Optional[str] = None # Store the ID for the current auth attempt
         self.auth_server_thread: Optional[AuthServerThread] = None
         self.settings = QSettings("ComicLabs", "ComicTranslate")
+        self._request_lock = threading.Lock()
+        self._session = requests.Session()
+        # Separate session for background/non-critical calls so they don't contend
+        # with token validation/refresh or per-operation requests.
+        self._bg_request_lock = threading.Lock()
+        self._bg_session = requests.Session()
+        self._validated_token: Optional[str] = None
+        self._validated_token_ok_until_monotonic: float = 0.0
+        self._validated_token_ttl_s: float = 30.0
+
+    def _clear_validation_cache(self) -> None:
+        self._validated_token = None
+        self._validated_token_ok_until_monotonic = 0.0
 
     def start_auth_flow(self):
         """Starts the new authentication flow."""
@@ -114,7 +129,8 @@ class AuthClient(QObject):
         try:
             # Securely store tokens using helper
             set_token("access_token", access_token)
-            
+            self._clear_validation_cache()
+             
             # Always store refresh token if received
             if refresh_token:
                 set_token("refresh_token", refresh_token)
@@ -224,12 +240,13 @@ class AuthClient(QObject):
             }
             logger.debug(f"Posting to {token_url} for token refresh.")
 
-            response = requests.post(
-                token_url, 
-                json=payload,
-                headers=headers, 
-                timeout=20
-            )
+            with self._request_lock:
+                response = self._session.post(
+                    token_url, 
+                    json=payload,
+                    headers=headers, 
+                    timeout=20
+                )
 
             response.raise_for_status()
 
@@ -242,6 +259,7 @@ class AuthClient(QObject):
                 return False
 
             set_token("access_token", new_access_token)
+            self._clear_validation_cache()
             if new_refresh_token:
                 logger.info("Refresh token rotated. Storing new refresh token.")
                 set_token("refresh_token", new_refresh_token)
@@ -307,11 +325,20 @@ class AuthClient(QObject):
                 logger.info("No access token found locally. Cannot validate.")
                 return False
 
+            now = time.monotonic()
+            if (
+                self._validated_token == access_token
+                and now < self._validated_token_ok_until_monotonic
+            ):
+                logger.debug("Token validation cache hit (skipping backend validate).")
+                return True
+
             validate_url = f"{self.api_url}/auth/v1/validate"
             headers = {"Authorization": f"Bearer {access_token}"}
 
             logger.debug(f"Sending validation request to {validate_url}")
-            response = requests.get(validate_url, headers=headers, timeout=10.0)
+            with self._request_lock:
+                response = self._session.get(validate_url, headers=headers, timeout=10.0)
             response.raise_for_status()
 
             data = response.json()
@@ -320,6 +347,8 @@ class AuthClient(QObject):
             if is_valid is True:
                 # Explicitly True means valid and not near expiry
                 logger.info("Token validation successful (via backend).")
+                self._validated_token = access_token
+                self._validated_token_ok_until_monotonic = time.monotonic() + self._validated_token_ttl_s
                 return True
             elif is_valid is False:
                 # Explicitly False (could be near expiry or actually invalid)
@@ -375,6 +404,7 @@ class AuthClient(QObject):
         try:
             logger.debug("Deleting local tokens from keyring...")
             delete_token("access_token")
+            self._clear_validation_cache()
         except Exception as e:
             # Log error but continue - local logout is priority
             logger.warning(f"Could not delete access token from keyring (might not exist): {e}")
@@ -397,11 +427,12 @@ class AuthClient(QObject):
                 logger.debug("Notifying backend of signout...")
                 signout_url = f"{self.api_url}/auth/v1/signout"
                 headers = {"Authorization": f"Bearer {access_token}"}
-                response = requests.post(
-                    signout_url,
-                    headers=headers,
-                    timeout=20
-                )
+                with self._request_lock:
+                    response = self._session.post(
+                        signout_url,
+                        headers=headers,
+                        timeout=20
+                    )
                 response.raise_for_status()
                 logger.info("Backend successfully processed signout notification.")
 
@@ -438,7 +469,8 @@ class AuthClient(QObject):
                 self.auth_error.emit("No access token available for fetching user info")
                 return
             headers = {"Authorization": f"Bearer {token}"}
-            response = requests.get(f"{self.api_url}/auth/v1/user_info", headers=headers, timeout=10)
+            with self._bg_request_lock:
+                response = self._bg_session.get(f"{self.api_url}/auth/v1/user_info", headers=headers, timeout=10)
             response.raise_for_status()
             user_info = response.json()
             # Re-use the same signal that SettingsPage.handle_auth_success listens on
@@ -452,6 +484,17 @@ class AuthClient(QObject):
     def check_session_async(self):
         """Validates the session in a background thread."""
         logger.debug("Starting async session check...")
+        try:
+            if hasattr(self, "_session_check_thread") and self._session_check_thread:
+                if self._session_check_thread.isRunning():
+                    logger.debug("Async session check already running; skipping duplicate start.")
+                    return
+        except Exception:
+            pass
+
+        if not self.is_authenticated():
+            logger.debug("No access token present; skipping async session check.")
+            return
         self._session_check_thread = SessionCheckThread(self)
         self._session_check_thread.result.connect(self._handle_session_check_result)
         self._session_check_thread.finished.connect(self._session_check_thread.deleteLater)

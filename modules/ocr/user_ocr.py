@@ -1,6 +1,7 @@
 import requests
 import numpy as np
 import logging
+import time
 from typing import Any, List, Optional, Dict
 
 from .base import OCREngine 
@@ -37,6 +38,8 @@ class UserOCR(OCREngine):
         self.is_llm_type: bool = False # Flag for block-by-block processing
         self.is_full_page_type: bool = False # Flag for full image processing
         self.auth_client: AuthClient = None
+        self._session = requests.Session()
+        self._profile_web_api = False
 
     def initialize(self, settings: SettingsPage, source_lang_english: str = None, ocr_key: str = 'Default', **kwargs) -> None:
         """
@@ -73,6 +76,7 @@ class UserOCR(OCREngine):
         Returns:
             The updated list of TextBlock objects with OCR text or error messages.
         """
+        start_t = time.perf_counter()
         logger.info(f"UserOCR: Attempting OCR via web API ({self.api_url}) for {self.ocr_key}")
 
         # Get Access Token
@@ -80,14 +84,25 @@ class UserOCR(OCREngine):
         if not access_token:
             logger.error("UserOCR Error: Access token not found. Cannot use web API.")
             return blk_list
+        after_token_t = time.perf_counter()
 
         # Determine Strategy and Execute
         if self.is_llm_type:
             logger.debug(f"UserOCR: Using block-by-block strategy for {self.ocr_key}")
-            return self._process_blocks_llm(img, blk_list, access_token)
+            result = self._process_blocks_llm(img, blk_list, access_token)
+            if self._profile_web_api:
+                msg = f"UserOCR timings: token={after_token_t - start_t:.3f}s total={time.perf_counter() - start_t:.3f}s (mode=llm)"
+                logger.info(msg)
+                print(msg)
+            return result
         elif self.is_full_page_type:
             logger.debug(f"UserOCR: Using full-page strategy for {self.ocr_key}")
-            return self._process_full_page(img, blk_list, access_token)
+            result = self._process_full_page(img, blk_list, access_token)
+            if self._profile_web_api:
+                msg = f"UserOCR timings: token={after_token_t - start_t:.3f}s total={time.perf_counter() - start_t:.3f}s (mode=full_page)"
+                logger.info(msg)
+                print(msg)
+            return result
         else:
             # Fallback or error if key wasn't categorized during init
             logger.error(f"UserOCR: Unknown processing strategy for key '{self.ocr_key}'. Aborting.")
@@ -128,6 +143,7 @@ class UserOCR(OCREngine):
         Handles OCR for LLM types (GPT, Gemini) by sending a single batch request
         containing the full image and a list of coordinates for each text block.
         """
+        start_t = time.perf_counter()
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
         llm_options = self._get_llm_options()
 
@@ -170,6 +186,7 @@ class UserOCR(OCREngine):
         if not img_b64:
             logger.error("Failed to encode image for batch processing.")
             return blk_list
+        after_encode_t = time.perf_counter()
 
         # 3. Construct Payload
         payload = {
@@ -181,12 +198,14 @@ class UserOCR(OCREngine):
         }
 
         # 4. Send Single Request
-        response = requests.post(
+        before_http_t = time.perf_counter()
+        response = self._session.post(
             self.api_url,
             headers=headers,
             json=payload,
             timeout=120  
         )
+        after_http_t = time.perf_counter()
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -226,10 +245,20 @@ class UserOCR(OCREngine):
             credits_info = response_data.get('credits') or response_data.get('credits_remaining')
             self.update_credits(credits_info)
 
+        if self._profile_web_api:
+            server_ms = response.headers.get("X-CT-Server-Duration-Ms")
+            msg = (
+                f"UserOCR LLM timings: encode={after_encode_t - start_t:.3f}s "
+                f"http={after_http_t - before_http_t:.3f}s total={time.perf_counter() - start_t:.3f}s "
+                f"(blocks={len(coordinates)} server_ms={server_ms})"
+            )
+            logger.info(msg)
+            print(msg)
         return blk_list
 
     def _process_full_page(self, img: np.ndarray, blk_list: List[TextBlock], token: str) -> List[TextBlock]:
         """Handles OCR for full-page types (Google, Microsoft)."""
+        start_t = time.perf_counter()
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
         # Encode the entire image
@@ -237,6 +266,7 @@ class UserOCR(OCREngine):
         if not img_b64:
             logger.error("UserOCR: Failed to encode the full image.")
             return blk_list
+        after_encode_t = time.perf_counter()
 
         # Prepare Payload
         payload = {
@@ -246,12 +276,14 @@ class UserOCR(OCREngine):
         }
 
         # Single API call for the whole page
-        response = requests.post(
+        before_http_t = time.perf_counter()
+        response = self._session.post(
             self.api_url, 
             headers=headers, 
             json=payload, 
             timeout=120
         ) 
+        after_http_t = time.perf_counter()
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -298,6 +330,21 @@ class UserOCR(OCREngine):
             updated_blk_list = lists_to_blk_list(blk_list, texts_bboxes, texts_string)
             credits_info = response_data.get('credits') or response_data.get('credits_remaining')
             self.update_credits(credits_info)
+            if self._profile_web_api:
+                server_ms = response.headers.get("X-CT-Server-Duration-Ms")
+                logger.info(
+                    "UserOCR full-page timings: encode=%.3fs http=%.3fs total=%.3fs (items=%d server_ms=%s)",
+                    after_encode_t - start_t,
+                    after_http_t - before_http_t,
+                    time.perf_counter() - start_t,
+                    len(api_results),
+                    server_ms,
+                )
+                print(
+                    f"UserOCR full-page timings: encode={after_encode_t - start_t:.3f}s "
+                    f"http={after_http_t - before_http_t:.3f}s total={time.perf_counter() - start_t:.3f}s "
+                    f"(items={len(api_results)} server_ms={server_ms})"
+                )
             return updated_blk_list
 
         return blk_list 
