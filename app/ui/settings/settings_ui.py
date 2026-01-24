@@ -54,15 +54,15 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.credential_widgets = {}
         self.export_widgets = {}
 
-        self.inpainters = ['LaMa', 'AOT']
+        self.inpainters = ['LaMa', 'AOT', 'Replicate']
         self.detectors = ['RT-DETR-v2']
         self.ocr_engines = [self.tr("Default"), self.tr('Microsoft OCR'), self.tr('Google Cloud Vision'), self.tr('Gemini-2.0-Flash'), self.tr('GPT-4.1-mini')]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
-        self.credential_services = [self.tr("Custom"), self.tr("Deepseek"), self.tr("Open AI GPT"), self.tr("Microsoft Azure"), self.tr("Google Cloud"), 
-                                    self.tr("Google Gemini"), self.tr("DeepL"), self.tr("Anthropic Claude"), self.tr("Yandex")]
+        self.credential_services = [self.tr("Custom"), self.tr("Deepseek"), self.tr("Open AI GPT"), self.tr("Microsoft Azure"), self.tr("Google Cloud"),
+                                    self.tr("Google Gemini"), self.tr("DeepL"), self.tr("Anthropic Claude"), self.tr("Yandex"), self.tr("Replicate")]
         
         self.supported_translators = [self.tr("GPT-4.1"), self.tr("GPT-4.1-mini"), self.tr("DeepL"), 
                                     self.tr("Claude-4.5-Sonnet"), self.tr("Claude-4.5-Haiku"),
@@ -117,6 +117,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             # Inpainter mappings
             "LaMa": "LaMa",
             "AOT": "AOT",
+            "Replicate": "Replicate",
 
             # Detector mappings
             "RT-DETR-v2": "RT-DETR-v2",
@@ -141,6 +142,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("DeepL"): "DeepL",
             self.tr("Anthropic Claude"): "Anthropic Claude",
             self.tr("Yandex"): "Yandex",
+            self.tr("Replicate"): "Replicate",
         }
 
         # Create reverse mappings for loading
