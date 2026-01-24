@@ -60,33 +60,33 @@
         <translation type="vanished">영어</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="449"/>
+        <location filename="../../controller.py" line="454"/>
         <source>Error</source>
         <translation>오류</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="807"/>
-        <location filename="../../controller.py" line="818"/>
+        <location filename="../../controller.py" line="812"/>
+        <location filename="../../controller.py" line="823"/>
         <source>Downloading model file: {filename}</source>
         <translation>모델 파일 다운로드 중: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="849"/>
+        <location filename="../../controller.py" line="854"/>
         <source>Unsaved Changes</source>
         <translation>저장되지 않은 변경 사항</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="850"/>
+        <location filename="../../controller.py" line="855"/>
         <source>Save changes to this file?</source>
         <translation>이 파일의 변경 사항을 저장하시겠습니까?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="851"/>
+        <location filename="../../controller.py" line="856"/>
         <source>Save</source>
         <translation>저장</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="852"/>
+        <location filename="../../controller.py" line="857"/>
         <source>Don&apos;t Save</source>
         <translation>저장 안 함</translation>
     </message>
@@ -95,7 +95,7 @@
         <translation type="vanished">저장 안 함</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="853"/>
+        <location filename="../../controller.py" line="858"/>
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
@@ -722,12 +722,12 @@ Skipping:</source>
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="772"/>
+        <location filename="../../controller.py" line="777"/>
         <source>Processing:</source>
         <translation>처리 중:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="775"/>
+        <location filename="../../controller.py" line="780"/>
         <source>Archiving:</source>
         <translation>압축 중:</translation>
     </message>
@@ -800,24 +800,29 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>선택한 번역기는 해당 대상 언어를 지원하지 않습니다. 다른 언어나 도구를 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="67"/>
+        <location filename="../../app/ui/messages.py" line="60"/>
+        <source>No {} selected. Please select a {} in Settings &gt; Tools.</source>
+        <translation>선택된 {}이(가) 없습니다. 설정 &gt; 도구에서 {}을(를) 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="79"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
         <translation>이 작업을 수행하기에 크레딧이 부족합니다.
 설정 &gt; 계정에서 크레딧을 추가로 구매하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="102"/>
+        <location filename="../../app/ui/messages.py" line="114"/>
         <source>Copy</source>
         <translation>복사</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="103"/>
+        <location filename="../../app/ui/messages.py" line="115"/>
         <source>OK</source>
         <translation>확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="104"/>
+        <location filename="../../app/ui/messages.py" line="116"/>
         <source>Close</source>
         <translation>닫기</translation>
     </message>
@@ -866,27 +871,27 @@ Go to Settings &gt; Account to buy more credits.</source>
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="487"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="485"/>
         <source>OK</source>
         <translation>확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="496"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="494"/>
         <source>Yes</source>
         <translation>예</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="497"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="495"/>
         <source>No</source>
         <translation>아니오</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="505"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="503"/>
         <source>Restart Required</source>
         <translation>재시작 필요</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="506"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="504"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>언어 변경 사항을 적용하려면 애플리케이션을 다시 시작하십시오.</translation>
     </message>
@@ -895,33 +900,33 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation type="vanished">로그인 중...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="543"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="541"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>로그인 프로세스 시작에 실패했습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="560"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="784"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="558"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="782"/>
         <source>Sign In</source>
         <translation>로그인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="577"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="575"/>
         <source>Sign In Required</source>
         <translation>로그인 필요</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="578"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="576"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>크레딧을 구매하거나 관리하려면 로그인하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="587"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="585"/>
         <source>Unable to Open Browser</source>
         <translation>브라우저를 열 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="588"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="586"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>브라우저에서 가격 페이지를 여세요: {url}</translation>
     </message>
@@ -934,55 +939,55 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation type="vanished">{email}로 성공적으로 로그인했습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="535"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="533"/>
         <source>Cancel</source>
         <translation type="unfinished">취소</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="660"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="658"/>
         <source>Sign In Error</source>
         <translation>로그인 오류</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="661"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="659"/>
         <source>Authentication failed: {error}</source>
         <translation>인증 실패: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="675"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
         <source>Confirm Sign Out</source>
         <translation>로그아웃 확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="676"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
         <source>Are you sure you want to sign out?</source>
         <translation>정말로 로그아웃하시겠습니까?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="680"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="678"/>
         <source>Signing Out...</source>
         <translation>로그아웃 중...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="703"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="701"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="775"/>
         <source>Sign Out</source>
         <translation>로그아웃</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="719"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="717"/>
         <source>Session Expired</source>
         <translation>세션 만료</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="720"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="718"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>세션이 만료되었습니다. 다시 로그인하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="734"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="737"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="756"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="735"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="754"/>
         <source>N/A</source>
         <translation>해당 없음</translation>
     </message>
@@ -990,176 +995,175 @@ Go to Settings &gt; Account to buy more credits.</source>
 <context>
     <name>SettingsPageUI</name>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="133"/>
         <source>Default</source>
         <translation>기본값</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="134"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="130"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="135"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
         <source>Gemini-2.0-Flash</source>
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Resize</source>
         <translation>크기 조정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
         <source>Original</source>
         <translation>원본</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="61"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="142"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
         <source>Crop</source>
         <translation>자르기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
         <source>Dark</source>
         <translation>어둡게</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="112"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
         <source>Light</source>
         <translation>밝게</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Left</source>
         <translation>왼쪽</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>Center</source>
         <translation>가운데</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Right</source>
         <translation>오른쪽</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="73"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="69"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="74"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="158"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="70"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="159"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="87"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
         <source>Custom</source>
         <translation>사용자 지정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="160"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="161"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="162"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="158"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="163"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="79"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="126"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="85"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
         <source>Gemini-2.5-Flash</source>
         <translation>Gemini-2.5-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="86"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
         <source>Deepseek-v3</source>
         <translation>Deepseek-v3</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
         <source>Gemini-2.5-Pro</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Account</source>
         <translation>계정</translation>
     </message>
@@ -1196,7 +1200,7 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation type="vanished">Google 번역</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="130"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft Translator</translation>
     </message>
@@ -1209,32 +1213,32 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation type="vanished">HD 전략</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="300"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
         <source>Personalization</source>
         <translation>개인 설정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Tools</source>
         <translation>도구</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Credentials</source>
         <translation>자격 증명</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="303"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>LLMs</source>
         <translation>LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
         <source>Text Rendering</source>
         <translation>텍스트 렌더링</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
         <source>Export</source>
         <translation>내보내기</translation>
     </message>
@@ -1405,85 +1409,85 @@ then do inpainting on the resized image.</source>
 <context>
     <name>ToolsPage</name>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="26"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="27"/>
         <source>Translator</source>
         <translation>번역기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="29"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="30"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="32"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="33"/>
         <source>Text Detector</source>
         <translation>텍스트 감지기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="35"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
         <source>Inpainting</source>
         <translation>인페인팅</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="37"/>
         <source>Inpainter</source>
         <translation>인페인터</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="38"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="39"/>
         <source>AOT</source>
         <translation>AOT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="40"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="41"/>
         <source>HD Strategy</source>
         <translation>HD 전략</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="42"/>
-        <location filename="../../app/ui/settings/tools_page.py" line="122"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="43"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="127"/>
         <source>Resize</source>
         <translation>크기 조정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="52"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="53"/>
         <source>Resize Limit:</source>
         <translation>크기 조정 제한:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="53"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="54"/>
         <source>Resize the longer side of the image to a specific size,
 then do inpainting on the resized image.</source>
         <translation>이미지의 긴 변을 특정 크기로 조정한 다음,
 크기가 조정된 이미지에 인페인팅을 수행합니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="69"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="70"/>
         <source>Crop masking area from the original image to do inpainting.</source>
         <translation>인페인팅을 수행하기 위해 원본 이미지에서 마스킹 영역을 자릅니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="71"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="72"/>
         <source>Crop Margin:</source>
         <translation>자르기 여백:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="81"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="82"/>
         <source>Crop Trigger Size:</source>
         <translation>자르기 트리거 크기:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="102"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="104"/>
         <source>Use GPU</source>
         <translation>GPU 사용</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="123"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="128"/>
         <source>Crop</source>
         <translation>자르기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="124"/>
+        <location filename="../../app/ui/settings/tools_page.py" line="129"/>
         <source>Original</source>
         <translation>원본</translation>
     </message>
@@ -1499,12 +1503,12 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="179"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="161"/>
         <source>Resize</source>
         <translation>크기 조정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="181"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="163"/>
         <source>Crop</source>
         <translation>크롭</translation>
     </message>
