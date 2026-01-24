@@ -12,6 +12,7 @@ from app.account.auth.auth_client import AuthClient
 from app.account.auth.token_storage import get_token
 from app.ui.settings.settings_page import SettingsPage
 from app.account.config import WEB_API_OCR_URL
+from ..utils.exceptions import InsufficientCreditsException
 
 
 logger = logging.getLogger(__name__)
@@ -186,7 +187,24 @@ class UserOCR(OCREngine):
             json=payload,
             timeout=120  
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 402:
+                try:
+                    error_data = response.json()
+                    detail = error_data.get('detail')
+                    # detail can be a string or a dict
+                    if isinstance(detail, dict):
+                        description = detail.get('error_description') or detail.get('message')
+                    else:
+                        description = str(detail)
+                    
+                    if description:
+                        raise InsufficientCreditsException(description)
+                except ValueError:
+                    pass
+            raise e
 
         if response.status_code == 200:
             response_data = response.json()
@@ -234,7 +252,24 @@ class UserOCR(OCREngine):
             json=payload, 
             timeout=120
         ) 
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 402:
+                try:
+                    error_data = response.json()
+                    detail = error_data.get('detail')
+                    # detail can be a string or a dict
+                    if isinstance(detail, dict):
+                        description = detail.get('error_description') or detail.get('message')
+                    else:
+                        description = str(detail)
+                    
+                    if description:
+                        raise InsufficientCreditsException(description)
+                except ValueError:
+                    pass
+            raise e
 
         if response.status_code == 200:
             response_data = response.json()

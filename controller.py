@@ -36,6 +36,7 @@ from app.controllers.rect_item import RectItemController
 from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
+from modules.utils.exceptions import InsufficientCreditsException
 from collections import deque
 
 
@@ -437,10 +438,15 @@ class ComicTranslate(ComicTranslateUI):
 
     def default_error_handler(self, error_tuple: Tuple):
         exctype, value, traceback_str = error_tuple
-        error_msg = f"An error occurred:\n{exctype.__name__}: {value}"
-        error_msg_trcbk = f"An error occurred:\n{exctype.__name__}: {value}\n\nTraceback:\n{traceback_str}"
-        print(error_msg_trcbk)
-        Messages.show_error_with_copy(self, self.tr("Error"), error_msg, error_msg_trcbk)
+        
+        # Handle specific exceptions
+        if exctype is InsufficientCreditsException:
+            Messages.show_insufficient_credits_error(self, details=str(value))
+        else:
+            error_msg = f"An error occurred:\n{exctype.__name__}: {value}"
+            error_msg_trcbk = f"An error occurred:\n{exctype.__name__}: {value}\n\nTraceback:\n{traceback_str}"
+            print(error_msg_trcbk)
+            Messages.show_error_with_copy(self, self.tr("Error"), error_msg, error_msg_trcbk)
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 

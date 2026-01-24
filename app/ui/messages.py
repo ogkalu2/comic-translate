@@ -55,6 +55,25 @@ class Messages:
         )
 
     @staticmethod
+    def show_insufficient_credits_error(parent, details: str = None):
+        """
+        Show an error message when the user has insufficient credits.
+        
+        Args:
+            parent: parent widget
+            details: optional detailed message from backend
+        """
+        MMessage.error(
+            text=QCoreApplication.translate(
+            "Messages", 
+            "Insufficient credits to perform this action.\nGo to Settings > Account to buy more credits."
+            ),
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
+    @staticmethod
     def show_error_with_copy(parent, title: str, text: str, detailed_text: str | None = None):
         """
         Show a critical error dialog where the main text is selectable and the
