@@ -230,9 +230,9 @@ class ClickMeta(QtWidgets.QWidget):
         
         if highlighted:
             highlight_color = self._original_background_color.darker(130)
-            self.setStyleSheet(f"background-color: {highlight_color.name()};")
+            self.setStyleSheet(f"background-color: {highlight_color.name()}; border: none; padding: 0px;")
         else:
-            self.setStyleSheet(f"background-color: {self._original_background_color.name()};")
+            self.setStyleSheet(f"background-color: {self._original_background_color.name()}; border: none; padding: 0px;")
 
         self.update()
 
