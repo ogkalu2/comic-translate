@@ -3,6 +3,7 @@ from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.spin_box import MSpinBox
 from .utils import create_title_and_combo, set_combo_box_width
+from modules.utils.device import is_gpu_available
 
 class ToolsPage(QtWidgets.QWidget):
     def __init__(
@@ -99,7 +100,11 @@ class ToolsPage(QtWidgets.QWidget):
         self.crop_widget.hide()
         self.inpaint_strategy_combo.currentIndexChanged.connect(self._update_hd_strategy_widgets)
 
+
         self.use_gpu_checkbox = MCheckBox(self.tr("Use GPU"))
+        if not is_gpu_available():
+            self.use_gpu_checkbox.setVisible(False)
+
 
         layout.addWidget(translator_widget)
         layout.addSpacing(10)

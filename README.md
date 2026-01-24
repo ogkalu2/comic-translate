@@ -67,7 +67,8 @@ Note: Some of these also have Official English Translations
 
 ## Installation
 ### Download
-You can download and install on Windows and Mac from [here](https://www.comic-translate.com/download/). Currently, no GPU support unless from source.
+Download and install Comic Translate for Windows and macOS from [here](https://www.comic-translate.com/download/). 
+> Note: GPU acceleration is currently only available when running from source.
 
 ### From Source
 Alternatively, if you'd like to run the source code directly.

@@ -10,6 +10,7 @@ from PySide6.QtCore import Signal, QSettings, QCoreApplication, QUrl, QTimer
 from PySide6.QtGui import QFont, QFontDatabase, QDesktopServices
 
 from .settings_ui import SettingsPageUI
+from modules.utils.device import is_gpu_available
 from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
     EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
 from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
@@ -119,6 +120,8 @@ class SettingsPage(QtWidgets.QWidget):
         return tool_combos[tool_type].currentText()
 
     def is_gpu_enabled(self):
+        if not is_gpu_available():
+            return False
         return self.ui.use_gpu_checkbox.isChecked()
 
     def get_llm_settings(self):
@@ -337,7 +340,10 @@ class SettingsPage(QtWidgets.QWidget):
         translated_detector = self.ui.reverse_mappings.get(detector, detector)
         self.ui.detector_combo.setCurrentText(translated_detector)
 
-        self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
+        if is_gpu_available():
+            self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
+        else:
+             self.ui.use_gpu_checkbox.setChecked(False)
 
         # Load HD strategy settings
         settings.beginGroup('hd_strategy')

@@ -174,3 +174,25 @@ def get_providers(device: Optional[str] = None) -> list[Any]:
             configured.append(p)
 
     return configured
+
+
+def is_gpu_available() -> bool:
+    """Check if a valid GPU provider is available.
+    
+    Returns False if only AzureExecutionProvider and/or CPUExecutionProvider are present.
+    Returns True if any other provider (CUDA, CoreML, etc.) is found.
+    """
+    try:
+        providers = ort.get_available_providers()
+    except Exception:
+        return False
+
+    ignored_providers = {'AzureExecutionProvider', 'CPUExecutionProvider'}
+    available = set(providers)
+    
+    # If the only available providers are in the ignored list, return False
+    # logic: if available is a subset of ignored_providers, then we have nothing else.
+    if available.issubset(ignored_providers):
+        return False
+        
+    return True
