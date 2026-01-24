@@ -60,7 +60,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.ocr_engines = [
             self.tr("Default"), 
             self.tr('Microsoft OCR'), 
-            self.tr('Google Cloud Vision'), 
             self.tr('Gemini-2.0-Flash'), 
         ]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
@@ -71,8 +70,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Custom"), 
             self.tr("Deepseek"), 
             self.tr("Open AI GPT"), 
-            self.tr("Microsoft Azure"), 
-            self.tr("Google Cloud"), 
+            self.tr("Microsoft Azure"),  
             self.tr("Google Gemini"), 
             self.tr("Anthropic Claude")
         ]

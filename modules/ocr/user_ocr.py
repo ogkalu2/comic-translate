@@ -23,7 +23,7 @@ class UserOCR(OCREngine):
     utilizing the user's account credits and server-side OCR engines.
     """
     LLM_OCR_KEYS = {"Gemini-2.0-Flash"} 
-    FULL_PAGE_OCR_KEYS = {"Microsoft OCR", "Google Cloud Vision"}
+    FULL_PAGE_OCR_KEYS = {"Microsoft OCR"}
 
     def __init__(self, api_url: str = WEB_API_OCR_URL):
         """
