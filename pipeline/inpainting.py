@@ -37,7 +37,16 @@ class InpaintingHandler:
             device = resolve_device(settings_page.is_gpu_enabled(), backend)
             inpainter_key = settings_page.get_tool_selection('inpainter')
             InpainterClass = inpaint_map[inpainter_key]
-            self.inpainter_cache = InpainterClass(device, backend=backend)
+
+            # Pass API key for Replicate cloud inpainter
+            if inpainter_key == "Replicate":
+                credentials = settings_page.get_credentials("Replicate")
+                api_key = credentials.get('api_key', '')
+                if not api_key:
+                    raise ValueError("Replicate API key is required. Configure it in Settings > Credentials.")
+                self.inpainter_cache = InpainterClass(device, backend=backend, api_key=api_key)
+            else:
+                self.inpainter_cache = InpainterClass(device, backend=backend)
             self.cached_inpainter_key = inpainter_key
 
         config = get_config(settings_page)

@@ -11,6 +11,7 @@ from modules.detection.utils.content import get_inpaint_bboxes
 from modules.inpainting.lama import LaMa
 from modules.inpainting.mi_gan import MIGAN
 from modules.inpainting.aot import AOT
+from modules.inpainting.replicate_inpaint import ReplicateInpaint
 from modules.inpainting.schema import Config
 from app.ui.messages import Messages
 
@@ -53,6 +54,7 @@ inpaint_map = {
     "LaMa": LaMa,
     "MI-GAN": MIGAN,
     "AOT": AOT,
+    "Replicate": ReplicateInpaint,
 }
 
 def get_config(settings_page):
