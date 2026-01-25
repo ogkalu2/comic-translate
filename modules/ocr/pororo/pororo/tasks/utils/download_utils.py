@@ -291,8 +291,10 @@ def download_from_url(
 
     logging.info("Downloading user-selected model...")
     wget.download(url, type_dir)
-    sys.stderr.write("\n")
-    sys.stderr.flush()
+    wget.download(url, type_dir)
+    if sys.stderr:
+        sys.stderr.write("\n")
+        sys.stderr.flush()
 
     return type_dir
 

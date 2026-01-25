@@ -53,7 +53,8 @@ def get_cache_path_by_url(url):
 def download_model(url, model_md5: str = None):
     cached_file = get_cache_path_by_url(url)
     if not os.path.exists(cached_file):
-        sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
+        if sys.stderr:
+            sys.stderr.write('Downloading: "{}" to {}\n'.format(url, cached_file))
         try:
             notify_download_event('start', os.path.basename(cached_file))
         except Exception:

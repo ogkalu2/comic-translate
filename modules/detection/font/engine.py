@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import os
+import logging
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
@@ -22,7 +23,10 @@ except ImportError:
 
 from . import config
 from modules.utils.device import resolve_device, get_providers
+from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
+
+logger = logging.getLogger(__name__)
 
 def build_backbone(model_name: str, *, regression_use_tanh: bool):
     if not TORCH_AVAILABLE:
@@ -120,7 +124,7 @@ class FontEngine(ABC):
 class TorchFontEngine(FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
         if not TORCH_AVAILABLE:
-            print("Warning: Torch not available, cannot initialize TorchFontEngine")
+            logger.warning("Warning: Torch not available, cannot initialize TorchFontEngine")
             self.detector = None
             return
 
@@ -129,7 +133,7 @@ class TorchFontEngine(FontEngine):
         ckpt_path = ModelDownloader.get_file_path(ModelID.FONT_DETECTOR_TORCH, 'font-detector.ckpt')
             
         if not os.path.exists(ckpt_path):
-            print(f"Warning: Font detection checkpoint not found at {ckpt_path}")
+            logger.warning(f"Warning: Font detection checkpoint not found at {ckpt_path}")
             self.detector = None
             return
 
@@ -168,7 +172,7 @@ class TorchFontEngine(FontEngine):
             ])
             
         except Exception as e:
-            print(f"Error loading font detector: {e}")
+            logger.error(f"Error loading font detector: {e}")
             self.detector = None
 
     def process(self, image: np.ndarray) -> dict:
@@ -187,14 +191,14 @@ class TorchFontEngine(FontEngine):
             return self.decode_output(out, original_width)
             
         except Exception as e:
-            print(f"Error in font detection (Torch): {e}")
+            logger.error(f"Error in font detection (Torch): {e}")
             return {"available": False}
 
 class ONNXFontEngine(FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
         model_path = ModelDownloader.get_file_path(ModelID.FONT_DETECTOR_ONNX, 'font-detector.onnx')
         if not os.path.exists(model_path):
-            print(f"Warning: Font detection ONNX model not found at {model_path}")
+            logger.warning(f"Warning: Font detection ONNX model not found at {model_path}")
             self.session = None
             return
 
@@ -203,7 +207,7 @@ class ONNXFontEngine(FontEngine):
             self.session = ort.InferenceSession(model_path, providers=providers)
             self.input_name = self.session.get_inputs()[0].name
         except Exception as e:
-            print(f"Error loading ONNX font detector: {e}")
+            logger.error(f"Error loading ONNX font detector: {e}")
             self.session = None
 
     def process(self, image: np.ndarray) -> dict:
@@ -226,7 +230,7 @@ class ONNXFontEngine(FontEngine):
             return self.decode_output(out, original_width)
             
         except Exception as e:
-            print(f"Error in font detection (ONNX): {e}")
+            logger.error(f"Error in font detection (ONNX): {e}")
             return {"available": False}
 
 class FontEngineFactory:

@@ -224,7 +224,11 @@ class ModelDownloader:
 # Core download implementations (shared)
 
 def _download_single_file(file_url: str, file_path: str, expected_checksum: Optional[str]):
-    sys.stderr.write(f'Downloading: "{file_url}" to {os.path.dirname(file_path)}\n')
+    msg = f'Downloading: "{file_url}" to {os.path.dirname(file_path)}\n'
+    if sys.stderr:
+        sys.stderr.write(msg)
+    else:
+        logger.info(msg.strip())
     notify_download_event('start', os.path.basename(file_path))
     download_url_to_file(file_url, file_path, hash_prefix=None, progress=True)
     notify_download_event('end', os.path.basename(file_path))
@@ -262,7 +266,7 @@ def _download_single_file(file_url: str, file_path: str, expected_checksum: Opti
 def _download_spec(spec: ModelSpec):
     if not os.path.exists(spec.save_dir):
         os.makedirs(spec.save_dir, exist_ok=True)
-        print(f"Created directory: {spec.save_dir}")
+        logger.info(f"Created directory: {spec.save_dir}")
 
     for remote_name, expected_checksum in zip(spec.files, spec.sha256):
         # Determine URL for remote filename
@@ -290,14 +294,14 @@ def _download_spec(spec: ModelSpec):
                     algo = 'md5'
                 else:
                     # Unknown checksum format: force re-download
-                    print(
+                    logger.warning(
                         f"Unknown checksum format for {remote_name} (len={len(expected_checksum)}). Redownloading..."
                     )
                     calculated = None
                     algo = None
             except Exception:
                 # If checksum calculation fails, force re-download
-                print(f"Failed to calculate checksum for {local_name}. Redownloading...")
+                logger.warning(f"Failed to calculate checksum for {local_name}. Redownloading...")
                 calculated = None
                 algo = None
 
@@ -305,7 +309,7 @@ def _download_spec(spec: ModelSpec):
                 continue
             else:
                 if calculated:
-                    print(
+                    logger.warning(
                         f"Checksum mismatch for {local_name}. Expected {expected_checksum}, got {calculated}. Redownloading..."
                     )
 
