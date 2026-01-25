@@ -425,7 +425,7 @@ class AuthClient(QObject):
         if access_token:
             try:
                 logger.debug("Notifying backend of signout...")
-                signout_url = f"{self.api_url}/auth/v1/logout?scope=local"
+                signout_url = f"{self.api_url}/auth/v1/signout?scope=local"
                 headers = {"Authorization": f"Bearer {access_token}"}
                 with self._request_lock:
                     response = self._session.post(
