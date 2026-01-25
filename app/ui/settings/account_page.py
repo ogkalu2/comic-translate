@@ -1,6 +1,7 @@
 from PySide6 import QtWidgets, QtCore
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.push_button import MPushButton
+from app.account.config import FRONTEND_BASE_URL
 
 class AccountPage(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -37,6 +38,17 @@ class AccountPage(QtWidgets.QWidget):
         logged_out_layout.addWidget(description_label)
         logged_out_layout.addSpacing(20)
         logged_out_layout.addWidget(self.sign_in_button, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        logged_out_layout.addWidget(self.sign_in_button, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        
+        # Link to credits costs (logged out)
+        link_text = self.tr("See model credit costs")
+        self.view_costs_link_out = MLabel(f'<a href="{FRONTEND_BASE_URL}/credit-costs" style="color: #909090; text-decoration: none; font-size: 11px;">{link_text}</a>')
+        self.view_costs_link_out.setOpenExternalLinks(True)
+        self.view_costs_link_out.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.view_costs_link_out.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        logged_out_layout.addSpacing(10)
+        logged_out_layout.addWidget(self.view_costs_link_out)
+        
         logged_out_layout.addStretch(1)
 
         # Logged In
@@ -66,7 +78,17 @@ class AccountPage(QtWidgets.QWidget):
         self.credits_value_label = MLabel("...")
         credits_layout.addWidget(credits_title_label)
         credits_layout.addWidget(self.credits_value_label)
+
+        credits_layout.addWidget(self.credits_value_label)
         credits_layout.addStretch(1)
+
+        # Link to credits costs (logged in) - below info block
+        # Link to credits costs (logged in) - below info block
+        link_text_in = self.tr("See model credit costs")
+        self.view_costs_link_in = MLabel(f'<a href="{FRONTEND_BASE_URL}/credit-costs" style="color: #909090; text-decoration: none; font-size: 11px;">{link_text_in}</a>')
+        self.view_costs_link_in.setOpenExternalLinks(True)
+        self.view_costs_link_in.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        self.view_costs_link_in.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
 
         self.buy_credits_button = MPushButton(self.tr("Buy Credits"))
         self.buy_credits_button.setFixedWidth(150)
@@ -79,6 +101,8 @@ class AccountPage(QtWidgets.QWidget):
         logged_in_layout.addLayout(email_layout)
         logged_in_layout.addLayout(tier_layout)
         logged_in_layout.addLayout(credits_layout)
+        logged_in_layout.addSpacing(5)
+        logged_in_layout.addWidget(self.view_costs_link_in)
         logged_in_layout.addStretch(1)
         logged_in_layout.addWidget(self.buy_credits_button, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
         logged_in_layout.addWidget(self.sign_out_button, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
