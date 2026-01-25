@@ -6,7 +6,7 @@
     <message>
         <location filename="../../app/ui/settings/about_page.py" line="14"/>
         <source>App Information</source>
-        <translation>Informazioni sull'app</translation>
+        <translation>Informazioni sull&apos;app</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/about_page.py" line="19"/>
@@ -609,20 +609,25 @@ sull&apos;immagine (per ulteriori modifiche)</translation>
         <translation>Salva chiavi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="32"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Queste impostazioni sono per utenti avanzati che desiderano utilizzare le proprie chiavi API personali. Per la maggior parte degli utenti, non è necessaria alcuna configurazione qui. Usa semplicemente il sistema di crediti nella scheda Account.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="38"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="82"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="131"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
         <source>API Key</source>
         <translation>Chiave API</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
         <source>Endpoint URL</source>
         <translation>URL endpoint</translation>
     </message>
@@ -635,17 +640,17 @@ sull&apos;immagine (per ulteriori modifiche)</translation>
         <translation type="vanished">Regione</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
         <source>Model</source>
         <translation>Modello</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="111"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
         <source>Secret Key</source>
         <translation>Chiave segreta</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
         <source>Folder ID</source>
         <translation>ID cartella</translation>
     </message>
@@ -808,9 +813,13 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
 Vai a Impostazioni &gt; Rendering testo &gt; Carattere per selezionarne o importarne uno</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account, or provide API credentials in Settings &gt; Credentials to continue.</source>
-        <translation>Accedi o registrati tramite Impostazioni &gt; Account, oppure fornisci le credenziali API in Impostazioni &gt; Credenziali per continuare.</translation>
+        <translation type="vanished">Accedi o registrati tramite Impostazioni &gt; Account, oppure fornisci le credenziali API in Impostazioni &gt; Credenziali per continuare.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1046,7 +1055,7 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="834"/>
         <source>You are using the latest version.</source>
-        <translation>Stai utilizzando l'ultima versione.</translation>
+        <translation>Stai utilizzando l&apos;ultima versione.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="845"/>
@@ -1169,9 +1178,14 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
         <translation>Google Cloud</translation>
     </message>
     <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <source>Advanced</source>
+        <translation>Avanzate</translation>
+    </message>
+    <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="317"/>
         <source>About</source>
-        <translation type="unfinished"></translation>
+        <translation>Informazioni</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
@@ -1247,7 +1261,7 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Account</source>
         <translation>Account</translation>
     </message>
@@ -1307,22 +1321,21 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
         <translation>Strumenti</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Credentials</source>
-        <translation>Credenziali</translation>
+        <translation type="vanished">Credenziali</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>LLMs</source>
         <translation>LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Text Rendering</source>
         <translation>Rendering testo</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Export</source>
         <translation>Esporta</translation>
     </message>

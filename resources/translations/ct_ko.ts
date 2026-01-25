@@ -105,7 +105,7 @@
     </message>
     <message>
         <location filename="../../controller.py" line="857"/>
-        <source>Don't Save</source>
+        <source>Don&apos;t Save</source>
         <translation>저장 안 함</translation>
     </message>
     <message>
@@ -609,20 +609,25 @@ back on the Image (for further editing)</source>
         <translation>키 저장</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="32"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>이 설정은 개인 API 키를 사용하려는 고급 사용자를 위한 것입니다. 대부분의 사용자는 여기서 별도의 설정이 필요하지 않습니다. 계정 탭의 크레딧 시스템을 사용하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="38"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="82"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="131"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
         <source>API Key</source>
         <translation>API 키</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
         <source>Endpoint URL</source>
         <translation>엔드포인트 URL</translation>
     </message>
@@ -635,17 +640,17 @@ back on the Image (for further editing)</source>
         <translation type="vanished">지역</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
         <source>Model</source>
         <translation>모델</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="111"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
         <source>Secret Key</source>
         <translation>시크릿 키</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
         <source>Folder ID</source>
         <translation>폴더 ID</translation>
     </message>
@@ -808,9 +813,13 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
 설정 &gt; 텍스트 렌더링 &gt; 글꼴로 이동하여 선택하거나 가져오세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account, or provide API credentials in Settings &gt; Credentials to continue.</source>
-        <translation>계속하려면 설정 &gt; 계정에서 로그인 또는 가입하거나, 설정 &gt; 자격 증명에서 API 자격 증명을 입력하세요.</translation>
+        <translation type="vanished">계속하려면 설정 &gt; 계정에서 로그인 또는 가입하거나, 설정 &gt; 자격 증명에서 API 자격 증명을 입력하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1165,9 +1174,14 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <source>Advanced</source>
+        <translation>고급</translation>
+    </message>
+    <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="317"/>
         <source>About</source>
-        <translation type="unfinished"></translation>
+        <translation>정보</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
@@ -1243,7 +1257,7 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Account</source>
         <translation>계정</translation>
     </message>
@@ -1303,22 +1317,21 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation>도구</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Credentials</source>
-        <translation>자격 증명</translation>
+        <translation type="vanished">자격 증명</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>LLMs</source>
         <translation>LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Text Rendering</source>
         <translation>텍스트 렌더링</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Export</source>
         <translation>내보내기</translation>
     </message>

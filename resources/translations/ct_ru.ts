@@ -609,20 +609,25 @@ back on the Image (for further editing)</source>
         <translation>Сохранить ключи</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="32"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Эти настройки предназначены для опытных пользователей, которые хотят использовать свои собственные API-ключи. Для большинства пользователей здесь не требуется никакой настройки — просто используйте систему кредитов на вкладке «Аккаунт».</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
         <source>OCR</source>
         <translation>Распознавание текста</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="38"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="82"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="131"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
         <source>API Key</source>
         <translation>Ключ API</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
         <source>Endpoint URL</source>
         <translation>URL-адрес конечной точки</translation>
     </message>
@@ -635,17 +640,17 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Регион</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
         <source>Model</source>
         <translation>Модель</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="111"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
         <source>Secret Key</source>
         <translation>Секретный ключ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
         <source>Folder ID</source>
         <translation>ID папки</translation>
     </message>
@@ -808,9 +813,13 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
 Перейдите в Настройки &gt; Отображение текста &gt; Шрифт, чтобы выбрать или импортировать его</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account, or provide API credentials in Settings &gt; Credentials to continue.</source>
-        <translation>Пожалуйста, войдите или зарегистрируйтесь через Настройки &gt; Аккаунт, или укажите API-ключи в Настройки &gt; Учетные данные для продолжения.</translation>
+        <translation type="vanished">Пожалуйста, войдите или зарегистрируйтесь через Настройки &gt; Аккаунт, или укажите API-ключи в Настройки &gt; Учетные данные для продолжения.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
+        <translation>Пожалуйста, войдите или зарегистрируйтесь через Настройки &gt; Аккаунт для продолжения. (Опытные пользователи могут задать API-ключи в Настройки &gt; Дополнительно).</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1169,9 +1178,14 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <source>Advanced</source>
+        <translation>Дополнительно</translation>
+    </message>
+    <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="317"/>
         <source>About</source>
-        <translation type="unfinished"></translation>
+        <translation>О программе</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
@@ -1247,7 +1261,7 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Account</source>
         <translation>Аккаунт</translation>
     </message>
@@ -1307,22 +1321,21 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation>Инструменты</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Credentials</source>
-        <translation>Учетные данные</translation>
+        <translation type="vanished">Учетные данные</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>LLMs</source>
         <translation>LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Text Rendering</source>
         <translation>Отображение текста</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Export</source>
         <translation>Экспорт</translation>
     </message>

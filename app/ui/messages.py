@@ -35,7 +35,7 @@ class Messages:
         MMessage.error(
             text=QCoreApplication.translate(
                 "Messages",
-                "Please sign in or sign up via Settings > Account, or provide API credentials in Settings > Credentials to continue."
+                "Please sign in or sign up via Settings > Account to continue. (Advanced users can set API keys in Settings > Advanced)."
             ),
             parent=parent,
             duration=None,

@@ -16,6 +16,15 @@ class CredentialsPage(QtWidgets.QWidget):
         content_layout = QtWidgets.QVBoxLayout()
 
         self.save_keys_checkbox = MCheckBox(self.tr("Save Keys"))
+
+        info_label = MLabel(self.tr(
+            "These settings are for advanced users who wish to use their own personal API keys. "
+            "For most users, no configuration is needed here. Simply use the Credits system in the Account tab."
+        )).secondary()
+        info_label.setWordWrap(True)
+        
+        content_layout.addWidget(info_label)
+        content_layout.addSpacing(10)
         content_layout.addWidget(self.save_keys_checkbox)
         content_layout.addSpacing(20)
 

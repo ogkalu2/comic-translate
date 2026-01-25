@@ -548,20 +548,25 @@ back on the Image (for further editing)</source>
         <translation>Anahtarları Kaydet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="32"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Bu ayarlar, kendi kişisel API anahtarlarını kullanmak isteyen ileri düzey kullanıcılar içindir. Çoğu kullanıcı için burada herhangi bir yapılandırmaya gerek yoktur. Sadece Hesap sekmesindeki Kredi sistemini kullanın.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="38"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="82"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="131"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
         <source>API Key</source>
         <translation>API Anahtarı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
         <source>Endpoint URL</source>
         <translation>Uç Nokta URL&apos;si</translation>
     </message>
@@ -574,17 +579,17 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Bölge</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
         <source>Model</source>
         <translation>Model</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="111"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
         <source>Secret Key</source>
         <translation>Gizli Anahtar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
         <source>Folder ID</source>
         <translation>Klasör Kimliği</translation>
     </message>
@@ -701,9 +706,13 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
 Bir yazı tipi seçmek veya içe aktarmak için Ayarlar &gt; Metin Renderlama &gt; Yazı Tipi bölümüne gidin </translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account, or provide API credentials in Settings &gt; Credentials to continue.</source>
-        <translation>Devam etmek için Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun ya da Ayarlar &gt; Kimlik Bilgileri bölümünde API bilgilerini girin.</translation>
+        <translation type="vanished">Devam etmek için Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun ya da Ayarlar &gt; Kimlik Bilgileri bölümünde API bilgilerini girin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
+        <translation>Devam etmek için lütfen Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun. (İleri düzey kullanıcılar API anahtarlarını Ayarlar &gt; Gelişmiş bölümünden ayarlayabilir).</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1146,29 +1155,33 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
         <translation>Araçlar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Credentials</source>
-        <translation>Kimlik Bilgileri</translation>
+        <translation type="vanished">Kimlik Bilgileri</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>LLMs</source>
         <translation>LLM&apos;ler</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Text Rendering</source>
         <translation>Metin Renderlama</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Export</source>
         <translation>Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Account</source>
         <translation>Hesap</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <source>Advanced</source>
+        <translation>Gelişmiş</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="317"/>

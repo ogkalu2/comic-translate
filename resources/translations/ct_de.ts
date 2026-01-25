@@ -573,20 +573,25 @@ zurück auf das Bild (zur weiteren Bearbeitung)</translation>
         <translation>Schlüssel speichern</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="32"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Diese Einstellungen sind für fortgeschrittene Nutzer, die eigene API-Schlüssel verwenden möchten. Für die meisten Nutzer ist hier keine Konfiguration erforderlich. Nutzen Sie einfach das Credits-System im Konto-Tab.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="38"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="82"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="131"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
         <source>API Key</source>
         <translation>API-Schlüssel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
         <source>Endpoint URL</source>
         <translation>Endpunkt-URL</translation>
     </message>
@@ -599,17 +604,17 @@ zurück auf das Bild (zur weiteren Bearbeitung)</translation>
         <translation type="vanished">Region</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
         <source>Model</source>
         <translation>Modell</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="111"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
         <source>Secret Key</source>
         <translation>Geheimer Schlüssel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
         <source>Folder ID</source>
         <translation>Ordner-ID</translation>
     </message>
@@ -766,9 +771,13 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
 Gehen Sie zu Einstellungen &gt; Textwiedergabe &gt; Schriftart, um eine auszuwählen oder zu importieren</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account, or provide API credentials in Settings &gt; Credentials to continue.</source>
-        <translation>Bitte melden Sie sich über Einstellungen &gt; Konto an oder registrieren Sie sich, oder geben Sie API-Zugangsdaten unter Einstellungen &gt; Anmeldedaten ein, um fortzufahren.</translation>
+        <translation type="vanished">Bitte melden Sie sich über Einstellungen &gt; Konto an oder registrieren Sie sich, oder geben Sie API-Zugangsdaten unter Einstellungen &gt; Anmeldedaten ein, um fortzufahren.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
+        <translation>Bitte melden Sie sich über Einstellungen &gt; Konto an oder registrieren Sie sich, um fortzufahren. (Fortgeschrittene Nutzer können API-Schlüssel unter Einstellungen &gt; Erweitert setzen.)</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1123,6 +1132,11 @@ Gehen Sie zu Einstellungen &gt; Konto, um weitere Credits zu kaufen.</translatio
         <translation>Google Cloud</translation>
     </message>
     <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <source>Advanced</source>
+        <translation>Erweitert</translation>
+    </message>
+    <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="317"/>
         <source>About</source>
         <translation>Über</translation>
@@ -1201,7 +1215,7 @@ Gehen Sie zu Einstellungen &gt; Konto, um weitere Credits zu kaufen.</translatio
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Account</source>
         <translation>Konto</translation>
     </message>
@@ -1261,22 +1275,21 @@ Gehen Sie zu Einstellungen &gt; Konto, um weitere Credits zu kaufen.</translatio
         <translation>Werkzeuge</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Credentials</source>
-        <translation>Anmeldedaten</translation>
+        <translation type="vanished">Anmeldedaten</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>LLMs</source>
         <translation>LLMs</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Text Rendering</source>
         <translation>Textwiedergabe</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Export</source>
         <translation>Exportieren</translation>
     </message>
