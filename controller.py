@@ -110,6 +110,9 @@ class ComicTranslate(ComicTranslateUI):
 
         self.project_ctrl.load_main_page_settings()
         self.settings_page.load_settings()
+        
+        # Check for updates in background
+        self.settings_page.check_for_updates(is_background=True)
 
         self.operation_queue = deque()
         self.is_processing_queue = False

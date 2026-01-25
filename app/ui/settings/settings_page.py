@@ -6,7 +6,7 @@ from dataclasses import asdict, is_dataclass
 import json
 
 from PySide6 import QtWidgets, QtGui
-from PySide6.QtCore import Signal, QSettings, QUrl, QTimer
+from PySide6.QtCore import Signal, QSettings, QUrl, QTimer, Qt
 from PySide6.QtGui import QFont, QFontDatabase, QDesktopServices
 
 from .settings_ui import SettingsPageUI
@@ -35,6 +35,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui = SettingsPageUI(self)
         self._setup_connections()
         self._loading_settings = False
+        self._is_background_check = False
 
         self._pricing_refresh_timer: Optional[QTimer] = None
         self._pricing_refresh_attempts: int = 0
@@ -757,7 +758,7 @@ class SettingsPage(QtWidgets.QWidget):
                         tier_display = f"{monthly:,} {self.tr('credits/month')}"
                 else:
                     # If 0 or None, default to "Free" to match site behavior
-                    tier_display = "Free"
+                    tier_display = self.tr("Free")
             except (ValueError, TypeError):
                 # Fallback to existing tier name if parsing fails
                 pass
@@ -772,15 +773,19 @@ class SettingsPage(QtWidgets.QWidget):
                 total = self.user_credits.get('total')
                 parts = []
                 if sub is not None:
-                    parts.append(f"{self.tr('Subscription')}: {sub}")
+                    label = self.tr('Subscription')
+                    parts.append(f"{label}: {sub}")
                 if one is not None:
-                    parts.append(f"{self.tr('One-time')}: {one}")
+                    label = self.tr('One-time')
+                    parts.append(f"{label}: {one}")
                 if total is not None:
-                    parts.append(f"{self.tr('Total')}: {total}")
+                    label = self.tr('Total')
+                    parts.append(f"{label}: {total}")
                 if parts:
                     credits_text = " | ".join(parts)
             elif self.user_credits is not None:
-                credits_text = f"{self.tr('Total')}: {self.user_credits}"
+                label = self.tr('Total')
+                credits_text = f"{label}: {self.user_credits}"
             self.ui.credits_value_label.setText(credits_text)
             self.ui.buy_credits_button.setEnabled(True)
             self.ui.buy_credits_button.show()
@@ -804,28 +809,52 @@ class SettingsPage(QtWidgets.QWidget):
         return self.auth_client.is_authenticated()
     
     
-    def check_for_updates(self):
-        self.ui.check_update_button.setEnabled(False)
-        self.ui.check_update_button.setText(self.tr("Checking..."))
+    def check_for_updates(self, is_background=False):
+        self._is_background_check = is_background
+        if not is_background:
+            self.ui.check_update_button.setEnabled(False)
+            self.ui.check_update_button.setText(self.tr("Checking..."))
         self.update_checker.check_for_updates()
 
-    def on_update_available(self, version, release_notes, download_url):
-        self.ui.check_update_button.setEnabled(True)
-        self.ui.check_update_button.setText(self.tr("Check for Updates"))
+    def on_update_available(self, version, release_url, download_url):
+        if not self._is_background_check:
+            self.ui.check_update_button.setEnabled(True)
+            self.ui.check_update_button.setText(self.tr("Check for Updates"))
         
+        # Check ignored version
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        ignored_version = settings.value("updates/ignored_version", "")
+        
+        if self._is_background_check and version == ignored_version:
+            return
+
         msg_box = QtWidgets.QMessageBox(self)
         msg_box.setWindowTitle(self.tr("Update Available"))
+        msg_box.setTextFormat(Qt.RichText)
+        msg_box.setTextInteractionFlags(Qt.TextBrowserInteraction)
         msg_box.setText(self.tr("A new version {version} is available.").format(version=version))
-        msg_box.setInformativeText(release_notes)
-        download_btn = msg_box.addButton(self.tr("Download && Install"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
-        cancel_btn = msg_box.addButton(self.tr("Cancel"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        link_text = self.tr("Release Notes")
+        msg_box.setInformativeText(f'<a href="{release_url}">{link_text}</a>')
+        
+        download_btn = msg_box.addButton(self.tr("Yes"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        cancel_btn = msg_box.addButton(self.tr("No"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        
+        dotted_ask_btn = None
+        if self._is_background_check:
+             dotted_ask_btn = msg_box.addButton(self.tr("Don't Ask Again"), QtWidgets.QMessageBox.ButtonRole.ApplyRole)
+        
         msg_box.setDefaultButton(download_btn)
         msg_box.exec()
 
         if msg_box.clickedButton() == download_btn:
              self.start_download(download_url)
+        elif dotted_ask_btn and msg_box.clickedButton() == dotted_ask_btn:
+             settings.setValue("updates/ignored_version", version)
     
     def on_up_to_date(self):
+        if self._is_background_check:
+            return
+
         self.ui.check_update_button.setEnabled(True)
         self.ui.check_update_button.setText(self.tr("Check for Updates"))
         self._show_message_box(
@@ -835,6 +864,10 @@ class SettingsPage(QtWidgets.QWidget):
         )
 
     def on_update_error(self, message):
+        if self._is_background_check:
+            logger.error(f"Background update check failed: {message}")
+            return
+
         self.ui.check_update_button.setEnabled(True)
         self.ui.check_update_button.setText(self.tr("Check for Updates"))
         if self.update_dialog:

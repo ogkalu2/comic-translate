@@ -124,7 +124,7 @@ class UpdateWorker(QObject):
                             break
                 
                 if asset_url:
-                    self.update_available.emit(latest_tag, data.get("body", ""), asset_url)
+                    self.update_available.emit(latest_tag, data.get("html_url", ""), asset_url)
                 else:
                     self.error.emit(f"New version {latest_tag} available, but no installer found for your OS.")
             else:
