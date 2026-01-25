@@ -4,32 +4,17 @@ import logging
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
-
-try:
-    import torch
-    from torchvision import transforms
-    from .model import FontDetector, ResNet18Regressor, ResNet34Regressor, \
-        ResNet50Regressor, ResNet101Regressor, DeepFontBaseline
-    TORCH_AVAILABLE = True
-except ImportError:
-    TORCH_AVAILABLE = False
-    # Dummy classes/functions to avoid NameError if torch is missing but ONNX is used
-    FontDetector = None
-    ResNet18Regressor = None
-    ResNet34Regressor = None
-    ResNet50Regressor = None
-    ResNet101Regressor = None
-    DeepFontBaseline = None
-
 from . import config
-from modules.utils.device import resolve_device, get_providers
 from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
 
 logger = logging.getLogger(__name__)
 
 def build_backbone(model_name: str, *, regression_use_tanh: bool):
-    if not TORCH_AVAILABLE:
+    try:
+        from .model import ResNet18Regressor, ResNet34Regressor, \
+            ResNet50Regressor, ResNet101Regressor, DeepFontBaseline
+    except ImportError:
         raise ImportError("Torch is not available")
         
     if model_name == "resnet18":
@@ -123,7 +108,11 @@ class FontEngine(ABC):
 
 class TorchFontEngine(FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
-        if not TORCH_AVAILABLE:
+        try:
+            import torch
+            from torchvision import transforms
+            from .model import FontDetector
+        except ImportError:
             logger.warning("Warning: Torch not available, cannot initialize TorchFontEngine")
             self.detector = None
             return
@@ -178,6 +167,8 @@ class TorchFontEngine(FontEngine):
     def process(self, image: np.ndarray) -> dict:
         if self.detector is None:
             return {"available": False}
+
+        import torch
 
         try:
             pil_image = Image.fromarray(image).convert("RGB")
