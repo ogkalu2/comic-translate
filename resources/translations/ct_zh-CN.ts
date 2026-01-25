@@ -22,47 +22,53 @@
 <context>
     <name>AccountPage</name>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="21"/>
+        <location filename="../../app/ui/settings/account_page.py" line="22"/>
         <source>Sign in to Comic Translate</source>
         <translation>登录 Comic Translate</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="25"/>
+        <location filename="../../app/ui/settings/account_page.py" line="26"/>
         <source>Sign in to use Comic Translate, see your credits balance, and purchase additional credits.</source>
         <translation>登录以使用 Comic Translate，查看您的积分余额并购买更多积分。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="32"/>
+        <location filename="../../app/ui/settings/account_page.py" line="33"/>
         <source>Sign In</source>
         <translation>登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="48"/>
+        <location filename="../../app/ui/settings/account_page.py" line="45"/>
+        <location filename="../../app/ui/settings/account_page.py" line="88"/>
+        <source>See model credit costs</source>
+        <translation>查看模型积分消耗</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/account_page.py" line="61"/>
         <source>Account Information</source>
         <translation>账户信息</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="51"/>
+        <location filename="../../app/ui/settings/account_page.py" line="64"/>
         <source>Email:</source>
         <translation>邮箱：</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="58"/>
+        <location filename="../../app/ui/settings/account_page.py" line="71"/>
         <source>Subscription Tier:</source>
         <translation>订阅等级：</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="65"/>
+        <location filename="../../app/ui/settings/account_page.py" line="78"/>
         <source>Credits:</source>
         <translation>积分：</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="71"/>
+        <location filename="../../app/ui/settings/account_page.py" line="94"/>
         <source>Buy Credits</source>
         <translation>购买积分</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="74"/>
+        <location filename="../../app/ui/settings/account_page.py" line="97"/>
         <source>Sign Out</source>
         <translation>退出登录</translation>
     </message>
@@ -70,33 +76,33 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="454"/>
+        <location filename="../../controller.py" line="457"/>
         <source>Error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="812"/>
-        <location filename="../../controller.py" line="823"/>
+        <location filename="../../controller.py" line="815"/>
+        <location filename="../../controller.py" line="826"/>
         <source>Downloading model file: {filename}</source>
         <translation>正在下载模型文件：{filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="854"/>
+        <location filename="../../controller.py" line="857"/>
         <source>Unsaved Changes</source>
         <translation>未保存的更改</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="855"/>
+        <location filename="../../controller.py" line="858"/>
         <source>Save changes to this file?</source>
         <translation>是否保存对此文件的更改？</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="856"/>
+        <location filename="../../controller.py" line="859"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="857"/>
+        <location filename="../../controller.py" line="860"/>
         <source>Don&apos;t Save</source>
         <translation>不保存</translation>
     </message>
@@ -105,7 +111,7 @@
         <translation type="vanished">放弃</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="858"/>
+        <location filename="../../controller.py" line="861"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
@@ -667,12 +673,12 @@ back on the Image (for further editing)</source>
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../controller.py" line="777"/>
+        <location filename="../../controller.py" line="780"/>
         <source>Processing:</source>
         <translation>处理中：</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="780"/>
+        <location filename="../../controller.py" line="783"/>
         <source>Archiving:</source>
         <translation>归档中：</translation>
     </message>
@@ -791,27 +797,29 @@ Go to Settings &gt; Account to buy more credits.</source>
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="499"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="500"/>
         <source>OK</source>
         <translation>确定</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="508"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="509"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="839"/>
         <source>Yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="509"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
         <source>No</source>
         <translation>否</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="517"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="518"/>
         <source>Restart Required</source>
         <translation>需要重启</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="518"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>请重启应用以使语言更改生效。</translation>
     </message>
@@ -820,33 +828,33 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation type="vanished">正在登录...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="555"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="556"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>无法启动登录流程。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="572"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="796"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="573"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="801"/>
         <source>Sign In</source>
         <translation>登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="589"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
         <source>Sign In Required</source>
         <translation>需要登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>请登录以购买或管理积分。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="599"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="600"/>
         <source>Unable to Open Browser</source>
         <translation>无法打开浏览器</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="600"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>请在浏览器中打开定价页面：{url}</translation>
     </message>
@@ -859,114 +867,143 @@ Go to Settings &gt; Account to buy more credits.</source>
         <translation type="vanished">已成功登录为 {email}。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="547"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="821"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="851"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="548"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="672"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
         <source>Sign In Error</source>
         <translation>登录错误</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
         <source>Authentication failed: {error}</source>
         <translation>认证失败：{error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="687"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="688"/>
         <source>Confirm Sign Out</source>
         <translation>确认退出登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="688"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
         <source>Are you sure you want to sign out?</source>
         <translation>确定要退出登录吗？</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="692"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="693"/>
         <source>Signing Out...</source>
         <translation>正在退出登录...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="715"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="789"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="716"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="794"/>
         <source>Sign Out</source>
         <translation>退出登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="731"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
         <source>Session Expired</source>
         <translation>会话已过期</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>您的会话已过期，请重新登录。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="746"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="749"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="768"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
         <source>N/A</source>
         <translation>无</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="809"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="761"/>
+        <source>Free</source>
+        <translation>免费</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="776"/>
+        <source>Subscription</source>
+        <translation>订阅</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="779"/>
+        <source>One-time</source>
+        <translation>一次性</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="782"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
+        <source>Total</source>
+        <translation>总计</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="816"/>
         <source>Checking...</source>
         <translation>正在检查...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="814"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="839"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="822"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="859"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
         <source>Check for Updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="817"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="832"/>
         <source>Update Available</source>
         <translation>有可用更新</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="818"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="835"/>
         <source>A new version {version} is available.</source>
         <translation>有新版本 {version} 可用。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="820"/>
-        <source>Download &amp;&amp; Install</source>
-        <translation>下载并安装</translation>
+        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
+        <source>Release Notes</source>
+        <translation>发行说明</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="844"/>
+        <source>Don&apos;t Ask Again</source>
+        <translation>不再询问</translation>
+    </message>
+    <message>
+        <source>Download &amp;&amp; Install</source>
+        <translation type="vanished">下载并安装</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="862"/>
         <source>Up to Date</source>
         <translation>已是最新</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="834"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
         <source>You are using the latest version.</source>
         <translation>您正在使用最新版本。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="845"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="878"/>
         <source>Update Error</source>
         <translation>更新错误</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="851"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
         <source>Downloading update...</source>
         <translation>正在下载更新...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="868"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="901"/>
         <source>Download Complete</source>
         <translation>下载完成</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="869"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>安装程序已下载到 {path}。现在运行吗？</translation>
     </message>
@@ -1318,12 +1355,12 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="175"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="176"/>
         <source>Resize</source>
         <translation>缩放</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="177"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="178"/>
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
