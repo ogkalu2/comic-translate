@@ -14,6 +14,7 @@ from .llms_page import LlmsPage
 from .text_rendering_page import TextRenderingPage
 from .export_page import ExportPage
 from .account_page import AccountPage
+from .about_page import AboutPage
 
 
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -197,6 +198,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.text_rendering_page = TextRenderingPage(parent=self)
         self.export_page = ExportPage(parent=self)
         self.account_page = AccountPage(parent=self)
+        self.about_page = AboutPage(parent=self)
 
         # Backward-compatible attribute proxies for existing SettingsPage references
         # Personalization
@@ -246,6 +248,10 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.credits_value_label = self.account_page.credits_value_label
         self.logged_out_widget = self.account_page.logged_out_widget
         self.logged_in_widget = self.account_page.logged_in_widget
+        
+        # System
+        self.check_update_button = self.about_page.check_update_button
+
 
         # Add pages to stacked widget (order must match navbar order)
         self.stacked_widget.addWidget(self.personalization_page)
@@ -255,6 +261,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.stacked_widget.addWidget(self.text_rendering_page)
         self.stacked_widget.addWidget(self.export_page)
         self.stacked_widget.addWidget(self.account_page)
+        self.stacked_widget.addWidget(self.about_page)
 
         settings_layout = QtWidgets.QHBoxLayout()
         
@@ -307,6 +314,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             {"title": self.tr("Text Rendering"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Export"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Account"), "avatar": MPixmap(".svg")},
+            {"title": self.tr("About"), "avatar": MPixmap(".svg")},
         ]):
             nav_card = ClickMeta(extra=False)
             nav_card.setup_data(setting)

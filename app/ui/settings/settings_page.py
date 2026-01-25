@@ -14,6 +14,7 @@ from modules.utils.device import is_gpu_available
 from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
     EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
 from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
+from app.update_checker import UpdateChecker
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,16 @@ class SettingsPage(QtWidgets.QWidget):
         self.auth_client.request_login_view.connect(self.show_login_view)
         self.auth_client.logout_success.connect(self.handle_logout_success)
         self.auth_client.session_check_finished.connect(self.handle_session_check_finished)
+
+        # Update Checker
+        self.update_checker = UpdateChecker()
+        self.update_checker.update_available.connect(self.on_update_available)
+        self.update_checker.up_to_date.connect(self.on_up_to_date)
+        self.update_checker.error_occurred.connect(self.on_update_error)
+        self.update_checker.download_progress.connect(self.on_download_progress)
+        self.update_checker.download_finished.connect(self.on_download_finished)
+        self.update_dialog = None
+
 
         self.user_email: Optional[str] = None
         self.user_tier: Optional[str] = None
@@ -81,6 +92,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.sign_in_button.clicked.connect(self.start_sign_in)
         self.ui.buy_credits_button.clicked.connect(self.open_pricing_page)
         self.ui.sign_out_button.clicked.connect(self.sign_out)
+        self.ui.check_update_button.clicked.connect(self.check_for_updates)
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
@@ -791,6 +803,74 @@ class SettingsPage(QtWidgets.QWidget):
         """Checks if user info indicates a logged-in state."""
         return self.auth_client.is_authenticated()
     
+    
+    def check_for_updates(self):
+        self.ui.check_update_button.setEnabled(False)
+        self.ui.check_update_button.setText(self.tr("Checking..."))
+        self.update_checker.check_for_updates()
+
+    def on_update_available(self, version, release_notes, download_url):
+        self.ui.check_update_button.setEnabled(True)
+        self.ui.check_update_button.setText(self.tr("Check for Updates"))
+        
+        msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setWindowTitle(self.tr("Update Available"))
+        msg_box.setText(self.tr("A new version {version} is available.").format(version=version))
+        msg_box.setInformativeText(release_notes)
+        download_btn = msg_box.addButton(self.tr("Download && Install"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        cancel_btn = msg_box.addButton(self.tr("Cancel"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        msg_box.setDefaultButton(download_btn)
+        msg_box.exec()
+
+        if msg_box.clickedButton() == download_btn:
+             self.start_download(download_url)
+    
+    def on_up_to_date(self):
+        self.ui.check_update_button.setEnabled(True)
+        self.ui.check_update_button.setText(self.tr("Check for Updates"))
+        self._show_message_box(
+            QtWidgets.QMessageBox.Icon.Information,
+            self.tr("Up to Date"),
+            self.tr("You are using the latest version.")
+        )
+
+    def on_update_error(self, message):
+        self.ui.check_update_button.setEnabled(True)
+        self.ui.check_update_button.setText(self.tr("Check for Updates"))
+        if self.update_dialog:
+             self.update_dialog.close()
+        
+        self._show_message_box(
+            QtWidgets.QMessageBox.Icon.Warning,
+            self.tr("Update Error"),
+            message
+        )
+
+    def start_download(self, url):
+        # Create a progress dialog
+        self.update_dialog = QtWidgets.QProgressDialog(self.tr("Downloading update..."), self.tr("Cancel"), 0, 100, self)
+        self.update_dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+        self.update_dialog.show()
+        
+        filename = url.split("/")[-1]
+        self.update_checker.download_installer(url, filename)
+
+    def on_download_progress(self, percent):
+        if self.update_dialog:
+             self.update_dialog.setValue(percent)
+
+    def on_download_finished(self, file_path):
+        if self.update_dialog:
+             self.update_dialog.close()
+        
+        # Ask to install
+        if self._ask_yes_no(
+            self.tr("Download Complete"),
+            self.tr("Installer downloaded to {path}. Run it now?").format(path=file_path),
+            default_yes=True
+        ):
+             self.update_checker.run_installer(file_path)
+
     def closeEvent(self, event):
         """Ensure login dialog is closed when the settings page itself closes."""
         logger.debug("SettingsPage closeEvent triggered.")
