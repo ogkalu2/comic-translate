@@ -555,24 +555,24 @@ back on the Image (for further editing)</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
-        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
-        <translation>Bu ayarlar, kendi kişisel API anahtarlarını kullanmak isteyen ileri düzey kullanıcılar içindir. Çoğu kullanıcı için burada herhangi bir yapılandırmaya gerek yoktur. Sadece Hesap sekmesindeki Kredi sistemini kullanın.</translation>
+        <source>These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. Personal API keys can only be used when signed out (except Custom). For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Bu ayarlar, kredi sistemi yerine kendi kişisel API anahtarlarını kullanmak isteyen ileri düzey kullanıcılar içindir. Kişisel API anahtarları yalnızca oturum kapalıyken kullanılabilir (Özel hariç). Çoğu kullanıcı için burada herhangi bir yapılandırmaya gerek yoktur. Sadece Hesap sekmesindeki Kredi sistemini kullanın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="42"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="48"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="92"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="141"/>
         <source>API Key</source>
         <translation>API Anahtarı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="57"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="101"/>
         <source>Endpoint URL</source>
         <translation>Uç Nokta URL&apos;si</translation>
     </message>
@@ -585,17 +585,17 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Bölge</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="110"/>
         <source>Model</source>
         <translation>Model</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="121"/>
         <source>Secret Key</source>
         <translation>Gizli Anahtar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="130"/>
         <source>Folder ID</source>
         <translation>Klasör Kimliği</translation>
     </message>
@@ -742,17 +742,24 @@ Go to Settings &gt; Account to buy more credits.</source>
 Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="114"/>
+        <location filename="../../app/ui/messages.py" line="95"/>
+        <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
+Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
+        <translation>Özel seçeneği gelişmiş API yapılandırması gerektirir. Çoğu kullanıcı bunun yerine Kredi sistemini kullanmalıdır.
+Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &gt; Gelişmiş bölümünden Özel API ayarlarını yapılandırın.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="131"/>
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="115"/>
+        <location filename="../../app/ui/messages.py" line="132"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="116"/>
+        <location filename="../../app/ui/messages.py" line="133"/>
         <source>Close</source>
         <translation>Kapat</translation>
     </message>

@@ -615,25 +615,29 @@ back on the Image (for further editing)</source>
         <translation>키 저장</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
         <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
-        <translation>이 설정은 개인 API 키를 사용하려는 고급 사용자를 위한 것입니다. 대부분의 사용자는 여기서 별도의 설정이 필요하지 않습니다. 계정 탭의 크레딧 시스템을 사용하세요.</translation>
+        <translation type="vanished">이 설정은 개인 API 키를 사용하려는 고급 사용자를 위한 것입니다. 대부분의 사용자는 여기서 별도의 설정이 필요하지 않습니다. 계정 탭의 크레딧 시스템을 사용하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. Personal API keys can only be used when signed out (except Custom). For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>이 설정은 크레딧 시스템 대신 개인 API 키를 사용하려는 고급 사용자를 위한 것입니다. 개인 API 키는 로그아웃 상태에서만 사용할 수 있습니다(사용자 지정 제외). 대부분의 사용자는 여기서 별도의 설정이 필요하지 않습니다. 계정 탭의 크레딧 시스템을 사용하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="42"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="48"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="92"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="141"/>
         <source>API Key</source>
         <translation>API 키</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="57"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="101"/>
         <source>Endpoint URL</source>
         <translation>엔드포인트 URL</translation>
     </message>
@@ -646,17 +650,17 @@ back on the Image (for further editing)</source>
         <translation type="vanished">지역</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="110"/>
         <source>Model</source>
         <translation>모델</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="121"/>
         <source>Secret Key</source>
         <translation>시크릿 키</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="130"/>
         <source>Folder ID</source>
         <translation>폴더 ID</translation>
     </message>
@@ -849,17 +853,24 @@ Go to Settings &gt; Account to buy more credits.</source>
 설정 &gt; 계정에서 크레딧을 추가로 구매하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="114"/>
+        <location filename="../../app/ui/messages.py" line="95"/>
+        <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
+Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
+        <translation>사용자 지정은 고급 API 구성이 필요합니다. 대부분의 사용자는 크레딧 시스템을 사용하는 것이 좋습니다.
+크레딧을 사용하려면 설정 &gt; 계정에서 로그인하거나, 설정 &gt; 고급에서 사용자 지정 API를 구성하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="131"/>
         <source>Copy</source>
         <translation>복사</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="115"/>
+        <location filename="../../app/ui/messages.py" line="132"/>
         <source>OK</source>
         <translation>확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="116"/>
+        <location filename="../../app/ui/messages.py" line="133"/>
         <source>Close</source>
         <translation>닫기</translation>
     </message>

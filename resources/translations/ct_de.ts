@@ -579,25 +579,29 @@ zurück auf das Bild (zur weiteren Bearbeitung)</translation>
         <translation>Schlüssel speichern</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
         <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
-        <translation>Diese Einstellungen sind für fortgeschrittene Nutzer, die eigene API-Schlüssel verwenden möchten. Für die meisten Nutzer ist hier keine Konfiguration erforderlich. Nutzen Sie einfach das Credits-System im Konto-Tab.</translation>
+        <translation type="vanished">Diese Einstellungen sind für fortgeschrittene Nutzer, die eigene API-Schlüssel verwenden möchten. Für die meisten Nutzer ist hier keine Konfiguration erforderlich. Nutzen Sie einfach das Credits-System im Konto-Tab.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. Personal API keys can only be used when signed out (except Custom). For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Diese Einstellungen sind für fortgeschrittene Nutzer, die eigene persönliche API-Schlüssel anstelle des Credits-Systems verwenden möchten. Persönliche API-Schlüssel können nur verwendet werden, wenn Sie abgemeldet sind (außer Benutzerdefiniert). Für die meisten Nutzer ist hier keine Konfiguration erforderlich. Nutzen Sie einfach das Credits-System im Konto-Tab.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="42"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="48"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="92"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="141"/>
         <source>API Key</source>
         <translation>API-Schlüssel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="57"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="101"/>
         <source>Endpoint URL</source>
         <translation>Endpunkt-URL</translation>
     </message>
@@ -610,17 +614,17 @@ zurück auf das Bild (zur weiteren Bearbeitung)</translation>
         <translation type="vanished">Region</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="110"/>
         <source>Model</source>
         <translation>Modell</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="121"/>
         <source>Secret Key</source>
         <translation>Geheimer Schlüssel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="130"/>
         <source>Folder ID</source>
         <translation>Ordner-ID</translation>
     </message>
@@ -807,17 +811,24 @@ Go to Settings &gt; Account to buy more credits.</source>
 Gehen Sie zu Einstellungen &gt; Konto, um weitere Credits zu kaufen.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="114"/>
+        <location filename="../../app/ui/messages.py" line="95"/>
+        <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
+Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
+        <translation>Benutzerdefiniert erfordert eine erweiterte API-Konfiguration. Die meisten Nutzer sollten stattdessen das Credits-System verwenden.
+Bitte melden Sie sich über Einstellungen &gt; Konto an, um Credits zu nutzen, oder konfigurieren Sie benutzerdefinierte API-Einstellungen unter Einstellungen &gt; Erweitert.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="131"/>
         <source>Copy</source>
         <translation>Kopieren</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="115"/>
+        <location filename="../../app/ui/messages.py" line="132"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="116"/>
+        <location filename="../../app/ui/messages.py" line="133"/>
         <source>Close</source>
         <translation>Schließen</translation>
     </message>

@@ -86,6 +86,23 @@ class Messages:
         )
 
     @staticmethod
+    def show_custom_not_configured_error(parent):
+        """
+        Show an error message when Custom is selected without proper configuration.
+        Guides users to use the Credits system instead.
+        """
+        MMessage.error(
+            text=QCoreApplication.translate(
+                "Messages",
+                "Custom requires advanced API configuration. Most users should use the Credits system instead.\n"
+                "Please sign in via Settings > Account to use credits, or configure Custom API settings in Settings > Advanced."
+            ),
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
+    @staticmethod
     def show_error_with_copy(parent, title: str, text: str, detailed_text: str | None = None):
         """
         Show a critical error dialog where the main text is selectable and the

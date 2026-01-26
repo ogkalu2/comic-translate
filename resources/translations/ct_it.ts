@@ -615,25 +615,29 @@ sull&apos;immagine (per ulteriori modifiche)</translation>
         <translation>Salva chiavi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
         <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
-        <translation>Queste impostazioni sono per utenti avanzati che desiderano utilizzare le proprie chiavi API personali. Per la maggior parte degli utenti, non è necessaria alcuna configurazione qui. Usa semplicemente il sistema di crediti nella scheda Account.</translation>
+        <translation type="vanished">Queste impostazioni sono per utenti avanzati che desiderano utilizzare le proprie chiavi API personali. Per la maggior parte degli utenti, non è necessaria alcuna configurazione qui. Usa semplicemente il sistema di crediti nella scheda Account.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. Personal API keys can only be used when signed out (except Custom). For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>Queste impostazioni sono per utenti avanzati che desiderano utilizzare le proprie chiavi API personali invece del sistema di crediti. Le chiavi API personali possono essere usate solo quando si è disconnessi (eccetto Custom). Per la maggior parte degli utenti, non è necessaria alcuna configurazione qui. Usa semplicemente il sistema di crediti nella scheda Account.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="42"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="48"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="92"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="141"/>
         <source>API Key</source>
         <translation>Chiave API</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="57"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="101"/>
         <source>Endpoint URL</source>
         <translation>URL endpoint</translation>
     </message>
@@ -646,17 +650,17 @@ sull&apos;immagine (per ulteriori modifiche)</translation>
         <translation type="vanished">Regione</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="110"/>
         <source>Model</source>
         <translation>Modello</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="121"/>
         <source>Secret Key</source>
         <translation>Chiave segreta</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="130"/>
         <source>Folder ID</source>
         <translation>ID cartella</translation>
     </message>
@@ -849,17 +853,24 @@ Go to Settings &gt; Account to buy more credits.</source>
 Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="114"/>
+        <location filename="../../app/ui/messages.py" line="95"/>
+        <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
+Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
+        <translation>La modalità Personalizzato richiede una configurazione API avanzata. La maggior parte degli utenti dovrebbe invece utilizzare il sistema di crediti.
+Accedi tramite Impostazioni &gt; Account per usare i crediti, oppure configura le impostazioni API personalizzate in Impostazioni &gt; Avanzate.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="131"/>
         <source>Copy</source>
         <translation>Copia</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="115"/>
+        <location filename="../../app/ui/messages.py" line="132"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="116"/>
+        <location filename="../../app/ui/messages.py" line="133"/>
         <source>Close</source>
         <translation>Chiudi</translation>
     </message>

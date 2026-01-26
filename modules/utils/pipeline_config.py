@@ -121,6 +121,15 @@ def validate_translator(main_page, source_lang, target_lang):
         if not has_access(service, 'api_key'):
             Messages.show_signup_or_credentials_error(main_page)
             return False
+    
+    elif "Custom" in translator_tool:
+        # Custom requires api_key, api_url, and model to be configured
+        service = tr('Custom')
+        creds = credentials.get(service, {})
+        # Check if all required fields are present and non-empty
+        if not all([creds.get('api_key'), creds.get('api_url'), creds.get('model')]):
+            Messages.show_custom_not_configured_error(main_page)
+            return False
 
     # Unsupported target languages by service
     unsupported = {

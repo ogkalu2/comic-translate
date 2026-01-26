@@ -559,24 +559,24 @@ back on the Image (for further editing)</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
-        <source>These settings are for advanced users who wish to use their own personal API keys. For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
-        <translation>这些设置适用于希望使用自己 API 密钥的高级用户。大多数用户无需在此进行配置，只需在账户标签页使用积分系统即可。</translation>
+        <source>These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. Personal API keys can only be used when signed out (except Custom). For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
+        <translation>这些设置适用于希望使用自己 API 密钥而不是积分系统的高级用户。个人 API 密钥只能在未登录时使用（自定义除外）。大多数用户无需在此进行配置，只需在账户标签页使用积分系统即可。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="42"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="48"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="92"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="141"/>
         <source>API Key</source>
         <translation>API 密钥</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="57"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="101"/>
         <source>Endpoint URL</source>
         <translation>终端地址</translation>
     </message>
@@ -589,17 +589,17 @@ back on the Image (for further editing)</source>
         <translation type="vanished">区域</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="110"/>
         <source>Model</source>
         <translation>模型</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="121"/>
         <source>Secret Key</source>
         <translation>密钥</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="130"/>
         <source>Folder ID</source>
         <translation>文件夹 ID</translation>
     </message>
@@ -742,17 +742,24 @@ Go to Settings &gt; Account to buy more credits.</source>
 请前往设置 &gt; 账户购买更多积分。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="114"/>
+        <location filename="../../app/ui/messages.py" line="95"/>
+        <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
+Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
+        <translation>自定义需要高级 API 配置。大多数用户应使用积分系统。
+请通过设置 &gt; 账户登录以使用积分，或在设置 &gt; 高级中配置自定义 API 设置。</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="131"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="115"/>
+        <location filename="../../app/ui/messages.py" line="132"/>
         <source>OK</source>
         <translation>确定</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="116"/>
+        <location filename="../../app/ui/messages.py" line="133"/>
         <source>Close</source>
         <translation>关闭</translation>
     </message>

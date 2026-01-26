@@ -18,7 +18,8 @@ class CredentialsPage(QtWidgets.QWidget):
         self.save_keys_checkbox = MCheckBox(self.tr("Save Keys"))
 
         info_label = MLabel(self.tr(
-            "These settings are for advanced users who wish to use their own personal API keys. "
+            "These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. "
+            "Personal API keys can only be used when signed out (except Custom). "
             "For most users, no configuration is needed here. Simply use the Credits system in the Account tab."
         )).secondary()
         info_label.setWordWrap(True)
