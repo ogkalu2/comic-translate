@@ -2,6 +2,7 @@ import os, sys
 import logging
 import hashlib
 import json
+import threading
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSettings, QTranslator, QLocale, \
     Qt, QTimer, QThread, QObject, Signal, Slot, QEvent
@@ -260,6 +261,11 @@ def main():
                 self._ct = ComicTranslate()
                 self._ct.setWindowIcon(icon)
 
+                try:
+                    app.aboutToQuit.connect(self._ct.shutdown)
+                except Exception:
+                    pass
+
                 splash.finish(self._ct)
 
                 if project_file:
@@ -316,9 +322,27 @@ def main():
         thread.quit()
         thread.wait()
 
-    # Force the process to terminate, killing any hanging threads
-    # This prevents the "zombie process" issue if 3rd party libs misbehave.
-    os._exit(exec_return)
+    # Best-effort IPC cleanup (avoids stale local server entries after crashes).
+    try:
+        server.close()
+        QLocalServer.removeServer(server_name)
+    except Exception:
+        pass
+
+    # Prefer a graceful shutdown (lets Qt clean up thread-local storage).
+    # Some 3rd-party libs can leave non-daemon Python threads running, which can
+    # keep the process alive after sys.exit(). Use a watchdog as a last resort.
+    def _hard_exit():
+        try:
+            os._exit(int(exec_return))
+        except Exception:
+            os._exit(0)
+
+    watchdog = threading.Timer(5.0, _hard_exit)
+    watchdog.daemon = True
+    watchdog.start()
+
+    raise SystemExit(exec_return)
 
 
 def get_system_language():

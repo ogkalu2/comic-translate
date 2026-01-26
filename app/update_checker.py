@@ -82,6 +82,20 @@ class UpdateChecker(QObject):
         except Exception as e:
             self.error_occurred.emit(f"Failed to launch installer: {e}")
 
+    def shutdown(self):
+        """Stops any active worker thread (best-effort)."""
+        try:
+            thread = self._worker_thread
+        except Exception:
+            thread = None
+
+        if thread and thread.isRunning():
+            thread.quit()
+            thread.wait(2000)
+
+        self._worker_thread = None
+        self._worker = None
+
 
 class UpdateWorker(QObject):
     update_available = Signal(str, str, str)

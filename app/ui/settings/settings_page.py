@@ -56,6 +56,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.update_checker.download_progress.connect(self.on_download_progress)
         self.update_checker.download_finished.connect(self.on_download_finished)
         self.update_dialog = None
+        self.login_dialog = None
 
 
         self.user_email: Optional[str] = None
@@ -913,14 +914,33 @@ class SettingsPage(QtWidgets.QWidget):
             # which calls on_login_dialog_closed, potentially cancelling the auth flow.
             # self.login_dialog.close() 
             pass
+        super().closeEvent(event)
 
     def shutdown(self):
         """Cleanup resources before app exit."""
-        if self.auth_client:
-            self.auth_client.shutdown()
-            self.login_dialog.close()
+        if getattr(self, "_is_shutting_down", False):
+            return
+        self._is_shutting_down = True
+
         self._stop_pricing_refresh_watch()
-        super().closeEvent(event)
+
+        try:
+            self.update_checker.shutdown()
+        except Exception:
+            pass
+
+        try:
+            if self.auth_client:
+                self.auth_client.shutdown()
+        except Exception:
+            pass
+
+        dialog = getattr(self, "login_dialog", None)
+        if dialog:
+            try:
+                dialog.close()
+            except Exception:
+                pass
     
 
 

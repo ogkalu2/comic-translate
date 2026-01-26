@@ -875,6 +875,8 @@ class ComicTranslate(ComicTranslateUI):
         else:
             self._skip_close_prompt = False
 
+        self.shutdown()
+
         # Save all settings when the application is closed
         self.settings_page.save_settings()
         self.project_ctrl.save_main_page_settings()
@@ -895,3 +897,23 @@ class ComicTranslate(ComicTranslateUI):
 
         super().closeEvent(event)
 
+    def shutdown(self):
+        if getattr(self, "_is_shutting_down", False):
+            return
+        self._is_shutting_down = True
+
+        try:
+            self.cancel_current_task()
+        except Exception:
+            pass
+
+        try:
+            self.threadpool.clear()
+            self.threadpool.waitForDone(2000)
+        except Exception:
+            pass
+
+        try:
+            self.settings_page.shutdown()
+        except Exception:
+            pass
