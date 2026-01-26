@@ -114,7 +114,8 @@ class AuthClient(QObject):
             "desktop_callback_uri": desktop_callback_uri,
             "prompt": "login"
         }
-        login_url = f"{self.frontend_url}/login" 
+        # Include trailing slash to prevent production server redirect that strips query params
+        login_url = f"{self.frontend_url}/login/" 
         auth_url = f"{login_url}?{urllib.parse.urlencode(params)}"
         logger.info(f"Requesting login view for: {auth_url}")
 
