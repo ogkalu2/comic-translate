@@ -37,38 +37,38 @@
         <translation>Accedi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="45"/>
-        <location filename="../../app/ui/settings/account_page.py" line="88"/>
+        <location filename="../../app/ui/settings/account_page.py" line="44"/>
+        <location filename="../../app/ui/settings/account_page.py" line="87"/>
         <source>See model credit costs</source>
         <translation>Vedi costi crediti modello</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="61"/>
+        <location filename="../../app/ui/settings/account_page.py" line="60"/>
         <source>Account Information</source>
         <translation>Informazioni account</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="64"/>
+        <location filename="../../app/ui/settings/account_page.py" line="63"/>
         <source>Email:</source>
         <translation>Email:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="71"/>
+        <location filename="../../app/ui/settings/account_page.py" line="70"/>
         <source>Subscription Tier:</source>
         <translation>Livello di abbonamento:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="78"/>
+        <location filename="../../app/ui/settings/account_page.py" line="77"/>
         <source>Credits:</source>
         <translation>Crediti:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="94"/>
+        <location filename="../../app/ui/settings/account_page.py" line="93"/>
         <source>Buy Credits</source>
         <translation>Acquista crediti</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="97"/>
+        <location filename="../../app/ui/settings/account_page.py" line="96"/>
         <source>Sign Out</source>
         <translation>Esci</translation>
     </message>
@@ -823,9 +823,13 @@ Vai a Impostazioni &gt; Rendering testo &gt; Carattere per selezionarne o import
         <translation type="vanished">Accedi o registrati tramite Impostazioni &gt; Account, oppure fornisci le credenziali API in Impostazioni &gt; Credenziali per continuare.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
-        <translation>Accedi o registrati tramite Impostazioni &gt; Account per continuare. (Gli utenti avanzati possono impostare le chiavi API in Impostazioni &gt; Avanzate).</translation>
+        <translation type="vanished">Accedi o registrati tramite Impostazioni &gt; Account per continuare. (Gli utenti avanzati possono impostare le chiavi API in Impostazioni &gt; Avanzate).</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue.</source>
+        <translation>Accedi o registrati tramite Impostazioni &gt; Account per continuare.</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1298,7 +1302,7 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Account</source>
         <translation>Account</translation>
     </message>
@@ -1353,7 +1357,7 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
         <translation>Personalizzazione</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Tools</source>
         <translation>Strumenti</translation>
     </message>
@@ -1362,17 +1366,17 @@ Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
         <translation type="vanished">Credenziali</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>LLMs</source>
         <translation>LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Text Rendering</source>
         <translation>Rendering testo</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Export</source>
         <translation>Esporta</translation>
     </message>

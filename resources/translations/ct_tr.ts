@@ -37,38 +37,38 @@
         <translation>Giriş Yap</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="45"/>
-        <location filename="../../app/ui/settings/account_page.py" line="88"/>
+        <location filename="../../app/ui/settings/account_page.py" line="44"/>
+        <location filename="../../app/ui/settings/account_page.py" line="87"/>
         <source>See model credit costs</source>
         <translation>Model kredi maliyetlerini gör</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="61"/>
+        <location filename="../../app/ui/settings/account_page.py" line="60"/>
         <source>Account Information</source>
         <translation>Hesap Bilgileri</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="64"/>
+        <location filename="../../app/ui/settings/account_page.py" line="63"/>
         <source>Email:</source>
         <translation>E-posta:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="71"/>
+        <location filename="../../app/ui/settings/account_page.py" line="70"/>
         <source>Subscription Tier:</source>
         <translation>Abonelik Seviyesi:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="78"/>
+        <location filename="../../app/ui/settings/account_page.py" line="77"/>
         <source>Credits:</source>
         <translation>Krediler:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="94"/>
+        <location filename="../../app/ui/settings/account_page.py" line="93"/>
         <source>Buy Credits</source>
         <translation>Kredi Satın Al</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="97"/>
+        <location filename="../../app/ui/settings/account_page.py" line="96"/>
         <source>Sign Out</source>
         <translation>Çıkış Yap</translation>
     </message>
@@ -716,9 +716,13 @@ Bir yazı tipi seçmek veya içe aktarmak için Ayarlar &gt; Metin Renderlama &g
         <translation type="vanished">Devam etmek için Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun ya da Ayarlar &gt; Kimlik Bilgileri bölümünde API bilgilerini girin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account to continue. (Advanced users can set API keys in Settings &gt; Advanced).</source>
-        <translation>Devam etmek için lütfen Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun. (İleri düzey kullanıcılar API anahtarlarını Ayarlar &gt; Gelişmiş bölümünden ayarlayabilir).</translation>
+        <translation type="vanished">Devam etmek için lütfen Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun. (İleri düzey kullanıcılar API anahtarlarını Ayarlar &gt; Gelişmiş bölümünden ayarlayabilir).</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="36"/>
+        <source>Please sign in or sign up via Settings &gt; Account to continue.</source>
+        <translation>Devam etmek için Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun.</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="48"/>
@@ -1187,7 +1191,7 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
         <translation>Kişiselleştirme</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Tools</source>
         <translation>Araçlar</translation>
     </message>
@@ -1196,22 +1200,22 @@ Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</trans
         <translation type="vanished">Kimlik Bilgileri</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>LLMs</source>
         <translation>LLM&apos;ler</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Text Rendering</source>
         <translation>Metin Renderlama</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>Export</source>
         <translation>Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
