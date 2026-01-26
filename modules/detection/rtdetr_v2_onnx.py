@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 import onnxruntime as ort
 from modules.utils.device import get_providers
-from huggingface_hub import hf_hub_download
+from modules.utils.download import ModelDownloader, ModelID
 
 from .base import DetectionEngine
 from ..utils.textblock import TextBlock
@@ -23,7 +23,6 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         self.session = None
         self.device = 'cpu'
         self.confidence_threshold = 0.3
-        self.repo_name = 'ogkalu/comic-text-and-bubble-detector'
         self.model_dir = os.path.join(project_root, 'models', 'detection')
 
         self.image_slicer = ImageSlicer(
@@ -42,9 +41,7 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         self.device = device
         self.confidence_threshold = confidence_threshold
 
-        os.makedirs(self.model_dir, exist_ok=True)
-        hf_hub_download(repo_id=self.repo_name, filename='config.json')
-        file_path = hf_hub_download(repo_id=self.repo_name, filename='detector.onnx')
+        file_path = ModelDownloader.get_file_path(ModelID.RTDETR_V2_ONNX, 'detector.onnx')
         providers = get_providers(self.device)
         self.session = ort.InferenceSession(file_path, providers=providers)
 

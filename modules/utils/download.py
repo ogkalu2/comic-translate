@@ -62,7 +62,7 @@ class ModelID(Enum):
     MIGAN_PIPELINE_ONNX = "migan-pipeline-v2"
     MIGAN_ONNX = "migan-onnx"
     MIGAN_JIT = "migan-traced"
-    RTDETRV2_ONNX = "rtdetr-v2-onnx"
+    RTDETR_V2_ONNX = "rtdetr-v2-onnx"
     
     # PPOCRv5 Detection Models
     PPOCR_V5_DET_MOBILE = "ppocr-v5-det-mobile"
@@ -445,7 +445,7 @@ def _register_defaults():
     ))
 
     ModelDownloader.register(ModelSpec(
-        id=ModelID.RTDETRV2_ONNX,
+        id=ModelID.RTDETR_V2_ONNX,
         url='https://huggingface.co/ogkalu/comic-text-and-bubble-detector/resolve/main/',
         files=['detector.onnx'],
         sha256=['065744e91c0594ad8663aa8b870ce3fb27222942eded5a3cc388ce23421bd195'], 
