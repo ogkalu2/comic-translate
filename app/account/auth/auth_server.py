@@ -130,18 +130,128 @@ class AuthServerThread(QThread):
                     should_shutdown = False
 
             def do_GET(self):
-                """Handle GET requests (e.g., browser favicon) - respond simply."""
+                """Handle GET requests - serve the JS bridge page for /callback."""
                 logger.debug(f"Received GET request for {self.path}")
+                
                 if self.path == '/favicon.ico':
                     self.send_response(204) # No content
                     self.end_headers()
-                else:
-                    self.send_response(200)
-                    self.send_header('Content-type', 'text/html')
-                    self.end_headers()
-                    # Simple message, browser might hit this if user navigates manually
-                    self.wfile.write(b"<html><body>Auth listener active. Please complete login in the opened browser tab.</body></html>")
-                # Do *not* shutdown on GET
+                    return
+
+                # For /callback (or standard root), serve the bridge page
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+                
+                # HTML with JS to extract hash and POST to server
+                # We use a simple inline HTML/JS payload to avoid needing external files
+                html = """
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Completing Login...</title>
+                        <style>
+                            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #f1f5f9; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                            .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); max-width: 400px; width: 100%; text-align: center; }
+                            .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+                            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                            .success { color: #10b981; font-weight: 500; }
+                            .error { color: #ef4444; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="card">
+                            <div id="spinner" class="spinner"></div>
+                            <h3 id="title">Finishing Sign In...</h3>
+                            <p id="message" style="color: #64748b;">Please wait while we complete the authentication process.</p>
+                        </div>
+                        <script>
+                            (function() {
+                                // Detect user's language (only fr, ko, zh are prefixed routes)
+                                function detectLanguage() {
+                                    const langs = navigator.languages || [navigator.language || navigator.userLanguage];
+                                    
+                                    // Return the FIRST language that matches our supported locales
+                                    // This respects the user's priority order
+                                    for (let i = 0; i < langs.length; i++) {
+                                        const lang = langs[i];
+                                        if (!lang) continue;
+                                        
+                                        // Check in order - if English is first, we return null immediately
+                                        if (lang.startsWith('en')) return null; // English = no prefix
+                                        if (lang.startsWith('fr')) return 'fr';
+                                        if (lang.startsWith('ko')) return 'ko';
+                                        if (lang.startsWith('zh')) return 'zh';
+                                    }
+                                    return null; // Default to English (no prefix)
+                                }
+                                
+                                // 1. Extract parameters from URL fragment (hash)
+                                const hash = window.location.hash.substring(1);
+                                if (!hash) {
+                                    document.getElementById('spinner').style.display = 'none';
+                                    if (window.location.pathname.includes('callback')) {
+                                        document.getElementById('title').innerText = 'Authentication Error';
+                                        document.getElementById('message').innerText = 'No authentication token received in URL fragment.';
+                                        document.getElementById('message').className = 'error';
+                                    } else {
+                                        document.getElementById('title').innerText = 'Auth Listener Active';
+                                        document.getElementById('message').innerText = 'This window handles desktop authentication.';
+                                    }
+                                    return;
+                                }
+
+                                const params = new URLSearchParams(hash);
+                                const payload = {};
+                                for (const [key, value] of params.entries()) {
+                                    payload[key] = value;
+                                }
+
+                                // 2. Parse user_info JSON string if present
+                                if (payload.user_info) {
+                                    try {
+                                        payload.user_info = JSON.parse(payload.user_info);
+                                    } catch (e) {
+                                        console.warn("Failed to parse user_info JSON:", e);
+                                    }
+                                }
+
+                                // 3. Send data to the local server via POST
+                                fetch('/callback', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                })
+                                .then(async response => {
+                                    const text = await response.text();
+                                    document.getElementById('spinner').style.display = 'none';
+                                    
+                                    if (response.ok) {
+                                        // Success! Redirect to localized success page (only fr, ko, zh have prefixes)
+                                        const userLang = detectLanguage();
+                                        const redirectPath = userLang 
+                                            ? `/${userLang}/auth/desktop-login-success` 
+                                            : '/auth/desktop-login-success';
+                                        
+                                        window.location.href = `https://comic-translate.com${redirectPath}`;
+                                    } else {
+                                        document.getElementById('title').innerText = 'Sign In Failed';
+                                        document.getElementById('message').innerText = text || 'The application rejected the login attempt.';
+                                        document.getElementById('message').className = 'error';
+                                    }
+                                })
+                                .catch(err => {
+                                    document.getElementById('spinner').style.display = 'none';
+                                    document.getElementById('title').innerText = 'Connection Error';
+                                    document.getElementById('message').innerText = 'Failed to communicate with the desktop application.';
+                                    document.getElementById('message').className = 'error';
+                                });
+                            })();
+                        </script>
+                    </body>
+                    </html>
+                    """
+                self.wfile.write(html.encode("utf-8"))
 
             def log_message(self, format, *args):
                 # Suppress default logging or customize
