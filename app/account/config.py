@@ -1,7 +1,10 @@
 # Localhost URLs for development environment
 # Use 127.0.0.1 instead of localhost to avoid IPv6 resolution/fallback delays on some Windows setups.
-dev_api_base_url = "http://127.0.0.1:8000"
-dev_frontend_base_url = "http://127.0.0.1:3000"
+# dev_api_base_url = "http://127.0.0.1:8000"
+# dev_frontend_base_url = "http://127.0.0.1:3000"
+
+dev_api_base_url = "http://localhost:8000"
+dev_frontend_base_url = "http://localhost:3000"
 
 # Production URLs
 prod_api_base_url = "https://api.comic-translate.com"
