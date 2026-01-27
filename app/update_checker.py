@@ -134,7 +134,7 @@ class UpdateWorker(QObject):
                             break
                 elif system == "Darwin":
                     for asset in data.get("assets", []):
-                        if asset["name"].endswith(".dmg"):
+                        if asset["name"].endswith(".dmg") or asset["name"].endswith(".pkg"):
                             asset_url = asset["browser_download_url"]
                             break
                 
