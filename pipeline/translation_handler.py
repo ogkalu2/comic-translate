@@ -1,7 +1,15 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 from modules.translation.processor import Translator
 from modules.utils.translator_utils import set_upper_case
 from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_original_block_coordinates
+from .cache_manager import CacheManager
+
+if TYPE_CHECKING:
+    from controller import ComicTranslate
+    from .main_pipeline import ComicTranslatePipeline
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +17,13 @@ logger = logging.getLogger(__name__)
 class TranslationHandler:
     """Handles translation processing with caching support."""
     
-    def __init__(self, main_page, cache_manager, pipeline):
+    def __init__(
+            self, 
+            main_page: ComicTranslate, 
+            cache_manager: CacheManager, 
+            pipeline: ComicTranslatePipeline,
+        ):
+        
         self.main_page = main_page
         self.cache_manager = cache_manager
         self.pipeline = pipeline

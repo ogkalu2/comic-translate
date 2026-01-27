@@ -1,9 +1,7 @@
 import os
-import json
 import shutil
 import logging
 import requests
-import traceback
 import numpy as np
 import imkit as imk
 from datetime import datetime

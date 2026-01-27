@@ -460,10 +460,8 @@ class ComicTranslate(ComicTranslateUI):
 
     def start_batch_process(self):
         for image_path in self.image_files:
-            source_lang = self.image_states[image_path]['source_lang']
             target_lang = self.image_states[image_path]['target_lang']
-
-            if not validate_settings(self, source_lang, target_lang):
+            if not validate_settings(self, target_lang):
                 return
             
         self.translate_button.setEnabled(False)
@@ -486,9 +484,8 @@ class ComicTranslate(ComicTranslateUI):
 
         # validate each
         for path in selected_paths:
-            src = self.image_states[path]['source_lang']
             tgt = self.image_states[path]['target_lang']
-            if not validate_settings(self, src, tgt):
+            if not validate_settings(self, tgt):
                 return
             
         self.selected_batch = selected_paths
@@ -579,9 +576,8 @@ class ComicTranslate(ComicTranslateUI):
             )
 
     def translate_image(self, single_block=False):
-        source_lang = self.s_combo.currentText()
         target_lang = self.t_combo.currentText()
-        if not is_there_text(self.blk_list) or not validate_translator(self, source_lang, target_lang):
+        if not is_there_text(self.blk_list) or not validate_translator(self, target_lang):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()

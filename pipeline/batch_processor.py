@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import json
 import shutil
@@ -6,6 +8,7 @@ import logging
 import traceback
 import imkit as imk
 import time
+from typing import TYPE_CHECKING
 from datetime import datetime
 from typing import List
 from PySide6.QtGui import QColor
@@ -24,7 +27,13 @@ from modules.utils.device import resolve_device
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from .cache_manager import CacheManager
+from .block_detection import BlockDetectionHandler
+from .inpainting import InpaintingHandler
+from .ocr_handler import OCRHandler
 
+if TYPE_CHECKING:
+    from controller import ComicTranslate
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +43,11 @@ class BatchProcessor:
     
     def __init__(
             self, 
-            main_page, 
-            cache_manager, 
-            block_detection_handler, 
-            inpainting_handler, 
-            ocr_handler
+            main_page: ComicTranslate, 
+            cache_manager: CacheManager, 
+            block_detection_handler: BlockDetectionHandler, 
+            inpainting_handler: InpaintingHandler, 
+            ocr_handler: OCRHandler 
         ):
         
         self.main_page = main_page
