@@ -316,7 +316,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        translator = settings.value('translator', 'GPT-4.1')
+        translator = settings.value('translator', 'Gemini-2.5-Flash')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         if self.ui.translator_combo.findText(translated_translator) != -1:
             self.ui.translator_combo.setCurrentText(translated_translator)
@@ -330,7 +330,7 @@ class SettingsPage(QtWidgets.QWidget):
         else:
             self.ui.ocr_combo.setCurrentIndex(-1)
 
-        inpainter = settings.value('inpainter', 'LaMa')
+        inpainter = settings.value('inpainter', 'AOT')
         translated_inpainter = self.ui.reverse_mappings.get(inpainter, inpainter)
         if self.ui.inpainter_combo.findText(translated_inpainter) != -1:
             self.ui.inpainter_combo.setCurrentText(translated_inpainter)

@@ -77,11 +77,11 @@ class SettingsPageUI(QtWidgets.QWidget):
         ]
         
         self.supported_translators = [
+            self.tr("Gemini-2.5-Flash"),
             self.tr("GPT-4.1"),
             self.tr("GPT-4.1-mini"),
             self.tr("Claude-4.5-Sonnet"),
             self.tr("Claude-4.5-Haiku"),
-            self.tr("Gemini-2.5-Flash"),
             self.tr("Deepseek-v3"),
             self.tr("Custom"),
         ]
