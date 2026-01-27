@@ -2,6 +2,74 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="it_IT">
 <context>
+    <name></name>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="51"/>
+        <source>Microsoft OCR</source>
+        <translation>Microsoft OCR</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="52"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="97"/>
+        <source>Microsoft Azure</source>
+        <translation>Microsoft Azure</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="58"/>
+        <source>Google Cloud Vision</source>
+        <translation>Google Cloud Vision</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="59"/>
+        <source>Google Cloud</source>
+        <translation>Google Cloud</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="65"/>
+        <source>GPT-4.1-mini</source>
+        <translation>GPT-4.1-mini</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="66"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="109"/>
+        <source>Open AI GPT</source>
+        <translation>Open AI GPT</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="90"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="91"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="137"/>
+        <source>DeepL</source>
+        <translation>DeepL</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="96"/>
+        <source>Microsoft Translator</source>
+        <translation>Microsoft Translator</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="102"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="103"/>
+        <source>Yandex</source>
+        <translation>Yandex</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="115"/>
+        <source>Google Gemini</source>
+        <translation>Google Gemini</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="121"/>
+        <source>Anthropic Claude</source>
+        <translation>Anthropic Claude</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="128"/>
+        <source>Custom</source>
+        <translation>Personalizzato</translation>
+    </message>
+</context>
+<context>
     <name>AboutPage</name>
     <message>
         <location filename="../../app/ui/settings/about_page.py" line="14"/>
@@ -874,6 +942,16 @@ Accedi tramite Impostazioni &gt; Account per usare i crediti, oppure configura l
         <source>Close</source>
         <translation>Chiudi</translation>
     </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="47"/>
+        <source>Text Recognition model</source>
+        <translation>Modello di riconoscimento testo</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="83"/>
+        <source>Translator</source>
+        <translation>Traduttore</translation>
+    </message>
 </context>
 <context>
     <name>PageListView</name>
@@ -1163,7 +1241,7 @@ Accedi tramite Impostazioni &gt; Account per usare i crediti, oppure configura l
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
@@ -1282,25 +1360,25 @@ Accedi tramite Impostazioni &gt; Account per usare i crediti, oppure configura l
         <translation>Yandex</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="126"/>
         <source>Gemini-2.5-Flash</source>
         <translation>Gemini-2.5-Flash</translation>
@@ -1567,9 +1645,13 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
         <translation>Traduttore</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="30"/>
         <source>OCR</source>
-        <translation>OCR</translation>
+        <translation type="vanished">OCR</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/tools_page.py" line="30"/>
+        <source>Text Recognition</source>
+        <translation>Riconoscimento testo</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/tools_page.py" line="33"/>
@@ -1646,6 +1728,14 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
     </message>
 </context>
 <context>
+    <name>main_page</name>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="138"/>
+        <source>Thai</source>
+        <translation>Thailandese</translation>
+    </message>
+</context>
+<context>
     <name>self.settings_page.ui</name>
     <message>
         <location filename="../../app/ui/main_window.py" line="702"/>
@@ -1672,6 +1762,19 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
     <message>
         <source>Please restart for the changes to take effect.</source>
         <translation type="vanished">Riavvia per rendere effettive le modifiche.</translation>
+    </message>
+</context>
+<context>
+    <name>settings_page.ui</name>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="16"/>
+        <source>Resize</source>
+        <translation>Ridimensiona</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="18"/>
+        <source>Crop</source>
+        <translation>Ritaglia</translation>
     </message>
 </context>
 </TS>

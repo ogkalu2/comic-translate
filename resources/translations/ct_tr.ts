@@ -2,6 +2,74 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="tr_TR">
 <context>
+    <name></name>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="51"/>
+        <source>Microsoft OCR</source>
+        <translation>Microsoft OCR</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="52"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="97"/>
+        <source>Microsoft Azure</source>
+        <translation>Microsoft Azure</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="58"/>
+        <source>Google Cloud Vision</source>
+        <translation>Google Cloud Vision</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="59"/>
+        <source>Google Cloud</source>
+        <translation>Google Cloud</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="65"/>
+        <source>GPT-4.1-mini</source>
+        <translation>GPT-4.1-mini</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="66"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="109"/>
+        <source>Open AI GPT</source>
+        <translation>Open AI GPT</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="90"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="91"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="137"/>
+        <source>DeepL</source>
+        <translation>DeepL</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="96"/>
+        <source>Microsoft Translator</source>
+        <translation>Microsoft Translator</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="102"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="103"/>
+        <source>Yandex</source>
+        <translation>Yandex</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="115"/>
+        <source>Google Gemini</source>
+        <translation>Google Gemini</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="121"/>
+        <source>Anthropic Claude</source>
+        <translation>Anthropic Claude</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="128"/>
+        <source>Custom</source>
+        <translation>Özel</translation>
+    </message>
+</context>
+<context>
     <name>AboutPage</name>
     <message>
         <location filename="../../app/ui/settings/about_page.py" line="14"/>
@@ -763,6 +831,16 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="47"/>
+        <source>Text Recognition model</source>
+        <translation>Metin Tanıma Modeli</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="83"/>
+        <source>Translator</source>
+        <translation>Çevirmen</translation>
+    </message>
 </context>
 <context>
     <name>PageListView</name>
@@ -1048,7 +1126,7 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
@@ -1157,25 +1235,25 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
         <translation>Yandex</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="126"/>
         <source>Gemini-2.5-Flash</source>
         <translation>Gemini-2.5-Flash</translation>
@@ -1282,9 +1360,13 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
         <translation>Çevirmen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="30"/>
         <source>OCR</source>
-        <translation>OCR</translation>
+        <translation type="vanished">OCR</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/tools_page.py" line="30"/>
+        <source>Text Recognition</source>
+        <translation>Metin Tanıma</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/tools_page.py" line="33"/>
@@ -1361,6 +1443,14 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
     </message>
 </context>
 <context>
+    <name>main_page</name>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="138"/>
+        <source>Thai</source>
+        <translation>Tayca</translation>
+    </message>
+</context>
+<context>
     <name>self.settings_page.ui</name>
     <message>
         <location filename="../../app/ui/main_window.py" line="702"/>
@@ -1377,6 +1467,19 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_page.py" line="179"/>
+        <source>Crop</source>
+        <translation>Kırp</translation>
+    </message>
+</context>
+<context>
+    <name>settings_page.ui</name>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="16"/>
+        <source>Resize</source>
+        <translation>Yeniden Boyutlandır</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="18"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
