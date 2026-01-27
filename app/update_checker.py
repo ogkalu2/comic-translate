@@ -6,7 +6,7 @@ import requests
 import subprocess
 import tempfile
 from packaging import version
-from PySide6.QtCore import QObject, Signal, QThread
+from PySide6.QtCore import QObject, Signal, QThread, QStandardPaths
 from app.version import __version__
 
 logger = logging.getLogger(__name__)
@@ -163,9 +163,16 @@ class DownloadWorker(QObject):
 
     def run(self):
         try:
-            # Download to temp directory
-            temp_dir = tempfile.gettempdir()
-            save_path = os.path.join(temp_dir, self.filename)
+            # Download to Downloads directory
+            download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
+            if not download_dir:
+                download_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+            
+            # Fallback to temp if Downloads doesn't exist
+            if not os.path.exists(download_dir):
+                download_dir = tempfile.gettempdir()
+
+            save_path = os.path.join(download_dir, self.filename)
             
             response = requests.get(self.url, stream=True, timeout=30)
             response.raise_for_status()
