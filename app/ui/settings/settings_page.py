@@ -835,7 +835,7 @@ class SettingsPage(QtWidgets.QWidget):
         msg_box.setTextInteractionFlags(Qt.TextBrowserInteraction)
         msg_box.setText(self.tr("A new version {version} is available.").format(version=version))
         link_text = self.tr("Release Notes")
-        msg_box.setInformativeText(f'<a href="{release_url}">{link_text}</a>')
+        msg_box.setInformativeText(f'<a href="{release_url}" style="color: #4da6ff;">{link_text}</a>')
         
         download_btn = msg_box.addButton(self.tr("Yes"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
         cancel_btn = msg_box.addButton(self.tr("No"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
@@ -883,7 +883,7 @@ class SettingsPage(QtWidgets.QWidget):
     def start_download(self, url):
         # Create a progress dialog
         self.update_dialog = QtWidgets.QProgressDialog(self.tr("Downloading update..."), self.tr("Cancel"), 0, 100, self)
-        self.update_dialog.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+        self.update_dialog.setWindowModality(Qt.WindowModality.WindowModal)
         self.update_dialog.show()
         
         filename = url.split("/")[-1]
