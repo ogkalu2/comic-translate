@@ -316,7 +316,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        translator = settings.value('translator', 'Gemini-2.5-Flash')
+        translator = settings.value('translator', 'Gemini-3.0-Flash')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         if self.ui.translator_combo.findText(translated_translator) != -1:
             self.ui.translator_combo.setCurrentText(translated_translator)

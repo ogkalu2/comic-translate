@@ -61,7 +61,7 @@ class Translator:
             self.settings.ui.tr("GPT-4.1-mini"): "GPT-4.1-mini",
             self.settings.ui.tr("Claude-4.5-Sonnet"): "Claude-4.5-Sonnet",
             self.settings.ui.tr("Claude-4.5-Haiku"): "Claude-4.5-Haiku",
-            self.settings.ui.tr("Gemini-2.5-Flash"): "Gemini-2.5-Flash",
+            self.settings.ui.tr("Gemini-3.0-Flash"): "Gemini-3.0-Flash",
             self.settings.ui.tr("Gemini-2.5-Pro"): "Gemini-2.5-Pro",
             self.settings.ui.tr("Microsoft Translator"): "Microsoft Translator",
             self.settings.ui.tr("DeepL"): "DeepL",
