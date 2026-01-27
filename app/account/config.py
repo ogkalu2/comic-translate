@@ -4,7 +4,7 @@ dev_api_base_url = "http://127.0.0.1:8000"
 dev_frontend_base_url = "http://127.0.0.1:3000"
 
 # Production URLs
-prod_api_base_url = "https://www.comic-translate.com"
+prod_api_base_url = "https://api.comic-translate.com"
 prod_frontend_base_url = "https://www.comic-translate.com"
 
 API_BASE_URL = prod_api_base_url
