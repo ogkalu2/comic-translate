@@ -592,7 +592,7 @@ class SettingsPage(QtWidgets.QWidget):
                 self.tr("Please sign in to purchase or manage credits.")
             )
             return
-        pricing_url = f"{FRONTEND_BASE_URL}/pricing?source=desktop"
+        pricing_url = f"{FRONTEND_BASE_URL}/pricing/?source=desktop"
         if QtGui.QDesktopServices.openUrl(QUrl(pricing_url)):
             self._start_pricing_refresh_watch()
         else:

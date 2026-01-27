@@ -42,11 +42,11 @@ class AccountPage(QtWidgets.QWidget):
         
         # Link to credits costs (logged out)
         link_text = self.tr("See model credit costs")
-        self.view_costs_link_out = MLabel(f'<a href="{FRONTEND_BASE_URL}/pricing/credits" style="color: #909090; text-decoration: none; font-size: 11px;">{link_text}</a>')
+        self.view_costs_link_out = MLabel(f'<a href="{FRONTEND_BASE_URL}/pricing/credits/" style="color: #909090; text-decoration: none; font-size: 11px;">{link_text}</a>')
         self.view_costs_link_out.setOpenExternalLinks(True)
         self.view_costs_link_out.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.view_costs_link_out.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.view_costs_link_out.setToolTip(f"{FRONTEND_BASE_URL}/pricing/credits")
+        self.view_costs_link_out.setToolTip(f"{FRONTEND_BASE_URL}/pricing/credits/")
         logged_out_layout.addSpacing(10)
         logged_out_layout.addWidget(self.view_costs_link_out)
         
@@ -86,11 +86,11 @@ class AccountPage(QtWidgets.QWidget):
         # Link to credits costs (logged in) - below info block
         # Link to credits costs (logged in) - below info block
         link_text_in = self.tr("See model credit costs")
-        self.view_costs_link_in = MLabel(f'<a href="{FRONTEND_BASE_URL}/pricing/credits" style="color: #909090; text-decoration: none; font-size: 11px;">{link_text_in}</a>')
+        self.view_costs_link_in = MLabel(f'<a href="{FRONTEND_BASE_URL}/pricing/credits/" style="color: #909090; text-decoration: none; font-size: 11px;">{link_text_in}</a>')
         self.view_costs_link_in.setOpenExternalLinks(True)
         self.view_costs_link_in.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.view_costs_link_in.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
-        self.view_costs_link_in.setToolTip(f"{FRONTEND_BASE_URL}/pricing/credits")
+        self.view_costs_link_in.setToolTip(f"{FRONTEND_BASE_URL}/pricing/credits/")
 
         self.buy_credits_button = MPushButton(self.tr("Buy Credits"))
         self.buy_credits_button.setFixedWidth(150)
