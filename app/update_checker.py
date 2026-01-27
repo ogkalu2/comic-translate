@@ -1,5 +1,4 @@
 import os
-import sys
 import platform
 import logging
 import requests
@@ -84,7 +83,9 @@ class UpdateChecker(QObject):
         try:
             system = platform.system()
             if system == "Windows":
-                subprocess.Popen([file_path], shell=True)
+                # Use os.startfile; Windows will parse the installer manifest
+                # and trigger UAC only if the installer requires it.
+                os.startfile(file_path)
             elif system == "Darwin": # macOS
                 subprocess.Popen(["open", file_path])
         except Exception as e:
