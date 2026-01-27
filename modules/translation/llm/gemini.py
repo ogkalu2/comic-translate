@@ -32,7 +32,7 @@ class GeminiTranslation(BaseLLMTranslation):
         self.api_key = credentials.get('api_key', '')
         
         # Map friendly model name to API model name
-        self.model_api = MODEL_MAP.get(self.model_name)
+        self.model_api_name = MODEL_MAP.get(self.model_name)
     
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
         """
@@ -47,15 +47,14 @@ class GeminiTranslation(BaseLLMTranslation):
             Translated text from the model
         """
         # Create API endpoint URL
-        url = f"{self.api_base_url}/{self.model_api}:generateContent?key={self.api_key}"
-        
+        url = f"{self.api_base_url}/{self.model_api_name}:generateContent?key={self.api_key}"
         
         # Setup generation config
         if self.model_name in ["Gemini-3.0-Flash"]:
             thinking_level = "minimal"
         else:
             thinking_level = "low"
-            
+
         generation_config = {
             "temperature": self.temperature,
             "maxOutputTokens": self.max_tokens,
