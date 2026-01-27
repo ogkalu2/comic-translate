@@ -3,6 +3,7 @@ from modules.inpainting.mi_gan import MIGAN
 from modules.inpainting.aot import AOT
 from modules.inpainting.schema import Config
 from app.ui.messages import Messages
+from PySide6.QtCore import QCoreApplication
 
 inpaint_map = {
     "LaMa": LaMa,
@@ -43,7 +44,7 @@ def validate_ocr(main_page, source_lang):
         return all(creds.get(k) for k in keys)
 
     if not ocr_tool:
-        Messages.show_missing_tool_error(main_page, "OCR model")
+        Messages.show_missing_tool_error(main_page, QCoreApplication.translate("Messages", "Text Recognition model"))
         return False
 
     # Microsoft OCR: needs api_key_ocr and endpoint
@@ -79,7 +80,7 @@ def validate_translator(main_page, source_lang, target_lang):
     translator_tool = settings['tools']['translator']
 
     if not translator_tool:
-        Messages.show_missing_tool_error(main_page, "Translator")
+        Messages.show_missing_tool_error(main_page, QCoreApplication.translate("Messages", "Translator"))
         return False
 
     def has_access(service, key_field):
