@@ -29,11 +29,21 @@ class UpdateChecker(QObject):
         self._worker_thread = None
         self._worker = None
 
+    def _safe_stop_thread(self):
+        try:
+            if self._worker_thread and self._worker_thread.isRunning():
+                self._worker_thread.quit()
+                self._worker_thread.wait()
+        except RuntimeError:
+            # The C++ object has been deleted
+            pass
+        except Exception as e:
+            logger.error(f"Error stopping thread: {e}")
+        self._worker_thread = None
+
     def check_for_updates(self):
         """Starts the check in a background thread."""
-        if self._worker_thread and self._worker_thread.isRunning():
-            self._worker_thread.quit()
-            self._worker_thread.wait()
+        self._safe_stop_thread()
             
         self._worker_thread = QThread()
         self._worker = UpdateWorker(self.REPO_OWNER, self.REPO_NAME, __version__)
@@ -52,9 +62,7 @@ class UpdateChecker(QObject):
 
     def download_installer(self, url, filename):
         """Starts the download in a background thread."""
-        if self._worker_thread and self._worker_thread.isRunning():
-            self._worker_thread.quit()
-            self._worker_thread.wait()
+        self._safe_stop_thread()
 
         self._worker_thread = QThread()
         self._worker = DownloadWorker(url, filename)
@@ -84,15 +92,7 @@ class UpdateChecker(QObject):
 
     def shutdown(self):
         """Stops any active worker thread (best-effort)."""
-        try:
-            thread = self._worker_thread
-        except Exception:
-            thread = None
-
-        if thread and thread.isRunning():
-            thread.quit()
-            thread.wait(2000)
-
+        self._safe_stop_thread()
         self._worker_thread = None
         self._worker = None
 
