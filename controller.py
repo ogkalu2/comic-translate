@@ -553,8 +553,7 @@ class ComicTranslate(ComicTranslateUI):
         self.on_manual_finished()
 
     def ocr(self, single_block=False):
-        source_lang = self.s_combo.currentText()
-        if not validate_ocr(self, source_lang):
+        if not validate_ocr(self):
             return
         self.loading.setVisible(True)
         self.disable_hbutton_group()
