@@ -39,7 +39,7 @@ class DetectionEngineFactory:
             'RT-DETR-v2': cls._create_rtdetr_v2,
         }
         
-        # Get the appropriate factory method, defaulting to RT-DETR-V2
+        # Get the appropriate factory method, defaulting to RT-DETR-v2
         factory_method = engine_factories.get(model_name, cls._create_rtdetr_v2)
 
         # Create and cache the engine
@@ -49,7 +49,7 @@ class DetectionEngineFactory:
 
     @staticmethod
     def _create_rtdetr_v2(settings, backend: str = 'onnx'):
-        """Create and initialize RT-DETR-V2 detection engine."""
+        """Create and initialize RT-DETR-v2 detection engine."""
         device = resolve_device(settings.is_gpu_enabled(), backend)
         
         if backend.lower() == 'torch' and torch_available():

@@ -15,7 +15,7 @@ project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 
 class RTDetrV2ONNXDetection(DetectionEngine):
-    """RT-DETR-V2 ONNX backend detection engine.
+    """RT-DETR-v2 ONNX backend detection engine.
     """
 
     def __init__(self, settings=None):

@@ -15,7 +15,7 @@ current_file_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 class RTDetrV2Detection(DetectionEngine):
-    """Detection engine using a fine-tuned RT-DETR-V2 model from Hugging Face."""
+    """Detection engine using a fine-tuned RT-DETR-v2 model from Hugging Face."""
     
     def __init__(self, settings=None):
         super().__init__(settings)
