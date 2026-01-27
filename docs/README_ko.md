@@ -141,8 +141,8 @@ raise RarCannotExec("Cannot find working tool")
 
 지원되는 모든 언어에 사용할 수 있습니다.
 
-* [Google Cloud Vision](https://cloud.google.com/vision/docs/ocr)
-* [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
+* Gemini 2.0 Flash
+* Microsoft Azure Vision
 
 ### 이미지 복원
 분할된 텍스트를 제거하기 위해

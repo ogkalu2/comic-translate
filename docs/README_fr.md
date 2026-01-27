@@ -144,8 +144,8 @@ Optionnel :
 
 Ces outils peuvent être utilisés pour n'importe laquelle des langues prises en charge.
 
-* [Google Cloud Vision](https://cloud.google.com/vision/docs/ocr)
-* [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
+* Gemini 2.0 Flash
+* Microsoft Azure Vision
 
 ### Effacement
 Pour supprimer le texte segmenté

@@ -147,8 +147,8 @@ Optional:
 
 These can be used for any of the supported languages.
 
-* [Google Cloud Vision](https://cloud.google.com/vision/docs/ocr)
-* [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
+* Gemini 2.0 Flash
+* Microsoft Azure Vision
 
 ### Inpainting
 To remove the segmented text

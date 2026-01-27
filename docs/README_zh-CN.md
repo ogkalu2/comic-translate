@@ -141,8 +141,8 @@ raise RarCannotExec("Cannot find working tool")
 
 这些可以用于任何支持的语言。
 
-* [Google Cloud Vision](https://cloud.google.com/vision/docs/ocr)
-* [Microsoft Azure Vision](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/overview-ocr)
+* Gemini 2.0 Flash
+* Microsoft Azure Vision
 
 ### 图像修复
 去除分割后的文本
