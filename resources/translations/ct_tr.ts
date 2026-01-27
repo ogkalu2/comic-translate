@@ -38,37 +38,37 @@
     </message>
     <message>
         <location filename="../../app/ui/settings/account_page.py" line="44"/>
-        <location filename="../../app/ui/settings/account_page.py" line="87"/>
+        <location filename="../../app/ui/settings/account_page.py" line="88"/>
         <source>See model credit costs</source>
         <translation>Model kredi maliyetlerini gör</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="60"/>
+        <location filename="../../app/ui/settings/account_page.py" line="61"/>
         <source>Account Information</source>
         <translation>Hesap Bilgileri</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="63"/>
+        <location filename="../../app/ui/settings/account_page.py" line="64"/>
         <source>Email:</source>
         <translation>E-posta:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="70"/>
+        <location filename="../../app/ui/settings/account_page.py" line="71"/>
         <source>Subscription Tier:</source>
         <translation>Abonelik Seviyesi:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="77"/>
+        <location filename="../../app/ui/settings/account_page.py" line="78"/>
         <source>Credits:</source>
         <translation>Krediler:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="93"/>
+        <location filename="../../app/ui/settings/account_page.py" line="95"/>
         <source>Buy Credits</source>
         <translation>Kredi Satın Al</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="96"/>
+        <location filename="../../app/ui/settings/account_page.py" line="98"/>
         <source>Sign Out</source>
         <translation>Çıkış Yap</translation>
     </message>
@@ -808,29 +808,29 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="500"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="501"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="509"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="839"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
         <source>Yes</source>
         <translation>Evet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="511"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="841"/>
         <source>No</source>
         <translation>Hayır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="518"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
         <source>Restart Required</source>
         <translation>Yeniden Başlatma Gerekli</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="520"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>Dil değişikliklerinin geçerli olması için lütfen uygulamayı yeniden başlatın.</translation>
     </message>
@@ -839,33 +839,33 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
         <translation type="vanished">Giriş Yapılıyor...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="556"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="557"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>Giriş işlemi başlatılamadı.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="573"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="801"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="574"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="802"/>
         <source>Sign In</source>
         <translation>Giriş Yap</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
         <source>Sign In Required</source>
         <translation>Giriş Gerekli</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="592"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>Kredi satın almak veya yönetmek için lütfen giriş yapın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="600"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
         <source>Unable to Open Browser</source>
         <translation>Tarayıcı Açılamıyor</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="602"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>Lütfen fiyatlandırma sayfasını tarayıcınızda açın: {url}</translation>
     </message>
@@ -878,143 +878,147 @@ Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &
         <translation type="vanished">{email} olarak başarıyla giriş yapıldı.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="548"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="549"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
         <source>Sign In Error</source>
         <translation>Giriş Hatası</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="675"/>
         <source>Authentication failed: {error}</source>
         <translation>Kimlik doğrulama başarısız: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="688"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
         <source>Confirm Sign Out</source>
         <translation>Çıkışı Onayla</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="690"/>
         <source>Are you sure you want to sign out?</source>
         <translation>Çıkış yapmak istediğinizden emin misiniz?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="693"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="694"/>
         <source>Signing Out...</source>
         <translation>Çıkış Yapılıyor...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="716"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="794"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="717"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="795"/>
         <source>Sign Out</source>
         <translation>Çıkış Yap</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
         <source>Session Expired</source>
         <translation>Oturum Süresi Doldu</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="734"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="748"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="751"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="770"/>
         <source>N/A</source>
         <translation>Yok</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="761"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
         <source>Free</source>
         <translation>Ücretsiz</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="776"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
         <source>Subscription</source>
         <translation>Abonelik</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="779"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="780"/>
         <source>One-time</source>
         <translation>Tek seferlik</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="782"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="783"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="788"/>
         <source>Total</source>
         <translation>Toplam</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="816"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="817"/>
         <source>Checking...</source>
         <translation>Kontrol ediliyor...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="822"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="859"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="823"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="860"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Check for Updates</source>
         <translation>Güncellemeleri Kontrol Et</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="832"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
         <source>Update Available</source>
         <translation>Güncelleme Mevcut</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="835"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
         <source>A new version {version} is available.</source>
         <translation>Yeni bir sürüm {version} mevcut.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="837"/>
         <source>Release Notes</source>
         <translation>Sürüm Notları</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="844"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="845"/>
+        <source>Skip This Version</source>
+        <translation>Bu Sürümü Atla</translation>
+    </message>
+    <message>
         <source>Don&apos;t Ask Again</source>
-        <translation>Bir Daha Sorma</translation>
+        <translation type="vanished">Bir Daha Sorma</translation>
     </message>
     <message>
         <source>Download &amp;&amp; Install</source>
         <translation type="vanished">İndir &amp;&amp; Kur</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="862"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
         <source>Up to Date</source>
         <translation>Güncel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="864"/>
         <source>You are using the latest version.</source>
         <translation>En son sürümü kullanıyorsunuz.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="878"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="879"/>
         <source>Update Error</source>
         <translation>Güncelleme Hatası</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
         <source>Downloading update...</source>
         <translation>Güncelleme indiriliyor...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="901"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
         <source>Download Complete</source>
         <translation>İndirme Tamamlandı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="903"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>Yükleyici {path} konumuna indirildi. Şimdi çalıştırılsın mı?</translation>
     </message>
@@ -1367,12 +1371,12 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="176"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="177"/>
         <source>Resize</source>
         <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="178"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="179"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>

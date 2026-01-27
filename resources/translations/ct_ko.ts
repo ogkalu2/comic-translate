@@ -38,37 +38,37 @@
     </message>
     <message>
         <location filename="../../app/ui/settings/account_page.py" line="44"/>
-        <location filename="../../app/ui/settings/account_page.py" line="87"/>
+        <location filename="../../app/ui/settings/account_page.py" line="88"/>
         <source>See model credit costs</source>
         <translation>모델 크레딧 비용 보기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="60"/>
+        <location filename="../../app/ui/settings/account_page.py" line="61"/>
         <source>Account Information</source>
         <translation>계정 정보</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="63"/>
+        <location filename="../../app/ui/settings/account_page.py" line="64"/>
         <source>Email:</source>
         <translation>이메일:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="70"/>
+        <location filename="../../app/ui/settings/account_page.py" line="71"/>
         <source>Subscription Tier:</source>
         <translation>구독 등급:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="77"/>
+        <location filename="../../app/ui/settings/account_page.py" line="78"/>
         <source>Credits:</source>
         <translation>크레딧:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="93"/>
+        <location filename="../../app/ui/settings/account_page.py" line="95"/>
         <source>Buy Credits</source>
         <translation>크레딧 구매</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="96"/>
+        <location filename="../../app/ui/settings/account_page.py" line="98"/>
         <source>Sign Out</source>
         <translation>로그아웃</translation>
     </message>
@@ -919,29 +919,29 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="500"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="501"/>
         <source>OK</source>
         <translation>확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="509"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="839"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
         <source>Yes</source>
         <translation>예</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="511"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="841"/>
         <source>No</source>
         <translation>아니오</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="518"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
         <source>Restart Required</source>
         <translation>재시작 필요</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="520"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>언어 변경 사항을 적용하려면 애플리케이션을 다시 시작하십시오.</translation>
     </message>
@@ -950,33 +950,33 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
         <translation type="vanished">로그인 중...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="556"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="557"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>로그인 프로세스 시작에 실패했습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="573"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="801"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="574"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="802"/>
         <source>Sign In</source>
         <translation>로그인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
         <source>Sign In Required</source>
         <translation>로그인 필요</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="592"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>크레딧을 구매하거나 관리하려면 로그인하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="600"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
         <source>Unable to Open Browser</source>
         <translation>브라우저를 열 수 없습니다</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="602"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>브라우저에서 가격 페이지를 여세요: {url}</translation>
     </message>
@@ -989,143 +989,147 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
         <translation type="vanished">{email}로 성공적으로 로그인했습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="548"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="549"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
         <source>Sign In Error</source>
         <translation>로그인 오류</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="675"/>
         <source>Authentication failed: {error}</source>
         <translation>인증 실패: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="688"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
         <source>Confirm Sign Out</source>
         <translation>로그아웃 확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="690"/>
         <source>Are you sure you want to sign out?</source>
         <translation>정말로 로그아웃하시겠습니까?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="693"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="694"/>
         <source>Signing Out...</source>
         <translation>로그아웃 중...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="716"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="794"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="717"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="795"/>
         <source>Sign Out</source>
         <translation>로그아웃</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
         <source>Session Expired</source>
         <translation>세션 만료</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="734"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>세션이 만료되었습니다. 다시 로그인하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="748"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="751"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="770"/>
         <source>N/A</source>
         <translation>해당 없음</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="761"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
         <source>Free</source>
         <translation>무료</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="776"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
         <source>Subscription</source>
         <translation>구독</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="779"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="780"/>
         <source>One-time</source>
         <translation>일회성</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="782"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="783"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="788"/>
         <source>Total</source>
         <translation>총합</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="816"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="817"/>
         <source>Checking...</source>
         <translation>확인 중...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="822"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="859"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="823"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="860"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Check for Updates</source>
         <translation>업데이트 확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="832"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
         <source>Update Available</source>
         <translation>업데이트 가능</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="835"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
         <source>A new version {version} is available.</source>
         <translation>새 버전 {version}을(를) 사용할 수 있습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="837"/>
         <source>Release Notes</source>
         <translation>릴리스 노트</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="844"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="845"/>
+        <source>Skip This Version</source>
+        <translation>이번 버전 건너뛰기</translation>
+    </message>
+    <message>
         <source>Don&apos;t Ask Again</source>
-        <translation>다시 묻지 않기</translation>
+        <translation type="vanished">다시 묻지 않기</translation>
     </message>
     <message>
         <source>Download &amp;&amp; Install</source>
         <translation type="vanished">다운로드 및 설치</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="862"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
         <source>Up to Date</source>
         <translation>최신 상태</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="864"/>
         <source>You are using the latest version.</source>
         <translation>최신 버전을 사용 중입니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="878"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="879"/>
         <source>Update Error</source>
         <translation>업데이트 오류</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
         <source>Downloading update...</source>
         <translation>업데이트 다운로드 중...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="901"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
         <source>Download Complete</source>
         <translation>다운로드 완료</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="903"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>설치 관리자가 {path}(으)로 다운로드되었습니다. 지금 실행하시겠습니까?</translation>
     </message>
@@ -1648,12 +1652,12 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="176"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="177"/>
         <source>Resize</source>
         <translation>크기 조정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="178"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="179"/>
         <source>Crop</source>
         <translation>크롭</translation>
     </message>

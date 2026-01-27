@@ -38,37 +38,37 @@
     </message>
     <message>
         <location filename="../../app/ui/settings/account_page.py" line="44"/>
-        <location filename="../../app/ui/settings/account_page.py" line="87"/>
+        <location filename="../../app/ui/settings/account_page.py" line="88"/>
         <source>See model credit costs</source>
         <translation>Посмотреть стоимость кредитов модели</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="60"/>
+        <location filename="../../app/ui/settings/account_page.py" line="61"/>
         <source>Account Information</source>
         <translation>Информация об аккаунте</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="63"/>
+        <location filename="../../app/ui/settings/account_page.py" line="64"/>
         <source>Email:</source>
         <translation>Электронная почта:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="70"/>
+        <location filename="../../app/ui/settings/account_page.py" line="71"/>
         <source>Subscription Tier:</source>
         <translation>Уровень подписки:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="77"/>
+        <location filename="../../app/ui/settings/account_page.py" line="78"/>
         <source>Credits:</source>
         <translation>Кредиты:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="93"/>
+        <location filename="../../app/ui/settings/account_page.py" line="95"/>
         <source>Buy Credits</source>
         <translation>Купить кредиты</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="96"/>
+        <location filename="../../app/ui/settings/account_page.py" line="98"/>
         <source>Sign Out</source>
         <translation>Выйти</translation>
     </message>
@@ -919,29 +919,29 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="500"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="501"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="509"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="839"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
         <source>Yes</source>
         <translation>Да</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="511"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="841"/>
         <source>No</source>
         <translation>Нет</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="518"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
         <source>Restart Required</source>
         <translation>Необходим перезапуск</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="520"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>Пожалуйста, перезапустите приложение, чтобы изменения языка вступили в силу.</translation>
     </message>
@@ -950,33 +950,33 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
         <translation type="vanished">Вход...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="556"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="557"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>Не удалось начать процесс входа.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="573"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="801"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="574"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="802"/>
         <source>Sign In</source>
         <translation>Войти</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
         <source>Sign In Required</source>
         <translation>Требуется вход</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="592"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>Пожалуйста, войдите, чтобы купить или управлять кредитами.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="600"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
         <source>Unable to Open Browser</source>
         <translation>Не удалось открыть браузер</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="602"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>Пожалуйста, откройте страницу с ценами в вашем браузере: {url}</translation>
     </message>
@@ -989,143 +989,147 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
         <translation type="vanished">Вы успешно вошли как {email}.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="548"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="549"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="673"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
         <source>Sign In Error</source>
         <translation>Ошибка входа</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="675"/>
         <source>Authentication failed: {error}</source>
         <translation>Ошибка аутентификации: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="688"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
         <source>Confirm Sign Out</source>
         <translation>Подтвердите выход</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="690"/>
         <source>Are you sure you want to sign out?</source>
         <translation>Вы уверены, что хотите выйти?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="693"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="694"/>
         <source>Signing Out...</source>
         <translation>Выход...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="716"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="794"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="717"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="795"/>
         <source>Sign Out</source>
         <translation>Выйти</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
         <source>Session Expired</source>
         <translation>Сессия истекла</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="734"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>Ваша сессия истекла. Пожалуйста, войдите снова.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="748"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="751"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="770"/>
         <source>N/A</source>
         <translation>Н/Д</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="761"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
         <source>Free</source>
         <translation>Бесплатно</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="776"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
         <source>Subscription</source>
         <translation>Подписка</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="779"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="780"/>
         <source>One-time</source>
         <translation>Одноразовая</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="782"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="783"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="788"/>
         <source>Total</source>
         <translation>Всего</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="816"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="817"/>
         <source>Checking...</source>
         <translation>Проверка...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="822"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="859"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="823"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="860"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Check for Updates</source>
         <translation>Проверить обновления</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="832"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
         <source>Update Available</source>
         <translation>Доступно обновление</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="835"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
         <source>A new version {version} is available.</source>
         <translation>Доступна новая версия {version}.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="837"/>
         <source>Release Notes</source>
         <translation>Примечания к выпуску</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="844"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="845"/>
+        <source>Skip This Version</source>
+        <translation>Пропустить эту версию</translation>
+    </message>
+    <message>
         <source>Don&apos;t Ask Again</source>
-        <translation>Больше не спрашивать</translation>
+        <translation type="vanished">Больше не спрашивать</translation>
     </message>
     <message>
         <source>Download &amp;&amp; Install</source>
         <translation type="vanished">Скачать и установить</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="862"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
         <source>Up to Date</source>
         <translation>Актуальная версия</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="864"/>
         <source>You are using the latest version.</source>
         <translation>Вы используете последнюю версию.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="878"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="879"/>
         <source>Update Error</source>
         <translation>Ошибка обновления</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="884"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
         <source>Downloading update...</source>
         <translation>Загрузка обновления...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="901"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
         <source>Download Complete</source>
         <translation>Загрузка завершена</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="903"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>Установщик загружен в {path}. Запустить сейчас?</translation>
     </message>
@@ -1652,12 +1656,12 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="176"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="177"/>
         <source>Resize</source>
         <translation>Изменить размер</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="178"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="179"/>
         <source>Crop</source>
         <translation>Обрезать</translation>
     </message>

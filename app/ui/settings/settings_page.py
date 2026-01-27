@@ -842,15 +842,15 @@ class SettingsPage(QtWidgets.QWidget):
         
         dotted_ask_btn = None
         if self._is_background_check:
-             dotted_ask_btn = msg_box.addButton(self.tr("Don't Ask Again"), QtWidgets.QMessageBox.ButtonRole.ApplyRole)
+            dotted_ask_btn = msg_box.addButton(self.tr("Skip This Version"), QtWidgets.QMessageBox.ButtonRole.ApplyRole)
         
         msg_box.setDefaultButton(download_btn)
         msg_box.exec()
 
         if msg_box.clickedButton() == download_btn:
-             self.start_download(download_url)
+            self.start_download(download_url)
         elif dotted_ask_btn and msg_box.clickedButton() == dotted_ask_btn:
-             settings.setValue("updates/ignored_version", version)
+            settings.setValue("updates/ignored_version", version)
     
     def on_up_to_date(self):
         if self._is_background_check:
