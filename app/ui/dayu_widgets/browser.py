@@ -91,7 +91,7 @@ class MClickBrowserFilePushButton(MPushButton):
         self.clicked.connect(self.slot_browser_file)
         self.setToolTip(self.tr("Click to browser file"))
 
-        self._path = None
+        self._path = os.path.expanduser('~')
         self._multiple = multiple
         self._filters = []
 
@@ -159,7 +159,7 @@ class MClickBrowserFileToolButton(MToolButton):
         self.clicked.connect(self.slot_browser_file)
         self.setToolTip(self.tr("Click to browser file"))
 
-        self._path = None
+        self._path = os.path.expanduser('~')
         self._multiple = multiple
         self._filters = []
 
@@ -318,7 +318,7 @@ class MDragFileButton(MToolButton):
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.setToolTip(self.tr("Click to browser file"))
 
-        self._path = None
+        self._path = os.path.join(os.path.expanduser('~'), 'init')
         self._multiple = multiple
         self._filters = []
 
@@ -438,7 +438,7 @@ class MClickBrowserFolderPushButton(MPushButton):
         self.clicked.connect(self.slot_browser_folder)
         self.setToolTip(self.tr("Click to browser folder"))
 
-        self._path = None
+        self._path = os.path.expanduser('~')
         self._multiple = multiple
 
     def get_dayu_path(self):
@@ -491,7 +491,7 @@ class MClickBrowserFolderToolButton(MToolButton):
         self.clicked.connect(self.slot_browser_folder)
         self.setToolTip(self.tr("Click to browser folder"))
 
-        self._path = None
+        self._path = os.path.expanduser('~')
         self._multiple = multiple
 
     def get_dayu_path(self):
@@ -551,7 +551,7 @@ class MDragFolderButton(MToolButton):
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.setToolTip(self.tr("Click to browser folder or drag folder here"))
 
-        self._path = None
+        self._path = os.path.expanduser('~')
         self._multiple = multiple
 
     def get_dayu_path(self):
