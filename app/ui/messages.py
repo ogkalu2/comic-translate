@@ -31,7 +31,7 @@ class Messages:
         )
 
     @staticmethod
-    def show_signup_or_credentials_error(parent):
+    def show_not_logged_in_error(parent):
         MMessage.error(
             text=QCoreApplication.translate(
                 "Messages",
@@ -139,3 +139,55 @@ class Messages:
                 QtWidgets.QApplication.clipboard().setText(detailed_text or text)
             except Exception:
                 pass
+
+    @staticmethod
+    def show_server_error(parent, status_code: int = 500):
+        """
+        Show a user-friendly error for 5xx server issues.
+        """
+        messages = {
+            500: QCoreApplication.translate("Messages", "An unexpected error occurred on the server.\nPlease try again later."),
+            501: QCoreApplication.translate("Messages", "The selected translator is currently unavailable.\nPlease select a different tool in Settings."),
+            502: QCoreApplication.translate("Messages", "The server received an invalid response from an upstream provider.\nPlease try again later."),
+            503: QCoreApplication.translate("Messages", "The server is currently unavailable or overloaded.\nPlease try again later."),
+            504: QCoreApplication.translate("Messages", "The server timed out waiting for a response.\nPlease try again later."),
+        }
+        text = messages.get(status_code, messages[500])
+        
+        MMessage.error(
+            text=text,
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
+    @staticmethod
+    def show_network_error(parent):
+        """
+        Show a user-friendly error for network/connectivity issues.
+        """
+        MMessage.error(
+            text=QCoreApplication.translate(
+                "Messages", 
+                "Unable to connect to the server.\nPlease check your internet connection."
+            ),
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
+    @staticmethod
+    def show_content_flagged_error(parent):
+        """
+        Show a friendly error when content is blocked by safety filters.
+        """
+        MMessage.error(
+            text=QCoreApplication.translate(
+                "Messages", 
+                "Translation blocked: The content was flagged by safety filters.\nPlease try modifying the text or using a different translator."
+            ),
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+

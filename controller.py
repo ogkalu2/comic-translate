@@ -1,4 +1,5 @@
 import os
+import requests
 import numpy as np
 import shutil
 import tempfile
@@ -450,11 +451,48 @@ class ComicTranslate(ComicTranslateUI):
         # Handle specific exceptions
         if exctype is InsufficientCreditsException:
             Messages.show_insufficient_credits_error(self, details=str(value))
+        
+        # Handle HTTP Errors (Server-side)
+        elif issubclass(exctype, requests.exceptions.HTTPError):
+            response = value.response
+            if response is not None:
+                status_code = response.status_code
+                
+                # Content Flagged / Moderation Blocked
+                if status_code == 400:
+                    try:
+                        detail = response.json().get('detail', {})
+                        err_type = detail.get('type') if isinstance(detail, dict) else ""
+                        if err_type == 'CONTENT_FLAGGED_UNSAFE':
+                            Messages.show_content_flagged_error(self)
+                            self.loading.setVisible(False)
+                            self.enable_hbutton_group()
+                            return
+                    except Exception:
+                        pass # Fall through if parsing fails
+                        
+                # Server Errors (5xx)
+                if 500 <= status_code < 600:
+                    Messages.show_server_error(self, status_code)
+                    self.loading.setVisible(False)
+                    self.enable_hbutton_group()
+                    return
+
+            # If not handled above, fall through to generic error (with traceback)
+            error_msg = f"An error occurred:\n{exctype.__name__}: {value}"
+            error_msg_trcbk = f"An error occurred:\n{exctype.__name__}: {value}\n\nTraceback:\n{traceback_str}"
+            Messages.show_error_with_copy(self, self.tr("Error"), error_msg, error_msg_trcbk)
+
+        # Handle Network Errors (Connection, Timeout, etc.)
+        elif issubclass(exctype, requests.exceptions.RequestException):
+            Messages.show_network_error(self)
+
         else:
             error_msg = f"An error occurred:\n{exctype.__name__}: {value}"
             error_msg_trcbk = f"An error occurred:\n{exctype.__name__}: {value}\n\nTraceback:\n{traceback_str}"
             print(error_msg_trcbk)
             Messages.show_error_with_copy(self, self.tr("Error"), error_msg, error_msg_trcbk)
+
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 

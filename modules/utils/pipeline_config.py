@@ -38,42 +38,14 @@ def validate_ocr(main: ComicTranslate):
     credentials = settings.get('credentials', {})
     ocr_tool = settings['tools']['ocr']
 
-    # Helper to check authentication or credential
-    def has_access(service, key_field):
-        return settings_page.is_logged_in() or bool(credentials.get(service, {}).get(key_field))
-
-    # Helper to check authentication or presence of multiple credential fields
-    def has_all_credentials(service, keys):
-        if settings_page.is_logged_in():
-            return True
-        creds = credentials.get(service, {})
-        return all(creds.get(k) for k in keys)
-
     if not ocr_tool:
         Messages.show_missing_tool_error(main, QCoreApplication.translate("Messages", "Text Recognition model"))
         return False
-
-    # Microsoft OCR: needs api_key_ocr and endpoint
-    if ocr_tool == tr("Microsoft OCR"):
-        service = tr("Microsoft Azure")
-        if not has_all_credentials(service, ['api_key_ocr', 'endpoint']):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-
-    # Google Cloud Vision
-    elif ocr_tool == tr("Google Cloud Vision"):
-        service = tr("Google Cloud")
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-
-    # GPT-based OCR
-    elif ocr_tool == tr('GPT-4.1-mini'):
-        service = tr('Open AI GPT')
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-
+    
+    if not settings_page.is_logged_in():
+        Messages.show_not_logged_in_error(main)
+        return False
+        
     return True
 
 
@@ -89,66 +61,21 @@ def validate_translator(main: ComicTranslate, target_lang: str):
         Messages.show_missing_tool_error(main, QCoreApplication.translate("Messages", "Translator"))
         return False
 
-    def has_access(service, key_field):
-        return settings_page.is_logged_in() or bool(credentials.get(service, {}).get(key_field))
+    if not settings_page.is_logged_in():
+        Messages.show_not_logged_in_error(main)
+        return False
 
     # Credential checks
-    if translator_tool == tr("DeepL"):
-        service = tr("DeepL")
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-        
-    elif translator_tool == tr("Microsoft Translator"):
-        service = tr("Microsoft Azure")
-        if not has_access(service, 'api_key_translator'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-        
-    elif translator_tool == tr("Yandex"):
-        service = tr("Yandex")
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-        
-    elif "GPT" in translator_tool:
-        service = tr('Open AI GPT')
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-        
-    elif "Gemini" in translator_tool:
-        service = tr('Google Gemini')
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-        
-    elif "Claude" in translator_tool:
-        service = tr('Anthropic Claude')
-        if not has_access(service, 'api_key'):
-            Messages.show_signup_or_credentials_error(main)
-            return False
-    
-    elif "Custom" in translator_tool:
-        # Custom requires api_key, api_url, and model to be configured
+    if "Custom" in translator_tool:
+        # Custom requires api_key, api_url, and model to be configured LOCALLY
         service = tr('Custom')
         creds = credentials.get(service, {})
         # Check if all required fields are present and non-empty
         if not all([creds.get('api_key'), creds.get('api_url'), creds.get('model')]):
             Messages.show_custom_not_configured_error(main)
             return False
-
-    # Unsupported target languages by service
-    unsupported = {
-        tr("DeepL"): [
-            main.tr('Thai'),
-        ],
-    }
-    unsupported_langs = unsupported.get(translator_tool, [])
-    if tr(target_lang) in unsupported_langs:
-        Messages.show_translator_language_not_supported(main)
-        return False
-
+        return True
+        
     return True
 
 def font_selected(main: ComicTranslate):

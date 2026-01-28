@@ -69,11 +69,6 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         self.credential_services = [
             self.tr("Custom"), 
-            self.tr("Deepseek"), 
-            self.tr("Open AI GPT"), 
-            self.tr("Microsoft Azure"),  
-            self.tr("Google Gemini"), 
-            self.tr("Anthropic Claude")
         ]
         
         self.supported_translators = [

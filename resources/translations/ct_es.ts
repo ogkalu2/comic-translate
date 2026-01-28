@@ -4,67 +4,51 @@
 <context>
     <name></name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="51"/>
         <source>Microsoft OCR</source>
-        <translation>Microsoft OCR</translation>
+        <translation type="vanished">Microsoft OCR</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="52"/>
-        <location filename="../../modules/utils/pipeline_config.py" line="97"/>
         <source>Microsoft Azure</source>
-        <translation>Microsoft Azure</translation>
+        <translation type="vanished">Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="58"/>
         <source>Google Cloud Vision</source>
-        <translation>Google Cloud Vision</translation>
+        <translation type="vanished">Google Cloud Vision</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="59"/>
         <source>Google Cloud</source>
-        <translation>Google Cloud</translation>
+        <translation type="vanished">Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="65"/>
         <source>GPT-4.1-mini</source>
-        <translation>GPT-4.1-mini</translation>
+        <translation type="vanished">GPT-4.1-mini</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="66"/>
-        <location filename="../../modules/utils/pipeline_config.py" line="109"/>
         <source>Open AI GPT</source>
-        <translation>OpenAI GPT</translation>
+        <translation type="vanished">OpenAI GPT</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="90"/>
-        <location filename="../../modules/utils/pipeline_config.py" line="91"/>
-        <location filename="../../modules/utils/pipeline_config.py" line="137"/>
         <source>DeepL</source>
-        <translation>DeepL</translation>
+        <translation type="vanished">DeepL</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="96"/>
         <source>Microsoft Translator</source>
-        <translation>Microsoft Translator</translation>
+        <translation type="vanished">Microsoft Translator</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="102"/>
-        <location filename="../../modules/utils/pipeline_config.py" line="103"/>
         <source>Yandex</source>
-        <translation>Yandex</translation>
+        <translation type="vanished">Yandex</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="115"/>
         <source>Google Gemini</source>
-        <translation>Google Gemini</translation>
+        <translation type="vanished">Google Gemini</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="121"/>
         <source>Anthropic Claude</source>
-        <translation>Anthropic Claude</translation>
+        <translation type="vanished">Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="128"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="71"/>
         <source>Custom</source>
         <translation>Personalizado</translation>
     </message>
@@ -152,33 +136,34 @@
         <translation type="vanished">Inglés</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="457"/>
+        <location filename="../../controller.py" line="484"/>
+        <location filename="../../controller.py" line="494"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="815"/>
-        <location filename="../../controller.py" line="826"/>
+        <location filename="../../controller.py" line="848"/>
+        <location filename="../../controller.py" line="859"/>
         <source>Downloading model file: {filename}</source>
         <translation>Descargando archivo de modelo: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="857"/>
+        <location filename="../../controller.py" line="890"/>
         <source>Unsaved Changes</source>
         <translation>Cambios no guardados</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="858"/>
+        <location filename="../../controller.py" line="891"/>
         <source>Save changes to this file?</source>
         <translation>¿Guardar los cambios en este archivo?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="859"/>
+        <location filename="../../controller.py" line="892"/>
         <source>Save</source>
         <translation>Guardar</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="860"/>
+        <location filename="../../controller.py" line="893"/>
         <source>Don&apos;t Save</source>
         <translation>No guardar</translation>
     </message>
@@ -187,7 +172,7 @@
         <translation type="vanished">Descartar</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="861"/>
+        <location filename="../../controller.py" line="894"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
@@ -651,25 +636,29 @@ de nuevo en la imagen (para su posterior edición)</translation>
         <translation type="vanished">Estas configuraciones son para usuarios avanzados que desean usar sus propias claves API personales. Para la mayoría de los usuarios, no es necesaria ninguna configuración aquí. Simplemente use el sistema de créditos en la pestaña Cuenta.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
         <source>These settings are for advanced users who wish to use their own personal API keys instead of the Credits system. Personal API keys can only be used when signed out (except Custom). For most users, no configuration is needed here. Simply use the Credits system in the Account tab.</source>
-        <translation>Estas configuraciones son para usuarios avanzados que desean usar sus propias claves API personales en lugar del sistema de créditos. Las claves API personales solo se pueden usar cuando se ha cerrado la sesión (excepto Personalizado). Para la mayoría de los usuarios, no es necesaria ninguna configuración aquí. Simplemente use el sistema de créditos en la pestaña Cuenta.</translation>
+        <translation type="vanished">Estas configuraciones son para usuarios avanzados que desean usar sus propias claves API personales en lugar del sistema de créditos. Las claves API personales solo se pueden usar cuando se ha cerrado la sesión (excepto Personalizado). Para la mayoría de los usuarios, no es necesaria ninguna configuración aquí. Simplemente use el sistema de créditos en la pestaña Cuenta.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="42"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="21"/>
+        <source>These settings are for advanced users who wish to use their own Custom API endpoints (e.g. Local Language Models) for translation. For most users, no configuration is needed here.</source>
+        <translation>Estos ajustes son para usuarios avanzados que desean utilizar sus propios puntos de conexión de API personalizados (por ejemplo, modelos de lenguaje locales) para la traducción. Para la mayoría de los usuarios, no es necesaria ninguna configuración aquí.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/credentials_page.py" line="41"/>
         <source>OCR</source>
         <translation>OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="48"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="92"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="141"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="47"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="91"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="140"/>
         <source>API Key</source>
         <translation>Clave API</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="57"/>
-        <location filename="../../app/ui/settings/credentials_page.py" line="101"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="56"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="100"/>
         <source>Endpoint URL</source>
         <translation>URL del Punto Final</translation>
     </message>
@@ -682,17 +671,17 @@ de nuevo en la imagen (para su posterior edición)</translation>
         <translation type="vanished">Región</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="110"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="109"/>
         <source>Model</source>
         <translation>Modelo</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="121"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="120"/>
         <source>Secret Key</source>
         <translation>Clave secreta</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/credentials_page.py" line="130"/>
+        <location filename="../../app/ui/settings/credentials_page.py" line="129"/>
         <source>Folder ID</source>
         <translation>ID de carpeta</translation>
     </message>
@@ -787,12 +776,12 @@ Skipping:</source>
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="780"/>
+        <location filename="../../controller.py" line="813"/>
         <source>Processing:</source>
         <translation>Procesando:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="783"/>
+        <location filename="../../controller.py" line="816"/>
         <source>Archiving:</source>
         <translation>Archivando:</translation>
     </message>
@@ -901,12 +890,61 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation>Cerrar</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="47"/>
+        <location filename="../../app/ui/messages.py" line="149"/>
+        <source>An unexpected error occurred on the server.
+Please try again later.</source>
+        <translation>Ocurrió un error inesperado en el servidor.
+Por favor, inténtelo de nuevo más tarde.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="150"/>
+        <source>The selected translator is currently unavailable.
+Please select a different tool in Settings.</source>
+        <translation>El traductor seleccionado no está disponible actualmente.
+Por favor, seleccione una herramienta diferente en Configuración.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="151"/>
+        <source>The server received an invalid response from an upstream provider.
+Please try again later.</source>
+        <translation>El servidor recibió una respuesta no válida de un proveedor ascendente.
+Por favor, inténtelo de nuevo más tarde.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="152"/>
+        <source>The server is currently unavailable or overloaded.
+Please try again later.</source>
+        <translation>El servidor no está disponible actualmente o está sobrecargado.
+Por favor, inténtelo de nuevo más tarde.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="153"/>
+        <source>The server timed out waiting for a response.
+Please try again later.</source>
+        <translation>El servidor agotó el tiempo de espera para una respuesta.
+Por favor, inténtelo de nuevo más tarde.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="170"/>
+        <source>Unable to connect to the server.
+Please check your internet connection.</source>
+        <translation>No se puede conectar al servidor.
+Por favor, compruebe su conexión a Internet.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="185"/>
+        <source>Translation blocked: The content was flagged by safety filters.
+Please try modifying the text or using a different translator.</source>
+        <translation>Traducción bloqueada: El contenido fue marcado por filtros de seguridad.
+Por favor, intente modificar el texto o usar un traductor diferente.</translation>
+    </message>
+    <message>
+        <location filename="../../modules/utils/pipeline_config.py" line="42"/>
         <source>Text Recognition model</source>
         <translation>Modelo de reconocimiento de texto</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="83"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="61"/>
         <source>Translator</source>
         <translation>Traductor</translation>
     </message>
@@ -955,29 +993,29 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="501"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="471"/>
         <source>OK</source>
         <translation>Aceptar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="510"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="480"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="810"/>
         <source>Yes</source>
         <translation>Sí</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="511"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="841"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="481"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="811"/>
         <source>No</source>
         <translation>No</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="489"/>
         <source>Restart Required</source>
         <translation>Reinicio requerido</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="520"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="490"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>Por favor, reinicie la aplicación para que los cambios de idioma surtan efecto.</translation>
     </message>
@@ -986,33 +1024,33 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation type="vanished">Iniciando sesión...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="557"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="527"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>No se pudo iniciar el proceso de inicio de sesión.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="574"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="802"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="544"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="772"/>
         <source>Sign In</source>
         <translation>Iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="591"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="561"/>
         <source>Sign In Required</source>
         <translation>Se requiere iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="592"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="562"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>Por favor, inicia sesión para comprar o gestionar créditos.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="601"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="571"/>
         <source>Unable to Open Browser</source>
         <translation>No se puede abrir el navegador</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="602"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="572"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>Por favor, abre la página de precios en tu navegador: {url}</translation>
     </message>
@@ -1025,109 +1063,109 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation type="vanished">Sesión iniciada correctamente como {email}.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="549"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="855"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="674"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="644"/>
         <source>Sign In Error</source>
         <translation>Error al iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="675"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="645"/>
         <source>Authentication failed: {error}</source>
         <translation>La autenticación falló: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="689"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="659"/>
         <source>Confirm Sign Out</source>
         <translation>Confirmar cierre de sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="690"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="660"/>
         <source>Are you sure you want to sign out?</source>
         <translation>¿Estás seguro de que deseas cerrar sesión?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="694"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="664"/>
         <source>Signing Out...</source>
         <translation>Cerrando sesión...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="717"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="795"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="687"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="765"/>
         <source>Sign Out</source>
         <translation>Cerrar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="733"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="703"/>
         <source>Session Expired</source>
         <translation>Sesión expirada</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="734"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="704"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>Tu sesión ha expirado. Por favor, inicia sesión de nuevo.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="748"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="751"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="770"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="718"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="721"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="740"/>
         <source>N/A</source>
         <translation>No disponible</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
         <source>Free</source>
         <translation>Gratis</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
         <source>Subscription</source>
         <translation>Suscripción</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="780"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
         <source>One-time</source>
         <translation>Único pago</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="783"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="788"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="753"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="758"/>
         <source>Total</source>
         <translation>Total</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="817"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
         <source>Checking...</source>
         <translation>Comprobando...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="823"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="860"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="793"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="843"/>
         <source>Check for Updates</source>
         <translation>Buscar actualizaciones</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
         <source>Update Available</source>
         <translation>Actualización disponible</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="836"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="806"/>
         <source>A new version {version} is available.</source>
         <translation>Una nueva versión {version} está disponible.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="837"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="807"/>
         <source>Release Notes</source>
         <translation>Notas de la versión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="845"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="815"/>
         <source>Skip This Version</source>
         <translation>Omitir esta versión</translation>
     </message>
@@ -1140,32 +1178,32 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation type="vanished">Descargar e instalar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="863"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
         <source>Up to Date</source>
         <translation>Actualizado</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="864"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="834"/>
         <source>You are using the latest version.</source>
         <translation>Estás usando la última versión.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="879"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="849"/>
         <source>Update Error</source>
         <translation>Error de actualización</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="885"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="855"/>
         <source>Downloading update...</source>
         <translation>Descargando actualización...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
         <source>Download Complete</source>
         <translation>Descarga completa</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="903"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>El instalador se descargó en {path}. ¿Desea ejecutarlo ahora?</translation>
     </message>
@@ -1174,18 +1212,18 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
     <name>SettingsPageUI</name>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="132"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
         <source>Default</source>
         <translation>Predeterminado</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="133"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="134"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
@@ -1195,161 +1233,160 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="82"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
         <source>Resize</source>
         <translation>Redimensionar</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
         <source>Original</source>
         <translation>Original</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
         <source>Crop</source>
         <translation>Recortar</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="110"/>
         <source>Dark</source>
         <translation>Oscuro</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
         <source>Light</source>
         <translation>Claro</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
         <source>Left</source>
         <translation>Izquierda</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Center</source>
         <translation>Centro</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
         <source>Right</source>
         <translation>Derecha</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="73"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <source>Gemini-3.0-Flash</source>
+        <translation>Gemini-3.0-Flash</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>Open AI GPT</source>
         <translation>OpenAI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="74"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="158"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Advanced</source>
         <translation>Avanzado</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="317"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>About</source>
         <translation>Acerca de</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="86"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
         <source>Custom</source>
         <translation>Personalizado</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="159"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="160"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="161"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="162"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="83"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="84"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="79"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="126"/>
         <source>Gemini-2.5-Flash</source>
-        <translation>Gemini-2.5-Flash</translation>
+        <translation type="vanished">Gemini-2.5-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="85"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
         <source>Deepseek-v3</source>
         <translation>Deepseek-v3</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
         <source>Gemini-2.5-Pro</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Account</source>
         <translation>Cuenta</translation>
     </message>
@@ -1386,7 +1423,7 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation type="vanished">Google Translate</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft Translator</translation>
     </message>
@@ -1399,12 +1436,12 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation type="vanished">Estrategia HD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
         <source>Personalization</source>
         <translation>Personalización</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Tools</source>
         <translation>Herramientas</translation>
     </message>
@@ -1413,17 +1450,17 @@ Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o c
         <translation type="vanished">Credenciales</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>LLMs</source>
         <translation>LLMs</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
         <source>Text Rendering</source>
         <translation>Renderizado de texto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
         <source>Export</source>
         <translation>Exportar</translation>
     </message>
@@ -1684,9 +1721,8 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
 <context>
     <name>main_page</name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="138"/>
         <source>Thai</source>
-        <translation>Tailandés</translation>
+        <translation type="vanished">Tailandés</translation>
     </message>
 </context>
 <context>
@@ -1707,12 +1743,12 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="177"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="165"/>
         <source>Resize</source>
         <translation>Redimensionar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="179"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="167"/>
         <source>Crop</source>
         <translation>Recortar</translation>
     </message>
@@ -1732,12 +1768,12 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
 <context>
     <name>settings_page.ui</name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="16"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="23"/>
         <source>Resize</source>
         <translation>Redimensionar</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="18"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="25"/>
         <source>Crop</source>
         <translation>Recortar</translation>
     </message>
