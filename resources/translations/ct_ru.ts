@@ -51,7 +51,7 @@
         <location filename="../../modules/utils/pipeline_config.py" line="102"/>
         <location filename="../../modules/utils/pipeline_config.py" line="103"/>
         <source>Yandex</source>
-        <translation>Яндекс</translation>
+        <translation>Yandex</translation>
     </message>
     <message>
         <location filename="../../modules/utils/pipeline_config.py" line="115"/>
@@ -1357,7 +1357,7 @@ Please sign in via Settings &gt; Account to use credits, or configure Custom API
         <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="162"/>
         <source>Yandex</source>
-        <translation>Яндекс</translation>
+        <translation>Yandex</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
