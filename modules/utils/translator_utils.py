@@ -17,7 +17,7 @@ MODEL_MAP = {
     "Claude-4.5-Sonnet": "claude-sonnet-4-5-20250929",
     "Claude-4.5-Haiku": "claude-haiku-4-5-20251001",
     "Gemini-2.0-Flash": "gemini-2.0-flash",
-    "Gemini-3.0-Flash": "gemini-3.0-flash-preview",
+    "Gemini-3.0-Flash": "gemini-3-flash-preview",
     "Gemini-2.5-Pro": "gemini-2.5-pro"
 }
 
