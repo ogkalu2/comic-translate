@@ -92,7 +92,7 @@ class GPTOCR(OCREngine):
                     "role": "user",
                     "content": [
                         {"type": "text", "text": "Write out the text in this image. Do NOT Translate. Do not write anything else"},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpg;base64,{base64_image}"}}
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                     ]
                 }
             ],
