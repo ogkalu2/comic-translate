@@ -111,7 +111,7 @@ class GeminiOCR(OCREngine):
                 "parts": [
                     {
                         "inline_data": {
-                            "mime_type": "image/jpg",
+                            "mime_type": "image/jpeg",
                             "data": base64_image
                         }
                     },
