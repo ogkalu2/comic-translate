@@ -2,16 +2,12 @@ import os
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
+
 from modules.utils.device import get_providers
-from modules.utils.download import ModelDownloader, ModelID
-
+from modules.utils.download import ModelDownloader, ModelID, models_base_dir
+from modules.utils.textblock import TextBlock
+from modules.detection.utils.slicer import ImageSlicer
 from .base import DetectionEngine
-from ..utils.textblock import TextBlock
-from .utils.slicer import ImageSlicer
-
-
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 
 class RTDetrV2ONNXDetection(DetectionEngine):
@@ -23,7 +19,7 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         self.session = None
         self.device = 'cpu'
         self.confidence_threshold = 0.3
-        self.model_dir = os.path.join(project_root, 'models', 'detection')
+        self.model_dir = os.path.join(models_base_dir, 'detection')
 
         self.image_slicer = ImageSlicer(
             height_to_width_ratio_threshold=3.5,

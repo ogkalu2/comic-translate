@@ -15,6 +15,7 @@ from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
     EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
 from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
 from app.update_checker import UpdateChecker
+from modules.utils.paths import get_user_data_dir
 
 
 logger = logging.getLogger(__name__)
@@ -201,21 +202,21 @@ class SettingsPage(QtWidgets.QWidget):
     def import_font(self, file_paths: list[str]):
 
         file_paths = [f for f in file_paths 
-                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+                      if f.lower().endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+        
+        # Determine user font directory
+        user_font_dir = os.path.join(get_user_data_dir(), "fonts")
 
-        current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..', '..'))
-        font_folder_path = os.path.join(project_root, 'resources', 'fonts')
-
-        if not os.path.exists(font_folder_path):
-            os.makedirs(font_folder_path)
+        if not os.path.exists(user_font_dir):
+            os.makedirs(user_font_dir, exist_ok=True)
 
         if file_paths:
             for file in file_paths:
-                shutil.copy(file, font_folder_path)
+                shutil.copy(file, user_font_dir)
                 
-            font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
-                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
+            # Reload fonts from user directory
+            font_files = [os.path.join(user_font_dir, f) for f in os.listdir(user_font_dir) 
+                      if f.lower().endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
             
             font_families = []
             for font in font_files:

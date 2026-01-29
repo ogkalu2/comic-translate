@@ -12,12 +12,10 @@ from urllib.parse import urlparse
 from PIL import Image, ImageOps, PngImagePlugin
 
 from .download_file import download_url_to_file
-from .download import notify_download_event
+from .download import notify_download_event, models_base_dir
 
 logger = logging.getLogger(__name__)
 
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 def md5sum(filename):
     md5 = hashlib.md5()
@@ -37,12 +35,7 @@ def md5sum(filename):
 
 def get_cache_path_by_url(url):
     parts = urlparse(url)
-    # hub_dir = get_dir()
-    # model_dir = os.path.join(hub_dir, "checkpoints")
-
-    dir = os.path.join(project_root, "models")
-    model_dir = os.path.join(dir, "inpainting")
-
+    model_dir = os.path.join(models_base_dir, "inpainting")
     if not os.path.isdir(model_dir):
         os.makedirs(model_dir)
     filename = os.path.basename(parts.path)

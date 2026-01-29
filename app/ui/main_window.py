@@ -23,17 +23,15 @@ from .dayu_widgets.loading import MLoading
 from .dayu_widgets.theme import MTheme
 from .dayu_widgets.menu import MMenu
 
+from modules.utils.paths import get_user_data_dir
 from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
 from .list_view import PageListView
 
 
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
-font_folder_path = os.path.join(project_root, 'resources', 'fonts')
-
-if not os.path.exists(font_folder_path):
-    os.makedirs(font_folder_path)
+user_font_path = os.path.join(get_user_data_dir(), "fonts")
+if not os.path.exists(user_font_path):
+    os.makedirs(user_font_path, exist_ok=True)
 
 supported_source_languages = [
 "Korean", "Japanese", "French", "Chinese", "English",
@@ -432,9 +430,13 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         self.font_dropdown = MFontComboBox().small()
         self.font_dropdown.setToolTip(self.tr("Font"))
-        font_files = [os.path.join(font_folder_path, f) for f in os.listdir(font_folder_path) 
-                      if f.endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
-        for font in font_files:
+        all_font_files = []
+        # Load from user fonts
+        if os.path.exists(user_font_path):
+            all_font_files.extend([os.path.join(user_font_path, f) for f in os.listdir(user_font_path) 
+                if f.lower().endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))])
+
+        for font in all_font_files:
             self.add_custom_font(font)
 
         self.font_size_dropdown = MComboBox().small()

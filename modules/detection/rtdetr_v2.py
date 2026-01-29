@@ -1,18 +1,15 @@
 import os
 import torch
-import imkit as imk
 import numpy as np
 from PIL import Image
 from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
 
 from .base import DetectionEngine
-from ..utils.textblock import TextBlock
-from .utils.slicer import ImageSlicer
-from ..utils.device import tensors_to_device
+from modules.utils.textblock import TextBlock
+from modules.detection.utils.slicer import ImageSlicer
+from modules.utils.device import tensors_to_device
+from modules.utils.download import models_base_dir
 
-
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 class RTDetrV2Detection(DetectionEngine):
     """Detection engine using a fine-tuned RT-DETR-v2 model from Hugging Face."""
@@ -24,7 +21,7 @@ class RTDetrV2Detection(DetectionEngine):
         self.device = 'cpu'
         self.confidence_threshold = 0.3
         self.repo_name = 'ogkalu/comic-text-and-bubble-detector'  
-        self.model_dir = os.path.join(project_root, 'models/detection')
+        self.model_dir = os.path.join(models_base_dir, 'detection')
         
         # Initialize image slicer with default parameters
         self.image_slicer = ImageSlicer(

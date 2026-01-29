@@ -4,13 +4,12 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import Callable, Iterable, Optional, Dict, List, Union
 from .download_file import download_url_to_file
+from .paths import get_user_data_dir
 
 logger = logging.getLogger(__name__)
 
 # Paths / Globals
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
-models_base_dir = os.path.join(project_root, 'models')
+models_base_dir = os.path.join(get_user_data_dir(), "models")
 
 
 _download_event_callback: Optional[Callable[[str, str], None]] = None

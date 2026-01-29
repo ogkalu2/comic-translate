@@ -1,6 +1,4 @@
-import os
 import numpy as np
-import imkit as imk
 import onnxruntime as ort
 from ..utils.device import get_providers
 
@@ -11,10 +9,6 @@ from ..utils.inpainting import (
 from ..utils.download import ModelDownloader, ModelID
 from .base import InpaintModel
 from .schema import Config
-
-
-current_file_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
 
 
 class LaMa(InpaintModel):

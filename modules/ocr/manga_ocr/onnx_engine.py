@@ -20,8 +20,6 @@ class MangaOCREngineONNX(OCREngine):
         self.model = None
         self.device = 'cpu'
         self.expansion_percentage = 5
-        self.current_file_dir = os.path.dirname(os.path.abspath(__file__))
-        self.project_root = os.path.abspath(os.path.join(self.current_file_dir, '..', '..', '..'))
 
     def initialize(self, device: str = 'cpu', expansion_percentage: int = 5) -> None:
         """Initialize the ONNX Manga OCR engine.

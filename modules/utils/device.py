@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any, Mapping, Optional
 import onnxruntime as ort
+from .paths import get_user_data_dir
 
 
 def torch_available() -> bool:
@@ -136,19 +137,19 @@ def get_providers(device: Optional[str] = None) -> list[Any]:
         return ['CPUExecutionProvider']
 
     
-    current_file_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_file_dir, '..', '..'))
+    # Use user data directory for cache
+    base_models_dir = os.path.join(get_user_data_dir(), "models")
     
     # OpenVINO cache
-    ov_cache_dir = os.path.join(project_root, 'models', 'onnx-gpu-cache', 'openvino')
+    ov_cache_dir = os.path.join(base_models_dir, 'onnx-gpu-cache', 'openvino')
     os.makedirs(ov_cache_dir, exist_ok=True)
 
     # TensorRT cache
-    trt_cache_dir = os.path.join(project_root, 'models', 'onnx-gpu-cache', 'tensorrt')
+    trt_cache_dir = os.path.join(base_models_dir, 'onnx-gpu-cache', 'tensorrt')
     os.makedirs(trt_cache_dir, exist_ok=True)
 
     # CoreML cache
-    coreml_cache_dir = os.path.join(project_root, 'models', 'onnx-gpu-cache', 'coreml')
+    coreml_cache_dir = os.path.join(base_models_dir, 'onnx-gpu-cache', 'coreml')
     os.makedirs(coreml_cache_dir, exist_ok=True)
 
     provider_options = {
