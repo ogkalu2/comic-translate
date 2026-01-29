@@ -62,6 +62,8 @@
 ## 安装
 ### 下载
 从[这里](https://www.comic-translate.com/download/)下载并安装适用于 Windows 和 macOS 的 Comic Translate。
+> 对于 Windows，请忽略 Smart Screen（点击“更多信息” > “仍要运行”）。对于 macOS，在尝试打开后，前往“设置” > “隐私与安全性” > 向下滚动并点击“仍要打开”。
+
 > 注意：GPU 加速目前仅在从源码运行时可用。
 
 ### 从源码安装
