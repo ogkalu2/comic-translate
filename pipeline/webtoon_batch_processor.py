@@ -25,6 +25,7 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation 
 from modules.utils.device import resolve_device
+from modules.utils.exceptions import InsufficientCreditsException
 from .virtual_page import VirtualPage, VirtualPageCreator, PageStatus
 
 logger = logging.getLogger(__name__)
@@ -276,6 +277,8 @@ class WebtoonBatchProcessor:
                 source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
                 rtl = True if source_lang_english == 'Japanese' else False
                 blk_list = sort_blk_list(blk_list, rtl)
+            except InsufficientCreditsException:
+                raise
             except Exception as e:
                 if isinstance(e, requests.exceptions.HTTPError):
                     try:
@@ -346,6 +349,8 @@ class WebtoonBatchProcessor:
             translator = Translator(self.main_page, source_lang, target_lang)
             try:
                 translator.translate(blk_list, combined_image, extra_context)
+            except InsufficientCreditsException:
+                raise
             except Exception as e:
                 if isinstance(e, requests.exceptions.HTTPError):
                     try:

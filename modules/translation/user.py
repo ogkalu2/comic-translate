@@ -163,13 +163,19 @@ class UserTranslator(TranslationEngine):
                 try:
                     error_data = response.json()
                     detail = error_data.get('detail')
+                    description = ""
+
                     # detail can be a string or a dict
                     if isinstance(detail, dict):
-                        description = detail.get('error_description') or detail.get('message')
+                        if detail.get('type') == 'INSUFFICIENT_CREDITS':
+                            description = detail.get('error_description') or detail.get('message')
+                            raise InsufficientCreditsException(description)
+                        else:
+                            description = detail.get('error_description') or detail.get('message')
                     else:
                         description = str(detail)
                     
-                    if description:
+                    if description and "insufficient credits" in str(description).lower():
                         raise InsufficientCreditsException(description)
                 except ValueError:
                     # JSON parsing failed, just raise the original error
