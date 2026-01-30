@@ -64,7 +64,7 @@ Note : Certains ont également des traductions officielles en anglais.
 
 ## Installation
 ### Téléchargement
-Téléchargez et installez Comic Translate pour Windows et macOS depuis [ici](https://www.comic-translate.com/download/).
+Téléchargez et installez Comic Translate pour Windows et macOS depuis [ici](https://www.comic-translate.com).
 > Ignorez Smart Screen pour Windows (cliquez sur Plus d'informations > Exécuter quand même). Pour macOS, après avoir tenté d'ouvrir l'application, accédez à Réglages > Confidentialité et sécurité > faites défiler vers le bas et cliquez sur Ouvrir quand même.
 
 > Note : L'accélération GPU n'est actuellement disponible que lors de l'exécution depuis la source.
