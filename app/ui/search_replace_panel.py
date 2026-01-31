@@ -40,7 +40,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         btn.setAutoRaise(True)
         btn.setStyleSheet(
             """
-            QToolButton { padding: 0 6px; border-radius: 4px; }
+            QToolButton { padding: 0 4px; border-radius: 4px; }
             QToolButton:hover { background-color: rgba(127, 127, 127, 0.18); }
             QToolButton:checked { background-color: rgba(127, 127, 127, 0.35); }
             """
@@ -49,11 +49,11 @@ class SearchReplacePanel(QtWidgets.QWidget):
     def _build_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        layout.setSpacing(2)
 
         find_row = QtWidgets.QHBoxLayout()
         find_row.setContentsMargins(6, 6, 6, 0)
-        find_row.setSpacing(4)
+        find_row.setSpacing(2)
 
         self.find_input = MLineEdit().small()
         self.find_input.setPlaceholderText(self.tr("Find"))
@@ -66,6 +66,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.match_case_btn.setToolTip(self.tr("Match case"))
         self._apply_latching_toggle_style(self.match_case_btn)
         self.match_case_btn.toggled.connect(lambda _v: self._schedule_live_search())
+        self.match_case_btn.toggled.connect(lambda _v: self.find_input.setFocus())
 
         self.whole_word_btn = MToolButton().text_only().small()
         self.whole_word_btn.setText("ab")
@@ -73,6 +74,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.whole_word_btn.setToolTip(self.tr("Match whole word"))
         self._apply_latching_toggle_style(self.whole_word_btn)
         self.whole_word_btn.toggled.connect(lambda _v: self._schedule_live_search())
+        self.whole_word_btn.toggled.connect(lambda _v: self.find_input.setFocus())
 
         self.regex_btn = MToolButton().text_only().small()
         self.regex_btn.setText(".*")
@@ -80,31 +82,57 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.regex_btn.setToolTip(self.tr("Use regular expression"))
         self._apply_latching_toggle_style(self.regex_btn)
         self.regex_btn.toggled.connect(lambda _v: self._schedule_live_search())
+        self.regex_btn.toggled.connect(lambda _v: self.find_input.setFocus())
+
+        # Put ONLY the toggles inside the Find bar (VS Code-like).
+        find_suffix = QtWidgets.QWidget()
+        find_suffix.setStyleSheet("background: transparent;")
+        find_suffix_lay = QtWidgets.QHBoxLayout(find_suffix)
+        find_suffix_lay.setContentsMargins(0, 0, 0, 0)
+        find_suffix_lay.setSpacing(2)
+        find_suffix_lay.addWidget(self.match_case_btn)
+        find_suffix_lay.addWidget(self.whole_word_btn)
+        find_suffix_lay.addWidget(self.regex_btn)
+        find_suffix.setFixedWidth(find_suffix.sizeHint().width())
+        self.find_input.set_suffix_widget(find_suffix)
 
         self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
         self.prev_btn.setToolTip(self.tr("Previous match (Shift+F3)"))
         self.prev_btn.clicked.connect(self.prev_requested)
+        self.prev_btn.clicked.connect(lambda: self.find_input.setFocus())
 
         self.next_btn = MToolButton().icon_only().svg("down_fill.svg").small()
         self.next_btn.setToolTip(self.tr("Next match (F3)"))
         self.next_btn.clicked.connect(self.next_requested)
+        self.next_btn.clicked.connect(lambda: self.find_input.setFocus())
 
         self.clear_btn = MToolButton().icon_only().svg("close_line.svg").small()
         self.clear_btn.setToolTip(self.tr("Clear"))
         self.clear_btn.clicked.connect(self._clear_find)
+        self.clear_btn.clicked.connect(lambda: self.find_input.setFocus())
+
+        find_nav = QtWidgets.QWidget()
+        find_nav.setStyleSheet("background: transparent;")
+        find_nav_lay = QtWidgets.QHBoxLayout(find_nav)
+        find_nav_lay.setContentsMargins(0, 0, 0, 0)
+        find_nav_lay.setSpacing(2)
+        find_nav_lay.addWidget(self.prev_btn)
+        find_nav_lay.addWidget(self.next_btn)
+        find_nav_lay.addWidget(self.clear_btn)
+        nav_width = find_nav.sizeHint().width()
+        find_nav.setFixedWidth(nav_width)
 
         find_row.addWidget(self.find_input, 1)
-        find_row.addWidget(self.match_case_btn)
-        find_row.addWidget(self.whole_word_btn)
-        find_row.addWidget(self.regex_btn)
-        find_row.addWidget(self.prev_btn)
-        find_row.addWidget(self.next_btn)
-        find_row.addWidget(self.clear_btn)
+        find_row.addWidget(find_nav)
         layout.addLayout(find_row)
+
+        self.summary_label = QtWidgets.QLabel(self.tr("0 results"))
+        self.summary_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self.summary_label.setStyleSheet("color: #999999;")
 
         replace_row = QtWidgets.QHBoxLayout()
         replace_row.setContentsMargins(6, 0, 6, 0)
-        replace_row.setSpacing(4)
+        replace_row.setSpacing(2)
 
         self.replace_input = MLineEdit().small()
         self.replace_input.setPlaceholderText(self.tr("Replace"))
@@ -114,15 +142,38 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.replace_btn.setToolTip(self.tr("Replace"))
         self._apply_latching_toggle_style(self.replace_btn)
         self.replace_btn.clicked.connect(self.replace_requested)
+        self.replace_btn.clicked.connect(lambda: self.replace_input.setFocus())
 
         self.replace_all_btn = MToolButton().icon_only().svg("replace-all.svg").small()
         self.replace_all_btn.setToolTip(self.tr("Replace All"))
         self._apply_latching_toggle_style(self.replace_all_btn)
         self.replace_all_btn.clicked.connect(self.replace_all_requested)
+        self.replace_all_btn.clicked.connect(lambda: self.replace_input.setFocus())
+
+        # Put the replace actions inside the Replace bar (VS Code-like).
+        replace_suffix = QtWidgets.QWidget()
+        replace_suffix.setStyleSheet("background: transparent;")
+        replace_suffix_lay = QtWidgets.QHBoxLayout(replace_suffix)
+        replace_suffix_lay.setContentsMargins(0, 0, 0, 0)
+        replace_suffix_lay.setSpacing(2)
+        replace_suffix_lay.addWidget(self.replace_btn)
+        replace_suffix_lay.addWidget(self.replace_all_btn)
+        replace_suffix.setFixedWidth(replace_suffix.sizeHint().width())
+        self.replace_input.set_suffix_widget(replace_suffix)
 
         replace_row.addWidget(self.replace_input, 1)
-        replace_row.addWidget(self.replace_btn)
-        replace_row.addWidget(self.replace_all_btn)
+
+        # Keep Find and Replace bars the same width by reserving space for the
+        # find nav buttons (prev/next/clear) on the replace row, and show the
+        # results count there.
+        replace_right = QtWidgets.QWidget()
+        replace_right.setFixedWidth(find_nav.width())
+        replace_right_lay = QtWidgets.QVBoxLayout(replace_right)
+        replace_right_lay.setContentsMargins(0, 0, 0, 0)
+        replace_right_lay.setSpacing(0)
+        replace_right_lay.addWidget(self.summary_label)
+        replace_right_lay.addStretch(1)
+        replace_row.addWidget(replace_right)
         layout.addLayout(replace_row)
 
         meta_row = QtWidgets.QHBoxLayout()
@@ -140,12 +191,9 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.field_combo.setToolTip(self.tr("Search field"))
         self.field_combo.currentIndexChanged.connect(lambda _i: self._schedule_live_search())
 
-        self.summary_label = QtWidgets.QLabel(self.tr("0 results"))
-        self.summary_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-
         meta_row.addWidget(self.scope_combo)
         meta_row.addWidget(self.field_combo)
-        meta_row.addWidget(self.summary_label, 1)
+        meta_row.addStretch(1)
         layout.addLayout(meta_row)
 
         self.status_label = QtWidgets.QLabel(self.tr("Ready"))
