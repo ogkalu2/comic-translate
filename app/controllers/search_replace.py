@@ -278,11 +278,17 @@ class SearchReplaceController(QtCore.QObject):
         QtGui.QShortcut(QtGui.QKeySequence("Shift+F3"), self.main, activated=self.prev_match)
 
     def focus_find(self):
+        if hasattr(self.main, "show_search_sidebar"):
+            self.main.show_search_sidebar(focus="find")
+            return
         panel = self.main.search_panel
         panel.find_input.setFocus()
         panel.find_input.selectAll()
 
     def focus_replace(self):
+        if hasattr(self.main, "show_search_sidebar"):
+            self.main.show_search_sidebar(focus="replace")
+            return
         panel = self.main.search_panel
         panel.replace_input.setFocus()
         panel.replace_input.selectAll()

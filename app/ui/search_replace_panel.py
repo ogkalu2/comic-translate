@@ -196,12 +196,12 @@ class SearchReplacePanel(QtWidgets.QWidget):
         # Use the same fixed width as the Find nav so the left edge (x position)
         # aligns between rows.
         replace_right.setFixedWidth(find_nav_width)
-        replace_right_lay = QtWidgets.QVBoxLayout(replace_right)
+        replace_right.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        replace_right_lay = QtWidgets.QHBoxLayout(replace_right)
         replace_right_lay.setContentsMargins(0, 0, 0, 0)
         replace_right_lay.setSpacing(0)
-        replace_right_lay.addWidget(self.summary_label)
-        replace_right_lay.addStretch(1)
-        replace_row.addWidget(replace_right)
+        replace_right_lay.addWidget(self.summary_label, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        replace_row.addWidget(replace_right, 0, Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(replace_row)
 
         meta_row = QtWidgets.QHBoxLayout()
@@ -230,7 +230,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         layout.addWidget(self.status_label)
 
         self.results_tree = QtWidgets.QTreeWidget()
-        self.results_tree.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred)
+        self.results_tree.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.results_tree.setHeaderHidden(True)
         self.results_tree.setRootIsDecorated(True)
         self.results_tree.setUniformRowHeights(True)
@@ -238,8 +238,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.results_tree.itemActivated.connect(self._emit_activated)
         self.results_tree.itemClicked.connect(self._emit_activated)
         self.results_tree.setMinimumHeight(90)
-        self.results_tree.setMaximumHeight(220)
-        layout.addWidget(self.results_tree)
+        layout.addWidget(self.results_tree, 1)
 
         # Make combos wide enough for their longest entries.
         set_combo_box_width(
