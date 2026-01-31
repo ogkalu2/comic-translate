@@ -165,6 +165,9 @@ def _apply_replacements_to_html(
     new_plain = _qt_plain_to_user(doc.toPlainText())
     return old_plain, new_plain, new_html, len(matches)
 
+def _rect_area(r: QtCore.QRectF) -> float:
+    return max(0.0, float(r.width())) * max(0.0, float(r.height()))
+
 
 def _apply_text_delta_to_document(doc: QtGui.QTextDocument, new_text: str) -> bool:
     old_text = doc.toPlainText()
@@ -510,7 +513,66 @@ class SearchReplaceController(QtCore.QObject):
                 return blk
         return None
 
+    def _find_text_item_for_block(self, blk: object):
+        if not getattr(self.main, "image_viewer", None):
+            return None
+        text_items = getattr(self.main.image_viewer, "text_items", None)
+        if not text_items:
+            return None
+        try:
+            x1, y1, x2, y2 = blk.xyxy
+        except Exception:
+            return None
+
+        block_rect = QtCore.QRectF(float(x1), float(y1), float(x2 - x1), float(y2 - y1))
+        block_area = _rect_area(block_rect)
+        if block_area <= 0:
+            return None
+
+        best = None
+        best_score = 0.0
+        for item in text_items:
+            try:
+                item_rect = item.mapToScene(item.boundingRect()).boundingRect()
+            except Exception:
+                continue
+            if not block_rect.intersects(item_rect):
+                continue
+            inter = block_rect.intersected(item_rect)
+            inter_area = _rect_area(inter)
+            if inter_area <= 0:
+                continue
+            score = inter_area / max(1e-6, min(block_area, _rect_area(item_rect)))
+            if score > best_score:
+                best_score = score
+                best = item
+
+        # Require a modest overlap so we don't accidentally select unrelated text items.
+        if best is not None and best_score >= 0.15:
+            return best
+        return None
+
     def _select_block(self, blk: object):
+        # Prefer selecting a rendered TextBlockItem if available.
+        try:
+            text_item = self._find_text_item_for_block(blk)
+            if text_item is not None:
+                self.main.image_viewer.deselect_all()
+                text_item.selected = True
+                text_item.setSelected(True)
+                try:
+                    if not getattr(text_item, "editing_mode", False):
+                        text_item.item_selected.emit(text_item)
+                except Exception:
+                    pass
+                try:
+                    self.main.image_viewer.centerOn(text_item)
+                except Exception:
+                    pass
+                return
+        except Exception:
+            pass
+
         try:
             rect = self.main.rect_item_ctrl.find_corresponding_rect(blk, 0.2)
             if rect:
