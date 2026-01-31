@@ -27,6 +27,7 @@ from modules.utils.paths import get_user_data_dir
 from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
 from .list_view import PageListView
+from .search_replace_panel import SearchReplacePanel
 
 
 user_font_path = os.path.join(get_user_data_dir(), "fonts")
@@ -424,6 +425,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         input_layout.addLayout(t_combo_text_layout)
 
+        # Search / Replace (MTPE helper)
+        self.search_panel = SearchReplacePanel(self)
+
         # Text Render Settings
         text_render_layout = QtWidgets.QVBoxLayout()
         font_settings_layout = QtWidgets.QHBoxLayout()
@@ -647,6 +651,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         #tools_scroll.setMinimumHeight(300)
 
         right_layout.addLayout(input_layout)
+        right_layout.addWidget(self.search_panel)
         right_layout.addLayout(text_render_layout)
         right_layout.addWidget(tools_scroll)
         right_layout.addStretch()

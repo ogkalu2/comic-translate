@@ -37,6 +37,7 @@ from app.controllers.rect_item import RectItemController
 from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
+from app.controllers.search_replace import SearchReplaceController
 from modules.utils.exceptions import InsufficientCreditsException
 from collections import deque
 
@@ -98,6 +99,7 @@ class ComicTranslate(ComicTranslateUI):
         self.project_ctrl = ProjectController(self)
         self.text_ctrl = TextController(self)
         self.webtoon_ctrl = WebtoonController(self)
+        self.search_ctrl = SearchReplaceController(self)
 
         self.image_skipped.connect(self.image_ctrl.on_image_skipped)
         self.image_processed.connect(self.image_ctrl.on_image_processed)
