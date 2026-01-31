@@ -35,6 +35,17 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self._live_timer.timeout.connect(self.search_requested)
         self._build_ui()
 
+    def _apply_latching_toggle_style(self, btn: QtWidgets.QToolButton):
+        # Ensure check state is visually persistent (VS Code-like "latched" toggles).
+        btn.setAutoRaise(True)
+        btn.setStyleSheet(
+            """
+            QToolButton { padding: 0 6px; border-radius: 4px; }
+            QToolButton:hover { background-color: rgba(127, 127, 127, 0.18); }
+            QToolButton:checked { background-color: rgba(127, 127, 127, 0.35); }
+            """
+        )
+
     def _build_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -53,18 +64,21 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.match_case_btn.setText("Aa")
         self.match_case_btn.setCheckable(True)
         self.match_case_btn.setToolTip(self.tr("Match case"))
+        self._apply_latching_toggle_style(self.match_case_btn)
         self.match_case_btn.toggled.connect(lambda _v: self._schedule_live_search())
 
         self.whole_word_btn = MToolButton().text_only().small()
         self.whole_word_btn.setText("ab")
         self.whole_word_btn.setCheckable(True)
         self.whole_word_btn.setToolTip(self.tr("Match whole word"))
+        self._apply_latching_toggle_style(self.whole_word_btn)
         self.whole_word_btn.toggled.connect(lambda _v: self._schedule_live_search())
 
         self.regex_btn = MToolButton().text_only().small()
         self.regex_btn.setText(".*")
         self.regex_btn.setCheckable(True)
         self.regex_btn.setToolTip(self.tr("Use regular expression"))
+        self._apply_latching_toggle_style(self.regex_btn)
         self.regex_btn.toggled.connect(lambda _v: self._schedule_live_search())
 
         self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
