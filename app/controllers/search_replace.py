@@ -236,6 +236,15 @@ class SearchReplaceController(QtCore.QObject):
             in_target=(panel.field_combo.currentData() == "target"),
         )
 
+    def on_undo_redo(self, *_args):
+        """Refresh search results after undo/redo without jumping/focusing."""
+        panel = getattr(self.main, "search_panel", None)
+        if panel is None:
+            return
+        if not (panel.find_input.text() or "").strip():
+            return
+        self.search(jump_to_first=False)
+
     def _iter_blocks(self, opts: SearchOptions) -> Iterator[tuple[str, list, int, object]]:
         """
         Yields (file_path, blk_list, index, blk) for the requested scope.
@@ -263,10 +272,13 @@ class SearchReplaceController(QtCore.QObject):
             for idx, blk in enumerate(blks):
                 yield file_path, blks, idx, blk
 
-    def search(self):
+    def search(self, jump_to_first: bool = True):
         panel = self.main.search_panel
         opts = self._gather_options()
         focus_state = self._capture_focus_state()
+        prev_match = None
+        if 0 <= self._active_match_index < len(self._matches):
+            prev_match = self._matches[self._active_match_index]
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
@@ -303,14 +315,38 @@ class SearchReplaceController(QtCore.QObject):
                 )
 
         self._matches = matches
-        self._active_match_index = 0 if matches else -1
+        if matches:
+            if prev_match is not None:
+                try:
+                    self._active_match_index = next(
+                        i
+                        for i, mm in enumerate(matches)
+                        if mm.key == prev_match.key
+                        and mm.match_ordinal_in_block == prev_match.match_ordinal_in_block
+                        and mm.start == prev_match.start
+                        and mm.end == prev_match.end
+                    )
+                except StopIteration:
+                    self._active_match_index = 0
+            else:
+                self._active_match_index = 0
+        else:
+            self._active_match_index = -1
 
         panel.set_results(matches, len(images_with_hits), len(matches))
         if matches:
             panel.set_status(self.main.tr("Ready"))
-            # Avoid stealing keyboard focus from the find/replace inputs while typing.
-            focus_editor = not (panel.find_input.hasFocus() or panel.replace_input.hasFocus())
-            self._jump_to_match(0, focus=focus_editor, preserve_focus_state=focus_state if not focus_editor else None)
+            if jump_to_first:
+                # Avoid stealing keyboard focus from the find/replace inputs while typing.
+                focus_editor = not (panel.find_input.hasFocus() or panel.replace_input.hasFocus())
+                self._jump_to_match(
+                    self._active_match_index if self._active_match_index >= 0 else 0,
+                    focus=focus_editor,
+                    preserve_focus_state=focus_state if not focus_editor else None,
+                )
+            else:
+                if self._active_match_index >= 0:
+                    panel.select_match(matches[self._active_match_index])
         else:
             panel.set_status(self.main.tr("No results"))
 

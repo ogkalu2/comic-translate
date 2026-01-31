@@ -192,6 +192,11 @@ class ImageStateController:
             self.save_image_state(file)
             stack = QtGui.QUndoStack(self.main)
             stack.cleanChanged.connect(self.main._update_window_modified)
+            try:
+                if hasattr(self.main, "search_ctrl") and self.main.search_ctrl is not None:
+                    stack.indexChanged.connect(self.main.search_ctrl.on_undo_redo)
+            except Exception:
+                pass
             self.main.undo_stacks[file] = stack
             self.main.undo_group.addStack(stack)
 
