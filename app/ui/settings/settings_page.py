@@ -32,10 +32,6 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui = SettingsPageUI(self)
         self._setup_connections()
         self._loading_settings = False
-
-        self.ui = SettingsPageUI(self)
-        self._setup_connections()
-        self._loading_settings = False
         self._is_background_check = False
 
         self._pricing_refresh_timer: Optional[QTimer] = None

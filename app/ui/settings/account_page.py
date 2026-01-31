@@ -38,7 +38,6 @@ class AccountPage(QtWidgets.QWidget):
         logged_out_layout.addWidget(description_label)
         logged_out_layout.addSpacing(20)
         logged_out_layout.addWidget(self.sign_in_button, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        logged_out_layout.addWidget(self.sign_in_button, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
         
         # Link to credits costs (logged out)
         link_text = self.tr("See model credit costs")
@@ -78,8 +77,6 @@ class AccountPage(QtWidgets.QWidget):
         credits_title_label = MLabel(self.tr("Credits:")).strong()
         self.credits_value_label = MLabel("...")
         credits_layout.addWidget(credits_title_label)
-        credits_layout.addWidget(self.credits_value_label)
-
         credits_layout.addWidget(self.credits_value_label)
         credits_layout.addStretch(1)
 

@@ -13,12 +13,17 @@ from .token_storage import set_token, get_token, delete_token
 
 logger = logging.getLogger(__name__)
 
+# Use 127.0.0.1 instead of localhost to avoid IPv6 resolution/fallback issues on
+# some Windows setups and to ensure consistency with the server bind address.
+DESKTOP_CALLBACK_HOST = "127.0.0.1"
+
 # Define constants for QSettings keys
 USER_INFO_GROUP = "user_info"
 EMAIL_KEY = "email"
 TIER_KEY = "tier"
 CREDITS_KEY = "credits"
 MONTHLY_CREDITS_KEY = "monthly_credits"
+
 
 class SessionCheckThread(QThread):
     """Thread to validate the session in the background."""
@@ -108,14 +113,14 @@ class AuthClient(QObject):
         logger.info(f"Auth server started on port: {actual_port}")
 
         # 3. Prepare backend authorization URL
-        desktop_callback_uri = f"http://localhost:{actual_port}/callback" # Or 127.0.0.1
+        desktop_callback_uri = f"http://{DESKTOP_CALLBACK_HOST}:{actual_port}/callback"
         params = {
             "request_id": self.current_request_id,
             "desktop_callback_uri": desktop_callback_uri,
             "prompt": "login"
         }
-        # Include trailing slash to prevent production server redirect that strips query params
-        login_url = f"{self.frontend_url}/login/" 
+        # Include trailing slash to prevent production server redirect (308) that strips query params
+        login_url = f"{self.frontend_url.rstrip('/')}/login/"
         auth_url = f"{login_url}?{urllib.parse.urlencode(params)}"
         logger.info(f"Requesting login view for: {auth_url}")
 

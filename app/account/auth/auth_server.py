@@ -270,7 +270,9 @@ class AuthServerThread(QThread):
                 socketserver.TCPServer.allow_reuse_address = True
                 # Use threaded server so request handlers don't run inside serve_forever()
                 # (prevents shutdown deadlocks and improves robustness).
-                self.server = socketserver.ThreadingTCPServer(("localhost", port_to_try), CallbackHandler)
+                # Bind explicitly to IPv4 loopback to avoid IPv6 resolution issues with "localhost"
+                # on some systems/browsers.
+                self.server = socketserver.ThreadingTCPServer(("127.0.0.1", port_to_try), CallbackHandler)
                 self.server.daemon_threads = True
                 self.port = port_to_try # Store the successfully bound port
                 server_started = True
@@ -310,7 +312,7 @@ class AuthServerThread(QThread):
 
         if server_started and self.server:
             try:
-                logger.info(f"Auth server running on http://localhost:{self.port}. Waiting for callback...")
+                logger.info(f"Auth server running on http://127.0.0.1:{self.port}. Waiting for callback...")
                 self.server.serve_forever() # Blocks until shutdown() is called
                 # serve_forever exits when shutdown() is called
                 logger.info(f"Server on port {self.port} serve_forever() loop exited.")
