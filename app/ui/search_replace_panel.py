@@ -83,7 +83,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
 
         self.find_input = MLineEdit().small()
         self.find_input.setPlaceholderText(self.tr("Find"))
-        self.find_input.returnPressed.connect(self.search_requested)
+        # VS Code-like: Enter navigates matches; searching is live as you type.
         self.find_input.textChanged.connect(self._schedule_live_search)
 
         self.match_case_btn = MToolButton().text_only().small()
@@ -123,17 +123,17 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.find_input.set_suffix_widget(find_suffix)
 
         self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
-        self.prev_btn.setToolTip(self.tr("Previous match (Shift+F3)"))
+        self.prev_btn.setToolTip(self.tr("Previous match (Shift+Enter)"))
         self.prev_btn.clicked.connect(self.prev_requested)
         self.prev_btn.clicked.connect(lambda: self.find_input.setFocus())
 
         self.next_btn = MToolButton().icon_only().svg("down_fill.svg").small()
-        self.next_btn.setToolTip(self.tr("Next match (F3)"))
+        self.next_btn.setToolTip(self.tr("Next match (Enter)"))
         self.next_btn.clicked.connect(self.next_requested)
         self.next_btn.clicked.connect(lambda: self.find_input.setFocus())
 
         self.clear_btn = MToolButton().icon_only().svg("close_line.svg").small()
-        self.clear_btn.setToolTip(self.tr("Clear"))
+        self.clear_btn.setToolTip(self.tr("Clear (Esc)"))
         self.clear_btn.clicked.connect(self._clear_find)
         self.clear_btn.clicked.connect(lambda: self.find_input.setFocus())
 
@@ -209,7 +209,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
 
         self.scope_combo = MComboBox().small()
         self.scope_combo.addItem(self.tr("Current image"), userData="current")
-        self.scope_combo.addItem(self.tr("All images"), userData="all")
+        self.scope_combo.addItem(self.tr("All Images"), userData="all")
         self.scope_combo.setToolTip(self.tr("Search scope"))
         self.scope_combo.currentIndexChanged.connect(lambda _i: self._schedule_live_search())
 

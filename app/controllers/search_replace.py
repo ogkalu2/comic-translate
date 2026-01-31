@@ -259,6 +259,7 @@ class SearchReplaceController(QtCore.QObject):
         self.main = main
         self._matches: list[SearchMatch] = []
         self._active_match_index: int = -1
+        self._shortcuts: list[QtGui.QShortcut] = []
 
         panel = getattr(self.main, "search_panel", None)
         if panel is None:
@@ -276,6 +277,17 @@ class SearchReplaceController(QtCore.QObject):
         QtGui.QShortcut(QtGui.QKeySequence.Replace, self.main, activated=self.focus_replace)
         QtGui.QShortcut(QtGui.QKeySequence("F3"), self.main, activated=self.next_match)
         QtGui.QShortcut(QtGui.QKeySequence("Shift+F3"), self.main, activated=self.prev_match)
+
+        # VS Code-like navigation: Enter / Shift+Enter when Find box is focused.
+        self._shortcuts.append(QtGui.QShortcut(QtGui.QKeySequence("Return"), panel.find_input, activated=self.next_match))
+        self._shortcuts.append(
+            QtGui.QShortcut(QtGui.QKeySequence("Shift+Return"), panel.find_input, activated=self.prev_match)
+        )
+
+        # Clear (Esc) when any widget in the panel has focus.
+        clear_sc = QtGui.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key.Key_Escape), panel, activated=panel._clear_find)
+        clear_sc.setContext(QtCore.Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self._shortcuts.append(clear_sc)
 
     def focus_find(self):
         if hasattr(self.main, "show_search_sidebar"):
