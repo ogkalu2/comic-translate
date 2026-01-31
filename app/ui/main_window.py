@@ -409,7 +409,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.s_combo.setToolTip(self.tr("Source Language"))
         s_combo_text_layout.addWidget(self.s_combo)
         self.s_text_edit = MTextEdit()
-        self.s_text_edit.setFixedHeight(150)
+        self.s_text_edit.setFixedHeight(120)
         s_combo_text_layout.addWidget(self.s_text_edit)
         input_layout.addLayout(s_combo_text_layout)
 
@@ -420,7 +420,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.t_combo.setToolTip(self.tr("Target Language"))
         t_combo_text_layout.addWidget(self.t_combo)
         self.t_text_edit = MTextEdit()
-        self.t_text_edit.setFixedHeight(150)
+        self.t_text_edit.setFixedHeight(120)
         t_combo_text_layout.addWidget(self.t_text_edit)
 
         input_layout.addLayout(t_combo_text_layout)
