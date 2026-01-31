@@ -97,6 +97,62 @@ def _make_preview(text: str, start: int, end: int, radius: int = 30) -> str:
     suffix = "…" if right < len(safe) else ""
     return f"{prefix}{safe[left:right]}{suffix}"
 
+def _looks_like_html(text: str) -> bool:
+    if not text:
+        return False
+    return bool(re.search(r"<[^>]+>", text))
+
+
+def _to_qt_plain(text: str) -> str:
+    # QTextDocument uses U+2029 (paragraph separator) for line breaks in toPlainText().
+    t = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    return t.replace("\n", "\u2029")
+
+
+def _apply_text_delta_to_document(doc: QtGui.QTextDocument, new_text: str) -> bool:
+    old_text = doc.toPlainText()
+    new_text_qt = _to_qt_plain(new_text)
+    if old_text == new_text_qt:
+        return False
+
+    prefix = 0
+    max_prefix = min(len(old_text), len(new_text_qt))
+    while prefix < max_prefix and old_text[prefix] == new_text_qt[prefix]:
+        prefix += 1
+
+    suffix = 0
+    max_suffix = min(len(old_text) - prefix, len(new_text_qt) - prefix)
+    while suffix < max_suffix and old_text[-(suffix + 1)] == new_text_qt[-(suffix + 1)]:
+        suffix += 1
+
+    old_mid_end = len(old_text) - suffix
+    new_mid_end = len(new_text_qt) - suffix
+    old_mid = old_text[prefix:old_mid_end]
+    new_mid = new_text_qt[prefix:new_mid_end]
+
+    cursor = QTextCursor(doc)
+    insert_format = None
+    if old_text:
+        if prefix < len(old_text):
+            cursor.setPosition(prefix)
+            insert_format = cursor.charFormat()
+        elif prefix > 0:
+            cursor.setPosition(prefix - 1)
+            insert_format = cursor.charFormat()
+
+    cursor.beginEditBlock()
+    if old_mid:
+        cursor.setPosition(prefix)
+        cursor.setPosition(prefix + len(old_mid), QTextCursor.KeepAnchor)
+        cursor.removeSelectedText()
+    if new_mid:
+        cursor.setPosition(prefix)
+        if insert_format is not None:
+            cursor.setCharFormat(insert_format)
+        cursor.insertText(new_mid)
+    cursor.endEditBlock()
+    return True
+
 
 def replace_nth_match(
     text: str,
@@ -549,19 +605,26 @@ class SearchReplaceController(QtCore.QObject):
             viewer_state = state.get("viewer_state") or {}
             text_items_state = viewer_state.get("text_items_state") or []
             if opts.in_target:
-                try:
-                    doc = QtGui.QTextDocument()
-                    doc.setPlainText(new_text)
-                    new_html = doc.toHtml()
-                except Exception:
-                    new_html = new_text
                 for ti in text_items_state:
                     pos = ti.get("position") or (None, None)
                     rot = float(ti.get("rotation") or 0.0)
                     if pos[0] is None:
                         continue
                     if is_close(float(pos[0]), float(key.xyxy[0]), 5) and is_close(float(pos[1]), float(key.xyxy[1]), 5) and is_close(rot, key.angle, 1.0):
-                        ti["text"] = new_html
+                        existing = ti.get("text") or ""
+                        if _looks_like_html(existing):
+                            try:
+                                doc = QtGui.QTextDocument()
+                                doc.setHtml(existing)
+                                if _apply_text_delta_to_document(doc, new_text):
+                                    ti["text"] = doc.toHtml()
+                            except Exception:
+                                # Fallback: keep original if we can't safely edit it.
+                                pass
+                        else:
+                            # If stored as plain text, keep it plain so TextItemProperties restore
+                            # will apply size/font/etc from the other serialized fields.
+                            ti["text"] = new_text
 
         # If currently displayed, update canvas + edits as well.
         blk = self._find_block_in_current_image(key)
@@ -581,7 +644,17 @@ class SearchReplaceController(QtCore.QObject):
                     y = float(text_item.pos().y())
                     rot = float(text_item.rotation())
                     if is_close(x, key.xyxy[0], 5) and is_close(y, key.xyxy[1], 5) and is_close(rot, key.angle, 1.0):
-                        self.main.text_ctrl.apply_text_from_command(text_item, new_text, html=None, blk=blk)
+                        html = None
+                        try:
+                            existing = text_item.document().toHtml()
+                            if _looks_like_html(existing):
+                                doc = QtGui.QTextDocument()
+                                doc.setHtml(existing)
+                                if _apply_text_delta_to_document(doc, new_text):
+                                    html = doc.toHtml()
+                        except Exception:
+                            html = None
+                        self.main.text_ctrl.apply_text_from_command(text_item, new_text, html=html, blk=blk)
                         break
             except Exception:
                 pass
