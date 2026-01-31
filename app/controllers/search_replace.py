@@ -9,6 +9,7 @@ from PySide6 import QtCore, QtGui
 from PySide6.QtGui import QTextCursor
 
 from modules.utils.common_utils import is_close
+from app.ui.commands.search_replace import ReplaceBlocksCommand, ReplaceChange
 
 
 @dataclass(frozen=True)
@@ -568,6 +569,19 @@ class SearchReplaceController(QtCore.QObject):
         except Exception:
             pass
 
+    def _apply_block_text_by_key(
+        self,
+        *,
+        in_target: bool,
+        file_path: str,
+        xyxy: tuple[int, int, int, int],
+        angle: float,
+        new_text: str,
+    ):
+        key = BlockKey(file_path=file_path, xyxy=xyxy, angle=angle)
+        opts = SearchOptions(query="", replace="", in_target=bool(in_target))
+        self._apply_block_text(opts, key, new_text)
+
     def replace_current(self):
         if not self._matches or self._active_match_index < 0:
             return
@@ -580,18 +594,20 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         m = self._matches[self._active_match_index]
-        # Pull current text fresh from the state to avoid replacing stale positions.
-        state = self.main.image_states.get(m.key.file_path) or {}
-        blks = state.get("blk_list") or []
-        target_blk = next(
-            (
-                blk
-                for blk in blks
-                if (int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3])) == m.key.xyxy
-                and is_close(float(getattr(blk, "angle", 0.0) or 0.0), m.key.angle, 0.5)
-            ),
-            None,
-        )
+        # Prefer the currently loaded block (so Replace works even when state isn't up to date).
+        target_blk = self._find_block_in_current_image(m.key)
+        if target_blk is None:
+            state = self.main.image_states.get(m.key.file_path) or {}
+            blks = state.get("blk_list") or []
+            target_blk = next(
+                (
+                    blk
+                    for blk in blks
+                    if (int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3])) == m.key.xyxy
+                    and is_close(float(getattr(blk, "angle", 0.0) or 0.0), m.key.angle, 0.5)
+                ),
+                None,
+            )
         if target_blk is None:
             return
         old_text = target_blk.translation if opts.in_target else target_blk.text
@@ -601,7 +617,26 @@ class SearchReplaceController(QtCore.QObject):
         if not changed or new_text == old_text:
             return
 
-        self._apply_block_text(opts, m.key, new_text)
+        stack = self.main.undo_group.activeStack()
+        if stack:
+            cmd = ReplaceBlocksCommand(
+                self,
+                in_target=opts.in_target,
+                changes=[
+                    ReplaceChange(
+                        file_path=m.key.file_path,
+                        xyxy=m.key.xyxy,
+                        angle=m.key.angle,
+                        old_text=old_text,
+                        new_text=new_text,
+                    )
+                ],
+                text=self.main.tr("Replace"),
+            )
+            stack.push(cmd)
+        else:
+            self._apply_block_text(opts, m.key, new_text)
+        panel.set_status(self.main.tr("Replaced 1 occurrence(s)"))
         self.search()
 
     def replace_all(self):
@@ -614,7 +649,7 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         total_replacements = 0
-        affected_blocks: list[tuple[BlockKey, str]] = []
+        changes: list[ReplaceChange] = []
 
         for file_path, _blk_list, _idx, blk in self._iter_blocks(opts) or []:
             old_text = blk.translation if opts.in_target else blk.text
@@ -627,10 +662,29 @@ class SearchReplaceController(QtCore.QObject):
                 xyxy=(int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3])),
                 angle=float(getattr(blk, "angle", 0.0) or 0.0),
             )
-            affected_blocks.append((key, new_text))
+            changes.append(
+                ReplaceChange(
+                    file_path=key.file_path,
+                    xyxy=key.xyxy,
+                    angle=key.angle,
+                    old_text=old_text,
+                    new_text=new_text,
+                )
+            )
 
-        for key, new_text in affected_blocks:
-            self._apply_block_text(opts, key, new_text)
+        if changes:
+            stack = self.main.undo_group.activeStack()
+            if stack:
+                cmd = ReplaceBlocksCommand(
+                    self,
+                    in_target=opts.in_target,
+                    changes=changes,
+                    text=self.main.tr("Replace All"),
+                )
+                stack.push(cmd)
+            else:
+                for ch in changes:
+                    self._apply_block_text(opts, ch.key, ch.new_text)
 
         if total_replacements:
             panel.set_status(self.main.tr("Replaced {0} occurrence(s)").format(total_replacements))
