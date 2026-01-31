@@ -110,12 +110,14 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.replace_input.setPlaceholderText(self.tr("Replace"))
         self.replace_input.returnPressed.connect(self.replace_requested)
 
-        self.replace_btn = MToolButton().text_only().small()
-        self.replace_btn.setText(self.tr("Replace"))
+        self.replace_btn = MToolButton().icon_only().svg("replace.svg").small()
+        self.replace_btn.setToolTip(self.tr("Replace"))
+        self._apply_latching_toggle_style(self.replace_btn)
         self.replace_btn.clicked.connect(self.replace_requested)
 
-        self.replace_all_btn = MToolButton().text_only().small()
-        self.replace_all_btn.setText(self.tr("All"))
+        self.replace_all_btn = MToolButton().icon_only().svg("replace-all.svg").small()
+        self.replace_all_btn.setToolTip(self.tr("Replace All"))
+        self._apply_latching_toggle_style(self.replace_all_btn)
         self.replace_all_btn.clicked.connect(self.replace_all_requested)
 
         replace_row.addWidget(self.replace_input, 1)
