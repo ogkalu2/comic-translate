@@ -108,6 +108,63 @@ def _to_qt_plain(text: str) -> str:
     t = (text or "").replace("\r\n", "\n").replace("\r", "\n")
     return t.replace("\n", "\u2029")
 
+def _qt_plain_to_user(text: str) -> str:
+    return (text or "").replace("\u2029", "\n")
+
+
+def _apply_replacements_to_html(
+    existing_html: str,
+    pattern: re.Pattern[str],
+    replacement: str,
+    *,
+    regex_mode: bool,
+    nth: int | None = None,
+) -> tuple[str, str, str, int]:
+    """
+    Apply replacements directly to a QTextDocument created from existing HTML to preserve rich formatting.
+    Returns (old_plain, new_plain, new_html, count).
+    """
+    doc = QtGui.QTextDocument()
+    if _looks_like_html(existing_html):
+        doc.setHtml(existing_html)
+    else:
+        doc.setPlainText(existing_html or "")
+
+    old_plain = _qt_plain_to_user(doc.toPlainText())
+    matches = [m for m in pattern.finditer(old_plain) if m.start() != m.end()]
+    if nth is not None:
+        if nth < 0 or nth >= len(matches):
+            return old_plain, old_plain, doc.toHtml(), 0
+        matches = [matches[nth]]
+
+    if not matches:
+        return old_plain, old_plain, doc.toHtml(), 0
+
+    py_repl = _vscode_regex_replacement_to_python(replacement) if regex_mode else replacement
+
+    for m in reversed(matches):
+        start, end = m.start(), m.end()
+        try:
+            repl_text = m.expand(py_repl) if regex_mode else py_repl
+        except Exception:
+            repl_text = py_repl if isinstance(py_repl, str) else ""
+
+        fmt_cur = QTextCursor(doc)
+        fmt_cur.setPosition(start)
+        fmt = fmt_cur.charFormat()
+
+        cursor = QTextCursor(doc)
+        cursor.setPosition(start)
+        cursor.setPosition(end, QTextCursor.KeepAnchor)
+        cursor.beginEditBlock()
+        cursor.removeSelectedText()
+        cursor.insertText(_to_qt_plain(repl_text), fmt)
+        cursor.endEditBlock()
+
+    new_html = doc.toHtml()
+    new_plain = _qt_plain_to_user(doc.toPlainText())
+    return old_plain, new_plain, new_html, len(matches)
+
 
 def _apply_text_delta_to_document(doc: QtGui.QTextDocument, new_text: str) -> bool:
     old_text = doc.toPlainText()
@@ -587,6 +644,27 @@ class SearchReplaceController(QtCore.QObject):
         self._jump_to_match(self._active_match_index, focus=True)
 
     def _apply_block_text(self, opts: SearchOptions, key: BlockKey, new_text: str):
+        return self._apply_block_text_with_html(opts, key, new_text, html_override=None)
+
+    def _find_matching_text_item_state(self, state: dict, key: BlockKey) -> Optional[dict]:
+        viewer_state = state.get("viewer_state") or {}
+        text_items_state = viewer_state.get("text_items_state") or []
+        for ti in text_items_state:
+            pos = ti.get("position") or (None, None)
+            rot = float(ti.get("rotation") or 0.0)
+            if pos[0] is None:
+                continue
+            if (
+                is_close(float(pos[0]), float(key.xyxy[0]), 5)
+                and is_close(float(pos[1]), float(key.xyxy[1]), 5)
+                and is_close(rot, key.angle, 1.0)
+            ):
+                return ti
+        return None
+
+    def _apply_block_text_with_html(
+        self, opts: SearchOptions, key: BlockKey, new_text: str, *, html_override: str | None
+    ):
         state = self.main.image_states.get(key.file_path)
         if state:
             blks = state.get("blk_list") or []
@@ -600,17 +678,13 @@ class SearchReplaceController(QtCore.QObject):
                         blk.text = new_text
                     break
 
-            # Best-effort: if the page has persisted rendered text items in viewer_state,
-            # keep them in sync so switching pages doesn't resurrect old text.
-            viewer_state = state.get("viewer_state") or {}
-            text_items_state = viewer_state.get("text_items_state") or []
+            # Keep persisted rendered text items in sync so switching pages doesn't resurrect old text.
             if opts.in_target:
-                for ti in text_items_state:
-                    pos = ti.get("position") or (None, None)
-                    rot = float(ti.get("rotation") or 0.0)
-                    if pos[0] is None:
-                        continue
-                    if is_close(float(pos[0]), float(key.xyxy[0]), 5) and is_close(float(pos[1]), float(key.xyxy[1]), 5) and is_close(rot, key.angle, 1.0):
+                ti = self._find_matching_text_item_state(state, key)
+                if ti is not None:
+                    if html_override is not None:
+                        ti["text"] = html_override
+                    else:
                         existing = ti.get("text") or ""
                         if _looks_like_html(existing):
                             try:
@@ -619,11 +693,8 @@ class SearchReplaceController(QtCore.QObject):
                                 if _apply_text_delta_to_document(doc, new_text):
                                     ti["text"] = doc.toHtml()
                             except Exception:
-                                # Fallback: keep original if we can't safely edit it.
                                 pass
                         else:
-                            # If stored as plain text, keep it plain so TextItemProperties restore
-                            # will apply size/font/etc from the other serialized fields.
                             ti["text"] = new_text
 
         # If currently displayed, update canvas + edits as well.
@@ -644,17 +715,20 @@ class SearchReplaceController(QtCore.QObject):
                     y = float(text_item.pos().y())
                     rot = float(text_item.rotation())
                     if is_close(x, key.xyxy[0], 5) and is_close(y, key.xyxy[1], 5) and is_close(rot, key.angle, 1.0):
-                        html = None
-                        try:
-                            existing = text_item.document().toHtml()
-                            if _looks_like_html(existing):
-                                doc = QtGui.QTextDocument()
-                                doc.setHtml(existing)
-                                if _apply_text_delta_to_document(doc, new_text):
-                                    html = doc.toHtml()
-                        except Exception:
+                        if html_override is not None:
+                            self.main.text_ctrl.apply_text_from_command(text_item, new_text, html=html_override, blk=blk)
+                        else:
                             html = None
-                        self.main.text_ctrl.apply_text_from_command(text_item, new_text, html=html, blk=blk)
+                            try:
+                                existing = text_item.document().toHtml()
+                                if _looks_like_html(existing):
+                                    doc = QtGui.QTextDocument()
+                                    doc.setHtml(existing)
+                                    if _apply_text_delta_to_document(doc, new_text):
+                                        html = doc.toHtml()
+                            except Exception:
+                                html = None
+                            self.main.text_ctrl.apply_text_from_command(text_item, new_text, html=html, blk=blk)
                         break
             except Exception:
                 pass
@@ -686,10 +760,11 @@ class SearchReplaceController(QtCore.QObject):
         xyxy: tuple[int, int, int, int],
         angle: float,
         new_text: str,
+        html_override: str | None = None,
     ):
         key = BlockKey(file_path=file_path, xyxy=xyxy, angle=angle)
         opts = SearchOptions(query="", replace="", in_target=bool(in_target))
-        self._apply_block_text(opts, key, new_text)
+        self._apply_block_text_with_html(opts, key, new_text, html_override=html_override)
 
     def replace_current(self):
         if not self._matches or self._active_match_index < 0:
@@ -703,28 +778,54 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         m = self._matches[self._active_match_index]
-        # Prefer the currently loaded block (so Replace works even when state isn't up to date).
-        target_blk = self._find_block_in_current_image(m.key)
-        if target_blk is None:
-            state = self.main.image_states.get(m.key.file_path) or {}
-            blks = state.get("blk_list") or []
-            target_blk = next(
-                (
-                    blk
-                    for blk in blks
-                    if (int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3])) == m.key.xyxy
-                    and is_close(float(getattr(blk, "angle", 0.0) or 0.0), m.key.angle, 0.5)
-                ),
-                None,
+        old_html = None
+        new_html = None
+
+        # If the page has a persisted TextBlockItem state (rich text), update it in-place to preserve formatting.
+        state = self.main.image_states.get(m.key.file_path) or {}
+        if opts.in_target:
+            ti = self._find_matching_text_item_state(state, m.key)
+            existing_html = (ti.get("text") if ti else None) if isinstance(ti, dict) else None
+            if isinstance(existing_html, str) and existing_html:
+                old_text, new_text, new_html, count = _apply_replacements_to_html(
+                    existing_html,
+                    pattern,
+                    opts.replace,
+                    regex_mode=opts.regex,
+                    nth=m.match_ordinal_in_block,
+                )
+                if count <= 0 or new_text == old_text:
+                    return
+                old_html = existing_html
+            else:
+                old_text = None
+                new_text = None
+        else:
+            old_text = None
+            new_text = None
+
+        if old_text is None:
+            # Prefer the currently loaded block (so Replace works even when state isn't up to date).
+            target_blk = self._find_block_in_current_image(m.key)
+            if target_blk is None:
+                blks = state.get("blk_list") or []
+                target_blk = next(
+                    (
+                        blk
+                        for blk in blks
+                        if (int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3])) == m.key.xyxy
+                        and is_close(float(getattr(blk, "angle", 0.0) or 0.0), m.key.angle, 0.5)
+                    ),
+                    None,
+                )
+            if target_blk is None:
+                return
+            old_text = target_blk.translation if opts.in_target else target_blk.text
+            new_text, changed = replace_nth_match(
+                old_text, pattern, opts.replace, m.match_ordinal_in_block, regex_mode=opts.regex
             )
-        if target_blk is None:
-            return
-        old_text = target_blk.translation if opts.in_target else target_blk.text
-        new_text, changed = replace_nth_match(
-            old_text, pattern, opts.replace, m.match_ordinal_in_block, regex_mode=opts.regex
-        )
-        if not changed or new_text == old_text:
-            return
+            if not changed or new_text == old_text:
+                return
 
         stack = self.main.undo_group.activeStack()
         if stack:
@@ -738,13 +839,15 @@ class SearchReplaceController(QtCore.QObject):
                         angle=m.key.angle,
                         old_text=old_text,
                         new_text=new_text,
+                        old_html=old_html,
+                        new_html=new_html,
                     )
                 ],
                 text=self.main.tr("Replace"),
             )
             stack.push(cmd)
         else:
-            self._apply_block_text(opts, m.key, new_text)
+            self._apply_block_text_with_html(opts, m.key, new_text, html_override=new_html)
         panel.set_status(self.main.tr("Replaced 1 occurrence(s)"))
         self.search()
 
@@ -761,16 +864,42 @@ class SearchReplaceController(QtCore.QObject):
         changes: list[ReplaceChange] = []
 
         for file_path, _blk_list, _idx, blk in self._iter_blocks(opts) or []:
-            old_text = blk.translation if opts.in_target else blk.text
-            new_text, count = replace_all_matches(old_text, pattern, opts.replace, regex_mode=opts.regex)
-            if count <= 0 or new_text == old_text:
-                continue
-            total_replacements += count
             key = BlockKey(
                 file_path=file_path,
                 xyxy=(int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3])),
                 angle=float(getattr(blk, "angle", 0.0) or 0.0),
             )
+
+            old_html = None
+            new_html = None
+
+            state = self.main.image_states.get(file_path) or {}
+            if opts.in_target:
+                ti = self._find_matching_text_item_state(state, key)
+                existing_html = (ti.get("text") if ti else None) if isinstance(ti, dict) else None
+                if isinstance(existing_html, str) and existing_html:
+                    old_text, new_text, new_html, count = _apply_replacements_to_html(
+                        existing_html,
+                        pattern,
+                        opts.replace,
+                        regex_mode=opts.regex,
+                        nth=None,
+                    )
+                    if count <= 0 or new_text == old_text:
+                        continue
+                    old_html = existing_html
+                else:
+                    old_text = blk.translation
+                    new_text, count = replace_all_matches(old_text, pattern, opts.replace, regex_mode=opts.regex)
+                    if count <= 0 or new_text == old_text:
+                        continue
+            else:
+                old_text = blk.text
+                new_text, count = replace_all_matches(old_text, pattern, opts.replace, regex_mode=opts.regex)
+                if count <= 0 or new_text == old_text:
+                    continue
+
+            total_replacements += count
             changes.append(
                 ReplaceChange(
                     file_path=key.file_path,
@@ -778,6 +907,8 @@ class SearchReplaceController(QtCore.QObject):
                     angle=key.angle,
                     old_text=old_text,
                     new_text=new_text,
+                    old_html=old_html,
+                    new_html=new_html,
                 )
             )
 

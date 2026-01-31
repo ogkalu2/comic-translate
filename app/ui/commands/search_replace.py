@@ -12,6 +12,8 @@ class ReplaceChange:
     angle: float
     old_text: str
     new_text: str
+    old_html: str | None = None
+    new_html: str | None = None
 
 
 class ReplaceBlocksCommand(QUndoCommand):
@@ -40,6 +42,7 @@ class ReplaceBlocksCommand(QUndoCommand):
                 xyxy=ch.xyxy,
                 angle=ch.angle,
                 new_text=ch.new_text if use_new else ch.old_text,
+                html_override=ch.new_html if use_new else ch.old_html,
             )
 
     def redo(self):
