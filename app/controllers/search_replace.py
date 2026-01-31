@@ -260,6 +260,7 @@ class SearchReplaceController(QtCore.QObject):
         self._matches: list[SearchMatch] = []
         self._active_match_index: int = -1
         self._shortcuts: list[QtGui.QShortcut] = []
+        self._jump_nonce: int = 0
 
         panel = getattr(self.main, "search_panel", None)
         if panel is None:
@@ -560,11 +561,52 @@ class SearchReplaceController(QtCore.QObject):
         if os.path.normcase(current_file) != os.path.normcase(key.file_path):
             return None
 
+        def _key_xyxy_to_scene() -> tuple[float, float, float, float] | None:
+            if not getattr(self.main, "webtoon_mode", False):
+                return None
+            viewer = getattr(self.main, "image_viewer", None)
+            webtoon_manager = getattr(viewer, "webtoon_manager", None) if viewer is not None else None
+            converter = getattr(webtoon_manager, "coordinate_converter", None) if webtoon_manager is not None else None
+            if converter is None:
+                return None
+            try:
+                page_idx = self.main.image_files.index(key.file_path)
+            except ValueError:
+                return None
+            try:
+                tl = QtCore.QPointF(float(key.xyxy[0]), float(key.xyxy[1]))
+                br = QtCore.QPointF(float(key.xyxy[2]), float(key.xyxy[3]))
+                stl = converter.page_local_to_scene_position(tl, page_idx)
+                sbr = converter.page_local_to_scene_position(br, page_idx)
+                return (float(stl.x()), float(stl.y()), float(sbr.x()), float(sbr.y()))
+            except Exception:
+                return None
+
+        scene_xyxy = _key_xyxy_to_scene()
         for blk in self.main.blk_list or []:
-            xyxy = (int(blk.xyxy[0]), int(blk.xyxy[1]), int(blk.xyxy[2]), int(blk.xyxy[3]))
             angle = float(getattr(blk, "angle", 0.0) or 0.0)
-            if xyxy == key.xyxy and is_close(angle, key.angle, 0.5):
+            try:
+                bxyxy = (float(blk.xyxy[0]), float(blk.xyxy[1]), float(blk.xyxy[2]), float(blk.xyxy[3]))
+            except Exception:
+                continue
+
+            # Exact match (regular mode / already-scene keys)
+            if (
+                (int(bxyxy[0]), int(bxyxy[1]), int(bxyxy[2]), int(bxyxy[3])) == key.xyxy
+                and is_close(angle, key.angle, 0.5)
+            ):
                 return blk
+
+            # Webtoon mode: keys commonly come from per-page stored state (page-local coords),
+            # while loaded blocks in main.blk_list use scene coords.
+            if scene_xyxy is not None and is_close(angle, key.angle, 0.5):
+                if (
+                    is_close(bxyxy[0], scene_xyxy[0], 5)
+                    and is_close(bxyxy[1], scene_xyxy[1], 5)
+                    and is_close(bxyxy[2], scene_xyxy[2], 5)
+                    and is_close(bxyxy[3], scene_xyxy[3], 5)
+                ):
+                    return blk
         return None
 
     def _find_text_item_for_block(self, blk: object):
@@ -669,64 +711,7 @@ class SearchReplaceController(QtCore.QObject):
         except Exception:
             pass
 
-    def _jump_to_match_when_ready(self, match_index: int, focus: bool, attempt: int = 0, preserve_focus_state=None):
-        if match_index < 0 or match_index >= len(self._matches):
-            return
-        m = self._matches[match_index]
-
-        # In regular mode, page switches load asynchronously. Wait until current index matches.
-        if self.main.curr_img_idx < 0:
-            if attempt > 50:
-                return
-            QtCore.QTimer.singleShot(60, lambda: self._jump_to_match_when_ready(match_index, focus, attempt + 1))
-            return
-
-        current_file = self.main.image_files[self.main.curr_img_idx] if self.main.image_files else ""
-        if os.path.normcase(current_file) != os.path.normcase(m.key.file_path):
-            if attempt > 50:
-                return
-            QtCore.QTimer.singleShot(
-                60, lambda: self._jump_to_match_when_ready(match_index, focus, attempt + 1, preserve_focus_state)
-            )
-            return
-
-        blk = self._find_block_in_current_image(m.key)
-        if blk is None:
-            # In webtoon mode we don't always load per-page blk_list into main.blk_list.
-            # Fall back to the page's stored blk_list to at least populate the MTPE edits.
-            if getattr(self.main, "webtoon_mode", False):
-                state = self.main.image_states.get(m.key.file_path) or {}
-                blks = state.get("blk_list") or []
-                blk = next(
-                    (
-                        b
-                        for b in blks
-                        if (int(b.xyxy[0]), int(b.xyxy[1]), int(b.xyxy[2]), int(b.xyxy[3])) == m.key.xyxy
-                        and is_close(float(getattr(b, "angle", 0.0) or 0.0), m.key.angle, 0.5)
-                    ),
-                    None,
-                )
-                if blk is not None:
-                    self._select_block(blk)
-                    if self._gather_options().in_target:
-                        self._highlight_in_target_edit(m.start, m.end)
-                        if focus:
-                            self.main.t_text_edit.setFocus()
-                    else:
-                        self._highlight_in_source_edit(m.start, m.end)
-                        if focus:
-                            self.main.s_text_edit.setFocus()
-                    if preserve_focus_state is not None and not focus:
-                        self._restore_focus_state(preserve_focus_state)
-                    return
-
-            if attempt > 50:
-                return
-            QtCore.QTimer.singleShot(
-                60, lambda: self._jump_to_match_when_ready(match_index, focus, attempt + 1, preserve_focus_state)
-            )
-            return
-
+    def _apply_match_selection(self, m: SearchMatch, blk: object, focus: bool, preserve_focus_state=None):
         self._select_block(blk)
         if self._gather_options().in_target:
             self._highlight_in_target_edit(m.start, m.end)
@@ -739,6 +724,120 @@ class SearchReplaceController(QtCore.QObject):
         if preserve_focus_state is not None and not focus:
             self._restore_focus_state(preserve_focus_state)
 
+    def _apply_webtoon_fallback_selection(self, m: SearchMatch, focus: bool, preserve_focus_state=None):
+        # Webtoon mode: if the page hasn't loaded into the scene yet, fall back to the
+        # page's stored blk_list to at least populate the MTPE edits.
+        state = self.main.image_states.get(m.key.file_path) or {}
+        blks = state.get("blk_list") or []
+        blk = next(
+            (
+                b
+                for b in blks
+                if (int(b.xyxy[0]), int(b.xyxy[1]), int(b.xyxy[2]), int(b.xyxy[3])) == m.key.xyxy
+                and is_close(float(getattr(b, "angle", 0.0) or 0.0), m.key.angle, 0.5)
+            ),
+            None,
+        )
+        if blk is None:
+            return
+        self._select_block(blk)
+        if self._gather_options().in_target:
+            self._highlight_in_target_edit(m.start, m.end)
+            if focus:
+                self.main.t_text_edit.setFocus()
+        else:
+            self._highlight_in_source_edit(m.start, m.end)
+            if focus:
+                self.main.s_text_edit.setFocus()
+        if preserve_focus_state is not None and not focus:
+            self._restore_focus_state(preserve_focus_state)
+
+    def _wait_for_webtoon_match_loaded(
+        self,
+        match_index: int,
+        focus: bool,
+        *,
+        attempt_load: int,
+        preserve_focus_state=None,
+        nonce: int | None = None,
+    ):
+        if nonce is not None and nonce != self._jump_nonce:
+            return
+        if match_index < 0 or match_index >= len(self._matches):
+            return
+        m = self._matches[match_index]
+
+        blk = self._find_block_in_current_image(m.key)
+        if blk is not None:
+            self._apply_match_selection(m, blk, focus, preserve_focus_state)
+            return
+
+        if attempt_load >= 35:  # ~2s (35 * 60ms)
+            self._apply_webtoon_fallback_selection(m, focus, preserve_focus_state)
+            return
+
+        QtCore.QTimer.singleShot(
+            60,
+            lambda: self._wait_for_webtoon_match_loaded(
+                match_index,
+                focus,
+                attempt_load=attempt_load + 1,
+                preserve_focus_state=preserve_focus_state,
+                nonce=nonce,
+            ),
+        )
+
+    def _jump_to_match_when_ready(
+        self, match_index: int, focus: bool, attempt: int = 0, preserve_focus_state=None, nonce: int | None = None
+    ):
+        if nonce is not None and nonce != self._jump_nonce:
+            return
+        if match_index < 0 or match_index >= len(self._matches):
+            return
+        m = self._matches[match_index]
+
+        # In regular mode, page switches load asynchronously. Wait until current index matches.
+        if self.main.curr_img_idx < 0:
+            if attempt > 50:
+                return
+            QtCore.QTimer.singleShot(
+                60, lambda: self._jump_to_match_when_ready(match_index, focus, attempt + 1, nonce=nonce)
+            )
+            return
+
+        current_file = self.main.image_files[self.main.curr_img_idx] if self.main.image_files else ""
+        if os.path.normcase(current_file) != os.path.normcase(m.key.file_path):
+            if attempt > 50:
+                return
+            QtCore.QTimer.singleShot(
+                60,
+                lambda: self._jump_to_match_when_ready(
+                    match_index, focus, attempt + 1, preserve_focus_state, nonce=nonce
+                ),
+            )
+            return
+
+        blk = self._find_block_in_current_image(m.key)
+        if blk is None:
+            if getattr(self.main, "webtoon_mode", False):
+                # Wait for the target page's scene items (text/rectangles/blocks) to load, then select.
+                self._wait_for_webtoon_match_loaded(
+                    match_index, focus, attempt_load=0, preserve_focus_state=preserve_focus_state, nonce=nonce
+                )
+                return
+
+            if attempt > 50:
+                return
+            QtCore.QTimer.singleShot(
+                60,
+                lambda: self._jump_to_match_when_ready(
+                    match_index, focus, attempt + 1, preserve_focus_state, nonce=nonce
+                ),
+            )
+            return
+
+        self._apply_match_selection(m, blk, focus, preserve_focus_state)
+
     def _jump_to_match(self, match_index: int, focus: bool = False, preserve_focus_state=None):
         if match_index < 0 or match_index >= len(self._matches):
             return
@@ -748,7 +847,9 @@ class SearchReplaceController(QtCore.QObject):
 
         if not self._set_current_row_for_file(m.key.file_path):
             return
-        self._jump_to_match_when_ready(match_index, focus, attempt=0, preserve_focus_state=preserve_focus_state)
+        self._jump_nonce += 1
+        nonce = self._jump_nonce
+        self._jump_to_match_when_ready(match_index, focus, attempt=0, preserve_focus_state=preserve_focus_state, nonce=nonce)
 
     def _on_result_activated(self, match: SearchMatch):
         try:
