@@ -34,6 +34,32 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self._live_timer.setInterval(250)
         self._live_timer.timeout.connect(self.search_requested)
         self._build_ui()
+        QtCore.QTimer.singleShot(0, self._sync_summary_x)
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() in {
+            QtCore.QEvent.Type.Polish,
+            QtCore.QEvent.Type.PolishRequest,
+            QtCore.QEvent.Type.StyleChange,
+            QtCore.QEvent.Type.FontChange,
+            QtCore.QEvent.Type.PaletteChange,
+        }:
+            QtCore.QTimer.singleShot(0, self._sync_summary_x)
+
+    def _sync_summary_x(self):
+        """
+        Align the *text* in the summary label with the (centered) icon in the
+        Find "Previous" button. Dayu theme uses a smaller iconSize than the
+        toolbutton size, so the icon is visually inset.
+        """
+        if not hasattr(self, "summary_label") or not hasattr(self, "prev_btn"):
+            return
+
+        contents = self.prev_btn.contentsRect()
+        icon = self.prev_btn.iconSize()
+        icon_left = contents.left() + max(0, (contents.width() - icon.width()) // 2)
+        self.summary_label.setIndent(max(0, int(icon_left)))
 
     def _apply_latching_toggle_style(self, btn: QtWidgets.QToolButton):
         # Ensure check state is visually persistent (VS Code-like "latched" toggles).
@@ -119,8 +145,8 @@ class SearchReplacePanel(QtWidgets.QWidget):
         find_nav_lay.addWidget(self.prev_btn)
         find_nav_lay.addWidget(self.next_btn)
         find_nav_lay.addWidget(self.clear_btn)
-        nav_width = find_nav.sizeHint().width()
-        find_nav.setFixedWidth(nav_width)
+        find_nav_width = find_nav.sizeHint().width()
+        find_nav.setFixedWidth(find_nav_width)
 
         find_row.addWidget(self.find_input, 1)
         find_row.addWidget(find_nav)
@@ -167,7 +193,9 @@ class SearchReplacePanel(QtWidgets.QWidget):
         # find nav buttons (prev/next/clear) on the replace row, and show the
         # results count there.
         replace_right = QtWidgets.QWidget()
-        replace_right.setFixedWidth(find_nav.width())
+        # Use the same fixed width as the Find nav so the left edge (x position)
+        # aligns between rows.
+        replace_right.setFixedWidth(find_nav_width)
         replace_right_lay = QtWidgets.QVBoxLayout(replace_right)
         replace_right_lay.setContentsMargins(0, 0, 0, 0)
         replace_right_lay.setSpacing(0)
