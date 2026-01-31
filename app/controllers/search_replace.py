@@ -387,26 +387,25 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         if not opts.scope_all_images:
-            # Webtoon mode "Current image" means "Visible area" (loaded pages in viewport + buffer).
+            # Webtoon mode "Current image" means "Visible area" (viewport + buffer pages).
             if getattr(self.main, "webtoon_mode", False):
                 viewer = getattr(self.main, "image_viewer", None)
                 webtoon_manager = getattr(viewer, "webtoon_manager", None) if viewer is not None else None
                 layout_manager = getattr(webtoon_manager, "layout_manager", None) if webtoon_manager is not None else None
                 if layout_manager is not None:
                     try:
-                        # Prefer strict viewport visibility over buffered visibility.
-                        if (
+                        visible_pages = set()
+                        if hasattr(layout_manager, "get_visible_pages"):
+                            # Includes the layout_manager.viewport_buffer pages.
+                            visible_pages |= set(layout_manager.get_visible_pages() or set())
+                        elif (
                             viewer is not None
                             and hasattr(layout_manager, "get_pages_for_scene_bounds")
                             and hasattr(viewer, "viewport")
                             and viewer.viewport() is not None
                         ):
                             viewport_rect = viewer.mapToScene(viewer.viewport().rect()).boundingRect()
-                            visible_pages = set(layout_manager.get_pages_for_scene_bounds(viewport_rect) or set())
-                        elif hasattr(layout_manager, "get_visible_pages"):
-                            visible_pages = set(layout_manager.get_visible_pages() or set())
-                        else:
-                            visible_pages = set()
+                            visible_pages |= set(layout_manager.get_pages_for_scene_bounds(viewport_rect) or set())
                     except Exception:
                         visible_pages = set()
 
