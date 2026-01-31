@@ -210,7 +210,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.scope_combo = MComboBox().small()
         self.scope_combo.addItem(self.tr("Current Image"), userData="current")
         self.scope_combo.addItem(self.tr("All Images"), userData="all")
-        self.scope_combo.setToolTip(self.tr("Search scope"))
+        self.scope_combo.setToolTip(self.tr("Search scope (Current image becomes Visible area in Webtoon mode)"))
         self.scope_combo.currentIndexChanged.connect(lambda _i: self._schedule_live_search())
 
         self.field_combo = MComboBox().small()

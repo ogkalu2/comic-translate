@@ -387,6 +387,43 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         if not opts.scope_all_images:
+            # Webtoon mode "Current image" means "Visible area" (loaded pages in viewport + buffer).
+            if getattr(self.main, "webtoon_mode", False):
+                viewer = getattr(self.main, "image_viewer", None)
+                webtoon_manager = getattr(viewer, "webtoon_manager", None) if viewer is not None else None
+                layout_manager = getattr(webtoon_manager, "layout_manager", None) if webtoon_manager is not None else None
+                if layout_manager is not None:
+                    try:
+                        # Prefer strict viewport visibility over buffered visibility.
+                        if (
+                            viewer is not None
+                            and hasattr(layout_manager, "get_pages_for_scene_bounds")
+                            and hasattr(viewer, "viewport")
+                            and viewer.viewport() is not None
+                        ):
+                            viewport_rect = viewer.mapToScene(viewer.viewport().rect()).boundingRect()
+                            visible_pages = set(layout_manager.get_pages_for_scene_bounds(viewport_rect) or set())
+                        elif hasattr(layout_manager, "get_visible_pages"):
+                            visible_pages = set(layout_manager.get_visible_pages() or set())
+                        else:
+                            visible_pages = set()
+                    except Exception:
+                        visible_pages = set()
+
+                    # If we can't determine visibility, fall back to current page.
+                    if not visible_pages and self.main.curr_img_idx >= 0:
+                        visible_pages = {self.main.curr_img_idx}
+
+                    for page_idx in sorted(visible_pages):
+                        if not (0 <= page_idx < len(self.main.image_files)):
+                            continue
+                        file_path = self.main.image_files[page_idx]
+                        state = self.main.image_states.get(file_path) or {}
+                        blks = state.get("blk_list") or []
+                        for idx, blk in enumerate(blks):
+                            yield file_path, blks, idx, blk
+                    return
+
             if self.main.curr_img_idx < 0:
                 return
             file_path = self.main.image_files[self.main.curr_img_idx]
