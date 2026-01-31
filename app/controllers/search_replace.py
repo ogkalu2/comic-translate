@@ -371,6 +371,15 @@ class SearchReplaceController(QtCore.QObject):
             in_target=(panel.field_combo.currentData() == "target"),
         )
 
+    def _format_pattern_error(self, err: Exception) -> str:
+        """
+        Map common validation errors to localized strings.
+        """
+        msg = str(err) if err is not None else ""
+        if isinstance(err, ValueError) and msg == "Empty query":
+            return self.main.tr("Empty query")
+        return msg
+
     def on_undo_redo(self, *_args):
         """Refresh search results after undo/redo without jumping/focusing."""
         panel = getattr(self.main, "search_panel", None)
@@ -453,7 +462,7 @@ class SearchReplaceController(QtCore.QObject):
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
-            panel.set_status(f"{self.main.tr('Search error')}: {e}")
+            panel.set_status(f"{self.main.tr('Search error')}: {self._format_pattern_error(e)}")
             panel.set_results([], 0, 0)
             self._matches = []
             self._active_match_index = -1
@@ -991,7 +1000,7 @@ class SearchReplaceController(QtCore.QObject):
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
-            panel.set_status(f"{self.main.tr('Replace error')}: {e}")
+            panel.set_status(f"{self.main.tr('Replace error')}: {self._format_pattern_error(e)}")
             return
 
         m = self._matches[self._active_match_index]
@@ -1074,7 +1083,7 @@ class SearchReplaceController(QtCore.QObject):
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
-            panel.set_status(f"{self.main.tr('Replace error')}: {e}")
+            panel.set_status(f"{self.main.tr('Replace error')}: {self._format_pattern_error(e)}")
             return
 
         total_replacements = 0
