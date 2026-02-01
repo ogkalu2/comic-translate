@@ -3,13 +3,16 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Optional
+from typing import Iterator, Optional, TYPE_CHECKING
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtGui import QTextCursor
 
 from modules.utils.common_utils import is_close
 from app.ui.commands.search_replace import ReplaceBlocksCommand, ReplaceChange
+
+if TYPE_CHECKING:
+    from controller import ComicTranslate
 
 
 @dataclass(frozen=True)
@@ -307,7 +310,7 @@ def replace_all_matches(
 
 
 class SearchReplaceController(QtCore.QObject):
-    def __init__(self, main):
+    def __init__(self, main: ComicTranslate):
         super().__init__(main)
         self.main = main
         self._matches: list[SearchMatch] = []
