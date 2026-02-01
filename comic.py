@@ -389,6 +389,23 @@ def load_translation(app, language: str):
     else:
         print(f"Failed to load translation for {language}")
 
+    # Load standard Qt translations
+    qt_translator = QTranslator(app)
+    # qtbase uses underscores (e.g. qtbase_zh_CN.qm, qtbase_fr.qm)
+    qt_lang_code = lang_code.replace('-', '_')
+    from PySide6.QtCore import QLibraryInfo
+    qt_tr_path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
+    
+    # Try loading from the local directory first (if bundled)
+    if not qt_translator.load(f"qtbase_{qt_lang_code}", current_file_dir):
+        # Try loading from the standard Qt installation path
+        if not qt_translator.load(f"qtbase_{qt_lang_code}", qt_tr_path):
+            print(f"Failed to load Qt translation for {language}")
+        else:
+            app.installTranslator(qt_translator)
+    else:
+        app.installTranslator(qt_translator)
+
     # if translator.load(f":/translations/ct_{lang_code}.qm"):
     #     app.installTranslator(translator)
     # else:
