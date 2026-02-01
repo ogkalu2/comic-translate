@@ -441,10 +441,13 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         # Ensure current image edits are persisted into image_states.viewer_state when possible.
-        try:
-            self.main.image_ctrl.save_current_image_state()
-        except Exception:
-            pass
+        # In webtoon mode, blocks are managed differently via the scene item manager,
+        # so skip this to avoid incorrectly assigning all visible blocks to a single file.
+        if not getattr(self.main, "webtoon_mode", False):
+            try:
+                self.main.image_ctrl.save_current_image_state()
+            except Exception:
+                pass
 
         for file_path in self.main.image_files:
             state = self.main.image_states.get(file_path) or {}
