@@ -33,7 +33,7 @@ class ToolsPage(QtWidgets.QWidget):
         detector_widget, self.detector_combo = create_title_and_combo(self.tr("Text Detector"), self.detectors, h4=True)
         set_combo_box_width(self.detector_combo, self.detectors)
 
-        inpainting_label = MLabel(self.tr("Inpainting")).h4()
+        inpainting_label = MLabel(self.tr("Image Cleaning")).h4()
         inpainter_widget, self.inpainter_combo = create_title_and_combo(self.tr("Inpainter"), self.inpainters, h4=False)
         set_combo_box_width(self.inpainter_combo, self.inpainters)
         self.inpainter_combo.setCurrentText(self.tr("AOT"))
