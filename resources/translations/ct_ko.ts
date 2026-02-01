@@ -52,6 +52,38 @@
         <source>Custom</source>
         <translation>사용자 지정</translation>
     </message>
+    <message>
+        <source>Empty query</source>
+        <translation type="obsolete">빈 쿼리</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation type="obsolete">준비됨</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation type="obsolete">결과 없음</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="obsolete">바꾸기</translation>
+    </message>
+    <message>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation type="obsolete">1개의 항목이 교체되었습니다</translation>
+    </message>
+    <message>
+        <source>Replace All</source>
+        <translation type="obsolete">모두 바꾸기</translation>
+    </message>
+    <message>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation type="obsolete">{0}개의 항목이 교체되었습니다</translation>
+    </message>
+    <message>
+        <source>No replacements</source>
+        <translation type="obsolete">교체 항목 없음</translation>
+    </message>
 </context>
 <context>
     <name>AboutPage</name>
@@ -916,78 +948,84 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation>선택된 {}이(가) 없습니다. 설정 &gt; 도구에서 {}을(를) 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="79"/>
+        <location filename="../../app/ui/messages.py" line="81"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
         <translation>이 작업을 수행하기에 크레딧이 부족합니다.
 설정 &gt; 계정에서 크레딧을 추가로 구매하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="95"/>
+        <location filename="../../app/ui/messages.py" line="100"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
         <translation>사용자 지정은 고급 API 구성이 필요합니다. 대부분의 사용자는 크레딧 시스템을 사용하는 것이 좋습니다.
 크레딧을 사용하려면 설정 &gt; 계정에서 로그인하거나, 설정 &gt; 고급에서 사용자 지정 API를 구성하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="131"/>
+        <location filename="../../app/ui/messages.py" line="136"/>
         <source>Copy</source>
         <translation>복사</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="132"/>
+        <location filename="../../app/ui/messages.py" line="89"/>
+        <location filename="../../app/ui/messages.py" line="137"/>
         <source>OK</source>
         <translation>확인</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="133"/>
+        <location filename="../../app/ui/messages.py" line="80"/>
+        <source>Insufficient Credits</source>
+        <translation>크레딧 부족</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="138"/>
         <source>Close</source>
         <translation>닫기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="149"/>
+        <location filename="../../app/ui/messages.py" line="154"/>
         <source>An unexpected error occurred on the server.
 Please try again later.</source>
         <translation>서버에서 예상치 못한 오류가 발생했습니다.
 나중에 다시 시도해 주세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="150"/>
+        <location filename="../../app/ui/messages.py" line="155"/>
         <source>The selected translator is currently unavailable.
 Please select a different tool in Settings.</source>
         <translation>선택한 번역기는 현재 사용할 수 없습니다.
 설정에서 다른 도구를 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="151"/>
+        <location filename="../../app/ui/messages.py" line="156"/>
         <source>The server received an invalid response from an upstream provider.
 Please try again later.</source>
         <translation>서버가 업스트림 제공업체로부터 유효하지 않은 응답을 받았습니다.
 나중에 다시 시도해 주세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="152"/>
+        <location filename="../../app/ui/messages.py" line="157"/>
         <source>The server is currently unavailable or overloaded.
 Please try again later.</source>
         <translation>서버가 현재 사용 불가능하거나 과부하 상태입니다.
 나중에 다시 시도해 주세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="153"/>
+        <location filename="../../app/ui/messages.py" line="158"/>
         <source>The server timed out waiting for a response.
 Please try again later.</source>
         <translation>서버가 응답을 기다리는 동안 시간이 초과되었습니다.
 나중에 다시 시도해 주세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="170"/>
+        <location filename="../../app/ui/messages.py" line="175"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>서버에 연결할 수 없습니다.
 인터넷 연결을 확인해 주세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="185"/>
+        <location filename="../../app/ui/messages.py" line="190"/>
         <source>Translation blocked: The content was flagged by safety filters.
 Please try modifying the text or using a different translator.</source>
         <translation>번역이 차단되었습니다: 콘텐츠가 안전 필터에 의해 감지되었습니다.
@@ -1043,6 +1081,60 @@ Please try modifying the text or using a different translator.</source>
         <location filename="../../app/ui/settings/personalization_page.py" line="14"/>
         <source>Theme</source>
         <translation>테마</translation>
+    </message>
+</context>
+<context>
+    <name>SearchReplaceController</name>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
+        <source>Empty query</source>
+        <translation>빈 쿼리</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="524"/>
+        <source>Search Error</source>
+        <translation>검색 오류</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
+        <source>Ready</source>
+        <translation>준비됨</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
+        <source>No results</source>
+        <translation>결과 없음</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1062"/>
+        <location filename="../../app/controllers/search_replace.py" line="1146"/>
+        <source>Replace Error</source>
+        <translation>교체 오류</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
+        <source>Replace</source>
+        <translation>바꾸기</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation>1개의 항목이 교체되었습니다</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
+        <source>Replace All</source>
+        <translation>모두 바꾸기</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation>{0}개의 항목이 교체되었습니다</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
+        <source>No replacements</source>
+        <translation>교체 항목 없음</translation>
     </message>
 </context>
 <context>
@@ -1110,12 +1202,12 @@ Please try modifying the text or using a different translator.</source>
         <translation>모두 바꾸기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
         <source>Current Image</source>
         <translation>현재 이미지</translation>
     </message>
     <message>
-        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
         <source>All Images</source>
         <translation>모든 이미지</translation>
     </message>
@@ -1889,49 +1981,6 @@ then do inpainting on the resized image.</source>
         <location filename="../../app/ui/settings/tools_page.py" line="129"/>
         <source>Original</source>
         <translation>원본</translation>
-    </message>
-</context>
-<context>
-    <name>self.main</name>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="435"/>
-        <source>Empty query</source>
-        <translation>빈 쿼리</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="577"/>
-        <source>Ready</source>
-        <translation>준비됨</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="590"/>
-        <source>No results</source>
-        <translation>결과 없음</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1132"/>
-        <source>Replace</source>
-        <translation>바꾸기</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1137"/>
-        <source>Replaced 1 occurrence(s)</source>
-        <translation>1개의 항목이 교체되었습니다</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1215"/>
-        <source>Replace All</source>
-        <translation>모두 바꾸기</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1223"/>
-        <source>Replaced {0} occurrence(s)</source>
-        <translation>{0}개의 항목이 교체되었습니다</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1225"/>
-        <source>No replacements</source>
-        <translation>교체 항목 없음</translation>
     </message>
 </context>
 <context>

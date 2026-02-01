@@ -52,6 +52,38 @@
         <source>Custom</source>
         <translation>Personalizzato</translation>
     </message>
+    <message>
+        <source>Empty query</source>
+        <translation type="obsolete">Query vuota</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation type="obsolete">Pronto</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation type="obsolete">Nessun risultato</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="obsolete">Sostituisci</translation>
+    </message>
+    <message>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation type="obsolete">Sostituita 1 occorrenza</translation>
+    </message>
+    <message>
+        <source>Replace All</source>
+        <translation type="obsolete">Sostituisci tutto</translation>
+    </message>
+    <message>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation type="obsolete">Sostituite {0} occorrenze</translation>
+    </message>
+    <message>
+        <source>No replacements</source>
+        <translation type="obsolete">Nessuna sostituzione</translation>
+    </message>
 </context>
 <context>
     <name>AboutPage</name>
@@ -916,78 +948,84 @@ Vai a Impostazioni &gt; Rendering testo &gt; Carattere per selezionarne o import
         <translation>Nessun {} selezionato. Seleziona un {} in Impostazioni &gt; Strumenti.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="79"/>
+        <location filename="../../app/ui/messages.py" line="81"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
         <translation>Crediti insufficienti per eseguire questa azione.
 Vai su Impostazioni &gt; Account per acquistare altri crediti.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="95"/>
+        <location filename="../../app/ui/messages.py" line="100"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
         <translation>La modalità Personalizzato richiede una configurazione API avanzata. La maggior parte degli utenti dovrebbe invece utilizzare il sistema di crediti.
 Accedi tramite Impostazioni &gt; Account per usare i crediti, oppure configura le impostazioni API personalizzate in Impostazioni &gt; Avanzate.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="131"/>
+        <location filename="../../app/ui/messages.py" line="136"/>
         <source>Copy</source>
         <translation>Copia</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="132"/>
+        <location filename="../../app/ui/messages.py" line="89"/>
+        <location filename="../../app/ui/messages.py" line="137"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="133"/>
+        <location filename="../../app/ui/messages.py" line="80"/>
+        <source>Insufficient Credits</source>
+        <translation>Crediti insufficienti</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="138"/>
         <source>Close</source>
         <translation>Chiudi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="149"/>
+        <location filename="../../app/ui/messages.py" line="154"/>
         <source>An unexpected error occurred on the server.
 Please try again later.</source>
         <translation>Si è verificato un errore imprevisto sul server.
 Riprova più tardi.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="150"/>
+        <location filename="../../app/ui/messages.py" line="155"/>
         <source>The selected translator is currently unavailable.
 Please select a different tool in Settings.</source>
         <translation>Il traduttore selezionato non è al momento disponibile.
 Seleziona uno strumento diverso nelle Impostazioni.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="151"/>
+        <location filename="../../app/ui/messages.py" line="156"/>
         <source>The server received an invalid response from an upstream provider.
 Please try again later.</source>
         <translation>Il server ha ricevuto una risposta non valida da un fornitore a monte.
 Riprova più tardi.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="152"/>
+        <location filename="../../app/ui/messages.py" line="157"/>
         <source>The server is currently unavailable or overloaded.
 Please try again later.</source>
         <translation>Il server è attualmente non disponibile o sovraccarico.
 Riprova più tardi.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="153"/>
+        <location filename="../../app/ui/messages.py" line="158"/>
         <source>The server timed out waiting for a response.
 Please try again later.</source>
         <translation>Il server è andato in timeout in attesa di una risposta.
 Riprova più tardi.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="170"/>
+        <location filename="../../app/ui/messages.py" line="175"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>Impossibile connettersi al server.
 Verifica la tua connessione Internet.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="185"/>
+        <location filename="../../app/ui/messages.py" line="190"/>
         <source>Translation blocked: The content was flagged by safety filters.
 Please try modifying the text or using a different translator.</source>
         <translation>Traduzione bloccata: il contenuto è stato segnalato dai filtri di sicurezza.
@@ -1043,6 +1081,60 @@ Prova a modificare il testo o a utilizzare un traduttore diverso.</translation>
         <location filename="../../app/ui/settings/personalization_page.py" line="14"/>
         <source>Theme</source>
         <translation>Tema</translation>
+    </message>
+</context>
+<context>
+    <name>SearchReplaceController</name>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
+        <source>Empty query</source>
+        <translation>Query vuota</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="524"/>
+        <source>Search Error</source>
+        <translation>Errore di ricerca</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
+        <source>Ready</source>
+        <translation>Pronto</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
+        <source>No results</source>
+        <translation>Nessun risultato</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1062"/>
+        <location filename="../../app/controllers/search_replace.py" line="1146"/>
+        <source>Replace Error</source>
+        <translation>Errore di sostituzione</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
+        <source>Replace</source>
+        <translation>Sostituisci</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation>Sostituita 1 occorrenza</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
+        <source>Replace All</source>
+        <translation>Sostituisci tutto</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation>Sostituite {0} occorrenze</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
+        <source>No replacements</source>
+        <translation>Nessuna sostituzione</translation>
     </message>
 </context>
 <context>
@@ -1110,12 +1202,12 @@ Prova a modificare il testo o a utilizzare un traduttore diverso.</translation>
         <translation>Sostituisci tutto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
         <source>Current Image</source>
         <translation>Immagine corrente</translation>
     </message>
     <message>
-        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
         <source>All Images</source>
         <translation>Tutte le immagini</translation>
     </message>
@@ -1893,49 +1985,6 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
         <location filename="../../app/ui/settings/tools_page.py" line="129"/>
         <source>Original</source>
         <translation>Originale</translation>
-    </message>
-</context>
-<context>
-    <name>self.main</name>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="435"/>
-        <source>Empty query</source>
-        <translation>Query vuota</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="577"/>
-        <source>Ready</source>
-        <translation>Pronto</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="590"/>
-        <source>No results</source>
-        <translation>Nessun risultato</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1132"/>
-        <source>Replace</source>
-        <translation>Sostituisci</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1137"/>
-        <source>Replaced 1 occurrence(s)</source>
-        <translation>Sostituita 1 occorrenza</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1215"/>
-        <source>Replace All</source>
-        <translation>Sostituisci tutto</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1223"/>
-        <source>Replaced {0} occurrence(s)</source>
-        <translation>Sostituite {0} occorrenze</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1225"/>
-        <source>No replacements</source>
-        <translation>Nessuna sostituzione</translation>
     </message>
 </context>
 <context>

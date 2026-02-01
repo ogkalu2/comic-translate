@@ -52,6 +52,38 @@
         <source>Custom</source>
         <translation>Özel</translation>
     </message>
+    <message>
+        <source>Empty query</source>
+        <translation type="obsolete">Boş sorgu</translation>
+    </message>
+    <message>
+        <source>Ready</source>
+        <translation type="obsolete">Hazır</translation>
+    </message>
+    <message>
+        <source>No results</source>
+        <translation type="obsolete">Sonuç yok</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation type="obsolete">Değiştir</translation>
+    </message>
+    <message>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation type="obsolete">1 eşleşme değiştirildi</translation>
+    </message>
+    <message>
+        <source>Replace All</source>
+        <translation type="obsolete">Tümünü Değiştir</translation>
+    </message>
+    <message>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation type="obsolete">{0} eşleşme değiştirildi</translation>
+    </message>
+    <message>
+        <source>No replacements</source>
+        <translation type="obsolete">Değişiklik yapılmadı</translation>
+    </message>
 </context>
 <context>
     <name>AboutPage</name>
@@ -805,78 +837,84 @@ Bir yazı tipi seçmek veya içe aktarmak için Ayarlar &gt; Metin Renderlama &g
         <translation>Hiçbir {} seçilmedi. Lütfen Ayarlar &gt; Araçlar bölümünden bir {} seçin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="79"/>
+        <location filename="../../app/ui/messages.py" line="81"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
         <translation>Bu işlemi gerçekleştirmek için yetersiz kredi.
 Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="95"/>
+        <location filename="../../app/ui/messages.py" line="100"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
         <translation>Özel seçeneği gelişmiş API yapılandırması gerektirir. Çoğu kullanıcı bunun yerine Kredi sistemini kullanmalıdır.
 Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &gt; Gelişmiş bölümünden Özel API ayarlarını yapılandırın.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="131"/>
+        <location filename="../../app/ui/messages.py" line="136"/>
         <source>Copy</source>
         <translation>Kopyala</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="132"/>
+        <location filename="../../app/ui/messages.py" line="89"/>
+        <location filename="../../app/ui/messages.py" line="137"/>
         <source>OK</source>
         <translation>Tamam</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="133"/>
+        <location filename="../../app/ui/messages.py" line="80"/>
+        <source>Insufficient Credits</source>
+        <translation>Yetersiz Kredi</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="138"/>
         <source>Close</source>
         <translation>Kapat</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="149"/>
+        <location filename="../../app/ui/messages.py" line="154"/>
         <source>An unexpected error occurred on the server.
 Please try again later.</source>
         <translation>Sunucuda beklenmedik bir hata oluştu.
 Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="150"/>
+        <location filename="../../app/ui/messages.py" line="155"/>
         <source>The selected translator is currently unavailable.
 Please select a different tool in Settings.</source>
         <translation>Seçilen çevirmen şu anda kullanılamıyor.
 Lütfen Ayarlar&apos;dan farklı bir araç seçin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="151"/>
+        <location filename="../../app/ui/messages.py" line="156"/>
         <source>The server received an invalid response from an upstream provider.
 Please try again later.</source>
         <translation>Sunucu, bir ana sağlayıcıdan geçersiz bir yanıt aldı.
 Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="152"/>
+        <location filename="../../app/ui/messages.py" line="157"/>
         <source>The server is currently unavailable or overloaded.
 Please try again later.</source>
         <translation>Sunucu şu anda kullanılamıyor veya aşırı yüklü.
 Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="153"/>
+        <location filename="../../app/ui/messages.py" line="158"/>
         <source>The server timed out waiting for a response.
 Please try again later.</source>
         <translation>Sunucu yanıt beklerken zaman aşımına uğradı.
 Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="170"/>
+        <location filename="../../app/ui/messages.py" line="175"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>Sunucuya bağlanılamıyor.
 Lütfen internet bağlantınızı kontrol edin.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="185"/>
+        <location filename="../../app/ui/messages.py" line="190"/>
         <source>Translation blocked: The content was flagged by safety filters.
 Please try modifying the text or using a different translator.</source>
         <translation>Çeviri engellendi: İçerik güvenlik filtreleri tarafından işaretlendi.
@@ -932,6 +970,60 @@ Lütfen metni değiştirmeyi veya farklı bir çevirmen kullanmayı deneyin.</tr
         <location filename="../../app/ui/settings/personalization_page.py" line="14"/>
         <source>Theme</source>
         <translation>Tema</translation>
+    </message>
+</context>
+<context>
+    <name>SearchReplaceController</name>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
+        <source>Empty query</source>
+        <translation>Boş sorgu</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="524"/>
+        <source>Search Error</source>
+        <translation>Arama Hatası</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
+        <source>Ready</source>
+        <translation>Hazır</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
+        <source>No results</source>
+        <translation>Sonuç yok</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1062"/>
+        <location filename="../../app/controllers/search_replace.py" line="1146"/>
+        <source>Replace Error</source>
+        <translation>Değiştirme Hatası</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
+        <source>Replace</source>
+        <translation>Değiştir</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation>1 eşleşme değiştirildi</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
+        <source>Replace All</source>
+        <translation>Tümünü Değiştir</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation>{0} eşleşme değiştirildi</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
+        <source>No replacements</source>
+        <translation>Değişiklik yapılmadı</translation>
     </message>
 </context>
 <context>
@@ -999,12 +1091,12 @@ Lütfen metni değiştirmeyi veya farklı bir çevirmen kullanmayı deneyin.</tr
         <translation>Tümünü Değiştir</translation>
     </message>
     <message>
-        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
         <source>Current Image</source>
         <translation>Mevcut Görüntü</translation>
     </message>
     <message>
-        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
         <source>All Images</source>
         <translation>Tüm Görüntüler</translation>
     </message>
@@ -1615,49 +1707,6 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
     <message>
         <source>Thai</source>
         <translation type="vanished">Tayca</translation>
-    </message>
-</context>
-<context>
-    <name>self.main</name>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="435"/>
-        <source>Empty query</source>
-        <translation>Boş sorgu</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="577"/>
-        <source>Ready</source>
-        <translation>Hazır</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="590"/>
-        <source>No results</source>
-        <translation>Sonuç yok</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1132"/>
-        <source>Replace</source>
-        <translation>Değiştir</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1137"/>
-        <source>Replaced 1 occurrence(s)</source>
-        <translation>1 eşleşme değiştirildi</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1215"/>
-        <source>Replace All</source>
-        <translation>Tümünü Değiştir</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1223"/>
-        <source>Replaced {0} occurrence(s)</source>
-        <translation>{0} eşleşme değiştirildi</translation>
-    </message>
-    <message>
-        <location filename="../../app/controllers/search_replace.py" line="1225"/>
-        <source>No replacements</source>
-        <translation>Değişiklik yapılmadı</translation>
     </message>
 </context>
 <context>

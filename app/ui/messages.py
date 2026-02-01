@@ -2,6 +2,8 @@ from .dayu_widgets.message import MMessage
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6 import QtWidgets
 
+# Shorthand for translations
+_translate = QCoreApplication.translate
 
 class Messages:
 
@@ -9,7 +11,7 @@ class Messages:
     def show_translation_complete(parent):
 
         MMessage.success(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages", 
                 "Comic has been Translated!"
             ),
@@ -21,7 +23,7 @@ class Messages:
     @staticmethod
     def select_font_error(parent):
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages", 
                 "No Font selected.\nGo to Settings > Text Rendering > Font to select or import one "
             ),
@@ -33,7 +35,7 @@ class Messages:
     @staticmethod
     def show_not_logged_in_error(parent):
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages",
                 "Please sign in or sign up via Settings > Account to continue."
             ),
@@ -45,7 +47,7 @@ class Messages:
     @staticmethod
     def show_translator_language_not_supported(parent):
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages",
                 "The translator does not support the selected target language. Please choose a different language or tool."
             ),
@@ -57,7 +59,7 @@ class Messages:
     @staticmethod
     def show_missing_tool_error(parent, tool_name):
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages",
                 "No {} selected. Please select a {} in Settings > Tools."
             ).format(tool_name, tool_name),
@@ -77,8 +79,8 @@ class Messages:
         """
         msg = QtWidgets.QMessageBox(parent)
         msg.setIcon(QtWidgets.QMessageBox.Warning)
-        msg.setWindowTitle(QCoreApplication.translate("Messages", "Insufficient Credits"))
-        msg.setText(QCoreApplication.translate(
+        msg.setWindowTitle(_translate("Messages", "Insufficient Credits"))
+        msg.setText(_translate(
             "Messages", 
             "Insufficient credits to perform this action.\nGo to Settings > Account to buy more credits."
         ))
@@ -86,7 +88,7 @@ class Messages:
         if details:
             msg.setDetailedText(details)
             
-        ok_btn = msg.addButton(QCoreApplication.translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        ok_btn = msg.addButton(_translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
         msg.setDefaultButton(ok_btn)
         msg.exec()
 
@@ -97,7 +99,7 @@ class Messages:
         Guides users to use the Credits system instead.
         """
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages",
                 "Custom requires advanced API configuration. Most users should use the Credits system instead.\n"
                 "Please sign in via Settings > Account to use credits, or configure Custom API settings in Settings > Advanced."
@@ -133,9 +135,9 @@ class Messages:
         except Exception:
             pass
 
-        copy_btn = msg.addButton(QCoreApplication.translate("Messages", "Copy"), QtWidgets.QMessageBox.ButtonRole.ActionRole)
-        ok_btn = msg.addButton(QCoreApplication.translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
-        msg.addButton(QCoreApplication.translate("Messages", "Close"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
+        copy_btn = msg.addButton(_translate("Messages", "Copy"), QtWidgets.QMessageBox.ButtonRole.ActionRole)
+        ok_btn = msg.addButton(_translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        msg.addButton(_translate("Messages", "Close"), QtWidgets.QMessageBox.ButtonRole.RejectRole)
         msg.setDefaultButton(ok_btn)
         msg.exec()
 
@@ -151,11 +153,11 @@ class Messages:
         Show a user-friendly error for 5xx server issues.
         """
         messages = {
-            500: QCoreApplication.translate("Messages", "An unexpected error occurred on the server.\nPlease try again later."),
-            501: QCoreApplication.translate("Messages", "The selected translator is currently unavailable.\nPlease select a different tool in Settings."),
-            502: QCoreApplication.translate("Messages", "The server received an invalid response from an upstream provider.\nPlease try again later."),
-            503: QCoreApplication.translate("Messages", "The server is currently unavailable or overloaded.\nPlease try again later."),
-            504: QCoreApplication.translate("Messages", "The server timed out waiting for a response.\nPlease try again later."),
+            500: _translate("Messages", "An unexpected error occurred on the server.\nPlease try again later."),
+            501: _translate("Messages", "The selected translator is currently unavailable.\nPlease select a different tool in Settings."),
+            502: _translate("Messages", "The server received an invalid response from an upstream provider.\nPlease try again later."),
+            503: _translate("Messages", "The server is currently unavailable or overloaded.\nPlease try again later."),
+            504: _translate("Messages", "The server timed out waiting for a response.\nPlease try again later."),
         }
         text = messages.get(status_code, messages[500])
         
@@ -172,7 +174,7 @@ class Messages:
         Show a user-friendly error for network/connectivity issues.
         """
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages", 
                 "Unable to connect to the server.\nPlease check your internet connection."
             ),
@@ -187,7 +189,7 @@ class Messages:
         Show a friendly error when content is blocked by safety filters.
         """
         MMessage.error(
-            text=QCoreApplication.translate(
+            text=_translate(
                 "Messages", 
                 "Translation blocked: The content was flagged by safety filters.\nPlease try modifying the text or using a different translator."
             ),
