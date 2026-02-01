@@ -6,7 +6,7 @@
     background-color: @background_color;
     font-size: @font_size_base@font_unit;
     selection-color: @text_color_inverse;
-    selection-background-color: @primary_color;
+    selection-background-color: #3b82f6;
 }
 MDateTimeEdit::drop-down,
 MDateEdit::drop-down,
