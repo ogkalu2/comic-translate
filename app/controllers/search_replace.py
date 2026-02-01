@@ -276,13 +276,11 @@ class SearchReplaceController(QtCore.QObject):
         # Shortcuts (global to main window)
         QtGui.QShortcut(QtGui.QKeySequence.Find, self.main, activated=self.focus_find)
         QtGui.QShortcut(QtGui.QKeySequence.Replace, self.main, activated=self.focus_replace)
-        QtGui.QShortcut(QtGui.QKeySequence("F3"), self.main, activated=self.next_match)
-        QtGui.QShortcut(QtGui.QKeySequence("Shift+F3"), self.main, activated=self.prev_match)
 
-        # VS Code-like navigation: Enter / Shift+Enter when Find box is focused.
-        self._shortcuts.append(QtGui.QShortcut(QtGui.QKeySequence("Return"), panel.find_input, activated=self.next_match))
+        # Enter in find input goes to next match, Ctrl+Enter for previous match
+        panel.find_input.returnPressed.connect(self.next_match)
         self._shortcuts.append(
-            QtGui.QShortcut(QtGui.QKeySequence("Shift+Return"), panel.find_input, activated=self.prev_match)
+            QtGui.QShortcut(QtGui.QKeySequence("Ctrl+Return"), panel, activated=self.prev_match)
         )
 
         # Clear (Esc) when any widget in the panel has focus.
@@ -397,7 +395,7 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         if not opts.scope_all_images:
-            # Webtoon mode "Current image" means "Visible area" (viewport + buffer pages).
+            # Webtoon mode "Current image" means visible area.
             if getattr(self.main, "webtoon_mode", False):
                 viewer = getattr(self.main, "image_viewer", None)
                 webtoon_manager = getattr(viewer, "webtoon_manager", None) if viewer is not None else None
@@ -405,10 +403,8 @@ class SearchReplaceController(QtCore.QObject):
                 if layout_manager is not None:
                     try:
                         visible_pages = set()
-                        if hasattr(layout_manager, "get_visible_pages"):
-                            # Includes the layout_manager.viewport_buffer pages.
-                            visible_pages |= set(layout_manager.get_visible_pages() or set())
-                        elif (
+                        # Use get_pages_for_scene_bounds with actual viewport rect (no buffer)
+                        if (
                             viewer is not None
                             and hasattr(layout_manager, "get_pages_for_scene_bounds")
                             and hasattr(viewer, "viewport")
@@ -416,6 +412,9 @@ class SearchReplaceController(QtCore.QObject):
                         ):
                             viewport_rect = viewer.mapToScene(viewer.viewport().rect()).boundingRect()
                             visible_pages |= set(layout_manager.get_pages_for_scene_bounds(viewport_rect) or set())
+                        elif hasattr(layout_manager, "get_visible_pages"):
+                            # Fallback to get_visible_pages (includes buffer, but better than nothing)
+                            visible_pages |= set(layout_manager.get_visible_pages() or set())
                     except Exception:
                         visible_pages = set()
 
