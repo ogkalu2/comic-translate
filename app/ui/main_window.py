@@ -693,6 +693,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_layout.addWidget(inp_div)
         tools_layout.addLayout(inp_tools_lay)
         tools_layout.addWidget(self.brush_eraser_slider)
+        tools_layout.addStretch()
         tools_widget.setLayout(tools_layout)
 
         tools_scroll = QtWidgets.QScrollArea()
@@ -705,8 +706,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
         right_layout.addLayout(input_layout)
         right_layout.addLayout(text_render_layout)
-        right_layout.addWidget(tools_scroll)
-        right_layout.addStretch()
+        right_layout.addWidget(tools_scroll, 1)
 
         right_widget = QtWidgets.QWidget()
         right_widget.setLayout(right_layout)
