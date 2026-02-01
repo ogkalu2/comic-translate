@@ -122,7 +122,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         find_container_layout.addWidget(find_toggles, 0, Qt.AlignmentFlag.AlignTop)
 
         self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
-        self.prev_btn.setToolTip(self.tr("Previous match (Shift+Enter)"))
+        self.prev_btn.setToolTip(self.tr("Previous match (Ctrl+Enter)"))
         self.prev_btn.clicked.connect(self.prev_requested)
         self.prev_btn.clicked.connect(lambda: self.find_input.setFocus())
 
@@ -232,7 +232,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.scope_combo = MComboBox().small()
         self.scope_combo.addItem(self.tr("Current Image"), userData="current")
         self.scope_combo.addItem(self.tr("All Images"), userData="all")
-        self.scope_combo.setToolTip(self.tr("Search scope (Webtoon: Current image searches visible area + buffer)"))
+        self.scope_combo.setToolTip(self.tr("Search scope (Webtoon: Current image searches visible pages only)"))
         self.scope_combo.currentIndexChanged.connect(lambda _i: self._schedule_live_search())
 
         self.field_combo = MComboBox().small()
@@ -260,6 +260,21 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.results_tree.itemActivated.connect(self._emit_activated)
         self.results_tree.itemClicked.connect(self._emit_activated)
         self.results_tree.setMinimumHeight(90)
+        self.results_tree.setStyleSheet("""
+            QTreeWidget {
+                outline: none;
+            }
+            QTreeWidget::item {
+                border: none;
+                outline: none;
+            }
+            QTreeWidget::item:hover:!selected {
+                background-color: rgba(59, 130, 246, 0.2);
+            }
+            QTreeWidget::item:selected {
+                background-color: rgba(59, 130, 246, 0.4);
+            }
+        """)
         layout.addWidget(self.results_tree, 1)
 
         # Make combos wide enough for their longest entries.
