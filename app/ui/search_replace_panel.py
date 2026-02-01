@@ -39,6 +39,11 @@ class SearchReplacePanel(QtWidgets.QWidget):
         # Ensure check state is visually persistent (VS Code-like "latched" toggles).
         btn.setAutoRaise(True)
         btn.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        # Force square aspect ratio to ensure uniform shape regardless of content
+        if hasattr(btn, "_dayu_size"):
+            btn.setFixedSize(btn._dayu_size, btn._dayu_size)
+
         btn.setStyleSheet(
             """
             QToolButton { 
