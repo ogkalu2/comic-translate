@@ -38,9 +38,15 @@ class SearchReplacePanel(QtWidgets.QWidget):
     def _apply_latching_toggle_style(self, btn: QtWidgets.QToolButton):
         # Ensure check state is visually persistent (VS Code-like "latched" toggles).
         btn.setAutoRaise(True)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
         btn.setStyleSheet(
             """
-            QToolButton { padding: 0 4px; border-radius: 4px; }
+            QToolButton { 
+                padding: 0px; 
+                border-radius: 3px; 
+                margin: 0px 1px;
+                border: none;
+            }
             QToolButton:hover { background-color: rgba(127, 127, 127, 0.18); }
             QToolButton:checked { background-color: rgba(127, 127, 127, 0.35); }
             """
@@ -51,9 +57,38 @@ class SearchReplacePanel(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
+        # ─── HEADER ROW (Navigation) ────────────────────────────────────────
+        header_container = QtWidgets.QWidget()
+        header_row = QtWidgets.QHBoxLayout(header_container)
+        header_row.setContentsMargins(6, 6, 6, 0)
+        header_row.setSpacing(2)
+
+        title_lbl = QtWidgets.QLabel(self.tr("Search"))
+        title_lbl.setStyleSheet("font-weight: bold; color: #BBBBBB;")
+        header_row.addWidget(title_lbl)
+        header_row.addStretch()
+
+        self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
+        self.prev_btn.setToolTip(self.tr("Previous match (Ctrl+Enter)"))
+        self.prev_btn.clicked.connect(self.prev_requested)
+        
+        self.next_btn = MToolButton().icon_only().svg("down_fill.svg").small()
+        self.next_btn.setToolTip(self.tr("Next match (Enter)"))
+        self.next_btn.clicked.connect(self.next_requested)
+
+        self.clear_btn = MToolButton().icon_only().svg("close_line.svg").small()
+        self.clear_btn.setToolTip(self.tr("Clear (Esc)"))
+        self.clear_btn.clicked.connect(self._clear_find)
+
+        header_row.addWidget(self.prev_btn)
+        header_row.addWidget(self.next_btn)
+        header_row.addWidget(self.clear_btn)
+        
+        layout.addWidget(header_container)
+
         # ─── FIND ROW ───────────────────────────────────────────────────────
         find_row = QtWidgets.QHBoxLayout()
-        find_row.setContentsMargins(6, 6, 6, 0)
+        find_row.setContentsMargins(6, 0, 6, 0)
         find_row.setSpacing(2)
 
         # Container for find input + inline toggle buttons
@@ -83,6 +118,11 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.find_input.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         # VS Code-like: Enter navigates matches; searching is live as you type.
         self.find_input.textChanged.connect(self._schedule_live_search)
+        
+        # Connect nav buttons to focus back (needs find_input to be created)
+        self.prev_btn.clicked.connect(lambda: self.find_input.setFocus())
+        self.next_btn.clicked.connect(lambda: self.find_input.setFocus())
+        self.clear_btn.clicked.connect(lambda: self.find_input.setFocus())
 
         self.match_case_btn = MToolButton().text_only().small()
         self.match_case_btn.setText("Aa")
@@ -113,7 +153,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         find_toggles.setStyleSheet("background: transparent;")
         find_toggles_lay = QtWidgets.QHBoxLayout(find_toggles)
         find_toggles_lay.setContentsMargins(0, 0, 0, 0)
-        find_toggles_lay.setSpacing(2)
+        find_toggles_lay.setSpacing(1) # Tighter spacing
         find_toggles_lay.addWidget(self.match_case_btn)
         find_toggles_lay.addWidget(self.whole_word_btn)
         find_toggles_lay.addWidget(self.regex_btn)
@@ -121,34 +161,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         find_container_layout.addWidget(self.find_input, 1)
         find_container_layout.addWidget(find_toggles, 0, Qt.AlignmentFlag.AlignTop)
 
-        self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
-        self.prev_btn.setToolTip(self.tr("Previous match (Ctrl+Enter)"))
-        self.prev_btn.clicked.connect(self.prev_requested)
-        self.prev_btn.clicked.connect(lambda: self.find_input.setFocus())
-
-        self.next_btn = MToolButton().icon_only().svg("down_fill.svg").small()
-        self.next_btn.setToolTip(self.tr("Next match (Enter)"))
-        self.next_btn.clicked.connect(self.next_requested)
-        self.next_btn.clicked.connect(lambda: self.find_input.setFocus())
-
-        self.clear_btn = MToolButton().icon_only().svg("close_line.svg").small()
-        self.clear_btn.setToolTip(self.tr("Clear (Esc)"))
-        self.clear_btn.clicked.connect(self._clear_find)
-        self.clear_btn.clicked.connect(lambda: self.find_input.setFocus())
-
-        find_nav = QtWidgets.QWidget()
-        find_nav.setStyleSheet("background: transparent;")
-        find_nav_lay = QtWidgets.QHBoxLayout(find_nav)
-        find_nav_lay.setContentsMargins(0, 0, 0, 0)
-        find_nav_lay.setSpacing(2)
-        find_nav_lay.addWidget(self.prev_btn)
-        find_nav_lay.addWidget(self.next_btn)
-        find_nav_lay.addWidget(self.clear_btn)
-        find_nav_width = find_nav.sizeHint().width()
-        find_nav.setFixedWidth(find_nav_width)
-
         find_row.addWidget(find_container, 1)
-        find_row.addWidget(find_nav, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(find_row)
 
         self.summary_label = QtWidgets.QLabel(self.tr("0 results"))
@@ -221,10 +234,6 @@ class SearchReplacePanel(QtWidgets.QWidget):
 
         replace_row.addWidget(replace_container, 1)
 
-        # Nav placeholder to align with find row
-        replace_nav_placeholder = QtWidgets.QWidget()
-        replace_nav_placeholder.setFixedWidth(find_nav_width)
-        replace_row.addWidget(replace_nav_placeholder, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(replace_row)
 
         # Summary label on its own row so it doesn't get cut off
