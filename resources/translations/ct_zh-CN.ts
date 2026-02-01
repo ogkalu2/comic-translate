@@ -89,38 +89,38 @@
         <translation>登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="44"/>
-        <location filename="../../app/ui/settings/account_page.py" line="88"/>
+        <location filename="../../app/ui/settings/account_page.py" line="43"/>
+        <location filename="../../app/ui/settings/account_page.py" line="85"/>
         <source>See model credit costs</source>
         <translation>查看模型积分消耗</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="61"/>
+        <location filename="../../app/ui/settings/account_page.py" line="60"/>
         <source>Account Information</source>
         <translation>账户信息</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="64"/>
+        <location filename="../../app/ui/settings/account_page.py" line="63"/>
         <source>Email:</source>
         <translation>邮箱：</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="71"/>
+        <location filename="../../app/ui/settings/account_page.py" line="70"/>
         <source>Subscription Tier:</source>
         <translation>订阅等级：</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="78"/>
+        <location filename="../../app/ui/settings/account_page.py" line="77"/>
         <source>Credits:</source>
         <translation>积分：</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="95"/>
+        <location filename="../../app/ui/settings/account_page.py" line="92"/>
         <source>Buy Credits</source>
         <translation>购买积分</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="98"/>
+        <location filename="../../app/ui/settings/account_page.py" line="95"/>
         <source>Sign Out</source>
         <translation>退出登录</translation>
     </message>
@@ -128,43 +128,41 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="484"/>
-        <location filename="../../controller.py" line="494"/>
+        <location filename="../../controller.py" line="486"/>
+        <location filename="../../controller.py" line="496"/>
         <source>Error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="848"/>
-        <location filename="../../controller.py" line="859"/>
+        <location filename="../../controller.py" line="850"/>
+        <location filename="../../controller.py" line="861"/>
         <source>Downloading model file: {filename}</source>
         <translation>正在下载模型文件：{filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="890"/>
+        <location filename="../../controller.py" line="892"/>
         <source>Unsaved Changes</source>
         <translation>未保存的更改</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="891"/>
+        <location filename="../../controller.py" line="893"/>
         <source>Save changes to this file?</source>
         <translation>是否保存对此文件的更改？</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="892"/>
+        <location filename="../../controller.py" line="894"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="893"/>
+        <location filename="../../controller.py" line="895"/>
         <source>Don&apos;t Save</source>
         <translation>不保存</translation>
     </message>
+    <source>Discard</source>
+    <translation type="vanished">放弃</translation>
     <message>
-        <source>Discard</source>
-        <translation type="vanished">放弃</translation>
-    </message>
-    <message>
-        <location filename="../../controller.py" line="894"/>
+        <location filename="../../controller.py" line="896"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
@@ -172,433 +170,438 @@
 <context>
     <name>ComicTranslateUI</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="83"/>
+        <location filename="../../app/ui/main_window.py" line="82"/>
         <source>English</source>
         <translation>英语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="84"/>
+        <location filename="../../app/ui/main_window.py" line="83"/>
         <source>Korean</source>
         <translation>韩语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="85"/>
+        <location filename="../../app/ui/main_window.py" line="84"/>
         <source>Japanese</source>
         <translation>日语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="86"/>
+        <location filename="../../app/ui/main_window.py" line="85"/>
         <source>French</source>
         <translation>法语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="87"/>
+        <location filename="../../app/ui/main_window.py" line="86"/>
         <source>Simplified Chinese</source>
         <translation>简体中文</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="88"/>
+        <location filename="../../app/ui/main_window.py" line="87"/>
         <source>Traditional Chinese</source>
         <translation>繁体中文</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="89"/>
+        <location filename="../../app/ui/main_window.py" line="88"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="90"/>
+        <location filename="../../app/ui/main_window.py" line="89"/>
         <source>Russian</source>
         <translation>俄语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="91"/>
+        <location filename="../../app/ui/main_window.py" line="90"/>
         <source>German</source>
         <translation>德语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="92"/>
+        <location filename="../../app/ui/main_window.py" line="91"/>
         <source>Dutch</source>
         <translation>荷兰语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="93"/>
+        <location filename="../../app/ui/main_window.py" line="92"/>
         <source>Spanish</source>
         <translation>西班牙语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="94"/>
+        <location filename="../../app/ui/main_window.py" line="93"/>
         <source>Italian</source>
         <translation>意大利语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="95"/>
+        <location filename="../../app/ui/main_window.py" line="94"/>
         <source>Turkish</source>
         <translation>土耳其语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="96"/>
+        <location filename="../../app/ui/main_window.py" line="95"/>
         <source>Polish</source>
         <translation>波兰语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="97"/>
+        <location filename="../../app/ui/main_window.py" line="96"/>
         <source>Portuguese</source>
         <translation>葡萄牙语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="98"/>
+        <location filename="../../app/ui/main_window.py" line="97"/>
         <source>Brazilian Portuguese</source>
         <translation>巴西葡萄牙语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="99"/>
+        <location filename="../../app/ui/main_window.py" line="98"/>
         <source>Thai</source>
         <translation>泰语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="100"/>
+        <location filename="../../app/ui/main_window.py" line="99"/>
         <source>Vietnamese</source>
         <translation>越南语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="101"/>
+        <location filename="../../app/ui/main_window.py" line="100"/>
         <source>Indonesian</source>
         <translation>印尼语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="102"/>
+        <location filename="../../app/ui/main_window.py" line="101"/>
         <source>Hungarian</source>
         <translation>匈牙利语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="103"/>
+        <location filename="../../app/ui/main_window.py" line="102"/>
         <source>Finnish</source>
         <translation>芬兰语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="104"/>
+        <location filename="../../app/ui/main_window.py" line="103"/>
         <source>Arabic</source>
         <translation>阿拉伯语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="105"/>
+        <location filename="../../app/ui/main_window.py" line="104"/>
         <source>Czech</source>
         <translation>捷克语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="106"/>
+        <location filename="../../app/ui/main_window.py" line="105"/>
         <source>Persian</source>
         <translation>波斯语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="107"/>
+        <location filename="../../app/ui/main_window.py" line="106"/>
         <source>Romanian</source>
         <translation>罗马尼亚语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="108"/>
+        <location filename="../../app/ui/main_window.py" line="107"/>
         <source>Mongolian</source>
         <translation>蒙古语</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="151"/>
+        <location filename="../../app/ui/main_window.py" line="150"/>
         <source>New Project</source>
         <translation>新建项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="158"/>
+        <location filename="../../app/ui/main_window.py" line="157"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files (cbr, cbz, etc). This will Open a new project</source>
         <translation>导入图片、PDF、Epub 或漫画书归档文件（cbr、cbz 等）。这将打开一个新项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="182"/>
+        <location filename="../../app/ui/main_window.py" line="181"/>
         <source>Images</source>
         <translation>图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="185"/>
+        <location filename="../../app/ui/main_window.py" line="184"/>
         <source>Document</source>
         <translation>文档</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="188"/>
+        <location filename="../../app/ui/main_window.py" line="187"/>
         <source>Archive</source>
         <translation>归档</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="191"/>
+        <location filename="../../app/ui/main_window.py" line="190"/>
         <source>Comic Book Archive</source>
         <translation>漫画书归档</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="194"/>
+        <location filename="../../app/ui/main_window.py" line="193"/>
         <source>Project File</source>
         <translation>项目文件</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="202"/>
+        <location filename="../../app/ui/main_window.py" line="201"/>
         <source>Save Currently Loaded Image</source>
         <translation>保存当前加载的图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="206"/>
+        <location filename="../../app/ui/main_window.py" line="205"/>
         <source>Save Project</source>
         <translation>保存项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="210"/>
+        <location filename="../../app/ui/main_window.py" line="209"/>
         <source>Save as</source>
         <translation>另存为</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="222"/>
+        <location filename="../../app/ui/main_window.py" line="221"/>
         <source>Export all Images</source>
         <translation>导出所有图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="226"/>
+        <location filename="../../app/ui/main_window.py" line="225"/>
         <source>Home</source>
         <translation>主页</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="227"/>
+        <location filename="../../app/ui/main_window.py" line="226"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="235"/>
+        <location filename="../../app/ui/main_window.py" line="234"/>
+        <source>Search / Replace (Ctrl+F)</source>
+        <translation>查找 / 替换 (Ctrl+F)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window.py" line="242"/>
         <source>Insert files into current project</source>
         <translation>插入文件到当前项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="273"/>
+        <location filename="../../app/ui/main_window.py" line="323"/>
         <source>Start New Project</source>
         <translation>开始新项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="274"/>
+        <location filename="../../app/ui/main_window.py" line="324"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>您当前的项目有未保存的更改。要开始新项目吗？</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="275"/>
+        <location filename="../../app/ui/main_window.py" line="325"/>
         <source>Yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="276"/>
+        <location filename="../../app/ui/main_window.py" line="326"/>
         <source>No</source>
         <translation>否</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="307"/>
+        <location filename="../../app/ui/main_window.py" line="357"/>
         <source>Undo</source>
         <translation>撤销</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="308"/>
+        <location filename="../../app/ui/main_window.py" line="358"/>
         <source>Redo</source>
         <translation>重做</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="313"/>
+        <location filename="../../app/ui/main_window.py" line="363"/>
         <source>Detect Text</source>
         <translation>检测文本</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="314"/>
+        <location filename="../../app/ui/main_window.py" line="364"/>
         <source>Recognize Text</source>
         <translation>识别文本</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="315"/>
+        <location filename="../../app/ui/main_window.py" line="365"/>
         <source>Get Translations</source>
         <translation>获取翻译</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="316"/>
+        <location filename="../../app/ui/main_window.py" line="366"/>
         <source>Segment Text</source>
         <translation>分割文本</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="317"/>
+        <location filename="../../app/ui/main_window.py" line="367"/>
         <source>Clean Image</source>
         <translation>清理图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="318"/>
+        <location filename="../../app/ui/main_window.py" line="368"/>
         <source>Render</source>
         <translation>渲染</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="334"/>
+        <location filename="../../app/ui/main_window.py" line="384"/>
         <source>Manual</source>
         <translation>手动</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="337"/>
+        <location filename="../../app/ui/main_window.py" line="387"/>
         <source>Automatic</source>
         <translation>自动</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="346"/>
+        <location filename="../../app/ui/main_window.py" line="396"/>
         <source>Toggle Webtoon Mode. For comics that are read in long vertical strips</source>
         <translation>切换条漫模式。适用于以长条垂直方式阅读的漫画</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="350"/>
+        <location filename="../../app/ui/main_window.py" line="400"/>
         <source>Translate All</source>
         <translation>全部翻译</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="353"/>
+        <location filename="../../app/ui/main_window.py" line="403"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="383"/>
+        <location filename="../../app/ui/main_window.py" line="438"/>
         <source>Click or drag files here</source>
         <translation>点击或拖拽文件到此处</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="388"/>
+        <location filename="../../app/ui/main_window.py" line="443"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>导入图片、PDF、Epub 或漫画书归档文件（cbr、cbz 等）</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="410"/>
+        <location filename="../../app/ui/main_window.py" line="465"/>
         <source>Source Language</source>
         <translation>源语言</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="421"/>
+        <location filename="../../app/ui/main_window.py" line="476"/>
         <source>Target Language</source>
         <translation>目标语言</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="434"/>
+        <location filename="../../app/ui/main_window.py" line="489"/>
         <source>Font</source>
         <translation>字体</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="441"/>
+        <location filename="../../app/ui/main_window.py" line="500"/>
         <source>Font Size</source>
         <translation>字体大小</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="449"/>
+        <location filename="../../app/ui/main_window.py" line="508"/>
         <source>Line Spacing</source>
         <translation>行间距</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="469"/>
+        <location filename="../../app/ui/main_window.py" line="528"/>
         <source>Font Color</source>
         <translation>字体颜色</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="487"/>
+        <location filename="../../app/ui/main_window.py" line="546"/>
         <source>Bold</source>
         <translation>加粗</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="489"/>
+        <location filename="../../app/ui/main_window.py" line="548"/>
         <source>Italic</source>
         <translation>斜体</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="491"/>
+        <location filename="../../app/ui/main_window.py" line="550"/>
         <source>Underline</source>
         <translation>下划线</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="503"/>
+        <location filename="../../app/ui/main_window.py" line="562"/>
         <source>Outline</source>
         <translation>描边</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="507"/>
+        <location filename="../../app/ui/main_window.py" line="566"/>
         <source>Outline Color</source>
         <translation>描边颜色</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="516"/>
+        <location filename="../../app/ui/main_window.py" line="575"/>
         <source>Outline Width</source>
         <translation>描边宽度</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="541"/>
+        <location filename="../../app/ui/main_window.py" line="600"/>
         <source>Pan Image</source>
         <translation>平移图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="546"/>
+        <location filename="../../app/ui/main_window.py" line="605"/>
         <source>Set for all</source>
         <translation>全部设置</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="547"/>
+        <location filename="../../app/ui/main_window.py" line="606"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>将当前页的源语言和目标语言应用到所有页面</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="557"/>
+        <location filename="../../app/ui/main_window.py" line="616"/>
         <source>Draw or Select Text Boxes</source>
         <translation>绘制或选择文本框</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="562"/>
+        <location filename="../../app/ui/main_window.py" line="621"/>
         <source>Delete Selected Box</source>
         <translation>删除选中的框</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="565"/>
+        <location filename="../../app/ui/main_window.py" line="624"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>移除图片上的所有框</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="568"/>
+        <location filename="../../app/ui/main_window.py" line="627"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>将现有文本块列表中的所有文本块重新绘制到图片上（以便进一步编辑）</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="577"/>
+        <location filename="../../app/ui/main_window.py" line="636"/>
         <source>Reduce the size of all blocks</source>
         <translation>缩小所有块的大小</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="591"/>
+        <location filename="../../app/ui/main_window.py" line="650"/>
         <source>Increase the size of all blocks</source>
         <translation>增大所有块的大小</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="603"/>
+        <location filename="../../app/ui/main_window.py" line="662"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>绘制笔刷以清理图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="608"/>
+        <location filename="../../app/ui/main_window.py" line="667"/>
         <source>Erase Brush Strokes</source>
         <translation>擦除笔刷</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="613"/>
+        <location filename="../../app/ui/main_window.py" line="672"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>移除图片上的所有笔刷</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="625"/>
+        <location filename="../../app/ui/main_window.py" line="684"/>
         <source>Brush/Eraser Size Slider</source>
         <translation>笔刷/橡皮大小滑块</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="629"/>
+        <location filename="../../app/ui/main_window.py" line="688"/>
         <source>Box Drawing</source>
         <translation>框绘制</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="633"/>
+        <location filename="../../app/ui/main_window.py" line="692"/>
         <source>Inpainting</source>
         <translation>修复填充</translation>
     </message>
@@ -697,9 +700,13 @@ back on the Image (for further editing)</source>
 <context>
     <name>LlmsPage</name>
     <message>
-        <location filename="../../app/ui/settings/llms_page.py" line="17"/>
         <source>Provide Image as input to multimodal LLMs</source>
-        <translation>将图片作为输入提供给多模态大模型</translation>
+        <translation type="vanished">将图片作为输入提供给多模态大模型</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/llms_page.py" line="17"/>
+        <source>Provide Image as input to AI</source>
+        <translation>将图像作为 AI 的输入</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/llms_page.py" line="22"/>
@@ -730,29 +737,29 @@ back on the Image (for further editing)</source>
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../controller.py" line="813"/>
+        <location filename="../../controller.py" line="815"/>
         <source>Processing:</source>
         <translation>处理中：</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="816"/>
+        <location filename="../../controller.py" line="818"/>
         <source>Archiving:</source>
         <translation>归档中：</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="660"/>
+        <location filename="../../app/controllers/image.py" line="665"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
         <translation>未检测到文本块。跳过：</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="661"/>
+        <location filename="../../app/controllers/image.py" line="666"/>
         <source>Could not OCR detected text.
 Skipping:</source>
         <translation>无法识别检测到的文本。跳过：</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="662"/>
+        <location filename="../../app/controllers/image.py" line="667"/>
         <source>Could not get translations.
 Skipping:</source>
         <translation>无法获取翻译。跳过：</translation>
@@ -922,31 +929,137 @@ Please try modifying the text or using a different translator.</source>
     </message>
 </context>
 <context>
+    <name>SearchReplacePanel</name>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="71"/>
+        <source>Search</source>
+        <translation>搜索</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="77"/>
+        <source>Previous match (Ctrl+Enter)</source>
+        <translation>上一个匹配 (Ctrl+Enter)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="81"/>
+        <source>Next match (Enter)</source>
+        <translation>下一个匹配 (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="85"/>
+        <source>Clear (Esc)</source>
+        <translation>清除 (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="114"/>
+        <source>Find</source>
+        <translation>查找</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="135"/>
+        <source>Match case</source>
+        <translation>区分大小写</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="143"/>
+        <source>Match whole word</source>
+        <translation>全字匹配</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="151"/>
+        <source>Use regular expression</source>
+        <translation>使用正则表达式</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="172"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="326"/>
+        <source>0 results</source>
+        <translation>0 个结果</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="196"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="216"/>
+        <source>Replace</source>
+        <translation>替换</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="211"/>
+        <source>Preserve case (match original capitalization)</source>
+        <translation>保留大小写（匹配原始大写）</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="222"/>
+        <source>Replace All</source>
+        <translation>全部替换</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
+        <source>Current Image</source>
+        <translation>当前图片</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
+        <source>All Images</source>
+        <translation>所有图片</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
+        <translation>搜索范围（当前图像在条漫模式下搜索可见页面）</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="261"/>
+        <source>Target</source>
+        <translation>目标语言</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="262"/>
+        <source>Source</source>
+        <translation>源语言</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="263"/>
+        <source>Search in original source or translated target text</source>
+        <translation>在原始源文本或翻译后的目标文本中搜索</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="271"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="318"/>
+        <source>Ready</source>
+        <translation>就绪</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="328"/>
+        <source>{0} results in {1} image(s)</source>
+        <translation>{1} 张图片中共有 {0} 个结果</translation>
+    </message>
+</context>
+<context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="471"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="468"/>
         <source>OK</source>
         <translation>确定</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="480"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="810"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="477"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="807"/>
         <source>Yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="481"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="811"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="478"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="808"/>
         <source>No</source>
         <translation>否</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="489"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="486"/>
         <source>Restart Required</source>
         <translation>需要重启</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="490"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="487"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>请重启应用以使语言更改生效。</translation>
     </message>
@@ -955,33 +1068,33 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">正在登录...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="527"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="524"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>无法启动登录流程。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="544"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="772"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="541"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
         <source>Sign In</source>
         <translation>登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="561"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="558"/>
         <source>Sign In Required</source>
         <translation>需要登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="562"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="559"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>请登录以购买或管理积分。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="571"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="568"/>
         <source>Unable to Open Browser</source>
         <translation>无法打开浏览器</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="572"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="569"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>请在浏览器中打开定价页面：{url}</translation>
     </message>
@@ -994,109 +1107,109 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">已成功登录为 {email}。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="855"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="516"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="644"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="641"/>
         <source>Sign In Error</source>
         <translation>登录错误</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="645"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="642"/>
         <source>Authentication failed: {error}</source>
         <translation>认证失败：{error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="659"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="656"/>
         <source>Confirm Sign Out</source>
         <translation>确认退出登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="660"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="657"/>
         <source>Are you sure you want to sign out?</source>
         <translation>确定要退出登录吗？</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="664"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="661"/>
         <source>Signing Out...</source>
         <translation>正在退出登录...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="687"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="765"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="684"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
         <source>Sign Out</source>
         <translation>退出登录</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="703"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="700"/>
         <source>Session Expired</source>
         <translation>会话已过期</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="704"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="701"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>您的会话已过期，请重新登录。</translation>
     </message>
     <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="715"/>
         <location filename="../../app/ui/settings/settings_page.py" line="718"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="721"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="740"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="737"/>
         <source>N/A</source>
         <translation>无</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="729"/>
         <source>Free</source>
         <translation>免费</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="744"/>
         <source>Subscription</source>
         <translation>订阅</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
         <source>One-time</source>
         <translation>一次性</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="753"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="758"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="755"/>
         <source>Total</source>
         <translation>总计</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="784"/>
         <source>Checking...</source>
         <translation>正在检查...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="793"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="843"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="790"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="827"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
         <source>Check for Updates</source>
         <translation>检查更新</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="800"/>
         <source>Update Available</source>
         <translation>有可用更新</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="806"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
         <source>A new version {version} is available.</source>
         <translation>有新版本 {version} 可用。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="807"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="804"/>
         <source>Release Notes</source>
         <translation>发行说明</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="815"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="812"/>
         <source>Skip This Version</source>
         <translation>跳过此版本</translation>
     </message>
@@ -1109,32 +1222,32 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">下载并安装</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
         <source>Up to Date</source>
         <translation>已是最新</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="834"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="831"/>
         <source>You are using the latest version.</source>
         <translation>您正在使用最新版本。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="849"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="846"/>
         <source>Update Error</source>
         <translation>更新错误</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="855"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
         <source>Downloading update...</source>
         <translation>正在下载更新...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="869"/>
         <source>Download Complete</source>
         <translation>下载完成</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="870"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>安装程序已下载到 {path}。现在运行吗？</translation>
     </message>
@@ -1142,152 +1255,152 @@ Please try modifying the text or using a different translator.</source>
 <context>
     <name>SettingsPageUI</name>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="58"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
         <source>Default</source>
         <translation>默认</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="59"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
         <source>Microsoft OCR</source>
         <translation>微软 OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Google Cloud Vision</source>
         <translation>谷歌云视觉</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
         <source>Gemini-2.0-Flash</source>
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="73"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="113"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="135"/>
         <source>Resize</source>
         <translation>缩放</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="136"/>
         <source>Original</source>
         <translation>原始</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="137"/>
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="110"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="106"/>
         <source>Dark</source>
         <translation>深色</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="107"/>
         <source>Light</source>
         <translation>浅色</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
         <source>Left</source>
         <translation>左对齐</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
         <source>Center</source>
         <translation>居中</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="142"/>
         <source>Right</source>
         <translation>右对齐</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="110"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Custom</source>
         <translation>自定义</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
         <source>Gemini-3.0-Flash</source>
         <translation>Gemini-3.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="148"/>
         <source>Microsoft Azure</source>
         <translation>微软 Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
         <source>Google Cloud</source>
         <translation>谷歌云</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Google Gemini</source>
         <translation>谷歌 Gemini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="112"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="74"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="79"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
@@ -1296,28 +1409,28 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Gemini-2.5-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
         <source>Deepseek-v3</source>
         <translation>Deepseek-v3</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
         <source>Gemini-2.5-Pro</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
         <source>Microsoft Translator</source>
         <translation>微软翻译</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
         <source>Personalization</source>
         <translation>个性化</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="303"/>
         <source>Tools</source>
         <translation>工具</translation>
     </message>
@@ -1326,32 +1439,36 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">凭证</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>LLMs</source>
-        <translation>大模型</translation>
+        <translation type="vanished">大模型</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
         <source>Text Rendering</source>
         <translation>文本渲染</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Export</source>
         <translation>导出</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
         <source>Account</source>
         <translation>账户</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
+        <source>Translation Guidance</source>
+        <translation>翻译指南</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Advanced</source>
         <translation>高级</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>About</source>
         <translation>关于</translation>
     </message>
@@ -1411,9 +1528,13 @@ Please try modifying the text or using a different translator.</source>
         <translation>文本检测器</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
         <source>Inpainting</source>
-        <translation>修复填充</translation>
+        <translation type="vanished">修复填充</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
+        <source>Image Cleaning</source>
+        <translation>图像清理</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/tools_page.py" line="37"/>
@@ -1479,16 +1600,52 @@ then do inpainting on the resized image.</source>
     </message>
 </context>
 <context>
-    <name>main_page</name>
+    <name>self.main</name>
     <message>
-        <source>Thai</source>
-        <translation type="vanished">泰语</translation>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
+        <source>Empty query</source>
+        <translation>查询为空</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
+        <source>Ready</source>
+        <translation>就绪</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
+        <source>No results</source>
+        <translation>无结果</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
+        <source>Replace</source>
+        <translation>替换</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation>已替换 1 处</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
+        <source>Replace All</source>
+        <translation>全部替换</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation>已替换 {0} 处</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
+        <source>No replacements</source>
+        <translation>未进行替换</translation>
     </message>
 </context>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="702"/>
+        <location filename="../../app/ui/main_window.py" line="761"/>
         <source>Light</source>
         <translation>浅色</translation>
     </message>
@@ -1496,12 +1653,12 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="165"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="162"/>
         <source>Resize</source>
         <translation>缩放</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="167"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="164"/>
         <source>Crop</source>
         <translation>裁剪</translation>
     </message>
