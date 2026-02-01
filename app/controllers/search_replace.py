@@ -26,6 +26,7 @@ class SearchOptions:
     match_case: bool = False
     whole_word: bool = False
     regex: bool = False
+    preserve_case: bool = False
     scope_all_images: bool = False
     in_target: bool = True
 
@@ -56,6 +57,39 @@ def _vscode_regex_replacement_to_python(repl: str) -> str:
     repl = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", r"\\g<\1>", repl)
     repl = re.sub(r"\$(\d+)", r"\\g<\1>", repl)
     return repl.replace(sentinel, "$")
+
+
+def _apply_preserve_case(matched_text: str, replacement: str) -> str:
+    """
+    Apply the case pattern of matched_text to replacement.
+    
+    Patterns detected:
+    - all lowercase -> replacement lowercase
+    - ALL UPPERCASE -> REPLACEMENT UPPERCASE  
+    - Title Case / Capitalized -> Replacement Capitalized
+    - First char upper, rest mixed -> First char of replacement upper
+    """
+    if not matched_text or not replacement:
+        return replacement
+    
+    # Check if all lowercase
+    if matched_text.islower():
+        return replacement.lower()
+    
+    # Check if all uppercase
+    if matched_text.isupper():
+        return replacement.upper()
+    
+    # Check if title case (each word capitalized)
+    if matched_text.istitle():
+        return replacement.title()
+    
+    # Check if first character is uppercase (capitalize first only)
+    if matched_text[0].isupper():
+        return replacement[0].upper() + replacement[1:] if len(replacement) > 1 else replacement.upper()
+    
+    # Default: return replacement as-is
+    return replacement
 
 
 def compile_search_pattern(opts: SearchOptions) -> re.Pattern[str]:
@@ -118,6 +152,7 @@ def _apply_replacements_to_html(
     replacement: str,
     *,
     regex_mode: bool,
+    preserve_case: bool = False,
     nth: int | None = None,
 ) -> tuple[str, str, str, int]:
     """
@@ -148,6 +183,11 @@ def _apply_replacements_to_html(
             repl_text = m.expand(py_repl) if regex_mode else py_repl
         except Exception:
             repl_text = py_repl if isinstance(py_repl, str) else ""
+        
+        # Apply preserve case if enabled
+        if preserve_case:
+            matched_text = old_plain[start:end]
+            repl_text = _apply_preserve_case(matched_text, repl_text)
 
         fmt_cur = QTextCursor(doc)
         fmt_cur.setPosition(start)
@@ -244,12 +284,25 @@ def replace_all_matches(
     pattern: re.Pattern[str],
     replacement: str,
     regex_mode: bool,
+    preserve_case: bool = False,
 ) -> tuple[str, int]:
     if regex_mode:
         py_repl = _vscode_regex_replacement_to_python(replacement)
-        new_text, count = pattern.subn(py_repl, text or "")
+        if preserve_case:
+            def repl_func(m):
+                expanded = m.expand(py_repl)
+                return _apply_preserve_case(m.group(0), expanded)
+            new_text, count = pattern.subn(repl_func, text or "")
+        else:
+            new_text, count = pattern.subn(py_repl, text or "")
         return new_text, count
-    new_text, count = pattern.subn(lambda _m: replacement, text or "")
+    
+    if preserve_case:
+        def repl_func(m):
+            return _apply_preserve_case(m.group(0), replacement)
+        new_text, count = pattern.subn(repl_func, text or "")
+    else:
+        new_text, count = pattern.subn(lambda _m: replacement, text or "")
     return new_text, count
 
 
@@ -365,6 +418,7 @@ class SearchReplaceController(QtCore.QObject):
             match_case=panel.match_case_btn.isChecked(),
             whole_word=panel.whole_word_btn.isChecked(),
             regex=panel.regex_btn.isChecked(),
+            preserve_case=panel.preserve_case_btn.isChecked(),
             scope_all_images=(panel.scope_combo.currentData() == "all"),
             in_target=(panel.field_combo.currentData() == "target"),
         )
@@ -1020,6 +1074,7 @@ class SearchReplaceController(QtCore.QObject):
                     pattern,
                     opts.replace,
                     regex_mode=opts.regex,
+                    preserve_case=opts.preserve_case,
                     nth=m.match_ordinal_in_block,
                 )
                 if count <= 0 or new_text == old_text:
@@ -1111,6 +1166,7 @@ class SearchReplaceController(QtCore.QObject):
                         pattern,
                         opts.replace,
                         regex_mode=opts.regex,
+                        preserve_case=opts.preserve_case,
                         nth=None,
                     )
                     if count <= 0 or new_text == old_text:
@@ -1118,12 +1174,18 @@ class SearchReplaceController(QtCore.QObject):
                     old_html = existing_html
                 else:
                     old_text = blk.translation
-                    new_text, count = replace_all_matches(old_text, pattern, opts.replace, regex_mode=opts.regex)
+                    new_text, count = replace_all_matches(
+                        old_text, pattern, opts.replace,
+                        regex_mode=opts.regex, preserve_case=opts.preserve_case
+                    )
                     if count <= 0 or new_text == old_text:
                         continue
             else:
                 old_text = blk.text
-                new_text, count = replace_all_matches(old_text, pattern, opts.replace, regex_mode=opts.regex)
+                new_text, count = replace_all_matches(
+                    old_text, pattern, opts.replace,
+                    regex_mode=opts.regex, preserve_case=opts.preserve_case
+                )
                 if count <= 0 or new_text == old_text:
                     continue
 

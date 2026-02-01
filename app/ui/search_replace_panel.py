@@ -187,6 +187,13 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.replace_input.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.replace_input.returnPressed.connect(self.replace_requested)
 
+        self.preserve_case_btn = MToolButton().text_only().small()
+        self.preserve_case_btn.setText("AB")
+        self.preserve_case_btn.setCheckable(True)
+        self.preserve_case_btn.setToolTip(self.tr("Preserve case (match original capitalization)"))
+        self._apply_latching_toggle_style(self.preserve_case_btn)
+        self.preserve_case_btn.toggled.connect(lambda _v: self.replace_input.setFocus())
+
         self.replace_btn = MToolButton().icon_only().svg("replace.svg").small()
         self.replace_btn.setToolTip(self.tr("Replace"))
         self._apply_latching_toggle_style(self.replace_btn)
@@ -205,6 +212,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         replace_actions_lay = QtWidgets.QHBoxLayout(replace_actions)
         replace_actions_lay.setContentsMargins(0, 0, 0, 0)
         replace_actions_lay.setSpacing(2)
+        replace_actions_lay.addWidget(self.preserve_case_btn)
         replace_actions_lay.addWidget(self.replace_btn)
         replace_actions_lay.addWidget(self.replace_all_btn)
 
