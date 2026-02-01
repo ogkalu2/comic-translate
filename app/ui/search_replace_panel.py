@@ -4,7 +4,7 @@ from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import Qt
 
 from app.ui.dayu_widgets.combo_box import MComboBox
-from app.ui.dayu_widgets.line_edit import MLineEdit
+from app.ui.dayu_widgets.expanding_text_edit import MExpandingTextEdit
 from app.ui.dayu_widgets.tool_button import MToolButton
 from app.ui.settings.utils import set_combo_box_width
 
@@ -77,12 +77,36 @@ class SearchReplacePanel(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
+        # ─── FIND ROW ───────────────────────────────────────────────────────
         find_row = QtWidgets.QHBoxLayout()
         find_row.setContentsMargins(6, 6, 6, 0)
         find_row.setSpacing(2)
 
-        self.find_input = MLineEdit().small()
+        # Container for find input + inline toggle buttons
+        find_container = QtWidgets.QFrame()
+        find_container.setObjectName("findContainer")
+        find_container.setStyleSheet("""
+            #findContainer {
+                border: 1px solid rgba(127, 127, 127, 0.3);
+                border-radius: 4px;
+                background: transparent;
+            }
+        """)
+        find_container_layout = QtWidgets.QHBoxLayout(find_container)
+        find_container_layout.setContentsMargins(4, 2, 4, 2)
+        find_container_layout.setSpacing(2)
+
+        self.find_input = MExpandingTextEdit(max_lines=4)
         self.find_input.setPlaceholderText(self.tr("Find"))
+        self.find_input.setStyleSheet("""
+            QPlainTextEdit {
+                border: none;
+                background: transparent;
+                padding: 0;
+                margin: 0;
+            }
+        """)
+        self.find_input.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         # VS Code-like: Enter navigates matches; searching is live as you type.
         self.find_input.textChanged.connect(self._schedule_live_search)
 
@@ -110,17 +134,18 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.regex_btn.toggled.connect(lambda _v: self._schedule_live_search())
         self.regex_btn.toggled.connect(lambda _v: self.find_input.setFocus())
 
-        # Put ONLY the toggles inside the Find bar (VS Code-like).
-        find_suffix = QtWidgets.QWidget()
-        find_suffix.setStyleSheet("background: transparent;")
-        find_suffix_lay = QtWidgets.QHBoxLayout(find_suffix)
-        find_suffix_lay.setContentsMargins(0, 0, 0, 0)
-        find_suffix_lay.setSpacing(2)
-        find_suffix_lay.addWidget(self.match_case_btn)
-        find_suffix_lay.addWidget(self.whole_word_btn)
-        find_suffix_lay.addWidget(self.regex_btn)
-        find_suffix.setFixedWidth(find_suffix.sizeHint().width())
-        self.find_input.set_suffix_widget(find_suffix)
+        # Toggle buttons inline to the right of input (stays at top when input expands)
+        find_toggles = QtWidgets.QWidget()
+        find_toggles.setStyleSheet("background: transparent;")
+        find_toggles_lay = QtWidgets.QHBoxLayout(find_toggles)
+        find_toggles_lay.setContentsMargins(0, 0, 0, 0)
+        find_toggles_lay.setSpacing(2)
+        find_toggles_lay.addWidget(self.match_case_btn)
+        find_toggles_lay.addWidget(self.whole_word_btn)
+        find_toggles_lay.addWidget(self.regex_btn)
+
+        find_container_layout.addWidget(self.find_input, 1)
+        find_container_layout.addWidget(find_toggles, 0, Qt.AlignmentFlag.AlignTop)
 
         self.prev_btn = MToolButton().icon_only().svg("up_fill.svg").small()
         self.prev_btn.setToolTip(self.tr("Previous match (Shift+Enter)"))
@@ -148,20 +173,44 @@ class SearchReplacePanel(QtWidgets.QWidget):
         find_nav_width = find_nav.sizeHint().width()
         find_nav.setFixedWidth(find_nav_width)
 
-        find_row.addWidget(self.find_input, 1)
-        find_row.addWidget(find_nav)
+        find_row.addWidget(find_container, 1)
+        find_row.addWidget(find_nav, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(find_row)
 
         self.summary_label = QtWidgets.QLabel(self.tr("0 results"))
         self.summary_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.summary_label.setStyleSheet("color: #999999;")
 
+        # ─── REPLACE ROW ────────────────────────────────────────────────────
         replace_row = QtWidgets.QHBoxLayout()
         replace_row.setContentsMargins(6, 0, 6, 0)
         replace_row.setSpacing(2)
 
-        self.replace_input = MLineEdit().small()
+        # Container for replace input + inline action buttons
+        replace_container = QtWidgets.QFrame()
+        replace_container.setObjectName("replaceContainer")
+        replace_container.setStyleSheet("""
+            #replaceContainer {
+                border: 1px solid rgba(127, 127, 127, 0.3);
+                border-radius: 4px;
+                background: transparent;
+            }
+        """)
+        replace_container_layout = QtWidgets.QHBoxLayout(replace_container)
+        replace_container_layout.setContentsMargins(4, 2, 4, 2)
+        replace_container_layout.setSpacing(2)
+
+        self.replace_input = MExpandingTextEdit(max_lines=4)
         self.replace_input.setPlaceholderText(self.tr("Replace"))
+        self.replace_input.setStyleSheet("""
+            QPlainTextEdit {
+                border: none;
+                background: transparent;
+                padding: 0;
+                margin: 0;
+            }
+        """)
+        self.replace_input.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
         self.replace_input.returnPressed.connect(self.replace_requested)
 
         self.replace_btn = MToolButton().icon_only().svg("replace.svg").small()
@@ -176,18 +225,19 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.replace_all_btn.clicked.connect(self.replace_all_requested)
         self.replace_all_btn.clicked.connect(lambda: self.replace_input.setFocus())
 
-        # Put the replace actions inside the Replace bar (VS Code-like).
-        replace_suffix = QtWidgets.QWidget()
-        replace_suffix.setStyleSheet("background: transparent;")
-        replace_suffix_lay = QtWidgets.QHBoxLayout(replace_suffix)
-        replace_suffix_lay.setContentsMargins(0, 0, 0, 0)
-        replace_suffix_lay.setSpacing(2)
-        replace_suffix_lay.addWidget(self.replace_btn)
-        replace_suffix_lay.addWidget(self.replace_all_btn)
-        replace_suffix.setFixedWidth(replace_suffix.sizeHint().width())
-        self.replace_input.set_suffix_widget(replace_suffix)
+        # Action buttons inline to the right of input (stays at top when input expands)
+        replace_actions = QtWidgets.QWidget()
+        replace_actions.setStyleSheet("background: transparent;")
+        replace_actions_lay = QtWidgets.QHBoxLayout(replace_actions)
+        replace_actions_lay.setContentsMargins(0, 0, 0, 0)
+        replace_actions_lay.setSpacing(2)
+        replace_actions_lay.addWidget(self.replace_btn)
+        replace_actions_lay.addWidget(self.replace_all_btn)
 
-        replace_row.addWidget(self.replace_input, 1)
+        replace_container_layout.addWidget(self.replace_input, 1)
+        replace_container_layout.addWidget(replace_actions, 0, Qt.AlignmentFlag.AlignTop)
+
+        replace_row.addWidget(replace_container, 1)
 
         # Keep Find and Replace bars the same width by reserving space for the
         # find nav buttons (prev/next/clear) on the replace row, and show the
@@ -201,7 +251,7 @@ class SearchReplacePanel(QtWidgets.QWidget):
         replace_right_lay.setContentsMargins(0, 0, 0, 0)
         replace_right_lay.setSpacing(0)
         replace_right_lay.addWidget(self.summary_label, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        replace_row.addWidget(replace_right, 0, Qt.AlignmentFlag.AlignVCenter)
+        replace_row.addWidget(replace_right, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(replace_row)
 
         meta_row = QtWidgets.QHBoxLayout()
