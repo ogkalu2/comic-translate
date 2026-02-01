@@ -1055,7 +1055,7 @@ Veuillez essayer de modifier le texte ou d&apos;utiliser un autre traducteur.</t
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="211"/>
         <source>Preserve case (match original capitalization)</source>
-        <translation>Préserver la casse (respecter la capitalisation d'origine)</translation>
+        <translation>Préserver la casse (respecter la capitalisation d&apos;origine)</translation>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="222"/>
@@ -1074,8 +1074,12 @@ Veuillez essayer de modifier le texte ou d&apos;utiliser un autre traducteur.</t
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search Scope</source>
+        <translation>Portée de la recherche</translation>
+    </message>
+    <message>
         <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
-        <translation>Portée de la recherche (l'image actuelle recherche les pages visibles en mode webtoon)</translation>
+        <translation type="vanished">Portée de la recherche (l&apos;image actuelle recherche les pages visibles en mode webtoon)</translation>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="261"/>
@@ -1774,7 +1778,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../../app/ui/settings/tools_page.py" line="36"/>
         <source>Image Cleaning</source>
-        <translation>Nettoyage d'image</translation>
+        <translation>Nettoyage d&apos;image</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/tools_page.py" line="37"/>

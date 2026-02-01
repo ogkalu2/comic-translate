@@ -1010,8 +1010,12 @@ Lütfen metni değiştirmeyi veya farklı bir çevirmen kullanmayı deneyin.</tr
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search Scope</source>
+        <translation>Arama kapsamı</translation>
+    </message>
+    <message>
         <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
-        <translation>Arama kapsamı (Mevcut Görüntü, webtoon modunda görünür sayfalarda arama yapar)</translation>
+        <translation type="vanished">Arama kapsamı (Mevcut Görüntü, webtoon modunda görünür sayfalarda arama yapar)</translation>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="261"/>

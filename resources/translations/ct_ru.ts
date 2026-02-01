@@ -1121,8 +1121,12 @@ Please try modifying the text or using a different translator.</source>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search Scope</source>
+        <translation>Область поиска</translation>
+    </message>
+    <message>
         <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
-        <translation>Область поиска (Текущее изображение ищет на видимых страницах в режиме вебтуна)</translation>
+        <translation type="vanished">Область поиска (Текущее изображение ищет на видимых страницах в режиме вебтуна)</translation>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="261"/>

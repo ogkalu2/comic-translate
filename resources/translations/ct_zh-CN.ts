@@ -159,8 +159,6 @@
         <source>Don&apos;t Save</source>
         <translation>不保存</translation>
     </message>
-    <source>Discard</source>
-    <translation type="vanished">放弃</translation>
     <message>
         <location filename="../../controller.py" line="896"/>
         <source>Cancel</source>
@@ -1004,8 +1002,12 @@ Please try modifying the text or using a different translator.</source>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search Scope</source>
+        <translation>搜索范围</translation>
+    </message>
+    <message>
         <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
-        <translation>搜索范围（当前图像在条漫模式下搜索可见页面）</translation>
+        <translation type="vanished">搜索范围（当前图像在条漫模式下搜索可见页面）</translation>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="261"/>

@@ -1075,8 +1075,12 @@ Bitte versuchen Sie, den Text zu ändern oder einen anderen Übersetzer zu verwe
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search Scope</source>
+        <translation>Suchbereich</translation>
+    </message>
+    <message>
         <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
-        <translation>Suchbereich (Aktuelles Bild durchsucht sichtbare Seiten im Webtoon-Modus)</translation>
+        <translation type="vanished">Suchbereich (Aktuelles Bild durchsucht sichtbare Seiten im Webtoon-Modus)</translation>
     </message>
     <message>
         <location filename="../../app/ui/search_replace_panel.py" line="261"/>
