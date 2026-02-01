@@ -89,38 +89,38 @@
         <translation>Войти</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="44"/>
-        <location filename="../../app/ui/settings/account_page.py" line="88"/>
+        <location filename="../../app/ui/settings/account_page.py" line="43"/>
+        <location filename="../../app/ui/settings/account_page.py" line="85"/>
         <source>See model credit costs</source>
         <translation>Посмотреть стоимость кредитов модели</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="61"/>
+        <location filename="../../app/ui/settings/account_page.py" line="60"/>
         <source>Account Information</source>
         <translation>Информация об аккаунте</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="64"/>
+        <location filename="../../app/ui/settings/account_page.py" line="63"/>
         <source>Email:</source>
         <translation>Электронная почта:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="71"/>
+        <location filename="../../app/ui/settings/account_page.py" line="70"/>
         <source>Subscription Tier:</source>
         <translation>Уровень подписки:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="78"/>
+        <location filename="../../app/ui/settings/account_page.py" line="77"/>
         <source>Credits:</source>
         <translation>Кредиты:</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="95"/>
+        <location filename="../../app/ui/settings/account_page.py" line="92"/>
         <source>Buy Credits</source>
         <translation>Купить кредиты</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/account_page.py" line="98"/>
+        <location filename="../../app/ui/settings/account_page.py" line="95"/>
         <source>Sign Out</source>
         <translation>Выйти</translation>
     </message>
@@ -136,34 +136,34 @@
         <translation type="vanished">Английский</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="484"/>
-        <location filename="../../controller.py" line="494"/>
+        <location filename="../../controller.py" line="486"/>
+        <location filename="../../controller.py" line="496"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="848"/>
-        <location filename="../../controller.py" line="859"/>
+        <location filename="../../controller.py" line="850"/>
+        <location filename="../../controller.py" line="861"/>
         <source>Downloading model file: {filename}</source>
         <translation>Загрузка файла модели: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="890"/>
+        <location filename="../../controller.py" line="892"/>
         <source>Unsaved Changes</source>
         <translation>Несохранённые изменения</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="891"/>
+        <location filename="../../controller.py" line="893"/>
         <source>Save changes to this file?</source>
         <translation>Сохранить изменения в этом файле?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="892"/>
+        <location filename="../../controller.py" line="894"/>
         <source>Save</source>
         <translation>Сохранить</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="893"/>
+        <location filename="../../controller.py" line="895"/>
         <source>Don&apos;t Save</source>
         <translation>Не сохранять</translation>
     </message>
@@ -172,7 +172,7 @@
         <translation type="vanished">Отменить изменения</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="894"/>
+        <location filename="../../controller.py" line="896"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
@@ -180,247 +180,252 @@
 <context>
     <name>ComicTranslateUI</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="83"/>
+        <location filename="../../app/ui/main_window.py" line="82"/>
         <source>English</source>
         <translation>Английский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="84"/>
+        <location filename="../../app/ui/main_window.py" line="83"/>
         <source>Korean</source>
         <translation>Корейский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="85"/>
+        <location filename="../../app/ui/main_window.py" line="84"/>
         <source>Japanese</source>
         <translation>Японский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="86"/>
+        <location filename="../../app/ui/main_window.py" line="85"/>
         <source>French</source>
         <translation>Французский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="87"/>
+        <location filename="../../app/ui/main_window.py" line="86"/>
         <source>Simplified Chinese</source>
         <translation>Упрощенный китайский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="88"/>
+        <location filename="../../app/ui/main_window.py" line="87"/>
         <source>Traditional Chinese</source>
         <translation>Традиционный китайский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="89"/>
+        <location filename="../../app/ui/main_window.py" line="88"/>
         <source>Chinese</source>
         <translation>Китайский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="90"/>
+        <location filename="../../app/ui/main_window.py" line="89"/>
         <source>Russian</source>
         <translation>Русский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="91"/>
+        <location filename="../../app/ui/main_window.py" line="90"/>
         <source>German</source>
         <translation>Немецкий</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="92"/>
+        <location filename="../../app/ui/main_window.py" line="91"/>
         <source>Dutch</source>
         <translation>Нидерландский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="93"/>
+        <location filename="../../app/ui/main_window.py" line="92"/>
         <source>Spanish</source>
         <translation>Испанский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="94"/>
+        <location filename="../../app/ui/main_window.py" line="93"/>
         <source>Italian</source>
         <translation>Итальянский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="95"/>
+        <location filename="../../app/ui/main_window.py" line="94"/>
         <source>Turkish</source>
         <translation>Турецкий</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="96"/>
+        <location filename="../../app/ui/main_window.py" line="95"/>
         <source>Polish</source>
         <translation>Польский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="97"/>
+        <location filename="../../app/ui/main_window.py" line="96"/>
         <source>Portuguese</source>
         <translation>Португальский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="98"/>
+        <location filename="../../app/ui/main_window.py" line="97"/>
         <source>Brazilian Portuguese</source>
         <translation>Бразильский португальский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="99"/>
+        <location filename="../../app/ui/main_window.py" line="98"/>
         <source>Thai</source>
         <translation>Тайский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="100"/>
+        <location filename="../../app/ui/main_window.py" line="99"/>
         <source>Vietnamese</source>
         <translation>Вьетнамский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="101"/>
+        <location filename="../../app/ui/main_window.py" line="100"/>
         <source>Indonesian</source>
         <translation>Индонезийский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="102"/>
+        <location filename="../../app/ui/main_window.py" line="101"/>
         <source>Hungarian</source>
         <translation>Венгерский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="103"/>
+        <location filename="../../app/ui/main_window.py" line="102"/>
         <source>Finnish</source>
         <translation>Финский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="104"/>
+        <location filename="../../app/ui/main_window.py" line="103"/>
         <source>Arabic</source>
         <translation>Арабский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="105"/>
+        <location filename="../../app/ui/main_window.py" line="104"/>
         <source>Czech</source>
         <translation>Чешский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="106"/>
+        <location filename="../../app/ui/main_window.py" line="105"/>
         <source>Persian</source>
         <translation>Персидский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="107"/>
+        <location filename="../../app/ui/main_window.py" line="106"/>
         <source>Romanian</source>
         <translation>Румынский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="108"/>
+        <location filename="../../app/ui/main_window.py" line="107"/>
         <source>Mongolian</source>
         <translation>Монгольский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="151"/>
+        <location filename="../../app/ui/main_window.py" line="150"/>
         <source>New Project</source>
         <translation>Новый проект</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="158"/>
+        <location filename="../../app/ui/main_window.py" line="157"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files (cbr, cbz, etc). This will Open a new project</source>
         <translation>Импортировать изображения, PDF, Epub или архивы комиксов (cbr, cbz и т.д.). Это откроет новый проект</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="235"/>
+        <location filename="../../app/ui/main_window.py" line="234"/>
+        <source>Search / Replace (Ctrl+F)</source>
+        <translation>Поиск / Замена (Ctrl+F)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window.py" line="242"/>
         <source>Insert files into current project</source>
         <translation>Вставить файлы в текущий проект</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="273"/>
+        <location filename="../../app/ui/main_window.py" line="323"/>
         <source>Start New Project</source>
         <translation>Начать новый проект</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="274"/>
+        <location filename="../../app/ui/main_window.py" line="324"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>В текущем проекте есть несохранённые изменения. Начать новый проект?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="275"/>
+        <location filename="../../app/ui/main_window.py" line="325"/>
         <source>Yes</source>
         <translation>Да</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="276"/>
+        <location filename="../../app/ui/main_window.py" line="326"/>
         <source>No</source>
         <translation>Нет</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="313"/>
+        <location filename="../../app/ui/main_window.py" line="363"/>
         <source>Detect Text</source>
         <translation>Обнаружить текст</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="314"/>
+        <location filename="../../app/ui/main_window.py" line="364"/>
         <source>Recognize Text</source>
         <translation>Распознать текст</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="346"/>
+        <location filename="../../app/ui/main_window.py" line="396"/>
         <source>Toggle Webtoon Mode. For comics that are read in long vertical strips</source>
         <translation>Переключить режим вебтуна. Для комиксов, которые читаются длинными вертикальными полосами</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="350"/>
+        <location filename="../../app/ui/main_window.py" line="400"/>
         <source>Translate All</source>
         <translation>Перевести всё</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="388"/>
+        <location filename="../../app/ui/main_window.py" line="443"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>Имортировать изображения, PDF, Epubs или архивы комиксов (cbr, cbz и т. д.)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="182"/>
+        <location filename="../../app/ui/main_window.py" line="181"/>
         <source>Images</source>
         <translation>Изображения</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="185"/>
+        <location filename="../../app/ui/main_window.py" line="184"/>
         <source>Document</source>
         <translation>Документ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="188"/>
+        <location filename="../../app/ui/main_window.py" line="187"/>
         <source>Archive</source>
         <translation>Архив</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="191"/>
+        <location filename="../../app/ui/main_window.py" line="190"/>
         <source>Comic Book Archive</source>
         <translation>Архив комиксов</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="194"/>
+        <location filename="../../app/ui/main_window.py" line="193"/>
         <source>Project File</source>
         <translation>Файл проекта</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="202"/>
+        <location filename="../../app/ui/main_window.py" line="201"/>
         <source>Save Currently Loaded Image</source>
         <translation>Сохранить текущее изображение</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="206"/>
+        <location filename="../../app/ui/main_window.py" line="205"/>
         <source>Save Project</source>
         <translation>Сохранить проект</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="210"/>
+        <location filename="../../app/ui/main_window.py" line="209"/>
         <source>Save as</source>
         <translation>Сохранить как</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="222"/>
+        <location filename="../../app/ui/main_window.py" line="221"/>
         <source>Export all Images</source>
         <translation>Экспортировать все изображения</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="318"/>
+        <location filename="../../app/ui/main_window.py" line="368"/>
         <source>Render</source>
         <translation>Отрисовка</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="625"/>
+        <location filename="../../app/ui/main_window.py" line="684"/>
         <source>Brush/Eraser Size Slider</source>
         <translation>Ползунок размера кисти/ластика</translation>
     </message>
@@ -429,22 +434,22 @@
         <translation type="vanished">Сохранить все изображения</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="226"/>
+        <location filename="../../app/ui/main_window.py" line="225"/>
         <source>Home</source>
         <translation>Главная</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="227"/>
+        <location filename="../../app/ui/main_window.py" line="226"/>
         <source>Settings</source>
         <translation>Настройки</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="307"/>
+        <location filename="../../app/ui/main_window.py" line="357"/>
         <source>Undo</source>
         <translation>Отменить</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="308"/>
+        <location filename="../../app/ui/main_window.py" line="358"/>
         <source>Redo</source>
         <translation>Повторить</translation>
     </message>
@@ -457,17 +462,17 @@
         <translation type="vanished">Распознавание текста</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="315"/>
+        <location filename="../../app/ui/main_window.py" line="365"/>
         <source>Get Translations</source>
         <translation>Получить переводы</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="316"/>
+        <location filename="../../app/ui/main_window.py" line="366"/>
         <source>Segment Text</source>
         <translation>Сегментировать текст</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="317"/>
+        <location filename="../../app/ui/main_window.py" line="367"/>
         <source>Clean Image</source>
         <translation>Очистить изображение</translation>
     </message>
@@ -476,12 +481,12 @@
         <translation type="vanished">Вставить переводы</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="334"/>
+        <location filename="../../app/ui/main_window.py" line="384"/>
         <source>Manual</source>
         <translation>Вручную</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="337"/>
+        <location filename="../../app/ui/main_window.py" line="387"/>
         <source>Automatic</source>
         <translation>Автоматически</translation>
     </message>
@@ -490,7 +495,7 @@
         <translation type="vanished">Перевести</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="353"/>
+        <location filename="../../app/ui/main_window.py" line="403"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
@@ -499,124 +504,124 @@
         <translation type="vanished">Загруженные изображения</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="383"/>
+        <location filename="../../app/ui/main_window.py" line="438"/>
         <source>Click or drag files here</source>
         <translation>Нажмите или перетащите файлы сюда</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="410"/>
+        <location filename="../../app/ui/main_window.py" line="465"/>
         <source>Source Language</source>
         <translation>Исходный язык</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="421"/>
+        <location filename="../../app/ui/main_window.py" line="476"/>
         <source>Target Language</source>
         <translation>Целевой язык</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="434"/>
+        <location filename="../../app/ui/main_window.py" line="489"/>
         <source>Font</source>
         <translation>Шрифт</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="441"/>
+        <location filename="../../app/ui/main_window.py" line="500"/>
         <source>Font Size</source>
         <translation>Размер шрифта</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="449"/>
+        <location filename="../../app/ui/main_window.py" line="508"/>
         <source>Line Spacing</source>
         <translation>Межстрочный интервал</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="469"/>
+        <location filename="../../app/ui/main_window.py" line="528"/>
         <source>Font Color</source>
         <translation>Цвет шрифта</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="487"/>
+        <location filename="../../app/ui/main_window.py" line="546"/>
         <source>Bold</source>
         <translation>Жирный</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="489"/>
+        <location filename="../../app/ui/main_window.py" line="548"/>
         <source>Italic</source>
         <translation>Курсив</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="491"/>
+        <location filename="../../app/ui/main_window.py" line="550"/>
         <source>Underline</source>
         <translation>Подчеркнутый</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="503"/>
+        <location filename="../../app/ui/main_window.py" line="562"/>
         <source>Outline</source>
         <translation>Контур</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="507"/>
+        <location filename="../../app/ui/main_window.py" line="566"/>
         <source>Outline Color</source>
         <translation>Цвет контура</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="516"/>
+        <location filename="../../app/ui/main_window.py" line="575"/>
         <source>Outline Width</source>
         <translation>Ширина контура</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="541"/>
+        <location filename="../../app/ui/main_window.py" line="600"/>
         <source>Pan Image</source>
         <translation>Переместить изображение</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="546"/>
+        <location filename="../../app/ui/main_window.py" line="605"/>
         <source>Set for all</source>
         <translation>Установить для всех</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="547"/>
+        <location filename="../../app/ui/main_window.py" line="606"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Устанавливает исходный и целевой язык на текущей странице для всех страниц</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="557"/>
+        <location filename="../../app/ui/main_window.py" line="616"/>
         <source>Draw or Select Text Boxes</source>
         <translation>Нарисовать или выбрать текстовые блоки</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="562"/>
+        <location filename="../../app/ui/main_window.py" line="621"/>
         <source>Delete Selected Box</source>
         <translation>Удалить выбранный блок</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="565"/>
+        <location filename="../../app/ui/main_window.py" line="624"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Удалить все блоки на изображении</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="568"/>
+        <location filename="../../app/ui/main_window.py" line="627"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>Рисует все текстовые блоки из существующего списка текстовых блоков
 обратно на изображении (для дальнейшего редактирования)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="577"/>
+        <location filename="../../app/ui/main_window.py" line="636"/>
         <source>Reduce the size of all blocks</source>
         <translation>Уменьшить размер всех блоков</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="591"/>
+        <location filename="../../app/ui/main_window.py" line="650"/>
         <source>Increase the size of all blocks</source>
         <translation>Увеличить размер всех блоков</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="603"/>
+        <location filename="../../app/ui/main_window.py" line="662"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Рисовать мазки кистью для очистки изображения</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="608"/>
+        <location filename="../../app/ui/main_window.py" line="667"/>
         <source>Erase Brush Strokes</source>
         <translation>Стереть мазки кистью</translation>
     </message>
@@ -629,7 +634,7 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Повторить мазок кистью</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="613"/>
+        <location filename="../../app/ui/main_window.py" line="672"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Удалить все мазки кистью на изображении</translation>
     </message>
@@ -650,12 +655,12 @@ back on the Image (for further editing)</source>
         <translation type="vanished">Повторить изображение</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="629"/>
+        <location filename="../../app/ui/main_window.py" line="688"/>
         <source>Box Drawing</source>
         <translation>Рисование блоков</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="633"/>
+        <location filename="../../app/ui/main_window.py" line="692"/>
         <source>Inpainting</source>
         <translation>Восстановление изображения</translation>
     </message>
@@ -758,9 +763,17 @@ back on the Image (for further editing)</source>
 <context>
     <name>LlmsPage</name>
     <message>
-        <location filename="../../app/ui/settings/llms_page.py" line="17"/>
         <source>Provide Image as input to multimodal LLMs</source>
-        <translation>Предоставить изображение в качестве входных данных для мультимодальных LLM</translation>
+        <translation type="vanished">Предоставить изображение в качестве входных данных для мультимодальных LLM</translation>
+    </message>
+    <message>
+        <source>Provide Image as input to multimodal AI</source>
+        <translation type="vanished">Использовать изображение как входные данные для мультимодального ИИ</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/llms_page.py" line="17"/>
+        <source>Provide Image as input to AI</source>
+        <translation>Использовать изображение как входные данные для ИИ</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/llms_page.py" line="22"/>
@@ -791,33 +804,33 @@ back on the Image (for further editing)</source>
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="660"/>
+        <location filename="../../app/controllers/image.py" line="665"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
         <translation>Текстовые блоки не обнаружены.
 Пропускаем:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="661"/>
+        <location filename="../../app/controllers/image.py" line="666"/>
         <source>Could not OCR detected text.
 Skipping:</source>
         <translation>Не удалось распознать обнаруженный текст.
 Пропускаем:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="662"/>
+        <location filename="../../app/controllers/image.py" line="667"/>
         <source>Could not get translations.
 Skipping:</source>
         <translation>Не удалось получить переводы.
 Пропускаем:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="813"/>
+        <location filename="../../controller.py" line="815"/>
         <source>Processing:</source>
         <translation>Обработка:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="816"/>
+        <location filename="../../controller.py" line="818"/>
         <source>Archiving:</source>
         <translation>Архивация:</translation>
     </message>
@@ -1033,31 +1046,137 @@ Please try modifying the text or using a different translator.</source>
     </message>
 </context>
 <context>
+    <name>SearchReplacePanel</name>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="71"/>
+        <source>Search</source>
+        <translation>Поиск</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="77"/>
+        <source>Previous match (Ctrl+Enter)</source>
+        <translation>Предыдущее совпадение (Ctrl+Enter)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="81"/>
+        <source>Next match (Enter)</source>
+        <translation>Следующее совпадение (Enter)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="85"/>
+        <source>Clear (Esc)</source>
+        <translation>Очистить (Esc)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="114"/>
+        <source>Find</source>
+        <translation>Найти</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="135"/>
+        <source>Match case</source>
+        <translation>Учитывать регистр</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="143"/>
+        <source>Match whole word</source>
+        <translation>Только слово целиком</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="151"/>
+        <source>Use regular expression</source>
+        <translation>Использовать регулярные выражения</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="172"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="326"/>
+        <source>0 results</source>
+        <translation>0 результатов</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="196"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="216"/>
+        <source>Replace</source>
+        <translation>Заменить</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="211"/>
+        <source>Preserve case (match original capitalization)</source>
+        <translation>Сохранять регистр (соответствие исходной капитализации)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="222"/>
+        <source>Replace All</source>
+        <translation>Заменить все</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="255"/>
+        <source>Current Image</source>
+        <translation>Текущее изображение</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="256"/>
+        <source>All Images</source>
+        <translation>Все изображения</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="257"/>
+        <source>Search scope (Current Image searches visible pages in webtoon mode)</source>
+        <translation>Область поиска (Текущее изображение ищет на видимых страницах в режиме вебтуна)</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="261"/>
+        <source>Target</source>
+        <translation>Перевод</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="262"/>
+        <source>Source</source>
+        <translation>Оригинал</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="263"/>
+        <source>Search in original source or translated target text</source>
+        <translation>Поиск в исходном тексте или в переводе</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="271"/>
+        <location filename="../../app/ui/search_replace_panel.py" line="318"/>
+        <source>Ready</source>
+        <translation>Готов</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/search_replace_panel.py" line="328"/>
+        <source>{0} results in {1} image(s)</source>
+        <translation>{0} результатов в {1} изображениях</translation>
+    </message>
+</context>
+<context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="471"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="468"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="480"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="810"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="477"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="807"/>
         <source>Yes</source>
         <translation>Да</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="481"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="811"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="478"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="808"/>
         <source>No</source>
         <translation>Нет</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="489"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="486"/>
         <source>Restart Required</source>
         <translation>Необходим перезапуск</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="490"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="487"/>
         <source>Please restart the application for the language changes to take effect.</source>
         <translation>Пожалуйста, перезапустите приложение, чтобы изменения языка вступили в силу.</translation>
     </message>
@@ -1066,33 +1185,33 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Вход...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="527"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="524"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>Не удалось начать процесс входа.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="544"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="772"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="541"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
         <source>Sign In</source>
         <translation>Войти</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="561"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="558"/>
         <source>Sign In Required</source>
         <translation>Требуется вход</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="562"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="559"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>Пожалуйста, войдите, чтобы купить или управлять кредитами.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="571"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="568"/>
         <source>Unable to Open Browser</source>
         <translation>Не удалось открыть браузер</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="572"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="569"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>Пожалуйста, откройте страницу с ценами в вашем браузере: {url}</translation>
     </message>
@@ -1105,109 +1224,109 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Вы успешно вошли как {email}.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="519"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="855"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="516"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
         <source>Cancel</source>
         <translation>Отмена</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="644"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="641"/>
         <source>Sign In Error</source>
         <translation>Ошибка входа</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="645"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="642"/>
         <source>Authentication failed: {error}</source>
         <translation>Ошибка аутентификации: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="659"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="656"/>
         <source>Confirm Sign Out</source>
         <translation>Подтвердите выход</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="660"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="657"/>
         <source>Are you sure you want to sign out?</source>
         <translation>Вы уверены, что хотите выйти?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="664"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="661"/>
         <source>Signing Out...</source>
         <translation>Выход...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="687"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="765"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="684"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
         <source>Sign Out</source>
         <translation>Выйти</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="703"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="700"/>
         <source>Session Expired</source>
         <translation>Сессия истекла</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="704"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="701"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>Ваша сессия истекла. Пожалуйста, войдите снова.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="715"/>
         <location filename="../../app/ui/settings/settings_page.py" line="718"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="721"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="740"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="737"/>
         <source>N/A</source>
         <translation>Н/Д</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="732"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="729"/>
         <source>Free</source>
         <translation>Бесплатно</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="744"/>
         <source>Subscription</source>
         <translation>Подписка</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
         <source>One-time</source>
         <translation>Одноразовая</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="753"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="758"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="755"/>
         <source>Total</source>
         <translation>Всего</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="787"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="784"/>
         <source>Checking...</source>
         <translation>Проверка...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="793"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="843"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="790"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="827"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
         <source>Check for Updates</source>
         <translation>Проверить обновления</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="800"/>
         <source>Update Available</source>
         <translation>Доступно обновление</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="806"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
         <source>A new version {version} is available.</source>
         <translation>Доступна новая версия {version}.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="807"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="804"/>
         <source>Release Notes</source>
         <translation>Примечания к выпуску</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="815"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="812"/>
         <source>Skip This Version</source>
         <translation>Пропустить эту версию</translation>
     </message>
@@ -1220,32 +1339,32 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Скачать и установить</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
         <source>Up to Date</source>
         <translation>Актуальная версия</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="834"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="831"/>
         <source>You are using the latest version.</source>
         <translation>Вы используете последнюю версию.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="849"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="846"/>
         <source>Update Error</source>
         <translation>Ошибка обновления</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="855"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
         <source>Downloading update...</source>
         <translation>Загрузка обновления...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="872"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="869"/>
         <source>Download Complete</source>
         <translation>Загрузка завершена</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="870"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>Установщик загружен в {path}. Запустить сейчас?</translation>
     </message>
@@ -1257,162 +1376,167 @@ Please try modifying the text or using a different translator.</source>
 <context>
     <name>SettingsPageUI</name>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="58"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
         <source>Default</source>
         <translation>По умолчанию</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="128"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="59"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="129"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="60"/>
         <source>Gemini-2.0-Flash</source>
         <translation>Gemini-2.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="73"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="113"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="135"/>
         <source>Resize</source>
         <translation>Изменить размер</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="136"/>
         <source>Original</source>
         <translation>Оригинал</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="66"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="137"/>
         <source>Crop</source>
         <translation>Обрезать</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="110"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="106"/>
         <source>Dark</source>
         <translation>Темная</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="107"/>
         <source>Light</source>
         <translation>Светлая</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
         <source>Left</source>
         <translation>Слева</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
         <source>Center</source>
         <translation>По центру</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="142"/>
         <source>Right</source>
         <translation>Справа</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
         <source>Gemini-3.0-Flash</source>
         <translation>Gemini-3.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="148"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
+        <source>Translation Guidance</source>
+        <translation>Руководство по переводу</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Advanced</source>
         <translation>Дополнительно</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>About</source>
         <translation>О программе</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="81"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="110"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Custom</source>
         <translation>Пользовательский</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
         <source>Yandex</source>
         <translation>Яндекс</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="112"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="74"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="79"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
@@ -1421,18 +1545,18 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Gemini-2.5-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="80"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
         <source>Deepseek-v3</source>
         <translation>Deepseek-v3</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
         <source>Gemini-2.5-Pro</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
         <source>Account</source>
         <translation>Аккаунт</translation>
     </message>
@@ -1469,7 +1593,7 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Google Translate</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft Translator</translation>
     </message>
@@ -1482,12 +1606,12 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Стратегия HD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
         <source>Personalization</source>
         <translation>Персонализация</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="303"/>
         <source>Tools</source>
         <translation>Инструменты</translation>
     </message>
@@ -1496,17 +1620,16 @@ Please try modifying the text or using a different translator.</source>
         <translation type="vanished">Учетные данные</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>LLMs</source>
-        <translation>LLM</translation>
+        <translation type="vanished">LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
         <source>Text Rendering</source>
         <translation>Отображение текста</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Export</source>
         <translation>Экспорт</translation>
     </message>
@@ -1582,7 +1705,7 @@ then do inpainting on the resized image.</source>
     </message>
     <message>
         <source>Provide Image as input to multimodal LLMs</source>
-        <translation type="vanished">Предоставьте изображение в качестве входных данных для мультимодальных LLM</translation>
+        <translation type="vanished">Предоставить изображение в качестве входных данных для мультимодальных LLM</translation>
     </message>
     <message>
         <source>Text Alignment</source>
@@ -1696,9 +1819,13 @@ then do inpainting on the resized image.</source>
         <translation>Обнаружение текста</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
         <source>Inpainting</source>
-        <translation>Восстановление изображения</translation>
+        <translation type="vanished">Восстановление изображения</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/tools_page.py" line="36"/>
+        <source>Image Cleaning</source>
+        <translation>Очистка изображений</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/tools_page.py" line="37"/>
@@ -1765,16 +1892,52 @@ then do inpainting on the resized image.</source>
     </message>
 </context>
 <context>
-    <name>main_page</name>
+    <name>self.main</name>
     <message>
-        <source>Thai</source>
-        <translation type="vanished">Тайский</translation>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
+        <source>Empty query</source>
+        <translation>Пустой запрос</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
+        <source>Ready</source>
+        <translation>Готов</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
+        <source>No results</source>
+        <translation>Нет результатов</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
+        <source>Replace</source>
+        <translation>Замена</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
+        <source>Replaced 1 occurrence(s)</source>
+        <translation>Заменено 1 совпадение</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
+        <source>Replace All</source>
+        <translation>Заменить все</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
+        <source>Replaced {0} occurrence(s)</source>
+        <translation>Заменено {0} совпадений</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
+        <source>No replacements</source>
+        <translation>Нет замен</translation>
     </message>
 </context>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="702"/>
+        <location filename="../../app/ui/main_window.py" line="761"/>
         <source>Light</source>
         <translation>Светлая</translation>
     </message>
@@ -1782,12 +1945,12 @@ then do inpainting on the resized image.</source>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="165"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="162"/>
         <source>Resize</source>
         <translation>Изменить размер</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="167"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="164"/>
         <source>Crop</source>
         <translation>Обрезать</translation>
     </message>
