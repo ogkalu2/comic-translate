@@ -232,13 +232,13 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self.scope_combo = MComboBox().small()
         self.scope_combo.addItem(self.tr("Current Image"), userData="current")
         self.scope_combo.addItem(self.tr("All Images"), userData="all")
-        self.scope_combo.setToolTip(self.tr("Search scope (Webtoon: Current image searches visible pages only)"))
+        self.scope_combo.setToolTip(self.tr("Search scope (Current Image searches visible pages in webtoon mode)"))
         self.scope_combo.currentIndexChanged.connect(lambda _i: self._schedule_live_search())
 
         self.field_combo = MComboBox().small()
         self.field_combo.addItem(self.tr("Target"), userData="target")
         self.field_combo.addItem(self.tr("Source"), userData="source")
-        self.field_combo.setToolTip(self.tr("Search field"))
+        self.field_combo.setToolTip(self.tr("Search in original source or translated target text"))
         self.field_combo.currentIndexChanged.connect(lambda _i: self._schedule_live_search())
 
         meta_row.addWidget(self.scope_combo)
