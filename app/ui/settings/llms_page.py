@@ -14,7 +14,7 @@ class LlmsPage(QtWidgets.QWidget):
         v = QtWidgets.QVBoxLayout(self)
         main_layout = QtWidgets.QHBoxLayout()
 
-        self.image_checkbox = MCheckBox(self.tr("Provide Image as input to multimodal AI"))
+        self.image_checkbox = MCheckBox(self.tr("Provide Image as input to AI"))
         self.image_checkbox.setChecked(False)
 
         # Left
