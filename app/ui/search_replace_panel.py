@@ -34,32 +34,6 @@ class SearchReplacePanel(QtWidgets.QWidget):
         self._live_timer.setInterval(250)
         self._live_timer.timeout.connect(self.search_requested)
         self._build_ui()
-        QtCore.QTimer.singleShot(0, self._sync_summary_x)
-
-    def changeEvent(self, event):
-        super().changeEvent(event)
-        if event.type() in {
-            QtCore.QEvent.Type.Polish,
-            QtCore.QEvent.Type.PolishRequest,
-            QtCore.QEvent.Type.StyleChange,
-            QtCore.QEvent.Type.FontChange,
-            QtCore.QEvent.Type.PaletteChange,
-        }:
-            QtCore.QTimer.singleShot(0, self._sync_summary_x)
-
-    def _sync_summary_x(self):
-        """
-        Align the *text* in the summary label with the (centered) icon in the
-        Find "Previous" button. Dayu theme uses a smaller iconSize than the
-        toolbutton size, so the icon is visually inset.
-        """
-        if not hasattr(self, "summary_label") or not hasattr(self, "prev_btn"):
-            return
-
-        contents = self.prev_btn.contentsRect()
-        icon = self.prev_btn.iconSize()
-        icon_left = contents.left() + max(0, (contents.width() - icon.width()) // 2)
-        self.summary_label.setIndent(max(0, int(icon_left)))
 
     def _apply_latching_toggle_style(self, btn: QtWidgets.QToolButton):
         # Ensure check state is visually persistent (VS Code-like "latched" toggles).
@@ -239,20 +213,18 @@ class SearchReplacePanel(QtWidgets.QWidget):
 
         replace_row.addWidget(replace_container, 1)
 
-        # Keep Find and Replace bars the same width by reserving space for the
-        # find nav buttons (prev/next/clear) on the replace row, and show the
-        # results count there.
-        replace_right = QtWidgets.QWidget()
-        # Use the same fixed width as the Find nav so the left edge (x position)
-        # aligns between rows.
-        replace_right.setFixedWidth(find_nav_width)
-        replace_right.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        replace_right_lay = QtWidgets.QHBoxLayout(replace_right)
-        replace_right_lay.setContentsMargins(0, 0, 0, 0)
-        replace_right_lay.setSpacing(0)
-        replace_right_lay.addWidget(self.summary_label, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        replace_row.addWidget(replace_right, 0, Qt.AlignmentFlag.AlignTop)
+        # Nav placeholder to align with find row
+        replace_nav_placeholder = QtWidgets.QWidget()
+        replace_nav_placeholder.setFixedWidth(find_nav_width)
+        replace_row.addWidget(replace_nav_placeholder, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(replace_row)
+
+        # Summary label on its own row so it doesn't get cut off
+        summary_row = QtWidgets.QHBoxLayout()
+        summary_row.setContentsMargins(6, 2, 6, 0)
+        summary_row.addWidget(self.summary_label)
+        summary_row.addStretch()
+        layout.addLayout(summary_row)
 
         meta_row = QtWidgets.QHBoxLayout()
         meta_row.setContentsMargins(6, 0, 6, 0)
