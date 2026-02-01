@@ -75,15 +75,20 @@ class Messages:
             parent: parent widget
             details: optional detailed message from backend
         """
-        MMessage.error(
-            text=QCoreApplication.translate(
+        msg = QtWidgets.QMessageBox(parent)
+        msg.setIcon(QtWidgets.QMessageBox.Warning)
+        msg.setWindowTitle(QCoreApplication.translate("Messages", "Insufficient Credits"))
+        msg.setText(QCoreApplication.translate(
             "Messages", 
             "Insufficient credits to perform this action.\nGo to Settings > Account to buy more credits."
-            ),
-            parent=parent,
-            duration=None,
-            closable=True
-        )
+        ))
+        
+        if details:
+            msg.setDetailedText(details)
+            
+        ok_btn = msg.addButton(QCoreApplication.translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        msg.setDefaultButton(ok_btn)
+        msg.exec()
 
     @staticmethod
     def show_custom_not_configured_error(parent):
