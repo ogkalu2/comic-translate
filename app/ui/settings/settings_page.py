@@ -33,6 +33,7 @@ class SettingsPage(QtWidgets.QWidget):
         self._setup_connections()
         self._loading_settings = False
         self._is_background_check = False
+        self._current_language = None  # Track current language for revert
 
         self._pricing_refresh_timer: Optional[QTimer] = None
         self._pricing_refresh_attempts: int = 0
@@ -401,7 +402,11 @@ class SettingsPage(QtWidgets.QWidget):
             self.auth_client.check_session_async()
         # END Load user info 
 
+        # Initialize current language tracker after loading
+        self._current_language = self.ui.lang_combo.currentText()
+
         self._loading_settings = False
+
 
     # ADDED: Methods to load/save user info specifically
     def _load_user_info_from_settings(self):
@@ -458,7 +463,8 @@ class SettingsPage(QtWidgets.QWidget):
 
     def on_language_changed(self, new_language):
         if not self._loading_settings:  
-            self.show_restart_dialog()
+            # Pass the previous language so we can revert if needed
+            self.show_restart_dialog(new_language)
 
     def _show_message_box(self, icon: QtWidgets.QMessageBox.Icon, title: str, text: str):
         msg_box = QtWidgets.QMessageBox(self)
@@ -480,19 +486,25 @@ class SettingsPage(QtWidgets.QWidget):
         msg_box.exec()
         return msg_box.clickedButton() == yes_btn
 
-    def show_restart_dialog(self):
+    def show_restart_dialog(self, new_language):
         from modules.utils.common_utils import restart_application
         
         response = self._ask_yes_no(
             self.tr("Restart Required"),
-            self.tr("The application needs to restart for the language changes to take effect.\n\nRestart now?"),
+            self.tr("The application needs to restart for the language changes to take effect.\nRestart now?"),
             default_yes=True
         )
         
         if response:
             # Save settings before restarting
             self.save_settings()
+            self._current_language = new_language  # Update tracking
             restart_application()
+        else:
+            # User declined - revert to previous language
+            self._loading_settings = True  # Prevent triggering the handler again
+            self.ui.lang_combo.setCurrentText(self._current_language)
+            self._loading_settings = False
 
 
 
