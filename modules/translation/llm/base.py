@@ -38,7 +38,7 @@ class BaseLLMTranslation(LLMTranslation):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
-        self.temperature = llm_settings.get('temperature', 1)
+        self.temperature = 1.0
         self.top_p = 0.95
         self.max_tokens = 5000
         

@@ -109,7 +109,6 @@ class UserTranslator(TranslationEngine):
             # Access LLM settings from the desktop settings object
             llm_settings = self.settings.get_llm_settings() # Assuming this method exists
             llm_options_payload = {
-                "temperature": llm_settings.get('temperature', 1.0),
                 "image_input_enabled": llm_settings.get('image_input_enabled', False)
             }
 

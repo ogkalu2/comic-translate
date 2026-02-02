@@ -121,7 +121,6 @@ class SettingsPage(QtWidgets.QWidget):
         return {
             'extra_context': self.ui.extra_context.toPlainText(),
             'image_input_enabled': self.ui.image_checkbox.isChecked(),
-            'temperature': float(self.ui.temp_edit.text()),
         }
 
     def get_export_settings(self):
@@ -347,8 +346,6 @@ class SettingsPage(QtWidgets.QWidget):
         settings.beginGroup('llm')
         self.ui.extra_context.setPlainText(settings.value('extra_context', ''))
         self.ui.image_checkbox.setChecked(settings.value('image_input_enabled', False, type=bool))
-        temp = settings.value('temperature', 1.0, type=float)
-        self.ui.temp_edit.setText(f"{temp:.2f}")
         settings.endGroup()
 
         # Load export settings
