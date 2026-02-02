@@ -4,6 +4,7 @@ import logging
 import requests
 import numpy as np
 import imkit as imk
+from types import SimpleNamespace
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
@@ -334,8 +335,9 @@ class WebtoonBatchProcessor:
         if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
             return None
 
-        # if blk_list:
-        #     get_best_render_area(blk_list, combined_image, inpaint_input_img)
+        # Note: get_best_render_area is applied later per-virtual-page (after merge/dedup)
+        # in _emit_and_store_virtual_page_results, so it affects live rendering, saved state,
+        # and the final physical render.
 
         # Progress update: Pre-translation setup completed
         self.main_page.progress_update.emit(current_physical_page, total_images, 6, 10, False)
@@ -741,6 +743,12 @@ class WebtoonBatchProcessor:
         page_y_position_in_scene = 0
         if webtoon_manager and vpage.physical_page_index < len(webtoon_manager.image_positions):
             page_y_position_in_scene = webtoon_manager.image_positions[vpage.physical_page_index]
+
+        # Ensure blocks use the best (bubble-aware) render bounds in VIRTUAL coordinates.
+        # This is the single correct place to do it in webtoon mode: after merge/dedup and
+        # before wrapping + state creation.
+        virtual_img = SimpleNamespace(shape=(vpage.crop_height, vpage.physical_width, 3))
+        get_best_render_area(blk_list_virtual, virtual_img)
 
         # Process each block
         for blk_virtual in blk_list_virtual:
