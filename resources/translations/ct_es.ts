@@ -867,15 +867,13 @@ Vaya a Configuración &gt; Credenciales &gt; Microsoft para configurar una.</tra
         <translation type="vanished">DeepL no traduce al vietnamita.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="12"/>
         <source>Comic has been Translated!</source>
-        <translation>¡El cómic ha sido traducido!</translation>
+        <translation type="vanished">¡El cómic ha sido traducido!</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="24"/>
         <source>No Font selected.
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
-        <translation>No se ha seleccionado ninguna fuente.
+        <translation type="vanished">No se ha seleccionado ninguna fuente.
 Vaya a Configuración &gt; Renderización de texto &gt; Fuente para seleccionar o importar una.</translation>
     </message>
     <message>
@@ -887,102 +885,85 @@ Vaya a Configuración &gt; Renderización de texto &gt; Fuente para seleccionar 
         <translation type="vanished">Por favor, inicia sesión o regístrate en Configuración &gt; Cuenta para continuar. (Usuarios avanzados pueden configurar claves API en Configuración &gt; Avanzado).</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="36"/>
         <source>Please sign in or sign up via Settings &gt; Account to continue.</source>
-        <translation>Por favor, inicia sesión o regístrate en Configuración &gt; Cuenta para continuar.</translation>
+        <translation type="vanished">Por favor, inicia sesión o regístrate en Configuración &gt; Cuenta para continuar.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="48"/>
         <source>The translator does not support the selected target language. Please choose a different language or tool.</source>
-        <translation>El traductor no admite el idioma de destino seleccionado. Por favor, elige otro idioma o herramienta.</translation>
+        <translation type="vanished">El traductor no admite el idioma de destino seleccionado. Por favor, elige otro idioma o herramienta.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="60"/>
         <source>No {} selected. Please select a {} in Settings &gt; Tools.</source>
-        <translation>No se ha seleccionado {}. Por favor, selecciona un {} en Configuración &gt; Herramientas.</translation>
+        <translation type="vanished">No se ha seleccionado {}. Por favor, selecciona un {} en Configuración &gt; Herramientas.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="81"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
-        <translation>Créditos insuficientes para realizar esta acción.
+        <translation type="vanished">Créditos insuficientes para realizar esta acción.
 Ve a Configuración &gt; Cuenta para comprar más créditos.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="100"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
-        <translation>Personalizado requiere una configuración avanzada de API. La mayoría de los usuarios deberían usar el sistema de créditos.
+        <translation type="vanished">Personalizado requiere una configuración avanzada de API. La mayoría de los usuarios deberían usar el sistema de créditos.
 Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o configura la API personalizada en Configuración &gt; Avanzado.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="136"/>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation type="vanished">Copiar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="89"/>
-        <location filename="../../app/ui/messages.py" line="137"/>
         <source>OK</source>
-        <translation>Aceptar</translation>
+        <translation type="vanished">Aceptar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="80"/>
         <source>Insufficient Credits</source>
-        <translation>Créditos insuficientes</translation>
+        <translation type="vanished">Créditos insuficientes</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="138"/>
         <source>Close</source>
-        <translation>Cerrar</translation>
+        <translation type="vanished">Cerrar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="154"/>
         <source>An unexpected error occurred on the server.
 Please try again later.</source>
-        <translation>Ocurrió un error inesperado en el servidor.
+        <translation type="vanished">Ocurrió un error inesperado en el servidor.
 Por favor, inténtelo de nuevo más tarde.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="155"/>
         <source>The selected translator is currently unavailable.
 Please select a different tool in Settings.</source>
-        <translation>El traductor seleccionado no está disponible actualmente.
+        <translation type="vanished">El traductor seleccionado no está disponible actualmente.
 Por favor, seleccione una herramienta diferente en Configuración.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="156"/>
         <source>The server received an invalid response from an upstream provider.
 Please try again later.</source>
-        <translation>El servidor recibió una respuesta no válida de un proveedor ascendente.
+        <translation type="vanished">El servidor recibió una respuesta no válida de un proveedor ascendente.
 Por favor, inténtelo de nuevo más tarde.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="157"/>
         <source>The server is currently unavailable or overloaded.
 Please try again later.</source>
-        <translation>El servidor no está disponible actualmente o está sobrecargado.
+        <translation type="vanished">El servidor no está disponible actualmente o está sobrecargado.
 Por favor, inténtelo de nuevo más tarde.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="158"/>
         <source>The server timed out waiting for a response.
 Please try again later.</source>
-        <translation>El servidor agotó el tiempo de espera para una respuesta.
+        <translation type="vanished">El servidor agotó el tiempo de espera para una respuesta.
 Por favor, inténtelo de nuevo más tarde.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="175"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
-        <translation>No se puede conectar al servidor.
+        <translation type="vanished">No se puede conectar al servidor.
 Por favor, compruebe su conexión a Internet.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="190"/>
         <source>Translation blocked: The content was flagged by safety filters.
 Please try modifying the text or using a different translator.</source>
-        <translation>Traducción bloqueada: El contenido fue marcado por filtros de seguridad.
+        <translation type="vanished">Traducción bloqueada: El contenido fue marcado por filtros de seguridad.
 Por favor, intente modificar el texto o usar un traductor diferente.</translation>
     </message>
     <message>
@@ -1040,55 +1021,44 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
 <context>
     <name>SearchReplaceController</name>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="435"/>
         <source>Empty query</source>
-        <translation>Consulta vacía</translation>
+        <translation type="vanished">Consulta vacía</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="524"/>
         <source>Search Error</source>
-        <translation>Error de búsqueda</translation>
+        <translation type="vanished">Error de búsqueda</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="577"/>
         <source>Ready</source>
-        <translation>Listo</translation>
+        <translation type="vanished">Listo</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="590"/>
         <source>No results</source>
-        <translation>Sin resultados</translation>
+        <translation type="vanished">Sin resultados</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="1062"/>
-        <location filename="../../app/controllers/search_replace.py" line="1146"/>
         <source>Replace Error</source>
-        <translation>Error de reemplazo</translation>
+        <translation type="vanished">Error de reemplazo</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="1132"/>
         <source>Replace</source>
-        <translation>Reemplazar</translation>
+        <translation type="vanished">Reemplazar</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="1137"/>
         <source>Replaced 1 occurrence(s)</source>
-        <translation>1 ocurrencia reemplazada</translation>
+        <translation type="vanished">1 ocurrencia reemplazada</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="1215"/>
         <source>Replace All</source>
-        <translation>Reemplazar todo</translation>
+        <translation type="vanished">Reemplazar todo</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="1223"/>
         <source>Replaced {0} occurrence(s)</source>
-        <translation>{0} ocurrencia(s) reemplazada(s)</translation>
+        <translation type="vanished">{0} ocurrencia(s) reemplazada(s)</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/search_replace.py" line="1225"/>
         <source>No replacements</source>
-        <translation>Sin reemplazos</translation>
+        <translation type="vanished">Sin reemplazos</translation>
     </message>
 </context>
 <context>
@@ -1204,64 +1174,63 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
 <context>
     <name>SettingsPage</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="468"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="474"/>
         <source>OK</source>
         <translation>Aceptar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="477"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="807"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="483"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="828"/>
         <source>Yes</source>
         <translation>Sí</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="478"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="808"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="484"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="829"/>
         <source>No</source>
         <translation>No</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="486"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="493"/>
         <source>Restart Required</source>
         <translation>Reinicio requerido</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="487"/>
         <source>Please restart the application for the language changes to take effect.</source>
-        <translation>Por favor, reinicie la aplicación para que los cambios de idioma surtan efecto.</translation>
+        <translation type="vanished">Por favor, reinicie la aplicación para que los cambios de idioma surtan efecto.</translation>
     </message>
     <message>
         <source>Signing In...</source>
         <translation type="vanished">Iniciando sesión...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="524"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="545"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>No se pudo iniciar el proceso de inicio de sesión.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="541"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="769"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="562"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="790"/>
         <source>Sign In</source>
         <translation>Iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="558"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="579"/>
         <source>Sign In Required</source>
         <translation>Se requiere iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="559"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="580"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>Por favor, inicia sesión para comprar o gestionar créditos.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="568"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="589"/>
         <source>Unable to Open Browser</source>
         <translation>No se puede abrir el navegador</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="569"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>Por favor, abre la página de precios en tu navegador: {url}</translation>
     </message>
@@ -1274,109 +1243,116 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
         <translation type="vanished">Sesión iniciada correctamente como {email}.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="516"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="494"/>
+        <source>The application needs to restart for the language changes to take effect.
+Restart now?</source>
+        <translation>La aplicación necesita reiniciarse para que los cambios de idioma surtan efecto.
+¿Reiniciar ahora?</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/settings/settings_page.py" line="537"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="641"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="662"/>
         <source>Sign In Error</source>
         <translation>Error al iniciar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="642"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="663"/>
         <source>Authentication failed: {error}</source>
         <translation>La autenticación falló: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="656"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="677"/>
         <source>Confirm Sign Out</source>
         <translation>Confirmar cierre de sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="657"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="678"/>
         <source>Are you sure you want to sign out?</source>
         <translation>¿Estás seguro de que deseas cerrar sesión?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="661"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="682"/>
         <source>Signing Out...</source>
         <translation>Cerrando sesión...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="684"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="705"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="783"/>
         <source>Sign Out</source>
         <translation>Cerrar sesión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="700"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="721"/>
         <source>Session Expired</source>
         <translation>Sesión expirada</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="701"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="722"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>Tu sesión ha expirado. Por favor, inicia sesión de nuevo.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="715"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="718"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="737"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="736"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="739"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="758"/>
         <source>N/A</source>
         <translation>No disponible</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="729"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
         <source>Free</source>
         <translation>Gratis</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="744"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="765"/>
         <source>Subscription</source>
         <translation>Suscripción</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="747"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="768"/>
         <source>One-time</source>
         <translation>Único pago</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="755"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="771"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="776"/>
         <source>Total</source>
         <translation>Total</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="784"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="805"/>
         <source>Checking...</source>
         <translation>Comprobando...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="790"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="827"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="840"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="811"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="848"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="861"/>
         <source>Check for Updates</source>
         <translation>Buscar actualizaciones</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="800"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="821"/>
         <source>Update Available</source>
         <translation>Actualización disponible</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="824"/>
         <source>A new version {version} is available.</source>
         <translation>Una nueva versión {version} está disponible.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="804"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="825"/>
         <source>Release Notes</source>
         <translation>Notas de la versión</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="812"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="833"/>
         <source>Skip This Version</source>
         <translation>Omitir esta versión</translation>
     </message>
@@ -1389,32 +1365,32 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
         <translation type="vanished">Descargar e instalar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="830"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="851"/>
         <source>Up to Date</source>
         <translation>Actualizado</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="831"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
         <source>You are using the latest version.</source>
         <translation>Estás usando la última versión.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="846"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="867"/>
         <source>Update Error</source>
         <translation>Error de actualización</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Downloading update...</source>
         <translation>Descargando actualización...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="869"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="890"/>
         <source>Download Complete</source>
         <translation>Descarga completa</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="870"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="891"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>El instalador se descargó en {path}. ¿Desea ejecutarlo ahora?</translation>
     </message>
@@ -1701,37 +1677,37 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
     </message>
     <message>
         <source>Resize Limit:</source>
-        <translation>Límite de Redimensión:</translation>
+        <translation type="vanished">Límite de Redimensión:</translation>
     </message>
     <message>
         <source>Resize the longer side of the image to a specific size,
 then do inpainting on the resized image.</source>
-        <translation>Redimensiona el lado más largo de la imagen a un tamaño específico,
+        <translation type="vanished">Redimensiona el lado más largo de la imagen a un tamaño específico,
 luego realiza el inpainting en la imagen redimensionada.</translation>
     </message>
     <message>
         <source>Crop masking area from the original image to do inpainting.</source>
-        <translation>Recorta el área de enmascaramiento de la imagen original para realizar el inpainting.</translation>
+        <translation type="vanished">Recorta el área de enmascaramiento de la imagen original para realizar el inpainting.</translation>
     </message>
     <message>
         <source>Crop Margin:</source>
-        <translation>Margen de Recorte:</translation>
+        <translation type="vanished">Margen de Recorte:</translation>
     </message>
     <message>
         <source>Crop Trigger Size:</source>
-        <translation>Tamaño de Activación del Recorte:</translation>
+        <translation type="vanished">Tamaño de Activación del Recorte:</translation>
     </message>
     <message>
         <source>Use GPU</source>
-        <translation>Usar GPU</translation>
+        <translation type="vanished">Usar GPU</translation>
     </message>
     <message>
         <source>API Key</source>
-        <translation>Clave API</translation>
+        <translation type="vanished">Clave API</translation>
     </message>
     <message>
         <source>Endpoint URL</source>
-        <translation>URL del Punto Final</translation>
+        <translation type="vanished">URL del Punto Final</translation>
     </message>
     <message>
         <source>Translate</source>
@@ -1962,12 +1938,12 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
 <context>
     <name>self.ui</name>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="162"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="163"/>
         <source>Resize</source>
         <translation>Redimensionar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="164"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="165"/>
         <source>Crop</source>
         <translation>Recortar</translation>
     </message>
