@@ -1,4 +1,29 @@
 import os
+import sys
+
+def restart_application():
+    """
+    Restart the application.
+    Works for both running as script and compiled executable (PyInstaller/Nuitka).
+    """
+    from PySide6.QtWidgets import QApplication
+    from PySide6.QtCore import QProcess
+    
+    # Get the executable path (works for both script and compiled)
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable (PyInstaller/Nuitka)
+        executable = sys.executable
+        args = sys.argv[1:]  # Skip the executable name
+    else:
+        # Running as script
+        executable = sys.executable
+        args = sys.argv
+    
+    # Start new instance
+    QProcess.startDetached(executable, args)
+    
+    # Quit current instance
+    QApplication.quit()
 
 def is_close(value1, value2, tolerance=2):
     return abs(value1 - value2) <= tolerance

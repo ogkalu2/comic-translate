@@ -481,11 +481,20 @@ class SettingsPage(QtWidgets.QWidget):
         return msg_box.clickedButton() == yes_btn
 
     def show_restart_dialog(self):
-        self._show_message_box(
-            QtWidgets.QMessageBox.Icon.Information,
+        from modules.utils.common_utils import restart_application
+        
+        response = self._ask_yes_no(
             self.tr("Restart Required"),
-            self.tr("Please restart the application for the language changes to take effect.")
+            self.tr("The application needs to restart for the language changes to take effect.\n\nRestart now?"),
+            default_yes=True
         )
+        
+        if response:
+            # Save settings before restarting
+            self.save_settings()
+            restart_application()
+
+
 
     def get_min_font_size(self):
         return int(self.ui.min_font_spinbox.value())
