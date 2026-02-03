@@ -168,7 +168,7 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img=None):
                 bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
                 blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
 
-    if blk_list[0].source_lang not in ['ko']:
+    if blk_list and blk_list[0].source_lang not in ['ko', 'zh']:
         adjust_blks_size(blk_list, img, -5, -5)
 
     return blk_list
