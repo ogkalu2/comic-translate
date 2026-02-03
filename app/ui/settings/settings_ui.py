@@ -298,7 +298,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             {"title": self.tr("Personalization"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Account"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Tools"), "avatar": MPixmap(".svg")},
-            {"title": self.tr("Translation Guidance"), "avatar": MPixmap(".svg")},
+            {"title": self.tr("LLMs"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Text Rendering"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Export"), "avatar": MPixmap(".svg")},
             {"title": self.tr("Advanced"), "avatar": MPixmap(".svg")},

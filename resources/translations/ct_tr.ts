@@ -733,8 +733,10 @@ back on the Image (for further editing)</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="39"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
-        <translation>Yalnızca otomatik kaydetme etkinleştirildiğinde ve giriş bir arşiv (PDF/CBZ/CBR/EPUB/vb.) olduğunda geçerlidir. Çevrilen arşivler, orijinalin yanına &lt;filename&gt;_translated.&lt;ext&gt; olarak kaydedilir.</translation>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
+Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>Yalnızca otomatik kaydetme etkinleştirildiğinde ve giriş bir arşiv (PDF/CBZ/CBR/EPUB/vb.) olduğunda geçerlidir.
+Çevrilen arşivler, orijinalin yanına &lt;filename&gt;_translated.&lt;ext&gt; olarak kaydedilir.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="48"/>
@@ -1540,7 +1542,7 @@ Restart now?</source>
     </message>
     <message>
         <source>LLMs</source>
-        <translation type="vanished">LLM&apos;ler</translation>
+        <translation type="vanished">LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
@@ -1559,8 +1561,8 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
-        <source>Translation Guidance</source>
-        <translation>Çeviri Rehberi</translation>
+        <source>LLMs</source>
+        <translation>LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="304"/>

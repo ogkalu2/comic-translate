@@ -733,8 +733,10 @@ back on the Image (for further editing)</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="39"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
-        <translation>仅当启用了自动保存且输入为归档文件（PDF/CBZ/CBR/EPUB 等）时适用。翻译后的归档文件将以 &lt;filename&gt;_translated.&lt;ext&gt; 的名称保存在原文件旁。</translation>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
+Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>仅当启用了自动保存且输入为归档文件（PDF/CBZ/CBR/EPUB 等）时适用。
+翻译后的归档文件将以 &lt;filename&gt;_translated.&lt;ext&gt; 的名称保存在原文件旁。</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="48"/>
@@ -1551,8 +1553,8 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
-        <source>Translation Guidance</source>
-        <translation>翻译指南</translation>
+        <source>LLMs</source>
+        <translation>LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="304"/>

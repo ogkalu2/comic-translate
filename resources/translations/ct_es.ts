@@ -762,8 +762,10 @@ de nuevo en la imagen (para su posterior edición)</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="39"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
-        <translation>Solo se aplica cuando el guardado automático está habilitado y la entrada es un archivo (PDF/CBZ/CBR/EPUB/etc). Los archivos traducidos se guardan como &lt;filename&gt;_translated.&lt;ext&gt; junto al original.</translation>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
+Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>Solo se aplica cuando el guardado automático está habilitado y la entrada es un archivo (PDF/CBZ/CBR/EPUB/etc).
+Los archivos traducidos se guardan como &lt;filename&gt;_translated.&lt;ext&gt; junto al original.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="48"/>
@@ -1518,8 +1520,8 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
-        <source>Translation Guidance</source>
-        <translation>Guía de traducción</translation>
+        <source>LLMs</source>
+        <translation>LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="304"/>

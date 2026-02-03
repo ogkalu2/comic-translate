@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets
+from PySide6 import QtCore, QtWidgets
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.combo_box import MComboBox
@@ -16,6 +16,8 @@ class ExportPage(QtWidgets.QWidget):
         self.auto_save_note = MLabel(
             self.tr("Saves to a new comic_translate_<timestamp> folder in the same directory as the input file/archive.")
         ).secondary()
+        self.auto_save_note.setTextFormat(QtCore.Qt.PlainText)
+        self.auto_save_note.setWordWrap(True)
         self.raw_text_checkbox = MCheckBox(self.tr("Export Raw Text"))
         self.translated_text_checkbox = MCheckBox(self.tr("Export Translated text"))
         self.inpainted_image_checkbox = MCheckBox(self.tr("Export Inpainted Image"))
@@ -36,10 +38,12 @@ class ExportPage(QtWidgets.QWidget):
         file_conversion_label = MLabel(self.tr("File Format Conversion")).h4()
         file_conversion_note = MLabel(
             self.tr(
-                "Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). "
+                "Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).\n"
                 "Translated archives are saved as <filename>_translated.<ext> next to the original."
             )
         ).secondary()
+        file_conversion_note.setTextFormat(QtCore.Qt.PlainText)
+        file_conversion_note.setWordWrap(True)
 
         file_conversion_layout.addWidget(file_conversion_label)
         file_conversion_layout.addWidget(file_conversion_note)

@@ -798,8 +798,10 @@ back on the Image (for further editing)</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="39"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
-        <translation>자동 저장이 활성화되어 있고 입력이 아카이브(PDF/CBZ/CBR/EPUB 등)인 경우에만 적용됩니다. 번역된 아카이브는 원본 옆에 &lt;filename&gt;_translated.&lt;ext&gt; 이름으로 저장됩니다.</translation>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
+Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>자동 저장이 활성화되어 있고 입력이 아카이브(PDF/CBZ/CBR/EPUB 등)인 경우에만 적용됩니다.
+번역된 아카이브는 원본 옆에 &lt;filename&gt;_translated.&lt;ext&gt; 이름으로 저장됩니다.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="48"/>
@@ -1564,8 +1566,8 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
-        <source>Translation Guidance</source>
-        <translation>번역 안내</translation>
+        <source>LLMs</source>
+        <translation>LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="304"/>

@@ -798,8 +798,10 @@ sull&apos;immagine (per ulteriori modifiche)</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="39"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
-        <translation>Si applica solo quando il salvataggio automatico è abilitato e l&apos;input è un archivio (PDF/CBZ/CBR/EPUB/ecc.). Gli archivi tradotti vengono salvati come &lt;filename&gt;_translated.&lt;ext&gt; accanto all&apos;originale.</translation>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
+Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>Si applica solo quando il salvataggio automatico è abilitato e l&apos;input è un archivio (PDF/CBZ/CBR/EPUB/ecc.).
+Gli archivi tradotti vengono salvati come &lt;filename&gt;_translated.&lt;ext&gt; accanto all&apos;originale.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="48"/>
@@ -1568,8 +1570,8 @@ Riavviare ora?</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
-        <source>Translation Guidance</source>
-        <translation>Guida alla traduzione</translation>
+        <source>LLMs</source>
+        <translation>LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
