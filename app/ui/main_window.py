@@ -521,7 +521,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         settings = QSettings("ComicLabs", "ComicTranslate")
         settings.beginGroup('text_rendering')
         dflt_clr = settings.value('color', '#000000')
-        dflt_outline_check = settings.value('outline', False, type=bool)
+        dflt_outline_check = settings.value('outline', True, type=bool)
         settings.endGroup()
         
         self.block_font_color_button = QtWidgets.QPushButton()
