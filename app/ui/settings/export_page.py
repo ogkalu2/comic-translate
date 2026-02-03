@@ -12,7 +12,7 @@ class ExportPage(QtWidgets.QWidget):
 
         batch_label = MLabel(self.tr("Automatic Mode")).h4()
 
-        self.auto_save_checkbox = MCheckBox(self.tr("Auto-save Batch Translations"))
+        self.auto_save_checkbox = MCheckBox(self.tr("Auto-Save Batch Translations"))
         self.auto_save_note = MLabel(
             self.tr("Saves to a new comic_translate_<timestamp> folder in the same directory as the input file/archive.")
         ).secondary()
@@ -21,8 +21,8 @@ class ExportPage(QtWidgets.QWidget):
         self.inpainted_image_checkbox = MCheckBox(self.tr("Export Inpainted Image"))
 
         layout.addWidget(batch_label)
-        layout.addWidget(self.auto_save_checkbox)
         layout.addWidget(self.auto_save_note)
+        layout.addWidget(self.auto_save_checkbox)
         layout.addWidget(self.raw_text_checkbox)
         layout.addWidget(self.translated_text_checkbox)
         layout.addWidget(self.inpainted_image_checkbox)
