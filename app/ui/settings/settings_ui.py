@@ -222,6 +222,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.uppercase_checkbox = self.text_rendering_page.uppercase_checkbox
 
         # Export
+        self.auto_save_checkbox = self.export_page.auto_save_checkbox
         self.raw_text_checkbox = self.export_page.raw_text_checkbox
         self.translated_text_checkbox = self.export_page.translated_text_checkbox
         self.inpainted_image_checkbox = self.export_page.inpainted_image_checkbox

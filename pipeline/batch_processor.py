@@ -437,21 +437,29 @@ class BatchProcessor:
                 self.main_page.blk_list = blk_list
                 
             render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-            if not os.path.exists(render_save_dir):
-                os.makedirs(render_save_dir, exist_ok=True)
-            sv_pth = os.path.join(render_save_dir, f"{base_name}_translated{extension}")
+            
+            # Conditional Save: Final Rendered Image
+            if export_settings['auto_save']:
+                if not os.path.exists(render_save_dir):
+                    os.makedirs(render_save_dir, exist_ok=True)
+                sv_pth = os.path.join(render_save_dir, f"{base_name}_translated{extension}")
 
-            renderer = ImageSaveRenderer(image)
-            viewer_state = self.main_page.image_states[image_path]['viewer_state'].copy()
-            patches = self.main_page.image_patches.get(image_path, [])
-            renderer.apply_patches(patches)
-            renderer.add_state_to_image(viewer_state)
-            renderer.save_image(sv_pth)
+                renderer = ImageSaveRenderer(image)
+                viewer_state = self.main_page.image_states[image_path]['viewer_state'].copy()
+                patches = self.main_page.image_patches.get(image_path, [])
+                renderer.apply_patches(patches)
+                renderer.add_state_to_image(viewer_state)
+                renderer.save_image(sv_pth)
+            else:
+                # If auto-save is OFF, we still want to apply the state to the image state
+                # so the user can verify it in the UI, but we don't write to disk.
+                pass
 
             self.emit_progress(index, total_images, 10, 10, False)
 
         archive_info_list = self.main_page.file_handler.archive_info
-        if archive_info_list:
+        # Conditional Save: Archives (controlled by auto_save)
+        if archive_info_list and export_settings['auto_save']:
             save_as_settings = settings_page.get_export_settings()['save_as']
             for archive_index, archive in enumerate(archive_info_list):
                 archive_index_input = total_images + archive_index

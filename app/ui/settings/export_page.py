@@ -13,11 +13,13 @@ class ExportPage(QtWidgets.QWidget):
 
         batch_label = MLabel(self.tr("Automatic Mode")).h4()
 
+        self.auto_save_checkbox = MCheckBox(self.tr("Auto-save Batch Translations"))
         self.raw_text_checkbox = MCheckBox(self.tr("Export Raw Text"))
         self.translated_text_checkbox = MCheckBox(self.tr("Export Translated text"))
         self.inpainted_image_checkbox = MCheckBox(self.tr("Export Inpainted Image"))
 
         layout.addWidget(batch_label)
+        layout.addWidget(self.auto_save_checkbox)
         layout.addWidget(self.raw_text_checkbox)
         layout.addWidget(self.translated_text_checkbox)
         layout.addWidget(self.inpainted_image_checkbox)

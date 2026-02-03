@@ -979,12 +979,17 @@ class WebtoonBatchProcessor:
         # Continue Image Rendering
         viewer_state = self.main_page.image_states[image_path].get('viewer_state', {}).copy()
         renderer.add_state_to_image(viewer_state, page_idx, self.main_page)
-        render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-        if not os.path.exists(render_save_dir):
-            os.makedirs(render_save_dir, exist_ok=True)
-        sv_pth = os.path.join(render_save_dir, f"{base_name}_translated{extension}")
-        renderer.save_image(sv_pth)
-        logger.info(f"Saved final rendered page: {sv_pth}")
+        
+        # Conditional Save: Final Rendered Image (controlled by auto_save)
+        if export_settings['auto_save']:
+            render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
+            if not os.path.exists(render_save_dir):
+                os.makedirs(render_save_dir, exist_ok=True)
+            sv_pth = os.path.join(render_save_dir, f"{base_name}_translated{extension}")
+            renderer.save_image(sv_pth)
+            logger.info(f"Saved final rendered page: {sv_pth}")
+        else:
+            logger.info(f"Auto-save is OFF. Skipping final image save for page {page_idx}.")
 
     def webtoon_batch_process(self, selected_paths: List[str] = None):
         """
@@ -1155,7 +1160,11 @@ class WebtoonBatchProcessor:
 
         # Step 4: Handle archive creation
         archive_info_list = self.main_page.file_handler.archive_info
-        if archive_info_list:
+        # Conditional Save: Archives (controlled by auto_save)
+        # Note: We also need to fetch the setting here since webtoon_batch_process is the entry point
+        auto_save = self.main_page.settings_page.get_export_settings()['auto_save']
+        
+        if archive_info_list and auto_save:
             save_as_settings = self.main_page.settings_page.get_export_settings()['save_as']
             for archive_index, archive in enumerate(archive_info_list):
                 archive_index_input = total_images + archive_index
