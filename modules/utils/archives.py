@@ -4,6 +4,29 @@ import math
 import io
 from PIL import Image
 
+SUPPORTED_SAVE_AS_EXTS = {'.pdf', '.cbz', '.cb7', '.zip'}
+
+def resolve_save_as_ext(input_archive_ext: str, save_as: str | None = None) -> str:
+    """Resolve the output archive extension for auto-saved translated archives.
+
+    Returns a dotted extension (e.g. '.zip') accepted by `make()`.
+    `input_archive_ext` is ignored except for backward-compatible callers.
+    """
+    def _normalize_target(value: str | None) -> str | None:
+        if not value:
+            return None
+        v = str(value).strip().lower()
+        if not v:
+            return None
+        return v if v.startswith('.') else f'.{v}'
+
+    forced = _normalize_target(save_as)
+    if forced in SUPPORTED_SAVE_AS_EXTS:
+        return forced
+
+    # Default: zip
+    return '.zip'
+
 def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split(r'(\d+)', str(s))]

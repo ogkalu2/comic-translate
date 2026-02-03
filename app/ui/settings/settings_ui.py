@@ -50,7 +50,6 @@ class SettingsPageUI(QtWidgets.QWidget):
         super(SettingsPageUI, self).__init__(parent)
 
         self.credential_widgets = {}
-        self.export_widgets = {}
 
         self.inpainters = ['LaMa', 'AOT']
         self.detectors = ['RT-DETR-v2']
@@ -226,8 +225,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.raw_text_checkbox = self.export_page.raw_text_checkbox
         self.translated_text_checkbox = self.export_page.translated_text_checkbox
         self.inpainted_image_checkbox = self.export_page.inpainted_image_checkbox
-        self.export_widgets = self.export_page.export_widgets
-        self.from_file_types = self.export_page.from_file_types
+        self.archive_save_as_combo = self.export_page.archive_save_as_combo
 
         # Account
         self.sign_in_button = self.account_page.sign_in_button
