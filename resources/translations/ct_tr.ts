@@ -732,12 +732,12 @@ back on the Image (for further editing)</source>
         <translation>Dosya Formatı Dönüşümü</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="38"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).</source>
-        <translation>Yalnızca otomatik kaydetme etkinleştirildiğinde ve giriş bir arşiv (PDF/CBZ/CBR/EPUB/vb.) olduğunda geçerlidir.</translation>
+        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>Yalnızca otomatik kaydetme etkinleştirildiğinde ve giriş bir arşiv (PDF/CBZ/CBR/EPUB/vb.) olduğunda geçerlidir. Çevrilen arşivler, orijinalin yanına &lt;filename&gt;_translated.&lt;ext&gt; olarak kaydedilir.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="45"/>
+        <location filename="../../app/ui/settings/export_page.py" line="48"/>
         <source>Save archives as:</source>
         <translation>Arşivleri farklı kaydet:</translation>
     </message>

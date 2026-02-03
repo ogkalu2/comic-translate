@@ -793,12 +793,12 @@ back on the Image (for further editing)</source>
         <translation>Преобразование формата файла</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="38"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).</source>
-        <translation>Применяется только при включенном автосохранении и если входной файл является архивом (PDF/CBZ/CBR/EPUB/и т.д.).</translation>
+        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>Применяется только при включённом автосохранении и если входной файл — архив (PDF/CBZ/CBR/EPUB и т. д.). Переведённые архивы сохраняются рядом с оригиналом как &lt;filename&gt;_translated.&lt;ext&gt;.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="45"/>
+        <location filename="../../app/ui/settings/export_page.py" line="48"/>
         <source>Save archives as:</source>
         <translation>Сохранять архивы как:</translation>
     </message>

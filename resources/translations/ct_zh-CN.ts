@@ -732,12 +732,12 @@ back on the Image (for further editing)</source>
         <translation>文件格式转换</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="38"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).</source>
-        <translation>仅当启用了自动保存且输入为归档文件（PDF/CBZ/CBR/EPUB等）时适用。</translation>
+        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>仅当启用了自动保存且输入为归档文件（PDF/CBZ/CBR/EPUB 等）时适用。翻译后的归档文件将以 &lt;filename&gt;_translated.&lt;ext&gt; 的名称保存在原文件旁。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="45"/>
+        <location filename="../../app/ui/settings/export_page.py" line="48"/>
         <source>Save archives as:</source>
         <translation>归档另存为：</translation>
     </message>

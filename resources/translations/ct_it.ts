@@ -797,12 +797,12 @@ sull&apos;immagine (per ulteriori modifiche)</translation>
         <translation>Conversione formato file</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="38"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).</source>
-        <translation>Si applica solo quando il salvataggio automatico è abilitato e l&apos;input è un archivio (PDF/CBZ/CBR/EPUB/ecc.).ando il salvataggio automatico è abilitato e l&apos;input è un archivio (PDF/CBZ/CBR/EPUB/ecc.).ando il salvataggio automatico è abilitato e l&apos;input è un archivio (PDF/CBZ/CBR/EPUB/ecc.).</translation>
+        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>Si applica solo quando il salvataggio automatico è abilitato e l&apos;input è un archivio (PDF/CBZ/CBR/EPUB/ecc.). Gli archivi tradotti vengono salvati come &lt;filename&gt;_translated.&lt;ext&gt; accanto all&apos;originale.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="45"/>
+        <location filename="../../app/ui/settings/export_page.py" line="48"/>
         <source>Save archives as:</source>
         <translation>Salva archivi come:::</translation>
     </message>

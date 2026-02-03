@@ -760,12 +760,12 @@ back on the Image (for further editing)</source>
         <translation>Conversion de format de fichier</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="38"/>
-        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).</source>
-        <translation>S&apos;applique uniquement lorsque la sauvegarde automatique est activée et que l&apos;entrée est une archive (PDF/CBZ/CBR/EPUB/etc.).</translation>
+        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
+        <translation>S&apos;applique uniquement lorsque la sauvegarde automatique est activée et que l&apos;entrée est une archive (PDF/CBZ/CBR/EPUB/etc). Les archives traduites sont enregistrées sous &lt;filename&gt;_translated.&lt;ext&gt; à côté de l&apos;originale.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="45"/>
+        <location filename="../../app/ui/settings/export_page.py" line="48"/>
         <source>Save archives as:</source>
         <translation>Enregistrer les archives sous :</translation>
     </message>

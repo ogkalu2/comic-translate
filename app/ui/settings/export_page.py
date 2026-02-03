@@ -35,7 +35,10 @@ class ExportPage(QtWidgets.QWidget):
 
         file_conversion_label = MLabel(self.tr("File Format Conversion")).h4()
         file_conversion_note = MLabel(
-            self.tr("Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).")
+            self.tr(
+                "Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc). "
+                "Translated archives are saved as <filename>_translated.<ext> next to the original."
+            )
         ).secondary()
 
         file_conversion_layout.addWidget(file_conversion_label)
