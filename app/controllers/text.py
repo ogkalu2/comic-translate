@@ -46,6 +46,7 @@ class TextController:
         self._last_item_text = {}
         self._last_item_html = {}
         self._suspend_text_command = False
+        self._is_updating_from_edit = False
 
     def connect_text_item_signals(self, text_item: TextBlockItem):
         text_item.item_selected.connect(self.on_text_item_selected)
@@ -157,26 +158,30 @@ class TextController:
             self.main.mark_project_dirty()
 
     def update_text_block_from_edit(self):
-        new_text = self.main.t_text_edit.toPlainText()
-        old_translation = None
-        old_item_text = None
-        if self.main.curr_tblock:
-            old_translation = self.main.curr_tblock.translation
-            self.main.curr_tblock.translation = new_text
+        self._is_updating_from_edit = True
+        try:
+            new_text = self.main.t_text_edit.toPlainText()
+            old_translation = None
+            old_item_text = None
+            if self.main.curr_tblock:
+                old_translation = self.main.curr_tblock.translation
+                self.main.curr_tblock.translation = new_text
 
-        if self.main.curr_tblock_item and self.main.curr_tblock_item in self.main.image_viewer._scene.items():
-            old_item_text = self.main.curr_tblock_item.toPlainText()
-            cursor_position = self.main.t_text_edit.textCursor().position()
-            self._apply_text_item_text_delta(self.main.curr_tblock_item, new_text)
+            if self.main.curr_tblock_item and self.main.curr_tblock_item in self.main.image_viewer._scene.items():
+                old_item_text = self.main.curr_tblock_item.toPlainText()
+                cursor_position = self.main.t_text_edit.textCursor().position()
+                self._apply_text_item_text_delta(self.main.curr_tblock_item, new_text)
 
-            # Restore cursor position
-            cursor = self.main.t_text_edit.textCursor()
-            cursor.setPosition(cursor_position)
-            self.main.t_text_edit.setTextCursor(cursor)
-        if (old_translation is None or old_translation == new_text) and (
-            old_item_text is None or old_item_text == new_text
-        ):
-            return
+                # Restore cursor position
+                cursor = self.main.t_text_edit.textCursor()
+                cursor.setPosition(cursor_position)
+                self.main.t_text_edit.setTextCursor(cursor)
+            if (old_translation is None or old_translation == new_text) and (
+                old_item_text is None or old_item_text == new_text
+            ):
+                return
+        finally:
+            self._is_updating_from_edit = False
 
     def update_text_block_from_item(self, text_item: TextBlockItem, new_text: str):
         if self._suspend_text_command:
@@ -185,7 +190,7 @@ class TextController:
         if blk:
             blk.translation = new_text
 
-        if self.main.curr_tblock_item == text_item:
+        if self.main.curr_tblock_item == text_item and not self._is_updating_from_edit:
             self.main.curr_tblock = blk
             self.main.t_text_edit.blockSignals(True)
             self.main.t_text_edit.setPlainText(new_text)
@@ -369,9 +374,11 @@ class TextController:
                 blk.translation = text
             if self.main.curr_tblock_item == text_item:
                 self.main.curr_tblock = blk
-                self.main.t_text_edit.blockSignals(True)
-                self.main.t_text_edit.setPlainText(text)
-                self.main.t_text_edit.blockSignals(False)
+                # Only update if the text is actually different to avoid cursor reset
+                if self.main.t_text_edit.toPlainText() != text:
+                    self.main.t_text_edit.blockSignals(True)
+                    self.main.t_text_edit.setPlainText(text)
+                    self.main.t_text_edit.blockSignals(False)
         finally:
             self._suspend_text_command = False
         if text_item:
