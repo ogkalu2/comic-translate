@@ -10,41 +10,6 @@ from modules.utils.download import ModelDownloader, ModelID
 
 logger = logging.getLogger(__name__)
 
-def snap_extreme_neutrals(rgb: list[int] | tuple[int, int, int]) -> list[int]:
-    """Snap near-black/near-white predictions to pure black/white.
-
-    The font detector sometimes outputs slightly tinted neutrals (off-white /
-    off-black) that render poorly. This helper makes the common comic cases
-    (black text on white bubbles, white text on dark backgrounds) more stable.
-    """
-    try:
-        r, g, b = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
-    except Exception:
-        return [0, 0, 0]
-
-    r = max(0, min(255, r))
-    g = max(0, min(255, g))
-    b = max(0, min(255, b))
-
-    luma = 0.299 * r + 0.587 * g + 0.114 * b
-    chroma = max(r, g, b) - min(r, g, b)
-
-    # Very dark overall -> black (even if slightly colored).
-    if luma <= 40:
-        return [0, 0, 0]
-    if luma <= 60 and chroma <= 90:
-        return [0, 0, 0]
-
-    # Very bright overall -> white.
-    if luma >= 210 and chroma <= 90:
-        return [255, 255, 255]
-
-    # Light neutral greys / pastels are often intended as white.
-    if luma >= 155 and chroma <= 25:
-        return [255, 255, 255]
-
-    return [r, g, b]
-
 def build_backbone(model_name: str, *, regression_use_tanh: bool):
     try:
         from .model import ResNet18Regressor, ResNet34Regressor, \
@@ -117,8 +82,7 @@ class FontEngine(ABC):
         reg = np.clip(reg, 0.0, 1.0)
 
         def _rgb(start: int):
-            raw = (reg[start : start + 3] * 255.0).round().astype(int).tolist()
-            return snap_extreme_neutrals(raw)
+            return (reg[start : start + 3] * 255.0).round().astype(int).tolist()
 
         text_color = _rgb(0)
         font_size_px = float(reg[3] * original_width)
