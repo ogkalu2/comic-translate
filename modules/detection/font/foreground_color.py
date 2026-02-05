@@ -53,12 +53,6 @@ def _luma_u8(rgb_u8: np.ndarray) -> np.ndarray:
     rgb = rgb_u8.astype(np.float32)
     return 0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2]
 
-
-def _chroma_u8(rgb_u8: np.ndarray) -> np.ndarray:
-    """Per-pixel chroma: max(R,G,B) - min(R,G,B), returned as uint8."""
-    i16 = rgb_u8.astype(np.int16)
-    return (i16.max(axis=-1) - i16.min(axis=-1)).astype(np.uint8)
-
 def _snap_neutral_extremes(
     fg_rgb: tuple[int, int, int],
     bg_rgb: tuple[int, int, int] | None,
@@ -125,86 +119,6 @@ def _robust_cluster_rgb(
 
     rgb = np.median(px[idx].astype(np.float32), axis=0)
     return tuple(int(v) for v in np.clip(np.round(rgb), 0, 255))
-
-
-def _try_chroma_polarity(
-    img: np.ndarray,
-    valid_mask: np.ndarray,
-) -> ForegroundColorEstimate | None:
-    """Fast path: detect colored text on a neutral background via chroma.
-
-    Runs Otsu on the per-pixel chroma channel (max-min of RGB), which
-    cleanly separates saturated strokes from desaturated backgrounds even
-    when luma contrast is poor (e.g. cyan on white, red on black).
-
-    Returns *None* when the crop doesn't exhibit clear chroma bimodality,
-    letting the caller fall through to the luminance-based Otsu / k-means.
-    """
-    chroma = _chroma_u8(img)
-    valid_chroma = chroma[valid_mask]
-    if valid_chroma.size == 0 or int(valid_chroma.max()) < 40:
-        return None
-
-    # Otsu on chroma to split colored ↔ neutral pixels.
-    _, chroma_bin = imk.otsu_threshold(chroma)
-    high = (chroma_bin > 0) & valid_mask
-    low = (~chroma_bin.astype(bool)) & valid_mask
-
-    n_valid = max(int(valid_mask.sum()), 1)
-    frac_high = float(high.sum()) / n_valid
-
-    # The minority group is our text candidate.
-    if frac_high > 0.5:
-        fg_mask, bg_mask = low, high
-        frac = 1.0 - frac_high
-    else:
-        fg_mask, bg_mask = high, low
-        frac = frac_high
-
-    if not (0.005 <= frac <= 0.45):
-        return None
-
-    fg_px = img[fg_mask]
-    bg_px = img[bg_mask]
-    if fg_px.shape[0] < 15 or bg_px.shape[0] < 15:
-        return None
-
-    # Bias toward the most saturated interior pixels to reduce AA fringe.
-    if fg_px.shape[0] > 50:
-        fg_chr = _chroma_u8(fg_px.astype(np.uint8, copy=False))
-        k_tail = max(20, int(fg_px.shape[0] * 0.30))
-        top_idx = np.argpartition(fg_chr, fg_chr.size - k_tail)[-k_tail:]
-        fg_med = np.median(fg_px[top_idx].astype(np.float32), axis=0)
-    else:
-        fg_med = np.median(fg_px.astype(np.float32), axis=0)
-    fg_rgb_i: tuple[int, int, int] = tuple(
-        int(v) for v in np.clip(np.round(fg_med), 0, 255)
-    )
-
-    bg_med = np.median(bg_px.astype(np.float32), axis=0)
-    bg_rgb_i: tuple[int, int, int] = tuple(
-        int(v) for v in np.clip(np.round(bg_med), 0, 255)
-    )
-
-    # The foreground must be substantially more chromatic than background.
-    fg_c = float(max(fg_rgb_i) - min(fg_rgb_i))
-    bg_c = float(max(bg_rgb_i) - min(bg_rgb_i))
-    if fg_c < 35 or fg_c <= bg_c * 1.3:
-        return None
-
-    fg_l = float(_luma_u8(np.array(fg_rgb_i, dtype=np.uint8)))
-    bg_l = float(_luma_u8(np.array(bg_rgb_i, dtype=np.uint8)))
-    luma_contrast = abs(fg_l - bg_l) / 255.0
-    chroma_contrast = (fg_c - bg_c) / 255.0
-    conf = min(1.0, chroma_contrast * 2.5 + luma_contrast * 0.5)
-    conf = max(conf, 0.55)
-
-    return ForegroundColorEstimate(
-        rgb=fg_rgb_i,
-        confidence=conf,
-        method="polarity",
-        background_rgb=bg_rgb_i,
-    )
 
 
 def _kmeans_rgb(
@@ -336,11 +250,6 @@ def estimate_text_foreground_color(
         valid_mask[-margin:, :] = False
         valid_mask[:, :margin] = False
         valid_mask[:, -margin:] = False
-
-    # --- Fast path: chroma polarity for colored text on neutral bg ---
-    chroma_est = _try_chroma_polarity(img, valid_mask)
-    if chroma_est is not None:
-        return chroma_est
 
     # Fast candidate: Otsu + minority class (great for common black/white text).
     try:
