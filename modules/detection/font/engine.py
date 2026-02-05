@@ -10,6 +10,33 @@ from modules.utils.download import ModelDownloader, ModelID
 
 logger = logging.getLogger(__name__)
 
+
+def snap_extreme_neutrals(rgb: list[int]) -> list[int]:
+    """Snap near-black / near-white colours to pure black or white.
+
+    The font-detection model regresses colour as a continuous value, so
+    intended-black or intended-white text frequently comes back as a
+    greyish tone (e.g. [30, 15, 5] instead of [0, 0, 0], or
+    [210, 200, 195] instead of [255, 255, 255]).
+
+    This helper uses simple luma + saturation heuristics to clamp those
+    values to the nearest extreme.
+    """
+    r, g, b = int(rgb[0]), int(rgb[1]), int(rgb[2])
+    luma = 0.299 * r + 0.587 * g + 0.114 * b
+    chroma = max(r, g, b) - min(r, g, b)
+
+    # Dark end: low luma -> snap to black.
+    if luma < 80 and chroma < 80:
+        return [0, 0, 0]
+
+    # Light end: high luma -> snap to white.
+    if luma > 150 and chroma < 80:
+        return [255, 255, 255]
+
+    return [r, g, b]
+
+
 def build_backbone(model_name: str, *, regression_use_tanh: bool):
     try:
         from .model import ResNet18Regressor, ResNet34Regressor, \
@@ -84,10 +111,10 @@ class FontEngine(ABC):
         def _rgb(start: int):
             return (reg[start : start + 3] * 255.0).round().astype(int).tolist()
 
-        text_color = _rgb(0)
+        text_color = snap_extreme_neutrals(_rgb(0))
         font_size_px = float(reg[3] * original_width)
         stroke_width_px = float(reg[4] * original_width)
-        stroke_color = _rgb(5)
+        stroke_color = snap_extreme_neutrals(_rgb(5))
 
         line_spacing_px = float(reg[8] * original_width)
         line_height = 1.0 + (line_spacing_px / font_size_px) if font_size_px > 0 else 1.2
