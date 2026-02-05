@@ -6,7 +6,7 @@ import threading
 import time
 
 from typing import Optional
-from PySide6.QtCore import QObject, Signal, QThread, QSettings 
+from PySide6.QtCore import QObject, Signal, QThread, QSettings, QCoreApplication
 from PySide6.QtWidgets import QMessageBox
 from .auth_server import AuthServerThread
 from .token_storage import set_token, get_token, delete_token
@@ -65,10 +65,67 @@ class AuthClient(QObject):
         self._validated_token: Optional[str] = None
         self._validated_token_ok_until_monotonic: float = 0.0
         self._validated_token_ttl_s: float = 30.0
+        self._last_refresh_failure_kind: Optional[str] = None
+
+    def _is_gui_thread(self) -> bool:
+        try:
+            app = QCoreApplication.instance()
+            if app is None:
+                return False
+            return QThread.currentThread() == app.thread()
+        except Exception:
+            return False
+
+    def _show_critical_if_gui(self, title: str, message: str) -> None:
+        """
+        Never block or crash the app by showing modal UI from background threads.
+
+        In particular, token refresh/validation can run in a QThread (e.g.
+        SettingsPage startup credit refresh). QMessageBox must only be shown on
+        the GUI thread.
+        """
+        if self._is_gui_thread():
+            QMessageBox.critical(None, title, message)
+        else:
+            logger.error(f"{title}: {message}")
 
     def _clear_validation_cache(self) -> None:
         self._validated_token = None
         self._validated_token_ok_until_monotonic = 0.0
+
+    def _clear_local_session(self) -> None:
+        """Force local sign-out (delete tokens + cached user info). Safe to call from any thread."""
+        logger.warning("Clearing local session (tokens + cached user info).")
+        # Stop any in-progress auth listener so the user can sign in again.
+        try:
+            if self.auth_server_thread and self.auth_server_thread.isRunning():
+                self.auth_server_thread.stop_server()
+            self.current_request_id = None
+            self._cleanup_server()
+        except Exception as e:
+            logger.warning(f"Failed to stop auth listener during local session clear: {e}")
+
+        try:
+            delete_token("access_token")
+        except Exception as e:
+            logger.debug(f"Local session clear: access_token delete failed/absent: {e}")
+        try:
+            delete_token("refresh_token")
+        except Exception as e:
+            logger.debug(f"Local session clear: refresh_token delete failed/absent: {e}")
+
+        self._clear_validation_cache()
+
+        try:
+            # Use a fresh QSettings instance for thread-safety (QSettings is
+            # re-entrant, but individual instances should not be shared across
+            # threads).
+            settings = QSettings("ComicLabs", "ComicTranslate")
+            settings.beginGroup(USER_INFO_GROUP)
+            settings.remove("")
+            settings.endGroup()
+        except Exception as e:
+            logger.debug(f"Local session clear: failed clearing cached user info: {e}")
 
     def start_auth_flow(self):
         """Starts the new authentication flow."""
@@ -231,12 +288,15 @@ class AuthClient(QObject):
         """Refresh the access token using the stored refresh token."""
         logger.info("Attempting to refresh token...")
         try:
+            self._last_refresh_failure_kind = None
+
             refresh_token = get_token("refresh_token")
             access_token = get_token("access_token")
             if not (refresh_token and access_token):
                 logger.warning("Cannot refresh: Tokens not found.")
+                self._last_refresh_failure_kind = "missing_tokens"
                 return False
-            
+
             # Build headers with the existing access token
             headers = {"Authorization": f"Bearer {access_token}"}
             token_url = f"{self.api_url}/auth/v1/token" 
@@ -271,31 +331,47 @@ class AuthClient(QObject):
                 set_token("refresh_token", new_refresh_token)
 
             logger.info("Token refreshed successfully.")
+            self._last_refresh_failure_kind = None
             return True
         
         except requests.exceptions.HTTPError as http_err:
+            resp = getattr(http_err, "response", None)
+            if resp is None:
+                try:
+                    resp = response
+                except Exception:
+                    resp = None
             try:
-                error_data = response.json()
+                error_data = resp.json() if resp is not None else {}
                 error_desc = error_data.get('error_description') or error_data.get('error') or str(http_err)
             except Exception:
                 error_desc = str(http_err)
-            QMessageBox.critical(None, "Token Refresh Error", error_desc)
             logger.error(f"HTTP error during token refresh: {error_desc}")
-            if response.status_code in [400, 401]:
-                logger.warning("Refresh token seems invalid. Triggering logout.")
-                self.logout()
+            status_code = getattr(resp, "status_code", None)
+            if status_code in [400, 401]:
+                # If the user was deleted / refresh token was revoked, never block app startup.
+                # Clear local tokens so the app can continue in a signed-out state.
+                logger.warning("Refresh token seems invalid. Forcing local sign-out (clearing tokens).")
+                self._last_refresh_failure_kind = "invalid"
+                self._clear_local_session()
+            elif isinstance(status_code, int) and status_code >= 500:
+                # Server-side issues shouldn't force a logout (signing in again won't help).
+                logger.warning("Token refresh failed due to server error. Keeping local session.")
+                self._last_refresh_failure_kind = "server"
+            else:
+                self._last_refresh_failure_kind = "http"
             return False
             
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error during token refresh: {str(e)}"
             logger.error(error_msg)
-            QMessageBox.critical(None, "Network Error", error_msg)
+            self._last_refresh_failure_kind = "network"
             return False
         
         except Exception as e:
             error_msg = f"Unexpected error during token refresh: {str(e)}"
             logger.error(error_msg, exc_info=True)
-            QMessageBox.critical(None, "Error", error_msg)
+            self._last_refresh_failure_kind = "unexpected"
             return False
         
     def is_authenticated(self) -> bool:
@@ -320,8 +396,8 @@ class AuthClient(QObject):
         Returns:
             bool: True if the token is currently valid (and not near expiry)
                   OR if it was successfully refreshed after being reported invalid/near-expiry.
-                  False if the token was reported invalid/near-expiry AND refresh failed,
-                  or if there was a network/server error, or no token exists.
+                  False if the token was reported invalid/near-expiry AND refresh failed
+                  for non-transient reasons, or if no token exists.
         """
         logger.info("Checking access token validity with backend...")
         access_token: Optional[str] = None
@@ -361,7 +437,18 @@ class AuthClient(QObject):
                 reason = data.get("reason", "unspecified")
                 status_code = response.status_code # Log status for context
                 logger.info(f"Token reported as invalid by backend (status: {status_code}, reason: {reason}). Attempting refresh...")
-                return self.refresh_token() # Attempt refresh
+                refreshed = self.refresh_token() # Attempt refresh
+                if refreshed:
+                    return True
+                # If refresh failed due to transient connectivity/server issues, keep the
+                # local session so the app stays usable and can retry later.
+                if self._last_refresh_failure_kind in ("network", "server"):
+                    logger.warning(
+                        "Token refresh failed due to %s issue; keeping local session.",
+                        self._last_refresh_failure_kind,
+                    )
+                    return True
+                return False
             else:
                 # Response JSON is missing the 'valid' field or has an unexpected value
                 logger.error(f"Backend validation response (status: {response.status_code}) missing or has invalid 'valid' field. Assuming invalid.")
@@ -374,7 +461,16 @@ class AuthClient(QObject):
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 401:
                 logger.info("Token validation returned 401. Attempting refresh...")
-                return self.refresh_token()
+                refreshed = self.refresh_token()
+                if refreshed:
+                    return True
+                if self._last_refresh_failure_kind in ("network", "server"):
+                    logger.warning(
+                        "Token refresh failed due to %s issue; keeping local session.",
+                        self._last_refresh_failure_kind,
+                    )
+                    return True
+                return False
             logger.error(f"HTTP error during token validation: {str(e)}. Assuming invalid.")
             return False
         except requests.exceptions.RequestException as e:
@@ -448,18 +544,18 @@ class AuthClient(QObject):
                     error_desc = error_data.get('error_description') or error_data.get('error') or str(http_err)
                 except Exception:
                     error_desc = str(http_err)
-                QMessageBox.critical(None, "Logout Error", error_desc)
+                self._show_critical_if_gui("Logout Error", error_desc)
                 logger.error(f"HTTP error during token refresh: {error_desc}")
 
             except requests.exceptions.RequestException as e:
                 error_msg = f"Network error during logout: {str(e)}"
                 logger.error(error_msg)
-                QMessageBox.critical(None, "Logout Error", error_msg)
+                self._show_critical_if_gui("Logout Error", error_msg)
 
             except Exception as e:
                 error_msg = f"Unexpected error during logout: {str(e)}"
                 logger.error(error_msg, exc_info=True)
-                QMessageBox.critical(None, "Logout Error", error_msg)
+                self._show_critical_if_gui("Logout Error", error_msg)
         else:
             logger.debug("No access token found, skipping backend signout notification.")
 
