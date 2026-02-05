@@ -171,11 +171,8 @@ def _kmeans_rgb(
 
         # Update centers; re-seed empty clusters.
         counts = np.bincount(labels, minlength=k)
-        # Per-channel bincount is much faster than np.add.at for
-        # small k — avoids unbuffered Python-level per-element overhead.
-        sums = np.empty((k, 3), dtype=np.float32)
-        for ch in range(3):
-            sums[:, ch] = np.bincount(labels, weights=x[:, ch], minlength=k)
+        sums = np.zeros((k, 3), dtype=np.float32)
+        np.add.at(sums, labels, x)
 
         nonempty = counts > 0
         if np.any(nonempty):
@@ -263,10 +260,9 @@ def estimate_text_foreground_color(
             m[~valid_mask] = False
 
         if m.any():
-            # Single 5×5 erosion ≈ two 3×3 iterations, but one C-level pass
-            # instead of two — avoids an extra array copy + function call.
-            kernel5 = np.ones((5, 5), dtype=np.uint8)
-            m_er = imk.erode(m.astype(np.uint8) * 255, kernel5, iterations=1) > 0
+            kernel = np.ones((3, 3), dtype=np.uint8)
+            # Slightly stronger erosion for thin strokes; helps avoid grey anti-alias fringe.
+            m_er = imk.erode(m.astype(np.uint8) * 255, kernel, iterations=2) > 0
             if m_er.any():
                 m = m_er
 
@@ -355,36 +351,35 @@ def estimate_text_foreground_color(
     centers, labels = _kmeans_rgb(x, k, seed=seed, max_iter=20)
 
     # Score: prefer clusters with many edge pixels but not the majority.
-    # Vectorised stats — avoids k boolean masks + fancy-index sums.
-    labels_intp = labels.astype(np.intp, copy=False)
-    cluster_sizes = np.bincount(labels_intp, minlength=k).astype(np.int64)
-    cluster_edge_counts = np.bincount(
-        labels_intp, weights=edge_flags.astype(np.float64), minlength=k,
-    ).astype(np.int64)
+    best_ci = 0
+    best_score = -1.0
+    second_score = -1.0
+    cluster_sizes = np.zeros((k,), dtype=np.int64)
+    cluster_edge_counts = np.zeros((k,), dtype=np.int64)
 
-    total = max(float(cluster_sizes.sum()), 1.0)
-    # Vectorised scoring over all k clusters.
-    cs_f = cluster_sizes.astype(np.float64)
-    size_fracs = cs_f / total
-    edge_fracs = np.divide(
-        cluster_edge_counts.astype(np.float64), np.maximum(cs_f, 1.0),
-    )
-    tiny_penalties = np.minimum(1.0, size_fracs / 0.02)
-    scores = edge_fracs * (1.0 - size_fracs) * tiny_penalties
-    scores[cluster_sizes <= 0] = -1.0
-    # Top-2 scores.
-    if k >= 2:
-        top2 = np.argpartition(scores, -2)[-2:]
-        if scores[top2[0]] > scores[top2[1]]:
-            best_ci, second_ci = int(top2[0]), int(top2[1])
-        else:
-            best_ci, second_ci = int(top2[1]), int(top2[0])
-        best_score = float(scores[best_ci])
-        second_score = float(scores[second_ci])
-    else:
-        best_ci = int(scores.argmax())
-        best_score = float(scores[best_ci])
-        second_score = -1.0
+    for ci in range(k):
+        sel = labels == ci
+        cnt = int(sel.sum())
+        cluster_sizes[ci] = cnt
+        if cnt:
+            cluster_edge_counts[ci] = int(edge_flags[sel].sum())
+
+    total = float(cluster_sizes.sum()) if cluster_sizes.sum() else 1.0
+    for ci in range(k):
+        cnt = float(cluster_sizes[ci])
+        if cnt <= 0:
+            continue
+        size_frac = cnt / total
+        edge_frac = float(cluster_edge_counts[ci]) / cnt
+        # Penalize clusters that are too tiny to be stable.
+        tiny_penalty = min(1.0, size_frac / 0.02)
+        score = edge_frac * (1.0 - size_frac) * tiny_penalty
+        if score > best_score:
+            second_score = best_score
+            best_score = score
+            best_ci = ci
+        elif score > second_score:
+            second_score = score
 
     # Foreground pixels: prefer non-edge pixels inside the chosen cluster.
     sel_fg = labels == best_ci
@@ -396,13 +391,12 @@ def estimate_text_foreground_color(
     fg_rgb = np.median(fg_pixels, axis=0)
     fg_rgb_i = tuple(int(v) for v in np.clip(np.round(fg_rgb), 0, 255))
 
-    # Background: majority cluster.  Use k-means center (already a mean)
-    # rather than recomputing median over potentially 10k+ points — the
-    # background is typically uniform so mean ≈ median.
+    # Background: majority cluster.
     bg_ci = int(cluster_sizes.argmax())
     bg_rgb_i: tuple[int, int, int] | None = None
     if cluster_sizes[bg_ci] > 0:
-        bg_rgb_i = tuple(int(v) for v in np.clip(np.round(centers[bg_ci]), 0, 255))
+        bg_rgb = np.median(x[labels == bg_ci], axis=0)
+        bg_rgb_i = tuple(int(v) for v in np.clip(np.round(bg_rgb), 0, 255))
 
     # Confidence combines: separation vs runner-up + contrast vs background.
     sep = float(max(0.0, best_score - second_score))
