@@ -22,7 +22,11 @@ def get_smart_text_color(detected_rgb: tuple, setting_color: QColor) -> QColor:
         return setting_color
 
     try:
-        detected_color = QColor(*detected_rgb)
+        channels = [int(v) for v in detected_rgb[:3]]
+        if len(channels) < 3:
+            return setting_color
+        channels = [max(0, min(255, c)) for c in channels]
+        detected_color = QColor(*channels)
         if not detected_color.isValid():
             return setting_color
         return detected_color

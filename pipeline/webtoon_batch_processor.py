@@ -727,7 +727,7 @@ class WebtoonBatchProcessor:
 
         # Prepare render settings
         render_settings = self.main_page.render_settings()
-        font, font_color = render_settings.font_family, QColor(render_settings.color)
+        font, base_font_color = render_settings.font_family, QColor(render_settings.color)
         max_font_size, min_font_size = render_settings.max_font_size, render_settings.min_font_size
         line_spacing, outline_width = float(render_settings.line_spacing), float(render_settings.outline_width)
         outline_color, outline = QColor(render_settings.outline_color), render_settings.outline
@@ -784,7 +784,7 @@ class WebtoonBatchProcessor:
                 translation = translation.replace(' ', '')
 
             # Smart Color Override
-            font_color = get_smart_text_color(blk_virtual.font_color, font_color)
+            block_font_color = get_smart_text_color(blk_virtual.font_color, base_font_color)
 
             render_blk = blk_virtual.deep_copy()
             render_blk.xyxy = list(physical_coords)
@@ -812,7 +812,7 @@ class WebtoonBatchProcessor:
                 text=translation,
                 font_family=font,
                 font_size=font_size,
-                text_color=font_color,
+                text_color=block_font_color,
                 alignment=alignment,
                 line_spacing=line_spacing,
                 outline_color=outline_color,
