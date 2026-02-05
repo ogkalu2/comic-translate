@@ -2,10 +2,11 @@ from abc import ABC, abstractmethod
 import numpy as np
 from typing import Optional
 
-from ..utils.textblock import TextBlock
+from modules.utils.textblock import TextBlock
 from .utils.geometry import does_rectangle_fit, do_rectangles_overlap, \
     merge_overlapping_boxes
 from .font.engine import FontEngineFactory
+from .font.foreground_color import estimate_text_foreground_color
 from .utils.content import filter_and_fix_bboxes
 
 
@@ -63,6 +64,7 @@ class DetectionEngine(ABC):
         if len(text_boxes) > 0:
             for txt_idx, txt_box in enumerate(text_boxes):
                 font_attrs = {}
+                crop = None
                 # Calculate font attributes using FontEngine
                 try:
                     x1, y1, x2, y2 = map(int, txt_box)
@@ -82,6 +84,16 @@ class DetectionEngine(ABC):
 
                 direction = font_attrs.get('direction', '')
                 text_color = tuple(font_attrs.get('text_color', ()))
+                try:
+                    est = estimate_text_foreground_color(crop) if crop is not None else None
+                    if est is not None:
+                        text_color = est.rgb
+                except Exception:
+                    pass
+                angle = 0
+                # angle = -font_attrs.get('angle', 0)
+                # if abs(angle) < 10:
+                #     angle = 0
 
                 # If no bubble boxes, all text is free text
                 if len(bubble_boxes) == 0:
