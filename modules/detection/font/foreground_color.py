@@ -143,12 +143,11 @@ def _kmeans_rgb(
     if k <= 0:
         raise ValueError("kmeans: k must be > 0")
 
-    x = x.astype(np.float32, copy=False)
     rng = np.random.default_rng(seed)
     if n <= k:
         # Degenerate: every point is its own center (pad/repeat).
         centers = np.empty((k, 3), dtype=np.float32)
-        centers[:n] = x
+        centers[:n] = x.astype(np.float32, copy=False)
         if n < k:
             centers[n:] = centers[0]
         labels = np.arange(n, dtype=np.int64)
@@ -157,12 +156,10 @@ def _kmeans_rgb(
     init_idx = rng.choice(n, size=k, replace=False)
     centers = x[init_idx].astype(np.float32, copy=True)
     labels = np.zeros((n,), dtype=np.int64)
-    x_sq = np.einsum("ij,ij->i", x, x)
 
     for _ in range(max_iter):
-        # (N, K) squared distances via ||x-c||^2 = ||x||^2 + ||c||^2 - 2x.c
-        c_sq = np.einsum("ij,ij->i", centers, centers)
-        d2 = x_sq[:, None] + c_sq[None, :] - (2.0 * (x @ centers.T))
+        # (N, K) squared distances
+        d2 = ((x[:, None, :] - centers[None, :, :]) ** 2).sum(axis=2)
         new_labels = d2.argmin(axis=1)
 
         if np.array_equal(new_labels, labels):
@@ -170,17 +167,12 @@ def _kmeans_rgb(
         labels = new_labels
 
         # Update centers; re-seed empty clusters.
-        counts = np.bincount(labels, minlength=k)
-        sums = np.zeros((k, 3), dtype=np.float32)
-        np.add.at(sums, labels, x)
-
-        nonempty = counts > 0
-        if np.any(nonempty):
-            centers[nonempty] = sums[nonempty] / counts[nonempty, None].astype(np.float32)
-
-        empty_ids = np.flatnonzero(~nonempty)
-        if empty_ids.size:
-            centers[empty_ids] = x[rng.integers(0, n, size=empty_ids.size)]
+        for ci in range(k):
+            sel = labels == ci
+            if not np.any(sel):
+                centers[ci] = x[rng.integers(0, n)]
+            else:
+                centers[ci] = x[sel].mean(axis=0)
 
     return centers, labels
 
