@@ -433,6 +433,11 @@ class BatchProcessor:
                 'blk_list': blk_list                   
             })
 
+            # Notify UI that this page's render state is finalized.
+            # This enables a deterministic refresh when the user navigates to this page
+            # during processing and misses live blk_rendered events.
+            self.main_page.render_state_ready.emit(image_path)
+
             if image_path == file_on_display:
                 self.main_page.blk_list = blk_list
                 

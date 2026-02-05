@@ -51,6 +51,7 @@ class ComicTranslate(ComicTranslateUI):
     progress_update = QtCore.Signal(int, int, int, int, bool)
     image_skipped = QtCore.Signal(str, str, str)
     blk_rendered = QtCore.Signal(str, int, object)
+    render_state_ready = QtCore.Signal(str)
     download_event = QtCore.Signal(str, str)  # status, name
 
     def __init__(self, parent=None):
@@ -106,6 +107,7 @@ class ComicTranslate(ComicTranslateUI):
         self.patches_processed.connect(self.image_ctrl.on_inpaint_patches_processed)
         self.progress_update.connect(self.update_progress)
         self.blk_rendered.connect(self.text_ctrl.on_blk_rendered)
+        self.render_state_ready.connect(self.image_ctrl.on_render_state_ready)
         self.download_event.connect(self.on_download_event)
 
         self.connect_ui_elements()

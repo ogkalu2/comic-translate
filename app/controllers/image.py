@@ -13,6 +13,7 @@ from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
 from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
+from app.thread_worker import GenericWorker
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
 class ImageStateController:
     def __init__(self, main: ComicTranslate):
         self.main = main
+        self._nav_request_id = 0
+        self._nav_worker: GenericWorker | None = None
         
         # Initialize lazy image loader for list view
         self.page_list_loader = ListViewImageLoader(
@@ -283,20 +286,10 @@ class ImageStateController:
                     self.main.text_ctrl.clear_text_edits()
                 else:
                     # Webtoon viewer not ready, fall back to regular mode
-                    self.main.run_threaded(
-                        lambda: self.load_image(self.main.image_files[index]),
-                        lambda result: self.display_image_from_loaded(result, index),
-                        self.main.default_error_handler
-                        # Note: highlighting is now handled by on_selection_changed
-                    )
+                    self._run_async_nav_load(index)
             else:
                 # Regular mode - load and display the image
-                self.main.run_threaded(
-                    lambda: self.load_image(self.main.image_files[index]),
-                    lambda result: self.display_image_from_loaded(result, index),
-                    self.main.default_error_handler
-                    # Note: highlighting is now handled by on_selection_changed
-                )
+                self._run_async_nav_load(index)
 
     def navigate_images(self, direction: int):
         if self.main.image_files:
@@ -304,6 +297,35 @@ class ImageStateController:
             if 0 <= new_index < len(self.main.image_files):
                 item = self.main.page_list.item(new_index)
                 self.main.page_list.setCurrentItem(item)
+
+    def _run_async_nav_load(self, index: int):
+        """Load a selected image asynchronously without entering the batch queue.
+
+        This keeps page switching responsive while batch processing is ongoing.
+        """
+        if not (0 <= index < len(self.main.image_files)):
+            return
+
+        self._nav_request_id += 1
+        req_id = self._nav_request_id
+        file_path = self.main.image_files[index]
+
+        worker = GenericWorker(lambda: self.load_image(file_path))
+
+        def _on_result(result):
+            # Ignore stale loads when user switched pages rapidly.
+            if req_id != self._nav_request_id:
+                return
+            self.display_image_from_loaded(result, index)
+
+        worker.signals.result.connect(
+            lambda result: QtCore.QTimer.singleShot(0, lambda: _on_result(result))
+        )
+        worker.signals.error.connect(
+            lambda error: QtCore.QTimer.singleShot(0, lambda: self.main.default_error_handler(error))
+        )
+        self._nav_worker = worker
+        self.main.threadpool.start(worker)
 
     def highlight_card(self, index: int):
         """Highlight a single card (used for programmatic selection when signals are blocked)."""
@@ -659,6 +681,49 @@ class ImageStateController:
             command = SetImageCommand(self.main, image_path, image, False)
             self.main.undo_stacks[current_batch_file].push(command)
             self.main.image_data[image_path] = image
+
+    def on_render_state_ready(self, file_path: str):
+        """Refresh the currently visible page when batch render state is finalized.
+
+        This closes a race where page selection occurs mid-batch: inpaint patches
+        may appear first, while text items become available slightly later in
+        image_states. We reload the current page state once the render payload is ready.
+        """
+        if self.main.webtoon_mode:
+            return
+        if self.main.curr_img_idx < 0 or self.main.curr_img_idx >= len(self.main.image_files):
+            return
+        current_file = self.main.image_files[self.main.curr_img_idx]
+        if current_file != file_path:
+            return
+
+        viewer_state = self.main.image_states.get(file_path, {}).get('viewer_state', {})
+        if not viewer_state or not viewer_state.get('text_items_state'):
+            return
+
+        # Cancel pending async nav loads so stale callbacks can't overwrite this refresh.
+        self._nav_request_id += 1
+
+        # Only refresh text items; do not call display_image/load_state because that
+        # reapplies saved transform and causes visible zoom/pan jumps.
+        self.main.image_viewer.clear_text_items()
+        self.main.curr_tblock_item = None
+        self.main.curr_tblock = None
+        self.main.text_ctrl.clear_text_edits()
+
+        for data in viewer_state.get('text_items_state', []):
+            text_item = self.main.image_viewer.add_text_item(data)
+            self.main.text_ctrl.connect_text_item_signals(text_item)
+
+        if viewer_state.get('push_to_stack', False):
+            stack = self.main.undo_stacks.get(file_path)
+            if stack:
+                stack.beginMacro('text_items_rendered')
+                for text_item in self.main.image_viewer.text_items:
+                    command = AddTextItemCommand(self.main, text_item)
+                    stack.push(command)
+                stack.endMacro()
+            viewer_state['push_to_stack'] = False
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
         message = { 
