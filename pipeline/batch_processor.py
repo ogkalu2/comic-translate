@@ -333,7 +333,7 @@ class BatchProcessor:
             get_best_render_area(blk_list, image, inpaint_input_img)
 
             font = render_settings.font_family
-            base_font_color = QColor(render_settings.color)
+            font_color = QColor(render_settings.color)
 
             max_font_size = render_settings.max_font_size
             min_font_size = render_settings.min_font_size
@@ -384,14 +384,14 @@ class BatchProcessor:
                     translation = translation.replace(' ', '')
 
                 # Smart Color Override
-                block_font_color = get_smart_text_color(blk.font_color, base_font_color)
+                font_color = get_smart_text_color(blk.font_color, font_color)
 
                 # Use TextItemProperties for consistent text item creation
                 text_props = TextItemProperties(
                     text=translation,
                     font_family=font,
                     font_size=font_size,
-                    text_color=block_font_color,
+                    text_color=font_color,
                     alignment=alignment,
                     line_spacing=line_spacing,
                     outline_color=outline_color,
