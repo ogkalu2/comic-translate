@@ -50,7 +50,7 @@ class ComicTranslate(ComicTranslateUI):
     patches_processed = QtCore.Signal(list, str)
     progress_update = QtCore.Signal(int, int, int, int, bool)
     image_skipped = QtCore.Signal(str, str, str)
-    blk_rendered = QtCore.Signal(str, int, object)
+    blk_rendered = QtCore.Signal(str, int, object, str)
     render_state_ready = QtCore.Signal(str)
     download_event = QtCore.Signal(str, str)  # status, name
 

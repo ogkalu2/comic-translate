@@ -802,7 +802,7 @@ class WebtoonBatchProcessor:
             render_blk.translation = translation
 
             if should_emit_live:
-                self.main_page.blk_rendered.emit(translation, font_size, render_blk)
+                self.main_page.blk_rendered.emit(translation, font_size, render_blk, image_path)
                 self.main_page.blk_list.append(render_blk)
 
             # Store for final save (always do this)

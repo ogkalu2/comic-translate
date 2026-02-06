@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import copy
 import numpy as np
 from typing import TYPE_CHECKING
@@ -95,7 +96,14 @@ class TextController:
         self.main.s_text_edit.clear()
         self.main.t_text_edit.clear()
 
-    def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock):
+    def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock, image_path: str):
+        if not self.main.webtoon_mode:
+            if self.main.curr_img_idx < 0 or self.main.curr_img_idx >= len(self.main.image_files):
+                return
+            current_file = self.main.image_files[self.main.curr_img_idx]
+            if os.path.normcase(current_file) != os.path.normcase(image_path):
+                return
+
         if not self.main.image_viewer.hasPhoto():
             print("No main image to add to.")
             return

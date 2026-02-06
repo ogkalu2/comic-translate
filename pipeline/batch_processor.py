@@ -377,7 +377,7 @@ class BatchProcessor:
                 
                 # Display text if on current page  
                 if image_path == file_on_display:
-                    self.main_page.blk_rendered.emit(translation, font_size, blk)
+                    self.main_page.blk_rendered.emit(translation, font_size, blk, image_path)
 
                 # Language-specific formatting for state storage
                 if is_no_space_lang(trg_lng_cd):
