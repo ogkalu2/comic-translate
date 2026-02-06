@@ -91,12 +91,18 @@ class BatchProcessor:
                 file.write(full_traceback + "\n")
             file.write("\n")
 
+    def _is_cancelled(self) -> bool:
+        worker = getattr(self.main_page, "current_worker", None)
+        return bool(worker and worker.is_cancelled)
+
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
 
         for index, image_path in enumerate(image_list):
+            if self._is_cancelled():
+                return
 
             file_on_display = self.main_page.image_files[self.main_page.curr_img_idx]
 
@@ -135,9 +141,8 @@ class BatchProcessor:
 
             # Text Block Detection
             self.emit_progress(index, total_images, 1, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             # Use the shared block detector from the handler
             if self.block_detection.block_detector_cache is None:
@@ -146,9 +151,8 @@ class BatchProcessor:
             blk_list = self.block_detection.block_detector_cache.detect(image)
 
             self.emit_progress(index, total_images, 2, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             if blk_list:
                 # Get ocr cache key for batch processing
@@ -192,9 +196,8 @@ class BatchProcessor:
                 continue
 
             self.emit_progress(index, total_images, 3, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             # Clean Image of text
             export_settings = settings_page.get_export_settings()
@@ -223,9 +226,8 @@ class BatchProcessor:
             logger.info("pre-inpaint: mask generated in %.2fs (mask shape=%s)", t1 - t0, getattr(mask, 'shape', None))
 
             self.emit_progress(index, total_images, 4, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             inpaint_input_img = self.inpainting.inpainter_cache(image, mask, config)
             inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
@@ -243,9 +245,8 @@ class BatchProcessor:
                 imk.write_image(os.path.join(path, f"{base_name}_cleaned{extension}"), inpaint_input_img)
 
             self.emit_progress(index, total_images, 5, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
@@ -281,6 +282,9 @@ class BatchProcessor:
                 self.main_page.image_skipped.emit(image_path, "Translator", err_msg)
                 self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
                 continue
+
+            if self._is_cancelled():
+                return
 
             entire_raw_text = get_raw_text(blk_list)
             entire_translated_text = get_raw_translation(blk_list)
@@ -321,9 +325,8 @@ class BatchProcessor:
                 file.write(entire_translated_text)
 
             self.emit_progress(index, total_images, 7, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             # Text Rendering
             render_settings = self.main_page.render_settings()
@@ -424,9 +427,8 @@ class BatchProcessor:
                 })
             
             self.emit_progress(index, total_images, 9, 10, False)
-            if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                self.main_page.current_worker = None
-                break
+            if self._is_cancelled():
+                return
 
             # Saving blocks with texts to history
             self.main_page.image_states[image_path].update({
@@ -464,15 +466,16 @@ class BatchProcessor:
 
         archive_info_list = self.main_page.file_handler.archive_info
         # Conditional Save: Archives (controlled by auto_save)
+        if self._is_cancelled():
+            return
         if archive_info_list and export_settings['auto_save']:
             archive_save_as = settings_page.get_export_settings().get('archive_save_as')
             for archive_index, archive in enumerate(archive_info_list):
                 archive_index_input = total_images + archive_index
 
                 self.emit_progress(archive_index_input, total_images, 1, 3, True)
-                if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                    self.main_page.current_worker = None
-                    break
+                if self._is_cancelled():
+                    return
 
                 archive_path = archive['archive_path']
                 archive_ext = os.path.splitext(archive_path)[1]
@@ -484,9 +487,8 @@ class BatchProcessor:
                 check_from = os.path.join(archive_directory, f"comic_translate_{timestamp}")
 
                 self.emit_progress(archive_index_input, total_images, 2, 3, True)
-                if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                    self.main_page.current_worker = None
-                    break
+                if self._is_cancelled():
+                    return
 
                 # Create the new archive
                 output_base_name = f"{archive_bname}"
@@ -494,9 +496,8 @@ class BatchProcessor:
                     output_dir=archive_directory, output_base_name=output_base_name)
 
                 self.emit_progress(archive_index_input, total_images, 3, 3, True)
-                if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                    self.main_page.current_worker = None
-                    break
+                if self._is_cancelled():
+                    return
 
                 # Clean up temporary 
                 if os.path.exists(save_dir):

@@ -94,6 +94,8 @@ class ComicTranslate(ComicTranslateUI):
         self.file_handler = FileHandler()
         self.threadpool = QThreadPool()
         self.current_worker = None
+        self._batch_active = False
+        self._batch_cancel_requested = False
 
         self.image_ctrl = ImageStateController(self)
         self.rect_item_ctrl = RectItemController(self)
@@ -424,6 +426,11 @@ class ComicTranslate(ComicTranslateUI):
         """Enhanced cancel that also clears the queue"""
         if self.current_worker:
             self.current_worker.cancel()
+
+        if self._batch_active:
+            self._batch_cancel_requested = True
+            self.cancel_button.setEnabled(False)
+            self.progress_bar.setFormat(QCoreApplication.translate('Messages', 'Cancelling... %p%'))
         
         # Clear the queue and reset state
         self.clear_operation_queue()
@@ -505,8 +512,11 @@ class ComicTranslate(ComicTranslateUI):
             target_lang = self.image_states[image_path]['target_lang']
             if not validate_settings(self, target_lang):
                 return
-            
+
+        self._batch_active = True
+        self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
+        self.cancel_button.setEnabled(True)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -536,7 +546,10 @@ class ComicTranslate(ComicTranslateUI):
         if self.manual_radio.isChecked():
             self.automatic_radio.setChecked(True)
             self.batch_mode_selected()
+        self._batch_active = True
+        self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
+        self.cancel_button.setEnabled(True)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -558,10 +571,15 @@ class ComicTranslate(ComicTranslateUI):
             )
 
     def on_batch_process_finished(self):
+        was_cancelled = self._batch_cancel_requested
+        self._batch_active = False
+        self._batch_cancel_requested = False
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
+        self.cancel_button.setEnabled(True)
         self.selected_batch = []
-        Messages.show_translation_complete(self)
+        if not was_cancelled:
+            Messages.show_translation_complete(self)
 
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
@@ -802,6 +820,9 @@ class ComicTranslate(ComicTranslateUI):
         self.undo_group.activeStack().endMacro()
 
     def update_progress(self, index: int, total_images: int, step: int, total_steps: int, change_name: bool):
+        if self._batch_cancel_requested:
+            return
+
         # Assign weights to image processing and archiving (adjust as needed)
         image_processing_weight = 0.9
         archiving_weight = 0.1
