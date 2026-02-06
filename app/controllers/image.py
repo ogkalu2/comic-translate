@@ -711,6 +711,11 @@ class ImageStateController:
         self.main.curr_tblock = None
         self.main.text_ctrl.clear_text_edits()
 
+        # Reload blk_list so that clicking a text item can find the
+        # corresponding TextBlock (with OCR text) for s_text_edit.
+        stored_blk_list = self.main.image_states.get(file_path, {}).get('blk_list', [])
+        self.main.blk_list = stored_blk_list.copy() if stored_blk_list else []
+
         for data in viewer_state.get('text_items_state', []):
             text_item = self.main.image_viewer.add_text_item(data)
             self.main.text_ctrl.connect_text_item_signals(text_item)
