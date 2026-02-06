@@ -14,6 +14,7 @@ from app.account.auth.token_storage import get_token
 from app.ui.settings.settings_page import SettingsPage
 from app.account.config import WEB_API_TRANSLATE_URL
 from ..utils.exceptions import InsufficientCreditsException
+from ..utils.platform_utils import get_client_os
 
 
 logger = logging.getLogger(__name__)
@@ -143,9 +144,11 @@ class UserTranslator(TranslationEngine):
             request_payload["extra_context"] = extra_context
 
         # 6. Make the HTTP Request
+        client_os = get_client_os()
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {access_token}"
+            "Authorization": f"Bearer {access_token}",
+            "X-Client-OS": client_os
         }
 
         response = self._session.post(

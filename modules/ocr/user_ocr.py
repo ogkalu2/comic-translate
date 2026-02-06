@@ -14,6 +14,7 @@ from app.account.auth.token_storage import get_token
 from app.ui.settings.settings_page import SettingsPage
 from app.account.config import WEB_API_OCR_URL
 from ..utils.exceptions import InsufficientCreditsException
+from ..utils.platform_utils import get_client_os
 
 
 logger = logging.getLogger(__name__)
@@ -144,7 +145,12 @@ class UserOCR(OCREngine):
         containing the full image and a list of coordinates for each text block.
         """
         start_t = time.perf_counter()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        client_os = get_client_os()
+        headers = {
+            "Authorization": f"Bearer {token}", 
+            "Content-Type": "application/json",
+            "X-Client-OS": client_os
+        }
         llm_options = self._get_llm_options()
 
         # 1. Prepare Validation & Coordinates
@@ -265,7 +271,12 @@ class UserOCR(OCREngine):
     def _process_full_page(self, img: np.ndarray, blk_list: List[TextBlock], token: str) -> List[TextBlock]:
         """Handles OCR for full-page types (Google, Microsoft)."""
         start_t = time.perf_counter()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        client_os = get_client_os()
+        headers = {
+            "Authorization": f"Bearer {token}", 
+            "Content-Type": "application/json",
+            "X-Client-OS": client_os
+        }
 
         # Encode the entire image
         img_b64 = self.encode_image(img)
