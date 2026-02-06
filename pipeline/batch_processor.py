@@ -339,7 +339,7 @@ class BatchProcessor:
             min_font_size = render_settings.min_font_size
             line_spacing = float(render_settings.line_spacing) 
             outline_width = float(render_settings.outline_width)
-            outline_color = QColor(render_settings.outline_color) 
+            outline_color = QColor(render_settings.outline_color) if outline else None
             bold = render_settings.bold
             italic = render_settings.italic
             underline = render_settings.underline

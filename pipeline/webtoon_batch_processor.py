@@ -730,7 +730,8 @@ class WebtoonBatchProcessor:
         font, font_color = render_settings.font_family, QColor(render_settings.color)
         max_font_size, min_font_size = render_settings.max_font_size, render_settings.min_font_size
         line_spacing, outline_width = float(render_settings.line_spacing), float(render_settings.outline_width)
-        outline_color, outline = QColor(render_settings.outline_color), render_settings.outline
+        outline = render_settings.outline
+        outline_color = QColor(render_settings.outline_color) if outline else None
         bold, italic, underline = render_settings.bold, render_settings.italic, render_settings.underline
         alignment = self.main_page.button_to_alignment[render_settings.alignment_id]
         direction = render_settings.direction
