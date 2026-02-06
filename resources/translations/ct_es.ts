@@ -168,34 +168,34 @@
         <translation type="vanished">Inglés</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="486"/>
-        <location filename="../../controller.py" line="496"/>
+        <location filename="../../controller.py" line="495"/>
+        <location filename="../../controller.py" line="505"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="850"/>
-        <location filename="../../controller.py" line="861"/>
+        <location filename="../../controller.py" line="873"/>
+        <location filename="../../controller.py" line="884"/>
         <source>Downloading model file: {filename}</source>
         <translation>Descargando archivo de modelo: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="892"/>
+        <location filename="../../controller.py" line="915"/>
         <source>Unsaved Changes</source>
         <translation>Cambios no guardados</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="893"/>
+        <location filename="../../controller.py" line="916"/>
         <source>Save changes to this file?</source>
         <translation>¿Guardar los cambios en este archivo?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="894"/>
+        <location filename="../../controller.py" line="917"/>
         <source>Save</source>
         <translation>Guardar</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="895"/>
+        <location filename="../../controller.py" line="918"/>
         <source>Don&apos;t Save</source>
         <translation>No guardar</translation>
     </message>
@@ -204,7 +204,7 @@
         <translation type="vanished">Descartar</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="896"/>
+        <location filename="../../controller.py" line="919"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
@@ -741,34 +741,34 @@ de nuevo en la imagen (para su posterior edición)</translation>
         <translation>Guarda en una nueva carpeta comic_translate_&lt;timestamp&gt; en el mismo directorio que el archivo de entrada/archivo.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="19"/>
+        <location filename="../../app/ui/settings/export_page.py" line="21"/>
         <source>Export Raw Text</source>
         <translation>Exportar Texto sin Formato</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="20"/>
+        <location filename="../../app/ui/settings/export_page.py" line="22"/>
         <source>Export Translated text</source>
         <translation>Exportar texto traducido</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="21"/>
+        <location filename="../../app/ui/settings/export_page.py" line="23"/>
         <source>Export Inpainted Image</source>
         <translation>Exportar Imagen Inpainted</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="36"/>
+        <location filename="../../app/ui/settings/export_page.py" line="38"/>
         <source>File Format Conversion</source>
         <translation>Conversión de formato de archivo</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <location filename="../../app/ui/settings/export_page.py" line="41"/>
         <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
 Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
         <translation>Solo se aplica cuando el guardado automático está habilitado y la entrada es un archivo (PDF/CBZ/CBR/EPUB/etc).
 Los archivos traducidos se guardan como &lt;filename&gt;_translated.&lt;ext&gt; junto al original.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="48"/>
+        <location filename="../../app/ui/settings/export_page.py" line="52"/>
         <source>Save archives as:</source>
         <translation>Guardar archivos como:</translation>
     </message>
@@ -820,33 +820,38 @@ Los archivos traducidos se guardan como &lt;filename&gt;_translated.&lt;ext&gt; 
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="665"/>
+        <location filename="../../app/controllers/image.py" line="785"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
         <translation>No se detectaron bloques de texto.
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="666"/>
+        <location filename="../../app/controllers/image.py" line="786"/>
         <source>Could not OCR detected text.
 Skipping:</source>
         <translation>No se pudo aplicar OCR al texto detectado.
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="667"/>
+        <location filename="../../app/controllers/image.py" line="787"/>
         <source>Could not get translations.
 Skipping:</source>
         <translation>No se pudieron obtener las traducciones.
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="815"/>
+        <location filename="../../controller.py" line="433"/>
+        <source>Cancelling... %p%</source>
+        <translation>Cancelando... %p%</translation>
+    </message>
+    <message>
+        <location filename="../../controller.py" line="838"/>
         <source>Processing:</source>
         <translation>Procesando:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="818"/>
+        <location filename="../../controller.py" line="841"/>
         <source>Archiving:</source>
         <translation>Archivando:</translation>
     </message>
@@ -1664,10 +1669,6 @@ Restart now?</source>
     <message>
         <source>Credentials</source>
         <translation type="vanished">Credenciales</translation>
-    </message>
-    <message>
-        <source>LLMs</source>
-        <translation type="vanished">LLMs</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="302"/>

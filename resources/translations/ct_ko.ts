@@ -168,34 +168,34 @@
         <translation type="vanished">영어</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="486"/>
-        <location filename="../../controller.py" line="496"/>
+        <location filename="../../controller.py" line="495"/>
+        <location filename="../../controller.py" line="505"/>
         <source>Error</source>
         <translation>오류</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="850"/>
-        <location filename="../../controller.py" line="861"/>
+        <location filename="../../controller.py" line="873"/>
+        <location filename="../../controller.py" line="884"/>
         <source>Downloading model file: {filename}</source>
         <translation>모델 파일 다운로드 중: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="892"/>
+        <location filename="../../controller.py" line="915"/>
         <source>Unsaved Changes</source>
         <translation>저장되지 않은 변경 사항</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="893"/>
+        <location filename="../../controller.py" line="916"/>
         <source>Save changes to this file?</source>
         <translation>이 파일의 변경 사항을 저장하시겠습니까?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="894"/>
+        <location filename="../../controller.py" line="917"/>
         <source>Save</source>
         <translation>저장</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="895"/>
+        <location filename="../../controller.py" line="918"/>
         <source>Don&apos;t Save</source>
         <translation>저장 안 함</translation>
     </message>
@@ -204,7 +204,7 @@
         <translation type="vanished">저장 안 함</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="896"/>
+        <location filename="../../controller.py" line="919"/>
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
@@ -777,34 +777,34 @@ back on the Image (for further editing)</source>
         <translation>입력 파일/아카이브와 동일한 디렉터리의 새 comic_translate_&lt;타임스탬프&gt; 폴더에 저장합니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="19"/>
+        <location filename="../../app/ui/settings/export_page.py" line="21"/>
         <source>Export Raw Text</source>
         <translation>원시 텍스트 내보내기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="20"/>
+        <location filename="../../app/ui/settings/export_page.py" line="22"/>
         <source>Export Translated text</source>
         <translation>번역된 텍스트 내보내기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="21"/>
+        <location filename="../../app/ui/settings/export_page.py" line="23"/>
         <source>Export Inpainted Image</source>
         <translation>인페인팅된 이미지 내보내기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="36"/>
+        <location filename="../../app/ui/settings/export_page.py" line="38"/>
         <source>File Format Conversion</source>
         <translation>파일 형식 변환</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="39"/>
+        <location filename="../../app/ui/settings/export_page.py" line="41"/>
         <source>Applies only when auto-save is enabled and the input is an archive (PDF/CBZ/CBR/EPUB/etc).
 Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to the original.</source>
         <translation>자동 저장이 활성화되어 있고 입력이 아카이브(PDF/CBZ/CBR/EPUB 등)인 경우에만 적용됩니다.
 번역된 아카이브는 원본 옆에 &lt;filename&gt;_translated.&lt;ext&gt; 이름으로 저장됩니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/export_page.py" line="48"/>
+        <location filename="../../app/ui/settings/export_page.py" line="52"/>
         <source>Save archives as:</source>
         <translation>아카이브 저장 형식:</translation>
     </message>
@@ -860,33 +860,38 @@ Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="665"/>
+        <location filename="../../app/controllers/image.py" line="785"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
         <translation>텍스트 블록이 감지되지 않았습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="666"/>
+        <location filename="../../app/controllers/image.py" line="786"/>
         <source>Could not OCR detected text.
 Skipping:</source>
         <translation>감지된 텍스트를 OCR 할 수 없습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="667"/>
+        <location filename="../../app/controllers/image.py" line="787"/>
         <source>Could not get translations.
 Skipping:</source>
         <translation>번역을 가져올 수 없습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="815"/>
+        <location filename="../../controller.py" line="433"/>
+        <source>Cancelling... %p%</source>
+        <translation>취소 중... %p%</translation>
+    </message>
+    <message>
+        <location filename="../../controller.py" line="838"/>
         <source>Processing:</source>
         <translation>처리 중:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="818"/>
+        <location filename="../../controller.py" line="841"/>
         <source>Archiving:</source>
         <translation>압축 중:</translation>
     </message>
@@ -1710,10 +1715,6 @@ Restart now?</source>
     <message>
         <source>Credentials</source>
         <translation type="vanished">자격 증명</translation>
-    </message>
-    <message>
-        <source>LLMs</source>
-        <translation type="vanished">LLM</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
