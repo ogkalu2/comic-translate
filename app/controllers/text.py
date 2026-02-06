@@ -49,6 +49,8 @@ class TextController:
         self._is_updating_from_edit = False
 
     def connect_text_item_signals(self, text_item: TextBlockItem):
+        if getattr(text_item, "_ct_signals_connected", False):
+            return
         text_item.item_selected.connect(self.on_text_item_selected)
         text_item.item_deselected.connect(self.on_text_item_deselected)
         text_item.text_changed.connect(lambda text, ti=text_item: self.update_text_block_from_item(ti, text))
@@ -56,6 +58,7 @@ class TextController:
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
         self._last_item_text[text_item] = text_item.toPlainText()
         self._last_item_html[text_item] = text_item.document().toHtml()
+        text_item._ct_signals_connected = True
 
     def clear_text_edits(self):
         self.main.curr_tblock = None

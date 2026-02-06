@@ -314,7 +314,8 @@ class ImageStateController:
             img = self.load_image(file_path)
             # Preload inpaint patches into memory so that load_patch_state
             # doesn't hit disk on the main thread.
-            self._preload_patches(file_path)
+            if req_id == self._nav_request_id:
+                self._preload_patches(file_path, request_id=req_id)
             return img
 
         worker = GenericWorker(_bg_load)
@@ -334,7 +335,7 @@ class ImageStateController:
         self._nav_worker = worker
         self.main.threadpool.start(worker)
 
-    def _preload_patches(self, file_path: str):
+    def _preload_patches(self, file_path: str, request_id: int | None = None):
         """Read patch images from disk into in_memory_patches on a worker thread.
 
         This prevents load_patch_state from blocking the main thread with
@@ -347,6 +348,9 @@ class ImageStateController:
         mem_hashes = {m['hash'] for m in mem_list}
         loaded = []
         for saved in saved_patches:
+            # Stop stale preload work when user already switched to another page.
+            if request_id is not None and request_id != self._nav_request_id:
+                return
             if saved['hash'] not in mem_hashes:
                 rgb_img = imk.read_image(saved['png_path'])
                 if rgb_img is not None:
@@ -614,68 +618,70 @@ class ImageStateController:
 
     def load_image_state(self, file_path: str):
         rgb_image = self.main.image_data[file_path]
+        viewer = self.main.image_viewer
 
-        # Display the image directly instead of going through SetImageCommand.
-        # Page switching doesn't modify the image, so we skip the
-        # update_image_history overhead (load_image + np.array_equal + potential
-        # temp-file write that runs in SetImageCommand.__init__).
-        # Always skip fitInView here: for revisited pages load_state restores
-        # the saved transform, and for first-time pages display_image calls
-        # fitInView after this method returns.
-        self.main.image_viewer.display_image_array(rgb_image, fit=False)
+        # Avoid repeated repaints while restoring many items during page switches.
+        viewer.setUpdatesEnabled(False)
+        try:
+            # Display the image directly instead of going through SetImageCommand.
+            # Page switching doesn't modify the image, so we skip the
+            # update_image_history overhead (load_image + np.array_equal + potential
+            # temp-file write that runs in SetImageCommand.__init__).
+            # Always skip fitInView here: for revisited pages load_state restores
+            # the saved transform, and for first-time pages display_image calls
+            # fitInView after this method returns.
+            viewer.display_image_array(rgb_image, fit=False)
 
-        if file_path in self.main.image_states:
-            state = self.main.image_states[file_path]
-            
-            # Skip state loading for newly inserted images (which have empty viewer_state)
-            # This prevents loading of incomplete state or invalid transform data.
-            # As soon as an image is saved once, it will have a populated viewer_state.
-            if state.get('viewer_state'):
-                
-                push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
+            if file_path in self.main.image_states:
+                state = self.main.image_states[file_path]
 
-                self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
-                self.main.image_viewer.load_state(state['viewer_state'])
-                # Block signals to prevent triggering save when loading state
-                self.main.s_combo.blockSignals(True)
-                self.main.t_combo.blockSignals(True)
-                self.main.s_combo.setCurrentText(state['source_lang'])
-                self.main.t_combo.setCurrentText(state['target_lang'])
-                self.main.s_combo.blockSignals(False)
-                self.main.t_combo.blockSignals(False)
-                self.main.image_viewer.load_brush_strokes(state['brush_strokes'])
+                # Skip state loading for newly inserted images (which have empty viewer_state)
+                # This prevents loading of incomplete state or invalid transform data.
+                # As soon as an image is saved once, it will have a populated viewer_state.
+                if state.get('viewer_state'):
 
-                if push_to_stack:
-                    self.main.undo_stacks[file_path].beginMacro('text_items_rendered')
-                    for text_item in self.main.image_viewer.text_items:
-                        self.main.text_ctrl.connect_text_item_signals(text_item)
-                        command = AddTextItemCommand(self.main, text_item)
-                        self.main.undo_stacks[file_path].push(command)
-                    self.main.undo_stacks[file_path].endMacro()
-                    state['viewer_state'].update({'push_to_stack': False})
+                    push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
+
+                    self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
+                    viewer.load_state(state['viewer_state'])
+                    # Block signals to prevent triggering save when loading state
+                    self.main.s_combo.blockSignals(True)
+                    self.main.t_combo.blockSignals(True)
+                    self.main.s_combo.setCurrentText(state['source_lang'])
+                    self.main.t_combo.setCurrentText(state['target_lang'])
+                    self.main.s_combo.blockSignals(False)
+                    self.main.t_combo.blockSignals(False)
+                    viewer.load_brush_strokes(state['brush_strokes'])
+
+                    # add_text_item/add_rectangle used by load_state already emit the
+                    # viewer's connect_* signals, so no extra signal wiring is needed here.
+                    if push_to_stack:
+                        self.main.undo_stacks[file_path].beginMacro('text_items_rendered')
+                        for text_item in viewer.text_items:
+                            command = AddTextItemCommand(self.main, text_item)
+                            self.main.undo_stacks[file_path].push(command)
+                        self.main.undo_stacks[file_path].endMacro()
+                        state['viewer_state'].update({'push_to_stack': False})
+
+                    self.load_patch_state(file_path)
                 else:
-                    for text_item in self.main.image_viewer.text_items:
-                        self.main.text_ctrl.connect_text_item_signals(text_item)
+                    # New image - just set language preferences and clear everything else
+                    self.main.blk_list = []
+                    # Block signals to prevent triggering save when loading state
+                    self.main.s_combo.blockSignals(True)
+                    self.main.t_combo.blockSignals(True)
+                    self.main.s_combo.setCurrentText(state.get('source_lang', self.main.s_combo.currentText()))
+                    self.main.t_combo.setCurrentText(state.get('target_lang', self.main.t_combo.currentText()))
+                    self.main.s_combo.blockSignals(False)
+                    self.main.t_combo.blockSignals(False)
+                    viewer.clear_rectangles(page_switch=True)
+                    viewer.clear_brush_strokes(page_switch=True)
+                    viewer.clear_text_items()
 
-                for rect_item in self.main.image_viewer.rectangles:
-                    self.main.rect_item_ctrl.connect_rect_item_signals(rect_item)
-
-                self.load_patch_state(file_path)
-            else:
-                # New image - just set language preferences and clear everything else
-                self.main.blk_list = []
-                # Block signals to prevent triggering save when loading state
-                self.main.s_combo.blockSignals(True)
-                self.main.t_combo.blockSignals(True)
-                self.main.s_combo.setCurrentText(state.get('source_lang', self.main.s_combo.currentText()))
-                self.main.t_combo.setCurrentText(state.get('target_lang', self.main.t_combo.currentText()))
-                self.main.s_combo.blockSignals(False)
-                self.main.t_combo.blockSignals(False)
-                self.main.image_viewer.clear_rectangles(page_switch=True)
-                self.main.image_viewer.clear_brush_strokes(page_switch=True)
-                self.main.image_viewer.clear_text_items()
-
-        self.main.text_ctrl.clear_text_edits()
+            self.main.text_ctrl.clear_text_edits()
+        finally:
+            viewer.setUpdatesEnabled(True)
+            viewer.viewport().update()
 
     def display_image(self, index: int, switch_page: bool = True):
         if 0 <= index < len(self.main.image_files):
@@ -745,29 +751,34 @@ class ImageStateController:
 
         # Only refresh text items; do not call display_image/load_state because that
         # reapplies saved transform and causes visible zoom/pan jumps.
-        self.main.image_viewer.clear_text_items()
-        self.main.curr_tblock_item = None
-        self.main.curr_tblock = None
-        self.main.text_ctrl.clear_text_edits()
+        viewer = self.main.image_viewer
+        viewer.setUpdatesEnabled(False)
+        try:
+            viewer.clear_text_items()
+            self.main.curr_tblock_item = None
+            self.main.curr_tblock = None
+            self.main.text_ctrl.clear_text_edits()
 
-        # Reload blk_list so that clicking a text item can find the
-        # corresponding TextBlock (with OCR text) for s_text_edit.
-        stored_blk_list = self.main.image_states.get(file_path, {}).get('blk_list', [])
-        self.main.blk_list = stored_blk_list.copy() if stored_blk_list else []
+            # Reload blk_list so that clicking a text item can find the
+            # corresponding TextBlock (with OCR text) for s_text_edit.
+            stored_blk_list = self.main.image_states.get(file_path, {}).get('blk_list', [])
+            self.main.blk_list = stored_blk_list.copy() if stored_blk_list else []
 
-        for data in viewer_state.get('text_items_state', []):
-            text_item = self.main.image_viewer.add_text_item(data)
-            self.main.text_ctrl.connect_text_item_signals(text_item)
+            for data in viewer_state.get('text_items_state', []):
+                viewer.add_text_item(data)
 
-        if viewer_state.get('push_to_stack', False):
-            stack = self.main.undo_stacks.get(file_path)
-            if stack:
-                stack.beginMacro('text_items_rendered')
-                for text_item in self.main.image_viewer.text_items:
-                    command = AddTextItemCommand(self.main, text_item)
-                    stack.push(command)
-                stack.endMacro()
-            viewer_state['push_to_stack'] = False
+            if viewer_state.get('push_to_stack', False):
+                stack = self.main.undo_stacks.get(file_path)
+                if stack:
+                    stack.beginMacro('text_items_rendered')
+                    for text_item in viewer.text_items:
+                        command = AddTextItemCommand(self.main, text_item)
+                        stack.push(command)
+                    stack.endMacro()
+                viewer_state['push_to_stack'] = False
+        finally:
+            viewer.setUpdatesEnabled(True)
+            viewer.viewport().update()
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
         message = { 

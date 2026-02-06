@@ -19,9 +19,12 @@ class RectItemController:
         self.main = main
 
     def connect_rect_item_signals(self, rect_item: MoveableRectItem):
+        if getattr(rect_item, "_ct_signals_connected", False):
+            return
         rect_item.signals.change_undo.connect(self.rect_change_undo)
         rect_item.signals.ocr_block.connect(lambda: self.main.ocr(True))
         rect_item.signals.translate_block.connect(lambda: self.main.translate_image(True))
+        rect_item._ct_signals_connected = True
 
     def handle_rectangle_selection(self, rect: QRectF):
         rect = rect.getCoords()
