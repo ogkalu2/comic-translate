@@ -1286,7 +1286,7 @@ MDockWidget::close-button:hover, MDockWidget::float-button:hover {
 }
 
 MProgressBar {
-    font-size: @font_size_base@font_unit;
+    font-size: @font_size_small@font_unit;
     color: @primary_text_color;
     border: 0 solid @border_color;
     background-color: @border_color;
