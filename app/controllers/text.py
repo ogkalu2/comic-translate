@@ -755,7 +755,11 @@ class TextController:
             alignment = self.main.button_to_alignment[align_id]
             direction = render_settings.direction
 
-            self.main.undo_group.activeStack().beginMacro('text_items_rendered')
+            # Retrieve current image path to fix blk_rendered error
+            image_path = ""
+            if 0 <= self.main.curr_img_idx < len(self.main.image_files):
+                image_path = self.main.image_files[self.main.curr_img_idx]
+
             self.main.run_threaded(
                 manual_wrap, 
                 self.on_render_complete, 
@@ -763,6 +767,7 @@ class TextController:
                 None, 
                 self.main, 
                 new_blocks, 
+                image_path,
                 font_family, 
                 line_spacing, 
                 outline_width,

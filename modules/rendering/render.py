@@ -337,6 +337,7 @@ def pyside_word_wrap(
 def manual_wrap(
     main_page, 
     blk_list: List[TextBlock], 
+    image_path: str,
     font_family: str, 
     line_spacing: float, 
     outline_width: float, 
@@ -378,7 +379,7 @@ def manual_wrap(
             vertical
         )
         
-        main_page.blk_rendered.emit(translation, font_size, blk)
+        main_page.blk_rendered.emit(translation, font_size, blk, image_path)
 
 
 
