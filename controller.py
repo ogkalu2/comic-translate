@@ -236,7 +236,7 @@ class ComicTranslate(ComicTranslateUI):
             self.webtoon_toggle.setChecked(False)
         self.webtoon_mode = False
 
-    def connect_rect_item_signals(self, rect_item): return self.rect_item_ctrl.connect_rect_item_signals(rect_item)
+    def connect_rect_item_signals(self, rect_item, force_reconnect: bool = False): return self.rect_item_ctrl.connect_rect_item_signals(rect_item, force_reconnect=force_reconnect)
     def apply_inpaint_patches(self, patches): return self.image_ctrl.apply_inpaint_patches(patches)
     def render_settings(self): return self.text_ctrl.render_settings()
     def load_image(self, file_path: str) -> np.ndarray: return self.image_ctrl.load_image(file_path)

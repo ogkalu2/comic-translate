@@ -18,12 +18,34 @@ class RectItemController:
     def __init__(self, main: ComicTranslate):
         self.main = main
 
-    def connect_rect_item_signals(self, rect_item: MoveableRectItem):
-        if getattr(rect_item, "_ct_signals_connected", False):
+    def connect_rect_item_signals(self, rect_item: MoveableRectItem, force_reconnect: bool = False):
+        if getattr(rect_item, "_ct_signals_connected", False) and not force_reconnect:
             return
+
+        if force_reconnect:
+            try:
+                rect_item.signals.change_undo.disconnect(self.rect_change_undo)
+            except (TypeError, RuntimeError):
+                pass
+            if hasattr(rect_item, "_ct_ocr_slot"):
+                try:
+                    rect_item.signals.ocr_block.disconnect(rect_item._ct_ocr_slot)
+                except (TypeError, RuntimeError):
+                    pass
+            if hasattr(rect_item, "_ct_translate_slot"):
+                try:
+                    rect_item.signals.translate_block.disconnect(rect_item._ct_translate_slot)
+                except (TypeError, RuntimeError):
+                    pass
+
+        if not hasattr(rect_item, "_ct_ocr_slot"):
+            rect_item._ct_ocr_slot = lambda: self.main.ocr(True)
+        if not hasattr(rect_item, "_ct_translate_slot"):
+            rect_item._ct_translate_slot = lambda: self.main.translate_image(True)
+
         rect_item.signals.change_undo.connect(self.rect_change_undo)
-        rect_item.signals.ocr_block.connect(lambda: self.main.ocr(True))
-        rect_item.signals.translate_block.connect(lambda: self.main.translate_image(True))
+        rect_item.signals.ocr_block.connect(rect_item._ct_ocr_slot)
+        rect_item.signals.translate_block.connect(rect_item._ct_translate_slot)
         rect_item._ct_signals_connected = True
 
     def handle_rectangle_selection(self, rect: QRectF):
