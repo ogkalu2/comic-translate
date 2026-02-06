@@ -799,9 +799,11 @@ class ImageStateController:
     def on_inpaint_patches_processed(self, patches: list, file_path: str):
         target_stack = self.main.undo_stacks[file_path]
 
-        # Check if this page is currently visible in webtoon mode
+        # Decide visibility against the viewer's *actual* mode state.
+        # During webtoon->regular transitions, main.webtoon_mode may flip
+        # before the viewer scene is fully switched.
         should_display = False
-        if self.main.webtoon_mode:
+        if self.main.image_viewer.webtoon_mode:
             # In webtoon mode, display patches for pages that are currently loaded/visible
             loaded_pages = self.main.image_viewer.webtoon_manager.loaded_pages
             page_index = None
@@ -811,9 +813,23 @@ class ImageStateController:
             if page_index is not None and page_index in loaded_pages:
                 should_display = True
         else:
-            # Regular mode - check if it's the current file
-            file_on_display = self.main.image_files[self.main.curr_img_idx] if self.main.image_files else None
-            should_display = (file_path == file_on_display)
+            # Regular mode: only draw when page navigation is stable.
+            # If user clicks pages rapidly, currentRow can point to a page
+            # that hasn't finished async loading yet; drawing during that
+            # transition can place patches on the wrong scene/page.
+            current_row = self.main.page_list.currentRow()
+            nav_stable = current_row == self.main.curr_img_idx
+            file_on_display = (
+                self.main.image_files[self.main.curr_img_idx]
+                if (0 <= self.main.curr_img_idx < len(self.main.image_files))
+                else None
+            )
+            should_display = (
+                nav_stable and
+                file_path == file_on_display and
+                self.main.central_stack.currentWidget() == self.main.image_viewer and
+                self.main.image_viewer.hasPhoto()
+            )
 
         # Create the command for the specific page
         command = PatchInsertCommand(self.main, patches, file_path, display=should_display)
