@@ -1133,6 +1133,14 @@ class WebtoonBatchProcessor:
                             logger.info(f"All live data for physical page {p_idx} is now finalized.")
                             self.physical_page_status[p_idx] = PageStatus.LIVE_DATA_FINALIZED
                             newly_finalized_physical_pages.add(p_idx)
+                            # Keep regular-mode current page in sync when users switch
+                            # out of webtoon mode mid-batch.
+                            image_path = image_list[p_idx]
+                            page_state = self.main_page.image_states.get(image_path)
+                            if page_state is not None:
+                                viewer_state = page_state.setdefault('viewer_state', {})
+                                viewer_state['push_to_stack'] = True
+                            self.main_page.render_state_ready.emit(image_path)
 
             # Trigger Render Check for newly finalized pages and their neighbors
             pages_to_check_for_render = set(newly_finalized_physical_pages)
