@@ -324,11 +324,11 @@ class ImageViewer(QGraphicsView):
         qimage = QtGui.QImage(img_array.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
         return qimage
 
-    def display_image_array(self, img_array: np.ndarray):
+    def display_image_array(self, img_array: np.ndarray, fit: bool = True):
         qimage = self.qimage_from_array(img_array)
         pixmap = QtGui.QPixmap.fromImage(qimage)
         self.clear_scene()
-        self.setPhoto(pixmap)
+        self.setPhoto(pixmap, fit=fit)
 
     def clear_scene(self):
         self.webtoon_manager.clear() 
@@ -340,11 +340,12 @@ class ImageViewer(QGraphicsView):
         self.photo.setShapeMode(QGraphicsPixmapItem.BoundingRectShape)
         self._scene.addItem(self.photo)
 
-    def setPhoto(self, pixmap: QtGui.QPixmap = None):
+    def setPhoto(self, pixmap: QtGui.QPixmap = None, fit: bool = True):
         if pixmap and not pixmap.isNull():
             self.empty = False
             self.photo.setPixmap(pixmap)
-            self.fitInView()
+            if fit:
+                self.fitInView()
         else:
             self.empty = True
             self.photo.setPixmap(QtGui.QPixmap())

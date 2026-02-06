@@ -310,7 +310,14 @@ class ImageStateController:
         req_id = self._nav_request_id
         file_path = self.main.image_files[index]
 
-        worker = GenericWorker(lambda: self.load_image(file_path))
+        def _bg_load():
+            img = self.load_image(file_path)
+            # Preload inpaint patches into memory so that load_patch_state
+            # doesn't hit disk on the main thread.
+            self._preload_patches(file_path)
+            return img
+
+        worker = GenericWorker(_bg_load)
 
         def _on_result(result):
             # Ignore stale loads when user switched pages rapidly.
@@ -326,6 +333,30 @@ class ImageStateController:
         )
         self._nav_worker = worker
         self.main.threadpool.start(worker)
+
+    def _preload_patches(self, file_path: str):
+        """Read patch images from disk into in_memory_patches on a worker thread.
+
+        This prevents load_patch_state from blocking the main thread with
+        synchronous disk reads when the user switches pages.
+        """
+        saved_patches = self.main.image_patches.get(file_path)
+        if not saved_patches:
+            return
+        mem_list = self.main.in_memory_patches.get(file_path, [])
+        mem_hashes = {m['hash'] for m in mem_list}
+        loaded = []
+        for saved in saved_patches:
+            if saved['hash'] not in mem_hashes:
+                rgb_img = imk.read_image(saved['png_path'])
+                if rgb_img is not None:
+                    loaded.append({
+                        'bbox': saved['bbox'],
+                        'image': rgb_img,
+                        'hash': saved['hash'],
+                    })
+        if loaded:
+            self.main.in_memory_patches.setdefault(file_path, []).extend(loaded)
 
     def highlight_card(self, index: int):
         """Highlight a single card (used for programmatic selection when signals are blocked)."""
@@ -584,7 +615,15 @@ class ImageStateController:
     def load_image_state(self, file_path: str):
         rgb_image = self.main.image_data[file_path]
 
-        self.set_image(rgb_image, push=False) 
+        # Display the image directly instead of going through SetImageCommand.
+        # Page switching doesn't modify the image, so we skip the
+        # update_image_history overhead (load_image + np.array_equal + potential
+        # temp-file write that runs in SetImageCommand.__init__).
+        # Always skip fitInView here: for revisited pages load_state restores
+        # the saved transform, and for first-time pages display_image calls
+        # fitInView after this method returns.
+        self.main.image_viewer.display_image_array(rgb_image, fit=False)
+
         if file_path in self.main.image_states:
             state = self.main.image_states[file_path]
             
