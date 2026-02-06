@@ -17,7 +17,12 @@ def encode_image_array(img_array: np.ndarray):
 def get_smart_text_color(detected_rgb: tuple, setting_color: QColor) -> QColor:
     """
     Determines the best text color to use based on the detected color from the image
-    and the user's preferred setting color. Prevents invisible text (e.g. white on white).
+    and the user's preferred setting color.
+
+    Policy:
+      - If detection succeeded, use the detected colour (it came from
+        actual pixel analysis and is most likely correct).
+      - If detection is empty / invalid, fall back to the user setting.
     """
     if not detected_rgb:
         return setting_color
@@ -27,25 +32,11 @@ def get_smart_text_color(detected_rgb: tuple, setting_color: QColor) -> QColor:
         if not detected_color.isValid():
             return setting_color
 
-        def get_luma(c):
-            return 0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue()
-        
-        det_luma = get_luma(detected_color)
-        set_luma = get_luma(setting_color)
-        
-        # If detected is Light (likely on Dark BG) and Setting is Dark
-        # e.g. White text on Black BG, but user setting is Black
-        if det_luma > 140 and set_luma < 100:
-            return detected_color
-        
-        # If detected is Dark (likely on Light BG) and Setting is Light
-        # e.g. Black text on White BG, but user setting is White
-        elif det_luma < 100 and set_luma > 140:
-            return detected_color
-            
+        return detected_color
+
     except Exception:
         pass
-        
+
     return setting_color
 
 def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:

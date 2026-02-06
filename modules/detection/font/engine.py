@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
+import imkit as imk
 from . import config
 from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
@@ -11,28 +12,85 @@ from modules.utils.download import ModelDownloader, ModelID
 logger = logging.getLogger(__name__)
 
 
+def extract_foreground_color(image: np.ndarray) -> list[int] | None:
+    """Extract the foreground (text) color from a text bounding box crop.
+
+    Uses spatial analysis: border pixels define the background colour,
+    then Otsu thresholding on the colour-distance-from-background map
+    cleanly separates text from background.  The median colour of
+    the text pixels is returned.
+
+    This avoids the regression-to-the-mean problem that neural
+    regressors suffer from, and correctly handles:
+      - black text on white bubble
+      - white text on dark/coloured bubble
+      - coloured text on any background
+    """
+    if image is None or image.size == 0:
+        return None
+
+    h, w = image.shape[:2]
+    if h < 6 or w < 6:
+        return None
+
+    if len(image.shape) != 3 or image.shape[2] < 3:
+        return None
+
+    img = image[:, :, :3]  # drop alpha if present
+
+    # 1. Border sampling — collect a thin ring of pixels around the edge.
+    #    These are almost always background in a text bounding box.
+    bw = max(2, min(h, w) // 8)
+    top    = img[:bw, :]
+    bottom = img[-bw:, :]
+    left   = img[bw:-bw, :bw]
+    right  = img[bw:-bw, -bw:]
+
+    border_pixels = np.concatenate([
+        top.reshape(-1, 3),
+        bottom.reshape(-1, 3),
+        left.reshape(-1, 3),
+        right.reshape(-1, 3),
+    ], axis=0).astype(np.float64)
+
+    bg = np.median(border_pixels, axis=0)
+
+    # 2. Per-pixel Euclidean distance from the background colour.
+    flat = img.reshape(-1, 3).astype(np.float64)
+    dist = np.sqrt(np.sum((flat - bg) ** 2, axis=1))
+
+    # 3. Otsu threshold on the distance map to find the natural
+    #    boundary between "background-like" and "text-like" pixels.
+    dist_u8 = np.clip(dist, 0, 255).astype(np.uint8)
+    otsu_thresh, _ = imk.otsu_threshold(dist_u8)
+    # Floor: ignore tiny noise even if Otsu picks a very low split.
+    threshold = max(float(otsu_thresh), 25.0)
+
+    # 4. Extract text pixels and compute their median colour.
+    text_mask = dist > threshold
+    n_text = int(np.sum(text_mask))
+    if n_text < 5:
+        return None
+
+    fg = np.median(flat[text_mask], axis=0).round().astype(int).tolist()
+    return snap_extreme_neutrals(fg)
+
+
 def snap_extreme_neutrals(rgb: list[int]) -> list[int]:
-    """Snap near-black / near-white colours to pure black or white.
+    """Snap achromatic colours to pure black or white.
 
-    The font-detection model regresses colour as a continuous value, so
-    intended-black or intended-white text frequently comes back as a
-    greyish tone (e.g. [30, 15, 5] instead of [0, 0, 0], or
-    [210, 200, 195] instead of [255, 255, 255]).
-
-    This helper uses simple luma + saturation heuristics to clamp those
-    values to the nearest extreme.
+    Comic text is almost never intentionally grey.  If the detected
+    colour is achromatic (low chroma) it is meant to be either black
+    or white, so snap to whichever is closer.  Coloured text (high
+    chroma) is returned unchanged.
     """
     r, g, b = int(rgb[0]), int(rgb[1]), int(rgb[2])
     luma = 0.299 * r + 0.587 * g + 0.114 * b
     chroma = max(r, g, b) - min(r, g, b)
 
-    # Dark end: low luma -> snap to black.
-    if luma < 80 and chroma < 80:
-        return [0, 0, 0]
-
-    # Light end: high luma -> snap to white.
-    if luma > 150 and chroma < 80:
-        return [255, 255, 255]
+    # Achromatic → snap to nearest extreme.
+    if chroma < 40:
+        return [0, 0, 0] if luma < 128 else [255, 255, 255]
 
     return [r, g, b]
 
@@ -206,7 +264,14 @@ class TorchFontEngine(FontEngine):
             with torch.no_grad():
                 out = self.detector(x)[0].float().cpu().numpy()
                 
-            return self.decode_output(out, original_width)
+            result = self.decode_output(out, original_width)
+
+            # Override model's regressed colour with CV-extracted colour
+            cv_color = extract_foreground_color(image)
+            if cv_color is not None:
+                result["text_color"] = cv_color
+
+            return result
             
         except Exception as e:
             logger.error(f"Error in font detection (Torch): {e}")
@@ -245,7 +310,14 @@ class ONNXFontEngine(FontEngine):
             outputs = self.session.run(None, {self.input_name: img_data})
             out = outputs[0][0] # First batch item
             
-            return self.decode_output(out, original_width)
+            result = self.decode_output(out, original_width)
+
+            # Override model's regressed colour with CV-extracted colour
+            cv_color = extract_foreground_color(image)
+            if cv_color is not None:
+                result["text_color"] = cv_color
+
+            return result
             
         except Exception as e:
             logger.error(f"Error in font detection (ONNX): {e}")
