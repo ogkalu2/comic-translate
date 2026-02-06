@@ -1074,7 +1074,7 @@ class SearchReplaceController(QtCore.QObject):
         if opts.in_target:
             ti = self._find_matching_text_item_state(state, m.key)
             existing_html = (ti.get("text") if ti else None) if isinstance(ti, dict) else None
-            if isinstance(existing_html, str) and existing_html:
+            if isinstance(existing_html, str) and _looks_like_html(existing_html):
                 old_text, new_text, new_html, count = _apply_replacements_to_html(
                     existing_html,
                     pattern,
@@ -1166,7 +1166,7 @@ class SearchReplaceController(QtCore.QObject):
             if opts.in_target:
                 ti = self._find_matching_text_item_state(state, key)
                 existing_html = (ti.get("text") if ti else None) if isinstance(ti, dict) else None
-                if isinstance(existing_html, str) and existing_html:
+                if isinstance(existing_html, str) and _looks_like_html(existing_html):
                     old_text, new_text, new_html, count = _apply_replacements_to_html(
                         existing_html,
                         pattern,
