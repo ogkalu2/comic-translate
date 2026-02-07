@@ -1,5 +1,5 @@
 # 漫画翻译
-[English](../README.md) | [한국어](README_ko.md) | [Français](README_fr.md) | 简体中文
+[English](../README.md) | [한국어](README_ko.md) | [Français](README_fr.md) | 简体中文 | [繁體中文](README_zh-TW.md)
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
