@@ -358,10 +358,9 @@ def get_system_language():
         elif region in zh_traditional_locales:
             return '繁體中文'
         else:
-            # 預設處理未知地區
+            # fallback for unknown Chinese locales, default to Simplified
             return '中文'
 
-    # 其他語言處理
     lang_code = locale.split('_')[0]
     
     lang_map = {
