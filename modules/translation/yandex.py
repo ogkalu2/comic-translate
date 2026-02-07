@@ -79,11 +79,13 @@ class YandexTranslation(TraditionalTranslation):
     def preprocess_language_code(self, lang_code: str) -> str:
         if not lang_code:
             return lang_code
-            
+        
+        if lang_code in ("zh-TW", "zh-HK", "yue"):
+            return "zh-TW"
         if lang_code.lower().startswith('zh'):
             lang_code = 'zh'
 
         elif lang_code == 'pt-br':
-            lang_code = 'pt-BR' 
-            
+            lang_code = 'pt-BR'
+        
         return lang_code

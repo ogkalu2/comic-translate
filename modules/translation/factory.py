@@ -9,6 +9,10 @@ from .llm.gpt import GPTTranslation
 from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
+from .llm.xai import xAITranslation
+from .llm.openrouter import OpenRouterTranslation
+from .llm.github import GithubModelTranslation
+
 from .llm.custom import CustomTranslation
 from .user import UserTranslator
 from app.account.auth.token_storage import get_token
@@ -32,6 +36,9 @@ class TranslationFactory:
         "Claude": ClaudeTranslation,
         "Gemini": GeminiTranslation,
         "Deepseek": DeepseekTranslation,
+        "xAI": xAITranslation,
+        "OpenRouter": OpenRouterTranslation,
+        "GitHub": GithubModelTranslation,
         "Custom": CustomTranslation
     }
     
@@ -61,13 +68,20 @@ class TranslationFactory:
         # Determine engine class and create engine
         engine_class = cls._get_engine_class(translator_key)
         engine = engine_class()
-        
-        # Initialize with appropriate parameters
-        if translator_key not in cls.TRADITIONAL_ENGINES or isinstance(engine, UserTranslator):
+
+        # If LLM engine, pass model_name if available
+        llm_keys = cls.LLM_ENGINE_IDENTIFIERS.keys()
+        is_llm = any(k in translator_key for k in llm_keys)
+        if is_llm and hasattr(engine, 'initialize'):
+            # Try to extract model name from translator_key, fallback to translator_key itself
+            model_name = translator_key.split(':', 1)[-1] if ':' in translator_key else translator_key
+            engine.initialize(settings, source_lang, target_lang, model_name)
+        elif translator_key not in cls.TRADITIONAL_ENGINES or isinstance(engine, UserTranslator):
+            # Always pass translator_key as model_name for LLM fallback
             engine.initialize(settings, source_lang, target_lang, translator_key)
         else:
-            engine.initialize(settings, source_lang, target_lang)
-        
+            engine.initialize(settings, source_lang, target_lang, "")
+
         # Cache the engine
         cls._engines[cache_key] = engine
         return engine
@@ -88,7 +102,12 @@ class TranslationFactory:
         # Otherwise look for matching LLM engine (substring match)
         for identifier, engine_class in cls.LLM_ENGINE_IDENTIFIERS.items():
             if identifier in translator_key:
-                return engine_class
+                # For LLM, always require model_name param in initialize
+                class LLMWithModel(engine_class):
+                    def initialize(self, settings, source_lang, target_lang, *args, **kwargs):
+                        model_name = args[0] if args else translator_key
+                        super().initialize(settings, source_lang, target_lang, model_name, **kwargs)
+                return LLMWithModel
         
         # Default to LLM engine if no match found
         return cls.DEFAULT_LLM_ENGINE

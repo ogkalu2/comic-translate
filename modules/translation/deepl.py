@@ -58,10 +58,12 @@ class DeepLTranslation(TraditionalTranslation):
             return 'ZH-HANS'
         if lang_code == 'zh-TW':
             return 'ZH-HANT'
+        if lang_code in ('zh-HK', 'yue'):
+            return 'ZH-HANT'
         if lang_code == 'en':
             return 'EN-US'
         if lang_code == 'pt':
-            return 'PT-PT' 
+            return 'PT-PT'
 
         # fallback: e.g. 'fr' → 'FR', 'de' → 'DE'
         return lang_code.upper()
