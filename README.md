@@ -1,5 +1,5 @@
 # Comic Translate
-English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md)
+English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md) | [繁體中文](docs/README_zh-TW.md)
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
