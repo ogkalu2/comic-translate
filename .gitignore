@@ -21,3 +21,4 @@ uv.lock
 # Test files
 test_*.py
 demo_*.py
+*.ctpr
