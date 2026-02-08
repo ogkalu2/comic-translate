@@ -86,9 +86,6 @@ class BatchProcessor:
         with open(skipped_file, 'a', encoding='UTF-8') as file:
             file.write(image_path + "\n")
             file.write(reason + "\n")
-            if full_traceback:
-                file.write("Full Traceback:\n")
-                file.write(full_traceback + "\n")
             file.write("\n")
 
     def _is_cancelled(self) -> bool:

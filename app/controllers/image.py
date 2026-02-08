@@ -786,7 +786,9 @@ class ImageStateController:
         if "flagged as unsafe" in error or "content was flagged" in error or "safety filters" in error:
             # Extract concise reason
             reason = error.split(": ")[-1] if ": " in error else error
-            Messages.show_content_flagged_error(self.main, details=f"Reason: {reason}", context=skip_reason)
+            file_name = os.path.basename(image_path)
+            mode = "Batch " if self.main._batch_active else ""
+            Messages.show_content_flagged_error(self.main, details=f"Skipping: {file_name}\nReason: {reason}", context=skip_reason)
             return
 
         message = { 
