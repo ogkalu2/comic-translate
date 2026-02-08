@@ -786,7 +786,12 @@ class ImageStateController:
         if "flagged as unsafe" in error or "content was flagged" in error or "safety filters" in error:
             # Extract concise reason
             reason = error.split(": ")[-1] if ": " in error else error
-             Messages.show_content_flagged_error(self.main, details=f"Reason: {reason}", context=skip_reason)
+            Messages.show_content_flagged_error(self.main, details=f"Reason: {reason}", context=skip_reason)
+            return
+
+        message = { 
+            "Text Blocks": QtCore.QCoreApplication.translate('Messages', 'No Text Blocks Detected.\nSkipping:') + f" {image_path}\n{error}", 
+            "OCR": QtCore.QCoreApplication.translate('Messages', 'Could not OCR detected text.\nSkipping:') + f" {image_path}\n{error}",
             "Translator": QtCore.QCoreApplication.translate('Messages', 'Could not get translations.\nSkipping:') + f" {image_path}\n{error}"        
         }
 
