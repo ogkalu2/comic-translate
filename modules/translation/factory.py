@@ -80,7 +80,8 @@ class TranslationFactory:
             # Always pass translator_key as model_name for LLM fallback
             engine.initialize(settings, source_lang, target_lang, translator_key)
         else:
-            engine.initialize(settings, source_lang, target_lang, "")
+            # Traditional engines only accept 3 parameters
+            engine.initialize(settings, source_lang, target_lang)
 
         # Cache the engine
         cls._engines[cache_key] = engine

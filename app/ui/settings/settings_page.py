@@ -146,6 +146,11 @@ class SettingsPage(QtWidgets.QWidget):
             if normalized == "Custom":
                 for field in ("api_key", "api_url", "model"):
                     creds[field] = _text_or_none(f"Custom_{field}")
+            else:
+                # Handle all other services with api_key
+                api_key = _text_or_none(f"{normalized}_api_key")
+                if api_key:
+                    creds['api_key'] = api_key
 
             return creds
 
@@ -270,6 +275,8 @@ class SettingsPage(QtWidgets.QWidget):
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
                     settings.setValue(f"{translated_service}_api_url", cred['api_url'])
                     settings.setValue(f"{translated_service}_model", cred['model'])
+                elif translated_service in ["GitHub", "OpenRouter", "xAI"]:
+                    settings.setValue(f"{translated_service}_api_key", cred.get('api_key', ''))
         else:
             settings.remove('credentials')  # Clear all credentials if save_keys is unchecked
         settings.endGroup()
@@ -372,6 +379,10 @@ class SettingsPage(QtWidgets.QWidget):
                     self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
                     self.ui.credential_widgets[f"{translated_service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
                     self.ui.credential_widgets[f"{translated_service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                elif translated_service in ["GitHub", "OpenRouter", "xAI"]:
+                    api_key_widget = self.ui.credential_widgets.get(f"{translated_service}_api_key")
+                    if api_key_widget:
+                        api_key_widget.setText(settings.value(f"{translated_service}_api_key", ''))
         settings.endGroup()
 
         # ADDED: Load user info and update account view 

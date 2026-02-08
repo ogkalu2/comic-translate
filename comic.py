@@ -347,19 +347,20 @@ def main():
 
 def get_system_language():
     locale = QLocale.system().name()  # Returns something like "en_US" or "zh_CN"
-    
+
     zh_simplified_locales = {'CN', 'SG'}
-    zh_traditional_locales = {'TW', 'HK', 'MO'}
 
     if locale.startswith('zh_'):
         region = locale.split('_', 1)[-1]
         if region in zh_simplified_locales:
             return '简体中文'
-        elif region in zh_traditional_locales:
-            return '繁體中文'
+        elif region in {'HK', 'MO'}:
+            return '繁體中文-香港'
+        elif region == 'TW':
+            return '繁體中文-台灣'
         else:
             # fallback for unknown Chinese locales, default to Simplified
-            return '中文'
+            return '简体中文'
 
     lang_code = locale.split('_')[0]
     

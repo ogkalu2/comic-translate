@@ -63,7 +63,10 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
         self.credential_services = [
-            self.tr("Custom"), 
+            self.tr("Custom"),
+            self.tr("GitHub"),
+            self.tr("OpenRouter"),
+            self.tr("xAI"),
         ]
         
         self.supported_translators = [
@@ -156,6 +159,9 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("DeepL"): "DeepL",
             self.tr("Anthropic Claude"): "Anthropic Claude",
             self.tr("Yandex"): "Yandex",
+            self.tr("GitHub"): "GitHub",
+            self.tr("OpenRouter"): "OpenRouter",
+            self.tr("xAI"): "xAI",
         }
 # Create reverse mappings for loading
         self.reverse_mappings = {v: k for k, v in self.value_mappings.items()}
