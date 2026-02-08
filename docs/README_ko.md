@@ -1,5 +1,5 @@
 # 만화 번역
-[English](../README.md) | 한국어 | [Français](README_fr.md) | [简体中文](README_zh-CN.md)
+[English](../README.md) | 한국어 | [Français](README_fr.md) | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md)
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
@@ -61,7 +61,7 @@ GPT-4를 번역기로 사용.
 
 ## 설치
 ### 다운로드
-Windows 및 macOS용 Comic Translate를 [여기](https://www.comic-translate.com)에서 다운로드하고 설치하세요.
+Windows 및 macOS용 Comic Translate를 [여기](https://www.comic-translate.com/download/)에서 다운로드하고 설치하세요.
 > Windows의 경우 Smart Screen을 무시하세요 (추가 정보 > 실행 클릭). macOS의 경우 열기를 시도한 후, 설정 > 개인정보 보호 및 보안 > 아래로 스크롤하여 '확인 없이 열기'를 클릭하세요.
 
 > 참고: GPU 가속은 현재 소스 코드에서 실행할 때만 사용할 수 있습니다.

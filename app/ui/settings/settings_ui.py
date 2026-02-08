@@ -77,14 +77,17 @@ class SettingsPageUI(QtWidgets.QWidget):
         ]
         
         self.languages = [
-            'English', 
-            '한국어', 
-            'Français', 
-            '简体中文', 
-            'русский', 
-            'Deutsch', 
-            'Español', 
-            'Italiano', 
+            'English',
+            '한국어',
+            'Français',
+            '简体中文',
+            '繁體中文',
+            '繁體中文-香港',
+            '粵語（香港）',
+            'русский',
+            'Deutsch',
+            'Español',
+            'Italiano',
         ]
         
         self.nav_cards = []  
@@ -95,11 +98,14 @@ class SettingsPageUI(QtWidgets.QWidget):
             "English": "English",
             "한국어": "한국어",
             "Français": "Français",
-            "简体中文": "简体中文",
-            "русский": "русский",
-            "Deutsch": "Deutsch",
-            "Español": "Español",
-            "Italiano": "Italiano",
+            "简体中文": "zh-CN",
+            "繁體中文": "zh-TW",
+            "繁體中文-香港": "zh-HK",
+            "粵語（香港）": "yue",
+            "русский": "ru",
+            "Deutsch": "de",
+            "Español": "es",
+            "Italiano": "it",
 
             # Theme mappings
             self.tr("Dark"): "Dark",
@@ -151,9 +157,9 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Anthropic Claude"): "Anthropic Claude",
             self.tr("Yandex"): "Yandex",
         }
-
-        # Create reverse mappings for loading
+# Create reverse mappings for loading
         self.reverse_mappings = {v: k for k, v in self.value_mappings.items()}
+
 
         self._init_ui()
 

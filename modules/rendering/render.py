@@ -52,7 +52,7 @@ def is_vertical_language_code(lang_code: str | None) -> bool:
     if not lang_code:
         return False
     code = lang_code.lower()
-    return code in {"zh-cn", "zh-tw", "ja"}
+    return code in {"zh-cn", "zh-tw", "zh-hk", "yue", "ja"}
 
 def is_vertical_block(blk, lang_code: str | None) -> bool:
     """Return True if this block should be rendered vertically.

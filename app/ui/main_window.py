@@ -40,11 +40,12 @@ supported_source_languages = [
 ]
 
 supported_target_languages = [
-"English", "Korean", "Japanese", "French", "Simplified Chinese",
-"Traditional Chinese", "Russian", "German", "Dutch", "Spanish", 
-"Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese",
-"Thai", "Vietnamese", "Hungarian", "Indonesian",  "Finnish",
-"Arabic", "Czech", "Persian", "Romanian", "Mongolian"]
+    "English", "Korean", "Japanese", "French", "Simplified Chinese",
+    "Traditional Chinese", "Cantonese (Hong Kong)", "Russian", "German", "Dutch", "Spanish",
+    "Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese",
+    "Thai", "Vietnamese", "Hungarian", "Indonesian",  "Finnish",
+    "Arabic", "Czech", "Persian", "Romanian", "Mongolian"
+]
 
 
 class ComicTranslateUI(QtWidgets.QMainWindow):
@@ -85,6 +86,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.tr("French"): "French",
             self.tr("Simplified Chinese"): "Simplified Chinese",
             self.tr("Traditional Chinese"): "Traditional Chinese",
+            self.tr("Cantonese (Hong Kong)"): "Cantonese (Hong Kong)",
             self.tr("Chinese"): "Chinese",
             self.tr("Russian"): "Russian",
             self.tr("German"): "German",

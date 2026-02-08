@@ -5,6 +5,8 @@ language_codes = {
     "Japanese": "ja",
     "Chinese": "zh",
     "Simplified Chinese": "zh-CN",
+    "Cantonese (Hong Kong)": "yue",
+    "Traditional Chinese (Hong Kong)": "zh-HK",
     "Traditional Chinese": "zh-TW",
     "English": "en",
     "Russian": "ru",
