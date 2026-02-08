@@ -184,15 +184,26 @@ class Messages:
         )
 
     @staticmethod
-    def show_content_flagged_error(parent):
+    def show_content_flagged_error(parent, details: str = None, context: str = "Operation"):
         """
         Show a friendly error when content is blocked by safety filters.
         """
+        # Determine specific messaging based on context
+        if context == "OCR":
+            action_msg = "Text Recognition blocked"
+            suggestion = "Please try using a different Text Recognition tool."
+        elif context in ("Translator", "Translation"):
+            action_msg = "Translation blocked"
+            suggestion = "Please try using a different translator."
+
+        base_msg = _translate(
+            "Messages", 
+            f"{action_msg}: The content was flagged by safety filters.\n{suggestion}"
+        )
+        msg_text = f"{base_msg}\n{details}" if details else base_msg
+
         MMessage.error(
-            text=_translate(
-                "Messages", 
-                "Translation blocked: The content was flagged by safety filters.\nPlease try modifying the text or using a different translator."
-            ),
+            text=msg_text,
             parent=parent,
             duration=None,
             closable=True

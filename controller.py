@@ -38,7 +38,7 @@ from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
 from app.controllers.search_replace import SearchReplaceController
-from modules.utils.exceptions import InsufficientCreditsException
+from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
 from collections import deque
 
 
@@ -462,6 +462,12 @@ class ComicTranslate(ComicTranslateUI):
         # Handle specific exceptions
         if exctype is InsufficientCreditsException:
             Messages.show_insufficient_credits_error(self, details=str(value))
+            
+        elif exctype is ContentFlaggedException:
+            err_msg = str(value)
+            reason = err_msg.split(": ")[-1] if ": " in err_msg else err_msg
+            context = getattr(value, 'context', 'Operation')
+            Messages.show_content_flagged_error(self, details=f"Reason: {reason}", context=context)
         
         # Handle HTTP Errors (Server-side)
         elif issubclass(exctype, requests.exceptions.HTTPError):

@@ -8,6 +8,7 @@ from PySide6 import QtCore, QtWidgets, QtGui
 
 from app.ui.dayu_widgets.clickable_card import ClickMeta
 from app.ui.dayu_widgets.message import MMessage
+from app.ui.messages import Messages
 from app.ui.commands.image import SetImageCommand, ToggleSkipImagesCommand
 from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
@@ -781,9 +782,11 @@ class ImageStateController:
             viewer.viewport().update()
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
-        message = { 
-            "Text Blocks": QtCore.QCoreApplication.translate('Messages', 'No Text Blocks Detected.\nSkipping:') + f" {image_path}\n{error}", 
-            "OCR": QtCore.QCoreApplication.translate('Messages', 'Could not OCR detected text.\nSkipping:') + f" {image_path}\n{error}",
+        # Special handling for safety flags (improved UX)
+        if "flagged as unsafe" in error or "content was flagged" in error or "safety filters" in error:
+            # Extract concise reason
+            reason = error.split(": ")[-1] if ": " in error else error
+             Messages.show_content_flagged_error(self.main, details=f"Reason: {reason}", context=skip_reason)
             "Translator": QtCore.QCoreApplication.translate('Messages', 'Could not get translations.\nSkipping:') + f" {image_path}\n{error}"        
         }
 
