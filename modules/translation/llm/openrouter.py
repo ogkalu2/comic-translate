@@ -9,18 +9,18 @@ from ...utils.translator_utils import MODEL_MAP
 
 class OpenRouterTranslation(BaseLLMTranslation):
     """Translation engine using OpenRouter models through direct REST API calls."""
-    
+
     def __init__(self):
         super().__init__()
         self.model_name = None
         self.api_key = None
-        self.api_base_url = "https://api.openai.com/v1"
+        self.api_base_url = "https://openrouter.ai/api/v1"
         self.supports_images = True
-    
+
     def initialize(self, settings: Any, source_lang: str, target_lang: str, model_name: str, **kwargs) -> None:
         """
         Initialize OpenRouter translation engine.
-        
+
         Args:
             settings: Settings object with credentials
             source_lang: Source language name
@@ -28,21 +28,21 @@ class OpenRouterTranslation(BaseLLMTranslation):
             model_name: OpenRouter model name
         """
         super().initialize(settings, source_lang, target_lang, **kwargs)
-        
+
         self.model_name = model_name
         credentials = settings.get_credentials(settings.ui.tr('OpenRouter'))
         self.api_key = credentials.get('api_key', '')
-        self.model = MODEL_MAP.get(self.model_name)
-    
+        self.model = MODEL_MAP.get(self.model_name, self.model_name)
+
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
         """
         Perform translation using direct REST API calls to OpenRouter.
-        
+
         Args:
             user_prompt: Text prompt from user
             system_prompt: System instructions
             image: Image as numpy array
-            
+
         Returns:
             Translated text
         """
@@ -50,17 +50,17 @@ class OpenRouterTranslation(BaseLLMTranslation):
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
-        
+
         if self.supports_images and self.img_as_llm_input:
             encoded_image, mime_type = self.encode_image(image)
-            
+
             messages = [
                 {
-                    "role": "system", 
+                    "role": "system",
                     "content": [{"type": "text", "text": system_prompt}]
                 },
                 {
-                    "role": "user", 
+                    "role": "user",
                     "content": [
                         {"type": "text", "text": user_prompt},
                         {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{encoded_image}"}}
@@ -70,11 +70,11 @@ class OpenRouterTranslation(BaseLLMTranslation):
         else:
             messages = [
                 {
-                    "role": "system", 
+                    "role": "system",
                     "content": [{"type": "text", "text": system_prompt}]
                 },
                 {
-                    "role": "user", 
+                    "role": "user",
                     "content": [{"type": "text", "text": user_prompt}]
                 }
             ]
@@ -88,7 +88,7 @@ class OpenRouterTranslation(BaseLLMTranslation):
         }
 
         return self._make_api_request(payload, headers)
-    
+
     def _make_api_request(self, payload, headers):
         """
         Make API request and process response
@@ -100,10 +100,10 @@ class OpenRouterTranslation(BaseLLMTranslation):
                 data=json.dumps(payload),
                 timeout=self.timeout
             )
-            
+
             response.raise_for_status()
             response_data = response.json()
-            
+
             return response_data["choices"][0]["message"]["content"]
         except requests.exceptions.RequestException as e:
             error_msg = f"API request failed: {str(e)}"
