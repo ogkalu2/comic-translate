@@ -148,18 +148,32 @@ class Messages:
                 pass
 
     @staticmethod
-    def show_server_error(parent, status_code: int = 500):
+    def show_server_error(parent, status_code: int = 500, context: str = None):
         """
         Show a user-friendly error for 5xx server issues.
+        
+        Args:
+            parent: parent widget
+            status_code: HTTP status code
+            context: optional context ('translation', 'ocr', or None for generic)
         """
         messages = {
             500: _translate("Messages", "An unexpected error occurred on the server.\nPlease try again later."),
-            501: _translate("Messages", "The selected translator is currently unavailable.\nPlease select a different tool in Settings."),
             502: _translate("Messages", "The server received an invalid response from an upstream provider.\nPlease try again later."),
             503: _translate("Messages", "The server is currently unavailable or overloaded.\nPlease try again later."),
             504: _translate("Messages", "The server timed out waiting for a response.\nPlease try again later."),
         }
-        text = messages.get(status_code, messages[500])
+        
+        # Context-aware 501 message
+        if status_code == 501:
+            if context == 'ocr':
+                text = _translate("Messages", "The selected text recognition tool is currently unavailable.\nPlease select a different tool in Settings.")
+            elif context == 'translation':
+                text = _translate("Messages", "The selected translator is currently unavailable.\nPlease select a different tool in Settings.")
+            else:
+                text = _translate("Messages", "The selected tool is currently unavailable.\nPlease select a different tool in Settings.")
+        else:
+            text = messages.get(status_code, messages[500])
         
         MMessage.error(
             text=text,

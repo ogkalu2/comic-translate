@@ -490,7 +490,20 @@ class ComicTranslate(ComicTranslateUI):
                         
                 # Server Errors (5xx)
                 if 500 <= status_code < 600:
-                    Messages.show_server_error(self, status_code)
+                    # Try to determine context from error type for better messaging
+                    context = None
+                    try:
+                        detail = response.json().get('detail', {})
+                        if isinstance(detail, dict):
+                            err_type = detail.get('type', '')
+                            if 'OCR' in err_type:
+                                context = 'ocr'
+                            elif 'TRANSLAT' in err_type:
+                                context = 'translation'
+                    except Exception:
+                        pass
+                    
+                    Messages.show_server_error(self, status_code, context)
                     self.loading.setVisible(False)
                     self.enable_hbutton_group()
                     return
