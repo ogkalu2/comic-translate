@@ -195,28 +195,36 @@ class Messages:
         )
 
     @staticmethod
-    def show_content_flagged_error(parent, details: str = None, context: str = "Operation"):
+    def get_content_flagged_text(details: str = None, context: str = "Operation") -> str:
         """
-        Show a friendly error when content is blocked by safety filters.
+        Build the standardized content-flagged error text.
         """
-        # Determine specific messaging based on context
         if context == "OCR":
             action_msg = "Text Recognition blocked"
             suggestion = "Please try using a different Text Recognition tool."
         elif context in ("Translator", "Translation"):
             action_msg = "Translation blocked"
             suggestion = "Please try using a different translator."
+        else:
+            action_msg = "Operation blocked"
+            suggestion = "Please try using a different tool."
 
         base_msg = QCoreApplication.translate(
             "Messages", 
             "{0}: The content was flagged by the AI provider's safety filters.\n{1}"
         ).format(action_msg, suggestion)
-        msg_text = f"{base_msg}\n{details}" if details else base_msg
+        return f"{base_msg}\n{details}" if details else base_msg
 
-        MMessage.error(
+    @staticmethod
+    def show_content_flagged_error(parent, details: str = None, context: str = "Operation", duration=None, closable=True):
+        """
+        Show a friendly error when content is blocked by safety filters.
+        """
+        msg_text = Messages.get_content_flagged_text(details=details, context=context)
+        return MMessage.error(
             text=msg_text,
             parent=parent,
-            duration=None,
-            closable=True
+            duration=duration,
+            closable=closable
         )
 

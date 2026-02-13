@@ -532,6 +532,7 @@ class ComicTranslate(ComicTranslateUI):
             if not validate_settings(self, target_lang):
                 return
 
+        self.image_ctrl.clear_page_skip_errors_for_paths(self.image_files)
         self._batch_active = True
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
@@ -559,6 +560,7 @@ class ComicTranslate(ComicTranslateUI):
             if not validate_settings(self, tgt):
                 return
             
+        self.image_ctrl.clear_page_skip_errors_for_paths(selected_paths)
         self.selected_batch = selected_paths
 
         # disable UI & run
