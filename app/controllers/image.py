@@ -173,9 +173,9 @@ class ImageStateController:
         if file_paths:
             return self.load_image(file_paths[0])
         return None
-    
+
     def load_image(self, file_path: str) -> np.ndarray:
-        if file_path in self.main.image_data:
+        if file_path in self.main.image_data and self.main.image_data[file_path] is not None:
             return self.main.image_data[file_path]
 
         # Check if the image has been displayed before
