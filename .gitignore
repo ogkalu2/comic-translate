@@ -8,7 +8,7 @@ __pycache__/
 /app/icons
 
 # Models Folder
-/models
+models/
 
 # Environments
 .env
