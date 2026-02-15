@@ -154,6 +154,14 @@ class TextController:
         text_item = self.main.image_viewer.add_text_item(properties)
         text_item.set_plain_text(text)
 
+        # Center the text item within the detected block box
+        blk_width = blk.xyxy[2] - blk.xyxy[0]
+        blk_height = blk.xyxy[3] - blk.xyxy[1]
+        item_rect = text_item.boundingRect()
+        centered_x = blk.xyxy[0] + (blk_width - item_rect.width()) / 2
+        centered_y = blk.xyxy[1] + (blk_height - item_rect.height()) / 2
+        text_item.setPos(centered_x, centered_y)
+
         command = AddTextItemCommand(self.main, text_item)
         self.main.push_command(command)
 
