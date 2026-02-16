@@ -403,6 +403,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.cancel_button = MPushButton(self.tr("Cancel"))
         self.cancel_button.setEnabled(True)
         self.cancel_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.batch_report_button = MPushButton(self.tr("Batch Report"))
+        self.batch_report_button.setEnabled(False)
+        self.batch_report_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         header_layout.addWidget(self.undo_tool_group)
         header_layout.addWidget(self.hbutton_group)
@@ -413,6 +416,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         header_layout.addWidget(self.automatic_radio)
         header_layout.addWidget(self.translate_button)
         header_layout.addWidget(self.cancel_button)
+        header_layout.addWidget(self.batch_report_button)
 
         # Search / Replace (MTPE helper) - shown in left sidebar
         self.search_panel = SearchReplacePanel(self)

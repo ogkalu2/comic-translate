@@ -52,9 +52,25 @@ class ImageStateController:
             return MMessage.InfoType
         return MMessage.WarningType
 
+    def _summarize_skip_error(self, error: str) -> str:
+        if not error:
+            return ""
+        for raw_line in error.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.lower().startswith("traceback"):
+                break
+            if line.startswith('File "') or line.startswith("File '"):
+                continue
+            if line.startswith("During handling of the above exception"):
+                continue
+            return line
+        return ""
+
     def _build_skip_message(self, image_path: str, skip_reason: str, error: str) -> str:
         file_name = os.path.basename(image_path)
-        reason = error.strip() if (error and error.strip()) else ""
+        reason = self._summarize_skip_error(error)
         t = QtCore.QCoreApplication.translate
 
         message_map = {
@@ -931,8 +947,12 @@ class ImageStateController:
             viewer.viewport().update()
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
+        summarized_error = self._summarize_skip_error(error)
+        if hasattr(self.main, "register_batch_skip"):
+            self.main.register_batch_skip(image_path, skip_reason, summarized_error)
+
         if self._is_content_flagged_error(error):
-            reason = error.split(": ")[-1] if ": " in error else error
+            reason = summarized_error.split(": ")[-1] if ": " in summarized_error else summarized_error
             file_name = os.path.basename(image_path)
             flagged_msg = Messages.get_content_flagged_text(
                 details=reason,
@@ -940,7 +960,7 @@ class ImageStateController:
             )
             text = f"Skipping: {file_name}\n{flagged_msg}"
         else:
-            text = self._build_skip_message(image_path, skip_reason, error)
+            text = self._build_skip_message(image_path, skip_reason, summarized_error)
         dayu_type = self._resolve_skip_message_type(skip_reason, error)
         self._page_skip_errors[image_path] = {
             "text": text,

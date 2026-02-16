@@ -230,3 +230,19 @@ class Messages:
             closable=closable
         )
 
+    @staticmethod
+    def show_batch_skipped_summary(parent, skipped_count: int):
+        """
+        Show a persistent summary when a batch finished with skipped images.
+        """
+        text = QCoreApplication.translate(
+            "Messages",
+            "{0} image(s) were skipped in this batch.\nOpen Batch Report to see all skipped images and reasons."
+        ).format(skipped_count)
+        return MMessage.warning(
+            text=text,
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
