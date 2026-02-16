@@ -562,23 +562,127 @@ class ComicTranslate(ComicTranslateUI):
             return line
         return ""
 
+    def _is_content_flagged_error_text(self, error: str) -> bool:
+        lowered = (error or "").lower()
+        return (
+            "flagged as unsafe" in lowered
+            or "content was flagged" in lowered
+            or "safety filters" in lowered
+        )
+
     def _is_user_skip_reason(self, skip_reason: str, error: str = "") -> bool:
         text = f"{skip_reason} {error}".lower()
         return ("user-skipped" in text) or ("user skipped" in text)
 
-    def _format_batch_skip_reason(self, skip_reason: str, error: str) -> str:
+    def _is_no_text_detection_skip(self, skip_reason: str) -> bool:
+        return skip_reason == "Text Blocks"
+
+    def _localize_batch_skip_detail(self, error: str) -> str:
         summary = self._sanitize_batch_skip_error(error)
+        if not summary:
+            return ""
+
+        lowered = summary.lower()
+        if self._is_content_flagged_error_text(summary):
+            return self.tr("The AI provider flagged this content")
+        if "insufficient credit" in lowered:
+            return self.tr("Insufficient credits")
+        if "timed out" in lowered or "timeout" in lowered:
+            return self.tr("Request timed out")
+        if "too many requests" in lowered or "rate limit" in lowered or "429" in lowered:
+            return self.tr("Rate limited by provider")
+        if "unauthorized" in lowered or "invalid api key" in lowered or "401" in lowered or "403" in lowered:
+            return self.tr("Authentication failed")
+        if (
+            "connection" in lowered
+            or "network" in lowered
+            or "name or service not known" in lowered
+            or "failed to establish" in lowered
+        ):
+            return self.tr("Network or connection error")
+        if (
+            "bad gateway" in lowered
+            or "service unavailable" in lowered
+            or "gateway timeout" in lowered
+            or "502" in lowered
+            or "503" in lowered
+            or "504" in lowered
+        ):
+            return self.tr("Provider unavailable")
+        if (
+            "jsondecodeerror" in lowered
+            or "empty json" in lowered
+            or "expecting value" in lowered
+        ):
+            return self.tr("Invalid translation response")
+        return self.tr("Unexpected tool error")
+
+    def _localize_batch_skip_action(self, skip_reason: str, error: str) -> str:
+        summary = self._sanitize_batch_skip_error(error)
+        lowered = summary.lower()
+
+        if self._is_content_flagged_error_text(summary):
+            if "ocr" in (skip_reason or "").lower():
+                return self.tr("Try another text recognition tool")
+            if "translator" in (skip_reason or "").lower() or "translation" in (skip_reason or "").lower():
+                return self.tr("Try another translator")
+            return self.tr("Try another tool")
+        if "insufficient credit" in lowered:
+            return self.tr("Buy more credits")
+        if "timed out" in lowered or "timeout" in lowered:
+            return self.tr("Try again")
+        if "too many requests" in lowered or "rate limit" in lowered or "429" in lowered:
+            return self.tr("Wait and try again")
+        if "unauthorized" in lowered or "invalid api key" in lowered or "401" in lowered or "403" in lowered:
+            return self.tr("Check API settings")
+        if (
+            "connection" in lowered
+            or "network" in lowered
+            or "name or service not known" in lowered
+            or "failed to establish" in lowered
+        ):
+            return self.tr("Check your connection")
+        if (
+            "bad gateway" in lowered
+            or "service unavailable" in lowered
+            or "gateway timeout" in lowered
+            or "502" in lowered
+            or "503" in lowered
+            or "504" in lowered
+        ):
+            return self.tr("Try again later")
+        if (
+            "jsondecodeerror" in lowered
+            or "empty json" in lowered
+            or "expecting value" in lowered
+        ):
+            return self.tr("Try again")
+
+        if skip_reason == "Text Blocks":
+            return ""
+        if "ocr" in (skip_reason or "").lower():
+            return self.tr("Try another text recognition tool")
+        if "translator" in (skip_reason or "").lower() or "translation" in (skip_reason or "").lower():
+            return self.tr("Try another translator")
+        return self.tr("Try again")
+
+    def _format_batch_skip_reason(self, skip_reason: str, error: str) -> str:
+        detail = self._localize_batch_skip_detail(error)
+        action = self._localize_batch_skip_action(skip_reason, error)
         reason_map = {
             "Text Blocks": self.tr("No text blocks detected"),
-            "OCR": self.tr("OCR failed"),
+            "OCR": self.tr("Text recognition failed"),
             "Translator": self.tr("Translation failed"),
-            "OCR Chunk Failed": self.tr("Webtoon OCR chunk failed"),
+            "OCR Chunk Failed": self.tr("Webtoon text recognition chunk failed"),
             "Translation Chunk Failed": self.tr("Webtoon translation chunk failed"),
         }
         base_reason = reason_map.get(skip_reason, self.tr("Page processing failed"))
-        if summary:
-            return f"{base_reason}: {summary}"
-        return base_reason
+        reason = base_reason
+        if detail:
+            reason = f"{base_reason}: {detail}"
+        if action:
+            reason = f"{reason}. {action}."
+        return reason
 
     def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
         report = self._current_batch_report
@@ -587,6 +691,8 @@ class ComicTranslate(ComicTranslateUI):
         if image_path not in report["path_set"]:
             return
         if self._is_user_skip_reason(skip_reason, error):
+            return
+        if self._is_no_text_detection_skip(skip_reason):
             return
 
         reason_text = self._format_batch_skip_reason(skip_reason, error)
@@ -705,6 +811,10 @@ class ComicTranslate(ComicTranslateUI):
 
         skipped_entries = report["skipped_entries"]
         if skipped_entries:
+            hint = QtWidgets.QLabel(self.tr("Double-click a row to open that page."))
+            hint.setWordWrap(True)
+            layout.addWidget(hint)
+
             table = QtWidgets.QTableWidget(len(skipped_entries), 2)
             table.setHorizontalHeaderLabels([self.tr("Image"), self.tr("Reason")])
             table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -725,8 +835,10 @@ class ComicTranslate(ComicTranslateUI):
             for row, entry in enumerate(skipped_entries):
                 image_item = QtWidgets.QTableWidgetItem(entry["image_name"])
                 image_item.setData(QtCore.Qt.ItemDataRole.UserRole, entry["image_path"])
-                reason_item = QtWidgets.QTableWidgetItem("; ".join(entry["reasons"]) or self.tr("Skipped"))
+                image_item.setToolTip(entry["image_path"])
                 table.setItem(row, 0, image_item)
+                reason_item = QtWidgets.QTableWidgetItem("; ".join(entry["reasons"]) or self.tr("Skipped"))
+                reason_item.setToolTip(reason_item.text())
                 table.setItem(row, 1, reason_item)
 
             table.itemDoubleClicked.connect(
