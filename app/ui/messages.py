@@ -155,20 +155,20 @@ class Messages:
             context: optional context ('translation', 'ocr', or None for generic)
         """
         messages = {
-            500: QCoreApplication.translate("Messages", "An unexpected error occurred on the server.\nPlease try again later."),
-            502: QCoreApplication.translate("Messages", "The server received an invalid response from an upstream provider.\nPlease try again later."),
-            503: QCoreApplication.translate("Messages", "The server is currently unavailable or overloaded.\nPlease try again later."),
-            504: QCoreApplication.translate("Messages", "The server timed out waiting for a response.\nPlease try again later."),
+            500: QCoreApplication.translate("Messages", "We encountered an unexpected server error.\nPlease try again in a few moments."),
+            502: QCoreApplication.translate("Messages", "The external service provider is having trouble.\nPlease try again later."),
+            503: QCoreApplication.translate("Messages", "The server is currently busy or under maintenance.\nPlease try again shortly."),
+            504: QCoreApplication.translate("Messages", "The server took too long to respond.\nPlease check your connection or try again later."),
         }
         
         # Context-aware 501 message
         if status_code == 501:
             if context == 'ocr':
-                text = QCoreApplication.translate("Messages", "The selected text recognition tool is currently unavailable.\nPlease select a different tool in Settings.")
+                text = QCoreApplication.translate("Messages", "The selected text recognition tool is not supported.\nPlease select a different tool in Settings.")
             elif context == 'translation':
-                text = QCoreApplication.translate("Messages", "The selected translator is currently unavailable.\nPlease select a different tool in Settings.")
+                text = QCoreApplication.translate("Messages", "The selected translator is not supported.\nPlease select a different tool in Settings.")
             else:
-                text = QCoreApplication.translate("Messages", "The selected tool is currently unavailable.\nPlease select a different tool in Settings.")
+                text = QCoreApplication.translate("Messages", "The selected tool is not supported.\nPlease select a different tool in Settings.")
         else:
             text = messages.get(status_code, messages[500])
         
