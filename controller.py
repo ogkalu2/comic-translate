@@ -467,7 +467,7 @@ class ComicTranslate(ComicTranslateUI):
             err_msg = str(value)
             reason = err_msg.split(": ")[-1] if ": " in err_msg else err_msg
             context = getattr(value, 'context', 'Operation')
-            Messages.show_content_flagged_error(self, details=f"Reason: {reason}", context=context)
+            Messages.show_content_flagged_error(self, details=reason, context=context)
         
         # Handle HTTP Errors (Server-side)
         elif issubclass(exctype, requests.exceptions.HTTPError):

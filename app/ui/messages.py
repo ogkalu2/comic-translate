@@ -200,20 +200,22 @@ class Messages:
         Build the standardized content-flagged error text.
         """
         if context == "OCR":
-            action_msg = "Text Recognition blocked"
-            suggestion = "Please try using a different Text Recognition tool."
+            msg = QCoreApplication.translate(
+                "Messages",
+                "Text Recognition blocked: The AI provider flagged this content.\nPlease try a different Text Recognition tool."
+            )
         elif context in ("Translator", "Translation"):
-            action_msg = "Translation blocked"
-            suggestion = "Please try using a different translator."
+            msg = QCoreApplication.translate(
+                "Messages",
+                "Translation blocked: The AI provider flagged this content.\nPlease try a different translator."
+            )
         else:
-            action_msg = "Operation blocked"
-            suggestion = "Please try using a different tool."
-
-        base_msg = QCoreApplication.translate(
-            "Messages", 
-            "{0}: The content was flagged by the AI provider's safety filters.\n{1}"
-        ).format(action_msg, suggestion)
-        return f"{base_msg}\n{details}" if details else base_msg
+            msg = QCoreApplication.translate(
+                "Messages",
+                "Operation blocked: The AI provider flagged this content.\nPlease try a different tool."
+            )
+        
+        return msg
 
     @staticmethod
     def show_content_flagged_error(parent, details: str = None, context: str = "Operation", duration=None, closable=True):

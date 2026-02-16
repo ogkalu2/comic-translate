@@ -934,10 +934,11 @@ class ImageStateController:
         if self._is_content_flagged_error(error):
             reason = error.split(": ")[-1] if ": " in error else error
             file_name = os.path.basename(image_path)
-            text = Messages.get_content_flagged_text(
-                details=f"Skipping: {file_name}\nReason: {reason}",
+            flagged_msg = Messages.get_content_flagged_text(
+                details=reason,
                 context=skip_reason,
             )
+            text = f"Skipping: {file_name}\n{flagged_msg}"
         else:
             text = self._build_skip_message(image_path, skip_reason, error)
         dayu_type = self._resolve_skip_message_type(skip_reason, error)
