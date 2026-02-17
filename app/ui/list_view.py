@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QListWidget
 from PySide6.QtWidgets import QSizePolicy, QAbstractItemView
 from PySide6.QtCore import Signal, Qt, QSize
-from PySide6.QtGui import QContextMenuEvent
+from PySide6.QtGui import QContextMenuEvent, QDropEvent
 from .dayu_widgets.menu import MMenu
 from .dayu_widgets.browser import MClickBrowserFilePushButton
 
@@ -12,6 +12,7 @@ class PageListView(QListWidget):
     toggle_skip_img = Signal(list, bool)  # list of images, bool for skip status (True=skip, False=unskip)
     translate_imgs = Signal(list)
     selection_changed = Signal(list)  # list of selected indices
+    order_changed = Signal(list)  # reordered item identities (file paths when available)
 
     def __init__(self) -> None:
         super().__init__()
@@ -19,6 +20,11 @@ class PageListView(QListWidget):
         self.setMinimumWidth(100)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) 
+        self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
         self.ui_elements()
         
@@ -39,6 +45,28 @@ class PageListView(QListWidget):
             if index >= 0:
                 selected_indices.append(index)
         self.selection_changed.emit(selected_indices)
+
+    def _item_identity(self, item) -> str:
+        data = item.data(Qt.ItemDataRole.UserRole)
+        if isinstance(data, str) and data:
+            return data
+        return item.text()
+
+    def _current_item_order(self) -> list[str]:
+        order = []
+        for idx in range(self.count()):
+            item = self.item(idx)
+            if item:
+                order.append(self._item_identity(item))
+        return order
+
+    def dropEvent(self, event: QDropEvent):
+        before_order = self._current_item_order()
+        super().dropEvent(event)
+        after_order = self._current_item_order()
+        if after_order and after_order != before_order:
+            self.order_changed.emit(after_order)
+        self.viewport().update()
 
     def contextMenuEvent(self, event: QContextMenuEvent):
         menu = MMenu(parent=self)
