@@ -19,17 +19,9 @@ from app.ui.commands.box import DeleteBoxesCommand
 
 from modules.utils.textblock import TextBlock
 from modules.utils.file_handler import FileHandler
-from modules.utils.pipeline_config import validate_settings, validate_ocr, \
-                                         validate_translator
+from modules.utils.pipeline_config import validate_settings
 from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
-from modules.detection.utils.content import get_inpaint_bboxes
-from modules.utils.translator_utils import is_there_text
-from modules.rendering.render import pyside_word_wrap, is_vertical_block
-from modules.utils.language_utils import get_language_code, is_no_space_lang
-from modules.utils.common_utils import is_close
-from modules.utils.translator_utils import format_translations
 from pipeline.main_pipeline import ComicTranslatePipeline
-from pipeline.webtoon_utils import get_visible_text_items, get_first_visible_block
 
 from app.controllers.image import ImageStateController
 from app.controllers.rect_item import RectItemController
@@ -39,6 +31,7 @@ from app.controllers.webtoons import WebtoonController
 from app.controllers.search_replace import SearchReplaceController
 from app.controllers.task_runner import TaskRunnerController
 from app.controllers.batch_report import BatchReportController
+from app.controllers.manual_workflow import ManualWorkflowController
 from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
 
 
@@ -105,6 +98,7 @@ class ComicTranslate(ComicTranslateUI):
         self.search_ctrl = SearchReplaceController(self)
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
+        self.manual_workflow_ctrl = ManualWorkflowController(self)
 
         self.image_skipped.connect(self.image_ctrl.on_image_skipped)
         self.image_processed.connect(self.image_ctrl.on_image_processed)
@@ -505,234 +499,34 @@ class ComicTranslate(ComicTranslateUI):
             button.setEnabled(True)
 
     def block_detect(self, load_rects: bool = True):
-        self.loading.setVisible(True)
-        self.disable_hbutton_group()
-        self.run_threaded(self.pipeline.detect_blocks, self.pipeline.on_blk_detect_complete, 
-                          self.default_error_handler, self.on_manual_finished, load_rects)
+        self.manual_workflow_ctrl.block_detect(load_rects)
 
     def finish_ocr_translate(self, single_block=False):
-        if self.blk_list:
-            if single_block:
-                rect = self.image_viewer.selected_rect
-            else:
-                # In webtoon mode, use first visible block instead of just first block
-                if self.webtoon_mode:
-                    first_block = get_first_visible_block(self.blk_list, self.image_viewer)
-                    if first_block is None:
-                        first_block = self.blk_list[0]  # Fallback to first block if no visible blocks
-                else:
-                    first_block = self.blk_list[0]
-                rect = self.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
-            self.image_viewer.select_rectangle(rect) 
-        self.set_tool('box')
-        self.on_manual_finished()
+        self.manual_workflow_ctrl.finish_ocr_translate(single_block)
 
     def ocr(self, single_block=False):
-        if not validate_ocr(self):
-            return
-        self.loading.setVisible(True)
-        self.disable_hbutton_group()
-        
-        # Handle webtoon mode specially for visible area OCR
-        if self.webtoon_mode:
-            self.run_threaded(
-                lambda: self.pipeline.OCR_webtoon_visible_area(single_block),
-                None,
-                self.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block)
-            )
-        else:
-            self.run_threaded(
-                lambda: self.pipeline.OCR_image(single_block),
-                None,
-                self.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block)
-            )
+        self.manual_workflow_ctrl.ocr(single_block)
 
     def translate_image(self, single_block=False):
-        target_lang = self.t_combo.currentText()
-        if not is_there_text(self.blk_list) or not validate_translator(self, target_lang):
-            return
-        self.loading.setVisible(True)
-        self.disable_hbutton_group()
-        
-        # Handle webtoon mode specially for visible area translation
-        if self.webtoon_mode:
-            self.run_threaded(
-                lambda: self.pipeline.translate_webtoon_visible_area(single_block),
-                None,
-                self.default_error_handler,
-                lambda: self.update_translated_text_items(single_block)
-            )
-        else:
-            self.run_threaded(
-                lambda: self.pipeline.translate_image(single_block),
-                None,
-                self.default_error_handler,
-                lambda: self.update_translated_text_items(single_block)
-            )
+        self.manual_workflow_ctrl.translate_image(single_block)
 
     def _get_visible_text_items(self):
-        """Get text items that are currently visible in webtoon mode."""
-        if not self.webtoon_mode:
-            return self.image_viewer.text_items
-        
-        return get_visible_text_items(self.image_viewer.text_items, self.image_viewer.webtoon_manager)
+        return self.manual_workflow_ctrl._get_visible_text_items()
 
     def update_translated_text_items(self, single_blk: bool):
-        def set_new_text(text_item, wrapped, font_size):
-            if is_no_space_lang(trg_lng_cd):
-                wrapped = wrapped.replace(' ', '')
-            text_item.set_plain_text(wrapped)
-            text_item.set_font_size(font_size)
-
-        # Get visible text items instead of all text items
-        text_items_to_process = self._get_visible_text_items()
-        
-        if not text_items_to_process:
-            self.finish_ocr_translate(single_blk)
-            return
-        
-        rs = self.render_settings()
-        upper = rs.upper_case
-        target_lang_en = self.lang_mapping.get(self.t_combo.currentText(), None)
-        trg_lng_cd = get_language_code(target_lang_en)
-
-        # This callback only runs **after** format_translations has finished.
-        def on_format_finished():
-            for text_item in text_items_to_process:
-                text_item.handleDeselection()
-                x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
-                rot = text_item.rotation()
-                
-                blk = next(
-                    (
-                        b for b in self.blk_list
-                        if is_close(b.xyxy[0], x1, 5) and 
-                        is_close(b.xyxy[1], y1, 5) and 
-                        is_close(b.angle, rot, 1)
-                    ),
-                    None
-                )
-                if not (blk and blk.translation):
-                    continue
-                # Determine if this block should use vertical rendering
-                vertical = is_vertical_block(blk, trg_lng_cd)
-
-                wrap_args = (
-                    blk.translation,
-                    text_item.font_family,
-                    blk.xyxy[2] - blk.xyxy[0],
-                    blk.xyxy[3] - blk.xyxy[1],
-                    float(text_item.line_spacing),
-                    float(text_item.outline_width),
-                    text_item.bold,
-                    text_item.italic,
-                    text_item.underline,
-                    text_item.alignment,
-                    text_item.direction,
-                    rs.max_font_size,
-                    rs.min_font_size,
-                    vertical,
-                )
-
-                # enqueue the word-wrap
-                self.run_threaded(
-                    pyside_word_wrap,
-                    lambda wrap_res, ti=text_item: set_new_text(ti, wrap_res[0], wrap_res[1]),
-                    self.default_error_handler,
-                    None,
-                    *wrap_args
-                )
-
-            # once all wraps are queued, finish off
-            self.run_finish_only(
-                finished_callback=self.on_manual_finished
-            )
-
-        # enqueue the formatter
-        self.run_threaded(
-            lambda: format_translations(self.blk_list, trg_lng_cd, upper_case=upper),
-            None,                          
-            self.default_error_handler,
-            on_format_finished             
-        )
+        self.manual_workflow_ctrl.update_translated_text_items(single_blk)
 
     def inpaint_and_set(self):
-        if self.image_viewer.hasPhoto() and self.image_viewer.has_drawn_elements():
-            self.text_ctrl.clear_text_edits()
-            self.loading.setVisible(True)
-            self.disable_hbutton_group()
-            self.undo_group.activeStack().beginMacro('inpaint')
-            self.run_threaded(self.pipeline.inpaint, self.pipeline.inpaint_complete, 
-                              self.default_error_handler, self.on_manual_finished)
+        self.manual_workflow_ctrl.inpaint_and_set()
 
     def blk_detect_segment(self, result): 
-        # Handle both old (2-tuple) and new (3-tuple) result formats
-        if len(result) == 3:
-            blk_list, load_rects, _ = result
-        else:
-            blk_list, load_rects = result
-        self.blk_list = blk_list
-        self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
-        for blk in self.blk_list:
-            bboxes = blk.inpaint_bboxes
-            if bboxes is not None and len(bboxes) > 0:
-                self.image_viewer.draw_segmentation_lines(bboxes)
-        self.undo_group.activeStack().endMacro()
+        self.manual_workflow_ctrl.blk_detect_segment(result)
 
     def load_segmentation_points(self):
-        if self.image_viewer.hasPhoto():
-            self.text_ctrl.clear_text_edits()
-            self.set_tool('brush')
-            self.disable_hbutton_group()
-            self.image_viewer.clear_rectangles()
-            self.image_viewer.clear_text_items()
-
-            self.loading.setVisible(True)
-            self.disable_hbutton_group()
-            
-            if self.blk_list:
-                self.undo_group.activeStack().beginMacro('draw_segmentation_boxes')
-
-                # Handle webtoon mode specially for visible area segmentation
-                if self.webtoon_mode:
-                    self.run_threaded(
-                        lambda: self.pipeline.segment_webtoon_visible_area(),
-                        self._on_segmentation_bboxes_ready,
-                        self.default_error_handler,
-                        self.on_manual_finished
-                    )
-                else:
-                    def compute_all_bboxes():
-                        image = self.image_viewer.get_image_array()
-                        results = []
-                        for blk in self.blk_list:
-                            bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                            results.append((blk, bboxes))
-                        return results
-
-                    self.run_threaded(
-                        compute_all_bboxes,
-                        self._on_segmentation_bboxes_ready,
-                        self.default_error_handler,
-                        self.on_manual_finished
-                    )
-
-            else:
-                self.run_threaded(
-                    self.pipeline.detect_blocks, 
-                    self.blk_detect_segment, 
-                    self.default_error_handler, 
-                    self.on_manual_finished)
+        self.manual_workflow_ctrl.load_segmentation_points()
                 
     def _on_segmentation_bboxes_ready(self, results):
-        # Handle results on the main thread
-        for blk, bboxes in results:
-            blk.inpaint_bboxes = bboxes
-            if bboxes is not None and len(bboxes) > 0:
-                self.image_viewer.draw_segmentation_lines(bboxes)
-        self.undo_group.activeStack().endMacro()
+        self.manual_workflow_ctrl._on_segmentation_bboxes_ready(results)
 
     def update_progress(self, index: int, total_images: int, step: int, total_steps: int, change_name: bool):
         if self._batch_cancel_requested:
