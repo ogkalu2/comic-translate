@@ -3,7 +3,6 @@ import requests
 import numpy as np
 import shutil
 import tempfile
-from datetime import datetime
 from typing import Callable, Tuple
 
 from PySide6 import QtCore, QtWidgets
@@ -14,8 +13,6 @@ from app.ui.dayu_widgets.qt import MPixmap
 from app.ui.main_window import ComicTranslateUI
 from app.ui.messages import Messages
 from app.ui.dayu_widgets.message import MMessage
-from app.ui.dayu_widgets.drawer import MDrawer
-from app.thread_worker import GenericWorker
 
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.commands.box import DeleteBoxesCommand
@@ -40,8 +37,9 @@ from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
 from app.controllers.search_replace import SearchReplaceController
+from app.controllers.task_runner import TaskRunnerController
+from app.controllers.batch_report import BatchReportController
 from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
-from collections import deque
 
 
 # Ensure any pre-declared mandatory models
@@ -98,9 +96,6 @@ class ComicTranslate(ComicTranslateUI):
         self.current_worker = None
         self._batch_active = False
         self._batch_cancel_requested = False
-        self._current_batch_report = None
-        self._latest_batch_report = None
-        self._batch_report_drawer: MDrawer | None = None
 
         self.image_ctrl = ImageStateController(self)
         self.rect_item_ctrl = RectItemController(self)
@@ -108,6 +103,8 @@ class ComicTranslate(ComicTranslateUI):
         self.text_ctrl = TextController(self)
         self.webtoon_ctrl = WebtoonController(self)
         self.search_ctrl = SearchReplaceController(self)
+        self.task_runner_ctrl = TaskRunnerController(self)
+        self.batch_report_ctrl = BatchReportController(self)
 
         self.image_skipped.connect(self.image_ctrl.on_image_skipped)
         self.image_processed.connect(self.image_ctrl.on_image_processed)
@@ -126,8 +123,6 @@ class ComicTranslate(ComicTranslateUI):
         # Check for updates in background
         self.settings_page.check_for_updates(is_background=True)
 
-        self.operation_queue = deque()
-        self.is_processing_queue = False
         self._processing_page_change = False  # Flag to prevent recursive page change handling
 
         # Hook the global download callback so utils can notify us
@@ -281,15 +276,6 @@ class ComicTranslate(ComicTranslateUI):
         except Exception:
             pass
 
-    def closeEvent(self, event):
-        """Handle execution of cleanup operations on close"""
-        self.settings_page.shutdown()
-        if self._skip_close_prompt:
-             event.accept()
-        else:
-            # Add any other close prompt logic here if needed
-            event.accept()
-
     def _finish_close_after_save(self):
         self._skip_close_prompt = True
         self.close()
@@ -324,144 +310,28 @@ class ComicTranslate(ComicTranslateUI):
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 
-    def run_threaded(self, callback: Callable, result_callback: Callable=None, 
-                    error_callback: Callable=None, finished_callback: Callable=None, 
+    def run_threaded(self, callback: Callable, result_callback: Callable=None,
+                    error_callback: Callable=None, finished_callback: Callable=None,
                     *args, **kwargs):
-        """
-        Enhanced run_threaded with automatic queuing for top-level calls
-        """
-        return self._queue_operation(
-            callback, result_callback, error_callback, finished_callback,
-            *args, **kwargs
+        return self.task_runner_ctrl.run_threaded(
+            callback, result_callback, error_callback, finished_callback, *args, **kwargs
         )
 
-    def _queue_operation(self, callback: Callable, result_callback: Callable=None, 
-                        error_callback: Callable=None, finished_callback: Callable=None, 
-                        *args, **kwargs):
-        """Queue an operation for sequential execution"""
-        operation = {
-            'callback': callback,
-            'result_callback': result_callback,
-            'error_callback': error_callback,
-            'finished_callback': finished_callback,
-            'args': args,
-            'kwargs': kwargs,
-        }
-        
-        self.operation_queue.append(operation)
-        
-        if not self.is_processing_queue:
-            self._process_next_operation()
-
-    def _process_next_operation(self):
-        """
-        Process the next operation in the queue
-        """
-        if not self.operation_queue:
-            self.is_processing_queue = False
-            return
-            
-        self.is_processing_queue = True
-        operation = self.operation_queue.popleft()
-        
-        # Create enhanced callbacks that handle queue processing
-
-        def enhanced_finished_callback():
-            # Call the original finished callback if it exists
-            if operation['finished_callback']:
-                operation['finished_callback']()
-            
-            # Process the next operation in the queue
-            QtCore.QTimer.singleShot(0, self._process_next_operation)
-        
-        def enhanced_error_callback(error_tuple):
-            # Call the original error callback if it exists
-            if operation['error_callback']:
-                operation['error_callback'](error_tuple)
-            
-            # Process the next operation in the queue even after error
-            QtCore.QTimer.singleShot(0, self._process_next_operation)
-
-        def enhanced_result_callback(result):
-            # Call the original result callback if it exists
-            if operation['result_callback']:
-                operation['result_callback'](result)
-        
-        # Execute the operation
-        self._execute_single_operation(
-            operation['callback'],
-            enhanced_result_callback,
-            enhanced_error_callback,
-            enhanced_finished_callback,
-            *operation['args'],
-            **operation['kwargs']
-        )
-
-    def _execute_single_operation(self, callback: Callable, result_callback: Callable=None, 
-                                error_callback: Callable=None, finished_callback: Callable=None, 
-                                *args, **kwargs):
-        """
-        Execute a single threaded operation (original run_threaded logic)
-        """
-        worker = GenericWorker(callback, *args, **kwargs)
-
-        if result_callback:
-            worker.signals.result.connect(lambda result: QtCore.QTimer.singleShot(0, lambda: result_callback(result)))
-        if error_callback:
-            worker.signals.error.connect(lambda error: QtCore.QTimer.singleShot(0, lambda: error_callback(error)))
-        if finished_callback:
-            worker.signals.finished.connect(finished_callback)
-        
-        self.current_worker = worker
-        self.threadpool.start(worker)
-
-    def run_threaded_immediate(self, callback: Callable, result_callback: Callable=None, 
-                              error_callback: Callable=None, finished_callback: Callable=None, 
+    def run_threaded_immediate(self, callback: Callable, result_callback: Callable=None,
+                              error_callback: Callable=None, finished_callback: Callable=None,
                               *args, **kwargs):
-        """
-        Run a threaded operation immediately without queuing (bypass the queue)
-        Use this if you need the old behavior for specific operations
-        """
-        return self._execute_single_operation(callback, result_callback, error_callback, 
-                                            finished_callback, *args, **kwargs)
+        return self.task_runner_ctrl.run_threaded_immediate(
+            callback, result_callback, error_callback, finished_callback, *args, **kwargs
+        )
 
     def clear_operation_queue(self):
-        """Clear all pending operations in the queue"""
-        self.operation_queue.clear()
-        
+        self.task_runner_ctrl.clear_operation_queue()
+
     def cancel_current_task(self):
-        """Enhanced cancel that also clears the queue"""
-        if self.current_worker:
-            self.current_worker.cancel()
-
-        if self._batch_active:
-            self._batch_cancel_requested = True
-            self.cancel_button.setEnabled(False)
-            self.progress_bar.setFormat(QCoreApplication.translate('Messages', 'Cancelling... %p%'))
-        
-        # Clear the queue and reset state
-        self.clear_operation_queue()
-        self.is_processing_queue = False
-
-        # No need to Enable necessary Widgets/Buttons because the threads 
-        # already have finish callbacks that handle this.
+        self.task_runner_ctrl.cancel_current_task()
 
     def run_finish_only(self, finished_callback: Callable, error_callback: Callable = None):
-        """
-        Queue a no-op operation whose only effect is to invoke the finished_callback.
-        """
-        # 1) define a no-op function
-        def _noop():
-            pass
-
-        # 2) hand it off to the existing queue machinery
-        #    (this will wrap it in a GenericWorker and enqueue it)
-        self._queue_operation(
-            callback=_noop,
-            result_callback=None,
-            error_callback=error_callback,
-            finished_callback=finished_callback
-        )
+        self.task_runner_ctrl.run_finish_only(finished_callback, error_callback)
 
     def default_error_handler(self, error_tuple: Tuple):
         exctype, value, traceback_str = error_tuple
@@ -534,350 +404,16 @@ class ComicTranslate(ComicTranslateUI):
         self.enable_hbutton_group()
 
     def _start_batch_report(self, batch_paths: list[str]):
-        tracked_paths = [
-            path for path in batch_paths
-            if not self.image_states.get(path, {}).get("skip", False)
-        ]
-        self._current_batch_report = {
-            "started_at": datetime.now(),
-            "paths": tracked_paths,
-            "path_set": set(tracked_paths),
-            "skipped": {},
-        }
-
-    def _sanitize_batch_skip_error(self, error: str) -> str:
-        if not error:
-            return ""
-        for raw_line in str(error).splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-            if line.lower().startswith("traceback"):
-                break
-            if line.startswith('File "') or line.startswith("File '"):
-                continue
-            if line.startswith("During handling of the above exception"):
-                continue
-            if len(line) > 180:
-                return f"{line[:177]}..."
-            return line
-        return ""
-
-    def _is_content_flagged_error_text(self, error: str) -> bool:
-        lowered = (error or "").lower()
-        return (
-            "flagged as unsafe" in lowered
-            or "content was flagged" in lowered
-            or "safety filters" in lowered
-        )
-
-    def _is_user_skip_reason(self, skip_reason: str, error: str = "") -> bool:
-        text = f"{skip_reason} {error}".lower()
-        return ("user-skipped" in text) or ("user skipped" in text)
-
-    def _is_no_text_detection_skip(self, skip_reason: str) -> bool:
-        return skip_reason == "Text Blocks"
-
-    def _localize_batch_skip_detail(self, error: str) -> str:
-        summary = self._sanitize_batch_skip_error(error)
-        if not summary:
-            return ""
-
-        lowered = summary.lower()
-        if self._is_content_flagged_error_text(summary):
-            return self.tr("The AI provider flagged this content")
-        if "insufficient credit" in lowered:
-            return self.tr("Insufficient credits")
-        if "timed out" in lowered or "timeout" in lowered:
-            return self.tr("Request timed out")
-        if "too many requests" in lowered or "rate limit" in lowered or "429" in lowered:
-            return self.tr("Rate limited by provider")
-        if "unauthorized" in lowered or "invalid api key" in lowered or "401" in lowered or "403" in lowered:
-            return self.tr("Authentication failed")
-        if (
-            "connection" in lowered
-            or "network" in lowered
-            or "name or service not known" in lowered
-            or "failed to establish" in lowered
-        ):
-            return self.tr("Network or connection error")
-        if (
-            "bad gateway" in lowered
-            or "service unavailable" in lowered
-            or "gateway timeout" in lowered
-            or "502" in lowered
-            or "503" in lowered
-            or "504" in lowered
-        ):
-            return self.tr("Provider unavailable")
-        if (
-            "jsondecodeerror" in lowered
-            or "empty json" in lowered
-            or "expecting value" in lowered
-        ):
-            return self.tr("Invalid translation response")
-        return self.tr("Unexpected tool error")
-
-    def _localize_batch_skip_action(self, skip_reason: str, error: str) -> str:
-        summary = self._sanitize_batch_skip_error(error)
-        lowered = summary.lower()
-
-        if self._is_content_flagged_error_text(summary):
-            if "ocr" in (skip_reason or "").lower():
-                return self.tr("Try another text recognition tool")
-            if "translator" in (skip_reason or "").lower() or "translation" in (skip_reason or "").lower():
-                return self.tr("Try another translator")
-            return self.tr("Try another tool")
-        if "insufficient credit" in lowered:
-            return self.tr("Buy more credits")
-        if "timed out" in lowered or "timeout" in lowered:
-            return self.tr("Try again")
-        if "too many requests" in lowered or "rate limit" in lowered or "429" in lowered:
-            return self.tr("Wait and try again")
-        if "unauthorized" in lowered or "invalid api key" in lowered or "401" in lowered or "403" in lowered:
-            return self.tr("Check API settings")
-        if (
-            "connection" in lowered
-            or "network" in lowered
-            or "name or service not known" in lowered
-            or "failed to establish" in lowered
-        ):
-            return self.tr("Check your connection")
-        if (
-            "bad gateway" in lowered
-            or "service unavailable" in lowered
-            or "gateway timeout" in lowered
-            or "502" in lowered
-            or "503" in lowered
-            or "504" in lowered
-        ):
-            return self.tr("Try again later")
-        if (
-            "jsondecodeerror" in lowered
-            or "empty json" in lowered
-            or "expecting value" in lowered
-        ):
-            return self.tr("Try again")
-
-        if skip_reason == "Text Blocks":
-            return ""
-        if "ocr" in (skip_reason or "").lower():
-            return self.tr("Try another text recognition tool")
-        if "translator" in (skip_reason or "").lower() or "translation" in (skip_reason or "").lower():
-            return self.tr("Try another translator")
-        return self.tr("Try again")
-
-    def _format_batch_skip_reason(self, skip_reason: str, error: str) -> str:
-        detail = self._localize_batch_skip_detail(error)
-        action = self._localize_batch_skip_action(skip_reason, error)
-        reason_map = {
-            "Text Blocks": self.tr("No text blocks detected"),
-            "OCR": self.tr("Text recognition failed"),
-            "Translator": self.tr("Translation failed"),
-            "OCR Chunk Failed": self.tr("Webtoon text recognition chunk failed"),
-            "Translation Chunk Failed": self.tr("Webtoon translation chunk failed"),
-        }
-        base_reason = reason_map.get(skip_reason, self.tr("Page processing failed"))
-        reason = base_reason
-        if detail:
-            reason = f"{base_reason}: {detail}"
-        if action:
-            reason = f"{reason}. {action}."
-        return reason
-
-    def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
-        report = self._current_batch_report
-        if not report:
-            return
-        if image_path not in report["path_set"]:
-            return
-        if self._is_user_skip_reason(skip_reason, error):
-            return
-        if self._is_no_text_detection_skip(skip_reason):
-            return
-
-        reason_text = self._format_batch_skip_reason(skip_reason, error)
-        existing = report["skipped"].get(image_path)
-        if existing is None:
-            report["skipped"][image_path] = {
-                "image_path": image_path,
-                "image_name": os.path.basename(image_path),
-                "reasons": [reason_text] if reason_text else [],
-            }
-            return
-
-        if reason_text and reason_text not in existing["reasons"]:
-            existing["reasons"].append(reason_text)
+        self.batch_report_ctrl.start_batch_report(batch_paths)
 
     def _finalize_batch_report(self, was_cancelled: bool):
-        report = self._current_batch_report
-        self._current_batch_report = None
-        if not report:
-            return None
-
-        total_images = len(report["paths"])
-        skipped_entries = sorted(
-            report["skipped"].values(),
-            key=lambda entry: entry["image_name"].lower(),
-        )
-        skipped_count = len(skipped_entries)
-
-        finalized = {
-            "started_at": report["started_at"],
-            "finished_at": datetime.now(),
-            "was_cancelled": bool(was_cancelled),
-            "total_images": total_images,
-            "skipped_count": skipped_count,
-            "completed_count": max(0, total_images - skipped_count),
-            "skipped_entries": skipped_entries,
-        }
-        self._latest_batch_report = finalized
-        self.batch_report_button.setEnabled(True)
-        return finalized
-
-    def _open_image_from_batch_report(self, image_path: str):
-        if image_path not in self.image_files:
-            MMessage.warning(
-                text=self.tr("This image is not in the current project."),
-                parent=self,
-                duration=5,
-                closable=True,
-            )
-            return
-
-        index = self.image_files.index(image_path)
-        self.show_main_page()
-        self.page_list.setCurrentRow(index)
-
-    def _open_report_row_image(self, table: QtWidgets.QTableWidget, row: int):
-        item = table.item(row, 0)
-        if item is None:
-            return
-        image_path = item.data(QtCore.Qt.ItemDataRole.UserRole)
-        if not image_path:
-            return
-        self._open_image_from_batch_report(image_path)
-
-    def _build_batch_report_widget(self, report: dict) -> QtWidgets.QWidget:
-        container = QtWidgets.QWidget()
-        layout = QtWidgets.QVBoxLayout(container)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(10)
-
-        status_text = self.tr("Cancelled") if report["was_cancelled"] else self.tr("Completed")
-        finished = report["finished_at"].strftime("%Y-%m-%d %H:%M")
-        meta_label = QtWidgets.QLabel(
-            self.tr("{0}  |  Updated {1}").format(status_text, finished)
-        )
-        meta_label.setStyleSheet("color: rgba(130,130,130,0.95);")
-        layout.addWidget(meta_label)
-
-        stats_layout = QtWidgets.QHBoxLayout()
-        stats_layout.setSpacing(8)
-
-        def make_stat_card(label: str, value: str) -> QtWidgets.QFrame:
-            card = QtWidgets.QFrame()
-            card.setObjectName("batchStatCard")
-            card_layout = QtWidgets.QVBoxLayout(card)
-            card_layout.setContentsMargins(10, 8, 10, 8)
-            card_layout.setSpacing(2)
-
-            value_label = QtWidgets.QLabel(value)
-            value_label.setObjectName("batchStatValue")
-            value_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-
-            label_widget = QtWidgets.QLabel(label)
-            label_widget.setObjectName("batchStatLabel")
-            label_widget.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-
-            card_layout.addWidget(value_label)
-            card_layout.addWidget(label_widget)
-            return card
-
-        stats_layout.addWidget(make_stat_card(self.tr("Total"), str(report["total_images"])))
-        stats_layout.addWidget(make_stat_card(self.tr("Skipped"), str(report["skipped_count"])))
-        layout.addLayout(stats_layout)
-
-        container.setStyleSheet(
-            "QFrame#batchStatCard { border: 1px solid rgba(128,128,128,0.35); border-radius: 8px; }"
-            "QLabel#batchStatValue { font-size: 18px; font-weight: 600; }"
-            "QLabel#batchStatLabel { color: rgba(140,140,140,0.95); font-size: 11px; }"
-        )
-
-        header_label = QtWidgets.QLabel(
-            self.tr("Skipped Images ({0})").format(report["skipped_count"])
-        )
-        header_label.setStyleSheet("font-weight: 600;")
-        layout.addWidget(header_label)
-
-        skipped_entries = report["skipped_entries"]
-        if skipped_entries:
-            hint = QtWidgets.QLabel(self.tr("Double-click a row to open that page."))
-            hint.setWordWrap(True)
-            layout.addWidget(hint)
-
-            table = QtWidgets.QTableWidget(len(skipped_entries), 2)
-            table.setHorizontalHeaderLabels([self.tr("Image"), self.tr("Reason")])
-            table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-            table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-            table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-            table.verticalHeader().setVisible(False)
-            table.horizontalHeader().setStretchLastSection(True)
-            table.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-            table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
-            table.setWordWrap(False)
-            table.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
-            table.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            visible_rows = min(max(len(skipped_entries), 4), 12)
-            table_height = (visible_rows * 28) + 36
-            table.setMinimumHeight(table_height)
-            table.setMaximumHeight(table_height)
-
-            for row, entry in enumerate(skipped_entries):
-                image_item = QtWidgets.QTableWidgetItem(entry["image_name"])
-                image_item.setData(QtCore.Qt.ItemDataRole.UserRole, entry["image_path"])
-                image_item.setToolTip(entry["image_path"])
-                table.setItem(row, 0, image_item)
-                reason_item = QtWidgets.QTableWidgetItem("; ".join(entry["reasons"]) or self.tr("Skipped"))
-                reason_item.setToolTip(reason_item.text())
-                table.setItem(row, 1, reason_item)
-
-            table.itemDoubleClicked.connect(
-                lambda item, t=table: self._open_report_row_image(t, item.row())
-            )
-            layout.addWidget(table)
-        else:
-            empty_label = QtWidgets.QLabel(self.tr("No skipped images in this batch."))
-            empty_label.setWordWrap(True)
-            layout.addWidget(empty_label)
-
-        layout.addStretch()
-        return container
+        return self.batch_report_ctrl.finalize_batch_report(was_cancelled)
 
     def show_latest_batch_report(self):
-        report = self._latest_batch_report
-        if report is None:
-            MMessage.info(
-                text=self.tr("No batch report is available yet."),
-                parent=self,
-                duration=5,
-                closable=True,
-            )
-            return
+        self.batch_report_ctrl.show_latest_batch_report()
 
-        if self._batch_report_drawer is not None:
-            try:
-                self._batch_report_drawer.close()
-            except Exception:
-                pass
-            self._batch_report_drawer = None
-
-        drawer = MDrawer(self.tr("Batch Report"), parent=self).right()
-        drawer.setFixedWidth(max(460, int(self.width() * 0.42)))
-        drawer.set_widget(self._build_batch_report_widget(report))
-        drawer.sig_closed.connect(lambda: setattr(self, "_batch_report_drawer", None))
-        self._batch_report_drawer = drawer
-        drawer.show()
+    def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
+        self.batch_report_ctrl.register_batch_skip(image_path, skip_reason, error)
 
     def start_batch_process(self):
         for image_path in self.image_files:
@@ -1339,12 +875,7 @@ class ComicTranslate(ComicTranslateUI):
             return
         self._is_shutting_down = True
 
-        try:
-            if self._batch_report_drawer is not None:
-                self._batch_report_drawer.close()
-                self._batch_report_drawer = None
-        except Exception:
-            pass
+        self.batch_report_ctrl.shutdown()
 
         try:
             self.cancel_current_task()
