@@ -168,6 +168,17 @@ class ImageStateController:
         self._active_page_error_message = message
         self._active_page_error_path = file_path
 
+    def handle_webtoon_page_focus(self, file_path: str, explicit_navigation: bool):
+        """Apply page-skip popup policy for webtoon navigation.
+
+        explicit_navigation=True means deliberate jump (page list/report),
+        False means passive scroll-driven page change.
+        """
+        if explicit_navigation:
+            self._show_page_skip_error_for_file(file_path)
+        else:
+            self._hide_active_page_skip_error()
+
     def _clear_page_skip_error(self, file_path: str):
         self._page_skip_errors.pop(file_path, None)
         if self._active_page_error_path == file_path:
