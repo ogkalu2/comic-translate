@@ -15,7 +15,7 @@ from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 
 from modules.utils.textblock import TextBlock
-from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block
+from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block, pyside_word_wrap
 from modules.utils.pipeline_config import font_selected
 from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
 from modules.utils.image_utils import get_smart_text_color
@@ -703,6 +703,146 @@ class TextController:
 
     # Rendering
     def render_text(self):
+        selected_paths = self.main.get_selected_page_paths()
+        if self.main.image_viewer.hasPhoto() and len(selected_paths) > 1:
+            self.main.set_tool(None)
+            if not font_selected(self.main):
+                return
+            self.clear_text_edits()
+            self.main.loading.setVisible(True)
+            self.main.disable_hbutton_group()
+
+            context = self.main.manual_workflow_ctrl._prepare_multi_page_context(selected_paths)
+            render_settings = self.render_settings()
+            upper = render_settings.upper_case
+            line_spacing = float(self.main.line_spacing_dropdown.currentText())
+            font_family = self.main.font_dropdown.currentText()
+            outline_width = float(self.main.outline_width_dropdown.currentText())
+            bold = self.main.bold_button.isChecked()
+            italic = self.main.italic_button.isChecked()
+            underline = self.main.underline_button.isChecked()
+            align_id = self.main.alignment_tool_group.get_dayu_checked()
+            alignment = self.main.button_to_alignment[align_id]
+            direction = render_settings.direction
+            max_font_size = self.main.settings_page.get_max_font_size()
+            min_font_size = self.main.settings_page.get_min_font_size()
+            setting_font_color = QColor(render_settings.color)
+            outline_color = (
+                QColor(render_settings.outline_color)
+                if render_settings.outline
+                else None
+            )
+
+            def render_selected_pages() -> set[str]:
+                updated_paths: set[str] = set()
+                target_lang_fallback = self.main.t_combo.currentText()
+                for file_path in selected_paths:
+                    state = self.main.image_states.get(file_path, {})
+                    blk_list = state.get("blk_list", [])
+                    if not blk_list:
+                        continue
+
+                    target_lang = state.get("target_lang", target_lang_fallback)
+                    target_lang_en = self.main.lang_mapping.get(target_lang, None)
+                    trg_lng_cd = get_language_code(target_lang_en)
+                    format_translations(blk_list, trg_lng_cd, upper_case=upper)
+
+                    viewer_state = state.setdefault("viewer_state", {})
+                    existing_text_items = list(viewer_state.get("text_items_state", []))
+                    existing_keys = {
+                        (
+                            int(item.get("position", (0, 0))[0]),
+                            int(item.get("position", (0, 0))[1]),
+                            float(item.get("rotation", 0)),
+                        )
+                        for item in existing_text_items
+                    }
+
+                    new_text_items_state = []
+                    for blk in blk_list:
+                        blk_key = (int(blk.xyxy[0]), int(blk.xyxy[1]), float(blk.angle))
+                        if blk_key in existing_keys:
+                            continue
+
+                        x1, y1, width, height = blk.xywh
+                        translation = blk.translation
+                        if not translation or len(translation) == 1:
+                            continue
+
+                        vertical = is_vertical_block(blk, trg_lng_cd)
+                        wrapped, font_size = pyside_word_wrap(
+                            translation,
+                            font_family,
+                            width,
+                            height,
+                            line_spacing,
+                            outline_width,
+                            bold,
+                            italic,
+                            underline,
+                            alignment,
+                            direction,
+                            max_font_size,
+                            min_font_size,
+                            vertical,
+                        )
+                        if is_no_space_lang(trg_lng_cd):
+                            wrapped = wrapped.replace(" ", "")
+
+                        font_color = get_smart_text_color(blk.font_color, setting_font_color)
+                        text_props = TextItemProperties(
+                            text=wrapped,
+                            font_family=font_family,
+                            font_size=font_size,
+                            text_color=font_color,
+                            alignment=alignment,
+                            line_spacing=line_spacing,
+                            outline_color=outline_color,
+                            outline_width=outline_width,
+                            bold=bold,
+                            italic=italic,
+                            underline=underline,
+                            direction=direction,
+                            position=(x1, y1),
+                            rotation=blk.angle,
+                            scale=1.0,
+                            transform_origin=blk.tr_origin_point if blk.tr_origin_point else (0, 0),
+                            width=width,
+                            vertical=vertical,
+                        )
+                        new_text_items_state.append(text_props.to_dict())
+
+                    if new_text_items_state:
+                        viewer_state["text_items_state"] = existing_text_items + new_text_items_state
+                        viewer_state["push_to_stack"] = True
+                        state["blk_list"] = blk_list
+                        updated_paths.add(file_path)
+
+                return updated_paths
+
+            def on_selected_render_ready(updated_paths: set[str]) -> None:
+                if not updated_paths:
+                    return
+
+                current_file = context["current_file"]
+                if current_file in updated_paths:
+                    self.main.blk_list = self.main.image_states.get(current_file, {}).get("blk_list", []).copy()
+                    if self.main.webtoon_mode:
+                        if context["current_page_unloaded"]:
+                            self.main.manual_workflow_ctrl._reload_current_webtoon_page()
+                    else:
+                        self.main.image_ctrl.on_render_state_ready(current_file)
+
+                self.main.mark_project_dirty()
+
+            self.main.run_threaded(
+                render_selected_pages,
+                on_selected_render_ready,
+                self.main.default_error_handler,
+                self.main.on_manual_finished,
+            )
+            return
+
         if self.main.image_viewer.hasPhoto() and self.main.blk_list:
             self.main.set_tool(None)
             if not font_selected(self.main):

@@ -238,6 +238,19 @@ class ComicTranslate(ComicTranslateUI):
     def apply_inpaint_patches(self, patches): return self.image_ctrl.apply_inpaint_patches(patches)
     def render_settings(self): return self.text_ctrl.render_settings()
     def load_image(self, file_path: str) -> np.ndarray: return self.image_ctrl.load_image(file_path)
+    def get_selected_page_paths(self) -> list[str]:
+        selected_paths: list[str] = []
+        seen: set[str] = set()
+        for item in self.page_list.selectedItems():
+            path = item.data(QtCore.Qt.ItemDataRole.UserRole)
+            if not isinstance(path, str) or path not in self.image_files:
+                idx = self.page_list.row(item)
+                if 0 <= idx < len(self.image_files):
+                    path = self.image_files[idx]
+            if isinstance(path, str) and path in self.image_files and path not in seen:
+                selected_paths.append(path)
+                seen.add(path)
+        return selected_paths
 
     def _any_undo_dirty(self) -> bool:
         for stack in self.undo_stacks.values():
