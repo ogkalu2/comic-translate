@@ -25,6 +25,11 @@ class OCRFactory:
     }
     
     @classmethod
+    def clear_cache(cls):
+        """Clear the engine cache to force recreation on next request."""
+        cls._engines.clear()
+    
+    @classmethod
     def create_engine(
         cls, 
         settings, 
@@ -56,9 +61,10 @@ class OCRFactory:
         if cache_key in cls._engines:
             return cls._engines[cache_key]
 
-        # 2) For account holders using a remote  model
+        # 2) For account holders, ONLY use account-based OCR if the model requires it
+        # Never use account-based OCR for 'Default' model (always use local)
         token = get_token("access_token")
-        if token and (
+        if token and ocr_model != 'Default' and (
             ocr_model in UserOCR.LLM_OCR_KEYS
             or ocr_model in UserOCR.FULL_PAGE_OCR_KEYS
         ):
@@ -67,7 +73,7 @@ class OCRFactory:
             cls._engines[cache_key] = engine
             return engine
 
-        # 3) otherwise fall back to the local factories
+        # 3) for local models (Default, Microsoft, Gemini when forced local), create local engines
         engine = cls._create_new_engine(settings, source_lang_english, ocr_model, backend)
         cls._engines[cache_key] = engine
         return engine
@@ -161,15 +167,23 @@ class OCRFactory:
             'Dutch': lambda s: cls._create_ppocr(s, 'latin', backend),
         }
         
+        # For Default model, ALWAYS use local language-specific engines
+        if ocr_model == 'Default':
+            if source_lang_english in language_factories:
+                return language_factories[source_lang_english](settings)
+            # Fallback to PPOCRv5 English for unsupported languages
+            return cls._create_ppocr(settings, 'en', backend)
+        
         # Check if we have a specific model factory
         if ocr_model in general:
             return general[ocr_model](settings)
         
-        # For Default, use language-specific engines
-        if ocr_model == 'Default' and source_lang_english in language_factories:
+        # For any other model, fallback to language-specific or PPOCRv5
+        if source_lang_english in language_factories:
             return language_factories[source_lang_english](settings)
         
-        return 
+        # Ultimate fallback to PPOCRv5 English
+        return cls._create_ppocr(settings, 'en', backend) 
     
     @staticmethod
     def _create_microsoft_ocr(settings) -> OCREngine:

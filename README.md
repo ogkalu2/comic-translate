@@ -119,6 +119,24 @@ uv run comic.py
 ```
 This will launch the GUI
 
+### Local Translation (Ollama)
+If you want free, local translation without paid API credits, you can use Ollama.
+
+1) Install Ollama
+```bash
+https://ollama.com/download
+```
+
+2) Download a model (recommended)
+```bash
+ollama pull gemma2:9b
+```
+
+3) Configure in the app
+- Settings > Credentials > Ollama
+    - Model: gemma2:9b
+    - API URL: http://localhost:11434/v1
+- Settings > Tools > Translator: Ollama
 ### Tips
 * If you have a CBR file, you'll need to install Winrar or 7-Zip then add the folder it's installed to (e.g "C:\Program Files\WinRAR" for Windows) to Path. If it's installed but not to Path, you may get the error, 
 ```bash
@@ -162,7 +180,7 @@ To remove the segmented text
 
 ### Translation
 Currently, this supports using GPT-4.1, Claude-4.5, 
-Gemini-2.5.
+Gemini-2.5, and local Ollama models.
 
 All LLMs are fed the entire page text to aid translations. 
 There is also the Option to provide the Image itself for further context. 

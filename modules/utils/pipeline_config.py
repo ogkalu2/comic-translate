@@ -42,6 +42,11 @@ def validate_ocr(main: ComicTranslate):
         Messages.show_missing_tool_error(main, QCoreApplication.translate("Messages", "Text Recognition model"))
         return False
     
+    # 'Default' model is fully local (Manga-OCR, Pororo, PPOCRv5) - no authentication needed
+    if ocr_tool == 'Default':
+        return True
+    
+    # For cloud-based OCR models, authentication is required
     if not settings_page.is_logged_in():
         Messages.show_not_logged_in_error(main)
         return False
@@ -61,11 +66,11 @@ def validate_translator(main: ComicTranslate, target_lang: str):
         Messages.show_missing_tool_error(main, QCoreApplication.translate("Messages", "Translator"))
         return False
 
-    if not settings_page.is_logged_in():
-        Messages.show_not_logged_in_error(main)
-        return False
-
-    # Credential checks
+    # 'Ollama' is fully local (runs on localhost:11434) - no authentication needed
+    if translator_tool == 'Ollama':
+        return True
+    
+    # 'Custom' translator requires local API credentials but not account authentication
     if "Custom" in translator_tool:
         # Custom requires api_key, api_url, and model to be configured LOCALLY
         service = tr('Custom')
@@ -75,7 +80,12 @@ def validate_translator(main: ComicTranslate, target_lang: str):
             Messages.show_custom_not_configured_error(main)
             return False
         return True
-        
+    
+    # For cloud-based translators (GPT, Claude, DeepL, etc.), authentication is required
+    if not settings_page.is_logged_in():
+        Messages.show_not_logged_in_error(main)
+        return False
+
     return True
 
 def font_selected(main: ComicTranslate):

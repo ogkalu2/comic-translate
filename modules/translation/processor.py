@@ -55,6 +55,7 @@ class Translator:
             Standard translator key
         """
         translator_map = {
+            self.settings.ui.tr("Ollama"): "Ollama",
             self.settings.ui.tr("Custom"): "Custom",
             self.settings.ui.tr("Deepseek-v3"): "Deepseek-v3",
             self.settings.ui.tr("GPT-4.1"): "GPT-4.1",

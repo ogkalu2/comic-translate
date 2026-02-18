@@ -88,6 +88,8 @@ class SettingsPage(QtWidgets.QWidget):
         # Connect signals to slots
         self.ui.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         self.ui.lang_combo.currentTextChanged.connect(self.on_language_changed)
+        self.ui.translator_combo.currentTextChanged.connect(self.on_translator_changed)
+        self.ui.ocr_combo.currentTextChanged.connect(self.on_ocr_changed)
         self.ui.font_browser.sig_files_changed.connect(self.import_font)
         self.ui.sign_in_button.clicked.connect(self.start_sign_in)
         self.ui.buy_credits_button.clicked.connect(self.open_pricing_page)
@@ -96,6 +98,18 @@ class SettingsPage(QtWidgets.QWidget):
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
+    
+    def on_translator_changed(self, translator: str):
+        """Clear all engine caches when translator selection changes."""
+        from modules.translation.factory import TranslationFactory
+        from modules.ocr.factory import OCRFactory
+        TranslationFactory.clear_cache()
+        OCRFactory.clear_cache()
+    
+    def on_ocr_changed(self, ocr_engine: str):
+        """Clear OCR engine cache when OCR selection changes."""
+        from modules.ocr.factory import OCRFactory
+        OCRFactory.clear_cache()
 
     def get_language(self):
         return self.ui.lang_combo.currentText()
@@ -143,7 +157,10 @@ class SettingsPage(QtWidgets.QWidget):
         if service:
             normalized = self.ui.value_mappings.get(service, service)
             creds = {'save_key': save_keys}
-            if normalized == "Custom":
+            if normalized == "Ollama":
+                for field in ("model", "api_url", "api_key"):
+                    creds[field] = _text_or_none(f"Ollama_{field}")
+            elif normalized == "Custom":
                 for field in ("api_key", "api_url", "model"):
                     creds[field] = _text_or_none(f"Custom_{field}")
 

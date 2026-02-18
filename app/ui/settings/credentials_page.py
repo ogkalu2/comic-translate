@@ -84,6 +84,36 @@ class CredentialsPage(QtWidgets.QWidget):
                 # service_layout.addWidget(region_input)
                 # self.credential_widgets["Microsoft Azure_region"] = region_input
 
+            elif normalized == "Ollama":
+                # Description for Ollama
+                ollama_info = MLabel(self.tr(
+                    "Ollama provides free local translation without API costs. "
+                    "Install from https://ollama.com and run 'ollama pull gemma2:9b'."
+                )).secondary()
+                ollama_info.setWordWrap(True)
+                service_layout.addWidget(ollama_info)
+                service_layout.addSpacing(5)
+
+                model_input = MLineEdit()
+                model_input.setPlaceholderText("gemma2:9b")
+                model_input.setFixedWidth(400)
+                model_prefix = MLabel(self.tr("Model")).border()
+                set_label_width(model_prefix)
+                model_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                model_input.set_prefix_widget(model_prefix)
+                service_layout.addWidget(model_input)
+                self.credential_widgets[f"{normalized}_model"] = model_input
+
+                endpoint_input = MLineEdit()
+                endpoint_input.setPlaceholderText("http://localhost:11434/v1")
+                endpoint_input.setFixedWidth(400)
+                endpoint_prefix = MLabel(self.tr("API URL")).border()
+                set_label_width(endpoint_prefix)
+                endpoint_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                endpoint_input.set_prefix_widget(endpoint_prefix)
+                service_layout.addWidget(endpoint_input)
+                self.credential_widgets[f"{normalized}_api_url"] = endpoint_input
+
             elif normalized == "Custom":
                 api_key_input = MLineEdit()
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)

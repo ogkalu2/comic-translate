@@ -63,10 +63,12 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
         self.credential_services = [
+            self.tr("Ollama"),
             self.tr("Custom"), 
         ]
         
         self.supported_translators = [
+            self.tr("Ollama"),
             self.tr("Gemini-3.0-Flash"),
             self.tr("GPT-4.1"),
             self.tr("GPT-4.1-mini"),
@@ -106,6 +108,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Light"): "Light",
 
             # Translator mappings
+            self.tr("Ollama"): "Ollama",
             self.tr("Custom"): "Custom",
             self.tr("Deepseek-v3"): "Deepseek-v3",
             self.tr("GPT-4.1"): "GPT-4.1",
@@ -141,6 +144,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Right"): "Right",
 
             # Credential services mappings
+            self.tr("Ollama"): "Ollama",
             self.tr("Custom"): "Custom",
             self.tr("Deepseek"): "Deepseek",
             self.tr("Open AI GPT"): "Open AI GPT",

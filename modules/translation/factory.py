@@ -10,6 +10,7 @@ from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
 from .llm.custom import CustomTranslation
+from .llm.ollama import OllamaTranslation
 from .user import UserTranslator
 from app.account.auth.token_storage import get_token
 
@@ -32,7 +33,8 @@ class TranslationFactory:
         "Claude": ClaudeTranslation,
         "Gemini": GeminiTranslation,
         "Deepseek": DeepseekTranslation,
-        "Custom": CustomTranslation
+        "Custom": CustomTranslation,
+        "Ollama": OllamaTranslation
     }
     
     DEFAULT_LLM_ENGINE = GPTTranslation
@@ -63,22 +65,41 @@ class TranslationFactory:
         engine = engine_class()
         
         # Initialize with appropriate parameters
-        if translator_key not in cls.TRADITIONAL_ENGINES or isinstance(engine, UserTranslator):
+        if isinstance(engine, UserTranslator):
+            # UserTranslator needs the translator_key as positional argument
             engine.initialize(settings, source_lang, target_lang, translator_key)
         else:
-            engine.initialize(settings, source_lang, target_lang)
+            # All other engines (LLM-based and traditional) use named parameters
+            engine.initialize(settings, source_lang, target_lang, translator_key=translator_key)
         
         # Cache the engine
         cls._engines[cache_key] = engine
         return engine
+    
+    @classmethod
+    def clear_cache(cls):
+        """Clear the engine cache to force recreation on next request."""
+        cls._engines.clear()
     
 
     @classmethod
     def _get_engine_class(cls, translator_key: str):
         """Get the appropriate engine class based on translator key."""
 
+        # Never use account-based engines for local models
+        local_translators = ['Custom', 'Ollama']
+        is_local_translator = translator_key in local_translators or any(
+            identifier in translator_key for identifier in ['Custom', 'Ollama']
+        )
+        
+        if is_local_translator:
+            # Force use of the local engine, bypassing account check
+            for identifier, engine_class in cls.LLM_ENGINE_IDENTIFIERS.items():
+                if identifier in translator_key:
+                    return engine_class
+        
         access_token = get_token("access_token")
-        if access_token and translator_key not in ['Custom']:
+        if access_token and not is_local_translator:
             return UserTranslator
 
         # First check if it's a traditional translation engine (exact match)
