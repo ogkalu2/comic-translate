@@ -169,9 +169,12 @@ class MLabel(QtWidgets.QLabel):
         """
         Update the elided text on the label
         """
-        _font_metrics = self.fontMetrics()
         text = self.property("text")
         text = text if text else ""
+        if self.wordWrap():
+            super(MLabel, self).setText(text)
+            return
+        _font_metrics = self.fontMetrics()
         _elided_text = _font_metrics.elidedText(text, self._elide_mode, self.width() - 2 * 2)
         super(MLabel, self).setText(_elided_text)
 

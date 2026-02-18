@@ -59,7 +59,9 @@ class MMessage(QtWidgets.QWidget):
             )
 
         self._content_label = MLabel(parent=self)
+        self._content_label.setWordWrap(True)
         self._content_label.setText(text)
+        self.setMaximumWidth(1000)
 
         self._close_button = MToolButton(parent=self).icon_only().svg("close_line.svg").tiny()
         self._close_button.clicked.connect(self.close)
