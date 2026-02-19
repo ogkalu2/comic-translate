@@ -64,7 +64,7 @@ class MMessage(QtWidgets.QWidget):
         # Measure natural (unwrapped) text width across all lines; if it exceeds
         # the max, enable word wrap.  QFontMetrics.horizontalAdvance() stops at
         # the first '\n', so we must check each line individually.
-        _max_message_width = 500
+        _max_message_width = 700
         _fm = self._content_label.fontMetrics()
         _natural_width = max(
             (_fm.horizontalAdvance(line) for line in text.splitlines()),
