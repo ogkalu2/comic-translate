@@ -14,6 +14,7 @@ from __future__ import print_function
 # Import third-party modules
 from PySide6 import QtCore
 from PySide6 import QtWidgets
+from PySide6 import QtGui
 
 # Import local modules
 from . import dayu_theme
@@ -59,9 +60,16 @@ class MMessage(QtWidgets.QWidget):
             )
 
         self._content_label = MLabel(parent=self)
-        self._content_label.setWordWrap(True)
+
+        # Measure natural (unwrapped) text width; if it exceeds the max, enable word wrap.
+        _max_message_width = 500
+        _fm = self._content_label.fontMetrics()
+        _natural_width = _fm.horizontalAdvance(text)
+        if _natural_width > _max_message_width:
+            self._content_label.setWordWrap(True)
+            self._content_label.setFixedWidth(_max_message_width)
+
         self._content_label.setText(text)
-        self.setMaximumWidth(1000)
 
         self._close_button = MToolButton(parent=self).icon_only().svg("close_line.svg").tiny()
         self._close_button.clicked.connect(self.close)

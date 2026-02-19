@@ -134,6 +134,8 @@ class MLabel(QtWidgets.QLabel):
     dayu_elide_mod = QtCore.Property(QtCore.Qt.TextElideMode, get_dayu_code, set_dayu_code)
 
     def minimumSizeHint(self):
+        if self.wordWrap():
+            return super(MLabel, self).minimumSizeHint()
         return QtCore.QSize(1, self.fontMetrics().height())
 
     def text(self):
