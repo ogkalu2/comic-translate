@@ -816,21 +816,43 @@ Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to
     <message>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation type="vanished">Metin Bloğu Algılanmadı.
+        <translation>Metin Bloğu Algılanmadı.
 Atlanıyor:</translation>
     </message>
     <message>
-        <source>Could not OCR detected text.
+        <source>Could not recognize detected text.
 Skipping:</source>
-        <translation type="vanished">Algılanan metin OCR yapılamadı.
+        <translation>Algılanan metin tanınamadı.
 Atlanıyor:</translation>
     </message>
     <message>
         <source>Could not get translations.
 Skipping:</source>
-        <translation type="vanished">Çeviriler alınamadı.
+        <translation>Çeviriler alınamadı.
 Atlanıyor:</translation>
     </message>
+        <message>
+        <source>Could not recognize webtoon chunk.
+    Skipping:</source>
+        <translation>Webtoon parçası tanınamadı.
+    Atlanıyor:</translation>
+        </message>
+        <message>
+        <source>Could not translate webtoon chunk.
+    Skipping:</source>
+        <translation>Webtoon parçası çevrilemedi.
+    Atlanıyor:</translation>
+        </message>
+        <message>
+        <source>Page processing failed.
+    Skipping:</source>
+        <translation>Sayfa işleme başarısız oldu.
+    Atlanıyor:</translation>
+        </message>
+        <message>
+        <source>Skipping:</source>
+        <translation>Atlanıyor:</translation>
+        </message>
     <message>
         <location filename="../../app/ui/messages.py" line="11"/>
         <source>Comic has been Translated!</source>
@@ -1016,6 +1038,10 @@ Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="188"/>
+        <location filename="../../pipeline/batch_processor.py" line="175"/>
+        <location filename="../../pipeline/batch_processor.py" line="271"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="286"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="361"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>Sunucuya bağlanılamıyor.

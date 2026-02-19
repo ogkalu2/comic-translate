@@ -812,17 +812,36 @@ Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to
     <message>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation type="vanished">未检测到文本块。跳过：</translation>
+        <translation>未检测到文本块。跳过：</translation>
     </message>
     <message>
-        <source>Could not OCR detected text.
+        <source>Could not recognize detected text.
 Skipping:</source>
-        <translation type="vanished">无法识别检测到的文本。跳过：</translation>
+        <translation>无法识别检测到的文本。跳过：</translation>
     </message>
     <message>
         <source>Could not get translations.
 Skipping:</source>
-        <translation type="vanished">无法获取翻译。跳过：</translation>
+        <translation>无法获取翻译。跳过：</translation>
+    </message>
+    <message>
+        <source>Could not recognize webtoon chunk.
+Skipping:</source>
+        <translation>无法识别网页漫画分段。跳过：</translation>
+    </message>
+    <message>
+        <source>Could not translate webtoon chunk.
+Skipping:</source>
+        <translation>无法翻译网页漫画分段。跳过：</translation>
+    </message>
+    <message>
+        <source>Page processing failed.
+Skipping:</source>
+        <translation>页面处理失败。跳过：</translation>
+    </message>
+    <message>
+        <source>Skipping:</source>
+        <translation>跳过：</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="11"/>
@@ -1008,6 +1027,10 @@ Please try again later.</source>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="188"/>
+        <location filename="../../pipeline/batch_processor.py" line="175"/>
+        <location filename="../../pipeline/batch_processor.py" line="271"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="286"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="361"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>无法连接到服务器。

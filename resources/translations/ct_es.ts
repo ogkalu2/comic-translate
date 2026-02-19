@@ -827,21 +827,43 @@ Los archivos traducidos se guardan como &lt;filename&gt;_translated.&lt;ext&gt; 
     <message>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation type="vanished">No se detectaron bloques de texto.
+        <translation>No se detectaron bloques de texto.
 Saltando:</translation>
     </message>
     <message>
-        <source>Could not OCR detected text.
+        <source>Could not recognize detected text.
 Skipping:</source>
-        <translation type="vanished">No se pudo aplicar OCR al texto detectado.
+        <translation>No se pudo reconocer el texto detectado.
 Saltando:</translation>
     </message>
     <message>
         <source>Could not get translations.
 Skipping:</source>
-        <translation type="vanished">No se pudieron obtener las traducciones.
+        <translation>No se pudieron obtener traducciones.
 Saltando:</translation>
     </message>
+        <message>
+        <source>Could not recognize webtoon chunk.
+    Skipping:</source>
+        <translation>No se pudo reconocer el fragmento de webtoon.
+    Saltando:</translation>
+        </message>
+        <message>
+        <source>Could not translate webtoon chunk.
+    Skipping:</source>
+        <translation>No se pudo traducir el fragmento de webtoon.
+    Saltando:</translation>
+        </message>
+        <message>
+        <source>Page processing failed.
+    Skipping:</source>
+        <translation>Falló el procesamiento de la página.
+    Saltando:</translation>
+        </message>
+        <message>
+        <source>Skipping:</source>
+        <translation>Saltando:</translation>
+        </message>
     <message>
         <source>Cancelling... %p%</source>
         <translation type="vanished">Cancelando... %p%</translation>
@@ -1081,6 +1103,10 @@ Por favor, inténtelo de nuevo más tarde.</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="188"/>
+        <location filename="../../pipeline/batch_processor.py" line="175"/>
+        <location filename="../../pipeline/batch_processor.py" line="271"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="286"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="361"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>No se puede conectar al servidor.

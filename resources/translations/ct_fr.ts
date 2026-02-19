@@ -826,21 +826,43 @@ Les archives traduites sont enregistrées sous &lt;filename&gt;_translated.&lt;e
     <message>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation type="vanished">Aucune zone de texte détectée.
+        <translation>Aucune zone de texte détectée.
 Passage à la suite :</translation>
     </message>
     <message>
-        <source>Could not OCR detected text.
+        <source>Could not recognize detected text.
 Skipping:</source>
-        <translation type="vanished">Impossible d&apos;effectuer l&apos;OCR du texte détecté.
+        <translation>Impossible de reconnaître le texte détecté.
 Passage à la suite :</translation>
     </message>
     <message>
         <source>Could not get translations.
 Skipping:</source>
-        <translation type="vanished">Impossible d&apos;obtenir les traductions.
+        <translation>Impossible d&apos;obtenir les traductions.
 Passage à la suite :</translation>
     </message>
+        <message>
+        <source>Could not recognize webtoon chunk.
+    Skipping:</source>
+        <translation>Impossible de reconnaître le segment de webtoon.
+    Passage à la suite :</translation>
+        </message>
+        <message>
+        <source>Could not translate webtoon chunk.
+    Skipping:</source>
+        <translation>Impossible de traduire le segment de webtoon.
+    Passage à la suite :</translation>
+        </message>
+        <message>
+        <source>Page processing failed.
+    Skipping:</source>
+        <translation>Le traitement de la page a échoué.
+    Passage à la suite :</translation>
+        </message>
+        <message>
+        <source>Skipping:</source>
+        <translation>Passage à la suite :</translation>
+        </message>
     <message>
         <source>Cancelling... %p%</source>
         <translation type="vanished">Annulation... %p%</translation>
@@ -1080,6 +1102,10 @@ Veuillez réessayer plus tard.</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="188"/>
+        <location filename="../../pipeline/batch_processor.py" line="175"/>
+        <location filename="../../pipeline/batch_processor.py" line="271"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="286"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="361"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>Impossible de se connecter au serveur.
@@ -2097,7 +2123,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../../app/controllers/batch_report.py" line="116"/>
         <source>Unexpected tool error</source>
-        <translation>Erreur d'outil inattendue</translation>
+        <translation>Erreur d&apos;outil inattendue</translation>
     </message>
     <message>
         <location filename="../../app/controllers/batch_report.py" line="124"/>
@@ -2181,7 +2207,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../../app/controllers/batch_report.py" line="253"/>
         <source>This image is not in the current project.</source>
-        <translation>Cette image n'est pas dans le projet actuel.</translation>
+        <translation>Cette image n&apos;est pas dans le projet actuel.</translation>
     </message>
     <message>
         <location filename="../../app/controllers/batch_report.py" line="279"/>
@@ -2237,7 +2263,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../../app/controllers/batch_report.py" line="377"/>
         <source>No batch report is available yet.</source>
-        <translation>Aucun rapport de lot disponible pour l'instant.</translation>
+        <translation>Aucun rapport de lot disponible pour l&apos;instant.</translation>
     </message>
     <message>
         <location filename="../../app/controllers/batch_report.py" line="391"/>

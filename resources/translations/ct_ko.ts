@@ -867,21 +867,43 @@ Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to
     <message>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation type="vanished">텍스트 블록이 감지되지 않았습니다.
+        <translation>텍스트 블록이 감지되지 않았습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <source>Could not OCR detected text.
+        <source>Could not recognize detected text.
 Skipping:</source>
-        <translation type="vanished">감지된 텍스트를 OCR 할 수 없습니다.
+        <translation>감지된 텍스트를 인식할 수 없습니다.
 건너뛰기:</translation>
     </message>
     <message>
         <source>Could not get translations.
 Skipping:</source>
-        <translation type="vanished">번역을 가져올 수 없습니다.
+        <translation>번역을 가져올 수 없습니다.
 건너뛰기:</translation>
     </message>
+        <message>
+        <source>Could not recognize webtoon chunk.
+    Skipping:</source>
+        <translation>웹툰 구간을 인식할 수 없습니다.
+    건너뛰기:</translation>
+        </message>
+        <message>
+        <source>Could not translate webtoon chunk.
+    Skipping:</source>
+        <translation>웹툰 구간을 번역할 수 없습니다.
+    건너뛰기:</translation>
+        </message>
+        <message>
+        <source>Page processing failed.
+    Skipping:</source>
+        <translation>페이지 처리에 실패했습니다.
+    건너뛰기:</translation>
+        </message>
+        <message>
+        <source>Skipping:</source>
+        <translation>건너뛰기:</translation>
+        </message>
     <message>
         <source>Cancelling... %p%</source>
         <translation type="vanished">취소 중... %p%</translation>
@@ -1127,6 +1149,10 @@ Please try again later.</source>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="188"/>
+        <location filename="../../pipeline/batch_processor.py" line="175"/>
+        <location filename="../../pipeline/batch_processor.py" line="271"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="286"/>
+        <location filename="../../pipeline/webtoon_batch_processor.py" line="361"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>서버에 연결할 수 없습니다.
