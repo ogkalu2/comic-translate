@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QColor
 
 from modules.detection.processor import TextBlockDetector
@@ -281,7 +282,9 @@ class WebtoonBatchProcessor:
             except InsufficientCreditsException:
                 raise
             except Exception as e:
-                if isinstance(e, requests.exceptions.HTTPError):
+                if isinstance(e, requests.exceptions.ConnectionError):
+                    err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
+                elif isinstance(e, requests.exceptions.HTTPError):
                     try:
                         err_msg = e.response.json().get("error_description", str(e))
                     except Exception:
@@ -354,7 +357,9 @@ class WebtoonBatchProcessor:
             except InsufficientCreditsException:
                 raise
             except Exception as e:
-                if isinstance(e, requests.exceptions.HTTPError):
+                if isinstance(e, requests.exceptions.ConnectionError):
+                    err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
+                elif isinstance(e, requests.exceptions.HTTPError):
                     try:
                         err_msg = e.response.json().get("error_description", str(e))
                     except Exception:

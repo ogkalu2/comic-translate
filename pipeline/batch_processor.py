@@ -11,6 +11,7 @@ import time
 from typing import TYPE_CHECKING
 from datetime import datetime
 from typing import List
+from PySide6.QtCore import QCoreApplication
 from PySide6.QtGui import QColor
 
 from modules.detection.processor import TextBlockDetector
@@ -169,8 +170,11 @@ class BatchProcessor:
                 except InsufficientCreditsException:
                     raise
                 except Exception as e:
+                    # if it's a connection/network error, give a short message
+                    if isinstance(e, requests.exceptions.ConnectionError):
+                        err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
                     # if it's an HTTPError, try to pull the "error_description" field
-                    if isinstance(e, requests.exceptions.HTTPError):
+                    elif isinstance(e, requests.exceptions.HTTPError):
                         try:
                             err_json = e.response.json()
                             err_msg = err_json.get("error_description", str(e))
@@ -262,8 +266,11 @@ class BatchProcessor:
             except InsufficientCreditsException:
                 raise
             except Exception as e:
+                # if it's a connection/network error, give a short message
+                if isinstance(e, requests.exceptions.ConnectionError):
+                    err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
                 # if it's an HTTPError, try to pull the "error_description" field
-                if isinstance(e, requests.exceptions.HTTPError):
+                elif isinstance(e, requests.exceptions.HTTPError):
                     try:
                         err_json = e.response.json()
                         err_msg = err_json.get("error_description", str(e))
