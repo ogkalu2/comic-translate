@@ -349,7 +349,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load export settings
         settings.beginGroup('export')
-        self.ui.auto_save_checkbox.setChecked(settings.value('auto_save', True, type=bool))
+        self.ui.auto_save_checkbox.setChecked(settings.value('auto_save', False, type=bool))
         self.ui.raw_text_checkbox.setChecked(settings.value('export_raw_text', False, type=bool))
         self.ui.translated_text_checkbox.setChecked(settings.value('export_translated_text', False, type=bool))
         self.ui.inpainted_image_checkbox.setChecked(settings.value('export_inpainted_image', False, type=bool))
