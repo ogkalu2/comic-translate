@@ -60,6 +60,10 @@ class BatchProcessor:
         self.ocr_handler = ocr_handler
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
+        export_settings = self.main_page.settings_page.get_export_settings()
+        if not export_settings.get('auto_save', True):
+            logger.info("Auto-save is OFF. Skipping fallback image save for '%s'.", base_name)
+            return
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
         if not os.path.exists(path):
             os.makedirs(path, exist_ok=True)
