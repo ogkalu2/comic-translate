@@ -18,8 +18,9 @@ venv/
 pyproject.toml
 uv.lock
 
-# Test files
-test_*.py
+# Test files (allow tests/ directory, block loose test scripts)
 demo_*.py
+!tests/
+!tests/**
 *.ctpr
 .claude/

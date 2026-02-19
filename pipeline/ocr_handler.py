@@ -1,19 +1,29 @@
 import logging
 from modules.ocr.processor import OCRProcessor
+from modules.ocr.noise_filter import OCRNoiseFilter
 from modules.utils.device import resolve_device
 from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_original_block_coordinates
 
 logger = logging.getLogger(__name__)
 
 
+def _apply_noise_filter(blk_list, noise_filter: OCRNoiseFilter):
+    for blk in blk_list:
+        if blk.text:
+            blk.text, _ = noise_filter.filter_block_text(blk.text)
+        if blk.texts:
+            blk.texts = [noise_filter.filter_text(t) for t in blk.texts]
+
+
 class OCRHandler:
     """Handles OCR processing with caching support."""
-    
+
     def __init__(self, main_page, cache_manager, pipeline):
         self.main_page = main_page
         self.cache_manager = cache_manager
         self.pipeline = pipeline
         self.ocr = OCRProcessor()
+        self._noise_filter = OCRNoiseFilter()
 
     def OCR_image(self, single_block: bool = False):
         source_lang = self.main_page.s_combo.currentText()
@@ -48,7 +58,8 @@ class OCRHandler:
                         self.ocr.initialize(self.main_page, source_lang)
                         single_block_list = [blk]
                         self.ocr.process(image, single_block_list)
-                        
+                        _apply_noise_filter(single_block_list, self._noise_filter)
+
                         # Update the cache with this new result using the cache manager's method
                         self.cache_manager.update_ocr_cache_for_block(cache_key, blk)
                         
@@ -68,8 +79,9 @@ class OCRHandler:
                         original_id = self.cache_manager._get_block_id(original_blk)
                         original_to_copy[original_id] = copy_blk
                     
-                    if all_blocks_copy:  
+                    if all_blocks_copy:
                         self.ocr.process(image, all_blocks_copy)
+                        _apply_noise_filter(all_blocks_copy, self._noise_filter)
                         # Cache using the original blocks to maintain consistent IDs
                         self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list, all_blocks_copy)
                         cached_text = self.cache_manager._get_cached_text_for_block(cache_key, blk)
@@ -84,8 +96,9 @@ class OCRHandler:
                 else:
                     # Need to run OCR and cache results
                     self.ocr.initialize(self.main_page, source_lang)
-                    if self.main_page.blk_list:  
+                    if self.main_page.blk_list:
                         self.ocr.process(image, self.main_page.blk_list)
+                        _apply_noise_filter(self.main_page.blk_list, self._noise_filter)
                         self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list)
                         logger.info("OCR completed and cached for %d blocks", len(self.main_page.blk_list))
 
@@ -115,7 +128,8 @@ class OCRHandler:
         # Perform OCR on the visible image with filtered blocks
         self.ocr.initialize(self.main_page, source_lang)
         self.ocr.process(visible_image, visible_blocks)
-        
+        _apply_noise_filter(visible_blocks, self._noise_filter)
+
         # The OCR text is already set on the blocks, just restore coordinates
         restore_original_block_coordinates(visible_blocks)
         
