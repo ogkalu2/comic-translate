@@ -157,13 +157,12 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Google Cloud"): "Google Cloud",
             self.tr("Google Gemini"): "Google Gemini",
             self.tr("DeepL"): "DeepL",
-            self.tr("Anthropic Claude"): "Anthropic Claude",
             self.tr("Yandex"): "Yandex",
             self.tr("GitHub"): "GitHub",
             self.tr("OpenRouter"): "OpenRouter",
             self.tr("xAI"): "xAI",
         }
-# Create reverse mappings for loading
+        # Create reverse mappings for loading
         self.reverse_mappings = {v: k for k, v in self.value_mappings.items()}
 
 
