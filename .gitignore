@@ -22,3 +22,4 @@ uv.lock
 test_*.py
 demo_*.py
 *.ctpr
+.claude/
