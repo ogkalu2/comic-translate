@@ -55,6 +55,11 @@ class ImageStateController:
     def _summarize_skip_error(self, error: str) -> str:
         if not error:
             return ""
+        # If the error is a short, custom message (like a translation), return it fully
+        # instead of stripping everything after the first newline.
+        if "Traceback" not in error and len(error) < 500:
+            return error.strip()
+
         for raw_line in error.splitlines():
             line = raw_line.strip()
             if not line:
@@ -75,9 +80,9 @@ class ImageStateController:
 
         message_map = {
             "Text Blocks": t("Messages", "No Text Blocks Detected.\nSkipping:"),
-            "OCR": t("Messages", "Could not OCR detected text.\nSkipping:"),
+            "OCR": t("Messages", "Could not recognize detected text.\nSkipping:"),
             "Translator": t("Messages", "Could not get translations.\nSkipping:"),
-            "OCR Chunk Failed": t("Messages", "Could not OCR webtoon chunk.\nSkipping:"),
+            "OCR Chunk Failed": t("Messages", "Could not recognize webtoon chunk.\nSkipping:"),
             "Translation Chunk Failed": t("Messages", "Could not translate webtoon chunk.\nSkipping:"),
         }
 
@@ -1060,7 +1065,8 @@ class ImageStateController:
                 details=reason,
                 context=skip_reason,
             )
-            text = f"Skipping: {file_name}\n{flagged_msg}"
+            skip_prefix = QtCore.QCoreApplication.translate("Messages", "Skipping:")
+            text = f"{skip_prefix} {file_name}\n{flagged_msg}"
         else:
             text = self._build_skip_message(image_path, skip_reason, summarized_error)
         dayu_type = self._resolve_skip_message_type(skip_reason, error)
