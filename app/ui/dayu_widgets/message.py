@@ -143,7 +143,7 @@ class MMessage(QtWidgets.QWidget):
             if isinstance(child, MMessage) and child.isVisible():
                 offset = max(offset, child.y())
         base = pos.y() + MMessage.default_config.get("top")
-        target_x = pos.x() + parent_geo.width() / 2 - 100
+        target_x = pos.x() + parent_geo.width() / 2 - self.sizeHint().width() / 2
         target_y = (offset + 50) if offset else base
         self._pos_ani.setStartValue(QtCore.QPoint(target_x, target_y - 40))
         self._pos_ani.setEndValue(QtCore.QPoint(target_x, target_y))
