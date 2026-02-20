@@ -22,5 +22,7 @@ uv.lock
 demo_*.py
 !tests/
 !tests/**
+tests/**/__pycache__/
+tests/__pycache__/
 *.ctpr
 .claude/
