@@ -191,6 +191,11 @@ class LineLayoutNode:
 
         blk_text = self.parent_block.qt_block.text()
         char_idx = self.effective_char_idx
+
+        # Validate that char_idx is within bounds
+        if char_idx < 0 or char_idx >= len(blk_text):
+            return
+
         char = blk_text[char_idx]
 
         space_shift = self.left_spaces * self.char_style.space_width if self.left_spaces > 0 else 0
@@ -246,7 +251,7 @@ class LineLayoutNode:
         blpos = block.position()
         blk_text = block.text()
 
-        if self.effective_char_idx < 0:
+        if self.effective_char_idx < 0 or self.effective_char_idx >= len(blk_text):
             # Fallback for lines that don't map to an effective character (e.g., empty lines).
             # Draw the raw line at (0,0) relative to its calculated position.
             self.qt_line.draw(painter, QPointF(0, 0))

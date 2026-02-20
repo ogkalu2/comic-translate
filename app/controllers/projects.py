@@ -44,7 +44,10 @@ class ProjectController:
                         viewer_state = self._create_text_items_state_from_scene(page_idx)
                     else:
                         # For unloaded pages, use the already stored state.
-                        viewer_state = self.main.image_states[file_path].get('viewer_state', {}).copy()
+                        if file_path in self.main.image_states:
+                            viewer_state = self.main.image_states[file_path].get('viewer_state', {}).copy()
+                        else:
+                            viewer_state = {}
                     all_pages_current_state[file_path] = {'viewer_state': viewer_state}
 
                 # PASS 2: Render each page using the complete state map
@@ -74,7 +77,11 @@ class ProjectController:
                     rgb_img = self.main.load_image(file_path)
 
                     renderer = ImageSaveRenderer(rgb_img)
-                    viewer_state = self.main.image_states[file_path]['viewer_state']
+                    # Check if image_states has this file_path before accessing
+                    if file_path in self.main.image_states:
+                        viewer_state = self.main.image_states[file_path].get('viewer_state', {})
+                    else:
+                        viewer_state = {}
                     renderer.apply_patches(self.main.image_patches.get(file_path, []))
                     renderer.add_state_to_image(viewer_state)
                     sv_pth = os.path.join(temp_dir, bname)

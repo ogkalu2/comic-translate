@@ -1,5 +1,5 @@
 # 漫画翻译
-[English](../README.md) | [한국어](README_ko.md) | [Français](README_fr.md) | 简体中文
+[English](../README.md) | [한국어](README_ko.md) | [Français](README_fr.md) | 简体中文 | [繁體中文](README_zh-TW.md)
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
@@ -61,7 +61,7 @@
 
 ## 安装
 ### 下载
-从[这里](https://www.comic-translate.com)下载并安装适用于 Windows 和 macOS 的 Comic Translate。
+从[这里](https://www.comic-translate.com/download/)下载并安装适用于 Windows 和 macOS 的 Comic Translate。
 > 对于 Windows，请忽略 Smart Screen（点击“更多信息” > “仍要运行”）。对于 macOS，在尝试打开后，前往“设置” > “隐私与安全性” > 向下滚动并点击“仍要打开”。
 
 > 注意：GPU 加速目前仅在从源码运行时可用。
