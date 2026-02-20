@@ -26,3 +26,6 @@ tests/**/__pycache__/
 tests/__pycache__/
 *.ctpr
 .claude/
+
+# Generated summary docs
+SYNC_SUMMARY.md
