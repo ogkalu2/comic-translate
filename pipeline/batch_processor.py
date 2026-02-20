@@ -32,6 +32,8 @@ from .cache_manager import CacheManager
 from .block_detection import BlockDetectionHandler
 from .inpainting import InpaintingHandler
 from .ocr_handler import OCRHandler
+from .discovery_pass import DiscoveryPass
+from .comic_session import ComicSession
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -57,6 +59,7 @@ class BatchProcessor:
         self.block_detection = block_detection_handler
         self.inpainting = inpainting_handler
         self.ocr_handler = ocr_handler
+        self.comic_session = None
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
@@ -96,6 +99,19 @@ class BatchProcessor:
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
+
+        # Pass 1 setup: create ComicSession and DiscoveryPass for this batch
+        if image_list:
+            first_path = image_list[0]
+            first_state = self.main_page.image_states.get(first_path, {})
+            src_lang = first_state.get('source_lang', '')
+            tgt_lang = first_state.get('target_lang', '')
+            comic_id = f"batch_{int(time.time())}"
+            self.comic_session = ComicSession(comic_id, src_lang, tgt_lang)
+            discovery = DiscoveryPass(comic_id, src_lang, tgt_lang)
+            # Wire session into translation handler if available
+            if hasattr(self.main_page, 'pipeline') and hasattr(self.main_page.pipeline, 'translation_handler'):
+                self.main_page.pipeline.translation_handler.comic_session = self.comic_session
 
         for index, image_path in enumerate(image_list):
             if self._is_cancelled():
@@ -162,6 +178,9 @@ class BatchProcessor:
                     self.ocr_handler.ocr.process(image, blk_list)
                     # Cache the OCR results for potential future use
                     self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list)
+                    # Accumulate OCR text for discovery pass
+                    if self.comic_session is not None:
+                        discovery.add_page_ocr_results(blk_list)
                     source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
                     rtl = True if source_lang_english == 'Japanese' else False
                     blk_list = sort_blk_list(blk_list, rtl)
