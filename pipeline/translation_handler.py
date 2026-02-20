@@ -16,17 +16,18 @@ logger = logging.getLogger(__name__)
 
 class TranslationHandler:
     """Handles translation processing with caching support."""
-    
+
     def __init__(
-            self, 
-            main_page: ComicTranslate, 
-            cache_manager: CacheManager, 
+            self,
+            main_page: ComicTranslate,
+            cache_manager: CacheManager,
             pipeline: ComicTranslatePipeline,
         ):
-        
+
         self.main_page = main_page
         self.cache_manager = cache_manager
         self.pipeline = pipeline
+        self.comic_session = None  # Set externally before batch processing
 
     def translate_image(self, single_block=False):
         source_lang = self.main_page.s_combo.currentText()
@@ -36,6 +37,11 @@ class TranslationHandler:
             image = self.main_page.image_viewer.get_image_array()
             extra_context = settings_page.get_llm_settings()['extra_context']
             translator_key = settings_page.get_tool_selection('translator')
+
+            # Inject glossary + story context if a ComicSession is active
+            if self.comic_session is not None:
+                session_prompt = self.comic_session.build_system_prompt()
+                extra_context = f"{extra_context}\n{session_prompt}".strip()
 
             upper_case = settings_page.ui.uppercase_checkbox.isChecked()
 
@@ -104,6 +110,11 @@ class TranslationHandler:
                 else:
                     # Need to run translation and cache results
                     translator.translate(self.main_page.blk_list, image, extra_context)
+                    # Enforce glossary on output
+                    if self.comic_session is not None:
+                        for blk in self.main_page.blk_list:
+                            if blk.translation:
+                                blk.translation = self.comic_session.enforce_glossary(blk.translation)
                     self.cache_manager._cache_translation_results(translation_cache_key, self.main_page.blk_list)
                     logger.info("Translation completed and cached for %d blocks", len(self.main_page.blk_list))
                 
