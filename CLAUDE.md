@@ -9,6 +9,7 @@ Comic Translate is a PySide6-based desktop application for translating comics an
 ## Development Commands
 
 ### Setup and Installation
+
 ```bash
 # Initial setup (Python 3.12 required)
 uv init --python 3.12
@@ -23,12 +24,14 @@ uv add -r requirements.txt --compile-bytecode
 ```
 
 ### Running the Application
+
 ```bash
 # Launch GUI
 uv run comic.py
 ```
 
 ### Translation Files
+
 ```bash
 # Compile Qt translation files (.ts to .qm)
 # Translation source files are in resources/translations/
@@ -39,25 +42,34 @@ pyside6-lrelease resources/translations/ct_<lang>.ts -qm resources/translations/
 ## Architecture
 
 ### Entry Point and Application Lifecycle
+
 - **comic.py**: Main entry point. Handles single-instance enforcement via QLocalServer, splash screen with background loading, file association (.ctpr files), and translation loading.
 - **controller.py**: Main application controller (`ComicTranslate` class) that inherits from `ComicTranslateUI`. Orchestrates all major components and manages application state.
 
 ### Core Components
 
 #### Pipeline System (pipeline/)
+
 The translation pipeline is modular and orchestrated by `ComicTranslatePipeline`:
+
 - **main_pipeline.py**: Central orchestrator that delegates to specialized handlers
 - **block_detection.py**: Text and bubble detection using RT-DETR-v2 model
 - **segmentation_handler.py**: Algorithmic text segmentation within detected blocks
-- **ocr_handler.py**: OCR processing with caching support
+- **ocr_handler.py**: OCR processing with noise filtering and caching support
 - **inpainting.py**: Text removal using LaMa/AOT-GAN/MI-GAN models
-- **translation_handler.py**: Translation with LLM context and caching
-- **batch_processor.py**: Batch processing for regular comics
+- **translation_handler.py**: Translation with LLM context, ComicSession glossary injection, and caching
+- **batch_processor.py**: Batch processing with two-pass discovery pre-scan for glossary population
 - **webtoon_batch_processor.py**: Specialized batch processing for webtoon format
-- **cache_manager.py**: Caches OCR and translation results to avoid redundant API calls
+- **cache_manager.py**: Caches OCR and translation results; wraps cache v2 for status-aware lookups
+- **cache_v2.py**: Translation cache v2 with status tracking (`success`, `api_failed`, `untranslatable`, `pending_review`) and v1 migration
+- **comic_glossary.py**: Per-comic glossary with locked entries, category tagging, and enforcement
+- **comic_session.py**: Wires glossary + story context into a single session object passed to TranslationHandler
+- **story_context.py**: Rolling page summary window (last N pages) for LLM context injection
+- **discovery_pass.py**: Pass 1 pre-scan — OCRs all pages and builds a discovery prompt to populate the glossary before translation
 - **virtual_page.py**: Manages virtual page state for webtoon mode
 
 #### Detection and Processing Modules (modules/)
+
 - **modules/detection/**: Text/bubble detection models (RT-DETR-v2, font detection)
   - Uses ONNX runtime for inference
   - `rtdetr_v2_onnx.py` is the main detector
@@ -69,11 +81,14 @@ The translation pipeline is modular and orchestrated by `ComicTranslatePipeline`
   - `ppocr/`: PPOCRv5 for other languages
   - `gemini_ocr.py`, `microsoft_ocr.py`, `gpt_ocr.py`: Cloud OCR options
   - `factory.py`: OCR provider selection logic
+  - `noise_filter.py`: Filters phantom symbols and low-confidence OCR tokens before caching
 
 - **modules/translation/**: Translation providers
   - `llm/`: LLM-based translators (GPT, Claude, Gemini, DeepSeek, xAI, OpenRouter, GitHub, Custom)
   - `deepl.py`, `microsoft.py`, `yandex.py`: Traditional MT services
   - `factory.py`: Translator provider selection
+  - `provider_config.py`: Provider/model config with round-robin key rotation
+  - `async_router.py`: Async translation router with free-tier → paid-tier fallback
 
 - **modules/inpainting/**: Text removal models
   - `lama.py`: LaMa model (anime/manga finetuned)
@@ -83,6 +98,8 @@ The translation pipeline is modular and orchestrated by `ComicTranslatePipeline`
 - **modules/rendering/**: Text rendering and layout
   - `render.py`: Main rendering logic with word wrapping
   - `hyphen_textwrap.py`: Hyphenation support for text wrapping
+  - `collision_resolver.py`: Resolves overlapping text boxes via font reduction; flags unresolvable boxes for review
+  - `bubble_expander.py`: CV-based bubble detector and bubble-aware text box expander with art-style profiles
 
 - **modules/utils/**: Shared utilities
   - `textblock.py`: Core `TextBlock` class representing detected/translated text
@@ -92,6 +109,7 @@ The translation pipeline is modular and orchestrated by `ComicTranslatePipeline`
   - `translator_utils.py`: Translation formatting helpers
 
 #### UI Layer (app/ui/)
+
 - **main_window.py**: Main window UI setup (`ComicTranslateUI` class)
 - **canvas/**: Image viewing and editing
   - `image_viewer.py`: Main canvas for displaying and editing images
@@ -111,7 +129,9 @@ The translation pipeline is modular and orchestrated by `ComicTranslatePipeline`
 - **dayu_widgets/**: Custom Qt widgets library (forked/modified)
 
 #### Controllers (app/controllers/)
+
 Separate concerns for different aspects of the application:
+
 - **image.py**: Image state management, history, memory management
 - **projects.py**: Project file (.ctpr) loading/saving
 - **text.py**: Text block editing and formatting
@@ -120,6 +140,7 @@ Separate concerns for different aspects of the application:
 - **search_replace.py**: Search and replace across text blocks
 
 #### Project State (app/projects/)
+
 - **project_state.py**: Save/load project files (.ctpr format)
   - Uses msgpack for serialization
   - Stores images, patches, text blocks, and settings
@@ -127,31 +148,38 @@ Separate concerns for different aspects of the application:
 - **parsers.py**: Custom encoders/decoders for project serialization
 
 #### Account System (app/account/)
+
 - **auth/**: OAuth authentication for cloud services
 - **config.py**: Account configuration
 
 ### Data Flow
 
+**Batch mode (two-pass):**
+
 1. **Image Loading**: FileHandler extracts archives → images loaded into memory
-2. **Detection**: RT-DETR-v2 detects text/bubble boxes → segmentation creates TextBlocks
-3. **OCR**: OCR provider extracts text from each TextBlock → cached
-4. **Inpainting**: Selected inpainting model removes text → patches stored
-5. **Translation**: LLM translates text with page context → cached
-6. **Rendering**: Text rendered back onto inpainted image with proper layout
-7. **Editing**: User can manually edit boxes, text, and formatting via canvas
-8. **Saving**: Project state saved to .ctpr file (msgpack + images)
+2. **Pass 1 — Discovery**: OCR all pages → `DiscoveryPass` accumulates text → LLM identifies proper nouns/terms → `ComicSession` glossary populated
+3. **Pass 2 — Translation**:
+   - **Detection**: RT-DETR-v2 detects text/bubble boxes → segmentation creates TextBlocks
+   - **OCR**: OCR provider extracts text → `OCRNoiseFilter` strips phantom/misread tokens → cached
+   - **Inpainting**: Selected inpainting model removes text → patches stored
+   - **Translation**: LLM translates with `ComicSession` system prompt (locked glossary + rolling story context) → glossary enforced on output → cached in v2 cache
+   - **Rendering**: `CollisionResolver` adjusts font sizes for overlapping boxes → `BubbleExpander` clips boxes to bubble safe zones → text rendered onto inpainted image
+4. **Editing**: User can manually edit boxes, text, and formatting via canvas
+5. **Saving**: Project state saved to .ctpr file (msgpack + images)
 
 ### State Management
 
 - **Image States**: Tracked per image with history for undo/redo
 - **Undo/Redo**: Qt's QUndoStack/QUndoGroup with command pattern
 - **Memory Management**: LRU-style management keeps recent images in memory, older ones on disk
-- **Caching**: OCR and translation results cached to avoid redundant API calls
+- **Caching**: OCR results cached; translation results cached in both legacy dict and `TranslationCacheV2` (status-aware, with v1 migration)
+- **Comic Session**: `ComicSession` holds per-batch glossary and rolling story context; injected into `TranslationHandler` before batch processing
 - **Project Files**: .ctpr files are ZIP archives containing msgpack state + images
 
 ### Key Design Patterns
 
 - **Pipeline Pattern**: Modular handlers for each processing stage
+- **Two-Pass Pattern**: Discovery pass (OCR + glossary build) precedes translation pass in batch mode
 - **Command Pattern**: All edits are QUndoCommand subclasses
 - **Factory Pattern**: OCR and translator providers selected via factories
 - **Controller Pattern**: Separate controllers for different concerns
@@ -160,6 +188,7 @@ Separate concerns for different aspects of the application:
 ### Language Support
 
 The application supports multiple UI languages via Qt's translation system:
+
 - Translation files: `resources/translations/ct_<lang>.ts`
 - Compiled files: `resources/translations/compiled/ct_<lang>.qm`
 - Supported: English, Korean, French, Simplified Chinese, Traditional Chinese (Taiwan/Hong Kong), Russian, German, Spanish, Italian, Turkish
@@ -177,13 +206,20 @@ The application supports multiple UI languages via Qt's translation system:
 ### Git Remotes
 
 This repository has two remotes:
+
 - **origin**: https://github.com/ogkalu2/comic-translate (upstream/original)
 - **fork**: https://github.com/mythic3011/comic-translate.git (your fork)
 
 To sync with the original repository:
+
 ```bash
 git fetch origin
 git merge origin/main
 # or
 git rebase origin/main
 ```
+
+## git
+
+Avoid committing files that related to AI models, LLMs, and other sensitive information.
+NO committing with Co author with Claude or other LLMs.
