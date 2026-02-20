@@ -27,8 +27,16 @@ class StoryContextWindow:
         result = "\n".join(lines)
         return result[:self.max_chars]
 
-    def build_system_prompt(self, glossary_block: str, target_lang: str) -> str:
+    def build_system_prompt(
+        self,
+        glossary_block: str,
+        target_lang: str,
+        free_tier: bool = False,
+    ) -> str:
         context = self.build_prompt_block()
+        # Cap context for free-tier models to stay within token budgets
+        if free_tier and len(context) > 500:
+            context = context[:500]
         parts = [f"You are translating a comic into {target_lang}."]
         if glossary_block:
             parts.append(f"\nLOCKED GLOSSARY — use these exactly:\n{glossary_block}")

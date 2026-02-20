@@ -97,6 +97,19 @@ class TranslationCacheV2:
     def _get_entry(self, src: str, tgt: str, source_text: str) -> Optional[dict]:
         return self.data["entries"].get(_make_key(src, tgt, source_text))
 
+    def save(self, path: str) -> None:
+        import json
+        self.data["saved_at"] = time.time()
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def load(cls, path: str) -> "TranslationCacheV2":
+        import json
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return cls(data)
+
 
 def migrate_v1_to_v2(old: dict, src: str = "en", tgt: str = "en") -> dict:
     """Migrate flat KV cache to v2 schema."""

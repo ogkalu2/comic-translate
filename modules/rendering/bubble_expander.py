@@ -82,6 +82,15 @@ class BubbleDetector:
 
 
 class BubbleExpander:
+    @staticmethod
+    def make_fallback_mask(box: RenderBox, image_h: int, image_w: int) -> np.ndarray:
+        """Return a full-image mask covering the box's bounding rect as a safe zone."""
+        mask = np.zeros((image_h, image_w), dtype=np.uint8)
+        x2 = min(box.x + box.width, image_w)
+        y2 = min(box.y + box.height, image_h)
+        mask[box.y:y2, box.x:x2] = 255
+        return mask
+
     def expand(
         self,
         box: RenderBox,
