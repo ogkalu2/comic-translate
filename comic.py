@@ -440,16 +440,29 @@ def load_translation(app, language: str):
     qt_lang_code = lang_code.replace('-', '_')
     from PySide6.QtCore import QLibraryInfo
     qt_tr_path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
-    
-    # Try loading from the local directory first (if bundled)
-    if not qt_translator.load(f"qtbase_{qt_lang_code}", current_file_dir):
-        # Try loading from the standard Qt installation path
-        if not qt_translator.load(f"qtbase_{qt_lang_code}", qt_tr_path):
-            print(f"Failed to load Qt translation for {language}")
-        else:
+
+    # Fallback map: Qt doesn't ship qtbase files for every variant
+    _qt_fallback = {
+        'zh_HK': 'zh_CN',
+        'zh_TW': 'zh_TW',
+        'yue':   'zh_CN',
+    }
+    qt_lang_codes_to_try = [qt_lang_code]
+    if qt_lang_code in _qt_fallback:
+        qt_lang_codes_to_try.append(_qt_fallback[qt_lang_code])
+
+    loaded = False
+    for code in qt_lang_codes_to_try:
+        if qt_translator.load(f"qtbase_{code}", current_file_dir):
             app.installTranslator(qt_translator)
-    else:
-        app.installTranslator(qt_translator)
+            loaded = True
+            break
+        if qt_translator.load(f"qtbase_{code}", qt_tr_path):
+            app.installTranslator(qt_translator)
+            loaded = True
+            break
+    if not loaded:
+        print(f"Failed to load Qt translation for {language}")
 
     # if translator.load(f":/translations/ct_{lang_code}.qm"):
     #     app.installTranslator(translator)
