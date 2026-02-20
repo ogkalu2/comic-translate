@@ -376,7 +376,7 @@ class TextBlockItem(QGraphicsTextItem):
                 ]
         else:
             # Adding/updating an outline for the selection or whole document
-            type = OutlineType.Full_Document if self.outline else OutlineType.Selection
+            type = OutlineType.Selection if self.textCursor().hasSelection() else OutlineType.Full_Document
 
             # Remove any existing outline for this exact selection range
             self.selection_outlines = [
