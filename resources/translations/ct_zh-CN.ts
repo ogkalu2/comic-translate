@@ -230,7 +230,12 @@
         <translation>繁体中文</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="88"/>
+        <location filename="../../app/ui/main_window.py" line="89"/>
+        <source>Cantonese (Hong Kong)</source>
+        <translation>粤语（香港）</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window.py" line="90"/>
         <source>Chinese</source>
         <translation>中文</translation>
     </message>
