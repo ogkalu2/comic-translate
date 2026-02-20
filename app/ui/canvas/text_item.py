@@ -912,3 +912,30 @@ class TextBlockItem(QGraphicsTextItem):
         new_instance.__dict__.update(copy.copy(self.__dict__))
         return new_instance
 
+    def insert_translation(self, raw_translated: str) -> None:
+        """
+        Safely insert translated text into this item.
+        - Strips HTML from API response
+        - Inserts as plain text with explicit clean format (no background colour)
+        - Resets cursor format so next typed chars are also clean
+        """
+        import re as _re
+        plain_text = _re.sub(r'<[^>]+>', '', raw_translated).strip()
+
+        fmt = QTextCharFormat()
+        fmt.setForeground(self.text_color)
+        fmt.setBackground(Qt.GlobalColor.transparent)
+        if self.font_family:
+            font = QFont(self.font_family, int(self.font_size))
+            font.setBold(self.bold)
+            font.setItalic(self.italic)
+            font.setUnderline(self.underline)
+            fmt.setFont(font)
+
+        cursor = self.textCursor()
+        cursor.select(QTextCursor.SelectionType.Document)
+        cursor.insertText(plain_text, fmt)
+
+        self.setTextCursor(cursor)
+        self.setCurrentCharFormat(fmt)
+
