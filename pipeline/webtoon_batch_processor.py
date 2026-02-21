@@ -290,7 +290,11 @@ class WebtoonBatchProcessor:
                     err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
                 elif isinstance(e, requests.exceptions.HTTPError):
                     try:
-                        err_msg = e.response.json().get("error_description", str(e))
+                        err_json = e.response.json()
+                        if "detail" in err_json and isinstance(err_json["detail"], dict):
+                            err_msg = err_json["detail"].get("error_description", str(e))
+                        else:
+                            err_msg = err_json.get("error_description", str(e))
                     except Exception:
                         err_msg = str(e)
                 else:
@@ -365,7 +369,11 @@ class WebtoonBatchProcessor:
                     err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
                 elif isinstance(e, requests.exceptions.HTTPError):
                     try:
-                        err_msg = e.response.json().get("error_description", str(e))
+                        err_json = e.response.json()
+                        if "detail" in err_json and isinstance(err_json["detail"], dict):
+                            err_msg = err_json["detail"].get("error_description", str(e))
+                        else:
+                            err_msg = err_json.get("error_description", str(e))
                     except Exception:
                         err_msg = str(e)
                 else:
