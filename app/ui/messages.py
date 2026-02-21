@@ -145,6 +145,34 @@ class Messages:
                 pass
 
     @staticmethod
+    def get_server_error_text(status_code: int = 500, context: str = None) -> str:
+        """
+        Return the localized error string for a given HTTP status code.
+        Thread-safe — does not touch the UI. Use this from worker threads,
+        then pass the result through a signal so the UI can display it.
+
+        Args:
+            status_code: HTTP status code (500, 501, 502, 503, 504)
+            context: optional context ('translation', 'ocr', or None for generic)
+        """
+        messages = {
+            500: QCoreApplication.translate("Messages", "We encountered an unexpected server error.\nPlease try again in a few moments."),
+            502: QCoreApplication.translate("Messages", "The external service provider is having trouble.\nPlease try again later."),
+            503: QCoreApplication.translate("Messages", "The server is currently busy or under maintenance.\nPlease try again shortly."),
+            504: QCoreApplication.translate("Messages", "The server took too long to respond.\nPlease check your connection or try again later."),
+        }
+
+        if status_code == 501:
+            if context == 'ocr':
+                return QCoreApplication.translate("Messages", "The selected text recognition tool is not supported.\nPlease select a different tool in Settings.")
+            elif context == 'translation':
+                return QCoreApplication.translate("Messages", "The selected translator is not supported.\nPlease select a different tool in Settings.")
+            else:
+                return QCoreApplication.translate("Messages", "The selected tool is not supported.\nPlease select a different tool in Settings.")
+
+        return messages.get(status_code, messages[500])
+
+    @staticmethod
     def show_server_error(parent, status_code: int = 500, context: str = None):
         """
         Show a user-friendly error for 5xx server issues.
@@ -154,24 +182,7 @@ class Messages:
             status_code: HTTP status code
             context: optional context ('translation', 'ocr', or None for generic)
         """
-        messages = {
-            500: QCoreApplication.translate("Messages", "We encountered an unexpected server error.\nPlease try again in a few moments."),
-            502: QCoreApplication.translate("Messages", "The external service provider is having trouble.\nPlease try again later."),
-            503: QCoreApplication.translate("Messages", "The server is currently busy or under maintenance.\nPlease try again shortly."),
-            504: QCoreApplication.translate("Messages", "The server took too long to respond.\nPlease check your connection or try again later."),
-        }
-        
-        # Context-aware 501 message
-        if status_code == 501:
-            if context == 'ocr':
-                text = QCoreApplication.translate("Messages", "The selected text recognition tool is not supported.\nPlease select a different tool in Settings.")
-            elif context == 'translation':
-                text = QCoreApplication.translate("Messages", "The selected translator is not supported.\nPlease select a different tool in Settings.")
-            else:
-                text = QCoreApplication.translate("Messages", "The selected tool is not supported.\nPlease select a different tool in Settings.")
-        else:
-            text = messages.get(status_code, messages[500])
-        
+        text = Messages.get_server_error_text(status_code, context)
         MMessage.error(
             text=text,
             parent=parent,

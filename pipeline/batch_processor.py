@@ -29,6 +29,7 @@ from modules.utils.exceptions import InsufficientCreditsException
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from app.ui.messages import Messages
 from .cache_manager import CacheManager
 from .block_detection import BlockDetectionHandler
 from .inpainting import InpaintingHandler
@@ -179,14 +180,18 @@ class BatchProcessor:
                         err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
                     # if it's an HTTPError, try to pull the "error_description" field
                     elif isinstance(e, requests.exceptions.HTTPError):
-                        try:
-                            err_json = e.response.json()
-                            if "detail" in err_json and isinstance(err_json["detail"], dict):
-                                err_msg = err_json["detail"].get("error_description", str(e))
-                            else:
-                                err_msg = err_json.get("error_description", str(e))
-                        except Exception:
-                            err_msg = str(e)
+                        status_code = e.response.status_code if e.response is not None else 500
+                        if status_code >= 500:
+                            err_msg = Messages.get_server_error_text(status_code, context='ocr')
+                        else:
+                            try:
+                                err_json = e.response.json()
+                                if "detail" in err_json and isinstance(err_json["detail"], dict):
+                                    err_msg = err_json["detail"].get("error_description", str(e))
+                                else:
+                                    err_msg = err_json.get("error_description", str(e))
+                            except Exception:
+                                err_msg = str(e)
                     else:
                         err_msg = str(e)
 
@@ -278,14 +283,18 @@ class BatchProcessor:
                     err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
                 # if it's an HTTPError, try to pull the "error_description" field
                 elif isinstance(e, requests.exceptions.HTTPError):
-                    try:
-                        err_json = e.response.json()
-                        if "detail" in err_json and isinstance(err_json["detail"], dict):
-                            err_msg = err_json["detail"].get("error_description", str(e))
-                        else:
-                            err_msg = err_json.get("error_description", str(e))
-                    except Exception:
-                        err_msg = str(e)
+                    status_code = e.response.status_code if e.response is not None else 500
+                    if status_code >= 500:
+                        err_msg = Messages.get_server_error_text(status_code, context='translation')
+                    else:
+                        try:
+                            err_json = e.response.json()
+                            if "detail" in err_json and isinstance(err_json["detail"], dict):
+                                err_msg = err_json["detail"].get("error_description", str(e))
+                            else:
+                                err_msg = err_json.get("error_description", str(e))
+                        except Exception:
+                            err_msg = str(e)
                 else:
                     err_msg = str(e)
 
