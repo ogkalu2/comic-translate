@@ -27,5 +27,10 @@ class CustomTranslation(GPTTranslation):
         self.model = credentials.get('model', '')
         
         # Override the API base URL with the custom one
-        self.api_base_url = credentials.get('api_url', '').rstrip('/')
+        # Strip trailing slashes and remove any /chat/completions endpoint path
+        api_url = credentials.get('api_url', '').rstrip('/')
+        # Remove /chat/completions if it's already in the URL (to prevent duplication)
+        if api_url.endswith('/chat/completions'):
+            api_url = api_url.rsplit('/chat/completions', 1)[0]
+        self.api_base_url = api_url
         self.timeout = 120  # Custom timeout for potentially slower custom LLMs
