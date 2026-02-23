@@ -1,5 +1,5 @@
 # Comic Translate
-English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md)
+English | [한국어](docs/README_ko.md) | [Français](docs/README_fr.md) | [简体中文](docs/README_zh-CN.md) | [繁體中文](docs/README_zh-TW.md)
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
@@ -67,7 +67,7 @@ Note: Some of these also have Official English Translations
 
 ## Installation
 ### Download
-Download and install Comic Translate for Windows and macOS from [here](https://www.comic-translate.com). 
+Download and install Comic Translate for Windows and macOS from [here](https://www.comic-translate.com/download/).
 
 >Ignore Smart Screen for Windows (Click More info > Run anyway). For macOS, after trying to open, go to Settings > Privacy and Security > Scroll down and click Open Anyway. 
 

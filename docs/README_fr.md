@@ -1,5 +1,5 @@
 # Traduction de Bandes Dessinées
-[English](../README.md) | [한국어](README_ko.md) | Français | [简体中文](README_zh-CN.md)
+[English](../README.md) | [한국어](README_ko.md) | Français | [简体中文](README_zh-CN.md) | [繁體中文](README_zh-TW.md)
 
 <img src="https://i.imgur.com/QUVK6mK.png">
 
@@ -64,7 +64,7 @@ Note : Certains ont également des traductions officielles en anglais.
 
 ## Installation
 ### Téléchargement
-Téléchargez et installez Comic Translate pour Windows et macOS depuis [ici](https://www.comic-translate.com).
+Téléchargez et installez Comic Translate pour Windows et macOS depuis [ici](https://www.comic-translate.com/download/).
 > Ignorez Smart Screen pour Windows (cliquez sur Plus d'informations > Exécuter quand même). Pour macOS, après avoir tenté d'ouvrir l'application, accédez à Réglages > Confidentialité et sécurité > faites défiler vers le bas et cliquez sur Ouvrir quand même.
 
 > Note : L'accélération GPU n'est actuellement disponible que lors de l'exécution depuis la source.
