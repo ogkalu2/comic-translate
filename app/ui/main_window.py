@@ -1,4 +1,5 @@
 import os
+import sys
 from PySide6 import QtWidgets, QtGui
 from PySide6 import QtCore
 from PySide6.QtGui import QIntValidator
@@ -11,7 +12,11 @@ from .dayu_widgets.combo_box import MComboBox, MFontComboBox
 from .dayu_widgets.check_box import MCheckBox
 from .dayu_widgets.text_edit import MTextEdit
 from .dayu_widgets.line_edit import MLineEdit
-from .dayu_widgets.browser import MDragFileButton, MClickBrowserFileToolButton, MClickSaveFileToolButton
+from .dayu_widgets.browser import (
+    MDragFileButton,
+    MClickBrowserFileToolButton,
+    MClickSaveFileToolButton,
+)
 from .dayu_widgets.push_button import MPushButton
 from .dayu_widgets.tool_button import MToolButton
 from .dayu_widgets.radio_button import MRadioButton
@@ -28,7 +33,105 @@ from .canvas.image_viewer import ImageViewer
 from .settings.settings_page import SettingsPage
 from .list_view import PageListView
 from .search_replace_panel import SearchReplacePanel
+from .title_bar import CustomTitleBar, TITLE_BAR_HEIGHT, RESIZE_MARGIN
 
+
+# Qt-native edge-resize handler for frameless windows
+
+_EDGE_CURSORS: dict = {
+    frozenset({QtCore.Qt.Edge.LeftEdge}):                             QtCore.Qt.CursorShape.SizeHorCursor,
+    frozenset({QtCore.Qt.Edge.RightEdge}):                            QtCore.Qt.CursorShape.SizeHorCursor,
+    frozenset({QtCore.Qt.Edge.TopEdge}):                              QtCore.Qt.CursorShape.SizeVerCursor,
+    frozenset({QtCore.Qt.Edge.BottomEdge}):                           QtCore.Qt.CursorShape.SizeVerCursor,
+    frozenset({QtCore.Qt.Edge.TopEdge,    QtCore.Qt.Edge.LeftEdge}):  QtCore.Qt.CursorShape.SizeFDiagCursor,
+    frozenset({QtCore.Qt.Edge.BottomEdge, QtCore.Qt.Edge.RightEdge}): QtCore.Qt.CursorShape.SizeFDiagCursor,
+    frozenset({QtCore.Qt.Edge.TopEdge,    QtCore.Qt.Edge.RightEdge}): QtCore.Qt.CursorShape.SizeBDiagCursor,
+    frozenset({QtCore.Qt.Edge.BottomEdge, QtCore.Qt.Edge.LeftEdge}):  QtCore.Qt.CursorShape.SizeBDiagCursor,
+}
+
+
+def _edges_at(win: QtWidgets.QMainWindow, gpos: QtCore.QPoint, margin: int = RESIZE_MARGIN):
+    """Return a Qt.Edges flag for whichever window edges *gpos* is within
+    *margin* pixels of, or Qt.Edge(0) if none."""
+    geo = win.geometry()
+    x = gpos.x() - geo.x()
+    y = gpos.y() - geo.y()
+    w = geo.width()
+    h = geo.height()
+
+    edges = QtCore.Qt.Edge(0)
+    if x <= margin:     edges |= QtCore.Qt.Edge.LeftEdge
+    if x >= w - margin: edges |= QtCore.Qt.Edge.RightEdge
+    if y <= margin:     edges |= QtCore.Qt.Edge.TopEdge
+    if y >= h - margin: edges |= QtCore.Qt.Edge.BottomEdge
+    return edges
+
+
+class _EdgeResizer(QtCore.QObject):
+    """Application-level event filter that provides resize cursors and
+    calls QWindow.startSystemResize() for a frameless QMainWindow.
+
+    Installed once on the QApplication so it intercepts mouse events
+    regardless of which child widget the cursor is over.
+    """
+
+    MARGIN = RESIZE_MARGIN
+
+    def __init__(self, window: QtWidgets.QMainWindow) -> None:
+        super().__init__(window)
+        self._win = window
+        QtWidgets.QApplication.instance().installEventFilter(self)
+
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:  # noqa: N802
+        etype = event.type()
+        if etype not in (
+            QtCore.QEvent.Type.MouseMove,
+            QtCore.QEvent.Type.MouseButtonPress,
+        ):
+            return False
+
+        win = self._win
+
+        # Only handle events for this specific top-level window.
+        if isinstance(watched, QtWidgets.QWidget):
+            if watched.window() is not win:
+                return False
+
+        # Don't intercept when maximised or full-screen - no resize needed.
+        if win.isMaximized() or win.isFullScreen():
+            if etype == QtCore.QEvent.Type.MouseMove:
+                win.unsetCursor()
+            return False
+
+        gpos = event.globalPosition().toPoint()
+        geo = win.geometry()
+
+        # Quick bounding-box rejection.
+        m = self.MARGIN
+        if not geo.adjusted(-m, -m, m, m).contains(gpos):
+            if etype == QtCore.QEvent.Type.MouseMove:
+                win.unsetCursor()
+            return False
+
+        edges = _edges_at(win, gpos, m)
+
+        if etype == QtCore.QEvent.Type.MouseMove:
+            key = frozenset(e for e in QtCore.Qt.Edge if e & edges)
+            cursor_shape = _EDGE_CURSORS.get(key)
+            if cursor_shape is not None:
+                win.setCursor(cursor_shape)
+            else:
+                win.unsetCursor()
+            return False  # never consume move events
+
+        # MouseButtonPress
+        if event.button() == QtCore.Qt.MouseButton.LeftButton and edges:
+            handle = win.windowHandle()
+            if handle:
+                handle.startSystemResize(edges)
+            return True  # consume - nothing else should act on this press
+
+        return False
 
 user_font_path = os.path.join(get_user_data_dir(), "fonts")
 if not os.path.exists(user_font_path):
@@ -51,6 +154,19 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
 
     def __init__(self, parent=None):
         super(ComicTranslateUI, self).__init__(parent)
+        # Remove the OS-native title bar; our CustomTitleBar replaces it.
+        self.setWindowFlags(
+            self.windowFlags() | QtCore.Qt.WindowType.FramelessWindowHint
+        )
+
+        # On Windows, WA_TranslucentBackground changes how the DWM
+        # composites this window — it stops the DWM from doing its
+        # crude content-prediction/stretching during resize, which is
+        # the root cause of top/left resize jitter.
+        if sys.platform == "win32":
+            self.setAttribute(
+                QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True
+            )
         self.setWindowTitle("Comic Translate[*]")
         
         screen = QtWidgets.QApplication.primaryScreen()
@@ -118,10 +234,28 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self._init_ui()
 
     def _init_ui(self):
-        main_widget = QtWidgets.QWidget(self)
+        # ── Outer wrapper: custom title bar stacked above the content ──
+        outer_widget = QtWidgets.QWidget(self)
+        outer_layout = QtWidgets.QVBoxLayout(outer_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        self.title_bar = CustomTitleBar(outer_widget)
+        outer_layout.addWidget(self.title_bar)
+
+        # Apply initial (dark) theme colours right away so there's no flash.
+        self._apply_title_bar_style("Dark")
+
+        # Install the Qt-native edge-resize handler (cross-platform).
+        self._edge_resizer = _EdgeResizer(self)
+
+        # ── Content row ──
+        main_widget = QtWidgets.QWidget()
         self.main_layout = QtWidgets.QHBoxLayout()
         main_widget.setLayout(self.main_layout)
-        self.setCentralWidget(main_widget)
+        outer_layout.addWidget(main_widget)
+
+        self.setCentralWidget(outer_widget)
 
         # Navigation rail
         nav_rail_layout = self._create_nav_rail()
@@ -131,6 +265,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         # Create main content and a stacked container so switching pages
         # doesn't add/remove widgets (which can change window size)
         self.main_content_widget = self._create_main_content()
+        self.title_bar.set_undo_redo_widget(self.undo_tool_group)
         self._center_stack = QtWidgets.QStackedWidget()
         self._center_stack.addWidget(self.main_content_widget)
         # settings_page already created in __init__, add it to the stack
@@ -407,7 +542,6 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.batch_report_button.setEnabled(False)
         self.batch_report_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
-        header_layout.addWidget(self.undo_tool_group)
         header_layout.addWidget(self.hbutton_group)
         header_layout.addWidget(self.loading)
         header_layout.addStretch()
@@ -761,6 +895,49 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             # Switch back to the main content in the center stack
             self._center_stack.setCurrentWidget(self.main_content_widget)
 
+
+    def changeEvent(self, event: QtCore.QEvent) -> None:  # type: ignore[override]
+        """Keep the title bar in sync with window-state and title changes."""
+        super().changeEvent(event)
+        if not hasattr(self, "title_bar"):
+            return
+        if event.type() == QtCore.QEvent.Type.WindowStateChange:
+            self.title_bar.update_maximize_icon(self.isMaximized())
+        elif event.type() == QtCore.QEvent.Type.WindowTitleChange:
+            self.title_bar.update_title(self.windowTitle())
+        elif event.type() == QtCore.QEvent.Type.ModifiedChange:
+            self.title_bar.update_title(self.windowTitle())
+
+    if sys.platform == "win32":
+        def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # type: ignore[override]
+            """Fill the background opaquelyso WA_TranslucentBackground
+            doesn't show through during resize."""
+            p = QtGui.QPainter(self)
+            p.setCompositionMode(
+                QtGui.QPainter.CompositionMode.CompositionMode_Source
+            )
+            p.fillRect(self.rect(), self.palette().window())
+            p.end()
+            super().paintEvent(event)
+
+    def _apply_title_bar_style(self, theme: str) -> None:
+        """Theme the custom title bar independently of dayu_theme."""
+        if not hasattr(self, "title_bar"):
+            return
+        light = (theme == self.settings_page.ui.tr("Light")) if hasattr(self, "settings_page") else False
+        if light:
+            self.title_bar.apply_style(
+                bg="#f0f0f0",
+                fg="#1a1a1a",
+                hover="rgba(0,0,0,25)",
+            )
+        else:
+            self.title_bar.apply_style(
+                bg="#2b2b2b",
+                fg="#e8e8e8",
+                hover="rgba(255,255,255,30)",
+            )
+
     def apply_theme(self, theme: str):
         if theme == self.settings_page.ui.tr("Light"):
             new_theme = MTheme("light", primary_color=MTheme.blue)
@@ -768,6 +945,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             new_theme = MTheme("dark", primary_color=MTheme.yellow)
         
         new_theme.apply(self)
+        self._apply_title_bar_style(theme)
 
         # Refresh the UI to apply the new theme
         self.repaint()
@@ -895,5 +1073,3 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         
     def set_font(self, font_family: str):
         self.font_dropdown.setCurrentFont(font_family)
-        
-
