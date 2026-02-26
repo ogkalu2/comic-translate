@@ -360,11 +360,11 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.undo_tool_group.set_button_list(undo_tools)
 
         button_config_list = [
-            {"text": self.tr("Detect Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Recognize Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Get Translations"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Segment Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Clean Image"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Detect"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Recognize"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Translate"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Segment"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Clean"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Render"), "dayu_type": MPushButton.DefaultType, "enabled": False},
         ]
 
@@ -403,7 +403,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.cancel_button = MPushButton(self.tr("Cancel"))
         self.cancel_button.setEnabled(True)
         self.cancel_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-        self.batch_report_button = MPushButton(self.tr("Batch Report"))
+        self.batch_report_button = MPushButton(self.tr("Report"))
         self.batch_report_button.setEnabled(False)
         self.batch_report_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
