@@ -397,7 +397,9 @@ def _materialize_from_manifest_and_pages(
             usage_type = usage[0]
             if usage_type == "image_data":
                 file_path = usage[1]
-                image_data[file_path] = imk.read_image(img_disk_path)
+                # Keep image_data lazy on project load; load_image() reads from
+                # image_history/current path when needed.
+                image_data[file_path] = None
             elif usage_type == "image_files":
                 file_path = usage[1]
                 original_to_temp[file_path] = img_disk_path
@@ -407,7 +409,9 @@ def _materialize_from_manifest_and_pages(
                 history = in_memory_history[file_path]
                 while len(history) <= idx:
                     history.append(None)
-                history[idx] = imk.read_image(img_disk_path)
+                # Keep history cache lazy (None placeholders). Undo/redo already
+                # falls back to reading from image_history paths on demand.
+                history[idx] = None
             elif usage_type == "image_history":
                 file_path, idx = usage[1], usage[2]
                 image_history.setdefault(file_path, [])
