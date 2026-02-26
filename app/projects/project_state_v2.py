@@ -326,13 +326,11 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
                         (src_path, size, mtime_ns, blob_hash),
                     )
 
-        if use_temp_and_replace and temp_db_path is not None:
-            os.replace(temp_db_path, file_name)
     finally:
         if use_temp_and_replace:
             conn.close()
-        if temp_db_path and os.path.exists(temp_db_path):
-            os.remove(temp_db_path)
+    if use_temp_and_replace and temp_db_path is not None:
+        os.replace(temp_db_path, file_name)
 
 
 def _materialize_from_manifest_and_pages(
