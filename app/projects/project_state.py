@@ -10,6 +10,12 @@ from typing import TYPE_CHECKING
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import imkit as imk
 from .parsers import ProjectEncoder, ProjectDecoder, ensure_string_keys
+from .project_state_v2 import (
+    close_cached_connection as close_state_v2_cached_connection,
+    is_sqlite_project_file,
+    load_state_from_proj_file_v2,
+    save_state_to_proj_file_v2,
+)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -31,6 +37,13 @@ def _join_from_archive_relpath(base_dir: str, rel_path: str) -> str:
     return os.path.join(base_dir, *parts)
 
 def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
+    # Default writer: v2 SQLite container (incremental-friendly, portable).
+    return save_state_to_proj_file_v2(comic_translate, file_name)
+
+
+def close_state_store(file_name: str | None = None) -> None:
+    close_state_v2_cached_connection(file_name)
+
     """
     Saves the state of the comic_translate object to a msgpack file and a folder of unique images.
 
@@ -161,6 +174,9 @@ def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
 
 
 def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
+    if is_sqlite_project_file(file_name):
+        return load_state_from_proj_file_v2(comic_translate, file_name)
+
     decoder = ProjectDecoder()
 
     if not hasattr(comic_translate, 'temp_dir'):

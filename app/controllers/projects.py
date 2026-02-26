@@ -14,7 +14,11 @@ from PySide6.QtGui import QUndoStack
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
-from app.projects.project_state import save_state_to_proj_file, load_state_from_proj_file
+from app.projects.project_state import (
+    close_state_store,
+    load_state_from_proj_file,
+    save_state_to_proj_file,
+)
 from modules.utils.archives import make
 
 if TYPE_CHECKING:
@@ -144,6 +148,9 @@ class ProjectController:
         return file_name
 
     def run_save_proj(self, file_name, post_save_callback=None):
+        prev_project_file = self.main.project_file
+        if prev_project_file and prev_project_file != file_name:
+            close_state_store(prev_project_file)
         self.main.project_file = file_name
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.loading.setVisible(True)
@@ -231,6 +238,9 @@ class ProjectController:
 
     def thread_load_project(self, file_name: str):
         self.main.image_ctrl.clear_state()
+        prev_project_file = self.main.project_file
+        if prev_project_file and prev_project_file != file_name:
+            close_state_store(prev_project_file)
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.run_threaded(
             self.load_project, 
