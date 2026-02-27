@@ -124,7 +124,7 @@ class SettingsPage(QtWidgets.QWidget):
         }
 
     def get_export_settings(self):
-        owner = self.parent()
+        owner = self.window()
         title_bar = getattr(owner, "title_bar", None)
         autosave_enabled = bool(title_bar.autosave_switch.isChecked()) if title_bar is not None else False
         settings = {
