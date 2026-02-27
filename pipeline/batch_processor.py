@@ -323,15 +323,23 @@ class BatchProcessor:
                 path = os.path.join(directory, f"comic_translate_{timestamp}", "raw_texts", archive_bname)
                 if not os.path.exists(path):
                     os.makedirs(path, exist_ok=True)
-                file = open(os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_raw.txt"), 'w', encoding='UTF-8')
-                file.write(entire_raw_text)
+                with open(
+                    os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_raw.json"),
+                    'w',
+                    encoding='UTF-8',
+                ) as file:
+                    file.write(entire_raw_text)
 
             if export_settings['export_translated_text']:
                 path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_texts", archive_bname)
                 if not os.path.exists(path):
                     os.makedirs(path, exist_ok=True)
-                file = open(os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_translated.txt"), 'w', encoding='UTF-8')
-                file.write(entire_translated_text)
+                with open(
+                    os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_translated.json"),
+                    'w',
+                    encoding='UTF-8',
+                ) as file:
+                    file.write(entire_translated_text)
 
             self.emit_progress(index, total_images, 7, 10, False)
             if self._is_cancelled():

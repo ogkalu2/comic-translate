@@ -974,7 +974,7 @@ class WebtoonBatchProcessor:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
             raw_text = get_raw_text(blk_list)
-            with open(os.path.join(path, f"{base_name}_raw.txt"), 'w', encoding='UTF-8') as f:
+            with open(os.path.join(path, f"{base_name}_raw.json"), 'w', encoding='UTF-8') as f:
                 f.write(raw_text)
 
         # Export Translated Text
@@ -983,7 +983,7 @@ class WebtoonBatchProcessor:
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
             translated_text = get_raw_translation(blk_list)
-            with open(os.path.join(path, f"{base_name}_translated.txt"), 'w', encoding='UTF-8') as f:
+            with open(os.path.join(path, f"{base_name}_translated.json"), 'w', encoding='UTF-8') as f:
                 f.write(translated_text)
 
         # Continue Image Rendering
