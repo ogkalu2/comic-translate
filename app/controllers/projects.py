@@ -12,6 +12,7 @@ import imkit as imk
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QUndoStack
+from app.thread_worker import GenericWorker
 
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
@@ -43,6 +44,7 @@ class ProjectController:
         self._autosave_signals_connected = False
         self._autosave_save_pending = False
         self._autosave_retrigger_requested = False
+        self._active_save_workers: list = []  # keeps Python refs alive until workers finish
 
     def initialize_autosave(self):
         if self._autosave_signals_connected:
@@ -112,6 +114,66 @@ class ProjectController:
     def _on_realtime_autosave_timeout(self):
         # Real-time autosave writes directly to the open project file.
         self.autosave_project(prefer_project_file=True)
+
+
+    def _on_batch_page_done(self, image_path: str):
+        """Triggered by render_state_ready after each page is processed during batch.
+        Saves the project file immediately so progress is not lost between pages.
+
+        NOTE: this deliberately bypasses the task_runner_ctrl queue (which is
+        blocked while the batch is running) and avoids touching current_worker
+        (which the batch processor uses for cancel detection). A GenericWorker
+        is started directly on the shared threadpool instead.
+        """
+        autosave_enabled = bool(
+            self.main.settings_page.get_export_settings().get("project_autosave_enabled", False)
+        )
+        if not autosave_enabled or not self.main.project_file:
+            return
+        if self._autosave_save_pending:
+            # A save is already in flight; request a follow-up once it finishes.
+            self._autosave_retrigger_requested = True
+            return
+
+        autosave_start_revision = self.main._dirty_revision
+        self._autosave_save_pending = True
+        target_file = self.main.project_file
+
+        worker = GenericWorker(self.save_project, target_file)
+        self._active_save_workers.append(worker)  # prevent GC until done
+
+        def on_error(error_tuple):
+            try:
+                self._active_save_workers.remove(worker)
+            except ValueError:
+                pass
+            self._autosave_save_pending = False
+            exctype, value, _ = error_tuple
+            logger.warning("Per-page autosave failed for %s: %s: %s", image_path, exctype.__name__, value)
+            if self._autosave_retrigger_requested:
+                self._autosave_retrigger_requested = False
+                self._on_batch_page_done(image_path)
+
+        def on_finished():
+            try:
+                self._active_save_workers.remove(worker)
+            except ValueError:
+                pass
+            self._autosave_save_pending = False
+            self.clear_recovery_checkpoint()
+            if self.main._dirty_revision == autosave_start_revision:
+                self.main.set_project_clean()
+            if self._autosave_retrigger_requested:
+                self._autosave_retrigger_requested = False
+                self._on_batch_page_done(image_path)
+
+        worker.signals.error.connect(
+            lambda err: QtCore.QTimer.singleShot(0, lambda: on_error(err))
+        )
+        worker.signals.finished.connect(
+            lambda: QtCore.QTimer.singleShot(0, on_finished)
+        )
+        self.main.threadpool.start(worker)
 
     def notify_project_dirty_revision_changed(self):
         if not self.main.project_file:

@@ -107,6 +107,7 @@ class ComicTranslate(ComicTranslateUI):
         self.progress_update.connect(self.update_progress)
         self.blk_rendered.connect(self.text_ctrl.on_blk_rendered)
         self.render_state_ready.connect(self.image_ctrl.on_render_state_ready)
+        self.render_state_ready.connect(self.project_ctrl._on_batch_page_done)
         self.download_event.connect(self.on_download_event)
 
         self.connect_ui_elements()
