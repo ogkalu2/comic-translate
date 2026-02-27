@@ -81,6 +81,7 @@ class ComicTranslate(ComicTranslateUI):
         self.project_file = None
         self.temp_dir = tempfile.mkdtemp()
         self._manual_dirty = False
+        self._dirty_revision = 0
         self._skip_close_prompt = False
 
         self.pipeline = ComicTranslatePipeline(self)
@@ -113,6 +114,7 @@ class ComicTranslate(ComicTranslateUI):
 
         self.project_ctrl.load_main_page_settings()
         self.settings_page.load_settings()
+        self.project_ctrl.initialize_autosave()
         
         # Check for updates in background
         self.settings_page.check_for_updates(is_background=True)
@@ -139,6 +141,7 @@ class ComicTranslate(ComicTranslateUI):
 
         self.save_browser.sig_file_changed.connect(self.image_ctrl.save_current_image)
         self.save_all_browser.sig_file_changed.connect(self.project_ctrl.save_and_make)
+        self.export_psd_folder_browser.sig_folder_changed.connect(self.project_ctrl.export_to_psd)
         self.save_project_button.clicked.connect(self.project_ctrl.thread_save_project)
         self.save_as_project_button.clicked.connect(self.project_ctrl.thread_save_as_project)
         self.drag_browser.sig_files_changed.connect(self._guarded_thread_load_images)
@@ -226,6 +229,7 @@ class ComicTranslate(ComicTranslateUI):
         """Clear the app to initial state after confirmation."""
         if not self._confirm_start_new_project():
             return
+        self.project_ctrl.clear_recovery_checkpoint()
         # Clear state and show the drag area
         self.image_ctrl.clear_state()
         self.central_stack.setCurrentWidget(self.drag_browser)
@@ -264,7 +268,15 @@ class ComicTranslate(ComicTranslateUI):
     def has_unsaved_changes(self) -> bool:
         return bool(self._manual_dirty) or self._any_undo_dirty()
 
+    def _bump_dirty_revision(self, *_):
+        self._dirty_revision += 1
+        try:
+            self.project_ctrl.notify_project_dirty_revision_changed()
+        except Exception:
+            pass
+
     def mark_project_dirty(self):
+        self._bump_dirty_revision()
         self._manual_dirty = True
         self._update_window_modified()
 
@@ -655,6 +667,7 @@ class ComicTranslate(ComicTranslateUI):
         else:
             self._skip_close_prompt = False
 
+        self.project_ctrl.shutdown_autosave(clear_recovery=True)
         self.shutdown()
 
         # Save all settings when the application is closed

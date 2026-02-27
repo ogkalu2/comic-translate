@@ -1,25 +1,32 @@
 from __future__ import annotations
 
+import copy
+import logging
 import os
 import shutil
 import tempfile
+from datetime import datetime
 from typing import TYPE_CHECKING
 from dataclasses import asdict, is_dataclass
 import imkit as imk
 
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QUndoStack
 
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from app.controllers.psd_exporter import PsdPageData, export_psd_pages
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
     save_state_to_proj_file,
 )
 from modules.utils.archives import make
+from modules.utils.paths import get_user_data_dir
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -28,67 +35,375 @@ if TYPE_CHECKING:
 class ProjectController:
     def __init__(self, main: ComicTranslate):
         self.main = main
+        self._autosave_timer = QtCore.QTimer(self.main)
+        self._autosave_timer.setSingleShot(False)
+        self._autosave_timer.timeout.connect(self._on_autosave_timeout)
+        self._realtime_autosave_timer = QtCore.QTimer(self.main)
+        self._realtime_autosave_timer.setSingleShot(True)
+        self._realtime_autosave_timer.setInterval(800)
+        self._realtime_autosave_timer.timeout.connect(self._on_realtime_autosave_timeout)
+        self._autosave_signals_connected = False
+        self._autosave_save_pending = False
+        self._autosave_retrigger_requested = False
+
+    def initialize_autosave(self):
+        if self._autosave_signals_connected:
+            self._apply_autosave_settings()
+            return
+
+        self.main.title_bar.autosave_switch.toggled.connect(self._on_autosave_setting_changed)
+        self.main.settings_page.ui.project_autosave_interval_spinbox.valueChanged.connect(
+            self._on_autosave_setting_changed
+        )
+        self._autosave_signals_connected = True
+        self._apply_autosave_settings()
+
+    def _on_autosave_setting_changed(self, *_):
+        autosave_enabled = bool(self.main.title_bar.autosave_switch.isChecked())
+
+        # Word-like behavior: enabling autosave for an unsaved project must
+        # first choose a concrete project file path.
+        if autosave_enabled and not self.main.project_file:
+            if not self.thread_save_as_project():
+                with QtCore.QSignalBlocker(self.main.title_bar.autosave_switch):
+                    self.main.title_bar.autosave_switch.setChecked(False)
+                return
+
+        self._apply_autosave_settings()
+
+    def _apply_autosave_settings(self):
+        export_settings = self.main.settings_page.get_export_settings()
+        interval_min = int(export_settings.get("project_autosave_interval_min", 3) or 3)
+        interval_min = max(1, min(interval_min, 120))
+
+        self._autosave_timer.setInterval(interval_min * 60 * 1000)
+        # Crash recovery snapshots remain interval-based.
+        self._autosave_timer.start()
+
+    def shutdown_autosave(self, clear_recovery: bool = True):
+        try:
+            self._autosave_timer.stop()
+        except Exception:
+            pass
+        try:
+            self._realtime_autosave_timer.stop()
+        except Exception:
+            pass
+        close_state_store()
+        if clear_recovery:
+            self.clear_recovery_checkpoint()
+
+    def _autosave_dir(self) -> str:
+        return os.path.join(get_user_data_dir(), "autosave")
+
+    def _recovery_project_path(self) -> str:
+        return os.path.join(self._autosave_dir(), "project_recovery.ctpr")
+
+    def clear_recovery_checkpoint(self):
+        recovery_file = self._recovery_project_path()
+        if os.path.exists(recovery_file):
+            try:
+                os.remove(recovery_file)
+            except Exception:
+                logger.debug("Failed to remove recovery project file: %s", recovery_file)
+
+    def _on_autosave_timeout(self):
+        # Interval timer is reserved for recovery checkpoints.
+        self.autosave_project(prefer_project_file=False)
+
+    def _on_realtime_autosave_timeout(self):
+        # Real-time autosave writes directly to the open project file.
+        self.autosave_project(prefer_project_file=True)
+
+    def notify_project_dirty_revision_changed(self):
+        if not self.main.project_file:
+            return
+        autosave_enabled = bool(
+            self.main.settings_page.get_export_settings().get("project_autosave_enabled", False)
+        )
+        if not autosave_enabled:
+            return
+        # Debounce bursts of edits (typing, drag, rapid undo/redo).
+        self._realtime_autosave_timer.start()
+
+    def autosave_project(self, prefer_project_file: bool = True):
+        if self._autosave_save_pending:
+            if prefer_project_file:
+                self._autosave_retrigger_requested = True
+            return
+        if not self.main.image_files:
+            return
+        if not self.main.has_unsaved_changes():
+            return
+        if getattr(self.main, "_batch_active", False):
+            return
+
+        # Flush pending text-edit command batching so autosave captures the latest edits.
+        try:
+            self.main.text_ctrl._commit_pending_text_command()
+        except Exception:
+            pass
+
+        self.save_current_state()
+
+        autosave_enabled = bool(
+            self.main.settings_page.get_export_settings().get("project_autosave_enabled", False)
+        )
+        use_project_file = bool(prefer_project_file and autosave_enabled and self.main.project_file)
+        target_file = self.main.project_file if use_project_file else self._recovery_project_path()
+        if not target_file:
+            return
+
+        is_regular_project_save = bool(self.main.project_file and target_file == self.main.project_file)
+        autosave_start_revision = self.main._dirty_revision
+        self._autosave_save_pending = True
+
+        def on_error(error_tuple):
+            self._autosave_save_pending = False
+            exctype, value, _ = error_tuple
+            logger.warning("Project autosave failed: %s: %s", exctype.__name__, value)
+            if self._autosave_retrigger_requested:
+                self._autosave_retrigger_requested = False
+                self._realtime_autosave_timer.start()
+
+        def on_finished():
+            self._autosave_save_pending = False
+            if is_regular_project_save:
+                self.clear_recovery_checkpoint()
+                if self.main._dirty_revision == autosave_start_revision:
+                    self.main.set_project_clean()
+            if self._autosave_retrigger_requested or (
+                is_regular_project_save and self.main.has_unsaved_changes()
+            ):
+                self._autosave_retrigger_requested = False
+                self._realtime_autosave_timer.start()
+
+        self.main.run_threaded(self.save_project, None, on_error, on_finished, target_file)
+
+    def prompt_restore_recovery_if_available(self) -> bool:
+        if self.main.image_files:
+            return False
+
+        recovery_file = self._recovery_project_path()
+        if not os.path.exists(recovery_file):
+            return False
+
+        saved_at = datetime.fromtimestamp(os.path.getmtime(recovery_file)).strftime("%Y-%m-%d %H:%M:%S")
+
+        msg_box = QtWidgets.QMessageBox(self.main)
+        msg_box.setIcon(QtWidgets.QMessageBox.Question)
+        msg_box.setWindowTitle(self.main.tr("Project Recovery"))
+        msg_box.setText(self.main.tr("An autosaved project from a previous session was found."))
+        msg_box.setInformativeText(
+            self.main.tr("Last autosave: {saved_at}\nDo you want to restore it?").format(saved_at=saved_at)
+        )
+        restore_btn = msg_box.addButton(self.main.tr("Restore"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        discard_btn = msg_box.addButton(self.main.tr("Discard"), QtWidgets.QMessageBox.ButtonRole.DestructiveRole)
+        msg_box.setDefaultButton(restore_btn)
+        msg_box.exec()
+
+        if msg_box.clickedButton() == restore_btn:
+            self.restore_recovery_project(recovery_file)
+            return True
+
+        if msg_box.clickedButton() == discard_btn:
+            self.clear_recovery_checkpoint()
+
+        return False
+
+    def restore_recovery_project(self, recovery_file: str | None = None):
+        recovery_file = recovery_file or self._recovery_project_path()
+        if not os.path.exists(recovery_file):
+            return
+
+        self.main.image_ctrl.clear_state()
+        self.main.setWindowTitle(f"{self.main.tr('RecoveredProject.ctpr')}[*]")
+
+        load_failed = {"value": False}
+
+        def on_error(error_tuple):
+            load_failed["value"] = True
+            self.main.default_error_handler(error_tuple)
+
+        def on_finished():
+            if load_failed["value"]:
+                return
+            self.update_ui_from_project()
+            # Keep recovered data as an unsaved project so users can choose a destination.
+            self.main.project_file = None
+            self.main.setWindowTitle(f"{self.main.tr('RecoveredProject.ctpr')}[*]")
+            self.main.mark_project_dirty()
+            self.clear_recovery_checkpoint()
+
+        self.main.run_threaded(
+            self.load_project,
+            self.load_state_to_ui,
+            on_error,
+            on_finished,
+            recovery_file,
+        )
 
     def save_and_make(self, output_path: str):
         self.main.run_threaded(self.save_and_make_worker, None, self.main.default_error_handler, None, output_path)
 
+    def export_to_psd_dialog(self):
+        if not self.main.image_files:
+            return
+
+        default_dir = self._get_default_psd_export_dir()
+        if len(self.main.image_files) == 1:
+            default_name = f"{os.path.splitext(os.path.basename(self.main.image_files[0]))[0]}.psd"
+            selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self.main,
+                "Export PSD As",
+                os.path.join(default_dir, default_name),
+                "PSD Files (*.psd);;All Files (*)",
+            )
+            if not selected_path:
+                return
+            if not selected_path.lower().endswith(".psd"):
+                selected_path = f"{selected_path}.psd"
+            self.export_to_psd(os.path.dirname(selected_path), single_file_path=selected_path)
+            return
+
+        selected_folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self.main,
+            "Export PSD",
+            default_dir,
+        )
+        if selected_folder:
+            self.export_to_psd(selected_folder)
+
+    def export_to_psd(self, output_folder: str, single_file_path: str | None = None):
+        # Gather all data on the main thread (GUI access required for scene items)
+        self.main.image_ctrl.save_current_image_state()
+        pages = self._gather_psd_pages()
+        bundle_name = self._get_export_bundle_name()
+        # Do the heavy PSD writing on the worker thread
+        self.main.run_threaded(
+            self._write_psd_worker, None, self.main.default_error_handler, None,
+            output_folder, pages, bundle_name, single_file_path,
+        )
+
+    def _write_psd_worker(
+        self,
+        output_folder: str,
+        pages: list[PsdPageData],
+        bundle_name: str,
+        single_file_path: str | None = None,
+    ):
+        export_psd_pages(
+            output_folder=output_folder,
+            pages=pages,
+            bundle_name=bundle_name,
+            single_file_path=single_file_path,
+        )
+
     def save_and_make_worker(self, output_path: str):
         self.main.image_ctrl.save_current_image_state()
+        all_pages_current_state = self._build_all_pages_current_state()
         temp_dir = tempfile.mkdtemp()
         try:            
+            temp_main_page_context = None
             if self.main.webtoon_mode:
-                #  PASS 1: Pre-build a complete, up-to-date state map for ALL pages
-                all_pages_current_state = {}
-                loaded_pages = self.main.image_viewer.webtoon_manager.loaded_pages
+                temp_main_page_context = type('TempMainPage', (object,), {
+                    'image_files': self.main.image_files,
+                    'image_states': all_pages_current_state
+                })()
 
-                for page_idx, file_path in enumerate(self.main.image_files):
-                    if page_idx in loaded_pages:
-                        # For loaded pages, create state from the live scene. This state will
-                        # only contain items that "belong" to this page.
-                        viewer_state = self._create_text_items_state_from_scene(page_idx)
-                    else:
-                        # For unloaded pages, use the already stored state.
-                        viewer_state = self.main.image_states[file_path].get('viewer_state', {}).copy()
-                    all_pages_current_state[file_path] = {'viewer_state': viewer_state}
+            for page_idx, file_path in enumerate(self.main.image_files):
+                bname = os.path.basename(file_path)
+                rgb_img = self.main.load_image(file_path)
+                renderer = ImageSaveRenderer(rgb_img)
+                viewer_state = all_pages_current_state[file_path]['viewer_state']
 
-                # PASS 2: Render each page using the complete state map
-                for page_idx, file_path in enumerate(self.main.image_files):
-                    bname = os.path.basename(file_path)
-                    rgb_img = self.main.load_image(file_path)
-
-                    renderer = ImageSaveRenderer(rgb_img)
-                    
-                    # Use the pre-built, up-to-date state for this page.
-                    viewer_state = all_pages_current_state[file_path]['viewer_state']
-                    
-                    # Create a temporary context object for the renderer.
-                    temp_main_page_context = type('TempMainPage', (object,), {
-                        'image_files': self.main.image_files,
-                        'image_states': all_pages_current_state
-                    })()
-
-                    renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                if self.main.webtoon_mode and temp_main_page_context is not None:
                     renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
-                    sv_pth = os.path.join(temp_dir, bname)
-                    renderer.save_image(sv_pth)
-            else:
-                # Regular mode: use original logic
-                for file_path in self.main.image_files:
-                    bname = os.path.basename(file_path)
-                    rgb_img = self.main.load_image(file_path)
-
-                    renderer = ImageSaveRenderer(rgb_img)
-                    viewer_state = self.main.image_states[file_path]['viewer_state']
-                    renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                else:
                     renderer.add_state_to_image(viewer_state)
-                    sv_pth = os.path.join(temp_dir, bname)
-                    renderer.save_image(sv_pth)
+
+                sv_pth = os.path.join(temp_dir, bname)
+                renderer.save_image(sv_pth)
 
             # Call make function
             make(temp_dir, output_path)
         finally:
             # Clean up temp directory
             shutil.rmtree(temp_dir)
+
+    def _gather_psd_pages(self) -> list[PsdPageData]:
+        """Collect page data on the main thread where GUI access is safe."""
+        all_pages_current_state = self._build_all_pages_current_state()
+
+        temp_main_page_context = None
+        if self.main.webtoon_mode:
+            temp_main_page_context = type('TempMainPage', (object,), {
+                'image_files': self.main.image_files,
+                'image_states': all_pages_current_state
+            })()
+
+        pages: list[PsdPageData] = []
+        for page_idx, file_path in enumerate(self.main.image_files):
+            rgb_img = self.main.load_image(file_path)
+            viewer_state = copy.deepcopy(all_pages_current_state[file_path].get('viewer_state', {}))
+
+            if self.main.webtoon_mode and temp_main_page_context is not None:
+                renderer = ImageSaveRenderer(rgb_img)
+                renderer.add_spanning_text_items(viewer_state, page_idx, temp_main_page_context)
+
+            patch_list = copy.deepcopy(self.main.image_patches.get(file_path, []))
+            text_items = viewer_state.get('text_items_state', [])
+            logger.info(
+                "PSD page %d (%s): patches=%d, text_items=%d, viewer_state_keys=%s",
+                page_idx, os.path.basename(file_path),
+                len(patch_list), len(text_items) if text_items else 0,
+                list(viewer_state.keys()),
+            )
+
+            pages.append(
+                PsdPageData(
+                    file_path=file_path,
+                    rgb_image=rgb_img,
+                    viewer_state=viewer_state,
+                    patches=patch_list,
+                )
+            )
+
+        return pages
+
+    def _build_all_pages_current_state(self) -> dict[str, dict]:
+        all_pages_current_state: dict[str, dict] = {}
+
+        if self.main.webtoon_mode:
+            loaded_pages = self.main.image_viewer.webtoon_manager.loaded_pages
+            for page_idx, file_path in enumerate(self.main.image_files):
+                if page_idx in loaded_pages:
+                    viewer_state = self._create_text_items_state_from_scene(page_idx)
+                else:
+                    viewer_state = self.main.image_states.get(file_path, {}).get('viewer_state', {}).copy()
+                all_pages_current_state[file_path] = {'viewer_state': viewer_state}
+            return all_pages_current_state
+
+        for file_path in self.main.image_files:
+            viewer_state = self.main.image_states.get(file_path, {}).get('viewer_state', {}).copy()
+            all_pages_current_state[file_path] = {'viewer_state': viewer_state}
+
+        return all_pages_current_state
+
+    def _get_export_bundle_name(self) -> str:
+        if self.main.project_file:
+            return os.path.splitext(os.path.basename(self.main.project_file))[0]
+        if self.main.image_files:
+            return os.path.splitext(os.path.basename(self.main.image_files[0]))[0]
+        return "comic_translate_export"
+
+    def _get_default_psd_export_dir(self) -> str:
+        if self.main.project_file:
+            return os.path.dirname(self.main.project_file)
+        if self.main.image_files:
+            return os.path.dirname(self.main.image_files[0])
+        return os.path.expanduser("~")
 
     def _create_text_items_state_from_scene(self, page_idx: int) -> dict:
         """
@@ -156,6 +471,7 @@ class ProjectController:
         self.main.loading.setVisible(True)
         self.main.disable_hbutton_group()
         save_failed = {'value': False}
+        save_start_revision = self.main._dirty_revision
 
         def on_error(error_tuple):
             save_failed['value'] = True
@@ -164,7 +480,9 @@ class ProjectController:
         def on_finished():
             self.main.on_manual_finished()
             if not save_failed['value']:
-                self.main.set_project_clean()
+                if self.main._dirty_revision == save_start_revision:
+                    self.main.set_project_clean()
+                self.clear_recovery_checkpoint()
                 if post_save_callback:
                     post_save_callback()
 
@@ -216,6 +534,7 @@ class ProjectController:
         for file in self.main.image_files:
             stack = QUndoStack(self.main)
             stack.cleanChanged.connect(self.main._update_window_modified)
+            stack.indexChanged.connect(self.main._bump_dirty_revision)
             self.main.undo_stacks[file] = stack
             self.main.undo_group.addStack(stack)
 
@@ -236,11 +555,13 @@ class ProjectController:
             self.main.webtoon_ctrl.switch_to_webtoon_mode()
         self.main.set_project_clean()
 
-    def thread_load_project(self, file_name: str):
-        self.main.image_ctrl.clear_state()
+    def thread_load_project(self, file_name: str, clear_recovery: bool = True):
         prev_project_file = self.main.project_file
         if prev_project_file and prev_project_file != file_name:
             close_state_store(prev_project_file)
+        if clear_recovery:
+            self.clear_recovery_checkpoint()
+        self.main.image_ctrl.clear_state()
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.run_threaded(
             self.load_project, 

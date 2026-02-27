@@ -1,5 +1,4 @@
 import os
-import shutil
 import logging
 import requests
 import numpy as np
@@ -17,10 +16,8 @@ from modules.utils.textblock import sort_blk_list, TextBlock
 from modules.utils.pipeline_config import inpaint_map, get_config
 from modules.utils.image_utils import generate_mask, get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
-from modules.utils.common_utils import is_directory_empty
 from modules.utils.translator_utils import format_translations
 from modules.rendering.render import is_vertical_block
-from modules.utils.archives import make, resolve_save_as_ext
 from modules.rendering.render import get_best_render_area, pyside_word_wrap
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
@@ -78,25 +75,11 @@ class WebtoonBatchProcessor:
         self.edge_threshold = 50  # pixels from edge to consider as "near edge"
         
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
-        export_settings = self.main_page.settings_page.get_export_settings()
-        if not export_settings.get('auto_save', True):
-            logger.info("Auto-save is OFF. Skipping fallback image save for '%s'.", base_name)
-            return
-        path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
-        imk.write_image(os.path.join(path, f"{base_name}_translated{extension}"), image)
+        logger.info("Skipping fallback translated image save for '%s'.", base_name)
 
     def log_skipped_image(self, directory, timestamp, image_path, reason="", full_traceback=""):
-        skipped_file = os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt")
-        os.makedirs(os.path.dirname(skipped_file), exist_ok=True)
-        with open(skipped_file, 'a', encoding='UTF-8') as file:
-            file.write(image_path + "\n")
-            file.write(reason + "\n")
-            if full_traceback:
-                file.write("Full Traceback:\n")
-                file.write(full_traceback + "\n")
-            file.write("\n")
+        # Deprecated: skip details are captured by batch reporting/UI signals.
+        return
 
     def _create_virtual_chunk_image(self, vpage1: VirtualPage, vpage2: VirtualPage) -> Tuple[np.ndarray, List[Dict]]:
         """
@@ -1006,17 +989,6 @@ class WebtoonBatchProcessor:
         # Continue Image Rendering
         viewer_state = self.main_page.image_states[image_path].get('viewer_state', {}).copy()
         renderer.add_state_to_image(viewer_state, page_idx, self.main_page)
-        
-        # Conditional Save: Final Rendered Image (controlled by auto_save)
-        if export_settings['auto_save']:
-            render_save_dir = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-            if not os.path.exists(render_save_dir):
-                os.makedirs(render_save_dir, exist_ok=True)
-            sv_pth = os.path.join(render_save_dir, f"{base_name}_translated{extension}")
-            renderer.save_image(sv_pth)
-            logger.info(f"Saved final rendered page: {sv_pth}")
-        else:
-            logger.info(f"Auto-save is OFF. Skipping final image save for page {page_idx}.")
 
     def webtoon_batch_process(self, selected_paths: List[str] = None):
         """
@@ -1193,51 +1165,4 @@ class WebtoonBatchProcessor:
             if self.physical_page_status.get(p_idx) == PageStatus.LIVE_DATA_FINALIZED:
                 self._check_and_render_page(p_idx, total_images, image_list, timestamp, physical_to_virtual_mapping)
 
-        # Step 4: Handle archive creation
-        archive_info_list = self.main_page.file_handler.archive_info
-        # Conditional Save: Archives (controlled by auto_save)
-        # Note: We also need to fetch the setting here since webtoon_batch_process is the entry point
-        auto_save = self.main_page.settings_page.get_export_settings()['auto_save']
-        
-        if archive_info_list and auto_save:
-            archive_save_as = self.main_page.settings_page.get_export_settings().get('archive_save_as')
-            for archive_index, archive in enumerate(archive_info_list):
-                archive_index_input = total_images + archive_index
-
-                self.main_page.progress_update.emit(archive_index_input, total_images, 1, 3, True)
-                if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                    self.main_page.current_worker = None
-                    break
-
-                archive_path = archive['archive_path']
-                archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
-                archive_directory = os.path.dirname(archive_path)
-                archive_ext = os.path.splitext(archive_path)[1]
-                save_as_ext = resolve_save_as_ext(archive_ext, archive_save_as)
-
-                save_dir = os.path.join(archive_directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-                check_from = os.path.join(archive_directory, f"comic_translate_{timestamp}")
-
-                if not os.path.exists(save_dir) or is_directory_empty(save_dir):
-                    logger.warning(f"Skipping archive creation for {archive_bname} as its render directory is empty.")
-                    continue
-
-                self.main_page.progress_update.emit(archive_index_input, total_images, 2, 3, True)
-                if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                    self.main_page.current_worker = None
-                    break
-
-                output_base_name = f"{archive_bname}"
-                make(save_as_ext=save_as_ext, input_dir=save_dir, output_dir=archive_directory, output_base_name=output_base_name)
-
-                self.main_page.progress_update.emit(archive_index_input, total_images, 3, 3, True)
-                if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-                    self.main_page.current_worker = None
-                    break
-
-                if os.path.exists(save_dir):
-                    shutil.rmtree(save_dir)
-                if os.path.exists(check_from) and is_directory_empty(check_from):
-                    shutil.rmtree(check_from)
-        
         logger.info("Eager webtoon batch processing completed.")
