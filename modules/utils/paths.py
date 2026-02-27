@@ -1,6 +1,7 @@
 import os
 import platform
 
+
 def get_user_data_dir(app_name: str = "ComicTranslate") -> str:
     """
     Returns the platform-specific user data directory for the application.
@@ -24,3 +25,12 @@ def get_user_data_dir(app_name: str = "ComicTranslate") -> str:
             base_dir = os.path.join(os.path.expanduser("~"), ".local", "share")
             
     return os.path.join(base_dir, app_name)
+
+
+def get_default_project_autosave_dir(folder_name: str = "Comic Translate") -> str:
+    """
+    Returns a user-facing default folder for project auto-save files.
+
+    Windows/macOS/Linux: ~/Documents/<folder_name>
+    """
+    return os.path.join(os.path.expanduser("~"), "Documents", folder_name)

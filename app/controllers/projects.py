@@ -23,7 +23,7 @@ from app.projects.project_state import (
     save_state_to_proj_file,
 )
 from modules.utils.archives import make
-from modules.utils.paths import get_user_data_dir
+from modules.utils.paths import get_user_data_dir, get_default_project_autosave_dir
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +61,12 @@ class ProjectController:
     def _on_autosave_setting_changed(self, *_):
         autosave_enabled = bool(self.main.title_bar.autosave_switch.isChecked())
 
-        # Word-like behavior: enabling autosave for an unsaved project must
-        # first choose a concrete project file path.
+        # If autosave is enabled before a project has been saved manually,
+        # pick a deterministic path in the autosave folder and avoid prompting.
         if autosave_enabled and not self.main.project_file:
-            if not self.thread_save_as_project():
-                with QtCore.QSignalBlocker(self.main.title_bar.autosave_switch):
-                    self.main.title_bar.autosave_switch.setChecked(False)
-                return
+            generated_project_file = self._generate_autosave_project_file_path()
+            self.main.project_file = generated_project_file
+            self.main.setWindowTitle(f"{os.path.basename(generated_project_file)}[*]")
 
         self._apply_autosave_settings()
 
@@ -98,6 +97,44 @@ class ProjectController:
 
     def _recovery_project_path(self) -> str:
         return os.path.join(self._autosave_dir(), "project_recovery.ctpr")
+
+    def _configured_project_autosave_dir(self) -> str:
+        export_settings = self.main.settings_page.get_export_settings()
+        configured_folder = str(export_settings.get("project_autosave_folder", "") or "").strip()
+        if configured_folder:
+            return configured_folder
+        return get_default_project_autosave_dir()
+
+    def _generate_autosave_project_file_path(self) -> str:
+        autosave_dir = self._configured_project_autosave_dir()
+        try:
+            os.makedirs(autosave_dir, exist_ok=True)
+        except Exception:
+            logger.warning("Failed to create configured auto-save folder: %s", autosave_dir)
+            autosave_dir = self._autosave_dir()
+            os.makedirs(autosave_dir, exist_ok=True)
+
+        base_name = "untitled"
+        if self.main.image_files:
+            first_image = os.path.basename(self.main.image_files[0])
+            stem, _ = os.path.splitext(first_image)
+            if stem:
+                base_name = stem
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        candidate = os.path.join(autosave_dir, f"{base_name}_{timestamp}.ctpr")
+        if not os.path.exists(candidate):
+            return candidate
+
+        for seq in range(1, 1000):
+            seq_candidate = os.path.join(autosave_dir, f"{base_name}_{timestamp}_{seq:03d}.ctpr")
+            if not os.path.exists(seq_candidate):
+                return seq_candidate
+
+        # Extremely unlikely fallback; keeps behavior deterministic if all sequence
+        # slots are exhausted for the same timestamp.
+        fallback_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        return os.path.join(autosave_dir, f"{base_name}_{fallback_timestamp}.ctpr")
 
     def clear_recovery_checkpoint(self):
         recovery_file = self._recovery_project_path()
@@ -176,14 +213,14 @@ class ProjectController:
         self.main.threadpool.start(worker)
 
     def notify_project_dirty_revision_changed(self):
-        if not self.main.project_file:
-            return
         autosave_enabled = bool(
             self.main.settings_page.get_export_settings().get("project_autosave_enabled", False)
         )
         if not autosave_enabled:
             return
         # Debounce bursts of edits (typing, drag, rapid undo/redo).
+        # If no project file exists yet, autosave_project() falls back to
+        # the recovery checkpoint path.
         self._realtime_autosave_timer.start()
 
     def autosave_project(self, prefer_project_file: bool = True):
@@ -193,8 +230,6 @@ class ProjectController:
             return
         if not self.main.image_files:
             return
-        if not self.main.has_unsaved_changes():
-            return
         if getattr(self.main, "_batch_active", False):
             return
 
@@ -203,6 +238,9 @@ class ProjectController:
             self.main.text_ctrl._commit_pending_text_command()
         except Exception:
             pass
+
+        if not self.main.has_unsaved_changes():
+            return
 
         self.save_current_state()
 

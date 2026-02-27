@@ -15,7 +15,7 @@ from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
     EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
 from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
 from app.update_checker import UpdateChecker
-from modules.utils.paths import get_user_data_dir
+from modules.utils.paths import get_user_data_dir, get_default_project_autosave_dir
 
 
 logger = logging.getLogger(__name__)
@@ -127,12 +127,16 @@ class SettingsPage(QtWidgets.QWidget):
         owner = self.window()
         title_bar = getattr(owner, "title_bar", None)
         autosave_enabled = bool(title_bar.autosave_switch.isChecked()) if title_bar is not None else False
+        autosave_folder = self.ui.project_autosave_folder_input.text().strip()
+        if not autosave_folder:
+            autosave_folder = get_default_project_autosave_dir()
         settings = {
             'export_raw_text': self.ui.raw_text_checkbox.isChecked(),
             'export_translated_text': self.ui.translated_text_checkbox.isChecked(),
             'export_inpainted_image': self.ui.inpainted_image_checkbox.isChecked(),
             'project_autosave_enabled': autosave_enabled,
             'project_autosave_interval_min': int(self.ui.project_autosave_interval_spinbox.value()),
+            'project_autosave_folder': autosave_folder,
         }
         return settings
 
@@ -368,6 +372,9 @@ class SettingsPage(QtWidgets.QWidget):
             title_bar.set_autosave_checked(bool(autosave_enabled))
         self.ui.project_autosave_interval_spinbox.setValue(
             settings.value('project_autosave_interval_min', 3, type=int)
+        )
+        self.ui.project_autosave_folder_input.setText(
+            settings.value('project_autosave_folder', get_default_project_autosave_dir(), type=str)
         )
 
         settings.endGroup()  # export
