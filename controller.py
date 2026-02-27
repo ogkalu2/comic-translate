@@ -141,7 +141,6 @@ class ComicTranslate(ComicTranslateUI):
 
         self.save_browser.sig_file_changed.connect(self.image_ctrl.save_current_image)
         self.save_all_browser.sig_file_changed.connect(self.project_ctrl.save_and_make)
-        self.export_psd_folder_browser.sig_folder_changed.connect(self.project_ctrl.export_to_psd)
         self.save_project_button.clicked.connect(self.project_ctrl.thread_save_project)
         self.save_as_project_button.clicked.connect(self.project_ctrl.thread_save_as_project)
         self.drag_browser.sig_files_changed.connect(self._guarded_thread_load_images)
