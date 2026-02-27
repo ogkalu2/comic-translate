@@ -270,7 +270,23 @@ class ImageStateController:
         if paths and paths[0].lower().endswith('.ctpr'):
             self.main.project_ctrl.thread_load_project(paths[0])
             return
+
+        # If autosave is active and a project file is already chosen, preserve
+        # the association so the title and autosave target survive the state reset.
+        try:
+            autosave_enabled = bool(
+                hasattr(self.main, 'title_bar')
+                and self.main.title_bar.autosave_switch.isChecked()
+            )
+        except Exception:
+            autosave_enabled = False
+        prev_project_file = self.main.project_file if autosave_enabled else None
+
+        self.main.project_ctrl.clear_recovery_checkpoint()
         self.clear_state()
+        if prev_project_file:
+            self.main.project_file = prev_project_file
+            self.main.setWindowTitle(f"{os.path.basename(prev_project_file)}[*]")
         self.main.run_threaded(self.load_initial_image, self.on_initial_image_loaded, self.main.default_error_handler, None, paths)
 
     def thread_insert(self, paths: List[str]):
@@ -308,6 +324,7 @@ class ImageStateController:
                     # Create undo stack for new file
                     stack = QtGui.QUndoStack(self.main)
                     stack.cleanChanged.connect(self.main._update_window_modified)
+                    stack.indexChanged.connect(self.main._bump_dirty_revision)
                     self.main.undo_stacks[file_path] = stack
                     self.main.undo_group.addStack(stack)
                 
@@ -366,6 +383,7 @@ class ImageStateController:
             self.save_image_state(file)
             stack = QtGui.QUndoStack(self.main)
             stack.cleanChanged.connect(self.main._update_window_modified)
+            stack.indexChanged.connect(self.main._bump_dirty_revision)
             try:
                 if hasattr(self.main, "search_ctrl") and self.main.search_ctrl is not None:
                     stack.indexChanged.connect(self.main.search_ctrl.on_undo_redo)
@@ -764,6 +782,11 @@ class ImageStateController:
                 self.main.curr_img_idx = -1
                 self.main.central_stack.setCurrentWidget(self.main.drag_browser)
                 self.update_image_cards()
+
+        # If the project has been emptied via deletion, drop stale crash recovery data.
+        if not self.main.image_files:
+            self.main.project_ctrl.clear_recovery_checkpoint()
+
         if removed_any:
             self.main.mark_project_dirty()
 
