@@ -3,6 +3,7 @@ from PySide6 import QtCore, QtWidgets
 from ...dayu_widgets import dayu_theme
 from ...dayu_widgets.browser import (
     MClickBrowserFileToolButton,
+    MClickBrowserFolderToolButton,
     MClickSaveFileToolButton,
 )
 from ...dayu_widgets.button_group import MToolButtonGroup
@@ -34,7 +35,7 @@ class NavRailMixin:
         self.tool_browser.clicked.connect(self.show_tool_menu)
 
         self.image_browser_button = MClickBrowserFileToolButton(multiple=True)
-        self.image_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"])
+        self.image_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp", ".psd"])
 
         self.document_browser_button = MClickBrowserFileToolButton(multiple=True)
         self.document_browser_button.set_dayu_filters([".pdf", ".epub"])
@@ -95,14 +96,9 @@ class NavRailMixin:
 
         self.save_all_browser = MClickSaveFileToolButton()
         self.save_all_browser.set_file_types(save_all_file_types)
+        self.export_psd_folder_browser = MClickBrowserFolderToolButton(multiple=False)
 
         self.export_menu = MMenu(parent=self)
-        export_document_action = self.export_menu.addAction(
-            MIcon("mingcute--document-line.svg"),
-            self.tr("Document"),
-        )
-        export_document_action.triggered.connect(lambda: self._export_all_as("pdf"))
-
         export_archive_action = self.export_menu.addAction(
             MIcon("flowbite--file-zip-outline.svg"),
             self.tr("Archive"),
@@ -114,6 +110,18 @@ class NavRailMixin:
             self.tr("Comic Book Archive"),
         )
         export_comic_action.triggered.connect(lambda: self._export_all_as("cbz"))
+
+        export_document_action = self.export_menu.addAction(
+            MIcon("mingcute--document-line.svg"),
+            self.tr("Document"),
+        )
+        export_document_action.triggered.connect(lambda: self._export_all_as("pdf"))
+
+        export_psd_action = self.export_menu.addAction(
+            MIcon("mdi--file-image-outline.svg"),
+            self.tr("PSD"),
+        )
+        export_psd_action.triggered.connect(self._on_export_psd_requested)
 
         nav_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Vertical, exclusive=True)
         nav_tools = [
@@ -258,6 +266,13 @@ class NavRailMixin:
             return
         self.save_all_browser.set_file_types([file_type])
         self.save_all_browser.clicked.emit()
+
+    def _on_export_psd_requested(self):
+        project_ctrl = getattr(self, "project_ctrl", None)
+        if project_ctrl is not None and hasattr(project_ctrl, "export_to_psd_dialog"):
+            project_ctrl.export_to_psd_dialog()
+            return
+        self.export_psd_folder_browser.click()
 
     def create_push_button(self, text: str, clicked=None):
         button = MPushButton(text)
