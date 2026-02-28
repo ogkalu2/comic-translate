@@ -272,6 +272,9 @@ def main():
                     self.request_open_project(project_file)
                 elif self._pending_project_file:
                     self.request_open_project(self._pending_project_file)
+                else:
+                    # Offer recovery only on plain startup (no explicit project open request).
+                    self._ct.project_ctrl.prompt_restore_recovery_if_available()
             except Exception as e:
                 logging.error(f"Error during UI initialization: {e}")
                 splash.close()
