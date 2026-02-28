@@ -249,6 +249,16 @@ class CustomTitleBar(QtWidgets.QWidget):
         self._tools_layout.addWidget(widget)
         widget.show()
 
+    def set_undo_redo_visible(self, visible: bool) -> None:
+        """Show or hide the undo/redo tool group."""
+        if self._undo_redo_widget:
+            self._undo_redo_widget.setVisible(visible)
+
+    def set_autosave_visible(self, visible: bool) -> None:
+        """Show or hide the auto-save label and toggle switch."""
+        self.autosave_label.setVisible(visible)
+        self.autosave_switch.setVisible(visible)
+
     def update_maximize_icon(self, is_maximized: bool) -> None:
         self.maximize_btn.set_kind(_RESTORE if is_maximized else _MAXIMIZE)
         self.maximize_btn.setToolTip("Restore" if is_maximized else "Maximize")

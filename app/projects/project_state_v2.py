@@ -389,7 +389,12 @@ def _materialize_from_manifest_and_pages(
         if blob_row is None or blob_row[0] is None:
             continue
 
-        img_disk_path = os.path.join(unique_images_dir, f"{img_id}_{file_name_hint}")
+        # Preserve user-facing base names (no numeric prefix) while avoiding collisions
+        # by isolating each materialized image into its own id-specific subdirectory.
+        safe_name = os.path.basename(file_name_hint) or f"{img_id}.img"
+        img_dir = os.path.join(unique_images_dir, str(img_id))
+        os.makedirs(img_dir, exist_ok=True)
+        img_disk_path = os.path.join(img_dir, safe_name)
         with open(img_disk_path, "wb") as fh:
             fh.write(blob_row[0])
 

@@ -61,13 +61,13 @@ class ProjectPage(QtWidgets.QWidget):
         autosave_folder_layout.addWidget(reset_button)
         autosave_folder_layout.addStretch(1)
 
-        layout.addWidget(auto_recover_label)
-        layout.addWidget(auto_recover_note)
-        layout.addLayout(interval_layout)
-        layout.addSpacing(12)
         layout.addWidget(autosave_label)
         layout.addWidget(autosave_note)
         layout.addLayout(autosave_folder_layout)
+        layout.addSpacing(12)
+        layout.addWidget(auto_recover_label)
+        layout.addWidget(auto_recover_note)
+        layout.addLayout(interval_layout)
         layout.addStretch(1)
 
     def _choose_autosave_folder(self):
