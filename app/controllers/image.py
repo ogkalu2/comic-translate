@@ -761,6 +761,10 @@ class ImageStateController:
                 self.main.image_viewer.webtoon_manager.clear()
                 self.main.curr_img_idx = -1
                 self.main.central_stack.setCurrentWidget(self.main.drag_browser)
+                try:
+                    self.main.show_home_screen()
+                except Exception:
+                    pass
                 self.update_image_cards()
         else:
             # Handle normal mode
@@ -781,6 +785,10 @@ class ImageStateController:
                 # If no images remain, reset the view to the drag browser.
                 self.main.curr_img_idx = -1
                 self.main.central_stack.setCurrentWidget(self.main.drag_browser)
+                try:
+                    self.main.show_home_screen()
+                except Exception:
+                    pass
                 self.update_image_cards()
 
         # If the project has been emptied via deletion, drop stale crash recovery data.
@@ -1001,7 +1009,14 @@ class ImageStateController:
             else:
                 # Regular mode - display single image
                 self.main.central_stack.setCurrentWidget(self.main.image_viewer)
-                
+
+            # If the outer stack is still on the home screen, transition to the editor
+            try:
+                if self.main._center_stack.currentWidget() is self.main.startup_home:
+                    self.main.show_main_page()
+            except Exception:
+                pass
+
             self.main.central_stack.layout().activate()
             
             # Fit in view only if it's the first time displaying this image and not in webtoon mode
