@@ -97,8 +97,23 @@ class NavRailMixin:
         self.save_all_browser.set_file_types(save_all_file_types)
 
         self.export_menu = MMenu(parent=self)
-        export_archive_action = self.export_menu.addAction(MIcon("flowbite--file-zip-outline.svg"), self.tr("Archive"))
-        export_archive_action.triggered.connect(self.save_all_browser.clicked)
+        export_document_action = self.export_menu.addAction(
+            MIcon("mingcute--document-line.svg"),
+            self.tr("Document"),
+        )
+        export_document_action.triggered.connect(lambda: self._export_all_as("pdf"))
+
+        export_archive_action = self.export_menu.addAction(
+            MIcon("flowbite--file-zip-outline.svg"),
+            self.tr("Archive"),
+        )
+        export_archive_action.triggered.connect(lambda: self._export_all_as("zip"))
+
+        export_comic_action = self.export_menu.addAction(
+            MIcon("mdi--comic-thought-bubble-outline.svg"),
+            self.tr("Comic Book Archive"),
+        )
+        export_comic_action.triggered.connect(lambda: self._export_all_as("cbz"))
 
         nav_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Vertical, exclusive=True)
         nav_tools = [
@@ -229,6 +244,20 @@ class NavRailMixin:
 
     def show_export_menu(self):
         self.export_menu.exec_(self.save_all_button.mapToGlobal(self.save_all_button.rect().bottomLeft()))
+
+    def _export_all_as(self, extension: str):
+        extension = (extension or "").lower().lstrip(".")
+        export_types = {
+            "zip": ("ZIP files", "zip"),
+            "cbz": ("CBZ files", "cbz"),
+            "cb7": ("CB7 files", "cb7"),
+            "pdf": ("PDF files", "pdf"),
+        }
+        file_type = export_types.get(extension)
+        if file_type is None:
+            return
+        self.save_all_browser.set_file_types([file_type])
+        self.save_all_browser.clicked.emit()
 
     def create_push_button(self, text: str, clicked=None):
         button = MPushButton(text)
