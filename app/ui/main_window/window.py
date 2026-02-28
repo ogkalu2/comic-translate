@@ -1,0 +1,213 @@
+import sys
+
+from PySide6 import QtCore, QtGui, QtWidgets
+
+from ..canvas.image_viewer import ImageViewer
+from ..dayu_widgets.divider import MDivider
+from ..dayu_widgets.theme import MTheme
+from ..list_view import PageListView
+from ..settings.settings_page import SettingsPage
+from ..startup_home import StartupHomeScreen
+from ..title_bar import CustomTitleBar
+from .builders import MainWindowBuildersMixin
+from .frame import EdgeResizer
+from .tools import ToolStateMixin
+
+
+class ComicTranslateUI(
+    MainWindowBuildersMixin, 
+    ToolStateMixin, 
+    QtWidgets.QMainWindow
+):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() | QtCore.Qt.WindowType.FramelessWindowHint)
+
+        if sys.platform == "win32":
+            self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setWindowTitle("Comic Translate[*]")
+
+        screen = QtWidgets.QApplication.primaryScreen()
+        geo = screen.geometry()
+
+        width = float(geo.width())
+        height = float(geo.height())
+        x = 50
+        y = 50
+        w = int(width / 1.2)
+        h = int(height / 1.2)
+        self.setGeometry(x, y, w, h)
+
+        self.image_viewer = ImageViewer(self)
+        self.settings_page = SettingsPage(self)
+        self.settings_page.theme_changed.connect(self.apply_theme)
+        self.settings_page.font_imported.connect(self.set_font)
+        self.main_content_widget = None
+        self._workspace_initialized = False
+        self.tool_buttons = {}
+        self.page_list = PageListView()
+
+        self.webtoon_mode = False
+
+        self.grabGesture(QtCore.Qt.GestureType.PanGesture)
+        self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
+
+        self.lang_mapping = {
+            self.tr("English"): "English",
+            self.tr("Korean"): "Korean",
+            self.tr("Japanese"): "Japanese",
+            self.tr("French"): "French",
+            self.tr("Simplified Chinese"): "Simplified Chinese",
+            self.tr("Traditional Chinese"): "Traditional Chinese",
+            self.tr("Chinese"): "Chinese",
+            self.tr("Russian"): "Russian",
+            self.tr("German"): "German",
+            self.tr("Dutch"): "Dutch",
+            self.tr("Spanish"): "Spanish",
+            self.tr("Italian"): "Italian",
+            self.tr("Turkish"): "Turkish",
+            self.tr("Polish"): "Polish",
+            self.tr("Portuguese"): "Portuguese",
+            self.tr("Brazilian Portuguese"): "Brazilian Portuguese",
+            self.tr("Thai"): "Thai",
+            self.tr("Vietnamese"): "Vietnamese",
+            self.tr("Indonesian"): "Indonesian",
+            self.tr("Hungarian"): "Hungarian",
+            self.tr("Finnish"): "Finnish",
+            self.tr("Arabic"): "Arabic",
+            self.tr("Czech"): "Czech",
+            self.tr("Persian"): "Persian",
+            self.tr("Romanian"): "Romanian",
+            self.tr("Mongolian"): "Mongolian",
+        }
+        self.reverse_lang_mapping = {v: k for k, v in self.lang_mapping.items()}
+
+        self.button_to_alignment = {
+            0: QtCore.Qt.AlignmentFlag.AlignLeft,
+            1: QtCore.Qt.AlignmentFlag.AlignCenter,
+            2: QtCore.Qt.AlignmentFlag.AlignRight,
+        }
+
+        self._init_ui()
+
+    def _init_ui(self):
+        outer_widget = QtWidgets.QWidget(self)
+        outer_layout = QtWidgets.QVBoxLayout(outer_widget)
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.setSpacing(0)
+
+        self.title_bar = CustomTitleBar(outer_widget)
+        outer_layout.addWidget(self.title_bar)
+
+        self._apply_title_bar_style("Dark")
+        self._edge_resizer = EdgeResizer(self)
+
+        main_widget = QtWidgets.QWidget()
+        self.main_layout = QtWidgets.QHBoxLayout()
+        main_widget.setLayout(self.main_layout)
+        outer_layout.addWidget(main_widget)
+
+        self.setCentralWidget(outer_widget)
+
+        nav_rail_layout = self._create_nav_rail()
+        self.main_layout.addLayout(nav_rail_layout)
+        self.main_layout.addWidget(MDivider(orientation=QtCore.Qt.Vertical))
+
+        self.main_content_widget = self._create_main_content()
+        self.title_bar.set_undo_redo_widget(self.undo_tool_group)
+        self._center_stack = QtWidgets.QStackedWidget()
+
+        self.startup_home = StartupHomeScreen()
+        self._center_stack.addWidget(self.startup_home)
+        self._center_stack.addWidget(self.main_content_widget)
+        self._center_stack.addWidget(self.settings_page)
+
+        self._center_stack.setCurrentWidget(self.startup_home)
+        self._set_document_tools_visible(False)
+
+        self.main_layout.addWidget(self._center_stack)
+
+    def _set_document_tools_visible(self, visible: bool) -> None:
+        tools = [
+            self.insert_button,
+            self.save_project_button,
+            self.save_as_project_button,
+            self.save_browser,
+            self.save_all_button,
+            self.search_sidebar_button,
+        ]
+        for t in tools:
+            if hasattr(t, "setVisible"):
+                t.setVisible(visible)
+
+        if hasattr(self, "title_bar"):
+            self.title_bar.set_undo_redo_visible(visible)
+            self.title_bar.set_autosave_visible(visible)
+            if hasattr(self.title_bar, "webtoon_toggle"):
+                self.title_bar.webtoon_toggle.setVisible(visible)
+
+    def show_home_screen(self) -> None:
+        self._set_document_tools_visible(False)
+        self._center_stack.setCurrentWidget(self.startup_home)
+
+    def show_home(self) -> None:
+        if self._workspace_initialized:
+            self.show_main_page()
+            return
+        self.show_home_screen()
+
+    def show_settings_page(self):
+        if not self.settings_page:
+            self.settings_page = SettingsPage(self)
+        self._center_stack.setCurrentWidget(self.settings_page)
+
+    def show_main_page(self):
+        if self.settings_page:
+            self._workspace_initialized = True
+            self._set_document_tools_visible(True)
+            self._center_stack.setCurrentWidget(self.main_content_widget)
+
+    def changeEvent(self, event: QtCore.QEvent) -> None:  # type: ignore[override]
+        super().changeEvent(event)
+        if not hasattr(self, "title_bar"):
+            return
+        if event.type() == QtCore.QEvent.Type.WindowStateChange:
+            self.title_bar.update_maximize_icon(self.isMaximized())
+        elif event.type() == QtCore.QEvent.Type.WindowTitleChange:
+            self.title_bar.update_title(self.windowTitle())
+        elif event.type() == QtCore.QEvent.Type.ModifiedChange:
+            self.title_bar.update_title(self.windowTitle())
+
+    if sys.platform == "win32":
+
+        def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # type: ignore[override]
+            p = QtGui.QPainter(self)
+            p.setCompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_Source)
+            p.fillRect(self.rect(), self.palette().window())
+            p.end()
+            super().paintEvent(event)
+
+    def _apply_title_bar_style(self, theme: str) -> None:
+        if not hasattr(self, "title_bar"):
+            return
+        light = (theme == self.settings_page.ui.tr("Light")) if hasattr(self, "settings_page") else False
+        if light:
+            self.title_bar.apply_style(bg="#f0f0f0", fg="#1a1a1a", hover="rgba(0,0,0,25)")
+        else:
+            self.title_bar.apply_style(bg="#2b2b2b", fg="#e8e8e8", hover="rgba(255,255,255,30)")
+
+    def apply_theme(self, theme: str):
+        if theme == self.settings_page.ui.tr("Light"):
+            new_theme = MTheme("light", primary_color=MTheme.blue)
+            is_dark = False
+        else:
+            new_theme = MTheme("dark", primary_color=MTheme.yellow)
+            is_dark = True
+
+        new_theme.apply(self)
+        self._apply_title_bar_style(theme)
+
+        if hasattr(self, "home_screen"):
+            self.startup_home.apply_theme(is_dark)
+
+        self.repaint()
