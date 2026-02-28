@@ -126,7 +126,14 @@ class SettingsPage(QtWidgets.QWidget):
     def get_export_settings(self):
         owner = self.window()
         title_bar = getattr(owner, "title_bar", None)
-        autosave_enabled = bool(title_bar.autosave_switch.isChecked()) if title_bar is not None else False
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup('export')
+        persisted_autosave_enabled = settings.value('project_autosave_enabled', False, type=bool)
+        settings.endGroup()
+        if title_bar is not None:
+            autosave_enabled = bool(title_bar.autosave_switch.isChecked())
+        else:
+            autosave_enabled = bool(persisted_autosave_enabled)
         autosave_folder = self.ui.project_autosave_folder_input.text().strip()
         if not autosave_folder:
             autosave_folder = get_default_project_autosave_dir()
