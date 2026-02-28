@@ -143,8 +143,6 @@ class ProjectController:
         settings.setValue("pinned", [e.get("pinned", False) for e in entries])
         settings.endGroup()
 
-    # ------------------------------------------------------------------
-
     def initialize_autosave(self):
         # Restore persisted auto-save toggle state as a single source of truth.
         persisted_enabled = self._read_autosave_enabled_setting()
