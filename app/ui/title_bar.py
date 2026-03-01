@@ -41,6 +41,8 @@ class _CtrlButton(QtWidgets.QPushButton):
         self.setFlat(True)
         self.setToolTip(tooltip)
         self.setText("")
+        self.setMouseTracking(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
 
     def set_kind(self, kind: str) -> None:
         self._kind = kind
@@ -57,7 +59,8 @@ class _CtrlButton(QtWidgets.QPushButton):
         p = QtGui.QPainter(self)
         p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
-        hovered = self._hovered
+        # Combine tracked state with runtime mouse hit-testing for reliability.
+        hovered = self._hovered or self.underMouse()
 
         # Background
         if hovered:
@@ -109,14 +112,35 @@ class _CtrlButton(QtWidgets.QPushButton):
 
         p.end()
 
-    def enterEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
-        self._hovered = True
+    def _set_hovered(self, hovered: bool) -> None:
+        if self._hovered == hovered:
+            return
+        self._hovered = hovered
         self.update()
+
+    def event(self, event: QtCore.QEvent) -> bool:
+        etype = event.type()
+        if etype in (
+            QtCore.QEvent.Type.HoverEnter,
+            QtCore.QEvent.Type.HoverMove,
+            QtCore.QEvent.Type.Enter,
+        ):
+            self._set_hovered(True)
+        elif etype in (
+            QtCore.QEvent.Type.HoverLeave,
+            QtCore.QEvent.Type.Leave,
+            QtCore.QEvent.Type.WindowDeactivate,
+            QtCore.QEvent.Type.Hide,
+        ):
+            self._set_hovered(False)
+        return super().event(event)
+
+    def enterEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
+        self._set_hovered(True)
         super().enterEvent(event)
 
     def leaveEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
-        self._hovered = False
-        self.update()
+        self._set_hovered(False)
         super().leaveEvent(event)
 
 
