@@ -7,7 +7,7 @@ from pipeline.ocr_handler import OCRHandler
 from pipeline.translation_handler import TranslationHandler
 from pipeline.segmentation_handler import SegmentationHandler
 from pipeline.batch_processor import BatchProcessor
-from pipeline.webtoon_batch_processor import WebtoonBatchProcessor
+from pipeline.webtoon_batch import WebtoonBatchProcessor
 
 logger = logging.getLogger(__name__)
 
