@@ -1,6 +1,7 @@
 from PySide6 import QtCore, QtGui, QtWidgets
 import imkit as imk
 import numpy as np
+from app.path_materialization import ensure_path_materialized
 from .text_item import TextBlockItem
 from .text.text_item_properties import TextItemProperties
 
@@ -75,6 +76,7 @@ class ImageSaveRenderer:
         existing_text_items = viewer_state.get('text_items_state', [])
 
         current_image_path = main_page.image_files[page_idx]
+        ensure_path_materialized(current_image_path)
         current_image = imk.read_image(current_image_path)
         current_page_height = current_image.shape[0]
 
@@ -89,6 +91,7 @@ class ImageSaveRenderer:
             if abs(page_gap) != 1:  # Only check adjacent pages
                 continue
 
+            ensure_path_materialized(other_image_path)
             other_image = imk.read_image(other_image_path)
             other_page_height = other_image.shape[0]
             other_viewer_state = main_page.image_states[other_image_path].get('viewer_state', {})
@@ -192,7 +195,9 @@ class ImageSaveRenderer:
             # Extract data from the patch dict
             x, y, w, h = patch['bbox']
             if 'png_path' in patch:
-                patch_image = imk.read_image(patch['png_path'])
+                patch_path = patch['png_path']
+                ensure_path_materialized(patch_path)
+                patch_image = imk.read_image(patch_path)
             else:
                 # Handle direct image data (expected to be RGB format)
                 patch_image = patch['image']
