@@ -478,6 +478,12 @@ class ProjectController:
     def save_and_make_worker(self, output_path: str):
         self.main.image_ctrl.save_current_image_state()
         all_pages_current_state = self._build_all_pages_current_state()
+        try:
+            if self.main.file_handler.should_pre_materialize(self.main.image_files):
+                count = self.main.file_handler.pre_materialize(self.main.image_files)
+                logger.info("Export pre-materialized %d paths before save-and-make.", count)
+        except Exception:
+            logger.debug("Export pre-materialization failed; continuing lazily.", exc_info=True)
         temp_dir = tempfile.mkdtemp()
         try:            
             temp_main_page_context = None
