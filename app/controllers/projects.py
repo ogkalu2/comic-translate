@@ -249,12 +249,7 @@ class ProjectController:
             autosave_dir = self._autosave_dir()
             os.makedirs(autosave_dir, exist_ok=True)
 
-        base_name = "untitled"
-        if self.main.image_files:
-            first_image = os.path.basename(self.main.image_files[0])
-            stem, _ = os.path.splitext(first_image)
-            if stem:
-                base_name = stem
+        base_name = "project"
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         candidate = os.path.join(autosave_dir, f"{base_name}_{timestamp}.ctpr")
