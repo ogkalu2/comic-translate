@@ -15,7 +15,7 @@ from app.ui.commands.inpaint import PatchCommandBase
 from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
-from app.projects.project_state import ensure_project_path_materialized
+from app.path_materialization import ensure_path_materialized
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
