@@ -84,6 +84,7 @@ def extract_foreground_color(image: np.ndarray) -> list[int] | None:
         return None
 
     text_pixels = flat[text_mask]
+    text_ratio = n_text / float(flat.shape[0])
     bg_luma = 0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]
 
     # Printed comics often have antialiasing + halftone noise. On bright bubbles,
@@ -97,7 +98,25 @@ def extract_foreground_color(image: np.ndarray) -> list[int] | None:
         fg = np.median(text_pixels, axis=0)
 
     fg = np.round(fg).astype(int).tolist()
-    return snap_extreme_neutrals(fg)
+    snapped = snap_extreme_neutrals(fg)
+
+    # Targeted correction for colored text inside bright bubbles surrounded by
+    # very dark borders/background. In this case bg_luma can be dark while the
+    # selected mask is mostly bright fill, and the 80th percentile drifts to the
+    # bubble fill colour (e.g. orange) instead of darker text (e.g. red).
+    if (
+        snapped not in ([0, 0, 0], [255, 255, 255])
+        and bg_luma <= 85
+        and text_ratio >= 0.45
+    ):
+        luma_vals = 0.299 * text_pixels[:, 0] + 0.587 * text_pixels[:, 1] + 0.114 * text_pixels[:, 2]
+        dominant_luma = float(np.median(luma_vals))
+        luma_spread = float(np.percentile(luma_vals, 90) - np.percentile(luma_vals, 10))
+        if dominant_luma >= 140 and luma_spread >= 30:
+            dark_tail = np.percentile(text_pixels, 20, axis=0)
+            snapped = snap_extreme_neutrals(np.round(dark_tail).astype(int).tolist())
+
+    return snapped
 
 
 def snap_extreme_neutrals(rgb: list[int]) -> list[int]:
