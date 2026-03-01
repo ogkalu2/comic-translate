@@ -545,6 +545,76 @@ class WebtoonBatchProcessor:
 
         return False
 
+    @staticmethod
+    def _patch_area(patch: Dict) -> float:
+        bbox = patch.get('bbox')
+        if not bbox or len(bbox) < 4:
+            return 0.0
+        _, _, w, h = bbox
+        return max(0.0, float(w)) * max(0.0, float(h))
+
+    @staticmethod
+    def _patch_bbox_to_xyxy(patch: Dict) -> List[float]:
+        bbox = patch.get('bbox')
+        if not bbox or len(bbox) < 4:
+            return [0.0, 0.0, 0.0, 0.0]
+        x, y, w, h = bbox
+        x1 = float(x)
+        y1 = float(y)
+        return [x1, y1, x1 + float(w), y1 + float(h)]
+
+    def _patches_significantly_overlap(
+        self,
+        a: Dict,
+        b: Dict,
+        overlap_threshold: float = 0.70,
+    ) -> bool:
+        area_a = self._patch_area(a)
+        area_b = self._patch_area(b)
+        if area_a <= 1.0 or area_b <= 1.0:
+            return False
+
+        overlap = self._rect_intersection_area_xyxy(
+            self._patch_bbox_to_xyxy(a),
+            self._patch_bbox_to_xyxy(b),
+        )
+        return (overlap / min(area_a, area_b)) >= overlap_threshold
+
+    def _filter_duplicate_patches(
+        self,
+        existing_patches: List[Dict],
+        candidate_patches: List[Dict],
+        overlap_threshold: float = 0.70,
+    ) -> List[Dict]:
+        if not candidate_patches:
+            return []
+
+        selected_indices = set()
+        dedupe_pool = list(existing_patches)
+        ranked_candidates = sorted(
+            enumerate(candidate_patches),
+            key=lambda item: (-self._patch_area(item[1]), item[0]),
+        )
+
+        for idx, patch in ranked_candidates:
+            if self._patch_area(patch) <= 1.0:
+                continue
+
+            if any(
+                self._patches_significantly_overlap(
+                    patch,
+                    existing_patch,
+                    overlap_threshold=overlap_threshold,
+                )
+                for existing_patch in dedupe_pool
+            ):
+                continue
+
+            selected_indices.add(idx)
+            dedupe_pool.append(patch)
+
+        return [patch for idx, patch in enumerate(candidate_patches) if idx in selected_indices]
+
     def _calculate_virtual_inpaint_patches(self, mask: np.ndarray, inpainted_image: np.ndarray,
                                            mapping_data: List[Dict]) -> Dict[str, List[Dict]]:
         """
@@ -983,10 +1053,14 @@ class WebtoonBatchProcessor:
                 all_patches.extend(chunk_data['patches'][virtual_page_id])
 
         # 3. Emit Patches to the scene
-        if all_patches:
-            logger.info(f"Emitting {len(all_patches)} inpaint patches for confirmed VP {virtual_page_id}")
-            self.main_page.patches_processed.emit(all_patches, vpage.physical_page_path)
-            self.final_patches_for_save[vpage.physical_page_path].extend(all_patches)
+        deduped_virtual_patches = self._filter_duplicate_patches([], all_patches)
+        if deduped_virtual_patches:
+            page_patches = self.final_patches_for_save[vpage.physical_page_path]
+            new_page_patches = self._filter_duplicate_patches(page_patches, deduped_virtual_patches)
+            if new_page_patches:
+                logger.info(f"Emitting {len(new_page_patches)} inpaint patches for confirmed VP {virtual_page_id}")
+                self.main_page.patches_processed.emit(new_page_patches, vpage.physical_page_path)
+                page_patches.extend(new_page_patches)
 
         # 4. Handle and Emit Text Items using the new single source of truth
         if merged_blocks:
@@ -1128,6 +1202,7 @@ class WebtoonBatchProcessor:
         self.virtual_page_processing_count.clear()
         self.finalized_virtual_pages.clear()
         self.physical_page_status.clear()
+        self.final_patches_for_save.clear()
         self.processed_chunks = set()
         self.virtual_page_to_chunks = defaultdict(list)
         self._spanning_claims_by_page.clear()
