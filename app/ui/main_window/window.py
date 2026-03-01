@@ -89,6 +89,18 @@ class ComicTranslateUI(
         }
 
         self._init_ui()
+        self._settings_resize_preview = QtWidgets.QLabel(self._center_stack)
+        self._settings_resize_preview.setAttribute(
+            QtCore.Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
+        self._settings_resize_preview.setScaledContents(True)
+        self._settings_resize_preview.setStyleSheet("background-color: #323232;")
+        self._settings_resize_preview.hide()
+        self._settings_resize_active = False
+        self._settings_resize_settle_timer = QtCore.QTimer(self)
+        self._settings_resize_settle_timer.setSingleShot(True)
+        self._settings_resize_settle_timer.setInterval(120)
+        self._settings_resize_settle_timer.timeout.connect(self._finish_settings_resize_preview)
 
     def _init_ui(self):
         outer_widget = QtWidgets.QWidget(self)
@@ -147,6 +159,7 @@ class ComicTranslateUI(
                 self.title_bar.webtoon_toggle.setVisible(visible)
 
     def show_home_screen(self) -> None:
+        self._finish_settings_resize_preview()
         self._set_document_tools_visible(False)
         self._center_stack.setCurrentWidget(self.startup_home)
 
@@ -159,13 +172,57 @@ class ComicTranslateUI(
     def show_settings_page(self):
         if not self.settings_page:
             self.settings_page = SettingsPage(self)
+        self._finish_settings_resize_preview()
         self._center_stack.setCurrentWidget(self.settings_page)
 
     def show_main_page(self):
+        self._finish_settings_resize_preview()
         if self.settings_page:
             self._workspace_initialized = True
             self._set_document_tools_visible(True)
             self._center_stack.setCurrentWidget(self.main_content_widget)
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        if sys.platform != "win32":
+            return
+        if not hasattr(self, "_center_stack") or self._center_stack.currentWidget() is not self.settings_page:
+            self._finish_settings_resize_preview()
+            return
+        old = event.oldSize()
+        new = event.size()
+        is_contracting = (
+            old.isValid() and
+            (new.width() < old.width() or new.height() < old.height())
+        )
+        if is_contracting:
+            self._start_settings_resize_preview()
+        else:
+            self._finish_settings_resize_preview()
+
+    def _start_settings_resize_preview(self) -> None:
+        if not self._settings_resize_active:
+            self.settings_page.setVisible(False)
+            self._settings_resize_active = True
+        # Refresh snapshot on every contraction tick to reduce "pinch" artifacts
+        # from stretching a stale pixmap during live resize.
+        self._settings_resize_preview.setPixmap(self.settings_page.grab())
+        self._settings_resize_preview.setGeometry(self.settings_page.geometry())
+        self._settings_resize_preview.show()
+        self._settings_resize_preview.raise_()
+        self._settings_resize_settle_timer.start()
+
+    def _finish_settings_resize_preview(self) -> None:
+        if self._settings_resize_settle_timer.isActive():
+            self._settings_resize_settle_timer.stop()
+        if self._settings_resize_active:
+            self._settings_resize_preview.hide()
+            self._settings_resize_preview.clear()
+            self.settings_page.setVisible(True)
+            self._settings_resize_active = False
+            if hasattr(self, "settings_page") and self.settings_page is not None:
+                self.settings_page.update()
+
 
     def changeEvent(self, event: QtCore.QEvent) -> None:  # type: ignore[override]
         super().changeEvent(event)
