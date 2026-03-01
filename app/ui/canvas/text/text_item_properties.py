@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Any
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
+from app.ui.canvas.text_item import OutlineType
 
 @dataclass
 class TextItemProperties:
@@ -14,6 +15,7 @@ class TextItemProperties:
     line_spacing: float = 1.2
     outline_color: Optional[QColor] = None
     outline_width: float = 1
+    outline: bool = False
     bold: bool = False
     italic: bool = False
     underline: bool = False
@@ -27,6 +29,7 @@ class TextItemProperties:
     
     # Layout properties
     width: Optional[float] = None
+    height: Optional[float] = None
     vertical: bool = False
     
     # Advanced properties
@@ -60,6 +63,10 @@ class TextItemProperties:
                 props.outline_color = QColor(data['outline_color'])
                 
         props.outline_width = data.get('outline_width', 1)
+        if 'outline' in data:
+            props.outline = bool(data.get('outline', False))
+        else:
+            props.outline = _has_full_document_outline(data.get('selection_outlines', []))
         
         # Alignment
         if 'alignment' in data:
@@ -68,9 +75,17 @@ class TextItemProperties:
             else:
                 props.alignment = data['alignment']
                 
-        # Direction
+        # Direction – stored as Qt.LayoutDirection enum but may arrive as a plain
+        # integer after JSON round-trips (RightToLeft=1, LeftToRight=0).
         if 'direction' in data:
-            props.direction = data['direction']
+            dir_val = data['direction']
+            if isinstance(dir_val, int):
+                try:
+                    props.direction = Qt.LayoutDirection(dir_val)
+                except (ValueError, KeyError):
+                    props.direction = Qt.LayoutDirection.LeftToRight
+            else:
+                props.direction = dir_val
             
         # Position and transformation
         props.position = data.get('position', (0, 0))
@@ -80,6 +95,7 @@ class TextItemProperties:
         
         # Layout
         props.width = data.get('width')
+        props.height = data.get('height')
         props.vertical = data.get('vertical', False)
         
         # Advanced
@@ -101,6 +117,7 @@ class TextItemProperties:
         props.line_spacing = item.line_spacing
         props.outline_color = item.outline_color
         props.outline_width = item.outline_width
+        props.outline = bool(getattr(item, 'outline', False))
         props.bold = item.bold
         props.italic = item.italic
         props.underline = item.underline
@@ -116,6 +133,7 @@ class TextItemProperties:
         
         # Layout properties
         props.width = item.boundingRect().width()
+        props.height = item.boundingRect().height()
         props.vertical = getattr(item, 'vertical', False)
         
         # Advanced properties
@@ -134,6 +152,7 @@ class TextItemProperties:
             'line_spacing': self.line_spacing,
             'outline_color': self.outline_color,
             'outline_width': self.outline_width,
+            'outline': self.outline,
             'bold': self.bold,
             'italic': self.italic,
             'underline': self.underline,
@@ -143,6 +162,17 @@ class TextItemProperties:
             'scale': self.scale,
             'transform_origin': self.transform_origin,
             'width': self.width,
+            'height': self.height,
             'vertical': self.vertical,
             'selection_outlines': self.selection_outlines,
         }
+
+
+def _has_full_document_outline(selection_outlines: list) -> bool:
+    for outline in selection_outlines or []:
+        outline_type = outline.get('type') if isinstance(outline, dict) else getattr(outline, 'type', None)
+        if outline_type == OutlineType.Full_Document:
+            return True
+        if isinstance(outline_type, str) and outline_type.lower() == "full_document":
+            return True
+    return False
