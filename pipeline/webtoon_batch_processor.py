@@ -74,6 +74,15 @@ class WebtoonBatchProcessor:
         
         # Edge detection settings
         self.edge_threshold = 50  # pixels from edge to consider as "near edge"
+
+        # When a rendered block (assigned to one physical page) visually spans into a neighboring
+        # physical page in the webtoon scene, we record the portion that lands on the neighbor.
+        # Later, when that neighbor page emits its own (clipped) blocks near the edge, we suppress
+        # the duplicates so the scene shows only the single merged/spanning item.
+        #
+        # Structure: target_physical_page_index -> list[ [x1, y1, x2, y2] ] in *target page-local*
+        # coordinates.
+        self._spanning_claims_by_page = defaultdict(list)
         
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         logger.info("Skipping fallback translated image save for '%s'.", base_name)
@@ -425,27 +434,35 @@ class WebtoonBatchProcessor:
         virtual_page_blocks = defaultdict(list)
         
         for blk in blk_list:
-            # Assign block to the single virtual page with the most overlap area
+            # Prefer stable ownership for blocks that span the boundary between the two mapped regions.
+            # For a two-page chunk, the "upper" mapping is always first in mapping_data (y starts at 0),
+            # and spanning blocks should belong to that upper virtual page so they can render as a single,
+            # merged item across the seam.
             target_mapping = None
-            max_overlap_area = -1
+            if len(mapping_data) == 2:
+                boundary_y = mapping_data[0]['combined_y_end']
+                if blk.xyxy[1] < boundary_y and blk.xyxy[3] > boundary_y:
+                    target_mapping = mapping_data[0]
 
-            for mapping in mapping_data:
-                vpage = mapping['virtual_page']
-                y_start = mapping['combined_y_start']
-                y_end = mapping['combined_y_end']
-                
-                # Calculate vertical overlap with this virtual page
-                overlap_y_start = max(blk.xyxy[1], y_start)
-                overlap_y_end = min(blk.xyxy[3], y_end)
-                vertical_overlap = max(0, overlap_y_end - overlap_y_start)
-                
-                # Calculate overlap area
-                block_width = blk.xyxy[2] - blk.xyxy[0]
-                overlap_area = block_width * vertical_overlap
+            # Otherwise assign block to the single virtual page with the most overlap area.
+            if target_mapping is None:
+                max_overlap_area = -1
+                for mapping in mapping_data:
+                    y_start = mapping['combined_y_start']
+                    y_end = mapping['combined_y_end']
+                    
+                    # Calculate vertical overlap with this virtual page
+                    overlap_y_start = max(blk.xyxy[1], y_start)
+                    overlap_y_end = min(blk.xyxy[3], y_end)
+                    vertical_overlap = max(0, overlap_y_end - overlap_y_start)
+                    
+                    # Calculate overlap area
+                    block_width = blk.xyxy[2] - blk.xyxy[0]
+                    overlap_area = block_width * vertical_overlap
 
-                if overlap_area > max_overlap_area:
-                    max_overlap_area = overlap_area
-                    target_mapping = mapping
+                    if overlap_area > max_overlap_area:
+                        max_overlap_area = overlap_area
+                        target_mapping = mapping
 
             # Create a block for the target virtual page only, if one was found
             if target_mapping:
@@ -477,6 +494,56 @@ class WebtoonBatchProcessor:
                 logger.warning(f"Block {blk.xyxy} could not be assigned to any virtual page")
             
         return dict(virtual_page_blocks)
+
+    @staticmethod
+    def _rect_area_xyxy(xyxy: List[float]) -> float:
+        x1, y1, x2, y2 = xyxy
+        return max(0.0, float(x2) - float(x1)) * max(0.0, float(y2) - float(y1))
+
+    @staticmethod
+    def _rect_intersection_area_xyxy(a: List[float], b: List[float]) -> float:
+        ax1, ay1, ax2, ay2 = a
+        bx1, by1, bx2, by2 = b
+        ix1 = max(float(ax1), float(bx1))
+        iy1 = max(float(ay1), float(by1))
+        ix2 = min(float(ax2), float(bx2))
+        iy2 = min(float(ay2), float(by2))
+        return max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
+
+    def _should_suppress_clipped_block(
+        self,
+        physical_page_index: int,
+        physical_coords: List[float],
+        physical_height: float,
+    ) -> bool:
+        """
+        In webtoon mode, suppress clipped duplicates on page boundaries when a neighboring page
+        already emitted a spanning/merged block that visually covers this region.
+        """
+        claims = self._spanning_claims_by_page.get(physical_page_index)
+        if not claims:
+            return False
+
+        x1, y1, x2, y2 = physical_coords
+
+        # Never suppress a spanning block; those are the "merged" ones we want.
+        if y1 < 0 or y2 > physical_height:
+            return False
+
+        # Only suppress near page edges (typical location of clipped fragments).
+        if not (y1 < self.edge_threshold or (physical_height - y2) < self.edge_threshold):
+            return False
+
+        cand_area = self._rect_area_xyxy(physical_coords)
+        if cand_area <= 1.0:
+            return False
+
+        for claim_xyxy in claims:
+            overlap = self._rect_intersection_area_xyxy(physical_coords, claim_xyxy)
+            if overlap / cand_area >= 0.60:
+                return True
+
+        return False
 
     def _calculate_virtual_inpaint_patches(self, mask: np.ndarray, inpainted_image: np.ndarray,
                                            mapping_data: List[Dict]) -> Dict[str, List[Dict]]:
@@ -774,6 +841,13 @@ class WebtoonBatchProcessor:
             if not translation or len(translation) < 1:
                 continue
 
+            # Suppress clipped duplicates on physical page seams when a spanning block has already
+            # claimed this region from a neighbor page.
+            if webtoon_manager and self._should_suppress_clipped_block(
+                vpage.physical_page_index, physical_coords, vpage.physical_height
+            ):
+                continue
+
             # Determine if this block should use vertical rendering
             vertical = is_vertical_block(blk_virtual, trg_lng_cd)
 
@@ -855,6 +929,41 @@ class WebtoonBatchProcessor:
             )
             text_items_state.append(text_props.to_dict())
             page_blk_list.append(render_blk)
+
+            # If this rendered block visually spans into an adjacent physical page in the webtoon
+            # scene, record its footprint in the neighbor page-local coordinate space. This lets
+            # us suppress clipped duplicates when that neighbor page later emits its own blocks.
+            if webtoon_manager and vpage.physical_page_index < len(webtoon_manager.image_positions):
+                src_idx = vpage.physical_page_index
+                src_pos = float(webtoon_manager.image_positions[src_idx])
+
+                # Neighbor candidates: previous and next physical pages only.
+                for tgt_idx in (src_idx - 1, src_idx + 1):
+                    if tgt_idx < 0 or tgt_idx >= len(webtoon_manager.image_positions):
+                        continue
+                    if tgt_idx >= len(webtoon_manager.image_heights):
+                        continue
+
+                    tgt_pos = float(webtoon_manager.image_positions[tgt_idx])
+                    tgt_h = float(webtoon_manager.image_heights[tgt_idx])
+                    if tgt_h <= 0:
+                        continue
+
+                    # Map this block's physical coords (src-local) into target page-local coords.
+                    dy = src_pos - tgt_pos
+                    mapped = [float(x1), float(y1) + dy, float(x2), float(y2) + dy]
+
+                    # Clip to target page bounds in Y so claims don't affect unrelated pages.
+                    clipped = [mapped[0], max(0.0, mapped[1]), mapped[2], min(tgt_h, mapped[3])]
+                    if clipped[3] <= clipped[1]:
+                        continue
+
+                    # Require a meaningful overlap with the target page (avoid recording blocks that
+                    # just touch the seam or land entirely in the inter-page spacing).
+                    if self._rect_area_xyxy(clipped) <= 20.0:
+                        continue
+
+                    self._spanning_claims_by_page[tgt_idx].append(clipped)
 
     def _finalize_and_emit_for_virtual_page(self, vpage: VirtualPage):
         """
@@ -1021,6 +1130,7 @@ class WebtoonBatchProcessor:
         self.physical_page_status.clear()
         self.processed_chunks = set()
         self.virtual_page_to_chunks = defaultdict(list)
+        self._spanning_claims_by_page.clear()
 
         # Step 1: Create virtual pages for all physical pages
         all_virtual_pages = []
