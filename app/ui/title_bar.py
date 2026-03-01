@@ -136,7 +136,7 @@ class CustomTitleBar(QtWidgets.QWidget):
         self._layout.setContentsMargins(10, 0, 0, 0)
         self._layout.setSpacing(0)
 
-        # ----- App icon -----
+        # App icon
         self.icon_label = QtWidgets.QLabel()
         self.icon_label.setFixedSize(20, 20)
         self.icon_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
