@@ -768,7 +768,7 @@ class WebtoonBatchProcessor:
         for blk_virtual in blk_list_virtual:
             physical_coords = vpage.virtual_to_physical_coords(blk_virtual.xyxy)
             x1, y1, x2, y2 = physical_coords
-            width, height = x2 - x1, y2 - y1
+            block_width, block_height = x2 - x1, y2 - y1
 
             translation = blk_virtual.translation
             if not translation or len(translation) < 1:
@@ -777,11 +777,11 @@ class WebtoonBatchProcessor:
             # Determine if this block should use vertical rendering
             vertical = is_vertical_block(blk_virtual, trg_lng_cd)
 
-            translation, font_size = pyside_word_wrap(
+            translation, font_size, rendered_width, rendered_height = pyside_word_wrap(
                 translation, 
                 font, 
-                width, 
-                height,
+                block_width, 
+                block_height,
                 line_spacing, 
                 outline_width, 
                 bold, 
@@ -791,7 +791,8 @@ class WebtoonBatchProcessor:
                 direction, 
                 max_font_size, 
                 min_font_size,
-                vertical
+                vertical,
+                return_metrics=True
             )
             
             if is_no_space_lang(trg_lng_cd):
@@ -838,7 +839,8 @@ class WebtoonBatchProcessor:
                 rotation=blk_virtual.angle,
                 scale=1.0,
                 transform_origin=blk_virtual.tr_origin_point if blk_virtual.tr_origin_point else (0, 0),
-                width=width,
+                width=rendered_width,
+                height=rendered_height,
                 direction=direction,
                 vertical=vertical,
                 selection_outlines=[
@@ -918,9 +920,7 @@ class WebtoonBatchProcessor:
 
     def _save_final_rendered_page(self, page_idx: int, image_path: str, timestamp: str):
         """
-        A consolidated function that starts with the ORIGINAL image, applies the pre-calculated 
-        inpaint patches, renders text (including spanning items), and saves the final output file.
-        This is called only when the page and its neighbors have their data ready.
+        Handle per-page exports once a page and its neighbors are finalized.
         """
         logger.info(f"Starting final render process for page {page_idx} at path: {image_path}")
 
@@ -953,16 +953,15 @@ class WebtoonBatchProcessor:
             self.log_skipped_image(directory, timestamp, image_path, reason)
             return
         
-        renderer = ImageSaveRenderer(image)
-        patches = self.final_patches_for_save.get(image_path, [])
-        renderer.apply_patches(patches)
-
         # Intermediate Exports
         settings_page = self.main_page.settings_page
         export_settings = settings_page.get_export_settings()
 
         # Export Cleaned Image
         if export_settings['export_inpainted_image']:
+            renderer = ImageSaveRenderer(image)
+            patches = self.final_patches_for_save.get(image_path, [])
+            renderer.apply_patches(patches)
             path = os.path.join(directory, f"comic_translate_{timestamp}", "cleaned_images", archive_bname)
             if not os.path.exists(path):
                 os.makedirs(path, exist_ok=True)
@@ -991,9 +990,7 @@ class WebtoonBatchProcessor:
             with open(os.path.join(path, f"{base_name}_translated.json"), 'w', encoding='UTF-8') as f:
                 f.write(translated_text)
 
-        # Continue Image Rendering
-        viewer_state = self.main_page.image_states[image_path].get('viewer_state', {}).copy()
-        renderer.add_state_to_image(viewer_state, page_idx, self.main_page)
+        # No translated image file is written in this path, so no text rasterization is needed here.
 
     def webtoon_batch_process(self, selected_paths: List[str] = None):
         """

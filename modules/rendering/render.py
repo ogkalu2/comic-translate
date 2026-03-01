@@ -188,8 +188,9 @@ def pyside_word_wrap(
     direction: Qt.LayoutDirection, 
     init_font_size: int, 
     min_font_size: int = 10, 
-    vertical: bool = False
-) -> Tuple[str, int]:
+    vertical: bool = False,
+    return_metrics: bool = False
+) -> tuple:
     
     """Break long text to multiple lines, and find the largest point size
         so that all wrapped text fits within the box."""
@@ -203,7 +204,12 @@ def pyside_word_wrap(
 
         return font
 
-    def eval_metrics(txt: str, font_sz: float, vertical: bool = False) -> Tuple[float, float]:
+    def eval_metrics(
+        txt: str,
+        font_sz: float,
+        vertical: bool = False,
+        include_outline: bool = True
+    ) -> Tuple[float, float]:
         """Quick helper function to calculate width/height of text using QTextDocument."""
         
         # Create a QTextDocument
@@ -239,7 +245,7 @@ def pyside_word_wrap(
         width, height = size.width(), size.height()
         
         # Add outline width to the size
-        if outline_width > 0:
+        if include_outline and outline_width > 0:
             width += 2 * outline_width
             height += 2 * outline_width
         
@@ -286,6 +292,11 @@ def pyside_word_wrap(
     if not found_fit:
         best_text, w, h = wrap_and_size(min_font_size)
         best_size = min_font_size
+
+    if return_metrics:
+        # Match persisted state to the text item's actual geometry.
+        rendered_w, rendered_h = eval_metrics(best_text, best_size, vertical, include_outline=False)
+        return best_text, best_size, rendered_w, rendered_h
 
     return best_text, best_size
 

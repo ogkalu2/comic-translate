@@ -377,7 +377,7 @@ class BatchProcessor:
                 
             text_items_state = []
             for blk in blk_list:
-                x1, y1, width, height = blk.xywh
+                x1, y1, block_width, block_height = blk.xywh
 
                 translation = blk.translation
                 if not translation or len(translation) == 1:
@@ -386,11 +386,11 @@ class BatchProcessor:
                 # Determine if this block should use vertical rendering
                 vertical = is_vertical_block(blk, trg_lng_cd)
 
-                translation, font_size = pyside_word_wrap(
+                translation, font_size, rendered_width, rendered_height = pyside_word_wrap(
                     translation, 
                     font, 
-                    width, 
-                    height,
+                    block_width, 
+                    block_height,
                     line_spacing, 
                     outline_width, 
                     bold, 
@@ -400,7 +400,8 @@ class BatchProcessor:
                     direction, 
                     max_font_size, 
                     min_font_size,
-                    vertical
+                    vertical,
+                    return_metrics=True
                 )
                 
                 # Display text if on current page  
@@ -431,7 +432,8 @@ class BatchProcessor:
                     rotation=blk.angle,
                     scale=1.0,
                     transform_origin=blk.tr_origin_point,
-                    width=width,
+                    width=rendered_width,
+                    height=rendered_height,
                     direction=direction,
                     vertical=vertical,
                     selection_outlines=[

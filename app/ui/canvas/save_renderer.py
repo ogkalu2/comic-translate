@@ -100,7 +100,7 @@ class ImageSaveRenderer:
             for text_item in other_text_items:
                 pos = text_item.get('position', (0, 0))
                 item_x1, item_y1 = pos
-                height = text_item.get('height', 0)
+                height = text_item.get('height')
                 item_y2 = item_y1 + height
 
                 new_pos = None
