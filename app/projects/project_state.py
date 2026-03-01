@@ -46,8 +46,13 @@ def close_state_store(file_name: str | None = None) -> None:
     close_state_v2_cached_connection(file_name)
 
 
-def ensure_project_path_materialized(path: str) -> bool:
+def ensure_project_blob_materialized(path: str) -> bool:
     return ensure_lazy_blob_materialized(path)
+
+
+def ensure_project_path_materialized(path: str) -> bool:
+    # Backward-compatible alias kept for older imports.
+    return ensure_project_blob_materialized(path)
 
 
 def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):

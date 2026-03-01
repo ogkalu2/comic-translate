@@ -23,6 +23,7 @@ from modules.utils.translator_utils import get_raw_translation, get_raw_text, fo
 from modules.rendering.render import get_best_render_area, pyside_word_wrap, is_vertical_block
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
+from app.path_materialization import ensure_path_materialized
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.messages import Messages
@@ -88,6 +89,12 @@ class BatchProcessor:
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
+        try:
+            if self.main_page.file_handler.should_pre_materialize(image_list):
+                count = self.main_page.file_handler.pre_materialize(image_list)
+                logger.info("Batch pre-materialized %d paths before full-run processing.", count)
+        except Exception:
+            logger.debug("Batch pre-materialization failed; continuing lazily.", exc_info=True)
 
         for index, image_path in enumerate(image_list):
             if self._is_cancelled():
@@ -119,6 +126,7 @@ class BatchProcessor:
                         directory = os.path.dirname(archive_path)
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
 
+            ensure_path_materialized(image_path)
             image = imk.read_image(image_path)
 
             # skip UI-skipped images
@@ -461,3 +469,4 @@ class BatchProcessor:
                 self.main_page.blk_list = blk_list
 
             self.emit_progress(index, total_images, 10, 10, False)
+

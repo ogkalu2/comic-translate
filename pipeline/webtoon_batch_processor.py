@@ -25,6 +25,7 @@ from app.ui.canvas.save_renderer import ImageSaveRenderer
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation 
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
+from app.path_materialization import ensure_path_materialized
 from app.ui.messages import Messages
 from .virtual_page import VirtualPage, VirtualPageCreator, PageStatus
 
@@ -95,6 +96,7 @@ class WebtoonBatchProcessor:
         # Handle self-paired virtual pages (single virtual page processing)
         if vpage1.virtual_id == vpage2.virtual_id:
             # Load the physical image
+            ensure_path_materialized(vpage1.physical_page_path)
             img = imk.read_image(vpage1.physical_page_path)
             
             if img is None:
@@ -123,7 +125,9 @@ class WebtoonBatchProcessor:
         
         # Handle different virtual pages (original logic)
         # Load the physical images
+        ensure_path_materialized(vpage1.physical_page_path)
         img1 = imk.read_image(vpage1.physical_page_path)
+        ensure_path_materialized(vpage2.physical_page_path)
         img2 = imk.read_image(vpage2.physical_page_path)
         
         if img1 is None or img2 is None:
@@ -921,6 +925,7 @@ class WebtoonBatchProcessor:
         logger.info(f"Starting final render process for page {page_idx} at path: {image_path}")
 
         # Start with the ORIGINAL, un-inpainted image.
+        ensure_path_materialized(image_path)
         image = imk.read_image(image_path)
 
         if image is None:
@@ -999,6 +1004,12 @@ class WebtoonBatchProcessor:
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
+        try:
+            if self.main_page.file_handler.should_pre_materialize(image_list):
+                count = self.main_page.file_handler.pre_materialize(image_list)
+                logger.info("Webtoon batch pre-materialized %d paths before full-run processing.", count)
+        except Exception:
+            logger.debug("Webtoon batch pre-materialization failed; continuing lazily.", exc_info=True)
 
         if total_images < 1:
             logger.warning("No images to process")
@@ -1035,11 +1046,13 @@ class WebtoonBatchProcessor:
                         archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
                         break
                 
+                ensure_path_materialized(image_path)
                 image = imk.read_image(image_path)
                 self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
                 self.log_skipped_image(directory, timestamp, image_path, "User-skipped")
                 continue
             
+            ensure_path_materialized(image_path)
             image = imk.read_image(image_path)
             if image is None:
                 logger.error(f"Failed to load image: {image_path}")
@@ -1166,3 +1179,4 @@ class WebtoonBatchProcessor:
                 self._check_and_render_page(p_idx, total_images, image_list, timestamp, physical_to_virtual_mapping)
 
         logger.info("Eager webtoon batch processing completed.")
+
