@@ -186,8 +186,8 @@ class ProjectController:
 
     def _is_startup_home_visible(self) -> bool:
         try:
-            center_stack = getattr(self.main, "_center_stack", None)
-            home_screen = getattr(self.main, "home_screen", None)
+            center_stack = self.main._center_stack
+            home_screen = self.main.startup_home
             if center_stack is not None and home_screen is not None:
                 return center_stack.currentWidget() is home_screen
         except Exception:
@@ -695,7 +695,7 @@ class ProjectController:
 
     def _refresh_home_screen(self) -> None:
         """Repopulate the home screen recent list if it is currently visible."""
-        home = getattr(self.main, "home_screen", None)
+        home = self.main.startup_home
         if home is None:
             return
         home.populate(self.get_recent_projects())

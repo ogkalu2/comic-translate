@@ -264,7 +264,7 @@ class ComicTranslateUI(
         new_theme.apply(self)
         self._apply_title_bar_style(theme)
 
-        if hasattr(self, "home_screen"):
+        if self.startup_home:
             self.startup_home.apply_theme(is_dark)
 
         self.repaint()
