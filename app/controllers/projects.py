@@ -83,7 +83,7 @@ class ProjectController:
         self._save_entries(entries)
 
     def get_recent_projects(self) -> list:
-        """Return list of ``{path, mtime, pinned}`` dicts, most-recent first."""
+        """Return list of ``{path, mtime, pinned}`` dicts sorted by mtime desc."""
         settings = QSettings("ComicLabs", "ComicTranslate")
         settings.beginGroup("recent_projects")
         paths   = settings.value("paths",   []) or []
@@ -100,11 +100,19 @@ class ProjectController:
                 m = float(mtime)
             except (TypeError, ValueError):
                 m = 0.0
+            # Refresh from filesystem when possible so ordering reflects real
+            # modified time, not only the previously-saved snapshot.
+            try:
+                if os.path.isfile(path):
+                    m = float(os.path.getmtime(path))
+            except OSError:
+                pass
             try:
                 p = str(pinneds[i]).lower() == "true" if i < len(pinneds) else False
             except Exception:
                 p = False
             result.append({"path": str(path), "mtime": m, "pinned": p})
+        result.sort(key=lambda e: float(e.get("mtime", 0.0) or 0.0), reverse=True)
         return result
 
     def remove_recent_project(self, path: str) -> None:

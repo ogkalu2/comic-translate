@@ -179,7 +179,8 @@ class _RecentRow(QtWidgets.QFrame):
             dt  = datetime.fromtimestamp(mtime)
             now = datetime.now()
             if dt.date() == now.date():
-                return "Today, " + dt.strftime("%H:%M")
+                time_fmt = "%#I:%M %p" if sys.platform == "win32" else "%-I:%M %p"
+                return "Today, " + dt.strftime(time_fmt)
             diff = (now.date() - dt.date()).days
             if diff == 1:
                 return "Yesterday"
@@ -498,7 +499,7 @@ class StartupHomeScreen(QtWidgets.QWidget):
     # Public API 
 
     def populate(self, recent: list[dict]) -> None:
-        """Rebuild rows from [{path, mtime}, …] list (most-recent first)."""
+        """Rebuild rows from [{path, mtime}, …] list (newest modified first)."""
         self._all_entries = recent
         self._rebuild_rows()
 
