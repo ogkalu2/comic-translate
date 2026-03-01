@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
+from .dayu_widgets import dayu_theme
 from .dayu_widgets.switch import MSwitch
 
 
@@ -164,6 +165,7 @@ class CustomTitleBar(QtWidgets.QWidget):
         self.autosave_switch.setObjectName("titleBarAutosaveSwitch")
         self.autosave_switch.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.autosave_switch.setToolTip(self.tr("Auto-Save Project"))
+        self._configure_autosave_switch_geometry()
 
         self._tools_host = QtWidgets.QWidget(self)
         self._tools_host.setObjectName("titleBarToolsHost")
@@ -258,6 +260,8 @@ class CustomTitleBar(QtWidgets.QWidget):
         """Show or hide the auto-save label and toggle switch."""
         self.autosave_label.setVisible(visible)
         self.autosave_switch.setVisible(visible)
+        if visible:
+            self._configure_autosave_switch_geometry()
 
     def update_maximize_icon(self, is_maximized: bool) -> None:
         self.maximize_btn.set_kind(_RESTORE if is_maximized else _MAXIMIZE)
@@ -271,6 +275,8 @@ class CustomTitleBar(QtWidgets.QWidget):
         """Apply theme-aware colours.  Call from ``apply_theme``."""
         fg_color    = QtGui.QColor(fg)
         hover_color = QtGui.QColor(hover)
+        switch_width = int(getattr(dayu_theme, "switch_width_small", 28))
+        switch_height = int(getattr(dayu_theme, "switch_height_small", 14))
         # Keep the unchecked switch visible against both light and dark bars.
         if fg_color.lightness() >= 128:
             switch_off_bg = "#6a6a6a"
@@ -310,11 +316,17 @@ class CustomTitleBar(QtWidgets.QWidget):
                 background: transparent;
                 border: none;
                 spacing: 0px;
+                min-width: {switch_width + 4}px;
+                max-width: {switch_width + 4}px;
+                min-height: {switch_height + 4}px;
+                max-height: {switch_height + 4}px;
             }}
             MSwitch#titleBarAutosaveSwitch::indicator,
             MSwitch#titleBarAutosaveSwitch::indicator:unchecked,
             MSwitch#titleBarAutosaveSwitch::indicator:checked {{
                 border: none;
+                width: {switch_width}px;
+                height: {switch_height}px;
             }}
             MSwitch#titleBarAutosaveSwitch::indicator:unchecked {{
                 background-color: {switch_off_bg};
@@ -338,6 +350,17 @@ class CustomTitleBar(QtWidgets.QWidget):
                 border: none;
             }}
         """)
+
+    def _configure_autosave_switch_geometry(self) -> None:
+        """Keep a stable paint area so switch indicator never clips after relayout."""
+        switch_width = int(getattr(dayu_theme, "switch_width_small", 28))
+        switch_height = int(getattr(dayu_theme, "switch_height_small", 14))
+        self.autosave_switch.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Fixed,
+            QtWidgets.QSizePolicy.Policy.Fixed,
+        )
+        self.autosave_switch.setFixedSize(switch_width + 4, switch_height + 4)
+        self.autosave_switch.updateGeometry()
 
     # Window controls
     def _toggle_maximize(self) -> None:
