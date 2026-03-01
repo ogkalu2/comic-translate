@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QGraphicsPathItem
 from PySide6.QtCore import QRectF, QPointF
 from PySide6 import QtGui, QtWidgets
 import imkit as imk
+from app.projects.project_state import ensure_project_path_materialized
 
 from ..canvas.text.text_item_properties import TextItemProperties
 from modules.utils.textblock import TextBlock
@@ -236,7 +237,13 @@ class PatchCommandBase:
     @staticmethod
     def create_patch_item(properties, viewer: ImageViewer):
         x, y, w, h = properties['bbox']
-        img = imk.read_image(properties['png_path']) if 'png_path' in properties else properties['image']
+        if 'png_path' in properties:
+            ensure_project_path_materialized(properties['png_path'])
+            img = imk.read_image(properties['png_path'])
+        else:
+            img = properties['image']
+        if img is None:
+            return None
         qimg = QtGui.QImage(img.data, w, h, img.strides[0],
                             QtGui.QImage.Format.Format_RGB888)
         pix  = QtGui.QPixmap.fromImage(qimg)

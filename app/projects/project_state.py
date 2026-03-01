@@ -12,6 +12,7 @@ import imkit as imk
 from .parsers import ProjectEncoder, ProjectDecoder, ensure_string_keys
 from .project_state_v2 import (
     close_cached_connection as close_state_v2_cached_connection,
+    ensure_lazy_blob_materialized,
     is_sqlite_project_file,
     load_state_from_proj_file_v2,
     save_state_to_proj_file_v2,
@@ -43,6 +44,11 @@ def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
 
 def close_state_store(file_name: str | None = None) -> None:
     close_state_v2_cached_connection(file_name)
+
+
+def ensure_project_path_materialized(path: str) -> bool:
+    return ensure_lazy_blob_materialized(path)
+
 
 def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
     if is_sqlite_project_file(file_name):

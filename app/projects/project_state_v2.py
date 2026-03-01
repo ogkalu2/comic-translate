@@ -7,7 +7,6 @@ import tempfile
 import threading
 from typing import TYPE_CHECKING
 
-import imkit as imk
 import msgpack
 
 from .parsers import ProjectDecoder, ProjectEncoder, ensure_string_keys
@@ -19,6 +18,8 @@ if TYPE_CHECKING:
 _SQLITE_HEADER = b"SQLite format 3\x00"
 _CONN_CACHE_LOCK = threading.RLock()
 _CONN_CACHE: dict[str, tuple[sqlite3.Connection, threading.RLock]] = {}
+_LAZY_BLOB_LOCK = threading.RLock()
+_LAZY_BLOBS_BY_PATH: dict[str, tuple[str, str]] = {}
 
 
 def is_sqlite_project_file(file_name: str) -> bool:
@@ -126,11 +127,71 @@ def close_cached_connection(file_name: str | None = None) -> None:
             if cached is not None:
                 conn, _ = cached
                 conn.close()
+            with _LAZY_BLOB_LOCK:
+                stale_paths = [p for p, (mapped_db, _) in _LAZY_BLOBS_BY_PATH.items() if mapped_db == db_key]
+                for path in stale_paths:
+                    _LAZY_BLOBS_BY_PATH.pop(path, None)
             return
 
         for conn, _ in _CONN_CACHE.values():
             conn.close()
         _CONN_CACHE.clear()
+    with _LAZY_BLOB_LOCK:
+        _LAZY_BLOBS_BY_PATH.clear()
+
+
+def register_lazy_blob_path(project_file: str, output_path: str, blob_hash: str) -> None:
+    if not output_path or not blob_hash:
+        return
+    abs_path = os.path.abspath(output_path)
+    db_key = os.path.abspath(project_file)
+    # Avoid stale collisions when loading multiple projects into the same temp_dir.
+    if os.path.isfile(abs_path):
+        try:
+            os.remove(abs_path)
+        except OSError:
+            pass
+    with _LAZY_BLOB_LOCK:
+        _LAZY_BLOBS_BY_PATH[abs_path] = (db_key, str(blob_hash))
+
+
+def ensure_lazy_blob_materialized(path: str) -> bool:
+    if not path:
+        return False
+    abs_path = os.path.abspath(path)
+    try:
+        if os.path.isfile(abs_path) and os.path.getsize(abs_path) > 0:
+            return True
+    except Exception:
+        pass
+
+    with _LAZY_BLOB_LOCK:
+        mapped = _LAZY_BLOBS_BY_PATH.get(abs_path)
+        if mapped is None:
+            return os.path.isfile(abs_path)
+        db_key, blob_hash = mapped
+        conn, conn_lock = _get_cached_connection(db_key)
+        with conn_lock:
+            row = conn.execute("SELECT data FROM blobs WHERE hash = ?", (blob_hash,)).fetchone()
+        if row is None or row[0] is None:
+            return False
+
+        target_dir = os.path.dirname(abs_path)
+        if target_dir:
+            os.makedirs(target_dir, exist_ok=True)
+        fd, temp_path = tempfile.mkstemp(prefix=".blob_tmp_", dir=target_dir or None)
+        os.close(fd)
+        try:
+            with open(temp_path, "wb") as fh:
+                fh.write(row[0])
+            os.replace(temp_path, abs_path)
+        finally:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except OSError:
+                    pass
+    return True
 
 
 def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str) -> None:
@@ -335,8 +396,7 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
 
 def _materialize_from_manifest_and_pages(
     comic_translate: "ComicTranslate",
-    conn: sqlite3.Connection,
-    decoder: ProjectDecoder,
+    project_file: str,
     manifest: dict,
     page_rows: dict[str, dict],
 ):
@@ -385,18 +445,13 @@ def _materialize_from_manifest_and_pages(
             blob_hash = str(meta)
             file_name_hint = f"{img_id}.img"
 
-        blob_row = conn.execute("SELECT data FROM blobs WHERE hash = ?", (blob_hash,)).fetchone()
-        if blob_row is None or blob_row[0] is None:
-            continue
-
         # Preserve user-facing base names (no numeric prefix) while avoiding collisions
         # by isolating each materialized image into its own id-specific subdirectory.
         safe_name = os.path.basename(file_name_hint) or f"{img_id}.img"
         img_dir = os.path.join(unique_images_dir, str(img_id))
         os.makedirs(img_dir, exist_ok=True)
         img_disk_path = os.path.join(img_dir, safe_name)
-        with open(img_disk_path, "wb") as fh:
-            fh.write(blob_row[0])
+        register_lazy_blob_path(project_file, img_disk_path, blob_hash)
 
         for usage in img_id_to_usage[img_id]:
             usage_type = usage[0]
@@ -474,19 +529,12 @@ def _materialize_from_manifest_and_pages(
             png_hash = patch.get("png_hash")
             if not png_hash:
                 continue
-            row_blob = conn.execute(
-                "SELECT data, ext FROM blobs WHERE hash = ?",
-                (str(png_hash),),
-            ).fetchone()
-            if row_blob is None or row_blob[0] is None:
-                continue
 
-            ext = row_blob[1] or ".png"
+            ext = ".png"
             if not str(ext).startswith("."):
                 ext = f".{ext}"
             patch_disk_path = os.path.join(page_folder, f"{idx}_{png_hash[:12]}{ext}")
-            with open(patch_disk_path, "wb") as fh:
-                fh.write(row_blob[0])
+            register_lazy_blob_path(project_file, patch_disk_path, str(png_hash))
 
             new_list.append({"bbox": patch["bbox"], "png_path": patch_disk_path, "hash": patch["hash"]})
 
@@ -502,6 +550,7 @@ def _materialize_from_manifest_and_pages(
 
 def _load_from_legacy_state_blob(
     comic_translate: "ComicTranslate",
+    file_name: str,
     conn: sqlite3.Connection,
     decoder: ProjectDecoder,
 ):
@@ -536,23 +585,20 @@ def _load_from_legacy_state_blob(
         "unique_images": state.get("unique_images", {}),
     }
 
-    return _materialize_from_manifest_and_pages(comic_translate, conn, decoder, manifest, page_rows)
+    return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
 
 
 def load_state_from_proj_file_v2(comic_translate: "ComicTranslate", file_name: str):
     decoder = ProjectDecoder()
-    conn = sqlite3.connect(file_name)
-    try:
-        _init_schema(conn)
+    conn, conn_lock = _get_cached_connection(file_name)
+    with conn_lock:
         manifest_row = conn.execute("SELECT manifest_blob FROM project_manifest WHERE id = 1").fetchone()
         if manifest_row is None or manifest_row[0] is None:
-            return _load_from_legacy_state_blob(comic_translate, conn, decoder)
+            return _load_from_legacy_state_blob(comic_translate, file_name, conn, decoder)
 
         manifest = msgpack.unpackb(manifest_row[0], object_hook=decoder.decode, strict_map_key=True)
         page_rows = {
             row[0]: msgpack.unpackb(row[1], object_hook=decoder.decode, strict_map_key=True)
             for row in conn.execute("SELECT page_path, row_blob FROM page_state")
         }
-        return _materialize_from_manifest_and_pages(comic_translate, conn, decoder, manifest, page_rows)
-    finally:
-        conn.close()
+        return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)

@@ -5,6 +5,7 @@ from PIL import Image
 from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QListWidget
+from app.projects.project_state import ensure_project_path_materialized
 
 
 class ImageLoadWorker(QObject):
@@ -54,6 +55,7 @@ class ImageLoadWorker(QObject):
     def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
         """Load and resize an image to the target size."""
         try:
+            ensure_project_path_materialized(file_path)
             image = imk.read_image(file_path)
             if image is None:
                 return QPixmap()
@@ -204,7 +206,7 @@ class ListViewImageLoader:
         """Queue an image for loading."""
         if 0 <= index < len(self.file_paths):
             file_path = self.file_paths[index]
-            if os.path.exists(file_path):
+            if ensure_project_path_materialized(file_path) or os.path.exists(file_path):
                 self.worker.add_to_queue(index, file_path, self.avatar_size)
                 
                 # Start worker thread and process queue if not already running

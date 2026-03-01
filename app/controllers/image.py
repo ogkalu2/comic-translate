@@ -15,6 +15,7 @@ from app.ui.commands.inpaint import PatchCommandBase
 from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
+from app.projects.project_state import ensure_project_path_materialized
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -217,6 +218,7 @@ class ImageStateController:
             
             # Get the temp file path at the current index
             current_temp_path = self.main.image_history[file_path][current_index]
+            ensure_project_path_materialized(current_temp_path)
             
             # Load the image from the temp file
             rgb_image = imk.read_image(current_temp_path)
@@ -226,6 +228,7 @@ class ImageStateController:
 
         # If not in memory and not in history (or failed to load from temp),
         # load from the original file path
+        ensure_project_path_materialized(file_path)
         rgb_image = imk.read_image(file_path)
         return rgb_image
 
@@ -639,6 +642,7 @@ class ImageStateController:
             if request_id is not None and request_id != self._nav_request_id:
                 return
             if saved['hash'] not in mem_hashes:
+                ensure_project_path_materialized(saved['png_path'])
                 rgb_img = imk.read_image(saved['png_path'])
                 if rgb_img is not None:
                     loaded.append({
@@ -878,6 +882,7 @@ class ImageStateController:
                 }
             else:
                 # load into memory
+                ensure_project_path_materialized(saved['png_path'])
                 rgb_img = imk.read_image(saved['png_path'])
                 prop = {
                     'bbox': saved['bbox'],
