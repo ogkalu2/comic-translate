@@ -98,7 +98,7 @@ def _init_schema(conn: sqlite3.Connection) -> None:
 
 
 def _configure_connection(conn: sqlite3.Connection) -> None:
-    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA journal_mode=DELETE")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.execute("PRAGMA temp_store=MEMORY")
 
