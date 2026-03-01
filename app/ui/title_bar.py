@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import platform
+
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 from .dayu_widgets import dayu_theme
@@ -12,8 +14,13 @@ from .dayu_widgets.switch import MSwitch
 TITLE_BAR_HEIGHT = 36
 # Width of each window-control button (min / max / close)
 BUTTON_WIDTH = 46
+MAC_BUTTON_SIZE = 12
+MAC_BUTTON_HITBOX = 16
 # Edge hotspot thickness used by the frameless resize handler.
 RESIZE_MARGIN = 6
+TITLE_SAFE_GAP = 12
+IS_MACOS = platform.system() == "Darwin"
+USE_MAC_STYLE_CONTROLS = IS_MACOS
 
 # Icon kinds for _CtrlButton
 _MINIMIZE = "minimize"
@@ -144,6 +151,112 @@ class _CtrlButton(QtWidgets.QPushButton):
         super().leaveEvent(event)
 
 
+class _MacCtrlButton(QtWidgets.QPushButton):
+    """macOS traffic-light window control button."""
+
+    _COLOR_MAP = {
+        _CLOSE: QtGui.QColor("#ff5f57"),
+        _MINIMIZE: QtGui.QColor("#febc2e"),
+        _MAXIMIZE: QtGui.QColor("#28c840"),
+        _RESTORE: QtGui.QColor("#28c840"),
+    }
+
+    def __init__(self, kind: str, name: str, tooltip: str) -> None:
+        super().__init__()
+        self._kind = kind
+        self._hovered = False
+        self._fg = QtGui.QColor("#2e2e2e")
+        self.setObjectName(name)
+        self.setFixedSize(MAC_BUTTON_HITBOX, MAC_BUTTON_HITBOX)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setFlat(True)
+        self.setToolTip(tooltip)
+        self.setText("")
+        self.setMouseTracking(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+
+    def set_kind(self, kind: str) -> None:
+        self._kind = kind
+        self.update()
+
+    def set_colors(self, fg: QtGui.QColor, hover_bg: QtGui.QColor) -> None:
+        # Keep interface parity with _CtrlButton. Only icon foreground is relevant here.
+        self._fg = fg
+        self.update()
+
+    def _set_hovered(self, hovered: bool) -> None:
+        if self._hovered == hovered:
+            return
+        self._hovered = hovered
+        self.update()
+
+    def event(self, event: QtCore.QEvent) -> bool:
+        etype = event.type()
+        if etype in (
+            QtCore.QEvent.Type.HoverEnter,
+            QtCore.QEvent.Type.HoverMove,
+            QtCore.QEvent.Type.Enter,
+        ):
+            self._set_hovered(True)
+        elif etype in (
+            QtCore.QEvent.Type.HoverLeave,
+            QtCore.QEvent.Type.Leave,
+            QtCore.QEvent.Type.WindowDeactivate,
+            QtCore.QEvent.Type.Hide,
+        ):
+            self._set_hovered(False)
+        return super().event(event)
+
+    def enterEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
+        self._set_hovered(True)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event: QtCore.QEvent) -> None:  # noqa: N802
+        self._set_hovered(False)
+        super().leaveEvent(event)
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802
+        p = QtGui.QPainter(self)
+        p.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+
+        color = self._COLOR_MAP.get(self._kind, self._COLOR_MAP[_MAXIMIZE])
+        diameter = min(MAC_BUTTON_SIZE, self.width() - 2, self.height() - 2)
+        circle = QtCore.QRectF(
+            (self.width() - diameter) / 2.0,
+            (self.height() - diameter) / 2.0,
+            diameter,
+            diameter,
+        )
+        center = circle.center()
+
+        p.setPen(QtGui.QPen(color.darker(115), 0.9))
+        p.setBrush(color)
+        p.drawEllipse(circle)
+
+        if self._hovered or self.underMouse():
+            icon_pen = QtGui.QPen(QtGui.QColor(45, 45, 45), 1.1)
+            icon_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            p.setPen(icon_pen)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            cx = int(center.x())
+            cy = int(center.y())
+            s = 3
+
+            if self._kind == _CLOSE:
+                p.drawLine(cx - s, cy - s, cx + s, cy + s)
+                p.drawLine(cx + s, cy - s, cx - s, cy + s)
+            elif self._kind == _MINIMIZE:
+                p.drawLine(cx - s, cy, cx + s, cy)
+            elif self._kind == _RESTORE:
+                p.drawRect(QtCore.QRect(cx - s + 1, cy - s, 4, 4))
+                p.drawRect(QtCore.QRect(cx - s, cy - s + 1, 4, 4))
+            else:
+                p.drawLine(cx - s, cy, cx + s, cy)
+                p.drawLine(cx, cy - s, cx, cy + s)
+
+        p.end()
+
+
 class CustomTitleBar(QtWidgets.QWidget):
     """Thin title-bar replacement used with Qt.FramelessWindowHint."""
 
@@ -173,7 +286,8 @@ class CustomTitleBar(QtWidgets.QWidget):
         # Title label 
         win_title = win.windowTitle() if win is not None else ""
         is_modified = bool(win.isWindowModified()) if win is not None else False
-        self.title_label = QtWidgets.QLabel(_clean_title(win_title, is_modified))
+        self._title_text = _clean_title(win_title, is_modified)
+        self.title_label = QtWidgets.QLabel(self._title_text, self)
         self.title_label.setObjectName("titleBarLabel")
         self.title_label.setAlignment(
             Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignHCenter
@@ -217,41 +331,64 @@ class CustomTitleBar(QtWidgets.QWidget):
         self._right_layout.setSpacing(0)
 
         # Window-control buttons 
-        self.minimize_btn = _CtrlButton(_MINIMIZE, "minimizeBtn", "Minimize")
-        self.maximize_btn = _CtrlButton(_MAXIMIZE, "maximizeBtn", "Maximize")
-        self.close_btn    = _CtrlButton(_CLOSE,    "closeBtn",    "Close")
+        btn_cls = _MacCtrlButton if USE_MAC_STYLE_CONTROLS else _CtrlButton
+        self.minimize_btn = btn_cls(_MINIMIZE, "minimizeBtn", "Minimize")
+        self.maximize_btn = btn_cls(_MAXIMIZE, "maximizeBtn", "Maximize")
+        self.close_btn = btn_cls(_CLOSE, "closeBtn", "Close")
 
         self.minimize_btn.clicked.connect(lambda: self.window().showMinimized())
         self.maximize_btn.clicked.connect(self._toggle_maximize)
         self.close_btn.clicked.connect(lambda: self.window().close())
 
+        self._window_controls_host = QtWidgets.QWidget(self)
+        self._window_controls_host.setObjectName("titleBarWindowControls")
+        self._window_controls_layout = QtWidgets.QHBoxLayout(self._window_controls_host)
+        self._window_controls_layout.setContentsMargins(0, 0, 0, 0)
+        self._window_controls_layout.setSpacing(6 if USE_MAC_STYLE_CONTROLS else 0)
+        if USE_MAC_STYLE_CONTROLS:
+            # macOS order: close, minimize, maximize (left to right)
+            self._window_controls_layout.addWidget(self.close_btn)
+            self._window_controls_layout.addWidget(self.minimize_btn)
+            self._window_controls_layout.addWidget(self.maximize_btn)
+        else:
+            self._window_controls_layout.addWidget(self.minimize_btn)
+            self._window_controls_layout.addWidget(self.maximize_btn)
+            self._window_controls_layout.addWidget(self.close_btn)
+
         # Assembly 
-        self._left_layout.addWidget(self.icon_label)
-        self._left_layout.addSpacing(8)
+        if USE_MAC_STYLE_CONTROLS:
+            self._left_layout.addWidget(self._window_controls_host)
+            self._left_layout.addSpacing(10)
+
+        if not USE_MAC_STYLE_CONTROLS:
+            self._left_layout.addWidget(self.icon_label)
+            self._left_layout.addSpacing(8)
         self._left_layout.addWidget(self.autosave_label)
         self._left_layout.addSpacing(6)
         self._left_layout.addWidget(self.autosave_switch)
         self._left_layout.addSpacing(8)
         self._left_layout.addWidget(self._tools_host)
 
-        self._center_layout.addStretch()
-        self._center_layout.addWidget(self.title_label)
+        # Keep a flexible middle spacer. Title text itself is overlay-positioned
+        # to remain centered against full bar width, then clamped to avoid overlap.
         self._center_layout.addStretch()
 
-        self._right_layout.addWidget(self.minimize_btn)
-        self._right_layout.addWidget(self.maximize_btn)
-        self._right_layout.addWidget(self.close_btn)
+        if not USE_MAC_STYLE_CONTROLS:
+            self._right_layout.addWidget(self._window_controls_host)
 
         self._layout.addWidget(self._left_host, 0)
         self._layout.addWidget(self._center_host, 1)
         self._layout.addWidget(self._right_host, 0)
+        self.title_label.raise_()
+        self._layout_title_label()
 
     # Public update helpers
 
     def update_title(self, title: str) -> None:
         win = self.window()
         is_modified = bool(win.isWindowModified()) if win is not None else False
-        self.title_label.setText(_clean_title(title, is_modified))
+        self._title_text = _clean_title(title, is_modified)
+        self._layout_title_label()
 
     def set_autosave_checked(self, checked: bool) -> None:
         with QtCore.QSignalBlocker(self.autosave_switch):
@@ -274,11 +411,13 @@ class CustomTitleBar(QtWidgets.QWidget):
         widget.setParent(self._tools_host)
         self._tools_layout.addWidget(widget)
         widget.show()
+        self._layout_title_label()
 
     def set_undo_redo_visible(self, visible: bool) -> None:
         """Show or hide the undo/redo tool group."""
         if self._undo_redo_widget:
             self._undo_redo_widget.setVisible(visible)
+            self._layout_title_label()
 
     def set_autosave_visible(self, visible: bool) -> None:
         """Show or hide the auto-save label and toggle switch."""
@@ -286,10 +425,14 @@ class CustomTitleBar(QtWidgets.QWidget):
         self.autosave_switch.setVisible(visible)
         if visible:
             self._configure_autosave_switch_geometry()
+        self._layout_title_label()
 
     def update_maximize_icon(self, is_maximized: bool) -> None:
         self.maximize_btn.set_kind(_RESTORE if is_maximized else _MAXIMIZE)
-        self.maximize_btn.setToolTip("Restore" if is_maximized else "Maximize")
+        if USE_MAC_STYLE_CONTROLS:
+            self.maximize_btn.setToolTip("Zoom")
+        else:
+            self.maximize_btn.setToolTip("Restore" if is_maximized else "Maximize")
 
     def set_icon(self, icon: QtGui.QIcon) -> None:
         if icon and not icon.isNull():
@@ -317,6 +460,10 @@ class CustomTitleBar(QtWidgets.QWidget):
                 background-color: {bg};
             }}
             QWidget#titleBarToolsHost {{
+                background: transparent;
+                border: none;
+            }}
+            QWidget#titleBarWindowControls {{
                 background: transparent;
                 border: none;
             }}
@@ -374,6 +521,29 @@ class CustomTitleBar(QtWidgets.QWidget):
                 border: none;
             }}
         """)
+        self._layout_title_label()
+
+    def _layout_title_label(self) -> None:
+        """Center title in full bar width, then clamp to avoid side-widget overlap."""
+        if not self._title_text:
+            self.title_label.hide()
+            return
+
+        left_bound = self._left_host.geometry().right() + 1 + TITLE_SAFE_GAP
+        right_bound = self._right_host.geometry().x() - TITLE_SAFE_GAP
+        available_width = right_bound - left_bound
+        if available_width <= 0:
+            self.title_label.hide()
+            return
+
+        fm = self.title_label.fontMetrics()
+        desired_width = min(fm.horizontalAdvance(self._title_text) + 2, available_width)
+        centered_x = int((self.width() - desired_width) / 2)
+        x = max(left_bound, min(centered_x, right_bound - desired_width))
+
+        self.title_label.setGeometry(x, 0, desired_width, self.height())
+        self.title_label.setText(fm.elidedText(self._title_text, Qt.TextElideMode.ElideRight, desired_width))
+        self.title_label.show()
 
     def _configure_autosave_switch_geometry(self) -> None:
         """Keep a stable paint area so switch indicator never clips after relayout."""
@@ -385,6 +555,19 @@ class CustomTitleBar(QtWidgets.QWidget):
         )
         self.autosave_switch.setFixedSize(switch_width + 4, switch_height + 4)
         self.autosave_switch.updateGeometry()
+
+    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._layout_title_label()
+
+    def event(self, event: QtCore.QEvent) -> bool:
+        result = super().event(event)
+        if event.type() in (
+            QtCore.QEvent.Type.LayoutRequest,
+            QtCore.QEvent.Type.Show,
+        ):
+            QtCore.QTimer.singleShot(0, self._layout_title_label)
+        return result
 
     # Window controls
     def _toggle_maximize(self) -> None:
