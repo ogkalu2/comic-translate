@@ -84,39 +84,39 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="452"/>
-        <location filename="../../controller.py" line="462"/>
+        <location filename="../../controller.py" line="449"/>
+        <location filename="../../controller.py" line="459"/>
         <source>Error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="649"/>
-        <location filename="../../controller.py" line="660"/>
+        <location filename="../../controller.py" line="646"/>
+        <location filename="../../controller.py" line="657"/>
         <source>Downloading model file: {filename}</source>
         <translation>正在下载模型文件：{filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="691"/>
+        <location filename="../../controller.py" line="688"/>
         <source>Unsaved Changes</source>
         <translation>未保存的更改</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="692"/>
+        <location filename="../../controller.py" line="689"/>
         <source>Save changes to this file?</source>
         <translation>是否保存对此文件的更改？</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="693"/>
+        <location filename="../../controller.py" line="690"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="694"/>
+        <location filename="../../controller.py" line="691"/>
         <source>Don&apos;t Save</source>
         <translation>不保存</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="695"/>
+        <location filename="../../controller.py" line="692"/>
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
@@ -303,12 +303,12 @@
 <context>
     <name>CustomTitleBar</name>
     <message>
-        <location filename="../../app/ui/title_bar.py" line="159"/>
+        <location filename="../../app/ui/title_bar.py" line="298"/>
         <source>Auto-Save</source>
         <translation>自动保存</translation>
     </message>
     <message>
-        <location filename="../../app/ui/title_bar.py" line="166"/>
+        <location filename="../../app/ui/title_bar.py" line="305"/>
         <source>Auto-Save Project</source>
         <translation>自动保存项目</translation>
     </message>
@@ -362,17 +362,17 @@
         <translation>取消中... %p%</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="614"/>
+        <location filename="../../controller.py" line="611"/>
         <source>Processing:</source>
         <translation>处理中：</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="617"/>
+        <location filename="../../controller.py" line="614"/>
         <source>Archiving:</source>
         <translation>归档中：</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="1178"/>
+        <location filename="../../app/controllers/image.py" line="1183"/>
         <source>Skipping:</source>
         <translation>跳过：</translation>
     </message>
@@ -516,10 +516,10 @@ Please try a different tool.</source>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="199"/>
-        <location filename="../../pipeline/batch_processor.py" line="166"/>
-        <location filename="../../pipeline/batch_processor.py" line="269"/>
-        <location filename="../../pipeline/webtoon_batch_processor.py" line="274"/>
-        <location filename="../../pipeline/webtoon_batch_processor.py" line="357"/>
+        <location filename="../../pipeline/batch_processor.py" line="174"/>
+        <location filename="../../pipeline/batch_processor.py" line="277"/>
+        <location filename="../../pipeline/webtoon_batch/chunk.py" line="206"/>
+        <location filename="../../pipeline/webtoon_batch/chunk.py" line="306"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>无法连接到服务器。
@@ -555,17 +555,19 @@ Please check your internet connection.</source>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="116"/>
         <source>Document</source>
         <translation>文档</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="103"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="104"/>
         <source>Archive</source>
         <translation>归档</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="64"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="110"/>
         <source>Comic Book Archive</source>
         <translation>漫画书归档</translation>
     </message>
@@ -595,47 +597,47 @@ Please check your internet connection.</source>
         <translation>导出所有图片</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="106"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="122"/>
         <source>PSD</source>
         <translation>PSD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="128"/>
         <source>Home</source>
         <translation>主页</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="115"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="132"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="124"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="141"/>
         <source>Search / Replace (Ctrl+F)</source>
         <translation>查找 / 替换 (Ctrl+F)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="131"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="148"/>
         <source>Insert files into current project</source>
         <translation>插入文件到当前项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="222"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="239"/>
         <source>Start New Project</source>
         <translation>开始新项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="223"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="240"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>您当前的项目有未保存的更改。要开始新项目吗？</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="224"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="241"/>
         <source>Yes</source>
         <translation>是</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="225"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="242"/>
         <source>No</source>
         <translation>否</translation>
     </message>
@@ -1315,55 +1317,55 @@ Restart now?</source>
 <context>
     <name>StartupHomeScreen</name>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="399"/>
+        <location filename="../../app/ui/startup_home.py" line="400"/>
         <source>New</source>
         <translation>新的</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="411"/>
+        <location filename="../../app/ui/startup_home.py" line="412"/>
         <source>New Project</source>
         <translation>新建项目</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="412"/>
-        <location filename="../../app/ui/startup_home.py" line="576"/>
+        <location filename="../../app/ui/startup_home.py" line="413"/>
+        <location filename="../../app/ui/startup_home.py" line="577"/>
         <source>Open Files</source>
         <translation>打开文件</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="435"/>
+        <location filename="../../app/ui/startup_home.py" line="436"/>
         <source>Recent</source>
         <translation>最近的</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="436"/>
+        <location filename="../../app/ui/startup_home.py" line="437"/>
         <source>Pinned</source>
         <translation>已固定</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="448"/>
+        <location filename="../../app/ui/startup_home.py" line="449"/>
         <source>Search</source>
         <translation>搜索</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="461"/>
+        <location filename="../../app/ui/startup_home.py" line="462"/>
         <source>Name</source>
         <translation>姓名</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="462"/>
+        <location filename="../../app/ui/startup_home.py" line="463"/>
         <source>Date modified</source>
         <translation>修改日期</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="489"/>
+        <location filename="../../app/ui/startup_home.py" line="490"/>
         <source>No recent projects.
 Open or create a project to get started.</source>
         <translation>最近没有项目。
 打开或创建一个项目即可开始。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="578"/>
+        <location filename="../../app/ui/startup_home.py" line="579"/>
         <source>Supported Files ({exts});;All Files (*)</source>
         <translation>支持的文件 ({exts});;所有文件 (*)</translation>
     </message>
@@ -1708,27 +1710,27 @@ back on the Image (for further editing)</source>
 <context>
     <name>_RecentRow</name>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="293"/>
+        <location filename="../../app/ui/startup_home.py" line="294"/>
         <source>Open</source>
         <translation>打开</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="294"/>
+        <location filename="../../app/ui/startup_home.py" line="295"/>
         <source>Open File Location</source>
         <translation>打开文件位置</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="296"/>
+        <location filename="../../app/ui/startup_home.py" line="297"/>
         <source>Unpin</source>
         <translation>取消固定</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="296"/>
+        <location filename="../../app/ui/startup_home.py" line="297"/>
         <source>Pin to list</source>
         <translation>固定到列表</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="298"/>
+        <location filename="../../app/ui/startup_home.py" line="299"/>
         <source>Remove from Recent</source>
         <translation>从最近删除</translation>
     </message>
@@ -1926,39 +1928,39 @@ back on the Image (for further editing)</source>
         <translation>批处理报告</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="436"/>
+        <location filename="../../app/controllers/projects.py" line="438"/>
         <source>Project Recovery</source>
         <translation>项目恢复</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="437"/>
+        <location filename="../../app/controllers/projects.py" line="439"/>
         <source>An autosaved project from a previous session was found.</source>
         <translation>找到了上一个会话中自动保存的项目。</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="439"/>
+        <location filename="../../app/controllers/projects.py" line="441"/>
         <source>Last autosave: {saved_at}
 Do you want to restore it?</source>
         <translation>上次自动保存：{saved_at}
 您想恢复它吗？</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="441"/>
+        <location filename="../../app/controllers/projects.py" line="443"/>
         <source>Restore</source>
         <translation>恢复</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="442"/>
+        <location filename="../../app/controllers/projects.py" line="444"/>
         <source>Discard</source>
         <translation>丢弃</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="825"/>
+        <location filename="../../app/controllers/projects.py" line="841"/>
         <source>Project Not Found</source>
         <translation>未找到项目</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="827"/>
+        <location filename="../../app/controllers/projects.py" line="843"/>
         <source>The selected project file could not be found.
 It may have been moved, renamed, or deleted.
 
@@ -1969,12 +1971,12 @@ It may have been moved, renamed, or deleted.
 {小路}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="905"/>
+        <location filename="../../app/controllers/projects.py" line="921"/>
         <source>Korean</source>
         <translation>韩语</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="906"/>
+        <location filename="../../app/controllers/projects.py" line="922"/>
         <source>English</source>
         <translation>英语</translation>
     </message>
@@ -2061,8 +2063,8 @@ It may have been moved, renamed, or deleted.
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="193"/>
-        <location filename="../../app/ui/main_window/window.py" line="200"/>
+        <location filename="../../app/ui/main_window/window.py" line="250"/>
+        <location filename="../../app/ui/main_window/window.py" line="257"/>
         <source>Light</source>
         <translation>浅色</translation>
     </message>

@@ -84,39 +84,39 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="452"/>
-        <location filename="../../controller.py" line="462"/>
+        <location filename="../../controller.py" line="449"/>
+        <location filename="../../controller.py" line="459"/>
         <source>Error</source>
         <translation>Fehler</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="649"/>
-        <location filename="../../controller.py" line="660"/>
+        <location filename="../../controller.py" line="646"/>
+        <location filename="../../controller.py" line="657"/>
         <source>Downloading model file: {filename}</source>
         <translation>Modell-Datei wird heruntergeladen: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="691"/>
+        <location filename="../../controller.py" line="688"/>
         <source>Unsaved Changes</source>
         <translation>Ungespeicherte Änderungen</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="692"/>
+        <location filename="../../controller.py" line="689"/>
         <source>Save changes to this file?</source>
         <translation>Änderungen an dieser Datei speichern?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="693"/>
+        <location filename="../../controller.py" line="690"/>
         <source>Save</source>
         <translation>Speichern</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="694"/>
+        <location filename="../../controller.py" line="691"/>
         <source>Don&apos;t Save</source>
         <translation>Nicht speichern</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="695"/>
+        <location filename="../../controller.py" line="692"/>
         <source>Cancel</source>
         <translation>Abbrechen</translation>
     </message>
@@ -303,12 +303,12 @@
 <context>
     <name>CustomTitleBar</name>
     <message>
-        <location filename="../../app/ui/title_bar.py" line="159"/>
+        <location filename="../../app/ui/title_bar.py" line="298"/>
         <source>Auto-Save</source>
         <translation>Automatisch speichern</translation>
     </message>
     <message>
-        <location filename="../../app/ui/title_bar.py" line="166"/>
+        <location filename="../../app/ui/title_bar.py" line="305"/>
         <source>Auto-Save Project</source>
         <translation>Projekt automatisch speichern</translation>
     </message>
@@ -357,7 +357,7 @@
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="1178"/>
+        <location filename="../../app/controllers/image.py" line="1183"/>
         <source>Skipping:</source>
         <translation>Überspringen:</translation>
     </message>
@@ -367,12 +367,12 @@
         <translation>Abbrechen... %p%</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="614"/>
+        <location filename="../../controller.py" line="611"/>
         <source>Processing:</source>
         <translation>Verarbeitung:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="617"/>
+        <location filename="../../controller.py" line="614"/>
         <source>Archiving:</source>
         <translation>Archivierung:</translation>
     </message>
@@ -517,10 +517,10 @@ Bitte versuchen Sie ein anderes Werkzeug.</translation>
     </message>
     <message>
         <location filename="../../app/ui/messages.py" line="199"/>
-        <location filename="../../pipeline/batch_processor.py" line="166"/>
-        <location filename="../../pipeline/batch_processor.py" line="269"/>
-        <location filename="../../pipeline/webtoon_batch_processor.py" line="274"/>
-        <location filename="../../pipeline/webtoon_batch_processor.py" line="357"/>
+        <location filename="../../pipeline/batch_processor.py" line="174"/>
+        <location filename="../../pipeline/batch_processor.py" line="277"/>
+        <location filename="../../pipeline/webtoon_batch/chunk.py" line="206"/>
+        <location filename="../../pipeline/webtoon_batch/chunk.py" line="306"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>Verbindung zum Server nicht möglich.
@@ -556,17 +556,19 @@ Bitte überprüfen Sie Ihre Internetverbindung.</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="116"/>
         <source>Document</source>
         <translation>Dokument</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="103"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="104"/>
         <source>Archive</source>
         <translation>Archiv</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="64"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="110"/>
         <source>Comic Book Archive</source>
         <translation>Comic-Archiv</translation>
     </message>
@@ -596,47 +598,47 @@ Bitte überprüfen Sie Ihre Internetverbindung.</translation>
         <translation>Alle Bilder exportieren</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="106"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="122"/>
         <source>PSD</source>
         <translation>PSD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="128"/>
         <source>Home</source>
         <translation>Startseite</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="115"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="132"/>
         <source>Settings</source>
         <translation>Einstellungen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="124"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="141"/>
         <source>Search / Replace (Ctrl+F)</source>
         <translation>Suchen / Ersetzen (Strg+F)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="131"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="148"/>
         <source>Insert files into current project</source>
         <translation>Dateien in das aktuelle Projekt einfügen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="222"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="239"/>
         <source>Start New Project</source>
         <translation>Neues Projekt starten</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="223"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="240"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>Ihr aktuelles Projekt enthält ungespeicherte Änderungen. Neues Projekt starten?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="224"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="241"/>
         <source>Yes</source>
         <translation>Ja</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="225"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="242"/>
         <source>No</source>
         <translation>Nein</translation>
     </message>
@@ -1316,55 +1318,55 @@ Jetzt neu starten?</translation>
 <context>
     <name>StartupHomeScreen</name>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="399"/>
+        <location filename="../../app/ui/startup_home.py" line="400"/>
         <source>New</source>
         <translation>Neu</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="411"/>
+        <location filename="../../app/ui/startup_home.py" line="412"/>
         <source>New Project</source>
         <translation>Neues Projekt</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="412"/>
-        <location filename="../../app/ui/startup_home.py" line="576"/>
+        <location filename="../../app/ui/startup_home.py" line="413"/>
+        <location filename="../../app/ui/startup_home.py" line="577"/>
         <source>Open Files</source>
         <translation>Dateien öffnen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="435"/>
+        <location filename="../../app/ui/startup_home.py" line="436"/>
         <source>Recent</source>
         <translation>Jüngste</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="436"/>
+        <location filename="../../app/ui/startup_home.py" line="437"/>
         <source>Pinned</source>
         <translation>Angepinnt</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="448"/>
+        <location filename="../../app/ui/startup_home.py" line="449"/>
         <source>Search</source>
         <translation>Suche</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="461"/>
+        <location filename="../../app/ui/startup_home.py" line="462"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="462"/>
+        <location filename="../../app/ui/startup_home.py" line="463"/>
         <source>Date modified</source>
         <translation>Änderungsdatum</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="489"/>
+        <location filename="../../app/ui/startup_home.py" line="490"/>
         <source>No recent projects.
 Open or create a project to get started.</source>
         <translation>Keine aktuellen Projekte.
 Öffnen oder erstellen Sie ein Projekt, um loszulegen.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="578"/>
+        <location filename="../../app/ui/startup_home.py" line="579"/>
         <source>Supported Files ({exts});;All Files (*)</source>
         <translation>Unterstützte Dateien ({exts});;Alle Dateien (*)</translation>
     </message>
@@ -1557,7 +1559,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="81"/>
         <source>Report</source>
-        <translation>Melden</translation>
+        <translation>Bericht</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="112"/>
@@ -1710,27 +1712,27 @@ zurück auf das Bild (zur weiteren Bearbeitung)</translation>
 <context>
     <name>_RecentRow</name>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="293"/>
+        <location filename="../../app/ui/startup_home.py" line="294"/>
         <source>Open</source>
         <translation>Offen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="294"/>
+        <location filename="../../app/ui/startup_home.py" line="295"/>
         <source>Open File Location</source>
         <translation>Öffnen Sie den Dateispeicherort</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="296"/>
+        <location filename="../../app/ui/startup_home.py" line="297"/>
         <source>Unpin</source>
         <translation>Lösen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="296"/>
+        <location filename="../../app/ui/startup_home.py" line="297"/>
         <source>Pin to list</source>
         <translation>An die Liste anpinnen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="298"/>
+        <location filename="../../app/ui/startup_home.py" line="299"/>
         <source>Remove from Recent</source>
         <translation>Aus „Zuletzt verwendet“ entfernen</translation>
     </message>
@@ -1928,39 +1930,39 @@ zurück auf das Bild (zur weiteren Bearbeitung)</translation>
         <translation>Chargenprotokoll</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="436"/>
+        <location filename="../../app/controllers/projects.py" line="438"/>
         <source>Project Recovery</source>
         <translation>Projektwiederherstellung</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="437"/>
+        <location filename="../../app/controllers/projects.py" line="439"/>
         <source>An autosaved project from a previous session was found.</source>
         <translation>Ein automatisch gespeichertes Projekt aus einer früheren Sitzung wurde gefunden.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="439"/>
+        <location filename="../../app/controllers/projects.py" line="441"/>
         <source>Last autosave: {saved_at}
 Do you want to restore it?</source>
         <translation>Letzte automatische Speicherung: {saved_at}
 Möchten Sie es wiederherstellen?</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="441"/>
+        <location filename="../../app/controllers/projects.py" line="443"/>
         <source>Restore</source>
         <translation>Wiederherstellen</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="442"/>
+        <location filename="../../app/controllers/projects.py" line="444"/>
         <source>Discard</source>
         <translation>Verwerfen</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="825"/>
+        <location filename="../../app/controllers/projects.py" line="841"/>
         <source>Project Not Found</source>
         <translation>Projekt nicht gefunden</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="827"/>
+        <location filename="../../app/controllers/projects.py" line="843"/>
         <source>The selected project file could not be found.
 It may have been moved, renamed, or deleted.
 
@@ -1971,12 +1973,12 @@ Möglicherweise wurde es verschoben, umbenannt oder gelöscht.
 {Weg}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="905"/>
+        <location filename="../../app/controllers/projects.py" line="921"/>
         <source>Korean</source>
         <translation>Koreanisch</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="906"/>
+        <location filename="../../app/controllers/projects.py" line="922"/>
         <source>English</source>
         <translation>Englisch</translation>
     </message>
@@ -2063,8 +2065,8 @@ Möglicherweise wurde es verschoben, umbenannt oder gelöscht.
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="193"/>
-        <location filename="../../app/ui/main_window/window.py" line="200"/>
+        <location filename="../../app/ui/main_window/window.py" line="250"/>
+        <location filename="../../app/ui/main_window/window.py" line="257"/>
         <source>Light</source>
         <translation>Hell</translation>
     </message>
