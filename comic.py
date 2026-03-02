@@ -6,6 +6,7 @@ import threading
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtCore import QSettings, QTranslator, QLocale, \
     Qt, QTimer, QThread, QObject, Signal, Slot, QEvent
+from PySide6.QtCore import QLibraryInfo
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 from app.ui.splash_screen import SplashScreen
@@ -398,7 +399,6 @@ def load_translation(app, language: str):
     qt_translator = QTranslator(app)
     # qtbase uses underscores (e.g. qtbase_zh_CN.qm, qtbase_fr.qm)
     qt_lang_code = lang_code.replace('-', '_')
-    from PySide6.QtCore import QLibraryInfo
     qt_tr_path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
     
     # Try loading from the local directory first (if bundled)
