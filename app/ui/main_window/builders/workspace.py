@@ -48,6 +48,8 @@ class WorkspaceMixin:
         self.hbutton_group.set_dayu_size(dayu_theme.small)
         self.hbutton_group.set_button_list(button_config_list)
         self.hbutton_group.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        for button in self.hbutton_group.get_button_group().buttons():
+            button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         self.progress_bar = MProgressBar().auto_color()
         self.progress_bar.setValue(0)
