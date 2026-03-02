@@ -556,19 +556,16 @@ Lütfen internet bağlantınızı kontrol edin.</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="116"/>
         <source>Document</source>
         <translation>Belge</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="104"/>
         <source>Archive</source>
         <translation>Arşiv</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/nav.py" line="64"/>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="110"/>
         <source>Comic Book Archive</source>
         <translation>Çizgi Roman Arşivi</translation>
     </message>
@@ -598,47 +595,62 @@ Lütfen internet bağlantınızı kontrol edin.</translation>
         <translation>Tüm Resimleri Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="122"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="105"/>
+        <source>ZIP</source>
+        <translation>ZIP</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
+        <source>CBZ</source>
+        <translation>CBZ</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="117"/>
+        <source>PDF</source>
+        <translation>PDF</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="123"/>
         <source>PSD</source>
         <translation>PSD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="128"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="129"/>
         <source>Home</source>
         <translation>Ana Sayfa</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="132"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="133"/>
         <source>Settings</source>
         <translation>Ayarlar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="141"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="142"/>
         <source>Search / Replace (Ctrl+F)</source>
         <translation>Arama / Değiştirme (Ctrl+F)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="148"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="149"/>
         <source>Insert files into current project</source>
         <translation>Dosyaları mevcut projeye ekle</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="239"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="240"/>
         <source>Start New Project</source>
         <translation>Yeni Proje Başlat</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="240"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="241"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>Mevcut projenizde kaydedilmemiş değişiklikler var. Yeni bir proje başlatılsın mı?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="241"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="242"/>
         <source>Yes</source>
         <translation>Evet</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="242"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="243"/>
         <source>No</source>
         <translation>Hayır</translation>
     </message>
@@ -1105,18 +1117,18 @@ Restart now?</source>
     <name>SettingsPageUI</name>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="58"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="123"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
         <source>Default</source>
         <translation>Varsayılan</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="59"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="124"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="126"/>
         <source>Microsoft OCR</source>
         <translation>Microsoft OCR</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="125"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="127"/>
         <source>Google Cloud Vision</source>
         <translation>Google Cloud Vision</translation>
     </message>
@@ -1127,190 +1139,190 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="73"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="113"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-mini</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="135"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="137"/>
         <source>Resize</source>
         <translation>Yeniden Boyutlandır</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="136"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="138"/>
         <source>Original</source>
         <translation>Orijinal</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="62"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="137"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
         <source>Crop</source>
         <translation>Kırp</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="106"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="108"/>
         <source>Dark</source>
         <translation>Koyu</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="107"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="109"/>
         <source>Light</source>
         <translation>Açık</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="142"/>
         <source>Left</source>
         <translation>Sol</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="143"/>
         <source>Center</source>
         <translation>Orta</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="64"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="142"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
         <source>Right</source>
         <translation>Sağ</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="67"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="77"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="110"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="112"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
         <source>Custom</source>
         <translation>Özel</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="71"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
         <source>Gemini-3.0-Flash</source>
         <translation>Gemini-3.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="148"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="147"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="148"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="119"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="121"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="72"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="112"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="114"/>
         <source>GPT-4.1</source>
         <translation>GPT-4.1</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="74"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="115"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
         <source>Claude-4.5-Sonnet</source>
         <translation>Claude-4.5-Sonnet</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="75"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="116"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
         <source>Claude-4.5-Haiku</source>
         <translation>Claude-4.5-Haiku</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="76"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="111"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="113"/>
         <source>Deepseek-v3</source>
         <translation>Deepseek-v3</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="118"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
         <source>Gemini-2.5-Pro</source>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="120"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
         <source>Microsoft Translator</source>
         <translation>Microsoft Translator</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="301"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="303"/>
         <source>Personalization</source>
         <translation>Kişiselleştirme</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="303"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
         <source>Tools</source>
         <translation>Araçlar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>LLMs</source>
         <translation>LLMs</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="305"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Text Rendering</source>
         <translation>Metin Renderlama</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>Project</source>
         <translation>Proje</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
         <source>Export</source>
         <translation>Dışa Aktar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="302"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="304"/>
         <source>Account</source>
         <translation>Hesap</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
         <source>Advanced</source>
         <translation>Gelişmiş</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>About</source>
         <translation>Hakkında</translation>
     </message>
@@ -1329,44 +1341,49 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/startup_home.py" line="413"/>
-        <location filename="../../app/ui/startup_home.py" line="577"/>
+        <location filename="../../app/ui/startup_home.py" line="585"/>
         <source>Open Files</source>
         <translation>Dosyaları Aç</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="436"/>
+        <location filename="../../app/ui/startup_home.py" line="423"/>
+        <source>Drag and drop files anywhere on this page to open them.</source>
+        <translation>Dosyaları açmak için bu sayfanın herhangi bir yerine sürükleyip bırakın.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/startup_home.py" line="444"/>
         <source>Recent</source>
         <translation>Son</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="437"/>
+        <location filename="../../app/ui/startup_home.py" line="445"/>
         <source>Pinned</source>
         <translation>Sabitlendi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="449"/>
+        <location filename="../../app/ui/startup_home.py" line="457"/>
         <source>Search</source>
         <translation>Ara</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="462"/>
+        <location filename="../../app/ui/startup_home.py" line="470"/>
         <source>Name</source>
         <translation>İsim</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="463"/>
+        <location filename="../../app/ui/startup_home.py" line="471"/>
         <source>Date modified</source>
         <translation>Değiştirilme tarihi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="490"/>
+        <location filename="../../app/ui/startup_home.py" line="498"/>
         <source>No recent projects.
 Open or create a project to get started.</source>
         <translation>Yeni proje yok.
 Başlamak için bir proje açın veya oluşturun.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/startup_home.py" line="579"/>
+        <location filename="../../app/ui/startup_home.py" line="587"/>
         <source>Supported Files ({exts});;All Files (*)</source>
         <translation>Desteklenen Dosyalar ({exts});;Tüm Dosyalar (*)</translation>
     </message>
@@ -1533,178 +1550,178 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
         <translation>Render Et</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="59"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="61"/>
         <source>Manual</source>
         <translation>Manuel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="62"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="64"/>
         <source>Automatic</source>
         <translation>Otomatik</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="71"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="73"/>
         <source>Toggle Webtoon Mode. For comics that are read in long vertical strips</source>
         <translation>Webtoon Modunu Aç/Kapat. Uzun dikey şeritlerde okunan çizgi romanlar için</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="75"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="77"/>
         <source>Translate All</source>
         <translation>Tümünü Çevir</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="78"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="80"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="81"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="83"/>
         <source>Report</source>
         <translation>Rapor</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="112"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="114"/>
         <source>Click or drag files here</source>
         <translation>Dosyaları buraya tıklayın veya sürükleyin</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="133"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="135"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>Resimleri, PDF&apos;leri, Epub&apos;ları veya Çizgi Roman Arşiv Dosyalarını (cbr, cbz, vb.) içe aktarın</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="151"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="153"/>
         <source>Source Language</source>
         <translation>Kaynak Dil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="161"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="163"/>
         <source>Target Language</source>
         <translation>Hedef Dil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="172"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="174"/>
         <source>Font</source>
         <translation>Yazı Tipi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="187"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="189"/>
         <source>Font Size</source>
         <translation>Yazı Tipi Boyutu</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="196"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="198"/>
         <source>Line Spacing</source>
         <translation>Satır Aralığı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="215"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="217"/>
         <source>Font Color</source>
         <translation>Yazı Tipi Rengi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="230"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="232"/>
         <source>Bold</source>
         <translation>Kalın</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="232"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="234"/>
         <source>Italic</source>
         <translation>İtalik</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="234"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="236"/>
         <source>Underline</source>
         <translation>Altı Çizili</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="245"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="247"/>
         <source>Outline</source>
         <translation>Dış Çizgi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="249"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="251"/>
         <source>Outline Color</source>
         <translation>Dış Çizgi Rengi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="256"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="258"/>
         <source>Outline Width</source>
         <translation>Dış Çizgi Kalınlığı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="279"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="281"/>
         <source>Pan Image</source>
         <translation>Görseli Kaydır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="283"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="285"/>
         <source>Set for all</source>
         <translation>Tümüne Ayarla</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="285"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Mevcut sayfadaki kaynak ve hedef dili tüm sayfalara uygular</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="297"/>
         <source>Draw or Select Text Boxes</source>
         <translation>Metin Kutuları Çiz veya Seç</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="300"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="302"/>
         <source>Delete Selected Box</source>
         <translation>Seçili Kutuyu Sil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="303"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="305"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Görseldeki tüm kutuları kaldır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="308"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="310"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>Mevcut metin blok listesindeki tüm metin bloklarını tekrar görsele çizer (daha fazla düzenleme için)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="319"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="321"/>
         <source>Reduce the size of all blocks</source>
         <translation>Tüm blokların boyutunu küçült</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="330"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="332"/>
         <source>Increase the size of all blocks</source>
         <translation>Tüm blokların boyutunu büyüt</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="341"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="343"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Görseli temizlemek için fırça darbeleri çiz</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="346"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="348"/>
         <source>Erase Brush Strokes</source>
         <translation>Fırça darbelerini sil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="351"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="353"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Görseldeki tüm fırça darbelerini kaldır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="362"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="364"/>
         <source>Brush/Eraser Size Slider</source>
         <translation>Fırça/Silgi Boyutu Kaydırıcısı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="366"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="368"/>
         <source>Box Drawing</source>
         <translation>Kutu Çizimi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/workspace.py" line="370"/>
+        <location filename="../../app/ui/main_window/builders/workspace.py" line="372"/>
         <source>Inpainting</source>
         <translation>Boyama</translation>
     </message>

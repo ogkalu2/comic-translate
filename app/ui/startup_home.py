@@ -419,7 +419,15 @@ class StartupHomeScreen(QtWidgets.QWidget):
         cards_row.addWidget(self._card_open)
         cards_row.addStretch()
         vlay.addLayout(cards_row)
-        vlay.addSpacing(36)
+        self._drop_hint = QtWidgets.QLabel(
+            self.tr("Drag and drop files anywhere on this page to open them.")
+        )
+        self._drop_hint.setStyleSheet(
+            "font-size: 11px; background: transparent; border: none;"
+        )
+        vlay.addSpacing(8)
+        vlay.addWidget(self._drop_hint)
+        vlay.addSpacing(16)
 
         # Divider 
         self._div1 = QtWidgets.QFrame()
@@ -613,6 +621,9 @@ class StartupHomeScreen(QtWidgets.QWidget):
         self._new_hdr.setStyleSheet(
             f"font-size: 15px; font-weight: 600; color: {fg}; "
             "background: transparent; border: none;"
+        )
+        self._drop_hint.setStyleSheet(
+            f"font-size: 11px; color: {fg_sub}; background: transparent; border: none;"
         )
         self._div1.setStyleSheet(f"background: {div}; border: none;")
         self._div2.setStyleSheet(f"background: {div}; border: none;")
