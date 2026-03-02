@@ -167,21 +167,16 @@ class AuthServerThread(QThread):
                         </div>
                         <script>
                             (function() {
-                                // Detect user's language (only fr, ko, zh are prefixed routes)
+                                // Detect user's language (only listed codes are prefixed routes on comic-translate.com)
                                 function detectLanguage() {
+                                    const PREFIXED_LANGS = ['fr', 'ko', 'zh', 'ja']; // Add new prefixed locales here
                                     const langs = navigator.languages || [navigator.language || navigator.userLanguage];
-                                    
-                                    // Return the FIRST language that matches our supported locales
-                                    // This respects the user's priority order
-                                    for (let i = 0; i < langs.length; i++) {
-                                        const lang = langs[i];
+
+                                    for (const lang of langs) {
                                         if (!lang) continue;
-                                        
-                                        // Check in order - if English is first, we return null immediately
-                                        if (lang.startsWith('en')) return null; // English = no prefix
-                                        if (lang.startsWith('fr')) return 'fr';
-                                        if (lang.startsWith('ko')) return 'ko';
-                                        if (lang.startsWith('zh')) return 'zh';
+                                        if (lang.startsWith('en')) return null; // English = no prefix; stop searching
+                                        const match = PREFIXED_LANGS.find(p => lang.startsWith(p));
+                                        if (match !== undefined) return match;
                                     }
                                     return null; // Default to English (no prefix)
                                 }
