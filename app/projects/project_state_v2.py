@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import msgpack
 
 from .parsers import ProjectDecoder, ProjectEncoder, ensure_string_keys
+from modules.utils.file_handler import ensure_prepared_path_materialized
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -232,6 +233,8 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     image_patches_references: dict[str, list[dict]] = {}
 
     def add_blob_if_needed(path: str, kind: str) -> str:
+        if not ensure_lazy_blob_materialized(path):
+            ensure_prepared_path_materialized(path)
         stat = os.stat(path)
         size = int(stat.st_size)
         mtime_ns = int(stat.st_mtime_ns)

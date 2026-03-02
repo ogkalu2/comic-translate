@@ -611,8 +611,6 @@ class ProjectController:
 
     def run_save_proj(self, file_name, post_save_callback=None):
         prev_project_file = self.main.project_file
-        if prev_project_file and prev_project_file != file_name:
-            close_state_store(prev_project_file)
         self.main.project_file = file_name
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.loading.setVisible(True)
@@ -627,6 +625,10 @@ class ProjectController:
         def on_finished():
             self.main.on_manual_finished()
             if not save_failed['value']:
+                # Close the old project's DB connection only after the save
+                # has completed, so that lazy blobs can be read from it.
+                if prev_project_file and prev_project_file != file_name:
+                    close_state_store(prev_project_file)
                 if self.main._dirty_revision == save_start_revision:
                     self.main.set_project_clean()
                 self.clear_recovery_checkpoint()
