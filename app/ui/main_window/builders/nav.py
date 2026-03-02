@@ -99,19 +99,19 @@ class NavRailMixin:
         self.export_menu = MMenu(parent=self)
         export_archive_action = self.export_menu.addAction(
             MIcon("flowbite--file-zip-outline.svg"),
-            self.tr("Archive"),
+            self.tr("ZIP"),
         )
         export_archive_action.triggered.connect(lambda: self._export_all_as("zip"))
 
         export_comic_action = self.export_menu.addAction(
             MIcon("mdi--comic-thought-bubble-outline.svg"),
-            self.tr("Comic Book Archive"),
+            self.tr("CBZ"),
         )
         export_comic_action.triggered.connect(lambda: self._export_all_as("cbz"))
 
         export_document_action = self.export_menu.addAction(
             MIcon("mingcute--document-line.svg"),
-            self.tr("Document"),
+            self.tr("PDF"),
         )
         export_document_action.triggered.connect(lambda: self._export_all_as("pdf"))
 
