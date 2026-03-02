@@ -1,4 +1,4 @@
-import os
+﻿import os
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 
@@ -83,6 +83,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             'Français', 
             '简体中文', 
             'русский', 
+            '日本語', 
             'Deutsch', 
             'Español', 
             'Italiano', 
@@ -98,6 +99,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             "Français": "Français",
             "简体中文": "简体中文",
             "русский": "русский",
+            "日本語": "日本語",
             "Deutsch": "Deutsch",
             "Español": "Español",
             "Italiano": "Italiano",

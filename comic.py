@@ -1,4 +1,4 @@
-import os, sys
+﻿import os, sys
 import logging
 import hashlib
 import json
@@ -360,6 +360,7 @@ def get_system_language():
         'ko': '한국어',
         'fr': 'Français',
         'ru': 'русский',
+        'ja': '日本語',
         'de': 'Deutsch',
         'es': 'Español',
         'it': 'Italiano',
@@ -375,6 +376,7 @@ def load_translation(app, language: str):
         'Français': 'fr',
         '简体中文': 'zh-CN',
         'русский': 'ru',
+        '日本語': 'ja',
         'Deutsch': 'de',
         'Español': 'es',
         'Italiano': 'it',
