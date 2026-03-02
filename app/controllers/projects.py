@@ -485,7 +485,14 @@ class ProjectController:
         )
 
     def save_and_make(self, output_path: str):
-        self.main.run_threaded(self.save_and_make_worker, None, self.main.default_error_handler, None, output_path)
+        self.main.loading.setVisible(True)
+        self.main.run_threaded(
+            self.save_and_make_worker,
+            None,
+            self.main.default_error_handler,
+            lambda: self.main.loading.setVisible(False),
+            output_path,
+        )
 
     def save_and_make_worker(self, output_path: str):
         self.main.image_ctrl.save_current_image_state()
