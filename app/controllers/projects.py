@@ -335,6 +335,8 @@ class ProjectController:
                 pass
             self._autosave_save_pending = False
             self.clear_recovery_checkpoint()
+            self.add_recent_project(target_file)
+            self._refresh_home_screen()
             if self.main._dirty_revision == autosave_start_revision:
                 self.main.set_project_clean()
             if self._autosave_retrigger_requested:
@@ -407,6 +409,8 @@ class ProjectController:
             self._autosave_save_pending = False
             if is_regular_project_save:
                 self.clear_recovery_checkpoint()
+                self.add_recent_project(target_file)
+                self._refresh_home_screen()
                 if self.main._dirty_revision == autosave_start_revision:
                     self.main.set_project_clean()
             if self._autosave_retrigger_requested or (
