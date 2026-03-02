@@ -97,6 +97,7 @@ class NavRailMixin:
         self.save_all_browser.set_file_types(save_all_file_types)
 
         self.export_menu = MMenu(parent=self)
+        self.export_menu.setMinimumWidth(80)
         export_archive_action = self.export_menu.addAction(
             MIcon("flowbite--file-zip-outline.svg"),
             self.tr("ZIP"),
