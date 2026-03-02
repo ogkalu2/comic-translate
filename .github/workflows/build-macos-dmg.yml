@@ -1,0 +1,43 @@
+name: Build macOS DMG
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-dmg:
+    runs-on: macos-13
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Build app with PyInstaller
+        run: pyinstaller ct-mac.spec
+
+      - name: Build DMG
+        run: |
+          chmod +x builddmg.sh
+          ./builddmg.sh
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Comic-Translate-macOS
+          path: "dist/Comic Translate.dmg"
+          if-no-files-found: error
+          retention-days: 30
