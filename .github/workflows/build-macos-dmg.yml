@@ -27,6 +27,8 @@ jobs:
         run: brew install create-dmg
 
       - name: Build app with PyInstaller
+        env:
+          MACOSX_DEPLOYMENT_TARGET: '12.0'
         run: pyinstaller ct-mac.spec
 
       - name: Build DMG
