@@ -220,7 +220,9 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     else:
         conn, conn_lock = _get_cached_connection(db_path)
 
-    blob_rows: dict[str, tuple[str, str, int, bytes]] = {}
+    # Track which hashes have been written in this save so we don't re-read
+    # the same file twice, but do NOT hold the payload bytes in memory.
+    _written_blob_hashes: set[str] = set()
     fingerprint_updates: dict[str, tuple[int, int, str]] = {}
     image_id_counter = 0
     image_path_to_id: dict[str, int] = {}
@@ -257,9 +259,14 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
 
         payload = _read_file_bytes(path)
         blob_hash = _sha256_bytes(payload)
-        if blob_hash not in blob_rows:
+        if blob_hash not in _written_blob_hashes:
             ext = os.path.splitext(path)[1].lower()
-            blob_rows[blob_hash] = (kind, ext, len(payload), payload)
+            # Stream directly to DB — avoids holding all payloads in memory.
+            conn.execute(
+                "INSERT OR IGNORE INTO blobs(hash, kind, ext, size, data) VALUES(?, ?, ?, ?, ?)",
+                (blob_hash, kind, ext, len(payload), sqlite3.Binary(payload)),
+            )
+            _written_blob_hashes.add(blob_hash)
         fingerprint_updates[path] = (size, mtime_ns, blob_hash)
         return blob_hash
 
@@ -372,14 +379,7 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
                             (page_path, sqlite3.Binary(row_blob)),
                         )
 
-                for blob_hash, (kind, ext, size, payload) in blob_rows.items():
-                    conn.execute(
-                        """
-                        INSERT OR IGNORE INTO blobs(hash, kind, ext, size, data)
-                        VALUES(?, ?, ?, ?, ?)
-                        """,
-                        (blob_hash, kind, ext, size, sqlite3.Binary(payload)),
-                    )
+                # Blobs are already streamed to the DB by add_blob_if_needed.
 
                 for src_path, (size, mtime_ns, blob_hash) in fingerprint_updates.items():
                     conn.execute(
