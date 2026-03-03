@@ -257,6 +257,23 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
             if blob_exists:
                 return blob_hash
 
+        # Fast path: if this file was materialised from a project blob we
+        # already know the content-hash without reading the file.  Verify the
+        # blob still exists in the DB and return immediately.
+        abs_path = os.path.abspath(path)
+        with _LAZY_BLOB_LOCK:
+            lazy_mapped = _LAZY_BLOBS_BY_PATH.get(abs_path)
+        if lazy_mapped is not None:
+            _, lazy_hash = lazy_mapped
+            blob_exists = conn.execute(
+                "SELECT 1 FROM blobs WHERE hash = ? LIMIT 1",
+                (lazy_hash,),
+            ).fetchone()
+            if blob_exists:
+                fingerprint_updates[path] = (size, mtime_ns, lazy_hash)
+                _written_blob_hashes.add(lazy_hash)
+                return lazy_hash
+
         payload = _read_file_bytes(path)
         blob_hash = _sha256_bytes(payload)
         if blob_hash not in _written_blob_hashes:

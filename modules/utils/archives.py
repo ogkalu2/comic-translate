@@ -14,6 +14,31 @@ _IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.bmp', '.webp')
 _PDF_CACHE_LOCK = threading.RLock()
 _PDF_CACHE: dict[str, dict] = {}
 
+
+def close_pdf_cache(file_path: str | None = None) -> None:
+    """Close cached pdfplumber objects to free memory.
+
+    If *file_path* is given, only that entry is evicted; otherwise the entire
+    cache is cleared.
+    """
+    with _PDF_CACHE_LOCK:
+        if file_path is not None:
+            abs_path = os.path.abspath(file_path)
+            cached = _PDF_CACHE.pop(abs_path, None)
+            if cached and cached.get("pdf") is not None:
+                try:
+                    cached["pdf"].close()
+                except Exception:
+                    pass
+        else:
+            for cached in _PDF_CACHE.values():
+                if cached.get("pdf") is not None:
+                    try:
+                        cached["pdf"].close()
+                    except Exception:
+                        pass
+            _PDF_CACHE.clear()
+
 def resolve_save_as_ext(input_archive_ext: str, save_as: str | None = None) -> str:
     """Resolve the output archive extension for auto-saved translated archives.
 
