@@ -1,5 +1,4 @@
 import numpy as np
-import onnxruntime as ort
 from ..utils.device import get_providers
 
 from ..utils.inpainting import (
@@ -7,6 +6,7 @@ from ..utils.inpainting import (
     load_jit_model,
 )
 from ..utils.download import ModelDownloader, ModelID
+from modules.utils.onnx import make_session
 from .base import InpaintModel
 from .schema import Config
 
@@ -21,7 +21,7 @@ class LaMa(InpaintModel):
             ModelDownloader.get(ModelID.LAMA_ONNX)
             onnx_path = ModelDownloader.primary_path(ModelID.LAMA_ONNX)
             providers = get_providers(device)
-            self.session = ort.InferenceSession(onnx_path, providers=providers)
+            self.session = make_session(onnx_path, providers=providers)
         else:
             ModelDownloader.get(ModelID.LAMA_JIT)
             local_path = ModelDownloader.primary_path(ModelID.LAMA_JIT) 

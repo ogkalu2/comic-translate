@@ -3,11 +3,11 @@ import os
 import logging
 import numpy as np
 from PIL import Image
-import onnxruntime as ort
 import imkit as imk
 from . import config
 from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
+from modules.utils.onnx import make_session
 
 logger = logging.getLogger(__name__)
 
@@ -330,7 +330,7 @@ class ONNXFontEngine(FontEngine):
 
         try:
             providers = get_providers(device)            
-            self.session = ort.InferenceSession(model_path, providers=providers)
+            self.session = make_session(model_path, providers=providers)
             self.input_name = self.session.get_inputs()[0].name
         except Exception as e:
             logger.error(f"Error loading ONNX font detector: {e}")

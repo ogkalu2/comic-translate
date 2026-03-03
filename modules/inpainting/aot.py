@@ -1,7 +1,6 @@
 import numpy as np
 import imkit as imk
 from PIL import Image
-import onnxruntime as ort
 from modules.utils.device import get_providers
 
 from .base import InpaintModel
@@ -11,6 +10,7 @@ from modules.utils.inpainting import (
     load_jit_model,
 )
 from modules.utils.download import ModelDownloader, ModelID
+from modules.utils.onnx import make_session
 
 
 class AOT(InpaintModel):
@@ -25,7 +25,7 @@ class AOT(InpaintModel):
             ModelDownloader.get(ModelID.AOT_ONNX)
             onnx_path = ModelDownloader.primary_path(ModelID.AOT_ONNX)
             providers = get_providers(device)
-            self.session = ort.InferenceSession(onnx_path, providers=providers)
+            self.session = make_session(onnx_path, providers=providers)
         else:
             ModelDownloader.get(ModelID.AOT_JIT)
             local_path = ModelDownloader.primary_path(ModelID.AOT_JIT)

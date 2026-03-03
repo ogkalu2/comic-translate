@@ -1,10 +1,10 @@
 import os
 import numpy as np
 from PIL import Image
-import onnxruntime as ort
 
 from modules.utils.device import get_providers
 from modules.utils.download import ModelDownloader, ModelID, models_base_dir
+from modules.utils.onnx import make_session
 from modules.utils.textblock import TextBlock
 from modules.detection.utils.slicer import ImageSlicer
 from .base import DetectionEngine
@@ -33,13 +33,12 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         device: str = 'cpu', 
         confidence_threshold: float = 0.3, 
     ) -> None:
-        
         self.device = device
         self.confidence_threshold = confidence_threshold
 
         file_path = ModelDownloader.get_file_path(ModelID.RTDETR_V2_ONNX, 'detector.onnx')
         providers = get_providers(self.device)
-        self.session = ort.InferenceSession(file_path, providers=providers)
+        self.session = make_session(file_path, providers=providers)
 
     def detect(self, image: np.ndarray) -> list[TextBlock]:
         bubble_boxes, text_boxes = self.image_slicer.process_slices_for_detection(
