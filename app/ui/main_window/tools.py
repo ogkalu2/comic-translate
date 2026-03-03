@@ -1,7 +1,9 @@
 import os
 
 from PySide6 import QtGui, QtWidgets
-from PySide6.QtGui import QFont, QFontDatabase
+from PySide6.QtGui import QFontDatabase
+
+from .constants import user_font_path
 
 
 class ToolStateMixin:
@@ -86,19 +88,80 @@ class ToolStateMixin:
         scaled_size = base_size * scaling_factor
         return scaled_size
 
-    def get_font_family(self, font_input: str) -> QFont:
-        if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
-            font_id = QFontDatabase.addApplicationFont(font_input)
-            if font_id != -1:
-                font_families = QFontDatabase.applicationFontFamilies(font_id)
-                if font_families:
-                    return font_families[0]
+    def _ensure_custom_font_caches(self) -> None:
+        if not hasattr(self, "_custom_font_path_to_family"):
+            self._custom_font_path_to_family = {}
+        if not hasattr(self, "_custom_font_family_cache"):
+            self._custom_font_family_cache = {}
+        if not hasattr(self, "_custom_font_miss_cache"):
+            self._custom_font_miss_cache = set()
 
-        return font_input
+    def _load_custom_font_file(self, font_path: str) -> str | None:
+        self._ensure_custom_font_caches()
+        if not font_path or not os.path.isfile(font_path):
+            return None
+
+        font_path = os.path.normpath(font_path)
+        if font_path in self._custom_font_path_to_family:
+            return self._custom_font_path_to_family[font_path]
+
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        if font_id == -1:
+            return None
+
+        families = QFontDatabase.applicationFontFamilies(font_id)
+        if not families:
+            return None
+
+        primary = families[0]
+        self._custom_font_path_to_family[font_path] = primary
+        for family in families:
+            self._custom_font_family_cache[family.casefold()] = family
+        return primary
+
+    def ensure_custom_font_loaded(self, font_input: str) -> str:
+        if not isinstance(font_input, str):
+            return font_input
+
+        requested = font_input.strip()
+        if not requested:
+            return requested
+
+        self._ensure_custom_font_caches()
+        lower = requested.casefold()
+        if lower in self._custom_font_family_cache:
+            return self._custom_font_family_cache[lower]
+        if lower in self._custom_font_miss_cache:
+            return requested
+
+        ext = os.path.splitext(requested)[1].lower()
+        if ext in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
+            loaded = self._load_custom_font_file(requested)
+            return loaded or requested
+
+        for family in QFontDatabase().families():
+            if family.casefold() == lower:
+                self._custom_font_family_cache[lower] = family
+                return family
+
+        if os.path.isdir(user_font_path):
+            for name in os.listdir(user_font_path):
+                if os.path.splitext(name)[1].lower() not in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
+                    continue
+                path = os.path.join(user_font_path, name)
+                loaded = self._load_custom_font_file(path)
+                if loaded and loaded.casefold() == lower:
+                    return loaded
+
+        self._custom_font_miss_cache.add(lower)
+        return requested
+
+    def get_font_family(self, font_input: str) -> str:
+        return self.ensure_custom_font_loaded(font_input)
 
     def add_custom_font(self, font_input: str):
         if os.path.splitext(font_input)[1].lower() in [".ttf", ".ttc", ".otf", ".woff", ".woff2"]:
-            QFontDatabase.addApplicationFont(font_input)
+            self._load_custom_font_file(font_input)
 
     def get_color(self):
         default_color = QtGui.QColor("#000000")
@@ -108,4 +171,7 @@ class ToolStateMixin:
             return color_dialog.selectedColor()
 
     def set_font(self, font_family: str):
-        self.font_dropdown.setCurrentFont(font_family)
+        resolved_family = self.ensure_custom_font_loaded(font_family)
+        self.font_dropdown.setCurrentFont(QtGui.QFont(resolved_family))
+        if self.font_dropdown.currentText() != resolved_family:
+            self.font_dropdown.setCurrentText(resolved_family)
