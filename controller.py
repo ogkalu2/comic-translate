@@ -554,6 +554,13 @@ class ComicTranslate(ComicTranslateUI):
         elif not was_cancelled:
             Messages.show_translation_complete(self)
 
+        # Drop cached models/sessions after batch to keep RAM bounded.
+        try:
+            if self.pipeline is not None:
+                self.pipeline.release_model_caches()
+        except Exception:
+            pass
+
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(False)
