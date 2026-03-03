@@ -5,11 +5,6 @@ from modules.utils.textblock import TextBlock
 
 class DedupeMixin:
     @staticmethod
-    def _rect_area_xyxy(xyxy: List[float]) -> float:
-        x1, y1, x2, y2 = xyxy
-        return max(0.0, float(x2) - float(x1)) * max(0.0, float(y2) - float(y1))
-
-    @staticmethod
     def _rect_intersection_area_xyxy(a: List[float], b: List[float]) -> float:
         ax1, ay1, ax2, ay2 = a
         bx1, by1, bx2, by2 = b
@@ -18,38 +13,6 @@ class DedupeMixin:
         ix2 = min(float(ax2), float(bx2))
         iy2 = min(float(ay2), float(by2))
         return max(0.0, ix2 - ix1) * max(0.0, iy2 - iy1)
-
-    def _should_suppress_clipped_block(
-        self,
-        physical_page_index: int,
-        physical_coords: List[float],
-        physical_height: float,
-    ) -> bool:
-        """
-        Suppress clipped duplicates on page boundaries when a neighboring page already
-        emitted a spanning/merged block that visually covers this region.
-        """
-        claims = self._spanning_claims_by_page.get(physical_page_index)
-        if not claims:
-            return False
-
-        x1, y1, x2, y2 = physical_coords
-        if y1 < 0 or y2 > physical_height:
-            return False
-
-        if not (y1 < self.edge_threshold or (physical_height - y2) < self.edge_threshold):
-            return False
-
-        cand_area = self._rect_area_xyxy(physical_coords)
-        if cand_area <= 1.0:
-            return False
-
-        for claim_xyxy in claims:
-            overlap = self._rect_intersection_area_xyxy(physical_coords, claim_xyxy)
-            if overlap / cand_area >= 0.60:
-                return True
-
-        return False
 
     @staticmethod
     def _patch_area(patch: Dict) -> float:

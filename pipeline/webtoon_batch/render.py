@@ -148,12 +148,6 @@ class RenderMixin:
             if not translation or len(translation) < 1:
                 continue
 
-            # Suppress seam duplicates when a neighboring page already owns a spanning claim.
-            if webtoon_manager and self._should_suppress_clipped_block(
-                vpage.physical_page_index, physical_coords, vpage.physical_height
-            ):
-                continue
-
             vertical = is_vertical_block(blk_virtual, trg_lng_cd)
             translation, font_size, rendered_width, rendered_height = pyside_word_wrap(
                 translation,
@@ -235,38 +229,6 @@ class RenderMixin:
             )
             text_items_state.append(text_props.to_dict())
             page_blk_list.append(render_blk)
-
-            if webtoon_manager and vpage.physical_page_index < len(
-                webtoon_manager.image_positions
-            ):
-                src_idx = vpage.physical_page_index
-                src_pos = float(webtoon_manager.image_positions[src_idx])
-                # Neighbor candidates: previous and next physical pages only.
-                for tgt_idx in (src_idx - 1, src_idx + 1):
-                    if tgt_idx < 0 or tgt_idx >= len(webtoon_manager.image_positions):
-                        continue
-                    if tgt_idx >= len(webtoon_manager.image_heights):
-                        continue
-
-                    tgt_pos = float(webtoon_manager.image_positions[tgt_idx])
-                    tgt_h = float(webtoon_manager.image_heights[tgt_idx])
-                    if tgt_h <= 0:
-                        continue
-
-                    dy = src_pos - tgt_pos
-                    mapped = [float(x1), float(y1) + dy, float(x2), float(y2) + dy]
-                    # Clip to target page Y-bounds to avoid polluting unrelated pages.
-                    clipped = [
-                        mapped[0],
-                        max(0.0, mapped[1]),
-                        mapped[2],
-                        min(tgt_h, mapped[3]),
-                    ]
-                    if clipped[3] <= clipped[1]:
-                        continue
-                    if self._rect_area_xyxy(clipped) <= 20.0:
-                        continue
-                    self._spanning_claims_by_page[tgt_idx].append(clipped)
 
     def _finalize_and_emit_for_virtual_page(self, vpage: VirtualPage):
         """

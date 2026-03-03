@@ -52,7 +52,6 @@ class FlowMixin:
         self.final_patches_for_save.clear()
         self.processed_chunks = set()
         self.virtual_page_to_chunks = defaultdict(list)
-        self._spanning_claims_by_page.clear()
 
         all_virtual_pages = []
         physical_to_virtual_mapping = {}

@@ -22,6 +22,115 @@ logger = logging.getLogger(__name__)
 
 
 class ChunkMixin:
+    @staticmethod
+    def _union_xyxy(a: List[float], b: List[float]) -> List[float]:
+        return [
+            min(float(a[0]), float(b[0])),
+            min(float(a[1]), float(b[1])),
+            max(float(a[2]), float(b[2])),
+            max(float(a[3]), float(b[3])),
+        ]
+
+    def _merge_seam_split_blocks(
+        self, blk_list: List[TextBlock], boundary_y: float
+    ) -> List[TextBlock]:
+        """
+        Merge top+bottom partial detections around the chunk seam into one block.
+        This runs before OCR so downstream stages see a single logical block.
+        """
+        if len(blk_list) < 2:
+            return blk_list
+
+        edge = float(self.edge_threshold)
+        max_vertical_gap = max(20.0, edge * 1.4)
+        max_width_ratio = 3.5
+
+        top_candidates = []
+        bottom_candidates = []
+        for idx, blk in enumerate(blk_list):
+            x1, y1, x2, y2 = [float(v) for v in blk.xyxy]
+            if y2 <= boundary_y + edge and y1 < boundary_y:
+                top_candidates.append((idx, x1, y1, x2, y2))
+            if y1 >= boundary_y - edge and y2 > boundary_y:
+                bottom_candidates.append((idx, x1, y1, x2, y2))
+
+        if not top_candidates or not bottom_candidates:
+            return blk_list
+
+        candidate_pairs = []
+        for top_idx, tx1, ty1, tx2, ty2 in top_candidates:
+            top_w = max(1.0, tx2 - tx1)
+            top_cx = (tx1 + tx2) / 2.0
+            for bot_idx, bx1, by1, bx2, by2 in bottom_candidates:
+                if top_idx == bot_idx:
+                    continue
+
+                bot_w = max(1.0, bx2 - bx1)
+                bot_cx = (bx1 + bx2) / 2.0
+                width_ratio = max(top_w, bot_w) / max(1.0, min(top_w, bot_w))
+                if width_ratio > max_width_ratio:
+                    continue
+
+                vertical_gap = max(0.0, by1 - ty2)
+                if vertical_gap > max_vertical_gap:
+                    continue
+
+                inter_x = max(0.0, min(tx2, bx2) - max(tx1, bx1))
+                overlap_ratio = inter_x / max(1.0, min(top_w, bot_w))
+                center_delta = abs(top_cx - bot_cx)
+                if overlap_ratio < 0.45 and center_delta > 0.35 * max(top_w, bot_w):
+                    continue
+
+                seam_distance = abs(boundary_y - ty2) + abs(by1 - boundary_y)
+                score = (
+                    (2.5 * overlap_ratio)
+                    - (vertical_gap / max(1.0, edge))
+                    - (seam_distance / max(1.0, 2.0 * edge))
+                    - (0.30 * abs(width_ratio - 1.0))
+                )
+                candidate_pairs.append((score, top_idx, bot_idx))
+
+        if not candidate_pairs:
+            return blk_list
+
+        used_indices = set()
+        merged_blocks = []
+        for score, top_idx, bot_idx in sorted(candidate_pairs, key=lambda x: x[0], reverse=True):
+            if score < 0:
+                continue
+            if top_idx in used_indices or bot_idx in used_indices:
+                continue
+
+            top_blk = blk_list[top_idx]
+            bot_blk = blk_list[bot_idx]
+            merged_blk = top_blk.deep_copy()
+            merged_blk.xyxy = self._union_xyxy(top_blk.xyxy, bot_blk.xyxy)
+
+            top_bubble = top_blk.bubble_xyxy
+            bot_bubble = bot_blk.bubble_xyxy
+            if top_bubble is not None and bot_bubble is not None:
+                merged_blk.bubble_xyxy = self._union_xyxy(top_bubble, bot_bubble)
+            elif bot_bubble is not None:
+                merged_blk.bubble_xyxy = list(bot_bubble)
+
+            used_indices.add(top_idx)
+            used_indices.add(bot_idx)
+            merged_blocks.append(merged_blk)
+
+        if not merged_blocks:
+            return blk_list
+
+        merged_result = [
+            blk for idx, blk in enumerate(blk_list) if idx not in used_indices
+        ]
+        merged_result.extend(merged_blocks)
+        logger.info(
+            "Merged %d seam-split block pairs around boundary y=%s",
+            len(merged_blocks),
+            boundary_y,
+        )
+        return merged_result
+
     def _create_virtual_chunk_image(
         self, vpage1: VirtualPage, vpage2: VirtualPage
     ) -> Tuple[np.ndarray, List[Dict]]:
@@ -176,6 +285,23 @@ class ChunkMixin:
         blk_list, has_edge_blocks = self._detect_edge_blocks_virtual(
             combined_image, vpage1, vpage2
         )
+        if (
+            blk_list
+            and has_edge_blocks
+            and len(mapping_data) == 2
+            and vpage1.virtual_id != vpage2.virtual_id
+        ):
+            before_merge = len(blk_list)
+            boundary_y = mapping_data[0]["combined_y_end"]
+            blk_list = self._merge_seam_split_blocks(blk_list, boundary_y)
+            after_merge = len(blk_list)
+            if after_merge != before_merge:
+                logger.info(
+                    "Chunk %s seam merge adjusted block count from %d to %d.",
+                    chunk_id,
+                    before_merge,
+                    after_merge,
+                )
 
         current_physical_page = min(physical_pages_in_chunk)
         self.main_page.progress_update.emit(

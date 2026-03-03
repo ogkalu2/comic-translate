@@ -49,10 +49,6 @@ class WebtoonBatchProcessor(FlowMixin, ChunkMixin, DedupeMixin, RenderMixin):
 
         # Edge detection settings.
         self.edge_threshold = 50
-        # target_physical_page_index -> list[[x1, y1, x2, y2]] in target page-local coordinates.
-        # These claims allow suppression of seam duplicates when spanning blocks were already emitted
-        # from a neighboring page.
-        self._spanning_claims_by_page = defaultdict(list)
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         logger.info("Skipping fallback translated image save for '%s'.", base_name)
