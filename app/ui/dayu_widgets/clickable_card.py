@@ -108,6 +108,9 @@ class ClickMeta(QtWidgets.QWidget):
     ):
         super(ClickMeta, self).__init__(parent)
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
+        
+        self._is_highlighted = False
+        self._applying_highlight = False
 
         # Initialize Widgets
         self._cover_label = QtWidgets.QLabel()
@@ -246,8 +249,7 @@ class ClickMeta(QtWidgets.QWidget):
         super(ClickMeta, self).changeEvent(event)
         # Re-apply highlight if palette or style changes (e.g., toggling light/dark mode)
         if event.type() == QtCore.QEvent.Type.PaletteChange or event.type() == QtCore.QEvent.Type.StyleChange:
-            if hasattr(self, '_is_highlighted'):
-                self._apply_highlight()
+            self._apply_highlight()
 
     def set_skipped(self, skipped: bool):
         """Visually mark / un-mark this row as skipped."""
