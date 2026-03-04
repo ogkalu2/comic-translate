@@ -46,9 +46,9 @@ class WebtoonBatchProcessor(FlowMixin, ChunkMixin, RenderMixin):
         self.final_patches_for_save = defaultdict(list)
 
         # Seam matching / crop settings.
-        self.max_virtual_height = 2000
-        # Allow mildly-over-limit pages to stay as one virtual page.
-        self.soft_overflow_tolerance_px = 300
+        self.min_virtual_chunk_height = 2000
+        self.max_virtual_chunk_height = 3500
+        self.target_virtual_chunk_height = 2400
         self.edge_threshold = 50
         self.seam_crop_pad_x = 48
         self.seam_crop_pad_y = 48

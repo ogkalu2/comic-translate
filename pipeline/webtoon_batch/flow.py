@@ -35,10 +35,22 @@ class FlowMixin:
         physical_width: int,
         physical_height: int,
     ) -> List[VirtualPage]:
-        max_virtual_height = int(self.max_virtual_height)
-        overflow_tolerance = int(getattr(self, "soft_overflow_tolerance_px", 0))
-        single_page_limit = max_virtual_height + max(0, overflow_tolerance)
-        if physical_height <= single_page_limit:
+        
+        min_chunk = self.min_virtual_chunk_height
+        max_chunk = self.max_virtual_chunk_height
+        target_chunk = self.target_virtual_chunk_height
+
+        min_chunk = max(1, min_chunk)
+        max_chunk = max(min_chunk, max_chunk)
+        target_chunk = max(min_chunk, min(max_chunk, target_chunk))
+
+        chunk_count = self._select_virtual_chunk_count(
+            physical_height=physical_height,
+            min_chunk=min_chunk,
+            max_chunk=max_chunk,
+            target_chunk=target_chunk,
+        )
+        if chunk_count <= 1:
             return [
                 VirtualPage(
                     physical_page_index=physical_page_index,
@@ -53,10 +65,8 @@ class FlowMixin:
                 )
             ]
 
-        # Balanced chunking:
-        # distribute the page into k chunks of near-equal height (difference <= 1 px),
-        # while keeping each chunk <= max_virtual_height.
-        chunk_count = int(np.ceil(float(physical_height) / float(max_virtual_height)))
+        # Balanced chunking with chosen count:
+        # distribute into k chunks of near-equal height (difference <= 1 px).
         base_chunk_height = physical_height // chunk_count
         extra_rows = physical_height % chunk_count
 
@@ -80,6 +90,61 @@ class FlowMixin:
             )
             top = bottom
         return virtual_pages
+
+    @staticmethod
+    def _select_virtual_chunk_count(
+        physical_height: int, min_chunk: int, max_chunk: int, target_chunk: int
+    ) -> int:
+        """
+        Choose chunk count using three parameters:
+        - min_chunk: preferred lower bound for chunk height
+        - max_chunk: preferred upper bound for chunk height
+        - target_chunk: ideal chunk height
+
+        If no chunk count can satisfy both bounds (mathematically impossible for some
+        heights), choose the least-violating count with a stronger penalty for dropping
+        below min_chunk.
+        """
+        h = max(1, int(physical_height))
+        min_chunk = max(1, int(min_chunk))
+        max_chunk = max(min_chunk, int(max_chunk))
+        target_chunk = max(min_chunk, min(max_chunk, int(target_chunk)))
+
+        lower_k = max(1, int(np.ceil(float(h) / float(max_chunk))))
+        upper_k = max(1, int(np.floor(float(h) / float(min_chunk))))
+        ideal_k = max(1, int(round(float(h) / float(target_chunk))))
+
+        if lower_k <= upper_k:
+            candidates = range(lower_k, upper_k + 1)
+            return min(
+                candidates,
+                key=lambda k: (abs((float(h) / float(k)) - float(target_chunk)), k),
+            )
+
+        # Infeasible band: no k can satisfy both min and max simultaneously.
+        # Evaluate nearby candidates and pick least-violating option.
+        candidate_set = {
+            1,
+            lower_k,
+            upper_k,
+            ideal_k,
+            max(1, ideal_k - 1),
+            ideal_k + 1,
+            lower_k + 1,
+            max(1, upper_k - 1),
+        }
+        candidate_set = {k for k in candidate_set if k >= 1}
+
+        def score(k: int) -> Tuple[float, float, int]:
+            small = h // k
+            large = int(np.ceil(float(h) / float(k)))
+            under = max(0, min_chunk - small)
+            over = max(0, large - max_chunk)
+            avg_dev = abs((float(h) / float(k)) - float(target_chunk))
+            # Below-min chunks are penalized more heavily.
+            return (2.0 * float(under) + float(over), avg_dev, k)
+
+        return min(candidate_set, key=score)
 
     def _read_virtual_image(
         self: WebtoonBatchProcessor, vpage: VirtualPage
