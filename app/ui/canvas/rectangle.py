@@ -28,10 +28,11 @@ class RectSignals(QObject):
     translate_block = Signal()
 
 class MoveableRectItem(QGraphicsRectItem):
-    signals = RectSignals()
-
     def __init__(self, rect=None, parent=None):
         super().__init__(rect, parent)
+        # Signals must be per-item; sharing one QObject across all rectangles
+        # causes every context-menu action to fire handlers for every rectangle.
+        self.signals = RectSignals()
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setFlag(QGraphicsRectItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setAcceptHoverEvents(True)
@@ -67,6 +68,13 @@ class MoveableRectItem(QGraphicsRectItem):
         if views:
             view = views[0]
             global_pos = view.mapToGlobal(view.mapFromScene(scene_pos))
+            # Ensure single-block actions operate on the rectangle that opened
+            # this menu, even when invoked via right-click.
+            try:
+                if hasattr(view, "select_rectangle"):
+                    view.select_rectangle(self)
+            except Exception:
+                pass
 
             menu = MMenu(parent=view)
             ocr = menu.addAction(view.tr('OCR'))
