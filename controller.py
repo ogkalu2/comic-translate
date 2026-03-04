@@ -522,6 +522,7 @@ class ComicTranslate(ComicTranslateUI):
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -562,6 +563,7 @@ class ComicTranslate(ComicTranslateUI):
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -595,6 +597,7 @@ class ComicTranslate(ComicTranslateUI):
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
+        self.webtoon_toggle.setEnabled(True)
         self.selected_batch = []
         if report and report["skipped_count"] > 0:
             Messages.show_batch_skipped_summary(self, report["skipped_count"])
