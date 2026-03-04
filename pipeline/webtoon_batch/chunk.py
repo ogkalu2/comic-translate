@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 import imkit as imk
@@ -7,7 +6,6 @@ import numpy as np
 import requests
 from PySide6.QtCore import QCoreApplication
 
-from app.path_materialization import ensure_path_materialized
 from app.ui.messages import Messages
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
@@ -16,7 +14,6 @@ from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.image_utils import generate_mask
 from modules.utils.pipeline_config import get_config, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
-from ..virtual_page import VirtualPage
 
 logger = logging.getLogger(__name__)
 
@@ -31,594 +28,467 @@ class ChunkMixin:
             max(float(a[3]), float(b[3])),
         ]
 
-    def _merge_seam_split_blocks(
-        self, blk_list: List[TextBlock], boundary_y: float
-    ) -> List[TextBlock]:
-        """
-        Merge top+bottom partial detections around the chunk seam into one block.
-        This runs before OCR so downstream stages see a single logical block.
-        """
-        if len(blk_list) < 2:
-            return blk_list
-
-        edge = float(self.edge_threshold)
-        max_vertical_gap = max(20.0, edge * 1.4)
-        max_width_ratio = 3.5
-
-        top_candidates = []
-        bottom_candidates = []
-        for idx, blk in enumerate(blk_list):
-            x1, y1, x2, y2 = [float(v) for v in blk.xyxy]
-            if y2 <= boundary_y + edge and y1 < boundary_y:
-                top_candidates.append((idx, x1, y1, x2, y2))
-            if y1 >= boundary_y - edge and y2 > boundary_y:
-                bottom_candidates.append((idx, x1, y1, x2, y2))
-
-        if not top_candidates or not bottom_candidates:
-            return blk_list
-
-        candidate_pairs = []
-        for top_idx, tx1, ty1, tx2, ty2 in top_candidates:
-            top_w = max(1.0, tx2 - tx1)
-            top_cx = (tx1 + tx2) / 2.0
-            for bot_idx, bx1, by1, bx2, by2 in bottom_candidates:
-                if top_idx == bot_idx:
-                    continue
-
-                bot_w = max(1.0, bx2 - bx1)
-                bot_cx = (bx1 + bx2) / 2.0
-                width_ratio = max(top_w, bot_w) / max(1.0, min(top_w, bot_w))
-                if width_ratio > max_width_ratio:
-                    continue
-
-                vertical_gap = max(0.0, by1 - ty2)
-                if vertical_gap > max_vertical_gap:
-                    continue
-
-                inter_x = max(0.0, min(tx2, bx2) - max(tx1, bx1))
-                overlap_ratio = inter_x / max(1.0, min(top_w, bot_w))
-                center_delta = abs(top_cx - bot_cx)
-                if overlap_ratio < 0.45 and center_delta > 0.35 * max(top_w, bot_w):
-                    continue
-
-                seam_distance = abs(boundary_y - ty2) + abs(by1 - boundary_y)
-                score = (
-                    (2.5 * overlap_ratio)
-                    - (vertical_gap / max(1.0, edge))
-                    - (seam_distance / max(1.0, 2.0 * edge))
-                    - (0.30 * abs(width_ratio - 1.0))
-                )
-                candidate_pairs.append((score, top_idx, bot_idx))
-
-        if not candidate_pairs:
-            return blk_list
-
-        used_indices = set()
-        merged_blocks = []
-        for score, top_idx, bot_idx in sorted(candidate_pairs, key=lambda x: x[0], reverse=True):
-            if score < 0:
-                continue
-            if top_idx in used_indices or bot_idx in used_indices:
-                continue
-
-            top_blk = blk_list[top_idx]
-            bot_blk = blk_list[bot_idx]
-            merged_blk = top_blk.deep_copy()
-            merged_blk.xyxy = self._union_xyxy(top_blk.xyxy, bot_blk.xyxy)
-
-            top_bubble = top_blk.bubble_xyxy
-            bot_bubble = bot_blk.bubble_xyxy
-            if top_bubble is not None and bot_bubble is not None:
-                merged_blk.bubble_xyxy = self._union_xyxy(top_bubble, bot_bubble)
-            elif bot_bubble is not None:
-                merged_blk.bubble_xyxy = list(bot_bubble)
-
-            used_indices.add(top_idx)
-            used_indices.add(bot_idx)
-            merged_blocks.append(merged_blk)
-
-        if not merged_blocks:
-            return blk_list
-
-        merged_result = [
-            blk for idx, blk in enumerate(blk_list) if idx not in used_indices
-        ]
-        merged_result.extend(merged_blocks)
-        logger.info(
-            "Merged %d seam-split block pairs around boundary y=%s",
-            len(merged_blocks),
-            boundary_y,
-        )
-        return merged_result
-
-    def _create_virtual_chunk_image(
-        self, vpage1: VirtualPage, vpage2: VirtualPage
-    ) -> Tuple[np.ndarray, List[Dict]]:
-        """
-        Create a combined image from two virtual pages.
-        """
-        # Handle self-paired virtual pages (single virtual page processing).
-        if vpage1.virtual_id == vpage2.virtual_id:
-            ensure_path_materialized(vpage1.physical_page_path)
-            img = imk.read_image(vpage1.physical_page_path)
-
-            if img is None:
-                logger.error("Failed to load image: %s", vpage1.physical_page_path)
-                return None, []
-
-            virtual_img = vpage1.extract_virtual_image(img)
-            h, w = virtual_img.shape[:2]
-            mapping_data = [
-                {
-                    "virtual_page": vpage1,
-                    "physical_page_index": vpage1.physical_page_index,
-                    "physical_page_path": vpage1.physical_page_path,
-                    "combined_y_start": 0,
-                    "combined_y_end": h,
-                    "x_offset": 0,
-                    "virtual_width": w,
-                    "virtual_height": h,
-                }
-            ]
-            return virtual_img, mapping_data
-
-        # Handle different virtual pages by stacking them into one combined chunk image.
-        ensure_path_materialized(vpage1.physical_page_path)
-        img1 = imk.read_image(vpage1.physical_page_path)
-        ensure_path_materialized(vpage2.physical_page_path)
-        img2 = imk.read_image(vpage2.physical_page_path)
-
-        if img1 is None or img2 is None:
-            logger.error(
-                "Failed to load images: %s, %s",
-                vpage1.physical_page_path,
-                vpage2.physical_page_path,
-            )
-            return None, []
-
-        virtual_img1 = vpage1.extract_virtual_image(img1)
-        virtual_img2 = vpage2.extract_virtual_image(img2)
-
-        max_width = max(virtual_img1.shape[1], virtual_img2.shape[1])
-        total_height = virtual_img1.shape[0] + virtual_img2.shape[0]
-
-        combined_image = np.zeros((total_height, max_width, 3), dtype=np.uint8)
-        combined_image.fill(255)
-
-        h1, w1 = virtual_img1.shape[:2]
-        x1_offset = (max_width - w1) // 2
-        combined_image[0:h1, x1_offset : x1_offset + w1] = virtual_img1
-
-        h2, w2 = virtual_img2.shape[:2]
-        x2_offset = (max_width - w2) // 2
-        combined_image[h1 : h1 + h2, x2_offset : x2_offset + w2] = virtual_img2
-
-        mapping_data = [
-            {
-                "virtual_page": vpage1,
-                "physical_page_index": vpage1.physical_page_index,
-                "physical_page_path": vpage1.physical_page_path,
-                "combined_y_start": 0,
-                "combined_y_end": h1,
-                "x_offset": x1_offset,
-                "virtual_width": w1,
-                "virtual_height": h1,
-            },
-            {
-                "virtual_page": vpage2,
-                "physical_page_index": vpage2.physical_page_index,
-                "physical_page_path": vpage2.physical_page_path,
-                "combined_y_start": h1,
-                "combined_y_end": h1 + h2,
-                "x_offset": x2_offset,
-                "virtual_width": w2,
-                "virtual_height": h2,
-            },
+    @staticmethod
+    def _shift_xyxy(xyxy: List[float], dx: float, dy: float) -> List[float]:
+        return [
+            float(xyxy[0]) + dx,
+            float(xyxy[1]) + dy,
+            float(xyxy[2]) + dx,
+            float(xyxy[3]) + dy,
         ]
 
-        return combined_image, mapping_data
+    def _is_cancelled(self) -> bool:
+        worker = getattr(self.main_page, "current_worker", None)
+        return bool(worker and worker.is_cancelled)
 
-    def _detect_edge_blocks_virtual(
-        self, combined_image: np.ndarray, vpage1: VirtualPage, vpage2: VirtualPage
-    ) -> Tuple[List[TextBlock], bool]:
-        """
-        Detect text blocks on virtual page chunk and check for edge blocks.
-        """
+    def _get_page_scene_offset(self, page_index: int) -> int:
+        webtoon_manager = getattr(self.main_page.image_viewer, "webtoon_manager", None)
+        if (
+            webtoon_manager
+            and page_index < len(getattr(webtoon_manager, "image_positions", []))
+        ):
+            return int(webtoon_manager.image_positions[page_index])
+        return 0
+
+    def _ensure_detector(self):
         if self.block_detection.block_detector_cache is None:
             self.block_detection.block_detector_cache = TextBlockDetector(
                 self.main_page.settings_page
             )
 
-        # Run text block detection once on the combined chunk image.
-        blk_list = self.block_detection.block_detector_cache.detect(combined_image)
-        if not blk_list:
-            return [], False
-
-        # Check if any blocks span or land near the seam between the two virtual pages.
-        boundary_y = vpage1.crop_height
-        has_edge_blocks = False
-        for blk in blk_list:
-            if blk.xyxy[1] < boundary_y and blk.xyxy[3] > boundary_y:
-                has_edge_blocks = True
-                logger.info(
-                    "Detected text block spanning virtual page boundary: %s", blk.xyxy
-                )
-                break
-            if (
-                abs(blk.xyxy[3] - boundary_y) < self.edge_threshold
-                or abs(blk.xyxy[1] - boundary_y) < self.edge_threshold
-            ):
-                has_edge_blocks = True
-                logger.info(
-                    "Detected text block near virtual page boundary: %s", blk.xyxy
-                )
-                break
-
-        return blk_list, has_edge_blocks
-
-    def _process_virtual_chunk(
-        self,
-        vpage1: VirtualPage,
-        vpage2: VirtualPage,
-        chunk_id: str,
-        timestamp: str,
-        physical_pages_in_chunk: set,
-        total_images: int,
-    ) -> Optional[Dict]:
-        """
-        Process a chunk consisting of two virtual pages.
-        Returns a dictionary with blocks and patches keyed by virtual_page_id.
-        """
-        logger.info(
-            "Processing virtual chunk %s: %s + %s",
-            chunk_id,
-            vpage1.virtual_id,
-            vpage2.virtual_id,
-        )
-
-        # Create combined image and mapping metadata for this chunk pair.
-        combined_image, mapping_data = self._create_virtual_chunk_image(vpage1, vpage2)
-        if combined_image is None:
-            return None
-
-        # Detect blocks and seam-edge conditions.
-        blk_list, has_edge_blocks = self._detect_edge_blocks_virtual(
-            combined_image, vpage1, vpage2
-        )
-        if (
-            blk_list
-            and has_edge_blocks
-            and len(mapping_data) == 2
-            and vpage1.virtual_id != vpage2.virtual_id
-        ):
-            before_merge = len(blk_list)
-            boundary_y = mapping_data[0]["combined_y_end"]
-            blk_list = self._merge_seam_split_blocks(blk_list, boundary_y)
-            after_merge = len(blk_list)
-            if after_merge != before_merge:
-                logger.info(
-                    "Chunk %s seam merge adjusted block count from %d to %d.",
-                    chunk_id,
-                    before_merge,
-                    after_merge,
-                )
-
-        current_physical_page = min(physical_pages_in_chunk)
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 1, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
-
-        if not blk_list:
-            logger.info("No text blocks detected in virtual chunk %s", chunk_id)
-
-        if blk_list:
-            source_lang = self.main_page.image_states[vpage1.physical_page_path][
-                "source_lang"
-            ]
-            self.ocr_handler.ocr.initialize(self.main_page, source_lang)
-            try:
-                self.ocr_handler.ocr.process(combined_image, blk_list)
-                source_lang_english = self.main_page.lang_mapping.get(
-                    source_lang, source_lang
-                )
-                rtl = True if source_lang_english == "Japanese" else False
-                blk_list = sort_blk_list(blk_list, rtl)
-            except InsufficientCreditsException:
-                raise
-            except Exception as e:
-                if isinstance(e, requests.exceptions.ConnectionError):
-                    err_msg = QCoreApplication.translate(
-                        "Messages",
-                        "Unable to connect to the server.\nPlease check your internet connection.",
-                    )
-                elif isinstance(e, requests.exceptions.HTTPError):
-                    status_code = e.response.status_code if e.response is not None else 500
-                    if status_code >= 500:
-                        err_msg = Messages.get_server_error_text(status_code, context="ocr")
-                    else:
-                        try:
-                            err_json = e.response.json()
-                            if "detail" in err_json and isinstance(err_json["detail"], dict):
-                                err_msg = err_json["detail"].get(
-                                    "error_description", str(e)
-                                )
-                            else:
-                                err_msg = err_json.get("error_description", str(e))
-                        except Exception:
-                            err_msg = str(e)
-                else:
-                    err_msg = str(e)
-
-                logger.exception("OCR failed for virtual chunk %s: %s", chunk_id, err_msg)
-                self.main_page.image_skipped.emit(
-                    vpage1.physical_page_path, "OCR Chunk Failed", err_msg
-                )
-                self.main_page.image_skipped.emit(
-                    vpage2.physical_page_path, "OCR Chunk Failed", err_msg
-                )
-                # Keep chunk flow alive for inpainting-only output.
-                blk_list = []
-
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 2, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
-
+    def _ensure_inpainter(self):
+        settings_page = self.main_page.settings_page
+        inpainter_key = settings_page.get_tool_selection("inpainter")
         if (
             self.inpainting.inpainter_cache is None
-            or self.inpainting.cached_inpainter_key
-            != self.main_page.settings_page.get_tool_selection("inpainter")
+            or self.inpainting.cached_inpainter_key != inpainter_key
         ):
             backend = "onnx"
-            device = resolve_device(
-                self.main_page.settings_page.is_gpu_enabled(), backend=backend
-            )
-            inpainter_key = self.main_page.settings_page.get_tool_selection("inpainter")
+            device = resolve_device(settings_page.is_gpu_enabled(), backend=backend)
             InpainterClass = inpaint_map[inpainter_key]
             self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
             self.inpainting.cached_inpainter_key = inpainter_key
 
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 3, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
+    def _detect_blocks_for_page(self, image: np.ndarray) -> List[TextBlock]:
+        self._ensure_detector()
+        blocks = self.block_detection.block_detector_cache.detect(image)
+        return blocks or []
 
-        config = get_config(self.main_page.settings_page)
-        mask = generate_mask(combined_image, blk_list)
-        inpaint_input_img = self.inpainting.inpainter_cache(combined_image, mask, config)
-        inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
-
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 4, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
-
-        # Calculate inpaint patches per virtual page but defer emission until page finalization.
-        virtual_page_patches = self._calculate_virtual_inpaint_patches(
-            mask, inpaint_input_img, mapping_data
-        )
-
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 5, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
-
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 6, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
-
-        if blk_list:
-            target_lang = self.main_page.image_states[vpage1.physical_page_path][
-                "target_lang"
-            ]
-            extra_context = self.main_page.settings_page.get_llm_settings()[
-                "extra_context"
-            ]
-            translator = Translator(self.main_page, source_lang, target_lang)
+    def _extract_error_message(self, error: Exception, context: str) -> str:
+        if isinstance(error, requests.exceptions.ConnectionError):
+            return QCoreApplication.translate(
+                "Messages",
+                "Unable to connect to the server.\nPlease check your internet connection.",
+            )
+        if isinstance(error, requests.exceptions.HTTPError):
+            status_code = error.response.status_code if error.response is not None else 500
+            if status_code >= 500:
+                return Messages.get_server_error_text(status_code, context=context)
             try:
-                translator.translate(blk_list, combined_image, extra_context)
-            except InsufficientCreditsException:
-                raise
-            except Exception as e:
-                if isinstance(e, requests.exceptions.ConnectionError):
-                    err_msg = QCoreApplication.translate(
-                        "Messages",
-                        "Unable to connect to the server.\nPlease check your internet connection.",
-                    )
-                elif isinstance(e, requests.exceptions.HTTPError):
-                    status_code = e.response.status_code if e.response is not None else 500
-                    if status_code >= 500:
-                        err_msg = Messages.get_server_error_text(
-                            status_code, context="translation"
-                        )
-                    else:
-                        try:
-                            err_json = e.response.json()
-                            if "detail" in err_json and isinstance(err_json["detail"], dict):
-                                err_msg = err_json["detail"].get(
-                                    "error_description", str(e)
-                                )
-                            else:
-                                err_msg = err_json.get("error_description", str(e))
-                        except Exception:
-                            err_msg = str(e)
-                else:
-                    err_msg = str(e)
+                err_json = error.response.json()
+                if "detail" in err_json and isinstance(err_json["detail"], dict):
+                    return err_json["detail"].get("error_description", str(error))
+                return err_json.get("error_description", str(error))
+            except Exception:
+                return str(error)
+        return str(error)
 
-                logger.exception(
-                    "Translation failed for virtual chunk %s: %s", chunk_id, err_msg
-                )
-                self.main_page.image_skipped.emit(
-                    vpage1.physical_page_path, "Translation Chunk Failed", err_msg
-                )
-                self.main_page.image_skipped.emit(
-                    vpage2.physical_page_path, "Translation Chunk Failed", err_msg
-                )
-                for blk in blk_list:
-                    blk.translation = ""
+    def _run_ocr_on_blocks(
+        self,
+        image: np.ndarray,
+        blocks: List[TextBlock],
+        source_lang: str,
+        affected_paths: List[str],
+        reason: str,
+        sort_after: bool = True,
+    ) -> List[TextBlock]:
+        if not blocks:
+            return blocks
 
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 7, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
+        self.ocr_handler.ocr.initialize(self.main_page, source_lang)
+        try:
+            self.ocr_handler.ocr.process(image, blocks)
+            if sort_after:
+                source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
+                rtl = source_lang_en == "Japanese"
+                return sort_blk_list(blocks, rtl)
+            return blocks
+        except InsufficientCreditsException:
+            raise
+        except Exception as error:
+            err_msg = self._extract_error_message(error, context="ocr")
+            logger.exception("OCR failed (%s): %s", reason, err_msg)
+            for path in affected_paths:
+                self.main_page.image_skipped.emit(path, reason, err_msg)
+            return blocks
 
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 8, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
+    def _run_translation_on_blocks(
+        self,
+        image: np.ndarray,
+        blocks: List[TextBlock],
+        source_lang: str,
+        target_lang: str,
+        image_path: str,
+    ) -> None:
+        if not blocks:
+            return
+        extra_context = self.main_page.settings_page.get_llm_settings()["extra_context"]
+        translator = Translator(self.main_page, source_lang, target_lang)
+        try:
+            translator.translate(blocks, image, extra_context)
+        except InsufficientCreditsException:
+            raise
+        except Exception as error:
+            err_msg = self._extract_error_message(error, context="translation")
+            logger.exception("Translation failed for %s: %s", image_path, err_msg)
+            self.main_page.image_skipped.emit(image_path, "Translation", err_msg)
+            for block in blocks:
+                block.translation = ""
 
-        virtual_page_blocks = self._convert_blocks_to_virtual_coordinates(
-            blk_list, mapping_data
-        )
-
-        self.main_page.progress_update.emit(
-            current_physical_page, total_images, 9, 10, False
-        )
-        if self.main_page.current_worker and self.main_page.current_worker.is_cancelled:
-            return None
-
-        if not virtual_page_blocks and not virtual_page_patches:
-            logger.info("No results (blocks or patches) for virtual chunk %s", chunk_id)
-            return None
-
-        return {"blocks": virtual_page_blocks, "patches": virtual_page_patches}
-
-    def _convert_blocks_to_virtual_coordinates(
-        self, blk_list: List[TextBlock], mapping_data: List[Dict]
-    ) -> Dict[str, List[TextBlock]]:
-        """
-        Convert blocks from combined image coordinates to virtual page coordinates.
-        """
-        virtual_page_blocks = defaultdict(list)
-
-        for blk in blk_list:
-            # Prefer stable ownership for blocks that cross the chunk seam:
-            # assign spanning blocks to the upper mapping entry.
-            target_mapping = None
-            if len(mapping_data) == 2:
-                boundary_y = mapping_data[0]["combined_y_end"]
-                if blk.xyxy[1] < boundary_y and blk.xyxy[3] > boundary_y:
-                    target_mapping = mapping_data[0]
-
-            # Otherwise assign to the virtual page with maximum overlap area.
-            if target_mapping is None:
-                max_overlap_area = -1
-                for mapping in mapping_data:
-                    y_start = mapping["combined_y_start"]
-                    y_end = mapping["combined_y_end"]
-                    overlap_y_start = max(blk.xyxy[1], y_start)
-                    overlap_y_end = min(blk.xyxy[3], y_end)
-                    vertical_overlap = max(0, overlap_y_end - overlap_y_start)
-                    block_width = blk.xyxy[2] - blk.xyxy[0]
-                    overlap_area = block_width * vertical_overlap
-
-                    if overlap_area > max_overlap_area:
-                        max_overlap_area = overlap_area
-                        target_mapping = mapping
-
-            if target_mapping:
-                vpage = target_mapping["virtual_page"]
-                y_start = target_mapping["combined_y_start"]
-                x_offset = target_mapping["x_offset"]
-
-                virtual_block = blk.deep_copy()
-                virtual_block.xyxy = [
-                    blk.xyxy[0] - x_offset,
-                    blk.xyxy[1] - y_start,
-                    blk.xyxy[2] - x_offset,
-                    blk.xyxy[3] - y_start,
+    def _inpaint_image_with_blocks(
+        self, image: np.ndarray, blocks: List[TextBlock]
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+        if not blocks:
+            return None, None
+        self._ensure_inpainter()
+        config = get_config(self.main_page.settings_page)
+        mask_blocks: List[TextBlock] = []
+        img_h, img_w = image.shape[:2]
+        for block in blocks:
+            mask_block = block.deep_copy()
+            x1, y1, x2, y2 = [float(v) for v in mask_block.xyxy]
+            x1_i = int(np.floor(x1))
+            y1_i = int(np.floor(y1))
+            x2_i = int(np.ceil(x2))
+            y2_i = int(np.ceil(y2))
+            x1_i = max(0, min(x1_i, img_w))
+            y1_i = max(0, min(y1_i, img_h))
+            x2_i = max(0, min(x2_i, img_w))
+            y2_i = max(0, min(y2_i, img_h))
+            if x2_i <= x1_i or y2_i <= y1_i:
+                continue
+            mask_block.xyxy = [x1_i, y1_i, x2_i, y2_i]
+            if mask_block.bubble_xyxy is not None:
+                bx1, by1, bx2, by2 = [float(v) for v in mask_block.bubble_xyxy]
+                mask_block.bubble_xyxy = [
+                    max(0, min(int(np.floor(bx1)), img_w)),
+                    max(0, min(int(np.floor(by1)), img_h)),
+                    max(0, min(int(np.ceil(bx2)), img_w)),
+                    max(0, min(int(np.ceil(by2)), img_h)),
                 ]
+            if not mask_block.text and not mask_block.translation:
+                # Keep inpainting mask generation independent from OCR success.
+                mask_block.text = " "
+            mask_blocks.append(mask_block)
+        if not mask_blocks:
+            return None, None
+        mask = generate_mask(image, mask_blocks)
+        if mask is None or not np.any(mask):
+            return None, None
+        inpainted = self.inpainting.inpainter_cache(image, mask, config)
+        inpainted = imk.convert_scale_abs(inpainted)
+        return mask, inpainted
 
-                if virtual_block.bubble_xyxy is not None:
-                    virtual_block.bubble_xyxy = [
-                        blk.bubble_xyxy[0] - x_offset,
-                        blk.bubble_xyxy[1] - y_start,
-                        blk.bubble_xyxy[2] - x_offset,
-                        blk.bubble_xyxy[3] - y_start,
-                    ]
-
-                virtual_page_blocks[vpage.virtual_id].append(virtual_block)
-            else:
-                logger.warning(
-                    "Block %s could not be assigned to any virtual page", blk.xyxy
-                )
-
-        return dict(virtual_page_blocks)
-
-    def _calculate_virtual_inpaint_patches(
-        self, mask: np.ndarray, inpainted_image: np.ndarray, mapping_data: List[Dict]
-    ) -> Dict[str, List[Dict]]:
-        """
-        Create inpaint patches for virtual pages and convert to physical page coordinates.
-        """
-        # Find contours in the inpaint mask to build patch rectangles.
+    def _extract_page_patches_from_mask(
+        self,
+        mask: np.ndarray,
+        inpainted: np.ndarray,
+        page_index: int,
+        file_path: str,
+        y_offset: int = 0,
+    ) -> List[Dict]:
         contours, _ = imk.find_contours(mask)
         if not contours:
-            return {}
+            return []
 
-        patches_by_virtual_page = defaultdict(list)
-        for c in contours:
-            x, y, w, h = imk.bounding_rect(c)
-            patch_bottom = y + h
+        scene_offset_y = self._get_page_scene_offset(page_index)
+        patches: List[Dict] = []
+        for contour in contours:
+            x, y, w, h = [int(v) for v in imk.bounding_rect(contour)]
+            if w <= 0 or h <= 0:
+                continue
+            patch = inpainted[y : y + h, x : x + w]
+            physical_y = y + int(y_offset)
+            patches.append(
+                {
+                    "bbox": [x, physical_y, w, h],
+                    "image": patch.copy(),
+                    "page_index": page_index,
+                    "file_path": file_path,
+                    "scene_pos": [x, physical_y + scene_offset_y],
+                }
+            )
+        return patches
 
-            for mapping in mapping_data:
-                vpage = mapping["virtual_page"]
-                y_start = mapping["combined_y_start"]
-                y_end = mapping["combined_y_end"]
-                x_offset = mapping["x_offset"]
+    def _match_split_blocks(
+        self,
+        top_blocks: List[TextBlock],
+        top_height: int,
+        bottom_blocks: List[TextBlock],
+    ) -> List[Tuple[int, int]]:
+        if not top_blocks or not bottom_blocks:
+            return []
 
-                if patch_bottom <= y_start or y >= y_end:
+        edge = float(max(10, self.edge_threshold))
+        top_candidates = []
+        bottom_candidates = []
+
+        for idx, blk in enumerate(top_blocks):
+            x1, y1, x2, y2 = [float(v) for v in blk.xyxy]
+            if y2 >= top_height - edge and y1 < top_height:
+                top_candidates.append((idx, x1, y1, x2, y2))
+
+        for idx, blk in enumerate(bottom_blocks):
+            x1, y1, x2, y2 = [float(v) for v in blk.xyxy]
+            if y1 <= edge and y2 > 0:
+                bottom_candidates.append((idx, x1, y1, x2, y2))
+
+        if not top_candidates or not bottom_candidates:
+            return []
+
+        candidate_pairs = []
+        for top_idx, tx1, ty1, tx2, ty2 in top_candidates:
+            top_w = max(1.0, tx2 - tx1)
+            top_cx = 0.5 * (tx1 + tx2)
+            top_edge_dist = abs(top_height - ty2)
+
+            for bot_idx, bx1, by1, bx2, by2 in bottom_candidates:
+                bot_w = max(1.0, bx2 - bx1)
+                bot_cx = 0.5 * (bx1 + bx2)
+                bot_edge_dist = abs(by1)
+
+                width_ratio = max(top_w, bot_w) / max(1.0, min(top_w, bot_w))
+                if width_ratio > 2.2:
+                    continue
+                if top_edge_dist > 1.6 * edge or bot_edge_dist > 1.6 * edge:
                     continue
 
-                clip_y_start = max(y, y_start)
-                clip_y_end = min(patch_bottom, y_end)
-                if clip_y_end <= clip_y_start:
+                inter_x = max(0.0, min(tx2, bx2) - max(tx1, bx1))
+                overlap_ratio = inter_x / max(1.0, min(top_w, bot_w))
+                center_ratio = abs(top_cx - bot_cx) / max(1.0, max(top_w, bot_w))
+                if overlap_ratio < 0.35 and center_ratio > 0.35:
                     continue
 
-                clipped_patch = inpainted_image[clip_y_start:clip_y_end, x : x + w]
-                virtual_y = clip_y_start - y_start
-                virtual_x = x - x_offset
-                virtual_height = clip_y_end - clip_y_start
+                score = (
+                    2.6 * overlap_ratio
+                    - 0.75 * center_ratio
+                    - 0.35 * abs(width_ratio - 1.0)
+                    - (top_edge_dist + bot_edge_dist) / max(1.0, 3.0 * edge)
+                )
+                if score <= 0.0:
+                    continue
 
-                physical_coords = vpage.virtual_to_physical_coords(
-                    [virtual_x, virtual_y, virtual_x + w, virtual_y + virtual_height]
+                candidate_pairs.append((score, top_idx, bot_idx))
+
+        if not candidate_pairs:
+            return []
+
+        candidate_pairs.sort(key=lambda item: item[0], reverse=True)
+        matched_top = set()
+        matched_bottom = set()
+        matches: List[Tuple[int, int]] = []
+
+        for _, top_idx, bot_idx in candidate_pairs:
+            if top_idx in matched_top or bot_idx in matched_bottom:
+                continue
+            matched_top.add(top_idx)
+            matched_bottom.add(bot_idx)
+            matches.append((top_idx, bot_idx))
+
+        return matches
+
+    def _build_stitched_pair(self, top_image: np.ndarray, bottom_image: np.ndarray) -> np.ndarray:
+        top_h, top_w = top_image.shape[:2]
+        bottom_h, bottom_w = bottom_image.shape[:2]
+        stitched_width = max(top_w, bottom_w)
+        stitched = np.full((top_h + bottom_h, stitched_width, 3), 255, dtype=np.uint8)
+        stitched[:top_h, :top_w] = top_image
+        stitched[top_h : top_h + bottom_h, :bottom_w] = bottom_image
+        return stitched
+
+    def _compute_union_crop(
+        self,
+        boxes: List[List[float]],
+        image_shape: Tuple[int, int, int],
+        pad_x: int,
+        pad_y: int,
+    ) -> Optional[List[int]]:
+        if not boxes:
+            return None
+        h, w = image_shape[:2]
+        x1 = int(max(0, min(box[0] for box in boxes) - pad_x))
+        y1 = int(max(0, min(box[1] for box in boxes) - pad_y))
+        x2 = int(min(w, max(box[2] for box in boxes) + pad_x))
+        y2 = int(min(h, max(box[3] for box in boxes) + pad_y))
+        if x2 <= x1 or y2 <= y1:
+            return None
+        return [x1, y1, x2, y2]
+
+    def _localize_blocks_to_crop(
+        self, blocks: List[TextBlock], crop_xyxy: List[int]
+    ) -> List[TextBlock]:
+        crop_x1, crop_y1, _, _ = crop_xyxy
+        localized = []
+        for block in blocks:
+            local_block = block.deep_copy()
+            local_block.xyxy = self._shift_xyxy(block.xyxy, -float(crop_x1), -float(crop_y1))
+            if local_block.bubble_xyxy is not None:
+                local_block.bubble_xyxy = self._shift_xyxy(
+                    local_block.bubble_xyxy, -float(crop_x1), -float(crop_y1)
+                )
+            localized.append(local_block)
+        return localized
+
+    @staticmethod
+    def _copy_ocr_fields(dst: TextBlock, src: TextBlock) -> None:
+        dst.text = src.text
+        dst.texts = list(src.texts) if src.texts is not None else []
+        dst.source_lang = src.source_lang
+
+    def _extract_seam_patches_from_mask(
+        self,
+        mask: np.ndarray,
+        inpainted_crop: np.ndarray,
+        crop_xyxy: List[int],
+        top_page_index: int,
+        bottom_page_index: int,
+        top_global_page_index: int,
+        bottom_global_page_index: int,
+        top_path: str,
+        bottom_path: str,
+        top_y_offset: int,
+        bottom_y_offset: int,
+        top_image: np.ndarray,
+        bottom_image: np.ndarray,
+    ) -> Dict[int, List[Dict]]:
+        contours, _ = imk.find_contours(mask)
+        if not contours:
+            return {top_page_index: [], bottom_page_index: []}
+
+        crop_x1, crop_y1, _, _ = crop_xyxy
+        top_h, top_w = top_image.shape[:2]
+        bottom_h, bottom_w = bottom_image.shape[:2]
+        seam_y = top_h
+
+        top_scene_offset = self._get_page_scene_offset(top_global_page_index)
+        bottom_scene_offset = self._get_page_scene_offset(bottom_global_page_index)
+
+        top_patches: List[Dict] = []
+        bottom_patches: List[Dict] = []
+
+        for contour in contours:
+            x, y, w, h = [int(v) for v in imk.bounding_rect(contour)]
+            if w <= 0 or h <= 0:
+                continue
+
+            gx1 = crop_x1 + x
+            gy1 = crop_y1 + y
+            gx2 = gx1 + w
+            gy2 = gy1 + h
+
+            tx1 = max(0, gx1)
+            tx2 = min(top_w, gx2)
+            ty1 = max(0, gy1)
+            ty2 = min(top_h, gy2)
+            if tx2 > tx1 and ty2 > ty1:
+                sx1 = tx1 - crop_x1
+                sx2 = tx2 - crop_x1
+                sy1 = ty1 - crop_y1
+                sy2 = ty2 - crop_y1
+                patch = inpainted_crop[sy1:sy2, sx1:sx2]
+                top_physical_y = ty1 + int(top_y_offset)
+                top_patches.append(
+                    {
+                        "bbox": [tx1, top_physical_y, tx2 - tx1, ty2 - ty1],
+                        "image": patch.copy(),
+                        "page_index": top_global_page_index,
+                        "file_path": top_path,
+                        "scene_pos": [tx1, top_physical_y + top_scene_offset],
+                    }
                 )
 
-                physical_x = int(physical_coords[0])
-                physical_y = int(physical_coords[1])
-                physical_width = w
-                physical_height = int(physical_coords[3] - physical_coords[1])
+            bx1 = max(0, gx1)
+            bx2 = min(bottom_w, gx2)
+            by1 = max(seam_y, gy1)
+            by2 = min(seam_y + bottom_h, gy2)
+            if bx2 > bx1 and by2 > by1:
+                sx1 = bx1 - crop_x1
+                sx2 = bx2 - crop_x1
+                sy1 = by1 - crop_y1
+                sy2 = by2 - crop_y1
+                patch = inpainted_crop[sy1:sy2, sx1:sx2]
+                page_local_y = (by1 - seam_y) + int(bottom_y_offset)
+                bottom_patches.append(
+                    {
+                        "bbox": [bx1, page_local_y, bx2 - bx1, by2 - by1],
+                        "image": patch.copy(),
+                        "page_index": bottom_global_page_index,
+                        "file_path": bottom_path,
+                        "scene_pos": [bx1, page_local_y + bottom_scene_offset],
+                    }
+                )
 
-                webtoon_manager = self.main_page.image_viewer.webtoon_manager
-                page_y_position_in_scene = 0
-                if (
-                    webtoon_manager
-                    and vpage.physical_page_index < len(webtoon_manager.image_positions)
-                ):
-                    page_y_position_in_scene = webtoon_manager.image_positions[
-                        vpage.physical_page_index
-                    ]
+        return {top_page_index: top_patches, bottom_page_index: bottom_patches}
 
-                scene_x = physical_x
-                scene_y = physical_y + page_y_position_in_scene
+    def _process_seam_job_ocr_and_inpaint(
+        self, seam_job, page_records: List[Dict]
+    ) -> Dict[int, List[Dict]]:
+        top_record = page_records[seam_job.top_page_index]
+        bottom_record = page_records[seam_job.bottom_page_index]
+        top_image = top_record.get("image")
+        bottom_image = bottom_record.get("image")
+        if top_image is None or bottom_image is None:
+            return {seam_job.top_page_index: [], seam_job.bottom_page_index: []}
 
-                patch_data = {
-                    "bbox": [physical_x, physical_y, physical_width, physical_height],
-                    "image": clipped_patch.copy(),
-                    "page_index": vpage.physical_page_index,
-                    "file_path": vpage.physical_page_path,
-                    "scene_pos": [scene_x, scene_y],
-                }
-                patches_by_virtual_page[vpage.virtual_id].append(patch_data)
+        owner_blocks = [match.owner_block for match in seam_job.matches]
+        if not owner_blocks:
+            return {seam_job.top_page_index: [], seam_job.bottom_page_index: []}
 
-        return dict(patches_by_virtual_page)
+        stitched = self._build_stitched_pair(top_image, bottom_image)
+        crop_xyxy = self._compute_union_crop(
+            [list(block.xyxy) for block in owner_blocks],
+            stitched.shape,
+            pad_x=self.seam_crop_pad_x,
+            pad_y=self.seam_crop_pad_y,
+        )
+        if crop_xyxy is None:
+            return {seam_job.top_page_index: [], seam_job.bottom_page_index: []}
+
+        x1, y1, x2, y2 = crop_xyxy
+        seam_crop = stitched[y1:y2, x1:x2].copy()
+        seam_blocks_local = self._localize_blocks_to_crop(owner_blocks, crop_xyxy)
+
+        top_state = self.main_page.image_states.get(top_record["path"], {})
+        source_lang = top_state.get("source_lang", self.main_page.s_combo.currentText())
+        processed_local_blocks = self._run_ocr_on_blocks(
+            seam_crop,
+            seam_blocks_local,
+            source_lang,
+            [top_record["path"], bottom_record["path"]],
+            reason="OCR Seam Failed",
+            sort_after=False,
+        )
+        for owner_block, local_block in zip(owner_blocks, processed_local_blocks):
+            self._copy_ocr_fields(owner_block, local_block)
+
+        mask, inpainted_crop = self._inpaint_image_with_blocks(
+            seam_crop, processed_local_blocks
+        )
+        if mask is None or inpainted_crop is None:
+            return {seam_job.top_page_index: [], seam_job.bottom_page_index: []}
+
+        return self._extract_seam_patches_from_mask(
+            mask=mask,
+            inpainted_crop=inpainted_crop,
+            crop_xyxy=crop_xyxy,
+            top_page_index=seam_job.top_page_index,
+            bottom_page_index=seam_job.bottom_page_index,
+            top_global_page_index=int(top_record["global_index"]),
+            bottom_global_page_index=int(bottom_record["global_index"]),
+            top_path=top_record["path"],
+            bottom_path=bottom_record["path"],
+            top_y_offset=int(top_record.get("y_offset", 0)),
+            bottom_y_offset=int(bottom_record.get("y_offset", 0)),
+            top_image=top_image,
+            bottom_image=bottom_image,
+        )

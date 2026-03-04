@@ -148,7 +148,7 @@ class ComicTranslatePipeline:
         return self.batch_processor.batch_process(selected_paths)
     
     def webtoon_batch_process(self, selected_paths=None):
-        """Webtoon batch processing with overlapping sliding windows."""
+        """Webtoon batch processing with seam-aware virtual-page streaming."""
         return self.webtoon_batch_processor.webtoon_batch_process(selected_paths)
 
     # Segmentation methods (delegate to segmentation_handler)
