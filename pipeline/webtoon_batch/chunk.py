@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import imkit as imk
 import numpy as np
@@ -14,6 +16,9 @@ from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.image_utils import generate_mask
 from modules.utils.pipeline_config import get_config, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
+
+if TYPE_CHECKING:
+    from .processor import WebtoonBatchProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -37,12 +42,14 @@ class ChunkMixin:
             float(xyxy[3]) + dy,
         ]
 
-    def _is_cancelled(self) -> bool:
+    def _is_cancelled(self: WebtoonBatchProcessor) -> bool:
         worker = getattr(self.main_page, "current_worker", None)
         return bool(worker and worker.is_cancelled)
 
-    def _get_page_scene_offset(self, page_index: int) -> int:
-        webtoon_manager = getattr(self.main_page.image_viewer, "webtoon_manager", None)
+    def _get_page_scene_offset(
+        self: WebtoonBatchProcessor, page_index: int
+    ) -> int:
+        webtoon_manager = self.main_page.image_viewer.webtoon_manager
         if (
             webtoon_manager
             and page_index < len(getattr(webtoon_manager, "image_positions", []))
@@ -50,13 +57,13 @@ class ChunkMixin:
             return int(webtoon_manager.image_positions[page_index])
         return 0
 
-    def _ensure_detector(self):
+    def _ensure_detector(self: WebtoonBatchProcessor):
         if self.block_detection.block_detector_cache is None:
             self.block_detection.block_detector_cache = TextBlockDetector(
                 self.main_page.settings_page
             )
 
-    def _ensure_inpainter(self):
+    def _ensure_inpainter(self: WebtoonBatchProcessor):
         settings_page = self.main_page.settings_page
         inpainter_key = settings_page.get_tool_selection("inpainter")
         if (
@@ -69,12 +76,16 @@ class ChunkMixin:
             self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
             self.inpainting.cached_inpainter_key = inpainter_key
 
-    def _detect_blocks_for_page(self, image: np.ndarray) -> List[TextBlock]:
+    def _detect_blocks_for_page(
+        self: WebtoonBatchProcessor, image: np.ndarray
+    ) -> List[TextBlock]:
         self._ensure_detector()
         blocks = self.block_detection.block_detector_cache.detect(image)
         return blocks or []
 
-    def _extract_error_message(self, error: Exception, context: str) -> str:
+    def _extract_error_message(
+        self: WebtoonBatchProcessor, error: Exception, context: str
+    ) -> str:
         if isinstance(error, requests.exceptions.ConnectionError):
             return QCoreApplication.translate(
                 "Messages",
@@ -94,7 +105,7 @@ class ChunkMixin:
         return str(error)
 
     def _run_ocr_on_blocks(
-        self,
+        self: WebtoonBatchProcessor,
         image: np.ndarray,
         blocks: List[TextBlock],
         source_lang: str,
@@ -123,7 +134,7 @@ class ChunkMixin:
             return blocks
 
     def _run_translation_on_blocks(
-        self,
+        self: WebtoonBatchProcessor,
         image: np.ndarray,
         blocks: List[TextBlock],
         source_lang: str,
@@ -146,7 +157,9 @@ class ChunkMixin:
                 block.translation = ""
 
     def _inpaint_image_with_blocks(
-        self, image: np.ndarray, blocks: List[TextBlock]
+        self: WebtoonBatchProcessor,
+        image: np.ndarray,
+        blocks: List[TextBlock],
     ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         if not blocks:
             return None, None
@@ -190,7 +203,7 @@ class ChunkMixin:
         return mask, inpainted
 
     def _extract_page_patches_from_mask(
-        self,
+        self: WebtoonBatchProcessor,
         mask: np.ndarray,
         inpainted: np.ndarray,
         page_index: int,
@@ -221,7 +234,7 @@ class ChunkMixin:
         return patches
 
     def _match_split_blocks(
-        self,
+        self: WebtoonBatchProcessor,
         top_blocks: List[TextBlock],
         top_height: int,
         bottom_blocks: List[TextBlock],
@@ -297,7 +310,9 @@ class ChunkMixin:
 
         return matches
 
-    def _build_stitched_pair(self, top_image: np.ndarray, bottom_image: np.ndarray) -> np.ndarray:
+    def _build_stitched_pair(
+        self: WebtoonBatchProcessor, top_image: np.ndarray, bottom_image: np.ndarray
+    ) -> np.ndarray:
         top_h, top_w = top_image.shape[:2]
         bottom_h, bottom_w = bottom_image.shape[:2]
         stitched_width = max(top_w, bottom_w)
@@ -307,7 +322,7 @@ class ChunkMixin:
         return stitched
 
     def _compute_union_crop(
-        self,
+        self: WebtoonBatchProcessor,
         boxes: List[List[float]],
         image_shape: Tuple[int, int, int],
         pad_x: int,
@@ -325,7 +340,7 @@ class ChunkMixin:
         return [x1, y1, x2, y2]
 
     def _localize_blocks_to_crop(
-        self, blocks: List[TextBlock], crop_xyxy: List[int]
+        self: WebtoonBatchProcessor, blocks: List[TextBlock], crop_xyxy: List[int]
     ) -> List[TextBlock]:
         crop_x1, crop_y1, _, _ = crop_xyxy
         localized = []
@@ -346,7 +361,7 @@ class ChunkMixin:
         dst.source_lang = src.source_lang
 
     def _extract_seam_patches_from_mask(
-        self,
+        self: WebtoonBatchProcessor,
         mask: np.ndarray,
         inpainted_crop: np.ndarray,
         crop_xyxy: List[int],
@@ -431,7 +446,7 @@ class ChunkMixin:
         return {top_page_index: top_patches, bottom_page_index: bottom_patches}
 
     def _process_seam_job_ocr_and_inpaint(
-        self, seam_job, page_records: List[Dict]
+        self: WebtoonBatchProcessor, seam_job, page_records: List[Dict]
     ) -> Dict[int, List[Dict]]:
         top_record = page_records[seam_job.top_page_index]
         bottom_record = page_records[seam_job.bottom_page_index]

@@ -1,9 +1,19 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 from .chunk import ChunkMixin
 from .flow import FlowMixin
 from .render import RenderMixin
+
+if TYPE_CHECKING:
+    from controller import ComicTranslate
+    from pipeline.cache_manager import CacheManager
+    from pipeline.block_detection import BlockDetectionHandler
+    from pipeline.inpainting import InpaintingHandler
+    from pipeline.ocr_handler import OCRHandler
 
 logger = logging.getLogger(__name__)
 
@@ -18,12 +28,12 @@ class WebtoonBatchProcessor(FlowMixin, ChunkMixin, RenderMixin):
     """
 
     def __init__(
-        self,
-        main_page,
-        cache_manager,
-        block_detection_handler,
-        inpainting_handler,
-        ocr_handler,
+        self: WebtoonBatchProcessor,
+        main_page: ComicTranslate,
+        cache_manager: CacheManager,
+        block_detection_handler: BlockDetectionHandler,
+        inpainting_handler: InpaintingHandler,
+        ocr_handler: OCRHandler,
     ):
         self.main_page = main_page
         self.cache_manager = cache_manager
@@ -41,9 +51,24 @@ class WebtoonBatchProcessor(FlowMixin, ChunkMixin, RenderMixin):
         self.seam_crop_pad_x = 48
         self.seam_crop_pad_y = 48
 
-    def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
+    def skip_save(
+        self: WebtoonBatchProcessor,
+        directory,
+        timestamp,
+        base_name,
+        extension,
+        archive_bname,
+        image,
+    ):
         logger.info("Skipping fallback translated image save for '%s'.", base_name)
 
-    def log_skipped_image(self, directory, timestamp, image_path, reason="", full_traceback=""):
+    def log_skipped_image(
+        self: WebtoonBatchProcessor,
+        directory,
+        timestamp,
+        image_path,
+        reason="",
+        full_traceback="",
+    ):
         # Deprecated: skip details are captured by batch reporting/UI signals.
         return

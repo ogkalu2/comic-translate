@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
@@ -10,17 +12,24 @@ from app.path_materialization import ensure_path_materialized
 from modules.utils.textblock import sort_blk_list
 from ..virtual_page import VirtualPage
 
+if TYPE_CHECKING:
+    from .processor import WebtoonBatchProcessor
+
 logger = logging.getLogger(__name__)
 
 
 class FlowMixin:
     def _emit_progress(
-        self, index: int, total_images: int, step: int, change_name: bool
+        self: WebtoonBatchProcessor,
+        index: int,
+        total_images: int,
+        step: int,
+        change_name: bool,
     ) -> None:
         self.main_page.progress_update.emit(index, total_images, step, 10, change_name)
 
     def _create_virtual_pages_for_physical(
-        self,
+        self: WebtoonBatchProcessor,
         physical_page_index: int,
         physical_page_path: str,
         physical_width: int,
@@ -70,7 +79,9 @@ class FlowMixin:
             top = bottom
         return virtual_pages
 
-    def _read_virtual_image(self, vpage: VirtualPage) -> Optional[np.ndarray]:
+    def _read_virtual_image(
+        self: WebtoonBatchProcessor, vpage: VirtualPage
+    ) -> Optional[np.ndarray]:
         ensure_path_materialized(vpage.physical_page_path)
         with Image.open(vpage.physical_page_path) as image:
             crop = image.crop(
@@ -83,7 +94,12 @@ class FlowMixin:
             return None
         return arr
 
-    def _load_virtual_record(self, record: Dict, total_images: int, emit_progress: bool) -> Dict:
+    def _load_virtual_record(
+        self: WebtoonBatchProcessor,
+        record: Dict,
+        total_images: int,
+        emit_progress: bool,
+    ) -> Dict:
         if record.get("skip_only", False):
             if emit_progress:
                 self._emit_progress(record["selected_index"], total_images, 1, False)
@@ -130,7 +146,10 @@ class FlowMixin:
         return False
 
     def _build_pair_split_matches(
-        self, current_record: Dict, next_record: Dict, current_excluded: set
+        self: WebtoonBatchProcessor,
+        current_record: Dict,
+        next_record: Dict,
+        current_excluded: set,
     ) -> Tuple[List, set]:
         current_blocks = current_record.get("detected_blocks", [])
         next_blocks = next_record.get("detected_blocks", [])
@@ -198,7 +217,7 @@ class FlowMixin:
         return physical_blocks
 
     def _finalize_physical_page(
-        self,
+        self: WebtoonBatchProcessor,
         page_info: Dict,
         page_accum: Dict[str, Dict[str, List]],
         total_images: int,
@@ -255,7 +274,9 @@ class FlowMixin:
         self._save_final_rendered_page(selected_index, image_path, timestamp)
         self._emit_progress(selected_index, total_images, 10, False)
 
-    def webtoon_batch_process(self, selected_paths: List[str] = None):
+    def webtoon_batch_process(
+        self: WebtoonBatchProcessor, selected_paths: List[str] = None
+    ):
         try:
             timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
             image_list = selected_paths if selected_paths is not None else self.main_page.image_files

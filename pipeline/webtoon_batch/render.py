@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
 from types import SimpleNamespace
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import imkit as imk
 from PySide6.QtGui import QColor
@@ -16,12 +18,18 @@ from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.textblock import TextBlock
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
 
+if TYPE_CHECKING:
+    from .processor import WebtoonBatchProcessor
+
 logger = logging.getLogger(__name__)
 
 
 class RenderMixin:
     def _prepare_page_blocks_for_render(
-        self, image_path: str, blocks: List[TextBlock], has_patches: bool
+        self: WebtoonBatchProcessor,
+        image_path: str,
+        blocks: List[TextBlock],
+        has_patches: bool,
     ) -> List[TextBlock]:
         page_state = self.main_page.image_states[image_path]
         if not blocks:
@@ -47,7 +55,7 @@ class RenderMixin:
         return blocks
 
     def _store_page_text_items(
-        self,
+        self: WebtoonBatchProcessor,
         page_index: int,
         image_path: str,
         blocks: List[TextBlock],
@@ -182,7 +190,7 @@ class RenderMixin:
             viewer_state["text_items_state"].append(text_props.to_dict())
 
     def _save_final_rendered_page(
-        self, page_idx: int, image_path: str, timestamp: str
+        self: WebtoonBatchProcessor, page_idx: int, image_path: str, timestamp: str
     ):
         """
         Handle per-page exports once page results are finalized.
