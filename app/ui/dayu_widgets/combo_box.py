@@ -200,6 +200,72 @@ class MFontComboBox(MComboBoxSearchMixin, QtWidgets.QFontComboBox):
         self.set_placeholder(self.tr("Please Select"))
         self.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self._dayu_size = dayu_theme.default_size
+        self._font_preview_delegate = self.view().itemDelegate() if self.view() is not None else None
+        self._configure_popup_view()
+        self.currentTextChanged.connect(self._update_selected_font_tooltip)
+        self._update_selected_font_tooltip(self.currentText())
+
+    def _configure_popup_view(self):
+        view = self.view()
+        if not isinstance(view, QtWidgets.QTreeView):
+            tree_view = QtWidgets.QTreeView(self)
+            tree_view.setRootIsDecorated(False)
+            tree_view.setItemsExpandable(False)
+            tree_view.setUniformRowHeights(True)
+            tree_view.setHeaderHidden(True)
+            if self._font_preview_delegate is not None:
+                tree_view.setItemDelegate(self._font_preview_delegate)
+            header = tree_view.header()
+            header.setStretchLastSection(False)
+            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)
+            self._has_custom_view = True
+            super(MFontComboBox, self).setView(tree_view)
+            view = tree_view
+
+        if view is None:
+            return
+
+        view.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        view.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        view.setHorizontalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
+        view.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
+        if hasattr(view, "setWordWrap"):
+            view.setWordWrap(False)
+
+    def _sync_popup_width(self):
+        view = self.view()
+        if view is None:
+            return
+
+        widest_text = 0
+        model = self.model()
+        root_index = self.rootModelIndex()
+        model_column = self.modelColumn()
+        if model is not None:
+            for row in range(self.count()):
+                model_index = model.index(row, model_column, root_index)
+                if model_index.isValid():
+                    widest_text = max(widest_text, view.sizeHintForIndex(model_index).width())
+
+        if widest_text <= 0:
+            metrics = view.fontMetrics()
+            for idx in range(self.count()):
+                widest_text = max(widest_text, metrics.horizontalAdvance(self.itemText(idx)))
+
+        extra_padding = 120
+        target_width = widest_text + extra_padding
+        max_popup_width = max(self.width(), 420)
+        popup_width = min(max_popup_width, max(self.width(), target_width))
+
+        if isinstance(view, QtWidgets.QTreeView):
+            view.setColumnWidth(0, target_width)
+
+        view.setMinimumWidth(popup_width)
+        view.setMaximumWidth(popup_width)
+
+    def _update_selected_font_tooltip(self, family_name: str):
+        if self.lineEdit() is not None:
+            self.lineEdit().setToolTip(family_name or self.tr("Font"))
 
     def get_dayu_size(self):
         """
@@ -244,11 +310,15 @@ class MFontComboBox(MComboBoxSearchMixin, QtWidgets.QFontComboBox):
         """Override setView to flag _has_custom_view variable."""
         self._has_custom_view = True
         super(MFontComboBox, self).setView(*args, **kwargs)
+        self._configure_popup_view()
 
     def showPopup(self):
         """Override default showPopup. When set custom menu, show the menu instead."""
         if self._has_custom_view or self._root_menu is None:
             super(MFontComboBox, self).showPopup()
+            self._sync_popup_width()
+            if self.view() is not None:
+                self.view().horizontalScrollBar().setValue(0)
         else:
             super(MFontComboBox, self).hidePopup()
             self._root_menu.popup(self.mapToGlobal(QtCore.QPoint(0, self.height())))
