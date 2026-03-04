@@ -36,7 +36,9 @@ class FlowMixin:
         physical_height: int,
     ) -> List[VirtualPage]:
         max_virtual_height = int(self.max_virtual_height)
-        if physical_height <= max_virtual_height:
+        overflow_tolerance = int(getattr(self, "soft_overflow_tolerance_px", 0))
+        single_page_limit = max_virtual_height + max(0, overflow_tolerance)
+        if physical_height <= single_page_limit:
             return [
                 VirtualPage(
                     physical_page_index=physical_page_index,
@@ -202,6 +204,32 @@ class FlowMixin:
             consumed_bottom_indices.add(bottom_idx)
 
         return split_matches, consumed_bottom_indices
+
+    def _build_extended_ocr_image_for_pair(
+        self: WebtoonBatchProcessor,
+        current_record: Dict,
+        next_record: Optional[Dict],
+        split_owned_blocks: List,
+    ) -> np.ndarray:
+        """
+        Build a single OCR image for current-page processing.
+
+        If no seam-owned blocks exist, use the current virtual image as-is.
+        If seam-owned blocks exist, extend the current image with only the
+        required rows from the next image so split blocks are fully visible.
+        """
+        current_image = current_record["image"]
+        if not split_owned_blocks or next_record is None or next_record.get("image") is None:
+            return current_image
+
+        next_image = next_record["image"]
+        stitched = self._build_stitched_pair(current_image, next_image)
+        current_h = int(current_image.shape[0])
+        stitched_h = int(stitched.shape[0])
+        max_owner_y = max(float(block.xyxy[3]) for block in split_owned_blocks)
+        target_h = max(current_h, int(np.ceil(max_owner_y)) + 1)
+        target_h = max(1, min(stitched_h, target_h))
+        return stitched[:target_h, :].copy()
 
     @staticmethod
     def _convert_blocks_to_physical(
@@ -428,6 +456,7 @@ class FlowMixin:
                 current_vpage: VirtualPage = current_record["vpage"]
                 current_excluded = set(current_record.get("exclude_indices_from_prev", set()))
                 split_owned_blocks = []
+                split_matches = []
 
                 if self._can_pair_for_seam(current_record, next_record):
                     self._emit_progress(
@@ -442,19 +471,6 @@ class FlowMixin:
                         )
                     if split_matches:
                         split_owned_blocks.extend([m.owner_block for m in split_matches])
-                        seam_patches = self._process_seam_job_ocr_and_inpaint(
-                            seam_job=SimpleNamespace(
-                                top_page_index=0,
-                                bottom_page_index=1,
-                                matches=split_matches,
-                            ),
-                            page_records=[current_record, next_record],
-                        )
-                        for patches in seam_patches.values():
-                            for patch in patches:
-                                patch_path = patch.get("file_path")
-                                if patch_path in page_accum:
-                                    page_accum[patch_path]["patches"].append(patch)
 
                 regular_blocks = [
                     blk.deep_copy()
@@ -465,13 +481,22 @@ class FlowMixin:
                 self._emit_progress(current_record["selected_index"], total_images, 2, False)
                 page_state = self.main_page.image_states.get(current_record["path"], {})
                 source_lang = page_state.get("source_lang", self.main_page.s_combo.currentText())
-                regular_blocks = self._run_ocr_on_blocks(
-                    current_record["image"],
-                    regular_blocks,
+                ocr_image = self._build_extended_ocr_image_for_pair(
+                    current_record=current_record,
+                    next_record=next_record,
+                    split_owned_blocks=split_owned_blocks,
+                )
+                ocr_blocks = regular_blocks + split_owned_blocks
+                ocr_affected_paths = [current_record["path"]]
+                if split_owned_blocks and next_record is not None:
+                    ocr_affected_paths.append(next_record["path"])
+                self._run_ocr_on_blocks(
+                    ocr_image,
+                    ocr_blocks,
                     source_lang,
-                    [current_record["path"]],
+                    ocr_affected_paths,
                     reason="OCR",
-                    sort_after=True,
+                    sort_after=False,
                 )
 
                 self._emit_progress(current_record["selected_index"], total_images, 4, False)
@@ -487,6 +512,21 @@ class FlowMixin:
                         y_offset=int(current_record["y_offset"]),
                     )
                     page_accum[current_record["path"]]["patches"].extend(regular_patches)
+
+                if split_matches and next_record is not None:
+                    seam_patches = self._process_seam_job_ocr_and_inpaint(
+                        seam_job=SimpleNamespace(
+                            top_page_index=0,
+                            bottom_page_index=1,
+                            matches=split_matches,
+                        ),
+                        page_records=[current_record, next_record],
+                    )
+                    for patches in seam_patches.values():
+                        for patch in patches:
+                            patch_path = patch.get("file_path")
+                            if patch_path in page_accum:
+                                page_accum[patch_path]["patches"].append(patch)
 
                 final_blocks_virtual = regular_blocks + split_owned_blocks
                 source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)

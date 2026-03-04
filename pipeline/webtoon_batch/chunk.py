@@ -354,12 +354,6 @@ class ChunkMixin:
             localized.append(local_block)
         return localized
 
-    @staticmethod
-    def _copy_ocr_fields(dst: TextBlock, src: TextBlock) -> None:
-        dst.text = src.text
-        dst.texts = list(src.texts) if src.texts is not None else []
-        dst.source_lang = src.source_lang
-
     def _extract_seam_patches_from_mask(
         self: WebtoonBatchProcessor,
         mask: np.ndarray,
@@ -446,7 +440,9 @@ class ChunkMixin:
         return {top_page_index: top_patches, bottom_page_index: bottom_patches}
 
     def _process_seam_job_ocr_and_inpaint(
-        self: WebtoonBatchProcessor, seam_job, page_records: List[Dict]
+        self: WebtoonBatchProcessor,
+        seam_job,
+        page_records: List[Dict],
     ) -> Dict[int, List[Dict]]:
         top_record = page_records[seam_job.top_page_index]
         bottom_record = page_records[seam_job.bottom_page_index]
@@ -473,18 +469,8 @@ class ChunkMixin:
         seam_crop = stitched[y1:y2, x1:x2].copy()
         seam_blocks_local = self._localize_blocks_to_crop(owner_blocks, crop_xyxy)
 
-        top_state = self.main_page.image_states.get(top_record["path"], {})
-        source_lang = top_state.get("source_lang", self.main_page.s_combo.currentText())
-        processed_local_blocks = self._run_ocr_on_blocks(
-            seam_crop,
-            seam_blocks_local,
-            source_lang,
-            [top_record["path"], bottom_record["path"]],
-            reason="OCR Seam Failed",
-            sort_after=False,
-        )
-        for owner_block, local_block in zip(owner_blocks, processed_local_blocks):
-            self._copy_ocr_fields(owner_block, local_block)
+        # OCR has already been performed by the unified per-current-record pass.
+        processed_local_blocks = seam_blocks_local
 
         mask, inpainted_crop = self._inpaint_image_with_blocks(
             seam_crop, processed_local_blocks
