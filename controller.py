@@ -522,6 +522,7 @@ class ComicTranslate(ComicTranslateUI):
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.save_as_project_button.setEnabled(False)
         self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
         
@@ -563,6 +564,7 @@ class ComicTranslate(ComicTranslateUI):
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.save_as_project_button.setEnabled(False)
         self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
         
@@ -597,6 +599,7 @@ class ComicTranslate(ComicTranslateUI):
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
+        self.save_as_project_button.setEnabled(True)
         self.webtoon_toggle.setEnabled(True)
         self.selected_batch = []
         if report and report["skipped_count"] > 0:
