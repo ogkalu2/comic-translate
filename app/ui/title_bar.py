@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 import platform
+import sys
+
+if sys.platform == "win32":
+    import ctypes
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
@@ -27,6 +31,9 @@ _MINIMIZE = "minimize"
 _MAXIMIZE = "maximize"
 _RESTORE  = "restore"
 _CLOSE    = "close"
+if sys.platform == "win32":
+    WM_NCLBUTTONDOWN = 0x00A1
+    HTCAPTION = 2
 
 
 class _CtrlButton(QtWidgets.QPushButton):
@@ -577,6 +584,33 @@ class CustomTitleBar(QtWidgets.QWidget):
         else:
             win.showMaximized()
 
+    def is_caption_draggable(self, local_pos: QtCore.QPoint) -> bool:
+        """Return whether *local_pos* is a safe caption drag region."""
+        if not self.rect().contains(local_pos):
+            return False
+
+        child = self.childAt(local_pos)
+        while child is not None and child is not self:
+            if child.testAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents):
+                child = child.parentWidget()
+                continue
+            if isinstance(
+                child,
+                (
+                    QtWidgets.QAbstractButton,
+                    QtWidgets.QAbstractSlider,
+                    QtWidgets.QAbstractSpinBox,
+                    QtWidgets.QComboBox,
+                    QtWidgets.QLineEdit,
+                    QtWidgets.QTextEdit,
+                    QtWidgets.QPlainTextEdit,
+                    QtWidgets.QAbstractItemView,
+                ),
+            ):
+                return False
+            child = child.parentWidget()
+        return True
+
     # Dragging / double-click
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         """Delegate window move to the OS via QWindow.startSystemMove()."""
@@ -585,14 +619,23 @@ class CustomTitleBar(QtWidgets.QWidget):
             near_top = local.y() <= RESIZE_MARGIN
             near_left = local.x() <= RESIZE_MARGIN
             near_right = local.x() >= (self.width() - RESIZE_MARGIN)
-            if not (near_top or near_left or near_right):
-                handle = self.window().windowHandle()
-                if handle:
-                    handle.startSystemMove()
+            if self.is_caption_draggable(local) and not (near_top or near_left or near_right):
+                if sys.platform == "win32":
+                    hwnd = int(self.window().winId())
+                    if hwnd:
+                        user32 = ctypes.windll.user32
+                        user32.ReleaseCapture()
+                        user32.SendMessageW(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0)
+                        event.accept()
+                        return
+                else:
+                    handle = self.window().windowHandle()
+                    if handle:
+                        handle.startSystemMove()
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton and self.is_caption_draggable(event.position().toPoint()):
             self._toggle_maximize()
         super().mouseDoubleClickEvent(event)
 
