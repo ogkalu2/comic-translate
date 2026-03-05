@@ -9,6 +9,8 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import imkit as imk
+
+from modules.utils.archives import close_pdf_cache
 from .parsers import ProjectEncoder, ProjectDecoder, ensure_string_keys
 from .project_state_v2 import (
     close_cached_connection as close_state_v2_cached_connection,
@@ -44,6 +46,8 @@ def save_state_to_proj_file(comic_translate: ComicTranslate, file_name: str):
 
 def close_state_store(file_name: str | None = None) -> None:
     close_state_v2_cached_connection(file_name)
+    # Release cached pdfplumber objects to free memory.
+    close_pdf_cache()
 
 
 def ensure_project_blob_materialized(path: str) -> bool:

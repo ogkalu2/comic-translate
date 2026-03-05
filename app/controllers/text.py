@@ -594,7 +594,7 @@ class TextController:
 
         try:
             # Set values
-            self.main.font_dropdown.setCurrentText(text_item.font_family)
+            self.main.set_font(text_item.font_family)
             self.main.font_size_dropdown.setCurrentText(str(int(text_item.font_size)))
 
             self.main.line_spacing_dropdown.setCurrentText(str(text_item.line_spacing))
@@ -659,7 +659,7 @@ class TextController:
 
         try:
             # Set values
-            self.main.font_dropdown.setCurrentText(font_family) if font_family else None
+            self.main.set_font(font_family) if font_family else None
             self.main.font_size_dropdown.setCurrentText(str(int(font_size))) if font_size else None
 
             if text_color is not None:

@@ -1,28 +1,39 @@
+from __future__ import annotations
+
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
-from ..virtual_page import PageStatus, VirtualPageCreator
 from .chunk import ChunkMixin
-from .dedupe import DedupeMixin
 from .flow import FlowMixin
 from .render import RenderMixin
+
+if TYPE_CHECKING:
+    from controller import ComicTranslate
+    from pipeline.cache_manager import CacheManager
+    from pipeline.block_detection import BlockDetectionHandler
+    from pipeline.inpainting import InpaintingHandler
+    from pipeline.ocr_handler import OCRHandler
 
 logger = logging.getLogger(__name__)
 
 
-class WebtoonBatchProcessor(FlowMixin, ChunkMixin, DedupeMixin, RenderMixin):
+class WebtoonBatchProcessor(FlowMixin, ChunkMixin, RenderMixin):
     """
-    Handles batch processing of webtoon translation using virtual pages and
-    overlapping sliding windows.
+    Handles seam-aware webtoon batch processing with virtual-page streaming.
+
+    Physical pages are split into fixed-height virtual pages (no overlap), then
+    processed as adjacent pairs (n, n+1). Split blocks are merged and processed
+    once on a minimal stitched crop, so OCR/inpainting never sees cut blocks.
     """
 
     def __init__(
-        self,
-        main_page,
-        cache_manager,
-        block_detection_handler,
-        inpainting_handler,
-        ocr_handler,
+        self: WebtoonBatchProcessor,
+        main_page: ComicTranslate,
+        cache_manager: CacheManager,
+        block_detection_handler: BlockDetectionHandler,
+        inpainting_handler: InpaintingHandler,
+        ocr_handler: OCRHandler,
     ):
         self.main_page = main_page
         self.cache_manager = cache_manager
@@ -31,32 +42,35 @@ class WebtoonBatchProcessor(FlowMixin, ChunkMixin, DedupeMixin, RenderMixin):
         self.inpainting = inpainting_handler
         self.ocr_handler = ocr_handler
 
-        # Virtual page settings.
-        self.max_virtual_height = 2000
-        self.overlap_height = 200
-        self.virtual_page_creator = VirtualPageCreator(
-            max_virtual_height=self.max_virtual_height,
-            overlap_height=self.overlap_height,
-        )
-
-        # State tracking for virtual chunks/pages.
-        self.virtual_chunk_results = defaultdict(list)
-        self.virtual_page_processing_count = defaultdict(int)
-        self.finalized_virtual_pages = set()
-        self.physical_page_results = defaultdict(list)
-        self.physical_page_status = defaultdict(lambda: PageStatus.UNPROCESSED)
+        # State tracking for per-page patch accumulation.
         self.final_patches_for_save = defaultdict(list)
 
-        # Edge detection settings.
+        # Seam matching / crop settings.
+        self.min_virtual_chunk_height = 2000
+        self.max_virtual_chunk_height = 3500
+        self.target_virtual_chunk_height = 2400
         self.edge_threshold = 50
-        # target_physical_page_index -> list[[x1, y1, x2, y2]] in target page-local coordinates.
-        # These claims allow suppression of seam duplicates when spanning blocks were already emitted
-        # from a neighboring page.
-        self._spanning_claims_by_page = defaultdict(list)
+        self.seam_crop_pad_x = 48
+        self.seam_crop_pad_y = 48
 
-    def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
+    def skip_save(
+        self: WebtoonBatchProcessor,
+        directory,
+        timestamp,
+        base_name,
+        extension,
+        archive_bname,
+        image,
+    ):
         logger.info("Skipping fallback translated image save for '%s'.", base_name)
 
-    def log_skipped_image(self, directory, timestamp, image_path, reason="", full_traceback=""):
+    def log_skipped_image(
+        self: WebtoonBatchProcessor,
+        directory,
+        timestamp,
+        image_path,
+        reason="",
+        full_traceback="",
+    ):
         # Deprecated: skip details are captured by batch reporting/UI signals.
         return

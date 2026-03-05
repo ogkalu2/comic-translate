@@ -844,7 +844,11 @@ class ProjectController:
         alignment = settings.value('alignment_id', 1, type=int) # Default value is 1 which is Center
         self.main.alignment_tool_group.set_dayu_checked(alignment)
 
-        self.main.font_dropdown.setCurrentText(settings.value('font_family', ''))
+        saved_font_family = settings.value('font_family', '')
+        if saved_font_family:
+            self.main.set_font(saved_font_family)
+        else:
+            self.main.font_dropdown.setCurrentText('')
         min_font_size = settings.value('min_font_size', 5)  # Default value is 5
         max_font_size = settings.value('max_font_size', 40) # Default value is 40
         self.main.settings_page.ui.min_font_spinbox.setValue(int(min_font_size))

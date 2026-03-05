@@ -220,20 +220,17 @@ class SettingsPage(QtWidgets.QWidget):
             os.makedirs(user_font_dir, exist_ok=True)
 
         if file_paths:
-            for file in file_paths:
-                shutil.copy(file, user_font_dir)
-                
-            # Reload fonts from user directory
-            font_files = [os.path.join(user_font_dir, f) for f in os.listdir(user_font_dir) 
-                      if f.lower().endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))]
-            
-            font_families = []
-            for font in font_files:
-                font_family = self.add_font_family(font)
-                font_families.append(font_family)
-            
-            if font_families:
-                self.font_imported.emit(font_families[0])
+            loaded_families = []
+            for src in file_paths:
+                dst = os.path.join(user_font_dir, os.path.basename(src))
+                if os.path.normcase(src) != os.path.normcase(dst):
+                    shutil.copy(src, dst)
+                font_family = self.add_font_family(dst)
+                if font_family:
+                    loaded_families.append(font_family)
+
+            if loaded_families:
+                self.font_imported.emit(loaded_families[0])
 
     def select_color(self, outline = False):
         default_color = QtGui.QColor('#000000') if not outline else QtGui.QColor('#FFFFFF')
@@ -342,7 +339,7 @@ class SettingsPage(QtWidgets.QWidget):
         if is_gpu_available():
             self.ui.use_gpu_checkbox.setChecked(settings.value('use_gpu', False, type=bool))
         else:
-             self.ui.use_gpu_checkbox.setChecked(False)
+            self.ui.use_gpu_checkbox.setChecked(False)
 
         # Load HD strategy settings
         settings.beginGroup('hd_strategy')

@@ -19,7 +19,7 @@ class LazyImageLoader:
         self._scene = viewer._scene
         
         # Configuration
-        self.max_loaded_pages = 10  # Maximum pages in memory
+        self.max_loaded_pages = 5  # Maximum pages in memory
         
         # File path references (Owner of this data)
         self.image_file_paths: list[str] = []

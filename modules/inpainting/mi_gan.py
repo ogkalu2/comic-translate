@@ -1,5 +1,4 @@
 import os
-import onnxruntime as ort
 import imkit as imk
 from PIL import Image
 import numpy as np
@@ -12,6 +11,7 @@ from ..utils.inpainting import (
 )
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.device import get_providers
+from modules.utils.onnx import make_session
 from .base import InpaintModel
 from .schema import Config
 
@@ -31,7 +31,7 @@ class MIGAN(InpaintModel):
             ModelDownloader.get(model_id)
             onnx_path = ModelDownloader.primary_path(model_id)
             providers = get_providers(device)
-            self.session = ort.InferenceSession(onnx_path, providers=providers)
+            self.session = make_session(onnx_path, providers=providers)
         else:
             ModelDownloader.get(ModelID.MIGAN_JIT)
             local_path = ModelDownloader.primary_path(ModelID.MIGAN_JIT)

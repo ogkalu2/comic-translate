@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 @dataclass
 class LazyLoadingConfig:
     enabled: bool = True
-    max_loaded_pages: int = 10
+    max_loaded_pages: int = 5
     viewport_buffer: int = 2
     load_timer_interval: int = 50
     scroll_debounce_delay: int = 150

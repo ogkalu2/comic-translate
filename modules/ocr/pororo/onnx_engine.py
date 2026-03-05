@@ -4,12 +4,12 @@ import os
 import numpy as np
 from PIL import Image
 import imkit as imk
-import onnxruntime as ort
 from typing import Optional
 
 from modules.utils.download import ModelDownloader, ModelID
 from modules.ocr.base import OCREngine
 from modules.utils.device import get_providers
+from modules.utils.onnx import make_session, make_session_options
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import adjust_text_line_coordinates
 from .pororo.models.brainOCR.brainocr import Reader
@@ -47,12 +47,12 @@ class PororoOCREngineONNX(OCREngine):
         if device:
             self.opt2val["device"] = device
 
-        sess_opts = ort.SessionOptions()
+        sess_opts = make_session_options(log_severity_level=3)
         providers = get_providers(self.opt2val.get("device"))
         self.det_path = ModelDownloader.get_file_path(ModelID.PORORO_ONNX, "craft.onnx")
         self.rec_path = ModelDownloader.get_file_path(ModelID.PORORO_ONNX, "brainocr.onnx")
-        self.det_sess = ort.InferenceSession(self.det_path, sess_options=sess_opts, providers=providers)
-        self.rec_sess = ort.InferenceSession(self.rec_path, sess_options=sess_opts, providers=providers)
+        self.det_sess = make_session(self.det_path, sess_options=sess_opts, providers=providers)
+        self.rec_sess = make_session(self.rec_path, sess_options=sess_opts, providers=providers)
         return None
 
     # Detection

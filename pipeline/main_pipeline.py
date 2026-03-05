@@ -44,6 +44,46 @@ class ComicTranslatePipeline:
             self.ocr_handler
         )
 
+    def release_model_caches(self) -> None:
+        """Best-effort release of cached model engines/sessions to reduce RSS.
+
+        This trades some responsiveness for lower memory after batch runs.
+        """
+        # Drop handler-level caches
+        try:
+            self.block_detection.block_detector_cache = None
+        except Exception:
+            pass
+        try:
+            self.inpainting.inpainter_cache = None
+            self.inpainting.cached_inpainter_key = None
+        except Exception:
+            pass
+
+        # Drop factory-level engine caches (these often hold ONNX sessions)
+        try:
+            from modules.detection.factory import DetectionEngineFactory
+            DetectionEngineFactory._engines.clear()
+        except Exception:
+            pass
+        try:
+            from modules.ocr.factory import OCRFactory
+            OCRFactory._engines.clear()
+        except Exception:
+            pass
+        try:
+            from modules.translation.factory import TranslationFactory
+            TranslationFactory._engines.clear()
+        except Exception:
+            pass
+
+        # Encourage Python-side cleanup; native allocators may still keep arenas.
+        try:
+            import gc
+            gc.collect()
+        except Exception:
+            pass
+
     # Block detection methods (delegate to block_detection)
     def load_box_coords(self, blk_list):
         """Load bounding box coordinates."""
@@ -108,7 +148,7 @@ class ComicTranslatePipeline:
         return self.batch_processor.batch_process(selected_paths)
     
     def webtoon_batch_process(self, selected_paths=None):
-        """Webtoon batch processing with overlapping sliding windows."""
+        """Webtoon batch processing with seam-aware virtual-page streaming."""
         return self.webtoon_batch_processor.webtoon_batch_process(selected_paths)
 
     # Segmentation methods (delegate to segmentation_handler)

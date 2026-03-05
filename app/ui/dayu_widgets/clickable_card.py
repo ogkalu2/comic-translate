@@ -108,6 +108,9 @@ class ClickMeta(QtWidgets.QWidget):
     ):
         super(ClickMeta, self).__init__(parent)
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
+        
+        self._is_highlighted = False
+        self._applying_highlight = False
 
         # Initialize Widgets
         self._cover_label = QtWidgets.QLabel()
@@ -230,19 +233,15 @@ class ClickMeta(QtWidgets.QWidget):
 
     def _apply_highlight(self):
         # Prevent infinite recursion when setStyleSheet triggers another StyleChange event
-        if getattr(self, '_applying_highlight', False):
+        if self._applying_highlight:
             return
         self._applying_highlight = True
         try:
-            # Clear style sheet to ensure we fetch the current theme's valid palette color
-            self.setStyleSheet("")
-            bg_color = self.palette().color(self.backgroundRole())
-            
-            if getattr(self, '_is_highlighted', False):
-                highlight_color = bg_color.darker(130)
-                self.setStyleSheet(f"ClickMeta {{ background-color: {highlight_color.name()}; border: none; padding: 0px; }}")
+            if self._is_highlighted:
+                color = dayu_theme.background_selected_color
             else:
-                self.setStyleSheet(f"ClickMeta {{ background-color: {bg_color.name()}; border: none; padding: 0px; }}")
+                color = dayu_theme.background_color
+            self.setStyleSheet(f"ClickMeta {{ background-color: {color}; border: none; padding: 0px; }}")
         finally:
             self._applying_highlight = False
 
@@ -250,8 +249,7 @@ class ClickMeta(QtWidgets.QWidget):
         super(ClickMeta, self).changeEvent(event)
         # Re-apply highlight if palette or style changes (e.g., toggling light/dark mode)
         if event.type() == QtCore.QEvent.Type.PaletteChange or event.type() == QtCore.QEvent.Type.StyleChange:
-            if hasattr(self, '_is_highlighted'):
-                self._apply_highlight()
+            self._apply_highlight()
 
     def set_skipped(self, skipped: bool):
         """Visually mark / un-mark this row as skipped."""

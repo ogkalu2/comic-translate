@@ -38,6 +38,9 @@ from modules.utils.exceptions import InsufficientCreditsException, ContentFlagge
 # Ensure any pre-declared mandatory models
 ensure_mandatory_models()
 
+# Toggle memory logging.
+ENABLE_MEMLOGGER = False
+
 class ComicTranslate(ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)
     patches_processed = QtCore.Signal(list, str)
@@ -50,6 +53,19 @@ class ComicTranslate(ComicTranslateUI):
     def __init__(self, parent=None):
         super(ComicTranslate, self).__init__(parent)
         self.setWindowTitle("Project1.ctpr[*]")
+
+        # Memory logging toggle for local diagnostics.
+        # Start as early as possible after QWidget init so we can attribute idle RSS.
+        self._memlogger = None
+        if ENABLE_MEMLOGGER:
+            try:
+                from modules.utils.memlog import MemLogger
+
+                self._memlogger = MemLogger(self)
+                self._memlogger.start()
+                self._memlogger.emit("after_super_init")
+            except Exception:
+                self._memlogger = None
 
         # Explicitly set window icon to ensure it persists after splash screen
         current_file_dir = os.path.dirname(os.path.abspath(__file__))
@@ -73,7 +89,7 @@ class ComicTranslate(ComicTranslateUI):
         self.in_memory_patches = {}  # Store patches in memory for each image
         self.image_cards = []
         self.current_card = None
-        self.max_images_in_memory = 10
+        self.max_images_in_memory = 5
         self.loaded_images = []
 
         self.undo_group = QUndoGroup(self)
@@ -85,6 +101,11 @@ class ComicTranslate(ComicTranslateUI):
         self._skip_close_prompt = False
 
         self.pipeline = ComicTranslatePipeline(self)
+        try:
+            if self._memlogger is not None:
+                self._memlogger.emit("after_pipeline_init")
+        except Exception:
+            pass
         self.file_handler = FileHandler()
         self.threadpool = QThreadPool()
         self.current_worker = None
@@ -100,6 +121,11 @@ class ComicTranslate(ComicTranslateUI):
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
         self.manual_workflow_ctrl = ManualWorkflowController(self)
+        try:
+            if self._memlogger is not None:
+                self._memlogger.emit("after_controllers_init")
+        except Exception:
+            pass
 
         self.image_skipped.connect(self.image_ctrl.on_image_skipped)
         self.image_processed.connect(self.image_ctrl.on_image_processed)
@@ -194,6 +220,12 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.connect_text_item.connect(self.text_ctrl.connect_text_item_signals)
         self.image_viewer.page_changed.connect(self.webtoon_ctrl.on_page_changed)
         self.image_viewer.clear_text_edits.connect(self.text_ctrl.clear_text_edits)
+
+        try:
+            if self._memlogger is not None:
+                self._memlogger.emit("after_signal_wiring")
+        except Exception:
+            pass
 
         # Rendering
         self.font_dropdown.currentTextChanged.connect(self.text_ctrl.on_font_dropdown_change)
@@ -474,6 +506,11 @@ class ComicTranslate(ComicTranslateUI):
         self.batch_report_ctrl.register_batch_skip(image_path, skip_reason, error)
 
     def start_batch_process(self):
+        try:
+            if self._memlogger is not None:
+                self._memlogger.emit("batch_start_all")
+        except Exception:
+            pass
         for image_path in self.image_files:
             target_lang = self.image_states[image_path]['target_lang']
             if not validate_settings(self, target_lang):
@@ -485,6 +522,8 @@ class ComicTranslate(ComicTranslateUI):
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.save_as_project_button.setEnabled(False)
+        self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -494,6 +533,11 @@ class ComicTranslate(ComicTranslateUI):
             self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
 
     def batch_translate_selected(self, selected_file_names: list[str]):
+        try:
+            if self._memlogger is not None:
+                self._memlogger.emit("batch_start_selected")
+        except Exception:
+            pass
         # map base‐name back to full paths
         selected_paths = [
             p for p in self.image_files
@@ -520,6 +564,8 @@ class ComicTranslate(ComicTranslateUI):
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
+        self.save_as_project_button.setEnabled(False)
+        self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -541,6 +587,11 @@ class ComicTranslate(ComicTranslateUI):
             )
 
     def on_batch_process_finished(self):
+        try:
+            if self._memlogger is not None:
+                self._memlogger.emit("batch_finished")
+        except Exception:
+            pass
         was_cancelled = self._batch_cancel_requested
         report = self._finalize_batch_report(was_cancelled)
         self._batch_active = False
@@ -548,11 +599,22 @@ class ComicTranslate(ComicTranslateUI):
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
+        self.save_as_project_button.setEnabled(True)
+        self.webtoon_toggle.setEnabled(True)
         self.selected_batch = []
         if report and report["skipped_count"] > 0:
             Messages.show_batch_skipped_summary(self, report["skipped_count"])
         elif not was_cancelled:
             Messages.show_translation_complete(self)
+
+        # Drop cached models/sessions after batch to keep RAM bounded.
+        try:
+            if self.pipeline is not None:
+                self.pipeline.release_model_caches()
+            if self._memlogger is not None:
+                self._memlogger.emit("model_caches_released")
+        except Exception:
+            pass
 
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():

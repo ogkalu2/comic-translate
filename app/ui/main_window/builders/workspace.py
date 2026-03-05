@@ -1,25 +1,23 @@
-import os
-
 from PySide6 import QtCore, QtWidgets
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QIntValidator
 
-from ...dayu_widgets import dayu_theme
-from ...dayu_widgets.browser import MDragFileButton
-from ...dayu_widgets.button_group import MPushButtonGroup, MToolButtonGroup
-from ...dayu_widgets.check_box import MCheckBox
-from ...dayu_widgets.combo_box import MComboBox, MFontComboBox
-from ...dayu_widgets.divider import MDivider
-from ...dayu_widgets.line_edit import MLineEdit
-from ...dayu_widgets.loading import MLoading
-from ...dayu_widgets.progress_bar import MProgressBar
-from ...dayu_widgets.push_button import MPushButton
-from ...dayu_widgets.radio_button import MRadioButton
-from ...dayu_widgets.slider import MSlider
-from ...dayu_widgets.text_edit import MTextEdit
-from ...dayu_widgets.tool_button import MToolButton
-from ...search_replace_panel import SearchReplacePanel
-from ..constants import supported_source_languages, supported_target_languages, user_font_path
+from app.ui.dayu_widgets import dayu_theme
+from app.ui.dayu_widgets.browser import MDragFileButton
+from app.ui.dayu_widgets.button_group import MPushButtonGroup, MToolButtonGroup
+from app.ui.dayu_widgets.check_box import MCheckBox
+from app.ui.dayu_widgets.combo_box import MComboBox, MFontComboBox
+from app.ui.dayu_widgets.divider import MDivider
+from app.ui.dayu_widgets.line_edit import MLineEdit
+from app.ui.dayu_widgets.loading import MLoading
+from app.ui.dayu_widgets.progress_bar import MProgressBar
+from app.ui.dayu_widgets.push_button import MPushButton
+from app.ui.dayu_widgets.radio_button import MRadioButton
+from app.ui.dayu_widgets.slider import MSlider
+from app.ui.dayu_widgets.text_edit import MTextEdit
+from app.ui.dayu_widgets.tool_button import MToolButton
+from app.ui.search_replace_panel import SearchReplacePanel
+from app.ui.main_window.constants import supported_source_languages, supported_target_languages
 
 
 class WorkspaceMixin:
@@ -171,19 +169,6 @@ class WorkspaceMixin:
 
         self.font_dropdown = MFontComboBox().small()
         self.font_dropdown.setToolTip(self.tr("Font"))
-        all_font_files = []
-        if os.path.exists(user_font_path):
-            all_font_files.extend(
-                [
-                    os.path.join(user_font_path, f)
-                    for f in os.listdir(user_font_path)
-                    if f.lower().endswith((".ttf", ".ttc", ".otf", ".woff", ".woff2"))
-                ]
-            )
-
-        for font in all_font_files:
-            self.add_custom_font(font)
-
         self.font_size_dropdown = MComboBox().small()
         self.font_size_dropdown.setToolTip(self.tr("Font Size"))
         self.font_size_dropdown.addItems(

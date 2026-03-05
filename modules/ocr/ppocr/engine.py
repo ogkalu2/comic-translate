@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 import numpy as np
-import onnxruntime as ort
 
 from ..base import OCREngine
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import lists_to_blk_list
 from modules.utils.device import get_providers
 from modules.utils.download import ModelDownloader, ModelID
+from modules.utils.onnx import make_session, make_session_options
 from .preprocessing import det_preprocess, crop_quad, rec_resize_norm
 from .postprocessing import DBPostProcessor, CTCLabelDecoder
 
@@ -28,8 +28,9 @@ class PPOCRv5Engine(OCREngine):
 	"""
 
 	def __init__(self):
-		self.det_sess: Optional[ort.InferenceSession] = None
-		self.rec_sess: Optional[ort.InferenceSession] = None
+		# Sessions are created lazily in initialize(); keep startup light.
+		self.det_sess: Optional[Any] = None
+		self.rec_sess: Optional[Any] = None
 		self.det_post = DBPostProcessor(
 			thresh=0.3, 
 			box_thresh=0.5, 
@@ -59,10 +60,9 @@ class PPOCRv5Engine(OCREngine):
 		dict_path = dict_file[0] if dict_file else None
 
 		providers = get_providers(device)
-		sess_opt = ort.SessionOptions()
-		sess_opt.log_severity_level = 3
-		self.det_sess = ort.InferenceSession(det_path, sess_options=sess_opt, providers=providers)
-		self.rec_sess = ort.InferenceSession(rec_model, sess_options=sess_opt, providers=providers)
+		sess_opt = make_session_options(log_severity_level=3)
+		self.det_sess = make_session(det_path, sess_options=sess_opt, providers=providers)
+		self.rec_sess = make_session(rec_model, sess_options=sess_opt, providers=providers)
 
 		# Prepare CTC decoder
 		if dict_path:
