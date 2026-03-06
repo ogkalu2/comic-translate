@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import logging
 import imkit as imk
 
@@ -26,8 +27,11 @@ class InpaintingHandler:
             backend = 'onnx'
             device = resolve_device(settings_page.is_gpu_enabled(), backend)
             InpainterClass = inpaint_map[inpainter_key]
+            logger.info("pre-inpaint: initializing inpainter '%s' on device %s", inpainter_key, device)
+            t0 = time.time()
             self.inpainter_cache = InpainterClass(device, backend=backend)
             self.cached_inpainter_key = inpainter_key
+            logger.info("pre-inpaint: inpainter initialized in %.2fs", time.time() - t0)
         return self.inpainter_cache
 
     def manual_inpaint(self):
