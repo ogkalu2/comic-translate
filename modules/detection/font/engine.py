@@ -181,6 +181,14 @@ class FontEngine(ABC):
         """
         pass
 
+    def process_batch(self, images: list) -> list:
+        """Process a list of image crops in one batched inference call.
+
+        Subclasses should override this for efficiency.  The default
+        implementation falls back to calling process() per image.
+        """
+        return [self.process(img) for img in images]
+
     def decode_output(self, output_vec: np.ndarray, original_width: int) -> dict:
         """
         Decode the non-font attributes from the detector output.
@@ -320,6 +328,39 @@ class TorchFontEngine(FontEngine):
             logger.error(f"Error in font detection (Torch): {e}")
             return {"available": False}
 
+    def process_batch(self, images: list) -> list:
+        """Run a single batched forward pass for all crops."""
+        if self.detector is None or not images:
+            return [{"available": False}] * len(images)
+
+        import torch
+
+        try:
+            original_widths = []
+            tensors = []
+            for image in images:
+                pil_image = Image.fromarray(image).convert("RGB")
+                original_widths.append(pil_image.width)
+                tensors.append(self.transform(pil_image))
+
+            batch = torch.stack(tensors).to(self.device)  # (N, 3, H, W)
+
+            with torch.no_grad():
+                batch_out = self.detector(batch).float().cpu().numpy()  # (N, output_dim)
+
+            results = []
+            for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):
+                result = self.decode_output(out, orig_w)
+                cv_color = extract_foreground_color(images[i])
+                if cv_color is not None:
+                    result["text_color"] = cv_color
+                results.append(result)
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in batch font detection (Torch): {e}")
+            return [self.process(img) for img in images]
+
 class ONNXFontEngine(FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
         model_path = ModelDownloader.get_file_path(ModelID.FONT_DETECTOR_ONNX, 'font-detector.onnx')
@@ -365,6 +406,39 @@ class ONNXFontEngine(FontEngine):
         except Exception as e:
             logger.error(f"Error in font detection (ONNX): {e}")
             return {"available": False}
+
+    def process_batch(self, images: list) -> list:
+        """Run a single batched ONNX inference pass for all crops."""
+        if self.session is None or not images:
+            return [{"available": False}] * len(images)
+
+        try:
+            original_widths = []
+            batch_data = []
+            for image in images:
+                pil_image = Image.fromarray(image).convert("RGB")
+                original_widths.append(pil_image.width)
+                img = pil_image.resize((self.input_size, self.input_size), Image.BILINEAR)
+                img_data = np.array(img).astype(np.float32) / 255.0
+                img_data = img_data.transpose(2, 0, 1)  # HWC -> CHW
+                batch_data.append(img_data)
+
+            batch_tensor = np.stack(batch_data, axis=0)  # (N, 3, H, W)
+            outputs = self.session.run(None, {self.input_name: batch_tensor})
+            batch_out = outputs[0]  # (N, output_dim)
+
+            results = []
+            for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):
+                result = self.decode_output(out, orig_w)
+                cv_color = extract_foreground_color(images[i])
+                if cv_color is not None:
+                    result["text_color"] = cv_color
+                results.append(result)
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in batch font detection (ONNX): {e}")
+            return [self.process(img) for img in images]
 
 class FontEngineFactory:
     _engines = {}
