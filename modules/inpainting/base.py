@@ -199,15 +199,11 @@ class InpaintModel:
         return normalized_cdf
 
     def _calculate_lookup(self, source_cdf, reference_cdf):
-        lookup_table = np.zeros(256)
-        lookup_val = 0
-        for source_index, source_val in enumerate(source_cdf):
-            for reference_index, reference_val in enumerate(reference_cdf):
-                if reference_val >= source_val:
-                    lookup_val = reference_index
-                    break
-            lookup_table[source_index] = lookup_val
-        return lookup_table
+        # For each source CDF value, find the first reference CDF index >= it.
+        # np.searchsorted is O(256 * log 256) and fully vectorized vs the
+        # previous O(256²) pure-Python double loop.
+        indices = np.searchsorted(reference_cdf, source_cdf, side='left')
+        return np.clip(indices, 0, 255).astype(np.float64)
 
     def _match_histograms(self, source, reference, mask):
         transformed_channels = []
