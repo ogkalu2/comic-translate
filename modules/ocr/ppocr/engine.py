@@ -78,7 +78,7 @@ class PPOCRv5Engine(OCREngine):
 
 	def _det_infer(self, img: np.ndarray) -> Tuple[np.ndarray, List[float]]:
 		assert self.det_sess is not None
-		inp = det_preprocess(img, limit_side_len=960, limit_type='min')
+		inp = det_preprocess(img, limit_side_len=2, limit_type='min')
 		input_name = self.det_sess.get_inputs()[0].name
 		output_name = self.det_sess.get_outputs()[0].name
 		pred = self.det_sess.run([output_name], {input_name: inp})[0]
@@ -108,7 +108,7 @@ class PPOCRv5Engine(OCREngine):
 				# If output is (N, C, T), transpose to (N, T, C)
 				logits = np.transpose(logits, (0, 2, 1))
 			# Match PaddleOCR behavior: do not drop characters by per-step prob threshold
-			dec_texts, dec_confs = self.decoder(logits, prob_threshold=0.0)
+			dec_texts, dec_confs = self.decoder(logits, prob_threshold=0)
 			for oi, t, s in zip(idxs, dec_texts, dec_confs):
 				texts[oi] = t
 				confs[oi] = float(s)

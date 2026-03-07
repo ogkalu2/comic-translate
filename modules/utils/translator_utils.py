@@ -110,3 +110,36 @@ def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: 
 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
+
+import json
+from typing import List
+from .textblock import TextBlock
+
+def get_text_lines_compact(blk_list: list[TextBlock]) -> List[str]:
+    """
+    Минимальный по токенам вход для LLM: массив строк без ключей block_i.
+    """
+    return [(blk.text or "") for blk in blk_list]
+
+def dumps_compact_json(obj) -> str:
+    """
+    Компактный JSON без пробелов: экономит токены в prompt.
+    """
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+
+def set_translations_from_result_array(blk_list: list[TextBlock], content: str, key: str = "r") -> None:
+    """
+    Ожидает строгий JSON object формата {"r":[...]} (ключ по умолчанию 'r').
+    Маппинг по индексу блока.
+    """
+    obj = json.loads(content)
+    arr = obj[key]
+    if not isinstance(arr, list) or not all(isinstance(x, str) for x in arr):
+        raise ValueError(f"Invalid result format: expected {{{json.dumps(key)}:[str,...]}}")
+
+    # жёстко держим длину
+    if len(arr) != len(blk_list):
+        raise ValueError(f"Length mismatch: got {len(arr)} translations for {len(blk_list)} blocks")
+
+    for i, blk in enumerate(blk_list):
+        blk.translation = arr[i]

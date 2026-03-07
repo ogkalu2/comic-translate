@@ -15,6 +15,7 @@ from __future__ import print_function
 # Import third-party modules
 from PySide6 import QtCore
 from PySide6 import QtWidgets
+from PySide6 import QtGui
 
 # Import local modules
 from . import dayu_theme
@@ -46,9 +47,24 @@ class MToolButton(QtWidgets.QToolButton):
             else:
                 self.setIcon(MIcon(self._dayu_svg))
 
+    def changeEvent(self, event):
+        """Override change event to reset icon when enabled state changes"""
+        if event.type() == QtCore.QEvent.EnabledChange:
+            self._polish_icon()
+            effect = self.graphicsEffect()
+            if not self.isEnabled():
+                if effect is None:
+                    effect = QtWidgets.QGraphicsOpacityEffect(self)
+                    self.setGraphicsEffect(effect)
+                effect.setOpacity(0.35)
+            else:
+                if effect is not None:
+                    effect.setOpacity(1.0)
+        return super(MToolButton, self).changeEvent(event)
+
     def enterEvent(self, event):
         """Override enter event to highlight the icon"""
-        if self._dayu_svg:
+        if self._dayu_svg and self.isEnabled():
             self.setIcon(MIcon(self._dayu_svg, dayu_theme.primary_color))
         return super(MToolButton, self).enterEvent(event)
 

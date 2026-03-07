@@ -2,13 +2,14 @@ import sys
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from ..canvas.image_viewer import ImageViewer
-from ..dayu_widgets.divider import MDivider
-from ..dayu_widgets.theme import MTheme
-from ..list_view import PageListView
-from ..settings.settings_page import SettingsPage
-from ..startup_home import StartupHomeScreen
-from ..title_bar import CustomTitleBar
+from app.ui.canvas.image_viewer import ImageViewer
+from app.ui.dayu_widgets import dayu_theme
+from app.ui.dayu_widgets.divider import MDivider
+from app.ui.dayu_widgets.theme import MTheme
+from app.ui.list_view import PageListView
+from app.ui.settings.settings_page import SettingsPage
+from app.ui.startup_home import StartupHomeScreen
+from app.ui.title_bar import CustomTitleBar
 from .builders import MainWindowBuildersMixin
 from .frame import EdgeResizer
 from .tools import ToolStateMixin
@@ -255,13 +256,15 @@ class ComicTranslateUI(
 
     def apply_theme(self, theme: str):
         if theme == self.settings_page.ui.tr("Light"):
-            new_theme = MTheme("light", primary_color=MTheme.blue)
+            dayu_theme.set_primary_color(MTheme.blue)
+            dayu_theme.set_theme("light")
             is_dark = False
         else:
-            new_theme = MTheme("dark", primary_color=MTheme.yellow)
+            dayu_theme.set_primary_color(MTheme.yellow)
+            dayu_theme.set_theme("dark")
             is_dark = True
 
-        new_theme.apply(self)
+        dayu_theme.apply(self)
         self._apply_title_bar_style(theme)
 
         if self.startup_home:
