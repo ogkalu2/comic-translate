@@ -1,111 +1,107 @@
-from typing import Any
+from typing import Any, Optional, Union, List
+import json
 import numpy as np
 import requests
-import json
-
+import logging
 from .base import BaseLLMTranslation
 from ...utils.translator_utils import MODEL_MAP
 
 
 class GPTTranslation(BaseLLMTranslation):
-    """Translation engine using OpenAI GPT models through direct REST API calls."""
-    
-    def __init__(self):
+    """
+    Translation engine using local vLLM (OpenAI-compatible) through direct REST API calls.
+    Designed for minimal prompt overhead and strict JSON outputs.
+    """
+
+    def __init__(self) -> None:
         super().__init__()
-        self.model_name = None
-        self.api_key = None
-        self.api_base_url = "https://api.openai.com/v1"
-        self.supports_images = True
-    
-    def initialize(self, settings: Any, source_lang: str, target_lang: str, model_name: str, **kwargs) -> None:
-        """
-        Initialize GPT translation engine.
-        
-        Args:
-            settings: Settings object with credentials
-            source_lang: Source language name
-            target_lang: Target language name
-            model_name: GPT model name
-        """
+        self.model_name: Optional[str] = None
+        self.model: Optional[str] = None
+        self.last_usage = None
+        # vLLM OpenAI-compatible base URL
+        self.api_base_url: str = "http://localhost:8000/v1"
+
+        # vLLM text-only in your setup; keep this False to avoid multimodal payload bloat.
+        self.supports_images: bool = False
+
+    def initialize(
+        self,
+        settings: Any,
+        source_lang: str,
+        target_lang: str,
+        model_name: str,
+        api_base_url: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         super().initialize(settings, source_lang, target_lang, **kwargs)
-        
         self.model_name = model_name
-        credentials = settings.get_credentials(settings.ui.tr('Open AI GPT'))
-        self.api_key = credentials.get('api_key', '')
-        self.model = MODEL_MAP.get(self.model_name)
-    
-    def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:
+        self.model = MODEL_MAP.get(self.model_name, self.model_name)
+
+        # Allow override from UI/config
+        if api_base_url:
+            self.api_base_url = api_base_url.rstrip("/")
+
+    def _perform_translation(
+        self,
+        user_prompt: str,
+        system_prompt: str,
+        image: np.ndarray,
+    ) -> str:
         """
-        Perform translation using direct REST API calls to OpenAI.
-        
-        Args:
-            user_prompt: Text prompt from user
-            system_prompt: System instructions
-            image: Image as numpy array
-            
-        Returns:
-            Translated text
+        Sends translation request to local vLLM.
+        Returns the assistant message content (JSON string).
         """
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-        
-        if self.supports_images and self.img_as_llm_input:
-            # Use the base class method to encode the image
-            encoded_image, mime_type = self.encode_image(image)
-            
-            messages = [
-                {
-                    "role": "system", 
-                    "content": [{"type": "text", "text": system_prompt}]
-                },
-                {
-                    "role": "user", 
-                    "content": [
-                        {"type": "text", "text": user_prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{encoded_image}"}}
-                    ]
-                }
-            ]
-        else:
-            messages = [
-                {
-                    "role": "system", 
-                    "content": [{"type": "text", "text": system_prompt}]
-                },
-                {
-                    "role": "user", 
-                    "content": [{"type": "text", "text": user_prompt}]
-                }
-            ]
+
+        # Minimal messages: plain strings (no multimodal wrappers).
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
 
         payload = {
             "model": self.model,
             "messages": messages,
-            "temperature": self.temperature,
-            "max_completion_tokens": self.max_tokens,
-            "top_p": self.top_p,
+            "temperature": 0,
+            "top_p": 1,
+            "max_tokens": int(self.max_tokens),
+            "presence_penalty" : 0,
+            "repetition_penalty" : 1.0,
+            "response_format": {"type": "json_object"},
         }
 
-        return self._make_api_request(payload, headers)
-    
-    def _make_api_request(self, payload, headers):
-        """
-        Make API request and process response
-        """
+        return self._make_api_request(payload)
+
+    def _make_api_request(self, payload):
         try:
             response = requests.post(
                 f"{self.api_base_url}/chat/completions",
-                headers=headers,
-                data=json.dumps(payload),
+                headers={"Content-Type": "application/json"},
+                data=json.dumps(payload, ensure_ascii=False),
                 timeout=self.timeout
             )
-            
+
             response.raise_for_status()
             response_data = response.json()
-            
-            return response_data["choices"][0]["message"]["content"]
+
+            # --- TOKEN USAGE CAPTURE ---
+            usage = response_data.get("usage")
+            if usage:
+                self.last_usage = usage
+                logger = logging.getLogger(__name__)
+                logger.info(
+                    "TOKENS | prompt=%s completion=%s total=%s",
+                    usage.get("prompt_tokens"),
+                    usage.get("completion_tokens"),
+                    usage.get("total_tokens"),
+                )
+
+            content = response_data["choices"][0]["message"]["content"]
+
+            logger = logging.getLogger(__name__)
+            logger.info("LLM RESPONSE | %s", content)
+
+            return content
+
         except requests.exceptions.RequestException as e:
             error_msg = f"API request failed: {str(e)}"
             if hasattr(e, 'response') and e.response is not None:
@@ -115,3 +111,21 @@ class GPTTranslation(BaseLLMTranslation):
                 except:
                     error_msg += f" - Status code: {e.response.status_code}"
             raise RuntimeError(error_msg)
+
+    @staticmethod
+    def build_minimal_json_translate_prompts(lines: List[str], target_lang: str) -> (str, str):
+        system_prompt = (
+            f"Translate EN to {target_lang}. "
+            f"Return ONLY a JSON object: {{\"r\": [<strings>]}}. "
+            f"Keep array length and order. No extra keys. No explanations."
+        )
+        user_prompt = json.dumps(lines, ensure_ascii=False, separators=(",", ":"))
+        return user_prompt, system_prompt
+
+    @staticmethod
+    def parse_result_array(content: str) -> List[str]:
+        obj = json.loads(content)
+        res = obj["r"]
+        if not isinstance(res, list) or not all(isinstance(x, str) for x in res):
+            raise ValueError("Invalid result format: expected {'r': [str, ...]}")
+        return res

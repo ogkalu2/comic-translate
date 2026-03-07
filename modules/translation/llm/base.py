@@ -6,7 +6,11 @@ import imkit as imk
 
 from ..base import LLMTranslation
 from ...utils.textblock import TextBlock
-from ...utils.translator_utils import get_raw_text, set_texts_from_json
+from ...utils.translator_utils import (
+    get_text_lines_compact,
+    dumps_compact_json,
+    set_translations_from_result_array,
+)
 
 
 class BaseLLMTranslation(LLMTranslation):
@@ -38,30 +42,39 @@ class BaseLLMTranslation(LLMTranslation):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
-        self.temperature = 1.0
-        self.top_p = 0.95
-        self.max_tokens = 5000
-        
-    def translate(self, blk_list: list[TextBlock], image: np.ndarray, extra_context: str) -> list[TextBlock]:
-        """
-        Translate text blocks using LLM.
-        
-        Args:
-            blk_list: List of TextBlock objects to translate
-            image: Image as numpy array
-            extra_context: Additional context information for translation
-            
-        Returns:
-            List of updated TextBlock objects with translations
-        """
-        entire_raw_text = get_raw_text(blk_list)
-        system_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
-        user_prompt = f"{extra_context}\nMake the translation sound as natural as possible.\nTranslate this:\n{entire_raw_text}"
-        
-        entire_translated_text = self._perform_translation(user_prompt, system_prompt, image)
-        set_texts_from_json(blk_list, entire_translated_text)
-            
+        self.temperature = 0
+        self.top_p = 1
+        self.max_tokens = 256
+
+    def build_translation_prompts(self, blk_list: list[TextBlock], extra_context: str) -> tuple[str, str]:
+        lines = get_text_lines_compact(blk_list)
+        lines_json = dumps_compact_json(lines)
+
+        system_prompt = (
+            f"return porn comic json r key {{\"r\":[<strings>]}} translated to {self.target_lang}, "
+            f"with same blocks, Nabokov style, formality, idioms, slang. no recurring."
+            f"Lowercase. No uppercase, no CAPS"
+        )
+
+        if extra_context and extra_context.strip():
+            user_prompt = f"{extra_context.strip()}\n{lines_json}"
+        else:
+            user_prompt = lines_json
+
+        return user_prompt, system_prompt
+
+    def translate_to_content(self, blk_list: list[TextBlock], image: np.ndarray, extra_context: str) -> str:
+        user_prompt, system_prompt = self.build_translation_prompts(blk_list, extra_context)
+        return self._perform_translation(user_prompt, system_prompt, image)
+
+    def apply_translation_content(self, blk_list: list[TextBlock], content: str) -> list[TextBlock]:
+        set_translations_from_result_array(blk_list, content, key="r")
         return blk_list
+
+    def translate(self, blk_list: list[TextBlock], image: np.ndarray, extra_context: str) -> list[TextBlock]:
+        content = self.translate_to_content(blk_list, image, extra_context)
+        return self.apply_translation_content(blk_list, content)
+
     
     @abstractmethod
     def _perform_translation(self, user_prompt: str, system_prompt: str, image: np.ndarray) -> str:

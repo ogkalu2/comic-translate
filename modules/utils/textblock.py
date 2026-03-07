@@ -277,25 +277,109 @@ def adjust_blks_size(blk_list: List[TextBlock], img: np.ndarray, w_expan: int = 
         expanded_coords = adjust_text_line_coordinates(coords, w_expan, h_expan, img)
         blk.xyxy[:] = expanded_coords
 
-def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_string: list):  
-    group = list(zip(texts_bboxes, texts_string))  
+def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_string: list):
+    import re
+    import numpy as np
+
+    # (bbox, text) pairs; normalize types
+    group = []
+    for b, t in zip(texts_bboxes, texts_string):
+        if b is None:
+            continue
+        bbox = tuple(int(v) for v in b)
+        # text может прилететь не строкой (tuple/list) из кастомных движков
+        if isinstance(t, (tuple, list)):
+            t = " ".join(str(x) for x in t if x is not None)
+        else:
+            t = "" if t is None else str(t)
+        group.append((bbox, t))
+
+    def _area(b):
+        x1, y1, x2, y2 = b
+        return max(0, x2 - x1) * max(0, y2 - y1)
+
+    def _center(b):
+        x1, y1, x2, y2 = b
+        return ((x1 + x2) * 0.5, (y1 + y2) * 0.5)
+
+    def _iou(a, b):
+        ax1, ay1, ax2, ay2 = a
+        bx1, by1, bx2, by2 = b
+        ix1, iy1 = max(ax1, bx1), max(ay1, by1)
+        ix2, iy2 = min(ax2, bx2), min(ay2, by2)
+        iw, ih = max(0, ix2 - ix1), max(0, iy2 - iy1)
+        inter = iw * ih
+        if inter <= 0:
+            return 0.0
+        ua = _area(a) + _area(b) - inter
+        return float(inter) / float(ua) if ua > 0 else 0.0
+
+    # Фильтр “мусора” от VLM на пустых/не-текстовых кропах
+    # Оставляем строки, где есть латиница/цифры, или нормальная пунктуация в составе латинского текста.
+    _re_has_latin = re.compile(r"[A-Za-z0-9]")
+    _re_cjk = re.compile(r"[\u4e00-\u9fff]")
+
+    def _clean_text(s: str) -> str:
+        s = (s or "").strip()
+        if not s:
+            return ""
+        # выкинуть частые “caption” ответы VLM
+        low = s.lower()
+        if low.startswith("the image is") or low.startswith("this image is") or low.startswith("image is"):
+            return ""
+        # если содержит CJK и при этом нет латиницы/цифр — считаем мусором
+        if _re_cjk.search(s) and not _re_has_latin.search(s):
+            return ""
+        # если вообще нет латиницы/цифр — обычно тоже мусор для английских баблов
+        if not _re_has_latin.search(s):
+            return ""
+        # нормализация пробелов
+        s = re.sub(r"\s+", " ", s).strip()
+        return s
+
+    # предварительно почистить тексты
+    group = [(b, _clean_text(t)) for (b, t) in group]
+    # убрать пустые после чистки
+    group = [(b, t) for (b, t) in group if t]
 
     for blk in blk_list:
         blk_entries = []
-        
-        for line, text in group:
-            if does_rectangle_fit(blk.xyxy, line):
-                blk_entries.append((line, text)) 
-            elif is_mostly_contained(blk.xyxy, line, 0.5):
-                blk_entries.append((line, text)) 
 
-        # Sort and join text entries
+        # 1) строгая привязка: bbox строки внутри bbox блока (или почти внутри)
+        for line_bbox, text in group:
+            if does_rectangle_fit(blk.xyxy, line_bbox):
+                blk_entries.append((line_bbox, text))
+            elif is_mostly_contained(blk.xyxy, line_bbox, 0.5):
+                blk_entries.append((line_bbox, text))
+            else:
+                # 2) мягкая привязка: IoU > 0, чтобы не терять из-за паддинга/масштаба
+                if _iou(tuple(int(v) for v in blk.xyxy), line_bbox) > 0.05:
+                    blk_entries.append((line_bbox, text))
+
+        # 3) fallback: если ничего не попало, привязать ближайший по центру (одна строка → один блок)
+        if not blk_entries and group:
+            bx, by = _center(tuple(int(v) for v in blk.xyxy))
+            best = None
+            best_d2 = None
+            for line_bbox, text in group:
+                cx, cy = _center(line_bbox)
+                d2 = (cx - bx) ** 2 + (cy - by) ** 2
+                if best_d2 is None or d2 < best_d2:
+                    best_d2 = d2
+                    best = (line_bbox, text)
+            if best is not None:
+                blk_entries = [best]
+
+        # Сортировка в порядок чтения + склейка
         sorted_entries = sort_textblock_rectangles(blk_entries, blk.source_lang_direction)
-        
+
         if is_no_space_lang(blk.source_lang):
-            blk.text = ''.join(text for bbox, text in sorted_entries)
+            blk.text = ''.join(text for _, text in sorted_entries).strip()
         else:
-            blk.text = ' '.join(text for bbox, text in sorted_entries)
+            blk.text = ' '.join(text for _, text in sorted_entries).strip()
+
+        # держим совместимость с blk.texts
+        blk.texts = [text for _, text in sorted_entries if text]
 
     return blk_list
 

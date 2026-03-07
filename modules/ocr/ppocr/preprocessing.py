@@ -32,7 +32,7 @@ def resize_keep_stride(img: np.ndarray, limit_side_len: int = 960, limit_type: s
 
 
 def det_preprocess(img: np.ndarray, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5),
-				   limit_side_len: int = 960, limit_type: str = "min") -> np.ndarray:
+				   limit_side_len: int = 12, limit_type: str = "min") -> np.ndarray:
 	"""Preprocess for DB detector: resize, normalize, CHW, NCHW float32."""
 	resized = resize_keep_stride(img, limit_side_len, limit_type)
 	x = resized.astype(np.float32) / 255.0

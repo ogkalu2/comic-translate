@@ -31,7 +31,7 @@ from .cache_manager import CacheManager
 from .block_detection import BlockDetectionHandler
 from .inpainting import InpaintingHandler
 from .ocr_handler import OCRHandler
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 if TYPE_CHECKING:
     from controller import ComicTranslate
 
@@ -84,11 +84,33 @@ class BatchProcessor:
     def _is_cancelled(self) -> bool:
         worker = getattr(self.main_page, "current_worker", None)
         return bool(worker and worker.is_cancelled)
+    
+    def _translate_one_page_worker(self, item):
+        settings_page = self.main_page.settings_page
+        extra_context = settings_page.get_llm_settings()['extra_context']
 
+        translator = Translator(self.main_page, item["source_lang"], item["target_lang"])
+
+        # Важно: переводим копию blk_list внутри worker-а
+        blk_list = item["blk_list"]
+
+        # Если у Translator есть engine внутри translator.translator, оставь как есть:
+        # translator.translate(blk_list, item["image"], extra_context)
+        # return blk_list, getattr(translator, "last_usage", None)
+
+        # Если можно достучаться до engine:
+        content = translator.engine.translate_to_content(blk_list, item["image"], extra_context)
+        translator.engine.apply_translation_content(blk_list, content)
+
+        usage = getattr(translator.engine, "last_usage", None)
+        return blk_list, usage
+    
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
+        prepared_pages = []
+        max_parallel_translations = 32
         try:
             if self.main_page.file_handler.should_pre_materialize(image_list):
                 count = self.main_page.file_handler.pre_materialize(image_list)
@@ -255,50 +277,30 @@ class BatchProcessor:
             if self._is_cancelled():
                 return
 
-            # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
             translator_key = settings_page.get_tool_selection('translator')
-            translator = Translator(self.main_page, source_lang, target_lang)
-            
-            # Get translation cache key for batch processing
+
             translation_cache_key = self.cache_manager._get_translation_cache_key(
                 image, source_lang, target_lang, translator_key, extra_context
             )
-            
-            try:
-                translator.translate(blk_list, image, extra_context)
-                # Cache the translation results for potential future use
-                self.cache_manager._cache_translation_results(translation_cache_key, blk_list)
-            except InsufficientCreditsException:
-                raise
-            except Exception as e:
-                # if it's a connection/network error, give a short message
-                if isinstance(e, requests.exceptions.ConnectionError):
-                    err_msg = QCoreApplication.translate("Messages", "Unable to connect to the server.\nPlease check your internet connection.")
-                # if it's an HTTPError, try to pull the "error_description" field
-                elif isinstance(e, requests.exceptions.HTTPError):
-                    status_code = e.response.status_code if e.response is not None else 500
-                    if status_code >= 500:
-                        err_msg = Messages.get_server_error_text(status_code, context='translation')
-                    else:
-                        try:
-                            err_json = e.response.json()
-                            if "detail" in err_json and isinstance(err_json["detail"], dict):
-                                err_msg = err_json["detail"].get("error_description", str(e))
-                            else:
-                                err_msg = err_json.get("error_description", str(e))
-                        except Exception:
-                            err_msg = str(e)
-                else:
-                    err_msg = str(e)
 
-                logger.exception(f"Translation failed: {err_msg}")
-                reason = f"Translator: {err_msg}"
-                full_traceback = traceback.format_exc()
-                self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
-                self.main_page.image_skipped.emit(image_path, "Translator", err_msg)
-                self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
-                continue
+            prepared_pages.append({
+                "index": index,
+                "image_path": image_path,
+                "image": image,
+                "blk_list": blk_list,
+                "inpaint_input_img": inpaint_input_img,
+                "directory": directory,
+                "timestamp": timestamp,
+                "base_name": base_name,
+                "extension": extension,
+                "archive_bname": archive_bname,
+                "source_lang": source_lang,
+                "target_lang": target_lang,
+                "trg_lng_cd": trg_lng_cd,
+                "translation_cache_key": translation_cache_key,
+            })
+
 
             if self._is_cancelled():
                 return
@@ -472,3 +474,235 @@ class BatchProcessor:
 
             self.emit_progress(index, total_images, 10, 10, False)
 
+        future_to_item = {}
+
+        with ThreadPoolExecutor(max_workers=max_parallel_translations) as ex:
+            for item in prepared_pages:
+                future = ex.submit(self._translate_one_page_worker, item)
+                future_to_item[future] = item
+
+            for future in as_completed(future_to_item):
+                if self._is_cancelled():
+                    return
+
+                item = future_to_item[future]
+
+                try:
+                    translated_blk_list, usage = future.result()
+                    item["blk_list"] = translated_blk_list
+
+                    if usage:
+                        logger.info(
+                            "TOKENS | prompt=%s completion=%s total=%s | image=%s",
+                            usage.get("prompt_tokens"),
+                            usage.get("completion_tokens"),
+                            usage.get("total_tokens"),
+                            item["image_path"],
+                        )
+
+                    self.cache_manager._cache_translation_results(
+                        item["translation_cache_key"],
+                        item["blk_list"]
+                    )
+
+                except InsufficientCreditsException:
+                    raise
+                except Exception as e:
+                    err_msg = str(e)
+                    logger.exception("Translation failed for %s: %s", item["image_path"], err_msg)
+                    self.skip_save(
+                        item["directory"],
+                        item["timestamp"],
+                        item["base_name"],
+                        item["extension"],
+                        item["archive_bname"],
+                        item["image"],
+                    )
+                    self.main_page.image_skipped.emit(item["image_path"], "Translator", err_msg)
+                    item["translation_failed"] = True
+            for item in sorted(prepared_pages, key=lambda x: x["index"]):
+                if item.get("translation_failed"):
+                    continue
+
+                index = item["index"]
+                image_path = item["image_path"]
+                image = item["image"]
+                blk_list = item["blk_list"]
+                inpaint_input_img = item["inpaint_input_img"]
+                directory = item["directory"]
+                timestamp = item["timestamp"]
+                base_name = item["base_name"]
+                extension = item["extension"]
+                archive_bname = item["archive_bname"]
+                trg_lng_cd = item["trg_lng_cd"]
+
+                # сюда без изменений вставить старый код
+                # начиная с entire_raw_text = ...
+                entire_raw_text = get_raw_text(blk_list)
+                entire_translated_text = get_raw_translation(blk_list)
+
+                # Parse JSON strings and check if they're empty objects or invalid
+                try:
+                    raw_text_obj = json.loads(entire_raw_text)
+                    translated_text_obj = json.loads(entire_translated_text)
+                    
+                    if (not raw_text_obj) or (not translated_text_obj):
+                        self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
+                        self.main_page.image_skipped.emit(image_path, "Translator", "")
+                        self.log_skipped_image(directory, timestamp, image_path, "Translator: empty JSON")
+                        continue
+                except json.JSONDecodeError as e:
+                    # Handle invalid JSON
+                    error_message = str(e)
+                    reason = f"Translator: JSONDecodeError: {error_message}"
+                    logger.exception(reason)
+                    full_traceback = traceback.format_exc()
+                    self.skip_save(directory, timestamp, base_name, extension, archive_bname, image)
+                    self.main_page.image_skipped.emit(image_path, "Translator", error_message)
+                    self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
+                    continue
+
+                if export_settings['export_raw_text']:
+                    path = os.path.join(directory, f"comic_translate_{timestamp}", "raw_texts", archive_bname)
+                    if not os.path.exists(path):
+                        os.makedirs(path, exist_ok=True)
+                    with open(
+                        os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_raw.json"),
+                        'w',
+                        encoding='UTF-8',
+                    ) as file:
+                        file.write(entire_raw_text)
+
+                if export_settings['export_translated_text']:
+                    path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_texts", archive_bname)
+                    if not os.path.exists(path):
+                        os.makedirs(path, exist_ok=True)
+                    with open(
+                        os.path.join(path, os.path.splitext(os.path.basename(image_path))[0] + "_translated.json"),
+                        'w',
+                        encoding='UTF-8',
+                    ) as file:
+                        file.write(entire_translated_text)
+
+                self.emit_progress(index, total_images, 7, 10, False)
+                if self._is_cancelled():
+                    return
+
+                # Text Rendering
+                render_settings = self.main_page.render_settings()
+                upper_case = render_settings.upper_case
+                outline = render_settings.outline
+                format_translations(blk_list, trg_lng_cd, upper_case=upper_case)
+                get_best_render_area(blk_list, image, inpaint_input_img)
+
+                font = render_settings.font_family
+                setting_font_color = QColor(render_settings.color)
+
+                max_font_size = render_settings.max_font_size
+                min_font_size = render_settings.min_font_size
+                line_spacing = float(render_settings.line_spacing) 
+                outline_width = float(render_settings.outline_width)
+                outline_color = QColor(render_settings.outline_color) if outline else None
+                bold = render_settings.bold
+                italic = render_settings.italic
+                underline = render_settings.underline
+                alignment_id = render_settings.alignment_id
+                alignment = self.main_page.button_to_alignment[alignment_id]
+                direction = render_settings.direction
+                    
+                text_items_state = []
+                for blk in blk_list:
+                    x1, y1, block_width, block_height = blk.xywh
+
+                    translation = blk.translation
+                    if not translation or len(translation) == 1:
+                        continue
+                    
+                    # Determine if this block should use vertical rendering
+                    vertical = is_vertical_block(blk, trg_lng_cd)
+
+                    translation, font_size, rendered_width, rendered_height = pyside_word_wrap(
+                        translation, 
+                        font, 
+                        block_width, 
+                        block_height,
+                        line_spacing, 
+                        outline_width, 
+                        bold, 
+                        italic, 
+                        underline,
+                        alignment, 
+                        direction, 
+                        max_font_size, 
+                        min_font_size,
+                        vertical,
+                        return_metrics=True
+                    )
+                    
+                    # Display text if on current page  
+                    if image_path == file_on_display:
+                        self.main_page.blk_rendered.emit(translation, font_size, blk, image_path)
+
+                    # Language-specific formatting for state storage
+                    if is_no_space_lang(trg_lng_cd):
+                        translation = translation.replace(' ', '')
+
+                    # Smart Color Override
+                    font_color = get_smart_text_color(blk.font_color, setting_font_color)
+
+                    # Use TextItemProperties for consistent text item creation
+                    text_props = TextItemProperties(
+                        text=translation,
+                        font_family=font,
+                        font_size=font_size,
+                        text_color=font_color,
+                        alignment=alignment,
+                        line_spacing=line_spacing,
+                        outline_color=outline_color,
+                        outline_width=outline_width,
+                        bold=bold,
+                        italic=italic,
+                        underline=underline,
+                        position=(x1, y1),
+                        rotation=blk.angle,
+                        scale=1.0,
+                        transform_origin=blk.tr_origin_point,
+                        width=rendered_width,
+                        height=rendered_height,
+                        direction=direction,
+                        vertical=vertical,
+                        selection_outlines=[
+                            OutlineInfo(0, len(translation), 
+                            outline_color, 
+                            outline_width, 
+                            OutlineType.Full_Document)
+                        ] if outline else [],
+                    )
+                    text_items_state.append(text_props.to_dict())
+
+                self.main_page.image_states[image_path]['viewer_state'].update({
+                    'text_items_state': text_items_state
+                    })
+                
+                self.main_page.image_states[image_path]['viewer_state'].update({
+                    'push_to_stack': True
+                    })
+                
+                self.emit_progress(index, total_images, 9, 10, False)
+                if self._is_cancelled():
+                    return
+
+                # Saving blocks with texts to history
+                self.main_page.image_states[image_path].update({
+                    'blk_list': blk_list                   
+                })
+
+                # Notify UI that this page's render state is finalized.
+                # This enables a deterministic refresh when the user navigates to this page
+                # during processing and misses live blk_rendered events.
+                self.main_page.render_state_ready.emit(image_path)
+
+                if image_path == file_on_display:
+                    self.main_page.blk_list = blk_list
+
+                self.emit_progress(index, total_images, 10, 10, False)
