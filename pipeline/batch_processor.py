@@ -110,7 +110,7 @@ class BatchProcessor:
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
         prepared_pages = []
-        max_parallel_translations = 4
+        max_parallel_translations = 32
         try:
             if self.main_page.file_handler.should_pre_materialize(image_list):
                 count = self.main_page.file_handler.pre_materialize(image_list)

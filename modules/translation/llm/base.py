@@ -52,7 +52,7 @@ class BaseLLMTranslation(LLMTranslation):
 
         system_prompt = (
             f"return porn comic json r key {{\"r\":[<strings>]}} translated to {self.target_lang}, "
-            f"with same blocks, Nabokov style, formality, idioms, slang. "
+            f"with same blocks, Nabokov style, formality, idioms, slang. no recurring."
             f"Lowercase. No uppercase, no CAPS"
         )
 
