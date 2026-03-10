@@ -15,7 +15,7 @@ from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 
 from modules.utils.textblock import TextBlock
-from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block, pyside_word_wrap
+from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block, pyside_word_wrap, get_best_render_area
 from modules.utils.pipeline_config import font_selected
 from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
 from modules.utils.image_utils import get_smart_text_color
@@ -75,10 +75,20 @@ class TextController:
                 text_item.change_undo.disconnect(self.main.rect_item_ctrl.rect_change_undo)
             except (TypeError, RuntimeError):
                 pass
+            if hasattr(text_item, "_ct_sfx_toggled_slot"):
+                try:
+                    text_item.sfx_toggled.disconnect(text_item._ct_sfx_toggled_slot)
+                except (TypeError, RuntimeError):
+                    pass
 
         if not hasattr(text_item, "_ct_text_changed_slot"):
             text_item._ct_text_changed_slot = (
                 lambda text, ti=text_item: self.update_text_block_from_item(ti, text)
+            )
+
+        if not hasattr(text_item, "_ct_sfx_toggled_slot"):
+            text_item._ct_sfx_toggled_slot = (
+                lambda is_sfx, ti=text_item: self.on_sfx_toggled(ti, is_sfx)
             )
 
         text_item.item_selected.connect(self.on_text_item_selected)
@@ -86,6 +96,7 @@ class TextController:
         text_item.text_changed.connect(text_item._ct_text_changed_slot)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
+        text_item.sfx_toggled.connect(text_item._ct_sfx_toggled_slot)
         self._last_item_text[text_item] = text_item.toPlainText()
         self._last_item_html[text_item] = text_item.document().toHtml()
         text_item._ct_signals_connected = True
@@ -127,12 +138,19 @@ class TextController:
         outline_color_str = render_settings.outline_color
         outline_color = QColor(outline_color_str) if self.main.outline_checkbox.isChecked() else None
         outline_width = float(render_settings.outline_width)
+
+        # SFX blocks render over original artwork — force outline for legibility
+        if getattr(blk, 'is_sfx', False):
+            outline_color = QColor(outline_color_str) if outline_color_str else QColor("#000000")
+            if outline_width < 1.0:
+                outline_width = 2.0
         bold = render_settings.bold
         italic = render_settings.italic
         underline = render_settings.underline
         direction = render_settings.direction
         vertical = is_vertical_block(blk, trg_lng_cd)
 
+        _, _, blk_w, blk_h = blk.xywh
         properties = TextItemProperties(
             text=text,
             font_family=font_family,
@@ -148,6 +166,7 @@ class TextController:
             direction=direction,
             position=(blk.xyxy[0], blk.xyxy[1]),
             rotation=blk.angle,
+            width=float(blk_w),
             vertical=vertical,
         )
         
@@ -190,6 +209,18 @@ class TextController:
     def on_text_item_deselected(self):
         self._commit_pending_text_command()
         self.clear_text_edits()
+
+    def on_sfx_toggled(self, text_item: TextBlockItem, is_sfx: bool):
+        """Update the TextBlock.is_sfx flag when user toggles via right-click."""
+        x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
+        blk = next(
+            (b for b in self.main.blk_list
+             if is_close(b.xyxy[0], x1, 5) and is_close(b.xyxy[1], y1, 5)),
+            None
+        )
+        if blk is not None:
+            blk.is_sfx = is_sfx
+            text_item._is_sfx = is_sfx
 
     def update_text_block(self):
         if self.main.curr_tblock:
@@ -945,4 +976,66 @@ class TextController:
             underline = self.main.underline_button.isChecked(),
             line_spacing = self.main.line_spacing_dropdown.currentText(),
             direction = direction
+        )
+
+    def auto_repair_text(self):
+        """Re-render all text blocks on the current page with corrected font color,
+        bubble-expanded render area, and auto line breaks (fixes 字細到睇唔到)."""
+        if not self.main.image_viewer.hasPhoto() or not self.main.blk_list:
+            return
+        if not font_selected(self.main):
+            return
+
+        self.clear_text_edits()
+        self.main.loading.setVisible(True)
+        self.main.disable_hbutton_group()
+
+        render_settings = self.render_settings()
+        font_family = render_settings.font_family
+        line_spacing = float(render_settings.line_spacing)
+        outline_width = float(render_settings.outline_width)
+        bold = render_settings.bold
+        italic = render_settings.italic
+        underline = render_settings.underline
+        align_id = self.main.alignment_tool_group.get_dayu_checked()
+        alignment = self.main.button_to_alignment[align_id]
+        direction = render_settings.direction
+        max_font_size = render_settings.max_font_size
+        min_font_size = render_settings.min_font_size
+
+        image_path = ""
+        if 0 <= self.main.curr_img_idx < len(self.main.image_files):
+            image_path = self.main.image_files[self.main.curr_img_idx]
+
+        def do_repair():
+            # Load current image for boundary clamping in get_best_render_area
+            img = self.main.image_ctrl.load_image(image_path) if image_path else None
+            # Expand render areas to full bubble bounds before re-rendering
+            get_best_render_area(self.main.blk_list, img)
+            manual_wrap(
+                self.main,
+                self.main.blk_list,
+                image_path,
+                font_family,
+                line_spacing,
+                outline_width,
+                bold,
+                italic,
+                underline,
+                alignment,
+                direction,
+                max_font_size,
+                min_font_size,
+            )
+
+        # Clear existing text items so they get re-created with corrected properties
+        self.main.image_viewer.clear_text_items()
+        self.main.curr_tblock = None
+        self.main.curr_tblock_item = None
+
+        self.main.run_threaded(
+            do_repair,
+            self.on_render_complete,
+            self.main.default_error_handler,
+            None,
         )

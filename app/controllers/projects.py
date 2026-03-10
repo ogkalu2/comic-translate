@@ -26,71 +26,68 @@ class ProjectController:
         self.main = main
 
     def save_and_make(self, output_path: str):
-        self.main.run_threaded(self.save_and_make_worker, None, self.main.default_error_handler, None, output_path)
-
-    def save_and_make_worker(self, output_path: str):
         self.main.image_ctrl.save_current_image_state()
         temp_dir = tempfile.mkdtemp()
-        try:            
-            if self.main.webtoon_mode:
-                #  PASS 1: Pre-build a complete, up-to-date state map for ALL pages
-                all_pages_current_state = {}
-                loaded_pages = self.main.image_viewer.webtoon_manager.loaded_pages
+        try:
+            self._render_all_images_to_dir(temp_dir)
+        except Exception:
+            shutil.rmtree(temp_dir)
+            raise
+        self.main.run_threaded(
+            self._make_archive_worker,
+            None,
+            self.main.default_error_handler,
+            None,
+            temp_dir,
+            output_path,
+        )
 
-                for page_idx, file_path in enumerate(self.main.image_files):
-                    if page_idx in loaded_pages:
-                        # For loaded pages, create state from the live scene. This state will
-                        # only contain items that "belong" to this page.
-                        viewer_state = self._create_text_items_state_from_scene(page_idx)
-                    else:
-                        # For unloaded pages, use the already stored state.
-                        if file_path in self.main.image_states:
-                            viewer_state = self.main.image_states[file_path].get('viewer_state', {}).copy()
-                        else:
-                            viewer_state = {}
-                    all_pages_current_state[file_path] = {'viewer_state': viewer_state}
+    def _render_all_images_to_dir(self, temp_dir: str):
+        """Render all pages to temp_dir on the main thread (Qt GUI objects required)."""
+        if self.main.webtoon_mode:
+            all_pages_current_state = {}
+            loaded_pages = self.main.image_viewer.webtoon_manager.loaded_pages
 
-                # PASS 2: Render each page using the complete state map
-                for page_idx, file_path in enumerate(self.main.image_files):
-                    bname = os.path.basename(file_path)
-                    rgb_img = self.main.load_image(file_path)
-
-                    renderer = ImageSaveRenderer(rgb_img)
-                    
-                    # Use the pre-built, up-to-date state for this page.
-                    viewer_state = all_pages_current_state[file_path]['viewer_state']
-                    
-                    # Create a temporary context object for the renderer.
-                    temp_main_page_context = type('TempMainPage', (object,), {
-                        'image_files': self.main.image_files,
-                        'image_states': all_pages_current_state
-                    })()
-
-                    renderer.apply_patches(self.main.image_patches.get(file_path, []))
-                    renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
-                    sv_pth = os.path.join(temp_dir, bname)
-                    renderer.save_image(sv_pth)
-            else:
-                # Regular mode: use original logic
-                for file_path in self.main.image_files:
-                    bname = os.path.basename(file_path)
-                    rgb_img = self.main.load_image(file_path)
-
-                    renderer = ImageSaveRenderer(rgb_img)
-                    # Check if image_states has this file_path before accessing
+            for page_idx, file_path in enumerate(self.main.image_files):
+                if page_idx in loaded_pages:
+                    viewer_state = self._create_text_items_state_from_scene(page_idx)
+                else:
                     if file_path in self.main.image_states:
-                        viewer_state = self.main.image_states[file_path].get('viewer_state', {})
+                        viewer_state = self.main.image_states[file_path].get('viewer_state', {}).copy()
                     else:
                         viewer_state = {}
-                    renderer.apply_patches(self.main.image_patches.get(file_path, []))
-                    renderer.add_state_to_image(viewer_state)
-                    sv_pth = os.path.join(temp_dir, bname)
-                    renderer.save_image(sv_pth)
+                all_pages_current_state[file_path] = {'viewer_state': viewer_state}
 
-            # Call make function
+            for page_idx, file_path in enumerate(self.main.image_files):
+                bname = os.path.basename(file_path)
+                rgb_img = self.main.load_image(file_path)
+                renderer = ImageSaveRenderer(rgb_img)
+                viewer_state = all_pages_current_state[file_path]['viewer_state']
+                temp_main_page_context = type('TempMainPage', (object,), {
+                    'image_files': self.main.image_files,
+                    'image_states': all_pages_current_state
+                })()
+                renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
+                renderer.save_image(os.path.join(temp_dir, bname))
+        else:
+            for file_path in self.main.image_files:
+                bname = os.path.basename(file_path)
+                rgb_img = self.main.load_image(file_path)
+                renderer = ImageSaveRenderer(rgb_img)
+                if file_path in self.main.image_states:
+                    viewer_state = self.main.image_states[file_path].get('viewer_state', {})
+                else:
+                    viewer_state = {}
+                renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                renderer.add_state_to_image(viewer_state)
+                renderer.save_image(os.path.join(temp_dir, bname))
+
+    def _make_archive_worker(self, temp_dir: str, output_path: str):
+        """Create the archive from pre-rendered images, then clean up. Runs in worker thread."""
+        try:
             make(temp_dir, output_path)
         finally:
-            # Clean up temp directory
             shutil.rmtree(temp_dir)
 
     def _create_text_items_state_from_scene(self, page_idx: int) -> dict:

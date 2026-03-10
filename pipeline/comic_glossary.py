@@ -52,9 +52,24 @@ class ComicGlossary:
     def enforce(self, text: str) -> str:
         result = text
         for entry in self.locked_entries():
+            # Replace the source term itself if it appears untranslated in the output
+            if entry.source and entry.source in result:
+                result = result.replace(entry.source, entry.translated)
+            # Also replace any known variants
             for variant in entry.known_variants:
-                result = result.replace(variant, entry.translated)
+                if variant and variant in result:
+                    result = result.replace(variant, entry.translated)
         return result
+
+    def is_sfx_term(self, text: str) -> bool:
+        """Return True if text matches any SFX glossary entry."""
+        if not text:
+            return False
+        text_lower = text.lower()
+        for entry in self._entries.values():
+            if entry.category == GlossaryCategory.SFX and entry.source.lower() in text_lower:
+                return True
+        return False
 
     def build_prompt_block(self) -> str:
         lines = [

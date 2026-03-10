@@ -6,6 +6,7 @@ from modules.detection.processor import TextBlockDetector
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.rendering.render import get_best_render_area
 from pipeline.webtoon_utils import get_first_visible_block
+from pipeline.sfx_classifier import classify_sfx_blocks
 
 
 logger = logging.getLogger(__name__)
@@ -155,7 +156,8 @@ class BlockDetectionHandler:
         source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
         rtl = True if source_lang_english == 'Japanese' else False
         self.main_page.blk_list = sort_blk_list(self.main_page.blk_list, rtl)
-        
+        classify_sfx_blocks(self.main_page.blk_list)
+
         if load_rects:
             # For visible area detection, we pass the detected blocks only for rectangle loading
             blocks_to_load = blk_list

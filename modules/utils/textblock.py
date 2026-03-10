@@ -58,6 +58,7 @@ class TextBlock(object):
         self.max_font_size = max_font_size
         self.font_color = font_color
         self.direction = direction
+        self.is_sfx: bool = kwargs.get('is_sfx', False)
 
     @property
     def xywh(self):
@@ -107,7 +108,8 @@ class TextBlock(object):
         new_block.min_font_size = self.min_font_size
         new_block.max_font_size = self.max_font_size
         new_block.font_color = self.font_color
-        
+        new_block.is_sfx = self.is_sfx
+
         return new_block
 
 def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:

@@ -661,6 +661,15 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         box_tools_lay.addWidget(self.change_all_blocks_size_inc)
         box_tools_lay.addStretch()
 
+        # Auto Repair Tools
+        repair_tools_lay = QtWidgets.QHBoxLayout()
+
+        self.auto_repair_button = self.create_tool_button(text=self.tr("Auto Repair"), svg="refresh_line.svg")
+        self.auto_repair_button.setToolTip(self.tr("Re-render all text blocks on the current page with corrected font color, bubble-sized render area, and auto line breaks"))
+
+        repair_tools_lay.addWidget(self.auto_repair_button)
+        repair_tools_lay.addStretch()
+
         # Inpainting Tools
         inp_tools_lay = QtWidgets.QHBoxLayout()
 
@@ -699,6 +708,10 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_layout.addWidget(inp_div)
         tools_layout.addLayout(inp_tools_lay)
         tools_layout.addWidget(self.brush_eraser_slider)
+
+        repair_div = MDivider(self.tr('Text Repair'))
+        tools_layout.addWidget(repair_div)
+        tools_layout.addLayout(repair_tools_lay)
         tools_layout.addStretch()
         tools_widget.setLayout(tools_layout)
 

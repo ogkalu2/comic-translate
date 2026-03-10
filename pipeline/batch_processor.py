@@ -34,6 +34,7 @@ from .inpainting import InpaintingHandler
 from .ocr_handler import OCRHandler
 from .discovery_pass import DiscoveryPass
 from .comic_session import ComicSession
+from .sfx_classifier import classify_sfx_blocks
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -162,6 +163,7 @@ class BatchProcessor:
                 self.block_detection.block_detector_cache = TextBlockDetector(settings_page)
             
             blk_list = self.block_detection.block_detector_cache.detect(image)
+            classify_sfx_blocks(blk_list)
 
             self.emit_progress(index, total_images, 2, 10, False)
             if self._is_cancelled():
@@ -184,7 +186,14 @@ class BatchProcessor:
                     source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
                     rtl = True if source_lang_english == 'Japanese' else False
                     blk_list = sort_blk_list(blk_list, rtl)
-                    
+                    # Re-run classifier now that OCR text is available
+                    classify_sfx_blocks(blk_list)
+                    # Glossary-based SFX confirmation (Signal B)
+                    if self.comic_session is not None:
+                        for blk in blk_list:
+                            if not blk.is_sfx and blk.text and self.comic_session.glossary.is_sfx_term(blk.text):
+                                blk.is_sfx = True
+
                 except InsufficientCreditsException:
                     raise
                 except Exception as e:
@@ -266,6 +275,10 @@ class BatchProcessor:
 
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
+            # Inject glossary + story context if a ComicSession is active
+            if self.comic_session is not None:
+                session_prompt = self.comic_session.build_system_prompt()
+                extra_context = f"{extra_context}\n{session_prompt}".strip()
             translator_key = settings_page.get_tool_selection('translator')
             translator = Translator(self.main_page, source_lang, target_lang)
             
@@ -276,6 +289,11 @@ class BatchProcessor:
             
             try:
                 translator.translate(blk_list, image, extra_context)
+                # Enforce glossary on output to ensure consistent character names across pages
+                if self.comic_session is not None:
+                    for blk in blk_list:
+                        if blk.translation:
+                            blk.translation = self.comic_session.enforce_glossary(blk.translation)
                 # Cache the translation results for potential future use
                 self.cache_manager._cache_translation_results(translation_cache_key, blk_list)
             except InsufficientCreditsException:
@@ -405,6 +423,16 @@ class BatchProcessor:
                 # Smart Color Override
                 font_color = get_smart_text_color(blk.font_color, setting_font_color)
 
+                # SFX blocks render over original artwork — force outline for legibility
+                blk_outline_color = outline_color
+                blk_outline_width = outline_width
+                blk_outline = outline
+                if getattr(blk, 'is_sfx', False):
+                    blk_outline = True
+                    blk_outline_color = QColor(render_settings.outline_color) if render_settings.outline_color else QColor("#000000")
+                    if blk_outline_width < 1.0:
+                        blk_outline_width = 2.0
+
                 # Use TextItemProperties for consistent text item creation
                 text_props = TextItemProperties(
                     text=translation,
@@ -413,8 +441,8 @@ class BatchProcessor:
                     text_color=font_color,
                     alignment=alignment,
                     line_spacing=line_spacing,
-                    outline_color=outline_color,
-                    outline_width=outline_width,
+                    outline_color=blk_outline_color,
+                    outline_width=blk_outline_width,
                     bold=bold,
                     italic=italic,
                     underline=underline,
@@ -426,11 +454,11 @@ class BatchProcessor:
                     direction=direction,
                     vertical=vertical,
                     selection_outlines=[
-                        OutlineInfo(0, len(translation), 
-                        outline_color, 
-                        outline_width, 
+                        OutlineInfo(0, len(translation),
+                        blk_outline_color,
+                        blk_outline_width,
                         OutlineType.Full_Document)
-                    ] if outline else [],
+                    ] if blk_outline else [],
                 )
                 text_items_state.append(text_props.to_dict())
 

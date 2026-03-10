@@ -170,6 +170,7 @@ class ComicTranslate(ComicTranslateUI):
         self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
         self.change_all_blocks_size_dec.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
         self.change_all_blocks_size_inc.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
+        self.auto_repair_button.clicked.connect(self.text_ctrl.auto_repair_text)
         self.delete_button.clicked.connect(self.delete_selected_box)
 
         # Connect text edit widgets

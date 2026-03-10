@@ -43,6 +43,7 @@ class TextBlockItem(QGraphicsTextItem):
     item_deselected = Signal()
     text_highlighted = Signal(dict)
     change_undo = Signal(TextBlockState, TextBlockState)
+    sfx_toggled = Signal(bool)  # emitted when user toggles SFX mode via context menu
     
     def __init__(self, 
              text = "", 
@@ -94,6 +95,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.old_state = None
 
         self.selection_outlines = []
+        self._is_sfx: bool = False
 
         self.setAcceptHoverEvents(True)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
@@ -643,7 +645,13 @@ class TextBlockItem(QGraphicsTextItem):
         super().mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event):
-        super().contextMenuEvent(event)
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu()
+        sfx_action = menu.addAction("Mark as SFX (preserve position)" if not self._is_sfx else "Treat as dialogue")
+        action = menu.exec(event.screenPos().toPoint())
+        if action == sfx_action:
+            self._is_sfx = not self._is_sfx
+            self.sfx_toggled.emit(self._is_sfx)
         if self.editing_mode:
             self.enter_editing_mode()
     

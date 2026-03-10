@@ -110,14 +110,15 @@ class TranslationHandler:
                 else:
                     # Need to run translation and cache results
                     translator.translate(self.main_page.blk_list, image, extra_context)
-                    # Enforce glossary on output
-                    if self.comic_session is not None:
-                        for blk in self.main_page.blk_list:
-                            if blk.translation:
-                                blk.translation = self.comic_session.enforce_glossary(blk.translation)
                     self.cache_manager._cache_translation_results(translation_cache_key, self.main_page.blk_list)
                     logger.info("Translation completed and cached for %d blocks", len(self.main_page.blk_list))
-                
+
+                # Enforce glossary on output (always, even for cached results)
+                if self.comic_session is not None:
+                    for blk in self.main_page.blk_list:
+                        if blk.translation:
+                            blk.translation = self.comic_session.enforce_glossary(blk.translation)
+
                 set_upper_case(self.main_page.blk_list, upper_case)
 
     def translate_webtoon_visible_area(self, single_block=False):
