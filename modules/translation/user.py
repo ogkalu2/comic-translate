@@ -13,7 +13,7 @@ from app.account.auth.auth_client import AuthClient
 from app.account.auth.token_storage import get_token
 from app.ui.settings.settings_page import SettingsPage
 from app.account.config import WEB_API_TRANSLATE_URL
-from ..utils.exceptions import InsufficientCreditsException
+from ..utils.exceptions import InsufficientCreditsException, ContentFlaggedException
 from ..utils.platform_utils import get_client_os
 
 
@@ -161,27 +161,51 @@ class UserTranslator(TranslationEngine):
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            if response.status_code == 402:
-                try:
-                    error_data = response.json()
-                    detail = error_data.get('detail')
-                    description = ""
+            try:
+                error_data = response.json()
+                detail = error_data.get('detail')
+                description = ""
 
-                    # detail can be a string or a dict
-                    if isinstance(detail, dict):
-                        if detail.get('type') == 'INSUFFICIENT_CREDITS':
-                            description = detail.get('error_description') or detail.get('message')
-                            raise InsufficientCreditsException(description)
-                        else:
-                            description = detail.get('error_description') or detail.get('message')
-                    else:
-                        description = str(detail)
-                    
-                    if description and "insufficient credits" in str(description).lower():
+                # detail can be a string, a dict, or a list (validation errors)
+                if isinstance(detail, dict):
+                    description = detail.get('error_description') or detail.get('message')
+                    if not description and detail.get('type'):
+                        description = f"Error type: {detail.get('type')}"
+                elif isinstance(detail, list):
+                    # Pydantic validation errors
+                    msgs = []
+                    for err in detail:
+                        loc = ".".join(str(x) for x in err.get('loc', []))
+                        msg = err.get('msg', '')
+                        msgs.append(f"{loc}: {msg}")
+                    description = "; ".join(msgs)
+                else:
+                    description = str(detail) if detail else ""
+
+                if response.status_code == 402:
+                    if isinstance(detail, dict) and detail.get('type') == 'INSUFFICIENT_CREDITS':
                         raise InsufficientCreditsException(description)
-                except ValueError:
-                    # JSON parsing failed, just raise the original error
-                    pass
+                    # Implicit fallback for 402
+                    raise InsufficientCreditsException(description)
+                
+                # Check for Content Flagged errors (400)
+                if response.status_code == 400:
+                    is_flagged = False
+                    if isinstance(detail, dict) and detail.get('type') == 'CONTENT_FLAGGED_UNSAFE':
+                        is_flagged = True
+                    elif "flagged as unsafe" in str(description).lower() or "blocked by" in str(description).lower():
+                        is_flagged = True
+                    
+                    if is_flagged:
+                        raise ContentFlaggedException(description, context="Translation")
+
+                # For other errors (400, 500 etc), raise a clear exception with the server message
+                if description:
+                    raise Exception(f"Server Error ({response.status_code}): {description}") from e
+
+            except ValueError:
+                # JSON parsing failed, just raise the original error
+                pass
             # Re-raise the original error if we didn't handle it
             raise e
 

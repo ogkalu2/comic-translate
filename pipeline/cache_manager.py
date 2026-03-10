@@ -1,15 +1,17 @@
 import hashlib
 import logging
+from pipeline.cache_v2 import TranslationCacheV2
 
 logger = logging.getLogger(__name__)
 
 
 class CacheManager:
     """Manages OCR and translation caching for the pipeline."""
-    
+
     def __init__(self):
-        self.ocr_cache = {}  # OCR results cache: {(image_hash, model_key, source_lang): {block_id: text}}
-        self.translation_cache = {}  # Translation results cache: {(image_hash, translator_key, source_lang, target_lang, extra_context): {block_id: {source_text: str, translation: str}}}
+        self.ocr_cache = {}
+        self.translation_cache = {}
+        self.translation_cache_v2 = TranslationCacheV2()
 
     def clear_ocr_cache(self):
         """Clear the OCR cache. Note: Cache now persists across image and model changes automatically."""
@@ -254,6 +256,14 @@ class CacheManager:
             if block_results:
                 self.translation_cache[cache_key] = block_results
                 logger.info(f"Cached translation results for {len(block_results)} blocks")
+                # Also write to v2 cache
+                for blk in (processed_blk_list or blk_list):
+                    src = getattr(blk, 'source_lang', '') or ''
+                    tgt = getattr(blk, 'target_lang', '') or ''
+                    text = getattr(blk, 'text', '') or ''
+                    translation = getattr(blk, 'translation', '') or ''
+                    if src and tgt and text and translation:
+                        self.translation_cache_v2.store(src, tgt, text, translation)
             else:
                 logger.debug("No translations found in blocks; skipping translation cache creation")
         except Exception as e:
@@ -282,13 +292,23 @@ class CacheManager:
 
     def _get_cached_translation_for_block(self, cache_key, block):
         """Retrieve cached translation for a specific block, validating source text matches"""
+        # Try v2 cache first
+        src = getattr(block, 'source_lang', '') or ''
+        tgt = getattr(block, 'target_lang', '') or ''
+        text = getattr(block, 'text', '') or ''
+        if src and tgt and text:
+            v2_result = self.translation_cache_v2.get(src, tgt, text)
+            if v2_result is not None:
+                return v2_result
+
+        # Fall back to v1 cache
         matched_id, result = self._find_matching_translation_block_id(cache_key, block)
 
-        if matched_id is not None:  
-            if result: 
+        if matched_id is not None:
+            if result:
                 cached_source_text = result.get('source_text', '')
                 current_source_text = getattr(block, 'text', '') or ''
-                
+
                 if cached_source_text == current_source_text:
                     return result.get('translation', '')
                 else:

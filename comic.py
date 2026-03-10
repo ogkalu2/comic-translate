@@ -347,9 +347,20 @@ def main():
 
 def get_system_language():
     locale = QLocale.system().name()  # Returns something like "en_US" or "zh_CN"
-    
+
+    zh_simplified_locales = {'CN', 'SG'}
+
     if locale.startswith('zh_'):
-        return '简体中文'
+        region = locale.split('_', 1)[-1]
+        if region in zh_simplified_locales:
+            return '简体中文'
+        elif region in {'HK', 'MO'}:
+            return '繁體中文-香港'
+        elif region == 'TW':
+            return '繁體中文-台灣'
+        else:
+            # fallback for unknown Chinese locales, default to Simplified
+            return '简体中文'
 
     lang_code = locale.split('_')[0]
     
@@ -367,24 +378,58 @@ def get_system_language():
 
 def load_translation(app, language: str):
     translator = QTranslator(app)
-    lang_code = {
+
+    # Map display names to language codes
+    display_name_to_code = {
         '한국어': 'ko',
         'Français': 'fr',
         '简体中文': 'zh-CN',
+        '繁體中文': 'zh-TW',
+        '繁體中文-香港': 'zh-HK',
+        '繁體中文-台灣': 'zh-TW',
+        '粵語（香港）': 'zh-HK',
         'русский': 'ru',
         'Deutsch': 'de',
         'Español': 'es',
         'Italiano': 'it',
         'Türkçe': 'tr',
-    }.get(language)
+    }
 
-    if not lang_code:
+    # Map internal codes to translation file codes
+    code_to_file = {
+        'yue': 'zh-HK',  # Cantonese uses Hong Kong Chinese translation
+        'zh-HK': 'zh-HK',
+        'zh-TW': 'zh-TW',
+        'zh-CN': 'zh-CN',
+        'ko': 'ko',
+        'fr': 'fr',
+        'ru': 'ru',
+        'de': 'de',
+        'es': 'es',
+        'it': 'it',
+        'tr': 'tr',
+    }
+
+    # If language is a display name, convert to code
+    if language in display_name_to_code:
+        lang_code = display_name_to_code[language]
+    else:
+        lang_code = language
+
+    # If language code needs mapping to file code, map it
+    if lang_code in code_to_file:
+        file_code = code_to_file[lang_code]
+    else:
+        file_code = lang_code
+
+    if not file_code or file_code == 'English':
         return
 
     # Load the translation file
     current_file_dir = os.path.dirname(os.path.abspath(__file__))
     tr_dir = os.path.join(current_file_dir, 'resources', 'translations', 'compiled')
-    if translator.load(f"ct_{lang_code}", tr_dir):
+
+    if translator.load(f"ct_{file_code}", tr_dir):
         app.installTranslator(translator)
     else:
         print(f"Failed to load translation for {language}")
@@ -395,16 +440,29 @@ def load_translation(app, language: str):
     qt_lang_code = lang_code.replace('-', '_')
     from PySide6.QtCore import QLibraryInfo
     qt_tr_path = QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)
-    
-    # Try loading from the local directory first (if bundled)
-    if not qt_translator.load(f"qtbase_{qt_lang_code}", current_file_dir):
-        # Try loading from the standard Qt installation path
-        if not qt_translator.load(f"qtbase_{qt_lang_code}", qt_tr_path):
-            print(f"Failed to load Qt translation for {language}")
-        else:
+
+    # Fallback map: Qt doesn't ship qtbase files for every variant
+    _qt_fallback = {
+        'zh_HK': 'zh_CN',
+        'zh_TW': 'zh_TW',
+        'yue':   'zh_CN',
+    }
+    qt_lang_codes_to_try = [qt_lang_code]
+    if qt_lang_code in _qt_fallback:
+        qt_lang_codes_to_try.append(_qt_fallback[qt_lang_code])
+
+    loaded = False
+    for code in qt_lang_codes_to_try:
+        if qt_translator.load(f"qtbase_{code}", current_file_dir):
             app.installTranslator(qt_translator)
-    else:
-        app.installTranslator(qt_translator)
+            loaded = True
+            break
+        if qt_translator.load(f"qtbase_{code}", qt_tr_path):
+            app.installTranslator(qt_translator)
+            loaded = True
+            break
+    if not loaded:
+        print(f"Failed to load Qt translation for {language}")
 
     # if translator.load(f":/translations/ct_{lang_code}.qm"):
     #     app.installTranslator(translator)

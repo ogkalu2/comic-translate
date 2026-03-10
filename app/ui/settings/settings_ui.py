@@ -63,7 +63,10 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
         self.credential_services = [
-            self.tr("Custom"), 
+            self.tr("Custom"),
+            self.tr("GitHub"),
+            self.tr("OpenRouter"),
+            self.tr("xAI"),
         ]
         
         self.supported_translators = [
@@ -77,14 +80,17 @@ class SettingsPageUI(QtWidgets.QWidget):
         ]
         
         self.languages = [
-            'English', 
-            '한국어', 
-            'Français', 
-            '简体中文', 
-            'русский', 
-            'Deutsch', 
-            'Español', 
-            'Italiano', 
+            'English',
+            '한국어',
+            'Français',
+            '简体中文',
+            '繁體中文',
+            '繁體中文-香港',
+            '粵語（香港）',
+            'русский',
+            'Deutsch',
+            'Español',
+            'Italiano',
         ]
         
         self.nav_cards = []  
@@ -95,11 +101,14 @@ class SettingsPageUI(QtWidgets.QWidget):
             "English": "English",
             "한국어": "한국어",
             "Français": "Français",
-            "简体中文": "简体中文",
-            "русский": "русский",
-            "Deutsch": "Deutsch",
-            "Español": "Español",
-            "Italiano": "Italiano",
+            "简体中文": "zh-CN",
+            "繁體中文": "zh-TW",
+            "繁體中文-香港": "zh-HK",
+            "粵語（香港）": "yue",
+            "русский": "ru",
+            "Deutsch": "de",
+            "Español": "es",
+            "Italiano": "it",
 
             # Theme mappings
             self.tr("Dark"): "Dark",
@@ -148,12 +157,14 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Google Cloud"): "Google Cloud",
             self.tr("Google Gemini"): "Google Gemini",
             self.tr("DeepL"): "DeepL",
-            self.tr("Anthropic Claude"): "Anthropic Claude",
             self.tr("Yandex"): "Yandex",
+            self.tr("GitHub"): "GitHub",
+            self.tr("OpenRouter"): "OpenRouter",
+            self.tr("xAI"): "xAI",
         }
-
         # Create reverse mappings for loading
         self.reverse_mappings = {v: k for k, v in self.value_mappings.items()}
+
 
         self._init_ui()
 

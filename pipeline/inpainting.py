@@ -2,6 +2,9 @@ import numpy as np
 import logging
 import imkit as imk
 
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
+
 from modules.utils.device import resolve_device
 from modules.utils.pipeline_config import inpaint_map, get_config
 
@@ -15,6 +18,17 @@ class InpaintingHandler:
         self.main_page = main_page
         self.inpainter_cache = None
         self.cached_inpainter_key = None
+
+    def _ensure_inpainter(self):
+        settings_page = self.main_page.settings_page
+        inpainter_key = settings_page.get_tool_selection('inpainter')
+        if self.inpainter_cache is None or self.cached_inpainter_key != inpainter_key:
+            backend = 'onnx'
+            device = resolve_device(settings_page.is_gpu_enabled(), backend)
+            InpainterClass = inpaint_map[inpainter_key]
+            self.inpainter_cache = InpainterClass(device, backend=backend)
+            self.cached_inpainter_key = inpainter_key
+        return self.inpainter_cache
 
     def manual_inpaint(self):
         image_viewer = self.main_page.image_viewer
@@ -32,19 +46,91 @@ class InpaintingHandler:
         if image is None or mask is None:
             return None
 
-        if self.inpainter_cache is None or self.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-            backend = 'onnx'
-            device = resolve_device(settings_page.is_gpu_enabled(), backend)
-            inpainter_key = settings_page.get_tool_selection('inpainter')
-            InpainterClass = inpaint_map[inpainter_key]
-            self.inpainter_cache = InpainterClass(device, backend=backend)
-            self.cached_inpainter_key = inpainter_key
-
+        self._ensure_inpainter()
         config = get_config(settings_page)
         inpaint_input_img = self.inpainter_cache(image, mask, config)
         inpaint_input_img = imk.convert_scale_abs(inpaint_input_img) 
 
         return inpaint_input_img
+
+    def _qimage_to_np(self, qimg: QImage):
+        if qimg.width() <= 0 or qimg.height() <= 0:
+            return np.zeros((max(1, qimg.height()), max(1, qimg.width())), dtype=np.uint8)
+        ptr = qimg.constBits()
+        arr = np.array(ptr).reshape(qimg.height(), qimg.bytesPerLine())
+        return arr[:, :qimg.width()]
+
+    def _generate_mask_from_saved_strokes(self, strokes: list[dict], image: np.ndarray):
+        if image is None or not strokes:
+            return None
+        height, width = image.shape[:2]
+        if width <= 0 or height <= 0:
+            return None
+
+        human_qimg = QImage(width, height, QImage.Format_Grayscale8)
+        gen_qimg = QImage(width, height, QImage.Format_Grayscale8)
+        human_qimg.fill(0)
+        gen_qimg.fill(0)
+
+        human_painter = QPainter(human_qimg)
+        gen_painter = QPainter(gen_qimg)
+
+        human_painter.setPen(QPen(QColor(255, 255, 255), 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        gen_painter.setPen(QPen(QColor(255, 255, 255), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        human_painter.setBrush(QBrush(QColor(255, 255, 255)))
+        gen_painter.setBrush(QBrush(QColor(255, 255, 255)))
+
+        has_any = False
+        for stroke in strokes:
+            path = stroke.get('path')
+            if path is None:
+                continue
+            brush_hex = QColor(stroke.get('brush', '#00000000')).name(QColor.HexArgb)
+            if brush_hex == "#80ff0000":
+                gen_painter.drawPath(path)
+                has_any = True
+                continue
+
+            width_px = max(1, int(stroke.get('width', 25)))
+            human_pen = QPen(QColor(255, 255, 255), width_px, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+            human_painter.setPen(human_pen)
+            human_painter.drawPath(path)
+            has_any = True
+
+        human_painter.end()
+        gen_painter.end()
+
+        if not has_any:
+            return None
+
+        human_mask = self._qimage_to_np(human_qimg)
+        gen_mask = self._qimage_to_np(gen_qimg)
+        kernel = np.ones((5, 5), np.uint8)
+        human_mask = imk.dilate(human_mask, kernel, iterations=2)
+        gen_mask = imk.dilate(gen_mask, kernel, iterations=3)
+        mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
+        if np.count_nonzero(mask) == 0:
+            return None
+        return mask
+
+    def _get_regular_patches(self, mask: np.ndarray, inpainted_image: np.ndarray):
+        contours, _ = imk.find_contours(mask)
+        patches = []
+        for c in contours:
+            x, y, w, h = imk.bounding_rect(c)
+            patch = inpainted_image[y:y + h, x:x + w]
+            patches.append({'bbox': [x, y, w, h], 'image': patch.copy()})
+        return patches
+
+    def inpaint_page_from_saved_strokes(self, image: np.ndarray, strokes: list[dict]):
+        mask = self._generate_mask_from_saved_strokes(strokes, image)
+        if mask is None:
+            return []
+        self._ensure_inpainter()
+        config = get_config(self.main_page.settings_page)
+        inpainted = self.inpainter_cache(image, mask, config)
+        inpainted = imk.convert_scale_abs(inpainted)
+        return self._get_regular_patches(mask, inpainted)
 
     def inpaint_complete(self, patch_list):
         # Handle webtoon mode vs regular mode

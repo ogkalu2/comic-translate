@@ -32,6 +32,9 @@ from .cache_manager import CacheManager
 from .block_detection import BlockDetectionHandler
 from .inpainting import InpaintingHandler
 from .ocr_handler import OCRHandler
+from .discovery_pass import DiscoveryPass
+from .comic_session import ComicSession
+from .sfx_classifier import classify_sfx_blocks
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -57,6 +60,7 @@ class BatchProcessor:
         self.block_detection = block_detection_handler
         self.inpainting = inpainting_handler
         self.ocr_handler = ocr_handler
+        self.comic_session = None
 
     def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
         path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
@@ -86,9 +90,6 @@ class BatchProcessor:
         with open(skipped_file, 'a', encoding='UTF-8') as file:
             file.write(image_path + "\n")
             file.write(reason + "\n")
-            if full_traceback:
-                file.write("Full Traceback:\n")
-                file.write(full_traceback + "\n")
             file.write("\n")
 
     def _is_cancelled(self) -> bool:
@@ -99,6 +100,19 @@ class BatchProcessor:
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
         image_list = selected_paths if selected_paths is not None else self.main_page.image_files
         total_images = len(image_list)
+
+        # Pass 1 setup: create ComicSession and DiscoveryPass for this batch
+        if image_list:
+            first_path = image_list[0]
+            first_state = self.main_page.image_states.get(first_path, {})
+            src_lang = first_state.get('source_lang', '')
+            tgt_lang = first_state.get('target_lang', '')
+            comic_id = f"batch_{int(time.time())}"
+            self.comic_session = ComicSession(comic_id, src_lang, tgt_lang)
+            discovery = DiscoveryPass(comic_id, src_lang, tgt_lang)
+            # Wire session into translation handler if available
+            if hasattr(self.main_page, 'pipeline') and hasattr(self.main_page.pipeline, 'translation_handler'):
+                self.main_page.pipeline.translation_handler.comic_session = self.comic_session
 
         for index, image_path in enumerate(image_list):
             if self._is_cancelled():
@@ -149,6 +163,7 @@ class BatchProcessor:
                 self.block_detection.block_detector_cache = TextBlockDetector(settings_page)
             
             blk_list = self.block_detection.block_detector_cache.detect(image)
+            classify_sfx_blocks(blk_list)
 
             self.emit_progress(index, total_images, 2, 10, False)
             if self._is_cancelled():
@@ -165,10 +180,20 @@ class BatchProcessor:
                     self.ocr_handler.ocr.process(image, blk_list)
                     # Cache the OCR results for potential future use
                     self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list)
+                    # Accumulate OCR text for discovery pass
+                    if self.comic_session is not None:
+                        discovery.add_page_ocr_results(blk_list)
                     source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
                     rtl = True if source_lang_english == 'Japanese' else False
                     blk_list = sort_blk_list(blk_list, rtl)
-                    
+                    # Re-run classifier now that OCR text is available
+                    classify_sfx_blocks(blk_list)
+                    # Glossary-based SFX confirmation (Signal B)
+                    if self.comic_session is not None:
+                        for blk in blk_list:
+                            if not blk.is_sfx and blk.text and self.comic_session.glossary.is_sfx_term(blk.text):
+                                blk.is_sfx = True
+
                 except InsufficientCreditsException:
                     raise
                 except Exception as e:
@@ -250,6 +275,10 @@ class BatchProcessor:
 
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
+            # Inject glossary + story context if a ComicSession is active
+            if self.comic_session is not None:
+                session_prompt = self.comic_session.build_system_prompt()
+                extra_context = f"{extra_context}\n{session_prompt}".strip()
             translator_key = settings_page.get_tool_selection('translator')
             translator = Translator(self.main_page, source_lang, target_lang)
             
@@ -260,6 +289,11 @@ class BatchProcessor:
             
             try:
                 translator.translate(blk_list, image, extra_context)
+                # Enforce glossary on output to ensure consistent character names across pages
+                if self.comic_session is not None:
+                    for blk in blk_list:
+                        if blk.translation:
+                            blk.translation = self.comic_session.enforce_glossary(blk.translation)
                 # Cache the translation results for potential future use
                 self.cache_manager._cache_translation_results(translation_cache_key, blk_list)
             except InsufficientCreditsException:
@@ -389,6 +423,16 @@ class BatchProcessor:
                 # Smart Color Override
                 font_color = get_smart_text_color(blk.font_color, setting_font_color)
 
+                # SFX blocks render over original artwork — force outline for legibility
+                blk_outline_color = outline_color
+                blk_outline_width = outline_width
+                blk_outline = outline
+                if getattr(blk, 'is_sfx', False):
+                    blk_outline = True
+                    blk_outline_color = QColor(render_settings.outline_color) if render_settings.outline_color else QColor("#000000")
+                    if blk_outline_width < 1.0:
+                        blk_outline_width = 2.0
+
                 # Use TextItemProperties for consistent text item creation
                 text_props = TextItemProperties(
                     text=translation,
@@ -397,8 +441,8 @@ class BatchProcessor:
                     text_color=font_color,
                     alignment=alignment,
                     line_spacing=line_spacing,
-                    outline_color=outline_color,
-                    outline_width=outline_width,
+                    outline_color=blk_outline_color,
+                    outline_width=blk_outline_width,
                     bold=bold,
                     italic=italic,
                     underline=underline,
@@ -410,11 +454,11 @@ class BatchProcessor:
                     direction=direction,
                     vertical=vertical,
                     selection_outlines=[
-                        OutlineInfo(0, len(translation), 
-                        outline_color, 
-                        outline_width, 
+                        OutlineInfo(0, len(translation),
+                        blk_outline_color,
+                        blk_outline_width,
                         OutlineType.Full_Document)
-                    ] if outline else [],
+                    ] if blk_outline else [],
                 )
                 text_items_state.append(text_props.to_dict())
 

@@ -14,9 +14,6 @@ from app.ui.commands.search_replace import ReplaceBlocksCommand, ReplaceChange
 if TYPE_CHECKING:
     from controller import ComicTranslate
 
-# Shorthand for translations
-_translate = QtCore.QCoreApplication.translate
-
 
 @dataclass(frozen=True)
 class BlockKey:
@@ -435,7 +432,7 @@ class SearchReplaceController(QtCore.QObject):
         """
         msg = str(err) if err is not None else ""
         if isinstance(err, ValueError) and msg == "Empty query":
-            return _translate("SearchReplaceController", "Empty query")
+            return QtCore.QCoreApplication.translate("SearchReplaceController", "Empty query")
         return msg
 
     def on_undo_redo(self, *_args):
@@ -524,7 +521,7 @@ class SearchReplaceController(QtCore.QObject):
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
-            panel.set_status(_translate('SearchReplaceController', 'Search Error') + ": " + self._format_pattern_error(e))
+            panel.set_status(QtCore.QCoreApplication.translate('SearchReplaceController', 'Search Error') + ": " + self._format_pattern_error(e))
             panel.set_results([], 0, 0)
             self._matches = []
             self._active_match_index = -1
@@ -577,7 +574,7 @@ class SearchReplaceController(QtCore.QObject):
 
         panel.set_results(matches, len(images_with_hits), len(matches))
         if matches:
-            panel.set_status(_translate("SearchReplaceController", "Ready"))
+            panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "Ready"))
             if jump_to_first:
                 # Avoid stealing keyboard focus from the find/replace inputs while typing.
                 focus_editor = not (panel.find_input.hasFocus() or panel.replace_input.hasFocus())
@@ -590,7 +587,7 @@ class SearchReplaceController(QtCore.QObject):
                 if self._active_match_index >= 0:
                     panel.select_match(matches[self._active_match_index])
         else:
-            panel.set_status(_translate("SearchReplaceController", "No results"))
+            panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "No results"))
 
     def next_match(self):
         if not self._matches:
@@ -1062,7 +1059,7 @@ class SearchReplaceController(QtCore.QObject):
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
-            panel.set_status(_translate('SearchReplaceController', 'Replace Error') + ": " + self._format_pattern_error(e))
+            panel.set_status(QtCore.QCoreApplication.translate('SearchReplaceController', 'Replace Error') + ": " + self._format_pattern_error(e))
             return
 
         m = self._matches[self._active_match_index]
@@ -1132,12 +1129,12 @@ class SearchReplaceController(QtCore.QObject):
                         new_html=new_html,
                     )
                 ],
-                text=_translate("SearchReplaceController", "Replace"),
+                text=QtCore.QCoreApplication.translate("SearchReplaceController", "Replace"),
             )
             stack.push(cmd)
         else:
             self._apply_block_text_with_html(opts, m.key, new_text, html_override=new_html)
-        panel.set_status(_translate("SearchReplaceController", "Replaced 1 occurrence(s)"))
+        panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "Replaced 1 occurrence(s)"))
         self.search()
 
     def replace_all(self):
@@ -1146,7 +1143,7 @@ class SearchReplaceController(QtCore.QObject):
         try:
             pattern = compile_search_pattern(opts)
         except Exception as e:
-            panel.set_status(_translate('SearchReplaceController', 'Replace Error') + ": " + self._format_pattern_error(e))
+            panel.set_status(QtCore.QCoreApplication.translate('SearchReplaceController', 'Replace Error') + ": " + self._format_pattern_error(e))
             return
 
         total_replacements = 0
@@ -1215,7 +1212,7 @@ class SearchReplaceController(QtCore.QObject):
                     self,
                     in_target=opts.in_target,
                     changes=changes,
-                    text=_translate("SearchReplaceController", "Replace All"),
+                    text=QtCore.QCoreApplication.translate("SearchReplaceController", "Replace All"),
                 )
                 stack.push(cmd)
             else:
@@ -1223,8 +1220,8 @@ class SearchReplaceController(QtCore.QObject):
                     self._apply_block_text(opts, ch.key, ch.new_text)
 
         if total_replacements:
-            panel.set_status(_translate("SearchReplaceController", "Replaced {0} occurrence(s)").format(total_replacements))
+            panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "Replaced {0} occurrence(s)").format(total_replacements))
         else:
-            panel.set_status(_translate("SearchReplaceController", "No replacements"))
+            panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "No replacements"))
 
         self.search()

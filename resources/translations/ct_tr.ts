@@ -160,39 +160,39 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="495"/>
-        <location filename="../../controller.py" line="505"/>
+        <location filename="../../controller.py" line="398"/>
+        <location filename="../../controller.py" line="408"/>
         <source>Error</source>
         <translation>Hata</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="873"/>
-        <location filename="../../controller.py" line="884"/>
+        <location filename="../../controller.py" line="595"/>
+        <location filename="../../controller.py" line="606"/>
         <source>Downloading model file: {filename}</source>
         <translation>Model dosyası indiriliyor: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="915"/>
+        <location filename="../../controller.py" line="637"/>
         <source>Unsaved Changes</source>
         <translation>Kaydedilmemiş Değişiklikler</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="916"/>
+        <location filename="../../controller.py" line="638"/>
         <source>Save changes to this file?</source>
         <translation>Bu dosyadaki değişiklikleri kaydetmek ister misiniz?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="917"/>
+        <location filename="../../controller.py" line="639"/>
         <source>Save</source>
         <translation>Kaydet</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="918"/>
+        <location filename="../../controller.py" line="640"/>
         <source>Don&apos;t Save</source>
         <translation>Kaydetme</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="919"/>
+        <location filename="../../controller.py" line="641"/>
         <source>Cancel</source>
         <translation>İptal</translation>
     </message>
@@ -490,148 +490,153 @@
         <translation>İptal</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="438"/>
+        <location filename="../../app/ui/main_window.py" line="406"/>
+        <source>Batch Report</source>
+        <translation>Toplu İşlem Raporu</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window.py" line="442"/>
         <source>Click or drag files here</source>
         <translation>Dosyaları buraya tıklayın veya sürükleyin</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="443"/>
+        <location filename="../../app/ui/main_window.py" line="447"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>Resimleri, PDF&apos;leri, Epub&apos;ları veya Çizgi Roman Arşiv Dosyalarını (cbr, cbz, vb.) içe aktarın</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="465"/>
+        <location filename="../../app/ui/main_window.py" line="469"/>
         <source>Source Language</source>
         <translation>Kaynak Dil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="476"/>
+        <location filename="../../app/ui/main_window.py" line="480"/>
         <source>Target Language</source>
         <translation>Hedef Dil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="489"/>
+        <location filename="../../app/ui/main_window.py" line="493"/>
         <source>Font</source>
         <translation>Yazı Tipi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="500"/>
+        <location filename="../../app/ui/main_window.py" line="504"/>
         <source>Font Size</source>
         <translation>Yazı Tipi Boyutu</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="508"/>
+        <location filename="../../app/ui/main_window.py" line="512"/>
         <source>Line Spacing</source>
         <translation>Satır Aralığı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="528"/>
+        <location filename="../../app/ui/main_window.py" line="532"/>
         <source>Font Color</source>
         <translation>Yazı Tipi Rengi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="546"/>
+        <location filename="../../app/ui/main_window.py" line="550"/>
         <source>Bold</source>
         <translation>Kalın</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="548"/>
+        <location filename="../../app/ui/main_window.py" line="552"/>
         <source>Italic</source>
         <translation>İtalik</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="550"/>
+        <location filename="../../app/ui/main_window.py" line="554"/>
         <source>Underline</source>
         <translation>Altı Çizili</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="562"/>
+        <location filename="../../app/ui/main_window.py" line="566"/>
         <source>Outline</source>
         <translation>Dış Çizgi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="566"/>
+        <location filename="../../app/ui/main_window.py" line="570"/>
         <source>Outline Color</source>
         <translation>Dış Çizgi Rengi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="575"/>
+        <location filename="../../app/ui/main_window.py" line="579"/>
         <source>Outline Width</source>
         <translation>Dış Çizgi Kalınlığı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="600"/>
+        <location filename="../../app/ui/main_window.py" line="604"/>
         <source>Pan Image</source>
         <translation>Görseli Kaydır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="605"/>
+        <location filename="../../app/ui/main_window.py" line="609"/>
         <source>Set for all</source>
         <translation>Tümüne Ayarla</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="606"/>
+        <location filename="../../app/ui/main_window.py" line="610"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Mevcut sayfadaki kaynak ve hedef dili tüm sayfalara uygular</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="616"/>
+        <location filename="../../app/ui/main_window.py" line="620"/>
         <source>Draw or Select Text Boxes</source>
         <translation>Metin Kutuları Çiz veya Seç</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="621"/>
+        <location filename="../../app/ui/main_window.py" line="625"/>
         <source>Delete Selected Box</source>
         <translation>Seçili Kutuyu Sil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="624"/>
+        <location filename="../../app/ui/main_window.py" line="628"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Görseldeki tüm kutuları kaldır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="627"/>
+        <location filename="../../app/ui/main_window.py" line="631"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>Mevcut metin blok listesindeki tüm metin bloklarını tekrar görsele çizer (daha fazla düzenleme için)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="636"/>
+        <location filename="../../app/ui/main_window.py" line="640"/>
         <source>Reduce the size of all blocks</source>
         <translation>Tüm blokların boyutunu küçült</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="650"/>
+        <location filename="../../app/ui/main_window.py" line="654"/>
         <source>Increase the size of all blocks</source>
         <translation>Tüm blokların boyutunu büyüt</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="662"/>
+        <location filename="../../app/ui/main_window.py" line="666"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Görseli temizlemek için fırça darbeleri çiz</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="667"/>
+        <location filename="../../app/ui/main_window.py" line="671"/>
         <source>Erase Brush Strokes</source>
         <translation>Fırça darbelerini sil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="672"/>
+        <location filename="../../app/ui/main_window.py" line="676"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Görseldeki tüm fırça darbelerini kaldır</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="684"/>
+        <location filename="../../app/ui/main_window.py" line="688"/>
         <source>Brush/Eraser Size Slider</source>
         <translation>Fırça/Silgi Boyutu Kaydırıcısı</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="688"/>
+        <location filename="../../app/ui/main_window.py" line="692"/>
         <source>Box Drawing</source>
         <translation>Kutu Çizimi</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="692"/>
+        <location filename="../../app/ui/main_window.py" line="696"/>
         <source>Inpainting</source>
         <translation>Boyama</translation>
     </message>
@@ -795,49 +800,47 @@ Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../controller.py" line="433"/>
         <source>Cancelling... %p%</source>
-        <translation>İptal ediliyor... %p%</translation>
+        <translation type="vanished">İptal ediliyor... %p%</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="838"/>
+        <location filename="../../controller.py" line="560"/>
         <source>Processing:</source>
         <translation>İşleniyor:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="841"/>
+        <location filename="../../controller.py" line="563"/>
         <source>Archiving:</source>
         <translation>Arşivleniyor:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="785"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation>Metin Bloğu Algılanmadı.
+        <translation type="vanished">Metin Bloğu Algılanmadı.
 Atlanıyor:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="786"/>
         <source>Could not OCR detected text.
 Skipping:</source>
-        <translation>Algılanan metin OCR yapılamadı.
+        <translation type="vanished">Algılanan metin OCR yapılamadı.
 Atlanıyor:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="787"/>
         <source>Could not get translations.
 Skipping:</source>
-        <translation>Çeviriler alınamadı.
+        <translation type="vanished">Çeviriler alınamadı.
 Atlanıyor:</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="11"/>
         <source>Comic has been Translated!</source>
-        <translation type="vanished">Çizgi roman çevrildi!</translation>
+        <translation>Çizgi roman çevrildi!</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="23"/>
         <source>No Font selected.
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
-        <translation type="vanished">Yazı tipi seçilmedi.
+        <translation>Yazı tipi seçilmedi.
 Bir yazı tipi seçmek veya içe aktarmak için Ayarlar &gt; Metin Renderlama &gt; Yazı Tipi bölümüne gidin </translation>
     </message>
     <message>
@@ -849,44 +852,137 @@ Bir yazı tipi seçmek veya içe aktarmak için Ayarlar &gt; Metin Renderlama &g
         <translation type="vanished">Devam etmek için lütfen Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun. (İleri düzey kullanıcılar API anahtarlarını Ayarlar &gt; Gelişmiş bölümünden ayarlayabilir).</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="35"/>
         <source>Please sign in or sign up via Settings &gt; Account to continue.</source>
-        <translation type="vanished">Devam etmek için Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun.</translation>
+        <translation>Devam etmek için Ayarlar &gt; Hesap üzerinden giriş yapın veya kaydolun.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="47"/>
         <source>The translator does not support the selected target language. Please choose a different language or tool.</source>
-        <translation type="vanished">Çevirmen seçilen hedef dili desteklemiyor. Lütfen farklı bir dil veya araç seçin.</translation>
+        <translation>Çevirmen seçilen hedef dili desteklemiyor. Lütfen farklı bir dil veya araç seçin.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="59"/>
         <source>No {} selected. Please select a {} in Settings &gt; Tools.</source>
-        <translation type="vanished">Hiçbir {} seçilmedi. Lütfen Ayarlar &gt; Araçlar bölümünden bir {} seçin.</translation>
+        <translation>Hiçbir {} seçilmedi. Lütfen Ayarlar &gt; Araçlar bölümünden bir {} seçin.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="80"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
-        <translation type="vanished">Bu işlemi gerçekleştirmek için yetersiz kredi.
+        <translation>Bu işlemi gerçekleştirmek için yetersiz kredi.
 Daha fazla kredi satın almak için Ayarlar &gt; Hesap bölümüne gidin.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="99"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
-        <translation type="vanished">Özel seçeneği gelişmiş API yapılandırması gerektirir. Çoğu kullanıcı bunun yerine Kredi sistemini kullanmalıdır.
+        <translation>Özel seçeneği gelişmiş API yapılandırması gerektirir. Çoğu kullanıcı bunun yerine Kredi sistemini kullanmalıdır.
 Kredi kullanmak için Ayarlar &gt; Hesap üzerinden giriş yapın veya Ayarlar &gt; Gelişmiş bölümünden Özel API ayarlarını yapılandırın.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="135"/>
         <source>Copy</source>
-        <translation type="vanished">Kopyala</translation>
+        <translation>Kopyala</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="158"/>
+        <source>We encountered an unexpected server error.
+Please try again in a few moments.</source>
+        <translation>Beklenmeyen bir sunucu hatası oluştu.
+Lütfen birkaç dakika sonra tekrar deneyin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="159"/>
+        <source>The external service provider is having trouble.
+Please try again later.</source>
+        <translation>Harici hizmet sağlayıcısında sorun var.
+Lütfen daha sonra tekrar deneyin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="160"/>
+        <source>The server is currently busy or under maintenance.
+Please try again shortly.</source>
+        <translation>Sunucu şu anda meşgul veya bakımda.
+Lütfen kısa süre sonra tekrar deneyin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="161"/>
+        <source>The server took too long to respond.
+Please check your connection or try again later.</source>
+        <translation>Sunucu yanıt vermekte çok uzun sürdü.
+Lütfen bağlantınızı kontrol edin veya daha sonra tekrar deneyin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="167"/>
+        <source>The selected text recognition tool is not supported.
+Please select a different tool in Settings.</source>
+        <translation>Seçilen metin tanıma aracı desteklenmiyor.
+Lütfen Ayarlar&apos;dan farklı bir araç seçin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="169"/>
+        <source>The selected translator is not supported.
+Please select a different tool in Settings.</source>
+        <translation>Seçilen çevirici desteklenmiyor.
+Lütfen Ayarlar&apos;dan farklı bir araç seçin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="171"/>
+        <source>The selected tool is not supported.
+Please select a different tool in Settings.</source>
+        <translation>Seçilen araç desteklenmiyor.
+Lütfen Ayarlar&apos;dan farklı bir araç seçin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="238"/>
+        <source>{0} image(s) were skipped in this batch.
+Open Batch Report to see all skipped images and reasons.</source>
+        <translation>Bu toplu işlemde {0} görsel atlandı.
+Atlanan tüm görselleri ve nedenleri görmek için Toplu İşlem Raporunu açın.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="203"/>
+        <source>Text Recognition blocked: The AI provider flagged this content.
+Please try a different Text Recognition tool.</source>
+        <translation>Metin Tanıma engellendi: Yapay zeka sağlayıcısı bu içeriği işaretledi.
+Lütfen farklı bir Metin Tanıma aracı deneyin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="208"/>
+        <source>Translation blocked: The AI provider flagged this content.
+Please try a different translator.</source>
+        <translation>Çeviri engellendi: Yapay zeka sağlayıcısı bu içeriği işaretledi.
+Lütfen farklı bir çevirmen deneyin.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="213"/>
+        <source>Operation blocked: The AI provider flagged this content.
+Please try a different tool.</source>
+        <translation>İşlem engellendi: Yapay zeka sağlayıcısı bu içeriği işaretledi.
+Lütfen farklı bir araç deneyin.</translation>
+    </message>
+    <message>
+        <source>{0}: The content was flagged by the AI provider&apos;s safety filters.
+{1}</source>
+        <translation type="vanished">{0}: İçerik, AI sağlayıcısının güvenlik filtreleri tarafından işaretlendi.
+{1}</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="88"/>
+        <location filename="../../app/ui/messages.py" line="136"/>
         <source>OK</source>
-        <translation type="vanished">Tamam</translation>
+        <translation>Tamam</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="79"/>
         <source>Insufficient Credits</source>
-        <translation type="vanished">Yetersiz Kredi</translation>
+        <translation>Yetersiz Kredi</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="137"/>
         <source>Close</source>
-        <translation type="vanished">Kapat</translation>
+        <translation>Kapat</translation>
     </message>
     <message>
         <source>An unexpected error occurred on the server.
@@ -919,9 +1015,10 @@ Please try again later.</source>
 Lütfen daha sonra tekrar deneyin.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="188"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
-        <translation type="vanished">Sunucuya bağlanılamıyor.
+        <translation>Sunucuya bağlanılamıyor.
 Lütfen internet bağlantınızı kontrol edin.</translation>
     </message>
     <message>
@@ -944,27 +1041,27 @@ Lütfen metni değiştirmeyi veya farklı bir çevirmen kullanmayı deneyin.</tr
 <context>
     <name>PageListView</name>
     <message>
-        <location filename="../../app/ui/list_view.py" line="45"/>
+        <location filename="../../app/ui/list_view.py" line="73"/>
         <source>Insert</source>
         <translation>Ekle</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="46"/>
+        <location filename="../../app/ui/list_view.py" line="74"/>
         <source>Delete</source>
         <translation>Sil</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="51"/>
+        <location filename="../../app/ui/list_view.py" line="79"/>
         <source>Unskip</source>
         <translation>Atlamayı Geri Al</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="54"/>
+        <location filename="../../app/ui/list_view.py" line="82"/>
         <source>Skip</source>
         <translation>Atla</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="60"/>
+        <location filename="../../app/ui/list_view.py" line="88"/>
         <source>Translate</source>
         <translation>Çevir</translation>
     </message>
@@ -985,44 +1082,55 @@ Lütfen metni değiştirmeyi veya farklı bir çevirmen kullanmayı deneyin.</tr
 <context>
     <name>SearchReplaceController</name>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
         <source>Empty query</source>
-        <translation type="vanished">Boş sorgu</translation>
+        <translation>Boş sorgu</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="524"/>
         <source>Search Error</source>
-        <translation type="vanished">Arama Hatası</translation>
+        <translation>Arama Hatası</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
         <source>Ready</source>
-        <translation type="vanished">Hazır</translation>
+        <translation>Hazır</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
         <source>No results</source>
-        <translation type="vanished">Sonuç yok</translation>
+        <translation>Sonuç yok</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1062"/>
+        <location filename="../../app/controllers/search_replace.py" line="1146"/>
         <source>Replace Error</source>
-        <translation type="vanished">Değiştirme Hatası</translation>
+        <translation>Değiştirme Hatası</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
         <source>Replace</source>
-        <translation type="vanished">Değiştir</translation>
+        <translation>Değiştir</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
         <source>Replaced 1 occurrence(s)</source>
-        <translation type="vanished">1 eşleşme değiştirildi</translation>
+        <translation>1 eşleşme değiştirildi</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
         <source>Replace All</source>
-        <translation type="vanished">Tümünü Değiştir</translation>
+        <translation>Tümünü Değiştir</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
         <source>Replaced {0} occurrence(s)</source>
-        <translation type="vanished">{0} eşleşme değiştirildi</translation>
+        <translation>{0} eşleşme değiştirildi</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
         <source>No replacements</source>
-        <translation type="vanished">Değişiklik yapılmadı</translation>
+        <translation>Değişiklik yapılmadı</translation>
     </message>
 </context>
 <context>
@@ -1711,9 +1819,202 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
     </message>
 </context>
 <context>
+    <name>self.main</name>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="76"/>
+        <source>The AI provider flagged this content</source>
+        <translation>Yapay zeka sağlayıcısı bu içeriği işaretledi</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="78"/>
+        <source>Insufficient credits</source>
+        <translation>Yetersiz kredi</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="80"/>
+        <source>Request timed out</source>
+        <translation>İstek zaman aşımına uğradı</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="86"/>
+        <source>Rate limited by provider</source>
+        <translation>Sağlayıcı tarafından hız sınırı uygulandı</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="93"/>
+        <source>Authentication failed</source>
+        <translation>Kimlik doğrulama başarısız</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="100"/>
+        <source>Network or connection error</source>
+        <translation>Ağ veya bağlantı hatası</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="109"/>
+        <source>Provider unavailable</source>
+        <translation>Sağlayıcı kullanılamıyor</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="115"/>
+        <source>Invalid translation response</source>
+        <translation>Geçersiz çeviri yanıtı</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="116"/>
+        <source>Unexpected tool error</source>
+        <translation>Beklenmeyen araç hatası</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="124"/>
+        <location filename="../../app/controllers/batch_report.py" line="173"/>
+        <source>Try another text recognition tool</source>
+        <translation>Farklı bir metin tanıma aracı deneyin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="128"/>
+        <location filename="../../app/controllers/batch_report.py" line="177"/>
+        <source>Try another translator</source>
+        <translation>Farklı bir çevirmen deneyin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="129"/>
+        <source>Try another tool</source>
+        <translation>Farklı bir araç deneyin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="131"/>
+        <source>Buy more credits</source>
+        <translation>Daha fazla kredi satın alın</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="133"/>
+        <location filename="../../app/controllers/batch_report.py" line="168"/>
+        <location filename="../../app/controllers/batch_report.py" line="178"/>
+        <source>Try again</source>
+        <translation>Tekrar dene</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="139"/>
+        <source>Wait and try again</source>
+        <translation>Bekleyip tekrar deneyin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="146"/>
+        <source>Check API settings</source>
+        <translation>API ayarlarını kontrol edin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="153"/>
+        <source>Check your connection</source>
+        <translation>Bağlantınızı kontrol edin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="162"/>
+        <source>Try again later</source>
+        <translation>Daha sonra tekrar deneyin</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="184"/>
+        <source>No text blocks detected</source>
+        <translation>Metin bloğu tespit edilmedi</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="185"/>
+        <source>Text recognition failed</source>
+        <translation>Metin tanıma başarısız</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="186"/>
+        <source>Translation failed</source>
+        <translation>Çeviri başarısız</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="187"/>
+        <source>Webtoon text recognition chunk failed</source>
+        <translation>Webtoon metin tanıma parçası başarısız</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="189"/>
+        <source>Webtoon translation chunk failed</source>
+        <translation>Webtoon çeviri parçası başarısız</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="192"/>
+        <source>Page processing failed</source>
+        <translation>Sayfa işleme başarısız</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="253"/>
+        <source>This image is not in the current project.</source>
+        <translation>Bu görsel mevcut projede yer almıyor.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <source>Cancelled</source>
+        <translation>İptal Edildi</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <source>Completed</source>
+        <translation>Tamamlandı</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="282"/>
+        <source>{0}  |  Updated {1}</source>
+        <translation>{0}  |  Güncellendi {1}</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="309"/>
+        <source>Total</source>
+        <translation>Toplam</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="310"/>
+        <location filename="../../app/controllers/batch_report.py" line="356"/>
+        <source>Skipped</source>
+        <translation>Atlandı</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="320"/>
+        <source>Skipped Images ({0})</source>
+        <translation>Atlanan Görseller ({0})</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="327"/>
+        <source>Double-click a row to open that page.</source>
+        <translation>O sayfayı açmak için bir satıra çift tıklayın.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <source>Image</source>
+        <translation>Görsel</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <source>Reason</source>
+        <translation>Neden</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="366"/>
+        <source>No skipped images in this batch.</source>
+        <translation>Bu toplu işlemde atlanan görsel yok.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="377"/>
+        <source>No batch report is available yet.</source>
+        <translation>Henüz toplu işlem raporu mevcut değil.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="391"/>
+        <source>Batch Report</source>
+        <translation>Toplu İşlem Raporu</translation>
+    </message>
+</context>
+<context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="761"/>
+        <location filename="../../app/ui/main_window.py" line="765"/>
         <source>Light</source>
         <translation>Açık</translation>
     </message>

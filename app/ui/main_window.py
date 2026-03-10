@@ -40,11 +40,12 @@ supported_source_languages = [
 ]
 
 supported_target_languages = [
-"English", "Korean", "Japanese", "French", "Simplified Chinese",
-"Traditional Chinese", "Russian", "German", "Dutch", "Spanish", 
-"Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese",
-"Thai", "Vietnamese", "Hungarian", "Indonesian",  "Finnish",
-"Arabic", "Czech", "Persian", "Romanian", "Mongolian"]
+    "English", "Korean", "Japanese", "French", "Simplified Chinese",
+    "Traditional Chinese", "Cantonese (Hong Kong)", "Russian", "German", "Dutch", "Spanish",
+    "Italian", "Turkish", "Polish", "Portuguese", "Brazilian Portuguese",
+    "Thai", "Vietnamese", "Hungarian", "Indonesian",  "Finnish",
+    "Arabic", "Czech", "Persian", "Romanian", "Mongolian"
+]
 
 
 class ComicTranslateUI(QtWidgets.QMainWindow):
@@ -85,6 +86,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
             self.tr("French"): "French",
             self.tr("Simplified Chinese"): "Simplified Chinese",
             self.tr("Traditional Chinese"): "Traditional Chinese",
+            self.tr("Cantonese (Hong Kong)"): "Cantonese (Hong Kong)",
             self.tr("Chinese"): "Chinese",
             self.tr("Russian"): "Russian",
             self.tr("German"): "German",
@@ -403,6 +405,9 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         self.cancel_button = MPushButton(self.tr("Cancel"))
         self.cancel_button.setEnabled(True)
         self.cancel_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.batch_report_button = MPushButton(self.tr("Batch Report"))
+        self.batch_report_button.setEnabled(False)
+        self.batch_report_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         header_layout.addWidget(self.undo_tool_group)
         header_layout.addWidget(self.hbutton_group)
@@ -413,6 +418,7 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         header_layout.addWidget(self.automatic_radio)
         header_layout.addWidget(self.translate_button)
         header_layout.addWidget(self.cancel_button)
+        header_layout.addWidget(self.batch_report_button)
 
         # Search / Replace (MTPE helper) - shown in left sidebar
         self.search_panel = SearchReplacePanel(self)
@@ -655,6 +661,15 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         box_tools_lay.addWidget(self.change_all_blocks_size_inc)
         box_tools_lay.addStretch()
 
+        # Auto Repair Tools
+        repair_tools_lay = QtWidgets.QHBoxLayout()
+
+        self.auto_repair_button = self.create_tool_button(text=self.tr("Auto Repair"), svg="refresh_line.svg")
+        self.auto_repair_button.setToolTip(self.tr("Re-render all text blocks on the current page with corrected font color, bubble-sized render area, and auto line breaks"))
+
+        repair_tools_lay.addWidget(self.auto_repair_button)
+        repair_tools_lay.addStretch()
+
         # Inpainting Tools
         inp_tools_lay = QtWidgets.QHBoxLayout()
 
@@ -693,6 +708,10 @@ class ComicTranslateUI(QtWidgets.QMainWindow):
         tools_layout.addWidget(inp_div)
         tools_layout.addLayout(inp_tools_lay)
         tools_layout.addWidget(self.brush_eraser_slider)
+
+        repair_div = MDivider(self.tr('Text Repair'))
+        tools_layout.addWidget(repair_div)
+        tools_layout.addLayout(repair_tools_lay)
         tools_layout.addStretch()
         tools_widget.setLayout(tools_layout)
 

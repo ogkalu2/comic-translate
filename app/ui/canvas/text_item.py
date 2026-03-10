@@ -43,6 +43,7 @@ class TextBlockItem(QGraphicsTextItem):
     item_deselected = Signal()
     text_highlighted = Signal(dict)
     change_undo = Signal(TextBlockState, TextBlockState)
+    sfx_toggled = Signal(bool)  # emitted when user toggles SFX mode via context menu
     
     def __init__(self, 
              text = "", 
@@ -94,6 +95,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.old_state = None
 
         self.selection_outlines = []
+        self._is_sfx: bool = False
 
         self.setAcceptHoverEvents(True)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
@@ -643,7 +645,13 @@ class TextBlockItem(QGraphicsTextItem):
         super().mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event):
-        super().contextMenuEvent(event)
+        from PySide6.QtWidgets import QMenu
+        menu = QMenu()
+        sfx_action = menu.addAction("Mark as SFX (preserve position)" if not self._is_sfx else "Treat as dialogue")
+        action = menu.exec(event.screenPos().toPoint())
+        if action == sfx_action:
+            self._is_sfx = not self._is_sfx
+            self.sfx_toggled.emit(self._is_sfx)
         if self.editing_mode:
             self.enter_editing_mode()
     
@@ -911,4 +919,31 @@ class TextBlockItem(QGraphicsTextItem):
         new_instance.setScale(self.scale())
         new_instance.__dict__.update(copy.copy(self.__dict__))
         return new_instance
+
+    def insert_translation(self, raw_translated: str) -> None:
+        """
+        Safely insert translated text into this item.
+        - Strips HTML from API response
+        - Inserts as plain text with explicit clean format (no background colour)
+        - Resets cursor format so next typed chars are also clean
+        """
+        import re as _re
+        plain_text = _re.sub(r'<[^>]+>', '', raw_translated).strip()
+
+        fmt = QTextCharFormat()
+        fmt.setForeground(self.text_color)
+        fmt.setBackground(Qt.GlobalColor.transparent)
+        if self.font_family:
+            font = QFont(self.font_family, int(self.font_size))
+            font.setBold(self.bold)
+            font.setItalic(self.italic)
+            font.setUnderline(self.underline)
+            fmt.setFont(font)
+
+        cursor = self.textCursor()
+        cursor.select(QTextCursor.SelectionType.Document)
+        cursor.insertText(plain_text, fmt)
+
+        self.setTextCursor(cursor)
+        self.setCurrentCharFormat(fmt)
 

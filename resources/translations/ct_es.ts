@@ -168,34 +168,34 @@
         <translation type="vanished">Inglés</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="495"/>
-        <location filename="../../controller.py" line="505"/>
+        <location filename="../../controller.py" line="398"/>
+        <location filename="../../controller.py" line="408"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="873"/>
-        <location filename="../../controller.py" line="884"/>
+        <location filename="../../controller.py" line="595"/>
+        <location filename="../../controller.py" line="606"/>
         <source>Downloading model file: {filename}</source>
         <translation>Descargando archivo de modelo: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="915"/>
+        <location filename="../../controller.py" line="637"/>
         <source>Unsaved Changes</source>
         <translation>Cambios no guardados</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="916"/>
+        <location filename="../../controller.py" line="638"/>
         <source>Save changes to this file?</source>
         <translation>¿Guardar los cambios en este archivo?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="917"/>
+        <location filename="../../controller.py" line="639"/>
         <source>Save</source>
         <translation>Guardar</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="918"/>
+        <location filename="../../controller.py" line="640"/>
         <source>Don&apos;t Save</source>
         <translation>No guardar</translation>
     </message>
@@ -204,7 +204,7 @@
         <translation type="vanished">Descartar</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="919"/>
+        <location filename="../../controller.py" line="641"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
@@ -402,7 +402,12 @@
         <translation>Traducir todo</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="443"/>
+        <location filename="../../app/ui/main_window.py" line="406"/>
+        <source>Batch Report</source>
+        <translation>Informe de lote</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window.py" line="447"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>Importar imágenes, PDF, EPUB o archivos de cómics (CBR, CBZ, etc.)</translation>
     </message>
@@ -437,24 +442,24 @@
         <translation>Guardar la imagen cargada actualmente</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="627"/>
+        <location filename="../../app/ui/main_window.py" line="631"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>Dibuja todos los bloques de texto en la lista de bloques de texto existente
 de nuevo en la imagen (para su posterior edición)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="636"/>
+        <location filename="../../app/ui/main_window.py" line="640"/>
         <source>Reduce the size of all blocks</source>
         <translation>Reducir el tamaño de todos los bloques</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="650"/>
+        <location filename="../../app/ui/main_window.py" line="654"/>
         <source>Increase the size of all blocks</source>
         <translation>Aumentar el tamaño de todos los bloques</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="684"/>
+        <location filename="../../app/ui/main_window.py" line="688"/>
         <source>Brush/Eraser Size Slider</source>
         <translation>Control deslizante de tamaño de pincel/borrador</translation>
     </message>
@@ -526,72 +531,72 @@ de nuevo en la imagen (para su posterior edición)</translation>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="438"/>
+        <location filename="../../app/ui/main_window.py" line="442"/>
         <source>Click or drag files here</source>
         <translation>Haga clic o arrastre los archivos aquí</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="465"/>
+        <location filename="../../app/ui/main_window.py" line="469"/>
         <source>Source Language</source>
         <translation>Idioma de origen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="476"/>
+        <location filename="../../app/ui/main_window.py" line="480"/>
         <source>Target Language</source>
         <translation>Idioma de destino</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="489"/>
+        <location filename="../../app/ui/main_window.py" line="493"/>
         <source>Font</source>
         <translation>Fuente</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="500"/>
+        <location filename="../../app/ui/main_window.py" line="504"/>
         <source>Font Size</source>
         <translation>Tamaño de fuente</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="508"/>
+        <location filename="../../app/ui/main_window.py" line="512"/>
         <source>Line Spacing</source>
         <translation>Espaciado de línea</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="528"/>
+        <location filename="../../app/ui/main_window.py" line="532"/>
         <source>Font Color</source>
         <translation>Color de fuente</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="546"/>
+        <location filename="../../app/ui/main_window.py" line="550"/>
         <source>Bold</source>
         <translation>Negrita</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="548"/>
+        <location filename="../../app/ui/main_window.py" line="552"/>
         <source>Italic</source>
         <translation>Cursiva</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="550"/>
+        <location filename="../../app/ui/main_window.py" line="554"/>
         <source>Underline</source>
         <translation>Subrayado</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="562"/>
+        <location filename="../../app/ui/main_window.py" line="566"/>
         <source>Outline</source>
         <translation>Contorno</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="566"/>
+        <location filename="../../app/ui/main_window.py" line="570"/>
         <source>Outline Color</source>
         <translation>Color de contorno</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="575"/>
+        <location filename="../../app/ui/main_window.py" line="579"/>
         <source>Outline Width</source>
         <translation>Ancho de contorno</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="600"/>
+        <location filename="../../app/ui/main_window.py" line="604"/>
         <source>Pan Image</source>
         <translation>Desplazar imagen</translation>
     </message>
@@ -611,52 +616,52 @@ de nuevo en la imagen (para su posterior edición)</translation>
         <translation>Exportar todas las imágenes</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="605"/>
+        <location filename="../../app/ui/main_window.py" line="609"/>
         <source>Set for all</source>
         <translation>Establecer para todos</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="606"/>
+        <location filename="../../app/ui/main_window.py" line="610"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>Establece el idioma de origen y de destino en la página actual para todas las páginas</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="616"/>
+        <location filename="../../app/ui/main_window.py" line="620"/>
         <source>Draw or Select Text Boxes</source>
         <translation>Dibujar o seleccionar cuadros de texto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="621"/>
+        <location filename="../../app/ui/main_window.py" line="625"/>
         <source>Delete Selected Box</source>
         <translation>Eliminar el cuadro seleccionado</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="624"/>
+        <location filename="../../app/ui/main_window.py" line="628"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>Eliminar todos los cuadros de la imagen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="662"/>
+        <location filename="../../app/ui/main_window.py" line="666"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>Dibujar trazos de pincel para limpiar la imagen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="667"/>
+        <location filename="../../app/ui/main_window.py" line="671"/>
         <source>Erase Brush Strokes</source>
         <translation>Borrar trazos de pincel</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="672"/>
+        <location filename="../../app/ui/main_window.py" line="676"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>Eliminar todos los trazos de pincel de la imagen</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="688"/>
+        <location filename="../../app/ui/main_window.py" line="692"/>
         <source>Box Drawing</source>
         <translation>Dibujo de cuadros</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="692"/>
+        <location filename="../../app/ui/main_window.py" line="696"/>
         <source>Inpainting</source>
         <translation>Inpainting</translation>
     </message>
@@ -820,38 +825,34 @@ Los archivos traducidos se guardan como &lt;filename&gt;_translated.&lt;ext&gt; 
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="785"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation>No se detectaron bloques de texto.
+        <translation type="vanished">No se detectaron bloques de texto.
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="786"/>
         <source>Could not OCR detected text.
 Skipping:</source>
-        <translation>No se pudo aplicar OCR al texto detectado.
+        <translation type="vanished">No se pudo aplicar OCR al texto detectado.
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="787"/>
         <source>Could not get translations.
 Skipping:</source>
-        <translation>No se pudieron obtener las traducciones.
+        <translation type="vanished">No se pudieron obtener las traducciones.
 Saltando:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="433"/>
         <source>Cancelling... %p%</source>
-        <translation>Cancelando... %p%</translation>
+        <translation type="vanished">Cancelando... %p%</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="838"/>
+        <location filename="../../controller.py" line="560"/>
         <source>Processing:</source>
         <translation>Procesando:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="841"/>
+        <location filename="../../controller.py" line="563"/>
         <source>Archiving:</source>
         <translation>Archivando:</translation>
     </message>
@@ -896,13 +897,15 @@ Vaya a Configuración &gt; Credenciales &gt; Microsoft para configurar una.</tra
         <translation type="vanished">DeepL no traduce al vietnamita.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="11"/>
         <source>Comic has been Translated!</source>
-        <translation type="vanished">¡El cómic ha sido traducido!</translation>
+        <translation>¡El cómic ha sido traducido!</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="23"/>
         <source>No Font selected.
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
-        <translation type="vanished">No se ha seleccionado ninguna fuente.
+        <translation>No se ha seleccionado ninguna fuente.
 Vaya a Configuración &gt; Renderización de texto &gt; Fuente para seleccionar o importar una.</translation>
     </message>
     <message>
@@ -914,44 +917,137 @@ Vaya a Configuración &gt; Renderización de texto &gt; Fuente para seleccionar 
         <translation type="vanished">Por favor, inicia sesión o regístrate en Configuración &gt; Cuenta para continuar. (Usuarios avanzados pueden configurar claves API en Configuración &gt; Avanzado).</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="35"/>
         <source>Please sign in or sign up via Settings &gt; Account to continue.</source>
-        <translation type="vanished">Por favor, inicia sesión o regístrate en Configuración &gt; Cuenta para continuar.</translation>
+        <translation>Por favor, inicia sesión o regístrate en Configuración &gt; Cuenta para continuar.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="47"/>
         <source>The translator does not support the selected target language. Please choose a different language or tool.</source>
-        <translation type="vanished">El traductor no admite el idioma de destino seleccionado. Por favor, elige otro idioma o herramienta.</translation>
+        <translation>El traductor no admite el idioma de destino seleccionado. Por favor, elige otro idioma o herramienta.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="59"/>
         <source>No {} selected. Please select a {} in Settings &gt; Tools.</source>
-        <translation type="vanished">No se ha seleccionado {}. Por favor, selecciona un {} en Configuración &gt; Herramientas.</translation>
+        <translation>No se ha seleccionado {}. Por favor, selecciona un {} en Configuración &gt; Herramientas.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="80"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
-        <translation type="vanished">Créditos insuficientes para realizar esta acción.
+        <translation>Créditos insuficientes para realizar esta acción.
 Ve a Configuración &gt; Cuenta para comprar más créditos.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="99"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
-        <translation type="vanished">Personalizado requiere una configuración avanzada de API. La mayoría de los usuarios deberían usar el sistema de créditos.
+        <translation>Personalizado requiere una configuración avanzada de API. La mayoría de los usuarios deberían usar el sistema de créditos.
 Por favor, inicia sesión en Configuración &gt; Cuenta para usar créditos, o configura la API personalizada en Configuración &gt; Avanzado.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="135"/>
         <source>Copy</source>
-        <translation type="vanished">Copiar</translation>
+        <translation>Copiar</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="158"/>
+        <source>We encountered an unexpected server error.
+Please try again in a few moments.</source>
+        <translation>Encontramos un error inesperado del servidor.
+Por favor, inténtelo de nuevo en unos momentos.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="159"/>
+        <source>The external service provider is having trouble.
+Please try again later.</source>
+        <translation>El proveedor de servicios externo está teniendo problemas.
+Por favor, inténtelo de nuevo más tarde.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="160"/>
+        <source>The server is currently busy or under maintenance.
+Please try again shortly.</source>
+        <translation>El servidor está actualmente ocupado o en mantenimiento.
+Por favor, inténtelo de nuevo en breve.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="161"/>
+        <source>The server took too long to respond.
+Please check your connection or try again later.</source>
+        <translation>El servidor tardó demasiado en responder.
+Por favor, verifique su conexión o inténtelo de nuevo más tarde.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="167"/>
+        <source>The selected text recognition tool is not supported.
+Please select a different tool in Settings.</source>
+        <translation>La herramienta de reconocimiento de texto seleccionada no está soportada.
+Por favor, seleccione una herramienta diferente en Configuración.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="169"/>
+        <source>The selected translator is not supported.
+Please select a different tool in Settings.</source>
+        <translation>El traductor seleccionado no está soportado.
+Por favor, seleccione una herramienta diferente en Configuración.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="171"/>
+        <source>The selected tool is not supported.
+Please select a different tool in Settings.</source>
+        <translation>La herramienta seleccionada no está soportada.
+Por favor, seleccione una herramienta diferente en Configuración.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="238"/>
+        <source>{0} image(s) were skipped in this batch.
+Open Batch Report to see all skipped images and reasons.</source>
+        <translation>Se omitió(omitieron) {0} imagen(es) en este lote.
+Abra el Informe de lote para ver todas las imágenes omitidas y los motivos.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="203"/>
+        <source>Text Recognition blocked: The AI provider flagged this content.
+Please try a different Text Recognition tool.</source>
+        <translation>Reconocimiento de texto bloqueado: El proveedor de IA marcó este contenido.
+Por favor, intente con una herramienta de reconocimiento de texto diferente.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="208"/>
+        <source>Translation blocked: The AI provider flagged this content.
+Please try a different translator.</source>
+        <translation>Traducción bloqueada: El proveedor de IA marcó este contenido.
+Por favor, intente con un traductor diferente.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="213"/>
+        <source>Operation blocked: The AI provider flagged this content.
+Please try a different tool.</source>
+        <translation>Operación bloqueada: El proveedor de IA marcó este contenido.
+Por favor, intente con una herramienta diferente.</translation>
+    </message>
+    <message>
+        <source>{0}: The content was flagged by the AI provider&apos;s safety filters.
+{1}</source>
+        <translation type="vanished">{0}: El contenido fue marcado por los filtros de seguridad del proveedor de IA.
+{1}</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="88"/>
+        <location filename="../../app/ui/messages.py" line="136"/>
         <source>OK</source>
-        <translation type="vanished">Aceptar</translation>
+        <translation>Aceptar</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="79"/>
         <source>Insufficient Credits</source>
-        <translation type="vanished">Créditos insuficientes</translation>
+        <translation>Créditos insuficientes</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="137"/>
         <source>Close</source>
-        <translation type="vanished">Cerrar</translation>
+        <translation>Cerrar</translation>
     </message>
     <message>
         <source>An unexpected error occurred on the server.
@@ -984,9 +1080,10 @@ Please try again later.</source>
 Por favor, inténtelo de nuevo más tarde.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="188"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
-        <translation type="vanished">No se puede conectar al servidor.
+        <translation>No se puede conectar al servidor.
 Por favor, compruebe su conexión a Internet.</translation>
     </message>
     <message>
@@ -1009,27 +1106,27 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
 <context>
     <name>PageListView</name>
     <message>
-        <location filename="../../app/ui/list_view.py" line="45"/>
+        <location filename="../../app/ui/list_view.py" line="73"/>
         <source>Insert</source>
         <translation>Insertar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="46"/>
+        <location filename="../../app/ui/list_view.py" line="74"/>
         <source>Delete</source>
         <translation>Eliminar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="51"/>
+        <location filename="../../app/ui/list_view.py" line="79"/>
         <source>Unskip</source>
         <translation>No saltar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="54"/>
+        <location filename="../../app/ui/list_view.py" line="82"/>
         <source>Skip</source>
         <translation>Saltar</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="60"/>
+        <location filename="../../app/ui/list_view.py" line="88"/>
         <source>Translate</source>
         <translation>Traducir</translation>
     </message>
@@ -1050,44 +1147,55 @@ Por favor, intente modificar el texto o usar un traductor diferente.</translatio
 <context>
     <name>SearchReplaceController</name>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
         <source>Empty query</source>
-        <translation type="vanished">Consulta vacía</translation>
+        <translation>Consulta vacía</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="524"/>
         <source>Search Error</source>
-        <translation type="vanished">Error de búsqueda</translation>
+        <translation>Error de búsqueda</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
         <source>Ready</source>
-        <translation type="vanished">Listo</translation>
+        <translation>Listo</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
         <source>No results</source>
-        <translation type="vanished">Sin resultados</translation>
+        <translation>Sin resultados</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1062"/>
+        <location filename="../../app/controllers/search_replace.py" line="1146"/>
         <source>Replace Error</source>
-        <translation type="vanished">Error de reemplazo</translation>
+        <translation>Error de reemplazo</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
         <source>Replace</source>
-        <translation type="vanished">Reemplazar</translation>
+        <translation>Reemplazar</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
         <source>Replaced 1 occurrence(s)</source>
-        <translation type="vanished">1 ocurrencia reemplazada</translation>
+        <translation>1 ocurrencia reemplazada</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
         <source>Replace All</source>
-        <translation type="vanished">Reemplazar todo</translation>
+        <translation>Reemplazar todo</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
         <source>Replaced {0} occurrence(s)</source>
-        <translation type="vanished">{0} ocurrencia(s) reemplazada(s)</translation>
+        <translation>{0} ocurrencia(s) reemplazada(s)</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
         <source>No replacements</source>
-        <translation type="vanished">Sin reemplazos</translation>
+        <translation>Sin reemplazos</translation>
     </message>
 </context>
 <context>
@@ -1946,6 +2054,199 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
     </message>
 </context>
 <context>
+    <name>self.main</name>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="76"/>
+        <source>The AI provider flagged this content</source>
+        <translation>El proveedor de IA marcó este contenido</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="78"/>
+        <source>Insufficient credits</source>
+        <translation>Créditos insuficientes</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="80"/>
+        <source>Request timed out</source>
+        <translation>Solicitud agotada</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="86"/>
+        <source>Rate limited by provider</source>
+        <translation>Límite de velocidad del proveedor</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="93"/>
+        <source>Authentication failed</source>
+        <translation>Autenticación fallida</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="100"/>
+        <source>Network or connection error</source>
+        <translation>Error de red o conexión</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="109"/>
+        <source>Provider unavailable</source>
+        <translation>Proveedor no disponible</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="115"/>
+        <source>Invalid translation response</source>
+        <translation>Respuesta de traducción inválida</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="116"/>
+        <source>Unexpected tool error</source>
+        <translation>Error de herramienta inesperado</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="124"/>
+        <location filename="../../app/controllers/batch_report.py" line="173"/>
+        <source>Try another text recognition tool</source>
+        <translation>Pruebe otra herramienta de reconocimiento de texto</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="128"/>
+        <location filename="../../app/controllers/batch_report.py" line="177"/>
+        <source>Try another translator</source>
+        <translation>Pruebe otro traductor</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="129"/>
+        <source>Try another tool</source>
+        <translation>Pruebe otra herramienta</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="131"/>
+        <source>Buy more credits</source>
+        <translation>Comprar más créditos</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="133"/>
+        <location filename="../../app/controllers/batch_report.py" line="168"/>
+        <location filename="../../app/controllers/batch_report.py" line="178"/>
+        <source>Try again</source>
+        <translation>Intentar de nuevo</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="139"/>
+        <source>Wait and try again</source>
+        <translation>Esperar e intentar de nuevo</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="146"/>
+        <source>Check API settings</source>
+        <translation>Verificar configuración de API</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="153"/>
+        <source>Check your connection</source>
+        <translation>Verificar su conexión</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="162"/>
+        <source>Try again later</source>
+        <translation>Inténtelo más tarde</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="184"/>
+        <source>No text blocks detected</source>
+        <translation>No se detectaron bloques de texto</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="185"/>
+        <source>Text recognition failed</source>
+        <translation>Error en el reconocimiento de texto</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="186"/>
+        <source>Translation failed</source>
+        <translation>Traducción fallida</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="187"/>
+        <source>Webtoon text recognition chunk failed</source>
+        <translation>Error en el fragmento de reconocimiento de texto de webtoon</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="189"/>
+        <source>Webtoon translation chunk failed</source>
+        <translation>Error en el fragmento de traducción de webtoon</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="192"/>
+        <source>Page processing failed</source>
+        <translation>Error en el procesamiento de la página</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="253"/>
+        <source>This image is not in the current project.</source>
+        <translation>Esta imagen no está en el proyecto actual.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <source>Cancelled</source>
+        <translation>Cancelado</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <source>Completed</source>
+        <translation>Completado</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="282"/>
+        <source>{0}  |  Updated {1}</source>
+        <translation>{0}  |  Actualizado {1}</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="309"/>
+        <source>Total</source>
+        <translation>Total</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="310"/>
+        <location filename="../../app/controllers/batch_report.py" line="356"/>
+        <source>Skipped</source>
+        <translation>Omitido</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="320"/>
+        <source>Skipped Images ({0})</source>
+        <translation>Imágenes omitidas ({0})</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="327"/>
+        <source>Double-click a row to open that page.</source>
+        <translation>Doble clic en una fila para abrir esa página.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <source>Image</source>
+        <translation>Imagen</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <source>Reason</source>
+        <translation>Motivo</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="366"/>
+        <source>No skipped images in this batch.</source>
+        <translation>No hay imágenes omitidas en este lote.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="377"/>
+        <source>No batch report is available yet.</source>
+        <translation>Aún no hay informe de lote disponible.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="391"/>
+        <source>Batch Report</source>
+        <translation>Informe de lote</translation>
+    </message>
+</context>
+<context>
     <name>self.settings_page</name>
     <message>
         <source>Light</source>
@@ -1955,7 +2256,7 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="761"/>
+        <location filename="../../app/ui/main_window.py" line="765"/>
         <source>Light</source>
         <translation>Claro</translation>
     </message>

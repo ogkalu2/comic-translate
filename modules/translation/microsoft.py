@@ -100,18 +100,20 @@ class MicrosoftTranslation(TraditionalTranslation):
         """
         if not lang_code:
             return lang_code
-            
+        
         # Handle Chinese variants
         if lang_code == "zh-CN":
             return "zh-Hans"
         elif lang_code == "zh-TW":
             return "zh-Hant"
+        elif lang_code in ("zh-HK", "yue"):
+            return "yue"
         
         # Handle Portuguese variants
         if lang_code == "pt":
             return "pt-pt"
         elif lang_code.lower() == "pt-br":
             return "pt"
-            
+        
         # Return the original code for other languages
         return lang_code

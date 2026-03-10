@@ -52,6 +52,10 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
         # Skip blocks with no text and no translation
         if not blk.text and not blk.translation:
             continue
+
+        # Skip SFX blocks — preserve original artwork
+        if getattr(blk, 'is_sfx', False):
+            continue
         
         bboxes = get_inpaint_bboxes(blk.xyxy, img)
         blk.inpaint_bboxes = bboxes

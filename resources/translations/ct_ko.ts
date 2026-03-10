@@ -168,34 +168,34 @@
         <translation type="vanished">영어</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="495"/>
-        <location filename="../../controller.py" line="505"/>
+        <location filename="../../controller.py" line="398"/>
+        <location filename="../../controller.py" line="408"/>
         <source>Error</source>
         <translation>오류</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="873"/>
-        <location filename="../../controller.py" line="884"/>
+        <location filename="../../controller.py" line="595"/>
+        <location filename="../../controller.py" line="606"/>
         <source>Downloading model file: {filename}</source>
         <translation>모델 파일 다운로드 중: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="915"/>
+        <location filename="../../controller.py" line="637"/>
         <source>Unsaved Changes</source>
         <translation>저장되지 않은 변경 사항</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="916"/>
+        <location filename="../../controller.py" line="638"/>
         <source>Save changes to this file?</source>
         <translation>이 파일의 변경 사항을 저장하시겠습니까?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="917"/>
+        <location filename="../../controller.py" line="639"/>
         <source>Save</source>
         <translation>저장</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="918"/>
+        <location filename="../../controller.py" line="640"/>
         <source>Don&apos;t Save</source>
         <translation>저장 안 함</translation>
     </message>
@@ -204,7 +204,7 @@
         <translation type="vanished">저장 안 함</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="919"/>
+        <location filename="../../controller.py" line="641"/>
         <source>Cancel</source>
         <translation>취소</translation>
     </message>
@@ -402,7 +402,12 @@
         <translation>모두 번역</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="443"/>
+        <location filename="../../app/ui/main_window.py" line="406"/>
+        <source>Batch Report</source>
+        <translation>일괄 처리 보고서</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window.py" line="447"/>
         <source>Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)</source>
         <translation>이미지, PDF, Epub 또는 만화책 아카이브 파일(cbr, cbz 등) 가져오기</translation>
     </message>
@@ -457,7 +462,7 @@
         <translation>렌더링</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="684"/>
+        <location filename="../../app/ui/main_window.py" line="688"/>
         <source>Brush/Eraser Size Slider</source>
         <translation>브러시/지우개 크기 슬라이더</translation>
     </message>
@@ -536,124 +541,124 @@
         <translation type="vanished">로드된 이미지</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="438"/>
+        <location filename="../../app/ui/main_window.py" line="442"/>
         <source>Click or drag files here</source>
         <translation>여기에 파일을 클릭하거나 드래그하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="465"/>
+        <location filename="../../app/ui/main_window.py" line="469"/>
         <source>Source Language</source>
         <translation>소스 언어</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="476"/>
+        <location filename="../../app/ui/main_window.py" line="480"/>
         <source>Target Language</source>
         <translation>대상 언어</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="489"/>
+        <location filename="../../app/ui/main_window.py" line="493"/>
         <source>Font</source>
         <translation>글꼴</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="500"/>
+        <location filename="../../app/ui/main_window.py" line="504"/>
         <source>Font Size</source>
         <translation>글꼴 크기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="508"/>
+        <location filename="../../app/ui/main_window.py" line="512"/>
         <source>Line Spacing</source>
         <translation>줄 간격</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="528"/>
+        <location filename="../../app/ui/main_window.py" line="532"/>
         <source>Font Color</source>
         <translation>글꼴 색상</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="546"/>
+        <location filename="../../app/ui/main_window.py" line="550"/>
         <source>Bold</source>
         <translation>굵게</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="548"/>
+        <location filename="../../app/ui/main_window.py" line="552"/>
         <source>Italic</source>
         <translation>기울임꼴</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="550"/>
+        <location filename="../../app/ui/main_window.py" line="554"/>
         <source>Underline</source>
         <translation>밑줄</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="562"/>
+        <location filename="../../app/ui/main_window.py" line="566"/>
         <source>Outline</source>
         <translation>윤곽선</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="566"/>
+        <location filename="../../app/ui/main_window.py" line="570"/>
         <source>Outline Color</source>
         <translation>윤곽선 색상</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="575"/>
+        <location filename="../../app/ui/main_window.py" line="579"/>
         <source>Outline Width</source>
         <translation>윤곽선 너비</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="600"/>
+        <location filename="../../app/ui/main_window.py" line="604"/>
         <source>Pan Image</source>
         <translation>이미지 이동</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="605"/>
+        <location filename="../../app/ui/main_window.py" line="609"/>
         <source>Set for all</source>
         <translation>모두 설정</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="606"/>
+        <location filename="../../app/ui/main_window.py" line="610"/>
         <source>Sets the Source and Target Language on the current page for all pages</source>
         <translation>현재 페이지의 출발어 및 대상 언어를 모든 페이지에 설정합니다.</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="616"/>
+        <location filename="../../app/ui/main_window.py" line="620"/>
         <source>Draw or Select Text Boxes</source>
         <translation>텍스트 상자 그리기 또는 선택</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="621"/>
+        <location filename="../../app/ui/main_window.py" line="625"/>
         <source>Delete Selected Box</source>
         <translation>선택한 상자 삭제</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="624"/>
+        <location filename="../../app/ui/main_window.py" line="628"/>
         <source>Remove all the Boxes on the Image</source>
         <translation>이미지에서 모든 상자 제거</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="627"/>
+        <location filename="../../app/ui/main_window.py" line="631"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>기존 텍스트 블록 목록의 모든 텍스트 블록을 이미지에 다시 그립니다
 (추가 편집을 위해)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="636"/>
+        <location filename="../../app/ui/main_window.py" line="640"/>
         <source>Reduce the size of all blocks</source>
         <translation>모든 블록의 크기 줄이기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="650"/>
+        <location filename="../../app/ui/main_window.py" line="654"/>
         <source>Increase the size of all blocks</source>
         <translation>모든 블록의 크기 늘리기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="662"/>
+        <location filename="../../app/ui/main_window.py" line="666"/>
         <source>Draw Brush Strokes for Cleaning Image</source>
         <translation>이미지 정리를 위한 브러시 스트로크 그리기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="667"/>
+        <location filename="../../app/ui/main_window.py" line="671"/>
         <source>Erase Brush Strokes</source>
         <translation>브러시 스트로크 지우기</translation>
     </message>
@@ -666,7 +671,7 @@ back on the Image (for further editing)</source>
         <translation type="vanished">브러시 스트로크 다시 실행</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="672"/>
+        <location filename="../../app/ui/main_window.py" line="676"/>
         <source>Remove all the brush strokes on the Image</source>
         <translation>이미지에서 모든 브러시 스트로크 제거</translation>
     </message>
@@ -687,12 +692,12 @@ back on the Image (for further editing)</source>
         <translation type="vanished">이미지 다시 실행</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="688"/>
+        <location filename="../../app/ui/main_window.py" line="692"/>
         <source>Box Drawing</source>
         <translation>상자 그리기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window.py" line="692"/>
+        <location filename="../../app/ui/main_window.py" line="696"/>
         <source>Inpainting</source>
         <translation>인페인팅</translation>
     </message>
@@ -860,38 +865,34 @@ Translated archives are saved as &lt;filename&gt;_translated.&lt;ext&gt; next to
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="785"/>
         <source>No Text Blocks Detected.
 Skipping:</source>
-        <translation>텍스트 블록이 감지되지 않았습니다.
+        <translation type="vanished">텍스트 블록이 감지되지 않았습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="786"/>
         <source>Could not OCR detected text.
 Skipping:</source>
-        <translation>감지된 텍스트를 OCR 할 수 없습니다.
+        <translation type="vanished">감지된 텍스트를 OCR 할 수 없습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="787"/>
         <source>Could not get translations.
 Skipping:</source>
-        <translation>번역을 가져올 수 없습니다.
+        <translation type="vanished">번역을 가져올 수 없습니다.
 건너뛰기:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="433"/>
         <source>Cancelling... %p%</source>
-        <translation>취소 중... %p%</translation>
+        <translation type="vanished">취소 중... %p%</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="838"/>
+        <location filename="../../controller.py" line="560"/>
         <source>Processing:</source>
         <translation>처리 중:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="841"/>
+        <location filename="../../controller.py" line="563"/>
         <source>Archiving:</source>
         <translation>압축 중:</translation>
     </message>
@@ -942,13 +943,15 @@ Go to Settings &gt; Credentials &gt; Microsoft to set one</source>
         <translation type="vanished">DeepL은 베트남어를 지원하지 않습니다.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="11"/>
         <source>Comic has been Translated!</source>
-        <translation type="vanished">만화가 번역되었습니다!</translation>
+        <translation>만화가 번역되었습니다!</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="23"/>
         <source>No Font selected.
 Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
-        <translation type="vanished">글꼴이 선택되지 않았습니다.
+        <translation>글꼴이 선택되지 않았습니다.
 설정 &gt; 텍스트 렌더링 &gt; 글꼴로 이동하여 선택하거나 가져오세요.</translation>
     </message>
     <message>
@@ -960,44 +963,137 @@ Go to Settings &gt; Text Rendering &gt; Font to select or import one </source>
         <translation type="vanished">계속하려면 설정 &gt; 계정에서 로그인 또는 가입하세요. (고급 사용자는 설정 &gt; 고급에서 API 키를 설정할 수 있습니다.)</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="35"/>
         <source>Please sign in or sign up via Settings &gt; Account to continue.</source>
-        <translation type="vanished">계속하려면 설정 &gt; 계정에서 로그인하거나 가입하세요.</translation>
+        <translation>계속하려면 설정 &gt; 계정에서 로그인하거나 가입하세요.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="47"/>
         <source>The translator does not support the selected target language. Please choose a different language or tool.</source>
-        <translation type="vanished">선택한 번역기는 해당 대상 언어를 지원하지 않습니다. 다른 언어나 도구를 선택하세요.</translation>
+        <translation>선택한 번역기는 해당 대상 언어를 지원하지 않습니다. 다른 언어나 도구를 선택하세요.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="59"/>
         <source>No {} selected. Please select a {} in Settings &gt; Tools.</source>
-        <translation type="vanished">선택된 {}이(가) 없습니다. 설정 &gt; 도구에서 {}을(를) 선택하세요.</translation>
+        <translation>선택된 {}이(가) 없습니다. 설정 &gt; 도구에서 {}을(를) 선택하세요.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="80"/>
         <source>Insufficient credits to perform this action.
 Go to Settings &gt; Account to buy more credits.</source>
-        <translation type="vanished">이 작업을 수행하기에 크레딧이 부족합니다.
+        <translation>이 작업을 수행하기에 크레딧이 부족합니다.
 설정 &gt; 계정에서 크레딧을 추가로 구매하세요.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="99"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
-        <translation type="vanished">사용자 지정은 고급 API 구성이 필요합니다. 대부분의 사용자는 크레딧 시스템을 사용하는 것이 좋습니다.
+        <translation>사용자 지정은 고급 API 구성이 필요합니다. 대부분의 사용자는 크레딧 시스템을 사용하는 것이 좋습니다.
 크레딧을 사용하려면 설정 &gt; 계정에서 로그인하거나, 설정 &gt; 고급에서 사용자 지정 API를 구성하세요.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="135"/>
         <source>Copy</source>
-        <translation type="vanished">복사</translation>
+        <translation>복사</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="158"/>
+        <source>We encountered an unexpected server error.
+Please try again in a few moments.</source>
+        <translation>예기치 않은 서버 오류가 발생했습니다.
+잠시 후 다시 시도해주세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="159"/>
+        <source>The external service provider is having trouble.
+Please try again later.</source>
+        <translation>외부 서비스 제공업체에 문제가 발생했습니다.
+나중에 다시 시도해주세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="160"/>
+        <source>The server is currently busy or under maintenance.
+Please try again shortly.</source>
+        <translation>서버가 현재 사용 중이거나 유지보수 중입니다.
+잠시 후 다시 시도해주세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="161"/>
+        <source>The server took too long to respond.
+Please check your connection or try again later.</source>
+        <translation>서버 응답 시간이 초과되었습니다.
+연결을 확인하거나 나중에 다시 시도해주세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="167"/>
+        <source>The selected text recognition tool is not supported.
+Please select a different tool in Settings.</source>
+        <translation>선택한 텍스트 인식 도구는 지원되지 않습니다.
+설정에서 다른 도구를 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="169"/>
+        <source>The selected translator is not supported.
+Please select a different tool in Settings.</source>
+        <translation>선택한 번역기는 지원되지 않습니다.
+설정에서 다른 도구를 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="171"/>
+        <source>The selected tool is not supported.
+Please select a different tool in Settings.</source>
+        <translation>선택한 도구는 지원되지 않습니다.
+설정에서 다른 도구를 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="238"/>
+        <source>{0} image(s) were skipped in this batch.
+Open Batch Report to see all skipped images and reasons.</source>
+        <translation>이 일괄 처리에서 {0}개의 이미지가 건너뛰어졌습니다.
+건너뛴 이미지와 이유를 보려면 일괄 처리 보고서를 여세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="203"/>
+        <source>Text Recognition blocked: The AI provider flagged this content.
+Please try a different Text Recognition tool.</source>
+        <translation>텍스트 인식 차단됨: AI 공급자가 이 콘텐츠를 신고했습니다.
+다른 텍스트 인식 도구를 사용해 보세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="208"/>
+        <source>Translation blocked: The AI provider flagged this content.
+Please try a different translator.</source>
+        <translation>번역 차단됨: AI 공급자가 이 콘텐츠를 신고했습니다.
+다른 번역기를 사용해 보세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="213"/>
+        <source>Operation blocked: The AI provider flagged this content.
+Please try a different tool.</source>
+        <translation>작업 차단됨: AI 공급자가 이 콘텐츠를 신고했습니다.
+다른 도구를 사용해 보세요.</translation>
+    </message>
+    <message>
+        <source>{0}: The content was flagged by the AI provider&apos;s safety filters.
+{1}</source>
+        <translation type="vanished">{0}: AI 제공업체의 안전 필터에 의해 콘텐츠가 차단되었습니다.
+{1}</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/messages.py" line="88"/>
+        <location filename="../../app/ui/messages.py" line="136"/>
         <source>OK</source>
-        <translation type="vanished">확인</translation>
+        <translation>확인</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="79"/>
         <source>Insufficient Credits</source>
-        <translation type="vanished">크레딧 부족</translation>
+        <translation>크레딧 부족</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="137"/>
         <source>Close</source>
-        <translation type="vanished">닫기</translation>
+        <translation>닫기</translation>
     </message>
     <message>
         <source>An unexpected error occurred on the server.
@@ -1030,9 +1126,10 @@ Please try again later.</source>
 나중에 다시 시도해 주세요.</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="188"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
-        <translation type="vanished">서버에 연결할 수 없습니다.
+        <translation>서버에 연결할 수 없습니다.
 인터넷 연결을 확인해 주세요.</translation>
     </message>
     <message>
@@ -1055,27 +1152,27 @@ Please try modifying the text or using a different translator.</source>
 <context>
     <name>PageListView</name>
     <message>
-        <location filename="../../app/ui/list_view.py" line="45"/>
+        <location filename="../../app/ui/list_view.py" line="73"/>
         <source>Insert</source>
         <translation>삽입</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="46"/>
+        <location filename="../../app/ui/list_view.py" line="74"/>
         <source>Delete</source>
         <translation>삭제</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="51"/>
+        <location filename="../../app/ui/list_view.py" line="79"/>
         <source>Unskip</source>
         <translation>건너뛰기 해제</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="54"/>
+        <location filename="../../app/ui/list_view.py" line="82"/>
         <source>Skip</source>
         <translation>건너뛰기</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="60"/>
+        <location filename="../../app/ui/list_view.py" line="88"/>
         <source>Translate</source>
         <translation>번역</translation>
     </message>
@@ -1096,44 +1193,55 @@ Please try modifying the text or using a different translator.</source>
 <context>
     <name>SearchReplaceController</name>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="435"/>
         <source>Empty query</source>
-        <translation type="vanished">빈 쿼리</translation>
+        <translation>빈 쿼리</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="524"/>
         <source>Search Error</source>
-        <translation type="vanished">검색 오류</translation>
+        <translation>검색 오류</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="577"/>
         <source>Ready</source>
-        <translation type="vanished">준비됨</translation>
+        <translation>준비됨</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="590"/>
         <source>No results</source>
-        <translation type="vanished">결과 없음</translation>
+        <translation>결과 없음</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1062"/>
+        <location filename="../../app/controllers/search_replace.py" line="1146"/>
         <source>Replace Error</source>
-        <translation type="vanished">교체 오류</translation>
+        <translation>교체 오류</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1132"/>
         <source>Replace</source>
-        <translation type="vanished">바꾸기</translation>
+        <translation>바꾸기</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1137"/>
         <source>Replaced 1 occurrence(s)</source>
-        <translation type="vanished">1개의 항목이 교체되었습니다</translation>
+        <translation>1개의 항목이 교체되었습니다</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1215"/>
         <source>Replace All</source>
-        <translation type="vanished">모두 바꾸기</translation>
+        <translation>모두 바꾸기</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1223"/>
         <source>Replaced {0} occurrence(s)</source>
-        <translation type="vanished">{0}개의 항목이 교체되었습니다</translation>
+        <translation>{0}개의 항목이 교체되었습니다</translation>
     </message>
     <message>
+        <location filename="../../app/controllers/search_replace.py" line="1225"/>
         <source>No replacements</source>
-        <translation type="vanished">교체 항목 없음</translation>
+        <translation>교체 항목 없음</translation>
     </message>
 </context>
 <context>
@@ -1985,9 +2093,202 @@ then do inpainting on the resized image.</source>
     </message>
 </context>
 <context>
+    <name>self.main</name>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="76"/>
+        <source>The AI provider flagged this content</source>
+        <translation>AI 공급자가 이 콘텐츠를 신고했습니다</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="78"/>
+        <source>Insufficient credits</source>
+        <translation>크레딧 부족</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="80"/>
+        <source>Request timed out</source>
+        <translation>요청 시간 초과</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="86"/>
+        <source>Rate limited by provider</source>
+        <translation>공급자에 의한 속도 제한</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="93"/>
+        <source>Authentication failed</source>
+        <translation>인증 실패</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="100"/>
+        <source>Network or connection error</source>
+        <translation>네트워크 또는 연결 오류</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="109"/>
+        <source>Provider unavailable</source>
+        <translation>공급자 사용 불가</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="115"/>
+        <source>Invalid translation response</source>
+        <translation>잘못된 번역 응답</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="116"/>
+        <source>Unexpected tool error</source>
+        <translation>예상치 못한 도구 오류</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="124"/>
+        <location filename="../../app/controllers/batch_report.py" line="173"/>
+        <source>Try another text recognition tool</source>
+        <translation>다른 텍스트 인식 도구를 사용해 보세요</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="128"/>
+        <location filename="../../app/controllers/batch_report.py" line="177"/>
+        <source>Try another translator</source>
+        <translation>다른 번역기를 사용해 보세요</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="129"/>
+        <source>Try another tool</source>
+        <translation>다른 도구를 사용해 보세요</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="131"/>
+        <source>Buy more credits</source>
+        <translation>크레딧 더 구매하기</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="133"/>
+        <location filename="../../app/controllers/batch_report.py" line="168"/>
+        <location filename="../../app/controllers/batch_report.py" line="178"/>
+        <source>Try again</source>
+        <translation>다시 시도</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="139"/>
+        <source>Wait and try again</source>
+        <translation>잠시 기다렸다가 다시 시도하세요</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="146"/>
+        <source>Check API settings</source>
+        <translation>API 설정 확인</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="153"/>
+        <source>Check your connection</source>
+        <translation>연결 상태 확인</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="162"/>
+        <source>Try again later</source>
+        <translation>나중에 다시 시도하세요</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="184"/>
+        <source>No text blocks detected</source>
+        <translation>텍스트 블록이 감지되지 않았습니다</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="185"/>
+        <source>Text recognition failed</source>
+        <translation>텍스트 인식 실패</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="186"/>
+        <source>Translation failed</source>
+        <translation>번역 실패</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="187"/>
+        <source>Webtoon text recognition chunk failed</source>
+        <translation>웹툰 텍스트 인식 청크 실패</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="189"/>
+        <source>Webtoon translation chunk failed</source>
+        <translation>웹툰 번역 청크 실패</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="192"/>
+        <source>Page processing failed</source>
+        <translation>페이지 처리 실패</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="253"/>
+        <source>This image is not in the current project.</source>
+        <translation>이 이미지는 현재 프로젝트에 없습니다.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <source>Cancelled</source>
+        <translation>취소됨</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <source>Completed</source>
+        <translation>완료됨</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="282"/>
+        <source>{0}  |  Updated {1}</source>
+        <translation>{0}  |  업데이트됨 {1}</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="309"/>
+        <source>Total</source>
+        <translation>총합</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="310"/>
+        <location filename="../../app/controllers/batch_report.py" line="356"/>
+        <source>Skipped</source>
+        <translation>건너뜀</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="320"/>
+        <source>Skipped Images ({0})</source>
+        <translation>건너뛴 이미지 ({0})</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="327"/>
+        <source>Double-click a row to open that page.</source>
+        <translation>행을 두 번 클릭하면 해당 페이지가 열립니다.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <source>Image</source>
+        <translation>이미지</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <source>Reason</source>
+        <translation>이유</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="366"/>
+        <source>No skipped images in this batch.</source>
+        <translation>이 일괄 처리에서 건너뛴 이미지가 없습니다.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="377"/>
+        <source>No batch report is available yet.</source>
+        <translation>아직 일괄 처리 보고서가 없습니다.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="391"/>
+        <source>Batch Report</source>
+        <translation>일괄 처리 보고서</translation>
+    </message>
+</context>
+<context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window.py" line="761"/>
+        <location filename="../../app/ui/main_window.py" line="765"/>
         <source>Light</source>
         <translation>밝게</translation>
     </message>

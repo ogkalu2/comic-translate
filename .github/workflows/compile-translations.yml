@@ -1,0 +1,73 @@
+name: Compile Qt Translations
+
+on:
+  push:
+    paths:
+      - 'resources/translations/*.ts'
+      - '.github/workflows/compile-translations.yml'
+  pull_request:
+    paths:
+      - 'resources/translations/*.ts'
+  workflow_dispatch:
+
+jobs:
+  compile-translations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PySide6
+        run: |
+          pip install PySide6>=6.8.0
+
+      - name: Compile translation files
+        run: |
+          echo "Compiling Qt translation files..."
+          mkdir -p resources/translations/compiled
+
+          # Find all .ts files and compile them
+          for ts_file in resources/translations/*.ts; do
+            if [ -f "$ts_file" ]; then
+              filename=$(basename "$ts_file" .ts)
+              qm_file="resources/translations/compiled/${filename}.qm"
+              echo "Compiling $ts_file -> $qm_file"
+              pyside6-lrelease "$ts_file" -qm "$qm_file"
+            fi
+          done
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --quiet resources/translations/compiled/ || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit compiled translations
+        if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'push'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add resources/translations/compiled/*.qm
+          git commit -m "chore: Auto-compile Qt translation files [skip ci]"
+
+      - name: Push changes
+        if: steps.check_changes.outputs.changed == 'true' && github.event_name == 'push'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+
+      - name: Upload compiled translations as artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-translations
+          path: resources/translations/compiled/*.qm
+          retention-days: 7

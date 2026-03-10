@@ -52,7 +52,7 @@ def is_vertical_language_code(lang_code: str | None) -> bool:
     if not lang_code:
         return False
     code = lang_code.lower()
-    return code in {"zh-cn", "zh-tw", "ja"}
+    return code in {"zh-cn", "zh-tw", "zh-hk", "yue", "ja"}
 
 def is_vertical_block(blk, lang_code: str | None) -> bool:
     """Return True if this block should be rendered vertically.
@@ -119,7 +119,7 @@ def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str,
 
     return mutable_message, font_size
 
-def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 40, min_font_size=10, outline: bool = True):
+def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colour: str = "#000", init_font_size: int = 12, min_font_size=10, outline: bool = True):
     image = array_to_pil(image)
     draw = ImageDraw.Draw(image)
 
@@ -137,7 +137,8 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
             min_font_size = blk.min_font_size
         if blk.max_font_size > 0:
             init_font_size = blk.max_font_size
-        if blk.font_color:
+        # Only use detected font_color if it's a valid RGB tuple (not empty)
+        if blk.font_color and len(blk.font_color) == 3:
             colour = blk.font_color
 
         translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height,
@@ -156,19 +157,31 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
 
 def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img=None):
     # Using Speech Bubble detection to find best Text Render Area
-    
-    # if inpainted_img is None or inpainted_img.size == 0:
-    #     return blk_list
-    
+    img_h, img_w = (img.shape[:2] if img is not None else (None, None))
     for blk in blk_list:
         if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
-            
+            bx1, by1, bx2, by2 = (int(v) for v in blk.bubble_xyxy)
+            # Clamp bubble coords to image bounds before shrinking
+            if img_h is not None and img_w is not None:
+                bx1 = max(0, min(bx1, img_w))
+                by1 = max(0, min(by1, img_h))
+                bx2 = max(bx1 + 1, min(bx2, img_w))
+                by2 = max(by1 + 1, min(by2, img_h))
+            bubble: tuple[int, int, int, int] = (bx1, by1, bx2, by2)
             if blk.source_lang_direction == 'vertical':
-                text_draw_bounds = shrink_bbox(blk.bubble_xyxy, shrink_percent=0.3)
-                bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
-                blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
+                text_draw_bounds = shrink_bbox(bubble, shrink_percent=0.3)
+            else:
+                text_draw_bounds = shrink_bbox(bubble, shrink_percent=0.1)
+            bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
+            # Clamp shrunk result to image boundaries
+            if img_h is not None and img_w is not None:
+                bdx1 = max(0, min(bdx1, img_w - 1))
+                bdy1 = max(0, min(bdy1, img_h - 1))
+                bdx2 = max(bdx1 + 1, min(bdx2, img_w))
+                bdy2 = max(bdy1 + 1, min(bdy2, img_h))
+            blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
 
-    if blk_list and blk_list[0].source_lang not in ['ko', 'zh']:
+    if img is not None and blk_list and blk_list[0].source_lang not in ['ko', 'zh']:
         adjust_blks_size(blk_list, img, -5, -5)
 
     return blk_list
@@ -205,7 +218,7 @@ def pyside_word_wrap(
 
     def eval_metrics(txt: str, font_sz: float, vertical: bool = False) -> Tuple[float, float]:
         """Quick helper function to calculate width/height of text using QTextDocument."""
-        
+
         # Create a QTextDocument
         doc = QTextDocument()
         doc.setDefaultFont(prepare_font(font_sz))
@@ -225,6 +238,8 @@ def pyside_word_wrap(
             doc.setDocumentLayout(layout)
             layout.update_layout()
         else:
+            # Constrain document to roi_width so Qt reflows text and height is accurate
+            doc.setTextWidth(roi_width)
             # Apply line spacing
             cursor = QTextCursor(doc)
             cursor.select(QTextCursor.SelectionType.Document)
@@ -233,40 +248,44 @@ def pyside_word_wrap(
             block_format.setLineHeight(spacing, QTextBlockFormat.LineHeightTypes.ProportionalHeight.value)
             block_format.setAlignment(alignment)
             cursor.mergeBlockFormat(block_format)
-        
+
         # Get the size of the document
         size = doc.size()
         width, height = size.width(), size.height()
-        
+
         # Add outline width to the size
         if outline_width > 0:
             width += 2 * outline_width
             height += 2 * outline_width
-        
+
         return width, height
 
     def wrap_and_size(font_size):
-        words = text.split()
-        lines = []
-        # build lines greedily
-        while words:
-            line = words.pop(0)
-            # try extending the current line
-            while words:
-                test = f"{line} {words[0]}"
-                w, h = eval_metrics(test, font_size, vertical)
-                side, side_roi = (h, roi_height) if vertical else (w, roi_width)
-                if side <= side_roi:
-                    line = test
-                    words.pop(0)
-                else:
-                    break
-            lines.append(line)
-        wrapped = "\n".join(lines)
-        # measure wrapped block
-        w, h = eval_metrics(wrapped, font_size, vertical)
-        return wrapped, w, h
-    
+        # For vertical CJK layout, do manual character-by-character wrapping.
+        # For horizontal text, Qt reflows automatically via setTextWidth in eval_metrics.
+        if vertical:
+            tokens = list(text) if ' ' not in text else text.split()
+            join_sep = '' if ' ' not in text else ' '
+            lines = []
+            while tokens:
+                line = tokens.pop(0)
+                while tokens:
+                    test = f"{line}{join_sep}{tokens[0]}"
+                    _, h = eval_metrics(test, font_size, vertical)
+                    if h <= roi_height:
+                        line = test
+                        tokens.pop(0)
+                    else:
+                        break
+                lines.append(line)
+            wrapped = "\n".join(lines)
+        else:
+            # Qt wraps automatically at roi_width via setTextWidth
+            wrapped = text
+
+        _, h = eval_metrics(wrapped, font_size, vertical)
+        return wrapped, h
+
     # Initialize
     best_text, best_size = text, init_font_size
     found_fit = False
@@ -274,17 +293,17 @@ def pyside_word_wrap(
     lo, hi = min_font_size, init_font_size
     while lo <= hi:
         mid = (lo + hi) // 2
-        wrapped, w, h = wrap_and_size(mid)
-        if w <= roi_width and h <= roi_height:
+        wrapped, h = wrap_and_size(mid)
+        if h <= roi_height:
             found_fit = True
             best_text, best_size = wrapped, mid
             lo = mid + 1
         else:
             hi = mid - 1
 
-    # if nothing ever fit, force a wrap at the minimum size
+    # if nothing ever fit, force at minimum size
     if not found_fit:
-        best_text, w, h = wrap_and_size(min_font_size)
+        best_text, _ = wrap_and_size(min_font_size)
         best_size = min_font_size
 
     return best_text, best_size
@@ -346,7 +365,7 @@ def manual_wrap(
     underline: bool, 
     alignment: Qt.AlignmentFlag, 
     direction: Qt.LayoutDirection, 
-    init_font_size: int = 40, 
+    init_font_size: int = 12, 
     min_font_size: int = 10
 ):
     

@@ -37,6 +37,7 @@ class MMessage(QtWidgets.QWidget):
     def __init__(self, text, duration=None, dayu_type=None, closable=False, parent=None):
         super(MMessage, self).__init__(parent)
         self.setObjectName("message")
+        self._sig_closed_emitted = False
         self.setWindowFlags(
             QtCore.Qt.WindowType.FramelessWindowHint
             | QtCore.Qt.WindowType.Dialog
@@ -75,7 +76,6 @@ class MMessage(QtWidgets.QWidget):
             _close_timer = QtCore.QTimer(self)
             _close_timer.setSingleShot(True)
             _close_timer.timeout.connect(self.close)
-            _close_timer.timeout.connect(self.sig_closed)
             _close_timer.setInterval(duration * 1000)
 
             _ani_timer = QtCore.QTimer(self)
@@ -101,6 +101,12 @@ class MMessage(QtWidgets.QWidget):
 
         self._set_proper_position(parent)
         self._fade_int()
+
+    def closeEvent(self, event):
+        if not self._sig_closed_emitted:
+            self._sig_closed_emitted = True
+            self.sig_closed.emit()
+        super(MMessage, self).closeEvent(event)
 
     def _fade_out(self):
         self._pos_ani.setDirection(QtCore.QAbstractAnimation.Backward)
