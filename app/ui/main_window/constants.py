@@ -40,6 +40,7 @@ supported_target_languages = [
     "Indonesian",
     "Finnish",
     "Arabic",
+    "Hebrew",
     "Czech",
     "Persian",
     "Romanian",
