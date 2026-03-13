@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import json
-import shutil
 import requests
 import logging
 import traceback
@@ -16,12 +15,10 @@ from PySide6.QtGui import QColor
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.textblock import sort_blk_list
-from modules.utils.pipeline_config import inpaint_map, get_config
+from modules.utils.pipeline_config import get_config
 from modules.utils.image_utils import generate_mask, get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
-from modules.utils.common_utils import is_directory_empty
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
-from modules.utils.archives import make, resolve_save_as_ext
 from modules.rendering.render import get_best_render_area, pyside_word_wrap, is_vertical_block
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
@@ -35,6 +32,7 @@ from .ocr_handler import OCRHandler
 from .discovery_pass import DiscoveryPass
 from .comic_session import ComicSession
 from .sfx_classifier import classify_sfx_blocks
+from .batch_base import BatchProcessorBase
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -42,31 +40,19 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BatchProcessor:
+class BatchProcessor(BatchProcessorBase):
     """Handles batch processing of comic translation."""
-    
-    def __init__(
-            self, 
-            main_page: ComicTranslate, 
-            cache_manager: CacheManager, 
-            block_detection_handler: BlockDetectionHandler, 
-            inpainting_handler: InpaintingHandler, 
-            ocr_handler: OCRHandler 
-        ):
-        
-        self.main_page = main_page
-        self.cache_manager = cache_manager
-        # Use shared handlers from the main pipeline
-        self.block_detection = block_detection_handler
-        self.inpainting = inpainting_handler
-        self.ocr_handler = ocr_handler
-        self.comic_session = None
 
-    def skip_save(self, directory, timestamp, base_name, extension, archive_bname, image):
-        path = os.path.join(directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
-        imk.write_image(os.path.join(path, f"{base_name}_translated{extension}"), image)
+    def __init__(
+            self,
+            main_page: ComicTranslate,
+            cache_manager: CacheManager,
+            block_detection_handler: BlockDetectionHandler,
+            inpainting_handler: InpaintingHandler,
+            ocr_handler: OCRHandler
+        ):
+        super().__init__(main_page, cache_manager, block_detection_handler, inpainting_handler, ocr_handler)
+        self.comic_session = None
 
     def emit_progress(self, index, total, step, steps, change_name):
         """Wrapper around main_page.progress_update.emit that logs a human-readable stage."""
@@ -84,17 +70,6 @@ class BatchProcessor:
         stage_name = stage_map.get(step, f'stage-{step}')
         logger.info(f"Progress: image_index={index}/{total} step={step}/{steps} ({stage_name}) change_name={change_name}")
         self.main_page.progress_update.emit(index, total, step, steps, change_name)
-
-    def log_skipped_image(self, directory, timestamp, image_path, reason="", full_traceback=""):
-        skipped_file = os.path.join(directory, f"comic_translate_{timestamp}", "skipped_images.txt")
-        with open(skipped_file, 'a', encoding='UTF-8') as file:
-            file.write(image_path + "\n")
-            file.write(reason + "\n")
-            file.write("\n")
-
-    def _is_cancelled(self) -> bool:
-        worker = getattr(self.main_page, "current_worker", None)
-        return bool(worker and worker.is_cancelled)
 
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
@@ -132,17 +107,7 @@ class BatchProcessor:
             
             base_name = os.path.splitext(os.path.basename(image_path))[0].strip()
             extension = os.path.splitext(image_path)[1]
-            directory = os.path.dirname(image_path)
-
-            archive_bname = ""
-            for archive in self.main_page.file_handler.archive_info:
-                images = archive['extracted_images']
-                archive_path = archive['archive_path']
-
-                for img_pth in images:
-                    if img_pth == image_path:
-                        directory = os.path.dirname(archive_path)
-                        archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
+            directory, archive_bname = self._resolve_archive_info(image_path)
 
             image = imk.read_image(image_path)
 
@@ -227,21 +192,7 @@ class BatchProcessor:
             # Clean Image of text
             export_settings = settings_page.get_export_settings()
 
-            # Use the shared inpainter from the handler
-            if self.inpainting.inpainter_cache is None or self.inpainting.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-                backend = 'onnx'
-                device = resolve_device(
-                    settings_page.is_gpu_enabled(),
-                    backend=backend
-                )
-                inpainter_key = settings_page.get_tool_selection('inpainter')
-                InpainterClass = inpaint_map[inpainter_key]
-                logger.info("pre-inpaint: initializing inpainter '%s' on device %s", inpainter_key, device)
-                t0 = time.time()
-                self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
-                self.inpainting.cached_inpainter_key = inpainter_key
-                t1 = time.time()
-                logger.info("pre-inpaint: inpainter initialized in %.2fs", t1 - t0)
+            self._ensure_inpainter()
 
             config = get_config(settings_page)
             logger.info("pre-inpaint: generating mask (blk_list=%d blocks)", len(blk_list))
@@ -508,45 +459,6 @@ class BatchProcessor:
 
             self.emit_progress(index, total_images, 10, 10, False)
 
-        archive_info_list = self.main_page.file_handler.archive_info
-        # Conditional Save: Archives (controlled by auto_save)
         if self._is_cancelled():
             return
-        if archive_info_list and export_settings['auto_save']:
-            archive_save_as = settings_page.get_export_settings().get('archive_save_as')
-            for archive_index, archive in enumerate(archive_info_list):
-                archive_index_input = total_images + archive_index
-
-                self.emit_progress(archive_index_input, total_images, 1, 3, True)
-                if self._is_cancelled():
-                    return
-
-                archive_path = archive['archive_path']
-                archive_ext = os.path.splitext(archive_path)[1]
-                archive_bname = os.path.splitext(os.path.basename(archive_path))[0].strip()
-                archive_directory = os.path.dirname(archive_path)
-                save_as_ext = resolve_save_as_ext(archive_ext, archive_save_as)
-
-                save_dir = os.path.join(archive_directory, f"comic_translate_{timestamp}", "translated_images", archive_bname)
-                check_from = os.path.join(archive_directory, f"comic_translate_{timestamp}")
-
-                self.emit_progress(archive_index_input, total_images, 2, 3, True)
-                if self._is_cancelled():
-                    return
-
-                # Create the new archive
-                output_base_name = f"{archive_bname}"
-                make(save_as_ext=save_as_ext, input_dir=save_dir, 
-                    output_dir=archive_directory, output_base_name=output_base_name)
-
-                self.emit_progress(archive_index_input, total_images, 3, 3, True)
-                if self._is_cancelled():
-                    return
-
-                # Clean up temporary 
-                if os.path.exists(save_dir):
-                    shutil.rmtree(save_dir)
-                # The temp dir is removed when closing the app
-
-                if is_directory_empty(check_from):
-                    shutil.rmtree(check_from)
+        self._pack_archives(timestamp, total_images, settings_page.get_export_settings())

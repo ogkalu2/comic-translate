@@ -193,6 +193,12 @@ The application supports multiple UI languages via Qt's translation system:
 - Compiled files: `resources/translations/compiled/ct_<lang>.qm`
 - Supported: English, Korean, French, Simplified Chinese, Traditional Chinese (Taiwan/Hong Kong), Russian, German, Spanish, Italian, Turkish
 
+### macOS M-series Optimization Status
+
+- `modules/utils/device.py` already detects `CoreMLExecutionProvider` via `_resolve_onnx_device()`
+- `get_providers()` already passes `CoreMLExecutionProvider` with cache dir options — ONNX models (lama, aot, mi_gan) already use CoreML on M-series
+- **Future spike (out of scope):** MLX-native inpainting models (4–8x speedup) — requires porting ONNX weights to MLX format, new inference path in `base.py`, and benchmark validation
+
 ### Important Notes
 
 - The application uses single-instance enforcement (only one instance can run)
