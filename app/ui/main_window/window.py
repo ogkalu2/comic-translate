@@ -121,6 +121,7 @@ class ComicTranslateUI(
             self.tr("Arabic"): "Arabic",
             self.tr("Hebrew"): "Hebrew",
             self.tr("Czech"): "Czech",
+            self.tr("Croatian"): "Croatian",
             self.tr("Persian"): "Persian",
             self.tr("Romanian"): "Romanian",
             self.tr("Mongolian"): "Mongolian",

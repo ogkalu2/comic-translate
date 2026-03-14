@@ -25,6 +25,7 @@ language_codes = {
     "Arabic": "ar",
     "Hebrew": "he",
     "Czech": "cs",
+    "Croatian": "hr",
     "Persian": "fa",
     "Romanian": "ro",
     "Mongolian": "mn",

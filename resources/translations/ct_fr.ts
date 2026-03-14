@@ -245,16 +245,21 @@
     </message>
     <message>
         <location filename="../../app/ui/main_window/window.py" line="124"/>
+        <source>Croatian</source>
+        <translation>Croate</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window/window.py" line="125"/>
         <source>Persian</source>
         <translation>Persan</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="125"/>
+        <location filename="../../app/ui/main_window/window.py" line="126"/>
         <source>Romanian</source>
         <translation>Roumain</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="126"/>
+        <location filename="../../app/ui/main_window/window.py" line="127"/>
         <source>Mongolian</source>
         <translation>Mongol</translation>
     </message>
@@ -2086,8 +2091,8 @@ Il a peut-être été déplacé, renommé ou supprimé.
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="392"/>
-        <location filename="../../app/ui/main_window/window.py" line="399"/>
+        <location filename="../../app/ui/main_window/window.py" line="393"/>
+        <location filename="../../app/ui/main_window/window.py" line="400"/>
         <source>Light</source>
         <translation>Clair</translation>
     </message>

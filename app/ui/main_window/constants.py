@@ -42,6 +42,7 @@ supported_target_languages = [
     "Arabic",
     "Hebrew",
     "Czech",
+    "Croatian",
     "Persian",
     "Romanian",
     "Mongolian",

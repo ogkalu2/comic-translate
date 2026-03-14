@@ -245,16 +245,21 @@
     </message>
     <message>
         <location filename="../../app/ui/main_window/window.py" line="124"/>
+        <source>Croatian</source>
+        <translation>Hırvatça</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window/window.py" line="125"/>
         <source>Persian</source>
         <translation>Farsça</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="125"/>
+        <location filename="../../app/ui/main_window/window.py" line="126"/>
         <source>Romanian</source>
         <translation>Romence</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="126"/>
+        <location filename="../../app/ui/main_window/window.py" line="127"/>
         <source>Mongolian</source>
         <translation>Moğolca</translation>
     </message>
@@ -2086,8 +2091,8 @@ Taşınmış, yeniden adlandırılmış veya silinmiş olabilir.
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="392"/>
-        <location filename="../../app/ui/main_window/window.py" line="399"/>
+        <location filename="../../app/ui/main_window/window.py" line="393"/>
+        <location filename="../../app/ui/main_window/window.py" line="400"/>
         <source>Light</source>
         <translation>Açık</translation>
     </message>
