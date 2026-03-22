@@ -754,7 +754,7 @@ Bu klasör Otomatik Kurtarma anlık görüntülerinden ayrıdır.</translation>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
         <source>Reset</source>
-        <translation>SÄ±fÄ±rla</translation>
+        <translation>Sıfırla</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="78"/>
@@ -1328,7 +1328,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Shortcuts</source>
-        <translation>KÄ±sayollar</translation>
+        <translation>Kısayollar</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
@@ -1351,7 +1351,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>Son dÃ¼zenleme iÅlemini geri alÄ±r.</translation>
+        <translation>Son düzenleme işlemini geri alır.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
@@ -1361,27 +1361,27 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>Daha Ã¶nce geri alÄ±nan iÅlemi yineler.</translation>
+        <translation>Daha önce geri alınan işlemi yineler.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
         <source>Delete Selected Box</source>
-        <translation>SeÃ§ili Kutuyu Sil</translation>
+        <translation>Seçili Kutuyu Sil</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="32"/>
         <source>Delete the currently selected text box.</source>
-        <translation>Åu anda seÃ§ili olan metin kutusunu siler.</translation>
+        <translation>Şu anda seçili olan metin kutusunu siler.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="37"/>
         <source>Restore Text Blocks</source>
-        <translation>Metin BloklarÄ±nÄ± Geri YÃ¼kle</translation>
+        <translation>Metin Bloklarını Geri Yükle</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>KayÄ±tlÄ± metin bloklarÄ±nÄ± dÃ¼zenleme iÃ§in tekrar gÃ¶rselin Ã¼zerine Ã§izer.</translation>
+        <translation>Kayıtlı metin bloklarını düzenleme için tekrar görselin üzerine çizer.</translation>
     </message>
 </context>
 <context>
@@ -1389,22 +1389,22 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="24"/>
         <source>Keyboard Shortcuts</source>
-        <translation>Klavye KÄ±sayollarÄ±</translation>
+        <translation>Klavye Kısayolları</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>SÄ±k kullanÄ±lan dÃ¼zenleme iÅlemleri iÃ§in kÄ±sayollar atayÄ±n. Bir kÄ±sayolu devre dÄ±ÅÄ± bÄ±rakmak iÃ§in alanÄ± boÅ bÄ±rakÄ±n.</translation>
+        <translation>Sık kullanılan düzenleme işlemleri için kısayollar atayın. Bir kısayolu devre dışı bırakmak için alanı boş bırakın.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
         <source>Reset</source>
-        <translation>SÄ±fÄ±rla</translation>
+        <translation>Sıfırla</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="65"/>
         <source>Reset All Shortcuts</source>
-        <translation>TÃ¼m KÄ±sayollarÄ± SÄ±fÄ±rla</translation>
+        <translation>Tüm Kısayolları Sıfırla</translation>
     </message>
 </context>
 <context>
@@ -1752,7 +1752,7 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Delete Selected Box</source>
-        <translation>SeÃ§ili Kutuyu Sil</translation>
+        <translation>Seçili Kutuyu Sil</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="290"/>
@@ -1763,7 +1763,7 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
         <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Mevcut metin blok listesindeki tÃ¼m metin bloklarÄ±nÄ± tekrar gÃ¶rsele Ã§izer (daha fazla dÃ¼zenleme iÃ§in)</translation>
+        <translation>Mevcut metin blok listesindeki tüm metin bloklarını tekrar görsele çizer (daha fazla düzenleme için)</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2082,13 +2082,13 @@ Taşınmış, yeniden adlandırılmış veya silinmiş olabilir.
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="109"/>
         <source>Delete Selected Box</source>
-        <translation>SeÃ§ili Kutuyu Sil</translation>
+        <translation>Seçili Kutuyu Sil</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="111"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Mevcut metin blok listesindeki tÃ¼m metin bloklarÄ±nÄ± tekrar gÃ¶rsele Ã§izer (daha fazla dÃ¼zenleme iÃ§in)</translation>
+        <translation>Mevcut metin blok listesindeki tüm metin bloklarını tekrar görsele çizer (daha fazla düzenleme için)</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>

@@ -754,7 +754,7 @@ Ce dossier est distinct des instantanés de récupération automatique.</transla
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
         <source>Reset</source>
-        <translation>RÃ©initialiser</translation>
+        <translation>Réinitialiser</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="78"/>
@@ -1351,27 +1351,27 @@ Redémarrer maintenant ?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>Annule la derniÃ¨re action de modification.</translation>
+        <translation>Annule la dernière action de modification.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
         <source>Redo</source>
-        <translation>RÃ©tablir</translation>
+        <translation>Rétablir</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>RÃ©tablit lâaction prÃ©cÃ©demment annulÃ©e.</translation>
+        <translation>Rétablit l’action précédemment annulée.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
         <source>Delete Selected Box</source>
-        <translation>Supprimer la zone sÃ©lectionnÃ©e</translation>
+        <translation>Supprimer la zone sélectionnée</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="32"/>
         <source>Delete the currently selected text box.</source>
-        <translation>Supprime la zone de texte actuellement sÃ©lectionnÃ©e.</translation>
+        <translation>Supprime la zone de texte actuellement sélectionnée.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="37"/>
@@ -1381,7 +1381,7 @@ Redémarrer maintenant ?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>Redessine sur lâimage les blocs de texte enregistrÃ©s pour les modifier.</translation>
+        <translation>Redessine sur l’image les blocs de texte enregistrés pour les modifier.</translation>
     </message>
 </context>
 <context>
@@ -1394,17 +1394,17 @@ Redémarrer maintenant ?</translation>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>Attribuez des raccourcis aux actions dâÃ©dition courantes. Laissez un champ vide pour dÃ©sactiver ce raccourci.</translation>
+        <translation>Attribuez des raccourcis aux actions d’édition courantes. Laissez un champ vide pour désactiver ce raccourci.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
         <source>Reset</source>
-        <translation>RÃ©initialiser</translation>
+        <translation>Réinitialiser</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="65"/>
         <source>Reset All Shortcuts</source>
-        <translation>RÃ©initialiser tous les raccourcis</translation>
+        <translation>Réinitialiser tous les raccourcis</translation>
     </message>
 </context>
 <context>
@@ -1597,7 +1597,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="32"/>
         <source>Redo</source>
-        <translation>RÃ©tablir</translation>
+        <translation>Rétablir</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="37"/>
@@ -1752,7 +1752,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Delete Selected Box</source>
-        <translation>Supprimer la zone sÃ©lectionnÃ©e</translation>
+        <translation>Supprimer la zone sélectionnée</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="290"/>
@@ -1763,7 +1763,7 @@ puis effectuer l&apos;inpainting sur l&apos;image redimensionnée.</translation>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Redessine tous les blocs de texte de la liste existante sur l&amp;apos;image (pour une modification ultÃ©rieure)</translation>
+        <translation>Redessine tous les blocs de texte de la liste existante sur l&amp;apos;image (pour une modification ultérieure)</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2082,13 +2082,13 @@ Il a peut-être été déplacé, renommé ou supprimé.
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="109"/>
         <source>Delete Selected Box</source>
-        <translation>Supprimer la zone sÃ©lectionnÃ©e</translation>
+        <translation>Supprimer la zone sélectionnée</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="111"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Redessine tous les blocs de texte de la liste existante sur l&amp;apos;image (pour une modification ultÃ©rieure)</translation>
+        <translation>Redessine tous les blocs de texte de la liste existante sur l&amp;apos;image (pour une modification ultérieure)</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>
@@ -2098,7 +2098,7 @@ back on the Image (for further editing)</source>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="128"/>
         <source>Redo</source>
-        <translation>RÃ©tablir</translation>
+        <translation>Rétablir</translation>
     </message>
 </context>
 <context>

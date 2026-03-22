@@ -1351,7 +1351,7 @@ Riavviare ora?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>Annulla lâultima azione di modifica.</translation>
+        <translation>Annulla l’ultima azione di modifica.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
@@ -1361,7 +1361,7 @@ Riavviare ora?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>Ripete lâazione annullata in precedenza.</translation>
+        <translation>Ripete l’azione annullata in precedenza.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
@@ -1381,7 +1381,7 @@ Riavviare ora?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>Ridisegna sullâimmagine i blocchi di testo salvati per modificarli.</translation>
+        <translation>Ridisegna sull’immagine i blocchi di testo salvati per modificarli.</translation>
     </message>
 </context>
 <context>
@@ -1394,7 +1394,7 @@ Riavviare ora?</translation>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>Assegna scorciatoie alle azioni di modifica piÃ¹ comuni. Lascia vuoto un campo per disattivare quella scorciatoia.</translation>
+        <translation>Assegna scorciatoie alle azioni di modifica più comuni. Lascia vuoto un campo per disattivare quella scorciatoia.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>

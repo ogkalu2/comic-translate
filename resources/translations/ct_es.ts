@@ -1351,7 +1351,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>Deshace la Ãºltima acciÃ³n de ediciÃ³n.</translation>
+        <translation>Deshace la última acción de edición.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
@@ -1361,7 +1361,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>Rehace la acciÃ³n que se deshizo anteriormente.</translation>
+        <translation>Rehace la acción que se deshizo anteriormente.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
@@ -1394,7 +1394,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>Asigna atajos para acciones de ediciÃ³n comunes. Deja un campo vacÃ­o para desactivar ese atajo.</translation>
+        <translation>Asigna atajos para acciones de edición comunes. Deja un campo vacío para desactivar ese atajo.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
@@ -1764,7 +1764,7 @@ luego realiza el inpainting en la imagen redimensionada.</translation>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>Dibuja todos los bloques de texto de la lista de bloques de texto existente
-de nuevo en la imagen (para su posterior ediciÃ³n)</translation>
+de nuevo en la imagen (para su posterior edición)</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2090,7 +2090,7 @@ Es posible que se haya movido, cambiado de nombre o eliminado.
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
         <translation>Dibuja todos los bloques de texto de la lista de bloques de texto existente
-de nuevo en la imagen (para su posterior ediciÃ³n)</translation>
+de nuevo en la imagen (para su posterior edición)</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>

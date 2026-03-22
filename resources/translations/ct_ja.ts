@@ -754,7 +754,7 @@ This folder is separate from Auto-Recover snapshots.</source>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
         <source>Reset</source>
-        <translation>ãªã»ãã</translation>
+        <translation>リセット</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="78"/>
@@ -1328,7 +1328,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Shortcuts</source>
-        <translation>ã·ã§ã¼ãã«ãã</translation>
+        <translation>ショートカット</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
@@ -1346,42 +1346,42 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="19"/>
         <source>Undo</source>
-        <translation>åã«æ»ã</translation>
+        <translation>元に戻す</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>æå¾ã®ç·¨éæä½ãåã«æ»ãã¾ãã</translation>
+        <translation>最後の編集操作を元に戻します。</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
         <source>Redo</source>
-        <translation>ããç´ã</translation>
+        <translation>やり直す</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>ç´åã«åãæ¶ããæä½ãããç´ãã¾ãã</translation>
+        <translation>直前に取り消した操作をやり直します。</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
         <source>Delete Selected Box</source>
-        <translation>é¸æããããã¯ã¹ãåé¤</translation>
+        <translation>選択したボックスを削除</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="32"/>
         <source>Delete the currently selected text box.</source>
-        <translation>ç¾å¨é¸æããã¦ãããã­ã¹ãããã¯ã¹ãåé¤ãã¾ãã</translation>
+        <translation>現在選択されているテキストボックスを削除します。</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="37"/>
         <source>Restore Text Blocks</source>
-        <translation>ãã­ã¹ããã­ãã¯ãå¾©å</translation>
+        <translation>テキストブロックを復元</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>ä¿å­æ¸ã¿ã®ãã­ã¹ããã­ãã¯ãç·¨éã§ããããã«ç»åä¸ã¸åæç»ãã¾ãã</translation>
+        <translation>保存済みのテキストブロックを編集できるように画像上へ再描画します。</translation>
     </message>
 </context>
 <context>
@@ -1389,22 +1389,22 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="24"/>
         <source>Keyboard Shortcuts</source>
-        <translation>ã­ã¼ãã¼ãã·ã§ã¼ãã«ãã</translation>
+        <translation>キーボードショートカット</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>ããä½¿ãç·¨éæä½ã«ã·ã§ã¼ãã«ãããå²ãå½ã¦ã¾ããç©ºæ¬ã®ã¾ã¾ã«ããã¨ããã®ã·ã§ã¼ãã«ããã¯ç¡å¹ã«ãªãã¾ãã</translation>
+        <translation>よく使う編集操作にショートカットを割り当てます。空欄のままにすると、そのショートカットは無効になります。</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
         <source>Reset</source>
-        <translation>ãªã»ãã</translation>
+        <translation>リセット</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="65"/>
         <source>Reset All Shortcuts</source>
-        <translation>ãã¹ã¦ã®ã·ã§ã¼ãã«ããããªã»ãã</translation>
+        <translation>すべてのショートカットをリセット</translation>
     </message>
 </context>
 <context>
@@ -1592,12 +1592,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="31"/>
         <source>Undo</source>
-        <translation>åã«æ»ã</translation>
+        <translation>元に戻す</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="32"/>
         <source>Redo</source>
-        <translation>ããç´ã</translation>
+        <translation>やり直す</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="37"/>
@@ -1752,7 +1752,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Delete Selected Box</source>
-        <translation>é¸æããããã¯ã¹ãåé¤</translation>
+        <translation>選択したボックスを削除</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="290"/>
@@ -1763,8 +1763,8 @@ then do inpainting on the resized image.</source>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>æ¢å­ã®ãã­ã¹ããã­ãã¯ä¸è¦§ã«ãããã¹ã¦ã®ãã­ã¹ããã­ãã¯ãç»åä¸ã«åæç»ãã¾ã
-ï¼ããã«ç·¨éããããï¼</translation>
+        <translation>既存のテキストブロック一覧にあるすべてのテキストブロックを画像上に再描画します
+（さらに編集するため）</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2083,24 +2083,24 @@ It may have been moved, renamed, or deleted.
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="109"/>
         <source>Delete Selected Box</source>
-        <translation>é¸æããããã¯ã¹ãåé¤</translation>
+        <translation>選択したボックスを削除</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="111"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>æ¢å­ã®ãã­ã¹ããã­ãã¯ä¸è¦§ã«ãããã¹ã¦ã®ãã­ã¹ããã­ãã¯ãç»åä¸ã«åæç»ãã¾ã
-ï¼ããã«ç·¨éããããï¼</translation>
+        <translation>既存のテキストブロック一覧にあるすべてのテキストブロックを画像上に再描画します
+（さらに編集するため）</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>
         <source>Undo</source>
-        <translation>åã«æ»ã</translation>
+        <translation>元に戻す</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="128"/>
         <source>Redo</source>
-        <translation>ããç´ã</translation>
+        <translation>やり直す</translation>
     </message>
 </context>
 <context>

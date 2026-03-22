@@ -754,7 +754,7 @@ This folder is separate from Auto-Recover snapshots.</source>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
         <source>Reset</source>
-        <translation>Ð¡Ð±ÑÐ¾ÑÐ¸ÑÑ</translation>
+        <translation>Сбросить</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="78"/>
@@ -1234,7 +1234,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Shortcuts</source>
-        <translation>Ð¡Ð¾ÑÐµÑÐ°Ð½Ð¸Ñ ÐºÐ»Ð°Ð²Ð¸Ñ</translation>
+        <translation>Сочетания клавиш</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
@@ -1346,42 +1346,42 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="19"/>
         <source>Undo</source>
-        <translation>ÐÑÐ¼ÐµÐ½Ð¸ÑÑ</translation>
+        <translation>Отменить</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>ÐÑÐ¼ÐµÐ½ÑÐµÑ Ð¿Ð¾ÑÐ»ÐµÐ´Ð½ÐµÐµ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ ÑÐµÐ´Ð°ÐºÑÐ¸ÑÐ¾Ð²Ð°Ð½Ð¸Ñ.</translation>
+        <translation>Отменяет последнее действие редактирования.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
         <source>Redo</source>
-        <translation>ÐÐ¾Ð²ÑÐ¾ÑÐ¸ÑÑ</translation>
+        <translation>Повторить</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>ÐÐ¾Ð²ÑÐ¾ÑÑÐµÑ ÑÐ°Ð½ÐµÐµ Ð¾ÑÐ¼ÐµÐ½ÑÐ½Ð½Ð¾Ðµ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ðµ.</translation>
+        <translation>Повторяет ранее отменённое действие.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
         <source>Delete Selected Box</source>
-        <translation>Ð£Ð´Ð°Ð»Ð¸ÑÑ Ð²ÑÐ±ÑÐ°Ð½Ð½ÑÐ¹ Ð±Ð»Ð¾Ðº</translation>
+        <translation>Удалить выбранный блок</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="32"/>
         <source>Delete the currently selected text box.</source>
-        <translation>Ð£Ð´Ð°Ð»ÑÐµÑ ÑÐµÐºÑÑÐ¸Ð¹ Ð²ÑÐ±ÑÐ°Ð½Ð½ÑÐ¹ ÑÐµÐºÑÑÐ¾Ð²ÑÐ¹ Ð±Ð»Ð¾Ðº.</translation>
+        <translation>Удаляет текущий выбранный текстовый блок.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="37"/>
         <source>Restore Text Blocks</source>
-        <translation>ÐÐ¾ÑÑÑÐ°Ð½Ð¾Ð²Ð¸ÑÑ ÑÐµÐºÑÑÐ¾Ð²ÑÐµ Ð±Ð»Ð¾ÐºÐ¸</translation>
+        <translation>Восстановить текстовые блоки</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>Ð¡Ð½Ð¾Ð²Ð° ÑÐ¸ÑÑÐµÑ Ð½Ð° Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ð¸ ÑÐ¾ÑÑÐ°Ð½ÑÐ½Ð½ÑÐµ ÑÐµÐºÑÑÐ¾Ð²ÑÐµ Ð±Ð»Ð¾ÐºÐ¸ Ð´Ð»Ñ ÑÐµÐ´Ð°ÐºÑÐ¸ÑÐ¾Ð²Ð°Ð½Ð¸Ñ.</translation>
+        <translation>Снова рисует на изображении сохранённые текстовые блоки для редактирования.</translation>
     </message>
 </context>
 <context>
@@ -1389,22 +1389,22 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="24"/>
         <source>Keyboard Shortcuts</source>
-        <translation>Ð¡Ð¾ÑÐµÑÐ°Ð½Ð¸Ñ ÐºÐ»Ð°Ð²Ð¸Ñ</translation>
+        <translation>Сочетания клавиш</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>ÐÐ°Ð·Ð½Ð°ÑÑÑÐµ ÑÐ¾ÑÐµÑÐ°Ð½Ð¸Ñ ÐºÐ»Ð°Ð²Ð¸Ñ Ð´Ð»Ñ ÑÐ°ÑÑÐ¾ Ð¸ÑÐ¿Ð¾Ð»ÑÐ·ÑÐµÐ¼ÑÑ Ð´ÐµÐ¹ÑÑÐ²Ð¸Ð¹ ÑÐµÐ´Ð°ÐºÑÐ¸ÑÐ¾Ð²Ð°Ð½Ð¸Ñ. ÐÑÑÐ°Ð²ÑÑÐµ Ð¿Ð¾Ð»Ðµ Ð¿ÑÑÑÑÐ¼, ÑÑÐ¾Ð±Ñ Ð¾ÑÐºÐ»ÑÑÐ¸ÑÑ ÑÑÐ¾ ÑÐ¾ÑÐµÑÐ°Ð½Ð¸Ðµ.</translation>
+        <translation>Назначьте сочетания клавиш для часто используемых действий редактирования. Оставьте поле пустым, чтобы отключить это сочетание.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
         <source>Reset</source>
-        <translation>Ð¡Ð±ÑÐ¾ÑÐ¸ÑÑ</translation>
+        <translation>Сбросить</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="65"/>
         <source>Reset All Shortcuts</source>
-        <translation>Ð¡Ð±ÑÐ¾ÑÐ¸ÑÑ Ð²ÑÐµ ÑÐ¾ÑÐµÑÐ°Ð½Ð¸Ñ ÐºÐ»Ð°Ð²Ð¸Ñ</translation>
+        <translation>Сбросить все сочетания клавиш</translation>
     </message>
 </context>
 <context>
@@ -1592,12 +1592,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="31"/>
         <source>Undo</source>
-        <translation>ÐÑÐ¼ÐµÐ½Ð¸ÑÑ</translation>
+        <translation>Отменить</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="32"/>
         <source>Redo</source>
-        <translation>ÐÐ¾Ð²ÑÐ¾ÑÐ¸ÑÑ</translation>
+        <translation>Повторить</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="37"/>
@@ -1752,7 +1752,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Delete Selected Box</source>
-        <translation>Ð£Ð´Ð°Ð»Ð¸ÑÑ Ð²ÑÐ±ÑÐ°Ð½Ð½ÑÐ¹ Ð±Ð»Ð¾Ðº</translation>
+        <translation>Удалить выбранный блок</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="290"/>
@@ -1763,8 +1763,8 @@ then do inpainting on the resized image.</source>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Ð¡Ð½Ð¾Ð²Ð° ÑÐ¸ÑÑÐµÑ Ð²ÑÐµ ÑÐµÐºÑÑÐ¾Ð²ÑÐµ Ð±Ð»Ð¾ÐºÐ¸ Ð¸Ð· ÑÑÑÐµÑÑÐ²ÑÑÑÐµÐ³Ð¾ ÑÐ¿Ð¸ÑÐºÐ° ÑÐµÐºÑÑÐ¾Ð²ÑÑ Ð±Ð»Ð¾ÐºÐ¾Ð²
-Ð½Ð° Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ð¸ (Ð´Ð»Ñ Ð´Ð°Ð»ÑÐ½ÐµÐ¹ÑÐµÐ³Ð¾ ÑÐµÐ´Ð°ÐºÑÐ¸ÑÐ¾Ð²Ð°Ð½Ð¸Ñ)</translation>
+        <translation>Снова рисует все текстовые блоки из существующего списка текстовых блоков
+на изображении (для дальнейшего редактирования)</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2083,24 +2083,24 @@ It may have been moved, renamed, or deleted.
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="109"/>
         <source>Delete Selected Box</source>
-        <translation>Ð£Ð´Ð°Ð»Ð¸ÑÑ Ð²ÑÐ±ÑÐ°Ð½Ð½ÑÐ¹ Ð±Ð»Ð¾Ðº</translation>
+        <translation>Удалить выбранный блок</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="111"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Ð¡Ð½Ð¾Ð²Ð° ÑÐ¸ÑÑÐµÑ Ð²ÑÐµ ÑÐµÐºÑÑÐ¾Ð²ÑÐµ Ð±Ð»Ð¾ÐºÐ¸ Ð¸Ð· ÑÑÑÐµÑÑÐ²ÑÑÑÐµÐ³Ð¾ ÑÐ¿Ð¸ÑÐºÐ° ÑÐµÐºÑÑÐ¾Ð²ÑÑ Ð±Ð»Ð¾ÐºÐ¾Ð²
-Ð½Ð° Ð¸Ð·Ð¾Ð±ÑÐ°Ð¶ÐµÐ½Ð¸Ð¸ (Ð´Ð»Ñ Ð´Ð°Ð»ÑÐ½ÐµÐ¹ÑÐµÐ³Ð¾ ÑÐµÐ´Ð°ÐºÑÐ¸ÑÐ¾Ð²Ð°Ð½Ð¸Ñ)</translation>
+        <translation>Снова рисует все текстовые блоки из существующего списка текстовых блоков
+на изображении (для дальнейшего редактирования)</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>
         <source>Undo</source>
-        <translation>ÐÑÐ¼ÐµÐ½Ð¸ÑÑ</translation>
+        <translation>Отменить</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="128"/>
         <source>Redo</source>
-        <translation>ÐÐ¾Ð²ÑÐ¾ÑÐ¸ÑÑ</translation>
+        <translation>Повторить</translation>
     </message>
 </context>
 <context>

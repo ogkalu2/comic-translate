@@ -754,7 +754,7 @@ Dieser Ordner ist von den Auto-Recover-Snapshots getrennt.</translation>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
         <source>Reset</source>
-        <translation>ZurÃ¼cksetzen</translation>
+        <translation>Zurücksetzen</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="78"/>
@@ -1234,7 +1234,7 @@ Jetzt neu starten?</translation>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Shortcuts</source>
-        <translation>TastenkÃ¼rzel</translation>
+        <translation>Tastenkürzel</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
@@ -1346,12 +1346,12 @@ Jetzt neu starten?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="19"/>
         <source>Undo</source>
-        <translation>RÃ¼ckgÃ¤ngig</translation>
+        <translation>Rückgängig</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>Macht die letzte Bearbeitungsaktion rÃ¼ckgÃ¤ngig.</translation>
+        <translation>Macht die letzte Bearbeitungsaktion rückgängig.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
@@ -1361,27 +1361,27 @@ Jetzt neu starten?</translation>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>Stellt die zuvor rÃ¼ckgÃ¤ngig gemachte Aktion wieder her.</translation>
+        <translation>Stellt die zuvor rückgängig gemachte Aktion wieder her.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
         <source>Delete Selected Box</source>
-        <translation>AusgewÃ¤hltes Feld lÃ¶schen</translation>
+        <translation>Ausgewähltes Feld löschen</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="32"/>
         <source>Delete the currently selected text box.</source>
-        <translation>LÃ¶scht das aktuell ausgewÃ¤hlte Textfeld.</translation>
+        <translation>Löscht das aktuell ausgewählte Textfeld.</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="37"/>
         <source>Restore Text Blocks</source>
-        <translation>TextblÃ¶cke wiederherstellen</translation>
+        <translation>Textblöcke wiederherstellen</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>Zeichnet gespeicherte TextblÃ¶cke zum Bearbeiten zurÃ¼ck auf das Bild.</translation>
+        <translation>Zeichnet gespeicherte Textblöcke zum Bearbeiten zurück auf das Bild.</translation>
     </message>
 </context>
 <context>
@@ -1389,22 +1389,22 @@ Jetzt neu starten?</translation>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="24"/>
         <source>Keyboard Shortcuts</source>
-        <translation>TastenkÃ¼rzel</translation>
+        <translation>Tastenkürzel</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>Weisen Sie hÃ¤ufigen Bearbeitungsaktionen TastenkÃ¼rzel zu. Lassen Sie ein Feld leer, um das jeweilige TastenkÃ¼rzel zu deaktivieren.</translation>
+        <translation>Weisen Sie häufigen Bearbeitungsaktionen Tastenkürzel zu. Lassen Sie ein Feld leer, um das jeweilige Tastenkürzel zu deaktivieren.</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
         <source>Reset</source>
-        <translation>ZurÃ¼cksetzen</translation>
+        <translation>Zurücksetzen</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="65"/>
         <source>Reset All Shortcuts</source>
-        <translation>Alle TastenkÃ¼rzel zurÃ¼cksetzen</translation>
+        <translation>Alle Tastenkürzel zurücksetzen</translation>
     </message>
 </context>
 <context>
@@ -1591,7 +1591,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="31"/>
         <source>Undo</source>
-        <translation>RÃ¼ckgÃ¤ngig</translation>
+        <translation>Rückgängig</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="32"/>
@@ -1751,7 +1751,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Delete Selected Box</source>
-        <translation>AusgewÃ¤hltes Feld lÃ¶schen</translation>
+        <translation>Ausgewähltes Feld löschen</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="290"/>
@@ -1762,8 +1762,8 @@ then do inpainting on the resized image.</source>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Zeichnet alle TextblÃ¶cke in der vorhandenen Textblockliste
-zurÃ¼ck auf das Bild (zur weiteren Bearbeitung)</translation>
+        <translation>Zeichnet alle Textblöcke in der vorhandenen Textblockliste
+zurück auf das Bild (zur weiteren Bearbeitung)</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2082,19 +2082,19 @@ Möglicherweise wurde es verschoben, umbenannt oder gelöscht.
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="109"/>
         <source>Delete Selected Box</source>
-        <translation>AusgewÃ¤hltes Feld lÃ¶schen</translation>
+        <translation>Ausgewähltes Feld löschen</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="111"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>Zeichnet alle TextblÃ¶cke in der vorhandenen Textblockliste
-zurÃ¼ck auf das Bild (zur weiteren Bearbeitung)</translation>
+        <translation>Zeichnet alle Textblöcke in der vorhandenen Textblockliste
+zurück auf das Bild (zur weiteren Bearbeitung)</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>
         <source>Undo</source>
-        <translation>RÃ¼ckgÃ¤ngig</translation>
+        <translation>Rückgängig</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="128"/>
