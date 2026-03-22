@@ -48,6 +48,7 @@ class TextController:
         self._last_item_html = {}
         self._suspend_text_command = False
         self._is_updating_from_edit = False
+        self._render_macro_stack = None
 
     def connect_text_item_signals(self, text_item: TextBlockItem, force_reconnect: bool = False):
         if getattr(text_item, "_ct_signals_connected", False) and not force_reconnect:
@@ -702,6 +703,32 @@ class TextController:
             self.unblock_text_item_widgets(self.widgets_to_block)
 
     # Rendering
+    def _begin_render_macro(self):
+        if self._render_macro_stack is not None:
+            return
+
+        stack = self.main.undo_group.activeStack()
+        if stack is None:
+            return
+
+        stack.beginMacro("render_text")
+        self._render_macro_stack = stack
+
+    def _end_render_macro(self):
+        stack = self._render_macro_stack
+        self._render_macro_stack = None
+        if stack is None:
+            return
+
+        try:
+            stack.endMacro()
+        except RuntimeError:
+            pass
+
+    def _handle_render_error(self, error_tuple: tuple):
+        self._end_render_macro()
+        self.main.default_error_handler(error_tuple)
+
     def render_text(self):
         selected_paths = self.main.get_selected_page_paths()
         if self.main.image_viewer.hasPhoto() and len(selected_paths) > 1:
@@ -902,10 +929,13 @@ class TextController:
             if 0 <= self.main.curr_img_idx < len(self.main.image_files):
                 image_path = self.main.image_files[self.main.curr_img_idx]
 
+            if new_blocks:
+                self._begin_render_macro()
+
             self.main.run_threaded(
                 manual_wrap, 
                 self.on_render_complete, 
-                self.main.default_error_handler,
+                self._handle_render_error,
                 None, 
                 self.main, 
                 new_blocks, 
@@ -926,7 +956,7 @@ class TextController:
         # self.main.set_image(rendered_image) 
         self.main.loading.setVisible(False)
         self.main.enable_hbutton_group()
-        self.main.undo_group.activeStack().endMacro()
+        self._end_render_macro()
 
     def render_settings(self) -> TextRenderingSettings:
         target_lang = self.main.lang_mapping.get(self.main.t_combo.currentText(), None)
