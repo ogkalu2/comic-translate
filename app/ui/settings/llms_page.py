@@ -5,8 +5,11 @@ from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.collapse import MCollapse
 
 class LlmsPage(QtWidgets.QWidget):
+    DEFAULT_EXTRA_CONTEXT_LIMIT = 1000
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self._extra_context_limit: int | None = self.DEFAULT_EXTRA_CONTEXT_LIMIT
 
         v = QtWidgets.QVBoxLayout(self)
         main_layout = QtWidgets.QHBoxLayout()
@@ -40,8 +43,14 @@ class LlmsPage(QtWidgets.QWidget):
 
         self.extra_context.textChanged.connect(self._limit_extra_context)
 
+    def set_extra_context_unlimited(self, enabled: bool) -> None:
+        self._extra_context_limit = None if enabled else self.DEFAULT_EXTRA_CONTEXT_LIMIT
+        self._limit_extra_context()
+
     def _limit_extra_context(self):
-        max_length = 1000
+        max_length = self._extra_context_limit
+        if max_length is None:
+            return
         text = self.extra_context.toPlainText()
         if len(text) > max_length:
             # Preserve cursor position

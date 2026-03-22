@@ -88,11 +88,17 @@ class SettingsPage(QtWidgets.QWidget):
         # Connect signals to slots
         self.ui.theme_combo.currentTextChanged.connect(self.on_theme_changed)
         self.ui.lang_combo.currentTextChanged.connect(self.on_language_changed)
+        self.ui.translator_combo.currentTextChanged.connect(self._sync_extra_context_limit)
         self.ui.font_browser.sig_files_changed.connect(self.import_font)
         self.ui.sign_in_button.clicked.connect(self.start_sign_in)
         self.ui.buy_credits_button.clicked.connect(self.open_pricing_page)
         self.ui.sign_out_button.clicked.connect(self.sign_out)
         self.ui.check_update_button.clicked.connect(self.check_for_updates)
+        self._sync_extra_context_limit(self.ui.translator_combo.currentText())
+
+    def _sync_extra_context_limit(self, translator: str) -> None:
+        normalized = self.ui.reverse_mappings.get(translator, translator)
+        self.ui.llms_page.set_extra_context_unlimited(normalized == "Custom")
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
