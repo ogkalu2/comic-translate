@@ -190,7 +190,45 @@ class TextController:
 
     def on_text_item_deselected(self):
         self._commit_pending_text_command()
+        selected_items = self.main.image_viewer.get_selected_text_items()
+        if selected_items:
+            if self.main.curr_tblock_item not in selected_items:
+                self.on_text_item_selected(selected_items[-1])
+            return
         self.clear_text_edits()
+
+    def _selected_text_items(self) -> list[TextBlockItem]:
+        selected_items = self.main.image_viewer.get_selected_text_items()
+        if selected_items:
+            return selected_items
+        return [self.main.curr_tblock_item] if self.main.curr_tblock_item else []
+
+    def _apply_format_to_selected(self, macro_name: str, apply_fn):
+        items = self._selected_text_items()
+        if not items:
+            return
+
+        commands = []
+        for item in items:
+            old_item = copy.copy(item)
+            apply_fn(item)
+            commands.append(TextFormatCommand(self.main.image_viewer, old_item, item))
+
+        stack = self.main.undo_group.activeStack()
+        if stack is None:
+            return
+
+        if len(commands) > 1:
+            stack.beginMacro(macro_name)
+        try:
+            for command in commands:
+                stack.push(command)
+        finally:
+            if len(commands) > 1:
+                stack.endMacro()
+
+        if self.main.curr_tblock_item in items:
+            self.set_values_for_blk_item(self.main.curr_tblock_item)
 
     def update_text_block(self):
         if self.main.curr_tblock:
@@ -428,22 +466,20 @@ class TextController:
 
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):
-        if self.main.curr_tblock_item and font_family:
-            old_item = copy.copy(self.main.curr_tblock_item)
+        if self._selected_text_items() and font_family:
             font_size = int(self.main.font_size_dropdown.currentText())
-            self.main.curr_tblock_item.set_font(font_family, font_size)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._apply_format_to_selected(
+                "change_text_font",
+                lambda item: item.set_font(font_family, font_size),
+            )
 
     def on_font_size_change(self, font_size: str):
-        if self.main.curr_tblock_item and font_size:
-            old_item = copy.copy(self.main.curr_tblock_item)
+        if self._selected_text_items() and font_size:
             font_size = float(font_size)
-            self.main.curr_tblock_item.set_font_size(font_size)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._apply_format_to_selected(
+                "change_text_font_size",
+                lambda item: item.set_font_size(font_size),
+            )
 
     def on_line_spacing_change(self, line_spacing: str):
         if self.main.curr_tblock_item and line_spacing:
@@ -461,12 +497,11 @@ class TextController:
                 f"background-color: {font_color.name()}; border: none; border-radius: 5px;"
             )
             self.main.block_font_color_button.setProperty('selected_color', font_color.name())
-            if self.main.curr_tblock_item:
-                old_item = copy.copy(self.main.curr_tblock_item)
-                self.main.curr_tblock_item.set_color(font_color)
-
-                command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-                self.main.push_command(command)
+            if self._selected_text_items():
+                self._apply_format_to_selected(
+                    "change_text_color",
+                    lambda item: item.set_color(font_color),
+                )
 
     def left_align(self):
         if self.main.curr_tblock_item:

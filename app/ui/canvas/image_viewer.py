@@ -435,6 +435,9 @@ class ImageViewer(QGraphicsView):
         self.connect_text_item.emit(item)
         
         return item
+
+    def get_selected_text_items(self) -> list[TextBlockItem]:
+        return [item for item in self.text_items if item.selected]
     
     # InteractionManager proxy methods
     def sel_rot_item(self):
