@@ -753,7 +753,7 @@ This folder is separate from Auto-Recover snapshots.</source>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
         <source>Reset</source>
-        <translation>??</translation>
+        <translation>éç½®</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="78"/>
@@ -1327,7 +1327,7 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Shortcuts</source>
-        <translation>???</translation>
+        <translation>å¿«æ·é®</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
@@ -1345,42 +1345,42 @@ Restart now?</source>
     <message>
         <location filename="../../app/shortcuts.py" line="19"/>
         <source>Undo</source>
-        <translation>??</translation>
+        <translation>æ¤é</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="20"/>
         <source>Undo the last editing action.</source>
-        <translation>??????????</translation>
+        <translation>æ¤éä¸ä¸æ¬¡ç¼è¾æä½ã</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="25"/>
         <source>Redo</source>
-        <translation>??</translation>
+        <translation>éå</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="26"/>
         <source>Redo the previously undone action.</source>
-        <translation>??????????</translation>
+        <translation>éåä¹åæ¤éçæä½ã</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="31"/>
         <source>Delete Selected Box</source>
-        <translation>??????</translation>
+        <translation>å é¤éä¸­çæ¡</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="32"/>
         <source>Delete the currently selected text box.</source>
-        <translation>???????????</translation>
+        <translation>å é¤å½åéä¸­çææ¬æ¡ã</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="37"/>
         <source>Restore Text Blocks</source>
-        <translation>?????</translation>
+        <translation>æ¢å¤ææ¬å</translation>
     </message>
     <message>
         <location filename="../../app/shortcuts.py" line="38"/>
         <source>Draw saved text blocks back onto the image for editing.</source>
-        <translation>???????????????????????</translation>
+        <translation>å°å·²ä¿å­çææ¬åéæ°ç»å¶å°å¾çä¸ä»¥ä¾¿ç»§ç»­ç¼è¾ã</translation>
     </message>
 </context>
 <context>
@@ -1388,22 +1388,22 @@ Restart now?</source>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="24"/>
         <source>Keyboard Shortcuts</source>
-        <translation>?????</translation>
+        <translation>é®çå¿«æ·é®</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="26"/>
         <source>Assign shortcuts for common editing actions. Leave a field empty to disable that shortcut.</source>
-        <translation>??????????????????????????????</translation>
+        <translation>ä¸ºå¸¸ç¨ç¼è¾æä½æå®å¿«æ·é®ãå°æä¸ªå­æ®µçç©ºå³å¯ç¦ç¨å¯¹åºå¿«æ·é®ã</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="56"/>
         <source>Reset</source>
-        <translation>??</translation>
+        <translation>éç½®</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/shortcuts_page.py" line="65"/>
         <source>Reset All Shortcuts</source>
-        <translation>???????</translation>
+        <translation>éç½®ææå¿«æ·é®</translation>
     </message>
 </context>
 <context>
@@ -1590,12 +1590,12 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="31"/>
         <source>Undo</source>
-        <translation>??</translation>
+        <translation>æ¤é</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="32"/>
         <source>Redo</source>
-        <translation>??</translation>
+        <translation>éå</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="37"/>
@@ -1750,7 +1750,7 @@ then do inpainting on the resized image.</source>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="287"/>
         <source>Delete Selected Box</source>
-        <translation>??????</translation>
+        <translation>å é¤éä¸­çæ¡</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="290"/>
@@ -1761,7 +1761,7 @@ then do inpainting on the resized image.</source>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="295"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>????????????????????????????????</translation>
+        <translation>å°ç°æææ¬ååè¡¨ä¸­çææææ¬åéæ°ç»å¶å°å¾çä¸ï¼ä»¥ä¾¿è¿ä¸æ­¥ç¼è¾ï¼</translation>
     </message>
     <message>
         <location filename="../../app/ui/main_window/builders/workspace.py" line="306"/>
@@ -2080,23 +2080,23 @@ It may have been moved, renamed, or deleted.
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="109"/>
         <source>Delete Selected Box</source>
-        <translation>??????</translation>
+        <translation>å é¤éä¸­çæ¡</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="111"/>
         <source>Draws all the Text Blocks in the existing Text Block List
 back on the Image (for further editing)</source>
-        <translation>????????????????????????????????</translation>
+        <translation>å°ç°æææ¬ååè¡¨ä¸­çææææ¬åéæ°ç»å¶å°å¾çä¸ï¼ä»¥ä¾¿è¿ä¸æ­¥ç¼è¾ï¼</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="127"/>
         <source>Undo</source>
-        <translation>??</translation>
+        <translation>æ¤é</translation>
     </message>
     <message>
         <location filename="../../app/controllers/shortcuts.py" line="128"/>
         <source>Redo</source>
-        <translation>??</translation>
+        <translation>éå</translation>
     </message>
 </context>
 <context>
