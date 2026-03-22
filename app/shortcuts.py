@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from PySide6.QtCore import QT_TRANSLATE_NOOP
+
 
 @dataclass(frozen=True)
 class ShortcutDefinition:
@@ -14,26 +16,26 @@ class ShortcutDefinition:
 SHORTCUT_DEFINITIONS: tuple[ShortcutDefinition, ...] = (
     ShortcutDefinition(
         id="undo",
-        label="Undo",
-        description="Undo the last editing action.",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Undo"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Undo the last editing action."),
         default="Ctrl+Z",
     ),
     ShortcutDefinition(
         id="redo",
-        label="Redo",
-        description="Redo the previously undone action.",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Redo"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Redo the previously undone action."),
         default="Ctrl+Y",
     ),
     ShortcutDefinition(
         id="delete_selected_box",
-        label="Delete Selected Box",
-        description="Delete the currently selected text box.",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Delete Selected Box"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Delete the currently selected text box."),
         default="Delete",
     ),
     ShortcutDefinition(
         id="restore_text_blocks",
-        label="Restore Text Blocks",
-        description="Draw saved text blocks back onto the image for editing.",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Restore Text Blocks"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Draw saved text blocks back onto the image for editing."),
         default="Ctrl+Shift+R",
     ),
 )

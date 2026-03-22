@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import QCoreApplication
 
 from app.shortcuts import get_default_shortcuts, get_shortcut_definitions
 
@@ -9,6 +10,7 @@ from ..dayu_widgets.label import MLabel
 
 class ShortcutsPage(QtWidgets.QWidget):
     shortcut_changed = QtCore.Signal(str, str)
+    TRANSLATION_CONTEXT = "ShortcutDefinitions"
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -33,8 +35,8 @@ class ShortcutsPage(QtWidgets.QWidget):
 
         defaults = get_default_shortcuts()
         for row, definition in enumerate(get_shortcut_definitions()):
-            label = MLabel(self.tr(definition.label))
-            description = MLabel(self.tr(definition.description)).secondary()
+            label = MLabel(self._translate_definition(definition.label))
+            description = MLabel(self._translate_definition(definition.description)).secondary()
             description.setWordWrap(True)
 
             label_container = QtWidgets.QWidget()
@@ -98,3 +100,7 @@ class ShortcutsPage(QtWidgets.QWidget):
             shortcut_id,
             sequence.toString(QtGui.QKeySequence.SequenceFormat.PortableText),
         )
+
+    @classmethod
+    def _translate_definition(cls, text: str) -> str:
+        return QCoreApplication.translate(cls.TRANSLATION_CONTEXT, text)
