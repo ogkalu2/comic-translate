@@ -275,6 +275,25 @@ class ReplaceDetectedBlocksCommand(QUndoCommand):
         viewer_state = state.setdefault("viewer_state", {})
         viewer_state["rectangles"] = self._serialize_rectangles(blocks)
 
+    def _refresh_rectangles(self):
+        viewer = self.main.image_viewer
+        viewer.clear_rectangles(page_switch=True)
+
+        if not viewer.hasPhoto() or not self.main.blk_list:
+            return
+
+        for blk in self.main.blk_list:
+            x1, y1, x2, y2 = blk.xyxy
+            rect = QRectF(0, 0, x2 - x1, y2 - y1)
+            transform_origin = QPointF(*blk.tr_origin_point) if blk.tr_origin_point else None
+            rect_item = viewer.add_rectangle(rect, QPointF(x1, y1), blk.angle, transform_origin)
+            self.main.connect_rect_item_signals(rect_item)
+
+        first_block = self.main.blk_list[0]
+        rect = self.main.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
+        viewer.select_rectangle(rect)
+        self.main.set_tool("box")
+
     def _apply(self, blocks):
         copied_blocks = self._copy_blocks(blocks)
         self.main.blk_list = copied_blocks
@@ -283,7 +302,7 @@ class ReplaceDetectedBlocksCommand(QUndoCommand):
         self.main.curr_tblock = None
         self.main.curr_tblock_item = None
         self.main.image_viewer.selected_rect = None
-        self.main.pipeline.load_box_coords(self.main.blk_list)
+        self._refresh_rectangles()
 
     def redo(self):
         self._apply(self._new_blocks)
