@@ -29,6 +29,7 @@ from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
 from app.controllers.search_replace import SearchReplaceController
+from app.controllers.shortcuts import ShortcutController
 from app.controllers.task_runner import TaskRunnerController
 from app.controllers.batch_report import BatchReportController
 from app.controllers.manual_workflow import ManualWorkflowController
@@ -118,6 +119,7 @@ class ComicTranslate(ComicTranslateUI):
         self.text_ctrl = TextController(self)
         self.webtoon_ctrl = WebtoonController(self)
         self.search_ctrl = SearchReplaceController(self)
+        self.shortcut_ctrl = ShortcutController(self)
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
         self.manual_workflow_ctrl = ManualWorkflowController(self)
