@@ -376,17 +376,67 @@ class ComicTranslate(ComicTranslateUI):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
 
-    def delete_selected_box(self):
-        if self.curr_tblock:
-            # Create and push the delete command
-            command = DeleteBoxesCommand(
-                self,
+    def _selected_delete_targets(self):
+        targets = []
+        seen = set()
+
+        for rect_item in self.image_viewer.get_selected_rectangles():
+            rect_coords = rect_item.mapRectToScene(rect_item.rect()).getCoords()
+            blk = self.rect_item_ctrl.find_corresponding_text_block(rect_coords, 0.5)
+            text_item = None
+            for candidate in self.image_viewer.text_items:
+                if self.text_ctrl._find_text_block_for_item(candidate) is blk:
+                    text_item = candidate
+                    break
+
+            key = ("blk", id(blk)) if blk is not None else ("rect", id(rect_item))
+            if key in seen:
+                continue
+            seen.add(key)
+            targets.append((rect_item, text_item, blk))
+
+        for text_item in self.image_viewer.get_selected_text_items():
+            blk = self.text_ctrl._find_text_block_for_item(text_item)
+            rect_item = self.rect_item_ctrl.find_corresponding_rect(blk, 0.5) if blk else None
+            key = ("blk", id(blk)) if blk is not None else ("text", id(text_item))
+            if key in seen:
+                continue
+            seen.add(key)
+            targets.append((rect_item, text_item, blk))
+
+        if not targets and self.curr_tblock:
+            targets.append((
                 self.image_viewer.selected_rect,
                 self.curr_tblock_item,
                 self.curr_tblock,
-                self.blk_list,
-            )
-            self.undo_group.activeStack().push(command)
+            ))
+
+        return targets
+
+    def delete_selected_box(self):
+        targets = [target for target in self._selected_delete_targets() if target[2] is not None]
+        if not targets:
+            return
+
+        stack = self.undo_group.activeStack()
+        if stack is None:
+            return
+
+        if len(targets) > 1:
+            stack.beginMacro("delete_selected_boxes")
+        try:
+            for rect_item, text_item, blk in targets:
+                command = DeleteBoxesCommand(
+                    self,
+                    rect_item,
+                    text_item,
+                    blk,
+                    self.blk_list,
+                )
+                stack.push(command)
+        finally:
+            if len(targets) > 1:
+                stack.endMacro()
 
     def batch_mode_selected(self):
         self.disable_hbutton_group()
