@@ -438,6 +438,9 @@ class ImageViewer(QGraphicsView):
 
     def get_selected_text_items(self) -> list[TextBlockItem]:
         return [item for item in self.text_items if item.selected]
+
+    def get_selected_rectangles(self) -> list[MoveableRectItem]:
+        return [item for item in self.rectangles if item.selected]
     
     # InteractionManager proxy methods
     def sel_rot_item(self):

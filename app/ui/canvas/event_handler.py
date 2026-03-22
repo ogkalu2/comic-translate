@@ -59,8 +59,20 @@ class EventHandler:
                         if item is not clicked_item:
                             item.handleDeselection()
                     clicked_item.item_selected.emit(clicked_item)
-            elif isinstance(clicked_item, MoveableRectItem) and not clicked_item.selected:
-                self.viewer.select_rectangle(clicked_item)
+            elif isinstance(clicked_item, MoveableRectItem):
+                if ctrl_pressed:
+                    if clicked_item.selected:
+                        self.viewer.deselect_rect(clicked_item)
+                    else:
+                        self.viewer.interaction_manager.add_rectangle_to_selection(clicked_item)
+                elif clicked_item.selected and len(self.viewer.get_selected_rectangles()) > 1:
+                    for item in self.viewer.get_selected_rectangles():
+                        if item is not clicked_item:
+                            self.viewer.deselect_rect(item)
+                    self.viewer.selected_rect = clicked_item
+                    self.viewer.rectangle_selected.emit(clicked_item.mapRectToScene(clicked_item.rect()))
+                elif not clicked_item.selected:
+                    self.viewer.select_rectangle(clicked_item)
         
         if event.button() == Qt.LeftButton:
             # Order is important: check for handles, then drag, then general deselection
