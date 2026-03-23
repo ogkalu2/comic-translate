@@ -41,18 +41,21 @@ class AOT(TorchAutocastMixin, InpaintModel):
     def is_downloaded() -> bool:
         return ModelDownloader.is_downloaded(ModelID.AOT_ONNX)
 
+    @staticmethod
+    def _ensure_2d_mask(mask):
+        if len(mask.shape) == 3 and mask.shape[2] > 1:
+            return mask[:, :, 0]
+        if len(mask.shape) == 3:
+            return mask[:, :, 0]
+        return mask
+
     def forward(self, image, mask, config: Config):
         """Input image and output image have same size
         image: [H, W, C] RGB
         mask: [H, W] or [H, W, 1]
         return: BGR IMAGE
         """
-        
-        # Ensure mask is 2D
-        if len(mask.shape) == 3 and mask.shape[2] > 1:
-            mask = mask[:, :, 0]  # Take just one channel if mask is 3D
-        elif len(mask.shape) == 3:
-            mask = mask[:, :, 0]
+        mask = self._ensure_2d_mask(mask)
         
         # Store original dimensions
         im_h, im_w = image.shape[:2]
@@ -80,7 +83,6 @@ class AOT(TorchAutocastMixin, InpaintModel):
             img_inpainted = ((out[0].transpose(1, 2, 0) + 1.0) * 127.5)
             img_inpainted = (np.clip(np.round(img_inpainted), 0, 255)).astype(np.uint8)
         else:
-            # Torch preprocessing path
             import torch  # noqa
             img_torch = torch.from_numpy(image).permute(2, 0, 1).unsqueeze_(0).float() / 127.5 - 1.0
             mask_torch = torch.from_numpy(mask).unsqueeze_(0).unsqueeze_(0).float() / 255.0
