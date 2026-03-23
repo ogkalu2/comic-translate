@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 import imkit as imk
 from . import config
-from modules.utils.device import resolve_device, get_providers
+from modules.utils.device import resolve_device, get_providers, torch_available
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
 from modules.utils.torch_autocast import TorchAutocastMixin
@@ -456,16 +456,18 @@ class ONNXFontEngine(FontEngine):
 
 class FontEngineFactory:
     _engines = {}
+    _DEFAULT_BACKEND = "onnx"
 
     @classmethod
-    def create_engine(cls, settings, backend='onnx') -> FontEngine:
-        device = resolve_device(settings.is_gpu_enabled() if settings else True, backend)
-        cache_key = f"{backend}_{device}"
+    def create_engine(cls, settings, backend: str | None = None) -> FontEngine:
+        effective_backend = cls._resolve_backend(backend)
+        device = resolve_device(settings.is_gpu_enabled() if settings else True, effective_backend)
+        cache_key = f"{effective_backend}_{device}"
         
         if cache_key in cls._engines:
             return cls._engines[cache_key]
             
-        if backend == 'onnx':
+        if effective_backend == 'onnx':
             engine = ONNXFontEngine(settings)
         else:
             engine = TorchFontEngine(settings)
@@ -473,3 +475,10 @@ class FontEngineFactory:
         engine.initialize(device=device)
         cls._engines[cache_key] = engine
         return engine
+
+    @classmethod
+    def _resolve_backend(cls, backend: str | None = None) -> str:
+        effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
+        if effective_backend == "torch" and not torch_available():
+            return "onnx"
+        return effective_backend

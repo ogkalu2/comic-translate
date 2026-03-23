@@ -18,6 +18,7 @@ class OCRFactory:
     """Factory for creating appropriate OCR engines based on settings."""
     
     _engines = {}  # Cache of created engines
+    _DEFAULT_BACKEND = "onnx"
 
     LLM_ENGINE_IDENTIFIERS = {
         "GPT": GPTOCR,
@@ -30,7 +31,7 @@ class OCRFactory:
         settings, 
         source_lang_english: str, 
         ocr_model: str, 
-        backend: str = 'onnx'
+        backend: str | None = None
     ) -> OCREngine:
         """
         Create or retrieve an appropriate OCR engine based on settings.
@@ -39,17 +40,19 @@ class OCRFactory:
             settings: Settings object with OCR configuration
             source_lang_english: Source language in English
             ocr_model: OCR model to use
-            backend: Backend to use ('onnx' or 'torch')
+            backend: Optional backend override ('onnx' or 'torch')
             
         Returns:
             Appropriate OCR engine instance
         """
+        effective_backend = cls._resolve_backend(backend)
+
         # build cache key
         cache_key = cls._create_cache_key(
             ocr_model, 
             source_lang_english, 
             settings, 
-            backend
+            effective_backend
         )
 
         # 1) if we already made it, return it
@@ -68,7 +71,7 @@ class OCRFactory:
             return engine
 
         # 3) otherwise fall back to the local factories
-        engine = cls._create_new_engine(settings, source_lang_english, ocr_model, backend)
+        engine = cls._create_new_engine(settings, source_lang_english, ocr_model, effective_backend)
         cls._engines[cache_key] = engine
         return engine
     
@@ -78,7 +81,7 @@ class OCRFactory:
         ocr_key: str,
         source_lang: str,
         settings, 
-        backend: str = 'onnx'
+        backend: str | None = None
     ) -> str:
         """
         Build a cache key for all ocr engines.
@@ -92,13 +95,14 @@ class OCRFactory:
         - If no dynamic values are found, falls back to a simple key
           based on ocr and source language.
         """
-        base = f"{ocr_key}_{source_lang}_{backend}"
+        effective_backend = backend or cls._DEFAULT_BACKEND
+        base = f"{ocr_key}_{source_lang}_{effective_backend}"
 
         # Gather any dynamic bits we care about:
         extras = {}
 
         creds = settings.get_credentials(ocr_key)
-        device = resolve_device(settings.is_gpu_enabled(), backend)
+        device = resolve_device(settings.is_gpu_enabled(), effective_backend)
 
         if creds:
             extras["credentials"] = creds
@@ -128,6 +132,13 @@ class OCRFactory:
 
         # Append the fingerprint
         return f"{base}_{digest}"
+
+    @classmethod
+    def _resolve_backend(cls, backend: str | None = None) -> str:
+        effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
+        if effective_backend == "torch" and not torch_available():
+            return "onnx"
+        return effective_backend
     
     @classmethod
     def _create_new_engine(
@@ -135,9 +146,10 @@ class OCRFactory:
         settings, 
         source_lang_english: str, 
         ocr_model: str, 
-        backend: str = 'onnx'
+        backend: str | None = None
     ) -> OCREngine:
         """Create a new OCR engine instance based on model and language."""
+        effective_backend = cls._resolve_backend(backend)
         
         # Model-specific factory functions
         general = {
@@ -149,16 +161,16 @@ class OCRFactory:
         
         # Language-specific factory functions (for Default model)
         language_factories = {
-            'Japanese': lambda s: cls._create_manga_ocr(s, backend),
-            'Korean': lambda s: cls._create_pororo_ocr(s, backend),
-            'Chinese': lambda s: cls._create_ppocr(s, 'ch', backend),
-            'Russian': lambda s: cls._create_ppocr(s, 'ru', backend),
-            'French': lambda s: cls._create_ppocr(s, 'latin', backend),
-            'English': lambda s: cls._create_ppocr(s, 'en', backend),
-            'Spanish': lambda s: cls._create_ppocr(s, 'latin', backend),
-            'Italian': lambda s: cls._create_ppocr(s, 'latin', backend),
-            'German': lambda s: cls._create_ppocr(s, 'latin', backend),
-            'Dutch': lambda s: cls._create_ppocr(s, 'latin', backend),
+            'Japanese': lambda s: cls._create_manga_ocr(s, effective_backend),
+            'Korean': lambda s: cls._create_pororo_ocr(s, effective_backend),
+            'Chinese': lambda s: cls._create_ppocr(s, 'ch', effective_backend),
+            'Russian': lambda s: cls._create_ppocr(s, 'ru', effective_backend),
+            'French': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
+            'English': lambda s: cls._create_ppocr(s, 'en', effective_backend),
+            'Spanish': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
+            'Italian': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
+            'German': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
+            'Dutch': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
         }
         
         # Check if we have a specific model factory

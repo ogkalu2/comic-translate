@@ -77,7 +77,7 @@ class DetectionEngine(ABC):
         font_attrs_per_box: list[dict] = [{}] * len(text_boxes)
         if crops:
             try:
-                font_engine = FontEngineFactory.create_engine(self.settings, backend='onnx')
+                font_engine = FontEngineFactory.create_engine(self.settings)
                 batch_results = font_engine.process_batch(crops)
                 for crop_pos, txt_idx in enumerate(crop_indices):
                     font_attrs_per_box[txt_idx] = batch_results[crop_pos]
