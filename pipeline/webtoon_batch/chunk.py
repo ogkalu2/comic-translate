@@ -14,7 +14,7 @@ from modules.translation.processor import Translator
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.image_utils import generate_mask
-from modules.utils.pipeline_config import get_config, inpaint_map
+from modules.utils.pipeline_config import get_config, get_inpainter_backend, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
 
 if TYPE_CHECKING:
@@ -70,9 +70,9 @@ class ChunkMixin:
             self.inpainting.inpainter_cache is None
             or self.inpainting.cached_inpainter_key != inpainter_key
         ):
-            backend = "onnx"
-            device = resolve_device(settings_page.is_gpu_enabled(), backend=backend)
             InpainterClass = inpaint_map[inpainter_key]
+            backend = get_inpainter_backend(inpainter_key)
+            device = resolve_device(settings_page.is_gpu_enabled(), backend=backend)
             self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
             self.inpainting.cached_inpainter_key = inpainter_key
 

@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
 from modules.utils.device import resolve_device
-from modules.utils.pipeline_config import inpaint_map, get_config
+from modules.utils.pipeline_config import inpaint_map, get_config, get_inpainter_backend
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class InpaintingHandler:
         settings_page = self.main_page.settings_page
         inpainter_key = settings_page.get_tool_selection('inpainter')
         if self.inpainter_cache is None or self.cached_inpainter_key != inpainter_key:
-            backend = 'onnx'
+            backend = get_inpainter_backend(inpainter_key)
             device = resolve_device(settings_page.is_gpu_enabled(), backend)
             InpainterClass = inpaint_map[inpainter_key]
             logger.info("pre-inpaint: initializing inpainter '%s' on device %s", inpainter_key, device)

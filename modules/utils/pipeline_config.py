@@ -18,6 +18,11 @@ inpaint_map = {
     "AOT": AOT,
 }
 
+
+def get_inpainter_backend(inpainter_key: str) -> str:
+    inpainter_cls = inpaint_map[inpainter_key]
+    return getattr(inpainter_cls, "preferred_backend", "onnx")
+
 def get_config(settings_page: SettingsPage):
     strategy_settings = settings_page.get_hd_strategy_settings()
     if strategy_settings['strategy'] == settings_page.ui.tr("Resize"):
