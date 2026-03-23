@@ -18,7 +18,9 @@ MODEL_MAP = {
     "Claude-4.5-Haiku": "claude-haiku-4-5-20251001",
     "Gemini-2.0-Flash": "gemini-2.0-flash",
     "Gemini-3.0-Flash": "gemini-3-flash-preview",
-    "Gemini-2.5-Pro": "gemini-2.5-pro"
+    "Gemini-2.5-Pro": "gemini-2.5-pro",
+    "MiniMax-M2.7": "MiniMax-M2.7",
+    "MiniMax-M2.7-highspeed": "MiniMax-M2.7-highspeed",
 }
 
 def encode_image_array(img_array: np.ndarray):
