@@ -475,7 +475,7 @@ class ONNXFontEngine(FontEngine):
 
 class FontEngineFactory:
     _engines = {}
-    _DEFAULT_BACKEND = "torch"
+    _DEFAULT_BACKEND = "onnx"
 
     @classmethod
     def create_engine(cls, settings, backend: str | None = None) -> FontEngine:
