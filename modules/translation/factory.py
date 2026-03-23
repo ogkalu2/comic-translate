@@ -9,6 +9,7 @@ from .llm.gpt import GPTTranslation
 from .llm.claude import ClaudeTranslation
 from .llm.gemini import GeminiTranslation
 from .llm.deepseek import DeepseekTranslation
+from .llm.minimax import MinimaxTranslation
 from .llm.custom import CustomTranslation
 from .user import UserTranslator
 from app.account.auth.token_storage import get_token
@@ -32,6 +33,7 @@ class TranslationFactory:
         "Claude": ClaudeTranslation,
         "Gemini": GeminiTranslation,
         "Deepseek": DeepseekTranslation,
+        "MiniMax": MinimaxTranslation,
         "Custom": CustomTranslation
     }
     
