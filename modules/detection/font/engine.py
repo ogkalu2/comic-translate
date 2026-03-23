@@ -5,12 +5,28 @@ import numpy as np
 from PIL import Image
 import imkit as imk
 from . import config
-from modules.utils.device import resolve_device, get_providers, torch_available
+from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
 from modules.utils.torch_autocast import TorchAutocastMixin
 
 logger = logging.getLogger(__name__)
+
+
+def get_torch_font_runtime_error() -> str | None:
+    """Return the import error for the Torch font runtime, if any."""
+    try:
+        import torch  # noqa: F401
+        from torchvision import transforms  # noqa: F401
+        from .model import FontDetector  # noqa: F401
+        return None
+    except ImportError as exc:
+        return str(exc)
+
+
+def torch_font_runtime_available() -> bool:
+    """Return whether the Torch font runtime dependencies are importable."""
+    return get_torch_font_runtime_error() is None
 
 
 def extract_foreground_color(image: np.ndarray) -> list[int] | None:
@@ -245,14 +261,17 @@ class FontEngine(ABC):
 
 class TorchFontEngine(TorchAutocastMixin, FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
-        try:
-            import torch
-            from torchvision import transforms
-            from .model import FontDetector
-        except ImportError:
-            logger.warning("Warning: Torch not available, cannot initialize TorchFontEngine")
+        runtime_error = get_torch_font_runtime_error()
+        if runtime_error is not None:
+            logger.warning(
+                "Warning: Torch font runtime unavailable, cannot initialize TorchFontEngine: %s",
+                runtime_error,
+            )
             self.detector = None
             return
+        import torch
+        from torchvision import transforms
+        from .model import FontDetector
 
         self.device = torch.device(device)   
         self.model_name = "resnet50"
@@ -456,7 +475,7 @@ class ONNXFontEngine(FontEngine):
 
 class FontEngineFactory:
     _engines = {}
-    _DEFAULT_BACKEND = "onnx"
+    _DEFAULT_BACKEND = "torch"
 
     @classmethod
     def create_engine(cls, settings, backend: str | None = None) -> FontEngine:
@@ -479,6 +498,17 @@ class FontEngineFactory:
     @classmethod
     def _resolve_backend(cls, backend: str | None = None) -> str:
         effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
-        if effective_backend == "torch" and not torch_available():
+        if effective_backend == "torch":
+            runtime_error = get_torch_font_runtime_error()
+            if runtime_error is None:
+                return effective_backend
+            if backend is not None:
+                raise RuntimeError(
+                    f"Torch font backend requested but unavailable: {runtime_error}"
+                )
+            logger.warning(
+                "Falling back to ONNX font backend because Torch font runtime is incomplete: %s",
+                runtime_error,
+            )
             return "onnx"
         return effective_backend
