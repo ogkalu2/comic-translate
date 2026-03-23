@@ -1,6 +1,8 @@
 import numpy as np
 import imkit as imk
 from PIL import Image
+from contextlib import nullcontext
+import logging
 from modules.utils.device import get_providers
 
 from .base import InpaintModel
@@ -11,6 +13,8 @@ from modules.utils.inpainting import (
 )
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
+
+logger = logging.getLogger(__name__)
 
 
 class AOT(InpaintModel):
@@ -27,9 +31,24 @@ class AOT(InpaintModel):
             providers = get_providers(device)
             self.session = make_session(onnx_path, providers=providers)
         else:
+            import torch
             ModelDownloader.get(ModelID.AOT_JIT)
             local_path = ModelDownloader.primary_path(ModelID.AOT_JIT)
             self.model = load_jit_model(local_path, device)
+            self.autocast_device_type = str(device).split(":", 1)[0].lower()
+            self.autocast_dtype = torch.float16
+            self.use_autocast = (
+                self.autocast_device_type != "cpu"
+                and torch.amp.autocast_mode.is_autocast_available(self.autocast_device_type)
+            )
+
+    def _autocast_context(self, torch_module):
+        if not getattr(self, "use_autocast", False):
+            return nullcontext()
+        return torch_module.autocast(
+            device_type=self.autocast_device_type,
+            dtype=self.autocast_dtype,
+        )
 
     @staticmethod
     def is_downloaded() -> bool:
@@ -78,14 +97,27 @@ class AOT(InpaintModel):
             import torch  # noqa
             img_torch = torch.from_numpy(image).permute(2, 0, 1).unsqueeze_(0).float() / 127.5 - 1.0
             mask_torch = torch.from_numpy(mask).unsqueeze_(0).unsqueeze_(0).float() / 255.0
-            mask_torch[mask_torch < 0.5] = 0
-            mask_torch[mask_torch >= 0.5] = 1
+            mask_torch = (mask_torch >= 0.5).to(dtype=img_torch.dtype)
             img_torch = img_torch.to(self.device)
             mask_torch = mask_torch.to(self.device)
             img_torch = img_torch * (1 - mask_torch)
-            with torch.no_grad():
-                img_inpainted_torch = self.model(img_torch, mask_torch)
-            img_inpainted = ((img_inpainted_torch.cpu().squeeze_(0).permute(1, 2, 0).numpy() + 1.0) * 127.5)
+            with torch.inference_mode():
+                try:
+                    with self._autocast_context(torch):
+                        img_inpainted_torch = self.model(img_torch, mask_torch)
+                except Exception:
+                    if not getattr(self, "use_autocast", False):
+                        raise
+                    logger.warning(
+                        "Disabling AOT autocast for device '%s' after runtime failure.",
+                        self.autocast_device_type,
+                        exc_info=True,
+                    )
+                    self.use_autocast = False
+                    img_inpainted_torch = self.model(img_torch, mask_torch)
+            if img_inpainted_torch.dtype != torch.float32:
+                img_inpainted_torch = img_inpainted_torch.float()
+            img_inpainted = ((img_inpainted_torch.cpu().squeeze(0).permute(1, 2, 0).numpy() + 1.0) * 127.5)
             img_inpainted = (np.clip(np.round(img_inpainted), 0, 255)).astype(np.uint8)
         
         # Ensure output dimensions match input
