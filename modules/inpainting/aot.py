@@ -1,7 +1,6 @@
 import numpy as np
 import imkit as imk
 from PIL import Image
-from contextlib import nullcontext
 import logging
 from modules.utils.device import get_providers
 
@@ -13,11 +12,12 @@ from modules.utils.inpainting import (
 )
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
+from modules.utils.torch_autocast import TorchAutocastMixin
 
 logger = logging.getLogger(__name__)
 
 
-class AOT(InpaintModel):
+class AOT(TorchAutocastMixin, InpaintModel):
     name = "aot"
     pad_mod = 8
     min_size = 128  
@@ -35,20 +35,7 @@ class AOT(InpaintModel):
             ModelDownloader.get(ModelID.AOT_JIT)
             local_path = ModelDownloader.primary_path(ModelID.AOT_JIT)
             self.model = load_jit_model(local_path, device)
-            self.autocast_device_type = str(device).split(":", 1)[0].lower()
-            self.autocast_dtype = torch.float16
-            self.use_autocast = (
-                self.autocast_device_type != "cpu"
-                and torch.amp.autocast_mode.is_autocast_available(self.autocast_device_type)
-            )
-
-    def _autocast_context(self, torch_module):
-        if not getattr(self, "use_autocast", False):
-            return nullcontext()
-        return torch_module.autocast(
-            device_type=self.autocast_device_type,
-            dtype=self.autocast_dtype,
-        )
+            self.setup_torch_autocast(torch, device)
 
     @staticmethod
     def is_downloaded() -> bool:
@@ -102,19 +89,12 @@ class AOT(InpaintModel):
             mask_torch = mask_torch.to(self.device)
             img_torch = img_torch * (1 - mask_torch)
             with torch.inference_mode():
-                try:
-                    with self._autocast_context(torch):
-                        img_inpainted_torch = self.model(img_torch, mask_torch)
-                except Exception:
-                    if not getattr(self, "use_autocast", False):
-                        raise
-                    logger.warning(
-                        "Disabling AOT autocast for device '%s' after runtime failure.",
-                        self.autocast_device_type,
-                        exc_info=True,
-                    )
-                    self.use_autocast = False
-                    img_inpainted_torch = self.model(img_torch, mask_torch)
+                img_inpainted_torch = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.model(img_torch, mask_torch),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
             if img_inpainted_torch.dtype != torch.float32:
                 img_inpainted_torch = img_inpainted_torch.float()
             img_inpainted = ((img_inpainted_torch.cpu().squeeze(0).permute(1, 2, 0).numpy() + 1.0) * 127.5)

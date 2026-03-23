@@ -8,6 +8,7 @@ from . import config
 from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
+from modules.utils.torch_autocast import TorchAutocastMixin
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +243,7 @@ class FontEngine(ABC):
             "angle": angle_deg, # Renamed from angle_deg to angle for consistency
         }
 
-class TorchFontEngine(FontEngine):
+class TorchFontEngine(TorchAutocastMixin, FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
         try:
             import torch
@@ -290,6 +291,7 @@ class TorchFontEngine(FontEngine):
             self.detector.load_state_dict(fixed_state, strict=True)
             self.detector = self.detector.to(self.device)
             self.detector.eval()
+            self.setup_torch_autocast(torch, self.device)
             
             self.transform = transforms.Compose([
                 transforms.Resize((self.input_size, self.input_size)),
@@ -312,8 +314,14 @@ class TorchFontEngine(FontEngine):
             
             x = self.transform(pil_image).unsqueeze(0).to(self.device)
             
-            with torch.no_grad():
-                out = self.detector(x)[0].float().cpu().numpy()
+            with torch.inference_mode():
+                out = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.detector(x),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
+                out = out[0].float().cpu().numpy()
                 
             result = self.decode_output(out, original_width)
 
@@ -345,8 +353,14 @@ class TorchFontEngine(FontEngine):
 
             batch = torch.stack(tensors).to(self.device)  # (N, 3, H, W)
 
-            with torch.no_grad():
-                batch_out = self.detector(batch).float().cpu().numpy()  # (N, output_dim)
+            with torch.inference_mode():
+                batch_out = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.detector(batch),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
+                batch_out = batch_out.float().cpu().numpy()  # (N, output_dim)
 
             results = []
             for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):

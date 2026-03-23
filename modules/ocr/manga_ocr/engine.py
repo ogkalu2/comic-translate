@@ -2,13 +2,14 @@ import os
 import numpy as np
 import re
 import jaconv
-from transformers import ViTImageProcessor, AutoTokenizer, \
-    VisionEncoderDecoderModel, GenerationMixin
-import torch
+import logging
 
 from modules.ocr.base import OCREngine
 from modules.utils.textblock import TextBlock, adjust_text_line_coordinates
 from modules.utils.download import ModelDownloader, ModelID, models_base_dir
+from modules.utils.torch_autocast import TorchAutocastMixin
+
+logger = logging.getLogger(__name__)
 
 
 class MangaOCREngine(OCREngine):
@@ -64,24 +65,31 @@ class MangaOCREngine(OCREngine):
 # modified from https://github.com/kha-white/manga-ocr/blob/master/manga_ocr/ocr.py
 manga_ocr_path = os.path.join(models_base_dir, 'ocr', 'manga-ocr-base')
 
-
-class MangaOcrModel(VisionEncoderDecoderModel, GenerationMixin):
-    pass
-
-class MangaOcr:
+class MangaOcr(TorchAutocastMixin):
     def __init__(self, pretrained_model_name_or_path=manga_ocr_path, device='cpu'):
+        import torch
+        from transformers import AutoTokenizer, ViTImageProcessor, VisionEncoderDecoderModel
+
         self.processor = ViTImageProcessor.from_pretrained(pretrained_model_name_or_path)
         self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model_name_or_path)
-        self.model = MangaOcrModel.from_pretrained(pretrained_model_name_or_path)
+        self.model = VisionEncoderDecoderModel.from_pretrained(pretrained_model_name_or_path)
+        self.setup_torch_autocast(torch, device)
         self.to(device)
 
     def to(self, device):
         self.model.to(device)
 
-    @torch.no_grad()
     def __call__(self, img: np.ndarray):
+        import torch
+
         x = self.processor(img, return_tensors="pt").pixel_values.squeeze()
-        x = self.model.generate(x[None].to(self.model.device))[0].cpu()
+        with torch.inference_mode():
+            x = self.run_with_torch_autocast(
+                torch_module=torch,
+                fn=lambda: self.model.generate(x[None].to(self.model.device))[0].cpu(),
+                logger=logger,
+                engine_name=self.__class__.__name__,
+            )
         x = self.tokenizer.decode(x, skip_special_tokens=True)
         x = post_process(x)
         return x

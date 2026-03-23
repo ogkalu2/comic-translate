@@ -3,10 +3,12 @@ This code is adapted from https://github.com/JaidedAI/EasyOCR/blob/8af936ba1b2f3
 """
 
 import math
+import logging
 import numpy as np
 from PIL import Image
 
 from .utils import CTCLabelConverter
+from modules.utils.torch_autocast import configure_torch_autocast, run_with_optional_autocast
 
 # To keep torch as an optional dependency
 try:
@@ -16,6 +18,8 @@ try:
 except Exception:
     torch = None
     HAVE_TORCH = False
+
+logger = logging.getLogger(__name__)
 
 
 def contrast_grey(img):
@@ -166,14 +170,23 @@ def recognizer_predict(model, converter, test_loader, opt2val: dict):
     F = importlib.import_module("torch.nn.functional")
 
     device = opt2val["device"]
+    device_type, dtype, enabled = configure_torch_autocast(torch, device)
 
     model.eval()
     result = []
-    with torch.no_grad():
+    with torch.inference_mode():
         for image_tensors in test_loader:
             batch_size = image_tensors.size(0)
             inputs = image_tensors.to(device)
-            preds = model(inputs)  # (N, length, num_classes)
+            preds, enabled = run_with_optional_autocast(
+                torch_module=torch,
+                fn=lambda: model(inputs),
+                enabled=enabled,
+                device_type=device_type,
+                dtype=dtype,
+                logger=logger,
+                engine_name="PororoRecognition",
+            )
 
             # rebalance
             preds_prob = F.softmax(preds, dim=2)

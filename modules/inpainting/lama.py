@@ -1,6 +1,5 @@
 import numpy as np
 import logging
-from contextlib import nullcontext
 from ..utils.device import get_providers
 
 from ..utils.inpainting import (
@@ -9,13 +8,14 @@ from ..utils.inpainting import (
 )
 from ..utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
+from modules.utils.torch_autocast import TorchAutocastMixin
 from .base import InpaintModel
 from .schema import Config
 
 logger = logging.getLogger(__name__)
 
 
-class LaMa(InpaintModel):
+class LaMa(TorchAutocastMixin, InpaintModel):
     name = "lama"
     pad_mod = 8
 
@@ -31,20 +31,7 @@ class LaMa(InpaintModel):
             ModelDownloader.get(ModelID.LAMA_JIT)
             local_path = ModelDownloader.primary_path(ModelID.LAMA_JIT) 
             self.model = load_jit_model(local_path, device)
-            self.autocast_device_type = str(device).split(":", 1)[0].lower()
-            self.autocast_dtype = torch.float16
-            self.use_autocast = (
-                self.autocast_device_type != "cpu"
-                and torch.amp.autocast_mode.is_autocast_available(self.autocast_device_type)
-            )
-
-    def _autocast_context(self, torch_module):
-        if not getattr(self, "use_autocast", False):
-            return nullcontext()
-        return torch_module.autocast(
-            device_type=self.autocast_device_type,
-            dtype=self.autocast_dtype,
-        )
+            self.setup_torch_autocast(torch, device)
 
     @staticmethod
     def is_downloaded() -> bool:
@@ -76,19 +63,12 @@ class LaMa(InpaintModel):
             image_t = torch.from_numpy(image_n).unsqueeze(0).to(self.device)
             mask_t = torch.from_numpy(mask_n).unsqueeze(0).to(self.device)
             with torch.inference_mode():
-                try:
-                    with self._autocast_context(torch):
-                        inpainted_image = self.model(image_t, mask_t)
-                except Exception:
-                    if not getattr(self, "use_autocast", False):
-                        raise
-                    logger.warning(
-                        "Disabling LaMa autocast for device '%s' after runtime failure.",
-                        self.autocast_device_type,
-                        exc_info=True,
-                    )
-                    self.use_autocast = False
-                    inpainted_image = self.model(image_t, mask_t)
+                inpainted_image = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.model(image_t, mask_t),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
             cur_res = inpainted_image[0].permute(1, 2, 0).detach().cpu().numpy()
             cur_res = np.clip(cur_res * 255, 0, 255).astype("uint8")
             # cur_res is already in RGB format

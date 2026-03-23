@@ -5,10 +5,14 @@ This code is adapted from https://github.com/JaidedAI/EasyOCR/blob/master/easyoc
 from collections import OrderedDict
 
 import numpy as np
+import logging
 from PIL import Image
 
 from .craft_utils import adjust_result_coordinates, get_det_boxes
 from .imgproc import normalize_mean_variance, resize_aspect_ratio
+from modules.utils.torch_autocast import configure_torch_autocast, run_with_optional_autocast
+
+logger = logging.getLogger(__name__)
 
 
 def copy_state_dict(state_dict):
@@ -46,8 +50,17 @@ def test_net(image: np.ndarray, net, opt2val: dict):
     x = x.to(device)
 
     # forward pass
-    with torch.no_grad():
-        y, feature = net(x)
+    device_type, dtype, enabled = configure_torch_autocast(torch, device)
+    with torch.inference_mode():
+        (y, feature), _ = run_with_optional_autocast(
+            torch_module=torch,
+            fn=lambda: net(x),
+            enabled=enabled,
+            device_type=device_type,
+            dtype=dtype,
+            logger=logger,
+            engine_name="PororoDetection",
+        )
 
     # make score and link map
     score_text = y[0, :, :, 0].cpu().data.numpy()

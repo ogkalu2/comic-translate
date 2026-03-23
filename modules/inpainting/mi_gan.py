@@ -2,6 +2,7 @@ import os
 import imkit as imk
 from PIL import Image
 import numpy as np
+import logging
 
 from ..utils.inpainting import (
     load_jit_model,
@@ -12,11 +13,14 @@ from ..utils.inpainting import (
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.device import get_providers
 from modules.utils.onnx import make_session
+from modules.utils.torch_autocast import TorchAutocastMixin
 from .base import InpaintModel
 from .schema import Config
 
+logger = logging.getLogger(__name__)
 
-class MIGAN(InpaintModel):
+
+class MIGAN(TorchAutocastMixin, InpaintModel):
     name = "migan"
     min_size = 512
     pad_mod = 512
@@ -33,9 +37,11 @@ class MIGAN(InpaintModel):
             providers = get_providers(device)
             self.session = make_session(onnx_path, providers=providers)
         else:
+            import torch
             ModelDownloader.get(ModelID.MIGAN_JIT)
             local_path = ModelDownloader.primary_path(ModelID.MIGAN_JIT)
             self.model = load_jit_model(local_path, device)
+            self.setup_torch_autocast(torch, device)
 
     @staticmethod
     def is_downloaded() -> bool:
@@ -143,7 +149,13 @@ class MIGAN(InpaintModel):
             mask_t = torch.from_numpy(m_norm).unsqueeze(0).to(self.device)
             erased_img = image_t * (1 - mask_t)
             input_image = torch.cat([0.5 - mask_t, erased_img], dim=1)
-            output = self.model(input_image)
+            with torch.inference_mode():
+                output = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.model(input_image),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
             output = (
                 (output.permute(0, 2, 3, 1) * 127.5 + 127.5)
                 .round()
