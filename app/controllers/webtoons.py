@@ -166,6 +166,7 @@ class WebtoonController:
         # Clear the scene to remove multi-page items
         self.main.blk_list.clear()
         self.image_viewer.clear_scene()
+        self.main.image_ctrl.force_default_view_on_next_image_load()
         
         # Make sure the image viewer is the current widget
         self.main.central_stack.setCurrentWidget(self.image_viewer)

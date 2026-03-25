@@ -526,9 +526,17 @@ class ImageViewer(QGraphicsView):
         }
 
     def load_state(self, state: Dict):
-        self.setTransform(QtGui.QTransform(*state['transform']))
-        self.centerOn(QPointF(*state['center']))
-        self.setSceneRect(QRectF(*state['scene_rect']))
+        scene_rect = state.get('scene_rect')
+        if scene_rect:
+            self.setSceneRect(QRectF(*scene_rect))
+
+        transform = state.get('transform')
+        if transform:
+            self.setTransform(QtGui.QTransform(*transform))
+
+        center = state.get('center')
+        if center:
+            self.centerOn(QPointF(*center))
 
         for data in state['rectangles']:
             x, y, w, h = data['rect']

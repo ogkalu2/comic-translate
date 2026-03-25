@@ -31,6 +31,7 @@ class ImageStateController:
         self._suppress_dismiss_message_ids: set[int] = set()
         self._active_transient_skip_message: MMessage | None = None
         self._highlighted_card_indices: set[int] = set()
+        self._force_default_view_once = False
         
         # Initialize lazy image loader for list view
         self.page_list_loader = ListViewImageLoader(
@@ -992,6 +993,8 @@ class ImageStateController:
     def load_image_state(self, file_path: str):
         rgb_image = self.main.image_data[file_path]
         viewer = self.main.image_viewer
+        needs_default_fit = self._force_default_view_once
+        self._force_default_view_once = False
 
         # Avoid repeated repaints while restoring many items during page switches.
         viewer.setUpdatesEnabled(False)
@@ -1050,11 +1053,22 @@ class ImageStateController:
                     viewer.clear_rectangles(page_switch=True)
                     viewer.clear_brush_strokes(page_switch=True)
                     viewer.clear_text_items()
+                    needs_default_fit = True
+            else:
+                self.main.blk_list = []
+                viewer.clear_rectangles(page_switch=True)
+                viewer.clear_brush_strokes(page_switch=True)
+                viewer.clear_text_items()
+                needs_default_fit = True
 
             self.main.text_ctrl.clear_text_edits()
         finally:
             viewer.setUpdatesEnabled(True)
             viewer.viewport().update()
+
+        if needs_default_fit:
+            viewer.resetTransform()
+            viewer.fitInView()
 
     def display_image(self, index: int, switch_page: bool = True):
         if 0 <= index < len(self.main.image_files):
@@ -1095,6 +1109,9 @@ class ImageStateController:
             if first_time_display and not self.main.webtoon_mode:
                 self.main.image_viewer.fitInView()
                 self.main.displayed_images.add(file_path)  # Mark this image as displayed
+
+    def force_default_view_on_next_image_load(self):
+        self._force_default_view_once = True
 
     def on_image_processed(self, index: int, image: np.ndarray, image_path: str):
         file_on_display = self.main.image_files[self.main.curr_img_idx]
