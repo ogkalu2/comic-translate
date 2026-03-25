@@ -246,6 +246,7 @@ class BatchReportController:
         }
         self._latest_batch_report = finalized
         self.main.batch_report_button.setEnabled(True)
+        self.main.mark_project_dirty()
         return finalized
 
     def _open_image_from_batch_report(self, image_path: str):
