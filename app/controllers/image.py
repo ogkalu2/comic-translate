@@ -38,7 +38,6 @@ class ImageStateController:
             avatar_size=(35, 50)
         )
 
-
     def _default_export_group_name(self, file_path: str) -> str:
         source_label = None
         try:
