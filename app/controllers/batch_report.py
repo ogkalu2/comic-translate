@@ -181,6 +181,7 @@ class BatchReportController:
         detail = self._localize_batch_skip_detail(error)
         action = self._localize_batch_skip_action(skip_reason, error)
         reason_map = {
+            "Image Load": self.main.tr("Image could not be opened"),
             "Text Blocks": self.main.tr("No text blocks detected"),
             "OCR": self.main.tr("Text recognition failed"),
             "Translator": self.main.tr("Translation failed"),
