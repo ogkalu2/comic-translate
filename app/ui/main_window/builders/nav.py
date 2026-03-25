@@ -249,17 +249,10 @@ class NavRailMixin:
 
     def _export_all_as(self, extension: str):
         extension = (extension or "").lower().lstrip(".")
-        export_types = {
-            "zip": ("ZIP files", "zip"),
-            "cbz": ("CBZ files", "cbz"),
-            "cb7": ("CB7 files", "cb7"),
-            "pdf": ("PDF files", "pdf"),
-        }
-        file_type = export_types.get(extension)
-        if file_type is None:
+        project_ctrl = getattr(self, "project_ctrl", None)
+        if project_ctrl is None or not hasattr(project_ctrl, "start_export_as"):
             return
-        self.save_all_browser.set_file_types([file_type])
-        self.save_all_browser.clicked.emit()
+        project_ctrl.start_export_as(extension)
 
     def create_push_button(self, text: str, clicked=None):
         button = MPushButton(text)

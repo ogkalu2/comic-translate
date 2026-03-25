@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shutil
 import tempfile
 from datetime import datetime
 from typing import TYPE_CHECKING
 from dataclasses import asdict, is_dataclass
+from collections import OrderedDict
 
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QSettings
@@ -16,6 +18,7 @@ from app.thread_worker import GenericWorker
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from app.ui.export_chapters_dialog import ExportChaptersDialog, ExportChapterRow
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
@@ -91,7 +94,7 @@ class ProjectController:
         mtimes  = settings.value("mtimes",  []) or []
         pinneds = settings.value("pinned",  []) or []
         settings.endGroup()
-        # Normalise types — QSettings may return a single string if only 1 entry
+        # Normalise types â€” QSettings may return a single string if only 1 entry
         if isinstance(paths, str):   paths   = [paths]
         if not isinstance(mtimes,  list): mtimes  = [mtimes]
         if not isinstance(pinneds, list): pinneds = [pinneds]
@@ -486,25 +489,252 @@ class ProjectController:
         )
 
     def save_and_make(self, output_path: str):
+        self._save_and_make_internal(output_path)
+
+    def start_export_as(self, extension: str) -> None:
+        extension = (extension or "").lower().lstrip(".")
+        if not self.main.image_files:
+            return
+
+        export_rows = self._build_export_rows()
+        if not self._should_show_partition_dialog(export_rows):
+            output_path = self._launch_export_file_dialog(extension)
+            if output_path:
+                self._save_and_make_internal(output_path, skip_partition_dialog=True)
+            return
+
+        partition_result = self._prompt_for_partition(
+            export_rows,
+            os.path.join(self._get_default_export_dir(), f"untitled.{extension}"),
+        )
+        if partition_result is None:
+            return
+        chapter_names_by_path, output_dir = partition_result
+
+        groups = self._group_page_indices(chapter_names_by_path)
+        if len(groups) == 1:
+            only_group_name = next(iter(groups.keys()))
+            suggested_name = self._build_export_filename(only_group_name, f".{extension}", set())
+            output_path = self._launch_export_file_dialog(
+                extension,
+                suggested_name=suggested_name,
+                initial_dir=output_dir,
+            )
+            if output_path:
+                self._save_and_make_internal(
+                    output_path,
+                    chapter_names_by_path=chapter_names_by_path,
+                    skip_partition_dialog=True,
+                )
+            return
+
+        export_plan = self._build_export_plan_for_directory(output_dir, f".{extension}", chapter_names_by_path)
+        self._run_export_plan(export_plan)
+
+    def _save_and_make_internal(
+        self,
+        output_path: str,
+        chapter_names_by_path: dict[str, str] | None = None,
+        skip_partition_dialog: bool = False,
+    ) -> None:
+        if not self.main.image_files:
+            return
+
+        export_rows = self._build_export_rows()
+        resolved_chapter_names = chapter_names_by_path or {
+            row.file_path: row.group_name for row in export_rows
+        }
+        if not skip_partition_dialog and self._should_show_partition_dialog(export_rows):
+            partition_result = self._prompt_for_partition(export_rows, output_path)
+            if partition_result is None:
+                return
+            resolved_chapter_names = partition_result[0]
+
+        export_plan = self._build_export_plan(output_path, resolved_chapter_names)
+        self._run_export_plan(export_plan)
+
+    def _run_export_plan(self, export_plan: list[dict]) -> None:
+        self.main.image_ctrl.save_current_image_state()
+        all_pages_current_state = self._build_all_pages_current_state()
         self.main.loading.setVisible(True)
         self.main.run_threaded(
             self.save_and_make_worker,
             None,
             self.main.default_error_handler,
             lambda: self.main.loading.setVisible(False),
-            output_path,
+            export_plan,
+            all_pages_current_state,
         )
 
-    def save_and_make_worker(self, output_path: str):
-        self.main.image_ctrl.save_current_image_state()
-        all_pages_current_state = self._build_all_pages_current_state()
+    def _prompt_for_partition(
+        self,
+        export_rows: list[ExportChapterRow],
+        output_path_hint: str,
+    ) -> tuple[dict[str, str], str] | None:
+        dialog = ExportChaptersDialog(
+            export_rows,
+            os.path.dirname(output_path_hint) or os.path.expanduser("~"),
+            os.path.splitext(output_path_hint)[1],
+            self._build_export_filename,
+            parent=self.main,
+        )
+        if dialog.exec() != QtWidgets.QDialog.Accepted:
+            return None
+        chapter_names_by_path = dialog.chapter_names_by_path()
+        self._persist_export_group_names(chapter_names_by_path)
+        return chapter_names_by_path, dialog.selected_output_dir()
+
+    def _persist_export_group_names(self, chapter_names_by_path: dict[str, str]) -> None:
+        changed = False
+        for file_path, group_name in chapter_names_by_path.items():
+            state = self.main.image_states.setdefault(file_path, {})
+            if state.get("export_group_name") != group_name:
+                state["export_group_name"] = group_name
+                changed = True
+        if changed:
+            self.main.mark_project_dirty()
+
+    def _launch_export_file_dialog(
+        self,
+        extension: str,
+        suggested_name: str | None = None,
+        initial_dir: str | None = None,
+    ) -> str:
+        export_types = {
+            "zip": "ZIP files (*.zip)",
+            "cbz": "CBZ files (*.cbz)",
+            "cb7": "CB7 files (*.cb7)",
+            "pdf": "PDF files (*.pdf)",
+        }
+        normalized_ext = (extension or "").lower().lstrip(".")
+        if normalized_ext not in export_types:
+            return ""
+        default_name = suggested_name or f"untitled.{normalized_ext}"
+        selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self.main,
+            "Save File",
+            os.path.join(initial_dir or self._get_default_export_dir(), default_name),
+            export_types[normalized_ext],
+        )
+        if not selected_path:
+            return ""
+        if not selected_path.lower().endswith(f".{normalized_ext}"):
+            selected_path = f"{selected_path}.{normalized_ext}"
+        return selected_path
+
+    @staticmethod
+    def _sanitize_export_stem(value: str) -> str:
+        sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())
+        return sanitized.strip("._-") or "chapter"
+
+    def _default_export_group_name(self, file_path: str) -> str:
+        state = self.main.image_states.get(file_path, {})
+        group_name = str(state.get("export_group_name", "")).strip()
+        if group_name:
+            return group_name
+        try:
+            source_label = self.main.file_handler.get_prepared_source_label(file_path)
+        except Exception:
+            source_label = None
+        if source_label:
+            return source_label
+        return self._get_export_bundle_name()
+
+    def _build_export_rows(self) -> list[ExportChapterRow]:
+        rows: list[ExportChapterRow] = []
+        for page_index, file_path in enumerate(self.main.image_files):
+            rows.append(
+                ExportChapterRow(
+                    page_index=page_index,
+                    file_path=file_path,
+                    file_name=os.path.basename(file_path),
+                    group_name=self._default_export_group_name(file_path),
+                )
+            )
+        return rows
+
+    def _should_show_partition_dialog(self, rows: list[ExportChapterRow]) -> bool:
+        if len(rows) <= 1:
+            return False
+        distinct_groups = {row.group_name for row in rows if row.group_name}
+        if len(distinct_groups) > 1:
+            return True
+        basenames = [row.file_name.lower() for row in rows]
+        return len(set(basenames)) != len(basenames)
+
+    def _build_export_filename(self, group_name: str, extension: str, used_names: set[str]) -> str:
+        ext = extension if str(extension).startswith(".") else f".{extension}"
+        stem = self._sanitize_export_stem(group_name)
+        candidate = f"{stem}{ext}"
+        suffix = 2
+        while candidate.lower() in used_names:
+            candidate = f"{stem}_{suffix:02d}{ext}"
+            suffix += 1
+        used_names.add(candidate.lower())
+        return candidate
+
+    @staticmethod
+    def _build_export_page_name(page_number: int, file_path: str) -> str:
+        ext = os.path.splitext(file_path)[1].lower() or ".png"
+        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.splitext(os.path.basename(file_path))[0]).strip("._-")
+        if not stem:
+            stem = "page"
+        return f"{page_number:04d}_{stem}{ext}"
+
+    def _build_export_plan(self, output_path: str, chapter_names_by_path: dict[str, str]) -> list[dict]:
+        extension = os.path.splitext(output_path)[1] or ".zip"
+        output_dir = os.path.dirname(output_path) or os.path.expanduser("~")
+        groups = self._group_page_indices(chapter_names_by_path)
+
+        single_group = len(groups) == 1
+        used_names: set[str] = set()
+        plan: list[dict] = []
+        for group_name, page_indices in groups.items():
+            if single_group:
+                group_output_path = output_path
+            else:
+                file_name = self._build_export_filename(group_name, extension, used_names)
+                group_output_path = os.path.join(output_dir, file_name)
+            plan.append({
+                "group_name": group_name,
+                "page_indices": page_indices,
+                "output_path": group_output_path,
+            })
+        return plan
+
+    def _build_export_plan_for_directory(
+        self,
+        output_dir: str,
+        extension: str,
+        chapter_names_by_path: dict[str, str],
+    ) -> list[dict]:
+        groups = self._group_page_indices(chapter_names_by_path)
+        used_names: set[str] = set()
+        plan: list[dict] = []
+        for group_name, page_indices in groups.items():
+            file_name = self._build_export_filename(group_name, extension, used_names)
+            plan.append({
+                "group_name": group_name,
+                "page_indices": page_indices,
+                "output_path": os.path.join(output_dir, file_name),
+            })
+        return plan
+
+    def _group_page_indices(self, chapter_names_by_path: dict[str, str]) -> OrderedDict[str, list[int]]:
+        groups: OrderedDict[str, list[int]] = OrderedDict()
+        for page_index, file_path in enumerate(self.main.image_files):
+            group_name = str(chapter_names_by_path.get(file_path) or self._default_export_group_name(file_path)).strip()
+            groups.setdefault(group_name, []).append(page_index)
+        return groups
+
+    def save_and_make_worker(self, export_plan: list[dict], all_pages_current_state: dict[str, dict]):
         try:
             if self.main.file_handler.should_pre_materialize(self.main.image_files):
                 count = self.main.file_handler.pre_materialize(self.main.image_files)
                 logger.info("Export pre-materialized %d paths before save-and-make.", count)
         except Exception:
             logger.debug("Export pre-materialization failed; continuing lazily.", exc_info=True)
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp(prefix="comic_translate_export_")
         try:            
             temp_main_page_context = None
             if self.main.webtoon_mode:
@@ -513,25 +743,27 @@ class ProjectController:
                     'image_states': all_pages_current_state
                 })()
 
-            for page_idx, file_path in enumerate(self.main.image_files):
-                bname = os.path.basename(file_path)
-                rgb_img = self.main.load_image(file_path)
-                renderer = ImageSaveRenderer(rgb_img)
-                viewer_state = all_pages_current_state[file_path]['viewer_state']
+            for group_index, group in enumerate(export_plan, start=1):
+                group_dir = os.path.join(temp_dir, f"group_{group_index:03d}")
+                os.makedirs(group_dir, exist_ok=True)
+                for page_number, page_idx in enumerate(group["page_indices"], start=1):
+                    file_path = self.main.image_files[page_idx]
+                    rgb_img = self.main.load_image(file_path)
+                    renderer = ImageSaveRenderer(rgb_img)
+                    viewer_state = all_pages_current_state[file_path]['viewer_state']
 
-                renderer.apply_patches(self.main.image_patches.get(file_path, []))
-                if self.main.webtoon_mode and temp_main_page_context is not None:
-                    renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
-                else:
-                    renderer.add_state_to_image(viewer_state)
+                    renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                    if self.main.webtoon_mode and temp_main_page_context is not None:
+                        renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
+                    else:
+                        renderer.add_state_to_image(viewer_state)
 
-                sv_pth = os.path.join(temp_dir, bname)
-                renderer.save_image(sv_pth)
+                    sv_pth = os.path.join(group_dir, self._build_export_page_name(page_number, file_path))
+                    renderer.save_image(sv_pth)
 
-            # Call make function
-            make(temp_dir, output_path)
+                os.makedirs(os.path.dirname(group["output_path"]) or ".", exist_ok=True)
+                make(group_dir, group["output_path"])
         finally:
-            # Clean up temp directory
             shutil.rmtree(temp_dir)
 
     def _build_all_pages_current_state(self) -> dict[str, dict]:
@@ -552,6 +784,20 @@ class ProjectController:
             all_pages_current_state[file_path] = {'viewer_state': viewer_state}
 
         return all_pages_current_state
+
+    def _get_export_bundle_name(self) -> str:
+        if self.main.project_file:
+            return os.path.splitext(os.path.basename(self.main.project_file))[0]
+        if self.main.image_files:
+            return os.path.splitext(os.path.basename(self.main.image_files[0]))[0]
+        return "comic_translate_export"
+
+    def _get_default_export_dir(self) -> str:
+        if self.main.project_file:
+            return os.path.dirname(self.main.project_file)
+        if self.main.image_files:
+            return os.path.dirname(self.main.image_files[0])
+        return os.path.expanduser("~")
 
     def _create_text_items_state_from_scene(self, page_idx: int) -> dict:
         """

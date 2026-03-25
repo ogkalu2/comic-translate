@@ -38,6 +38,51 @@ class ImageStateController:
             avatar_size=(35, 50)
         )
 
+
+    def _default_export_group_name(self, file_path: str) -> str:
+        source_label = None
+        try:
+            source_label = self.main.file_handler.get_prepared_source_label(file_path)
+        except Exception:
+            source_label = None
+
+        if source_label:
+            return source_label
+
+        project_ctrl = getattr(self.main, "project_ctrl", None)
+        if project_ctrl is not None:
+            try:
+                bundle_name = project_ctrl._get_export_bundle_name()
+            except Exception:
+                bundle_name = ""
+            if bundle_name:
+                return bundle_name
+
+        return "comic_translate_export"
+
+    def _build_image_state(
+        self,
+        file_path: str,
+        viewer_state: dict,
+        brush_strokes: list,
+        blk_list: list,
+        skip_status: bool,
+        existing_state: dict | None = None,
+    ) -> dict:
+        state = dict(existing_state or self.main.image_states.get(file_path, {}) or {})
+        state.update({
+            "viewer_state": viewer_state,
+            "source_lang": self.main.s_combo.currentText(),
+            "target_lang": self.main.t_combo.currentText(),
+            "brush_strokes": brush_strokes,
+            "blk_list": blk_list,
+            "skip": skip_status,
+            "export_group_name": str(
+                state.get("export_group_name") or self._default_export_group_name(file_path)
+            ),
+        })
+        return state
+
     def _is_content_flagged_error(self, error: str) -> bool:
         lowered = (error or "").lower()
         return (
@@ -315,14 +360,13 @@ class ImageStateController:
                     
                     # Initialize empty image state for new files
                     skip_status = False
-                    self.main.image_states[file_path] = {
-                        'viewer_state': {},
-                        'source_lang': self.main.s_combo.currentText(),
-                        'target_lang': self.main.t_combo.currentText(),
-                        'brush_strokes': [],
-                        'blk_list': [],  # New images start with empty block list
-                        'skip': skip_status,
-                    }
+                    self.main.image_states[file_path] = self._build_image_state(
+                        file_path,
+                        {},
+                        [],
+                        [],
+                        skip_status,
+                    )
                     
                     # Create undo stack for new file
                     stack = QtGui.QUndoStack(self.main)
@@ -908,14 +952,13 @@ class ImageStateController:
     def save_image_state(self, file: str):
         # For regular mode only
         skip_status = self.main.image_states.get(file, {}).get('skip', False)
-        self.main.image_states[file] = {
-            'viewer_state': self.main.image_viewer.save_state(),
-            'source_lang': self.main.s_combo.currentText(),
-            'target_lang': self.main.t_combo.currentText(),
-            'brush_strokes': self.main.image_viewer.save_brush_strokes(),
-            'blk_list': self.main.blk_list.copy(),  # Store a copy of the list, not a reference
-            'skip': skip_status,
-        }
+        self.main.image_states[file] = self._build_image_state(
+            file,
+            self.main.image_viewer.save_state(),
+            self.main.image_viewer.save_brush_strokes(),
+            self.main.blk_list.copy(),
+            skip_status,
+        )
 
     def save_current_image_state(self):
         if self.main.curr_img_idx >= 0:
