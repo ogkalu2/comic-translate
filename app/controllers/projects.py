@@ -915,6 +915,7 @@ class ProjectController:
     def save_current_state(self):
         if self.main.webtoon_mode:
             webtoon_manager = self.main.image_viewer.webtoon_manager
+            self.main.curr_img_idx = webtoon_manager.layout_manager.current_page_index
             webtoon_manager.scene_item_manager.save_all_scene_items_to_states()
             webtoon_manager.save_view_state()
         else:
@@ -952,6 +953,12 @@ class ProjectController:
             return
 
         index = self.main.curr_img_idx
+        if self.main.webtoon_mode:
+            saved_view_state = getattr(self.main.image_viewer, "webtoon_view_state", {}) or {}
+            saved_page_index = saved_view_state.get("current_page_index")
+            if isinstance(saved_page_index, int):
+                index = saved_page_index
+                self.main.curr_img_idx = saved_page_index
         if not (0 <= index < len(self.main.image_files)):
             index = 0
             self.main.curr_img_idx = 0

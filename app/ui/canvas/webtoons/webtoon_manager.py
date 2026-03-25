@@ -167,6 +167,7 @@ class LazyWebtoonManager:
             'center': (center.x(), center.y()),
             'scene_rect': (self.viewer.sceneRect().x(), self.viewer.sceneRect().y(), 
                            self.viewer.sceneRect().width(), self.viewer.sceneRect().height()),
+            'current_page_index': self.layout_manager.current_page_index,
         }
         self.viewer.webtoon_view_state = state
         return state
@@ -176,8 +177,26 @@ class LazyWebtoonManager:
         state = self.viewer.webtoon_view_state
         if not state:
             return
-        
-        self.viewer.setTransform(QTransform(*state['transform']))
+
+        current_page_index = state.get('current_page_index')
+        if isinstance(current_page_index, int):
+            self.layout_manager.current_page_index = max(
+                0,
+                min(current_page_index, len(self.image_loader.image_file_paths) - 1),
+            )
+
+        scene_rect = state.get('scene_rect')
+        if scene_rect and len(scene_rect) == 4:
+            self._scene.setSceneRect(*scene_rect)
+            self.viewer.setSceneRect(*scene_rect)
+
+        transform_values = state.get('transform')
+        if transform_values and len(transform_values) == 9:
+            self.viewer.setTransform(QTransform(*transform_values))
+
+        center = state.get('center')
+        if center and len(center) == 2:
+            self.viewer.centerOn(center[0], center[1])
 
     # PROXY PROPERTIES to access data from the correct owner
 
