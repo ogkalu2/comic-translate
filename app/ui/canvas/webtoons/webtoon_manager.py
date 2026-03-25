@@ -66,6 +66,7 @@ class LazyWebtoonManager:
             if self.main_controller:
                 self.main_controller.blk_list.clear()
             self.viewer.clear_scene()
+            self.viewer.resetTransform()
             
             if not file_paths:
                 self.viewer.empty = True
@@ -197,7 +198,14 @@ class LazyWebtoonManager:
 
         center = state.get('center')
         if center and len(center) == 2:
-            self.viewer.centerOn(center[0], center[1])
+            self.viewer.centerOn(self.layout_manager.webtoon_width / 2, center[1])
+        elif self.image_loader.image_file_paths:
+            current_page = self.layout_manager.current_page_index
+            page_center_y = (
+                self.layout_manager.image_positions[current_page]
+                + (self.layout_manager.image_heights[current_page] / 2)
+            )
+            self.viewer.centerOn(self.layout_manager.webtoon_width / 2, page_center_y)
 
         self._prime_restored_view()
 
