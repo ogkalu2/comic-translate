@@ -44,6 +44,7 @@ class ProjectController:
         self._autosave_save_pending = False
         self._autosave_retrigger_requested = False
         self._active_save_workers: list = []  # keeps Python refs alive until workers finish
+        self._last_project_dialog_dir = ""
 
     # Recent projects (persisted via QSettings)
 
@@ -600,14 +601,27 @@ class ProjectController:
 
     def launch_save_proj_dialog(self):
         file_dialog = QtWidgets.QFileDialog()
+        initial_dir = self._get_default_project_dialog_dir()
+        initial_path = os.path.join(initial_dir, "untitled.ctpr")
         file_name, _ = file_dialog.getSaveFileName(
             self.main,
             "Save Project As",
-            "untitled",
+            initial_path,
             "Project Files (*.ctpr);;All Files (*)"
         )
+        if file_name:
+            self._last_project_dialog_dir = os.path.dirname(file_name)
 
         return file_name
+
+    def _get_default_project_dialog_dir(self) -> str:
+        if self._last_project_dialog_dir:
+            return self._last_project_dialog_dir
+        if self.main.project_file:
+            return os.path.dirname(self.main.project_file)
+        if self.main.image_files:
+            return os.path.dirname(self.main.image_files[0])
+        return os.path.expanduser("~")
 
     def run_save_proj(self, file_name, post_save_callback=None):
         prev_project_file = self.main.project_file
