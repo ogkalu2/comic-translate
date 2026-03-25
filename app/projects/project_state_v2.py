@@ -97,6 +97,14 @@ def _init_schema(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS batch_report (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            report_blob BLOB
+        )
+        """
+    )
 
 
 def _configure_connection(conn: sqlite3.Connection) -> None:
@@ -362,6 +370,15 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     }
     manifest_blob = msgpack.packb(manifest, default=encoder.encode, use_bin_type=True)
 
+    # Serialize batch report if available
+    batch_report_blob = None
+    if hasattr(comic_translate, 'batch_report_controller') and comic_translate.batch_report_controller._latest_batch_report:
+        batch_report_blob = msgpack.packb(
+            comic_translate.batch_report_controller._latest_batch_report,
+            default=encoder.encode,
+            use_bin_type=True
+        )
+
     try:
         with conn_lock:
             with conn:
@@ -406,6 +423,16 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
                         """,
                         (src_path, size, mtime_ns, blob_hash),
                     )
+
+                # Save batch report if available
+                if batch_report_blob is not None:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO batch_report(id, report_blob) VALUES(1, ?)",
+                        (sqlite3.Binary(batch_report_blob),),
+                    )
+                else:
+                    # Clear batch report if none exists
+                    conn.execute("DELETE FROM batch_report WHERE id = 1")
 
     finally:
         if use_temp_and_replace:
@@ -621,4 +648,13 @@ def load_state_from_proj_file_v2(comic_translate: "ComicTranslate", file_name: s
             row[0]: msgpack.unpackb(row[1], object_hook=decoder.decode, strict_map_key=True)
             for row in conn.execute("SELECT page_path, row_blob FROM page_state")
         }
+        
+        # Load batch report if available
+        batch_report_row = conn.execute("SELECT report_blob FROM batch_report WHERE id = 1").fetchone()
+        if batch_report_row and batch_report_row[0]:
+            batch_report = msgpack.unpackb(batch_report_row[0], object_hook=decoder.decode, strict_map_key=True)
+            if hasattr(comic_translate, 'batch_report_controller'):
+                comic_translate.batch_report_controller._latest_batch_report = batch_report
+                comic_translate.batch_report_button.setEnabled(True)
+        
         return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
