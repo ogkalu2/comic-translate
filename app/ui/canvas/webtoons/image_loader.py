@@ -200,6 +200,41 @@ class LazyImageLoader:
                 item = self.placeholder_items[i]
                 pos = item.pos()
                 item.setPos(pos.x(), pos.y() + height_diff)
+        
+        # CRITICAL FIX: Also adjust scene items (text, rectangles, etc.) for subsequent pages
+        # This fixes the bug where text shifts after scrolling
+        if self.scene_item_manager:
+            self._adjust_scene_items_for_layout_change(page_idx, height_diff)
+    
+    def _adjust_scene_items_for_layout_change(self, changed_page_idx: int, height_diff: int):
+        """Adjust positions of all scene items on pages after the changed page."""
+        from app.ui.canvas.text_item import TextBlockItem
+        from app.ui.canvas.rectangle import MoveableRectItem
+        
+        # Get the Y position threshold - items below this need to be shifted
+        threshold_y = self.layout_manager.image_positions[changed_page_idx + 1] if changed_page_idx + 1 < len(self.layout_manager.image_positions) else float('inf')
+        
+        # Adjust all scene items that are positioned after the changed page
+        for item in self._scene.items():
+            # Skip image items and placeholders (already handled)
+            if item in self.image_items.values() or item in self.placeholder_items.values():
+                continue
+            
+            # Check if this is a scene item we need to move
+            if isinstance(item, (TextBlockItem, MoveableRectItem)):
+                item_y = item.pos().y()
+                # If item is on or after the next page, shift it
+                if item_y >= threshold_y - 10:  # Small margin for items at page boundary
+                    current_pos = item.pos()
+                    item.setPos(current_pos.x(), current_pos.y() + height_diff)
+            # Also handle brush strokes and other QGraphicsItems
+            elif hasattr(item, 'pos') and hasattr(item, 'setPos'):
+                # Check if it's not a child item (those move with their parent)
+                if item.parentItem() is None:
+                    item_y = item.pos().y()
+                    if item_y >= threshold_y - 10:
+                        current_pos = item.pos()
+                        item.setPos(current_pos.x(), current_pos.y() + height_diff)
     
     def update_loaded_pages(self):
         """Update which pages should be loaded based on current viewport."""
