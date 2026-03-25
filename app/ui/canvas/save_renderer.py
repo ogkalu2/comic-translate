@@ -77,7 +77,13 @@ class ImageSaveRenderer:
 
         current_image_path = main_page.image_files[page_idx]
         ensure_path_materialized(current_image_path)
-        current_image = imk.read_image(current_image_path)
+        
+        try:
+            current_image = imk.read_image(current_image_path)
+        except Exception as e:
+            print(f"Warning: Could not read current image {current_image_path}: {e}")
+            return
+            
         current_page_height = current_image.shape[0]
 
         for other_page_idx, other_image_path in enumerate(main_page.image_files):
@@ -92,7 +98,15 @@ class ImageSaveRenderer:
                 continue
 
             ensure_path_materialized(other_image_path)
-            other_image = imk.read_image(other_image_path)
+            
+            # SAFETY: Check if file exists and is readable before trying to load
+            try:
+                other_image = imk.read_image(other_image_path)
+            except Exception as e:
+                print(f"Warning: Could not read adjacent image {other_image_path}: {e}")
+                print(f"  Skipping spanning text items from page {other_page_idx} to page {page_idx}")
+                continue
+                
             other_page_height = other_image.shape[0]
             other_viewer_state = main_page.image_states[other_image_path].get('viewer_state', {})
             other_text_items = other_viewer_state.get('text_items_state', [])
