@@ -176,6 +176,7 @@ class LazyWebtoonManager:
         """Restore the viewer state from a saved state."""
         state = self.viewer.webtoon_view_state
         if not state:
+            self._prime_restored_view()
             return
 
         current_page_index = state.get('current_page_index')
@@ -197,6 +198,18 @@ class LazyWebtoonManager:
         center = state.get('center')
         if center and len(center) == 2:
             self.viewer.centerOn(center[0], center[1])
+
+        self._prime_restored_view()
+
+    def _prime_restored_view(self):
+        """Queue visible pages immediately after initial load/restore."""
+        current_page = self.layout_manager.current_page_index
+        for page_idx in range(max(0, current_page - 1), min(len(self.image_loader.image_file_paths), current_page + 2)):
+            self.image_loader.queue_page_for_loading(page_idx)
+
+        self._update_loaded_pages()
+        QTimer.singleShot(0, self._update_loaded_pages)
+        QTimer.singleShot(150, self._update_loaded_pages)
 
     # PROXY PROPERTIES to access data from the correct owner
 
