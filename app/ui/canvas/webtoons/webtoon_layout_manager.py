@@ -5,6 +5,7 @@ Handles layout calculations, positioning, and viewport management.
 This class is the single source of truth for layout information.
 """
 
+from bisect import bisect_left, bisect_right
 from typing import Set, Tuple
 from PySide6.QtCore import QPointF, QRectF, QTimer
 
@@ -19,6 +20,7 @@ class WebtoonLayoutManager:
         # Layout state (OWNER of this data)
         self.image_positions: list[float] = []
         self.image_heights: list[float] = []
+        self.page_bottoms: list[float] = []
         self.total_height: float = 0
         self.webtoon_width: float = 0
         self.image_spacing = 0
@@ -83,6 +85,7 @@ class WebtoonLayoutManager:
                 current_y += height + self.image_spacing
                 
             self.total_height = current_y - self.image_spacing
+            self._rebuild_page_bottoms()
             self._scene.setSceneRect(0, 0, self.webtoon_width, self.total_height)
             
             return True
@@ -109,6 +112,7 @@ class WebtoonLayoutManager:
             
             # Update total height and scene rect
             self.total_height += height_diff
+            self._rebuild_page_bottoms(start_idx=page_idx)
             self._scene.setSceneRect(0, 0, self.webtoon_width, self.total_height)
             
             return height_diff
@@ -117,45 +121,54 @@ class WebtoonLayoutManager:
     
     def get_visible_pages(self) -> Set[int]:
         """Get pages currently visible in viewport + buffer."""
-        # During initialization, estimate viewport around current page
         if hasattr(self.viewer, 'viewport') and self.viewer.viewport():
             viewport_rect = self.viewer.mapToScene(self.viewer.viewport().rect()).boundingRect()
-            visible_top = viewport_rect.top() - (self.viewport_buffer * 1000)  # Buffer above
-            visible_bottom = viewport_rect.bottom() + (self.viewport_buffer * 1000)  # Buffer below
+            buffer_px = self.viewport_buffer * self.placeholder_height
+            scene_rect = QRectF(
+                viewport_rect.left(),
+                viewport_rect.top() - buffer_px,
+                viewport_rect.width(),
+                viewport_rect.height() + (buffer_px * 2),
+            )
         else:
-            # Fallback during initialization - estimate around current page
             current_page_y = self.image_positions[self.current_page_index] if self.current_page_index < len(self.image_positions) else 0
-            visible_top = current_page_y - (self.viewport_buffer * 1000)
-            visible_bottom = current_page_y + (self.viewport_buffer * 1000)
-        
-        visible_pages = set()
-        for i, (y_pos, height) in enumerate(zip(self.image_positions, self.image_heights)):
-            page_bottom = y_pos + height
-            if y_pos < visible_bottom and page_bottom > visible_top:
-                visible_pages.add(i)
-                
-        return visible_pages
+            buffer_px = self.viewport_buffer * self.placeholder_height
+            scene_rect = QRectF(
+                0,
+                current_page_y - buffer_px,
+                max(self.webtoon_width, 1),
+                buffer_px * 2,
+            )
+
+        return self.get_pages_for_scene_bounds(scene_rect)
     
     def get_pages_for_scene_bounds(self, scene_rect: QRectF) -> Set[int]:
         """Get all pages that a scene rectangle intersects with."""
-        pages = set()
+        if not self.image_positions:
+            return set()
+
         top = scene_rect.top()
         bottom = scene_rect.bottom()
-        
-        for i, (page_y, page_height) in enumerate(zip(self.image_positions, self.image_heights)):
-            page_bottom = page_y + page_height
-            
-            # Check if rectangle intersects with this page
-            if not (bottom < page_y or top > page_bottom):
-                pages.add(i)
-        
-        return pages
+        start_idx = bisect_left(self.page_bottoms, top)
+        end_idx = bisect_right(self.image_positions, bottom)
+
+        start_idx = max(0, min(start_idx, len(self.image_positions)))
+        end_idx = max(start_idx, min(end_idx, len(self.image_positions)))
+        return set(range(start_idx, end_idx))
     
     def get_page_at_position(self, y_pos: float) -> int:
         """Get the page index at a given Y position."""
-        for i, (pos, height) in enumerate(zip(self.image_positions, self.image_heights)):
-            if pos <= y_pos <= pos + height:
-                return i
+        if not self.image_positions:
+            return self.current_page_index
+
+        candidate = bisect_left(self.page_bottoms, y_pos)
+        if 0 <= candidate < len(self.image_positions):
+            if self.image_positions[candidate] <= y_pos <= self.page_bottoms[candidate]:
+                return candidate
+        if candidate > 0:
+            previous = candidate - 1
+            if self.image_positions[previous] <= y_pos <= self.page_bottoms[previous]:
+                return previous
         return self.current_page_index
     
     def scroll_to_page(self, page_index: int, position: str = 'top'):
@@ -200,47 +213,17 @@ class WebtoonLayoutManager:
     def update_current_page(self, loaded_pages_count: int = 0) -> bool:
         """Update current page index based on viewport center. Returns True if page changed."""
         # Don't update during initial loading or if page detection is disabled
-        if (loaded_pages_count < 3 or not self.page_detection_enabled):
+        if (loaded_pages_count < 3 or not self.page_detection_enabled or not self.image_positions):
             return False
             
         center_y = self.viewer.mapToScene(self.viewer.viewport().rect().center()).y()
         old_page = self.current_page_index
-        
-        # Only change page if viewport is significantly within another page
-        # Use a two-pass approach: first try strict detection, then relaxed detection
-        best_match_page = None
-        best_match_distance = float('inf')
-        
-        for i, (pos, height) in enumerate(zip(self.image_positions, self.image_heights)):
-            page_center = pos + height / 2
-            page_top = pos
-            page_bottom = pos + height
-            
-            # First pass: strict detection (10% margin)
-            margin = height * 0.1
-            page_detection_top = pos + margin
-            page_detection_bottom = pos + height - margin
-            
-            if page_detection_top <= center_y <= page_detection_bottom:
-                if i != self.current_page_index:
-                    self.current_page_index = i
-                    return True  # Page changed
-                return False  # Same page
-            
-            # Second pass: find the closest page for fallback
-            if page_top <= center_y <= page_bottom:
-                # Viewport is within this page's bounds (no margin)
-                distance_from_center = abs(center_y - page_center)
-                if distance_from_center < best_match_distance:
-                    best_match_distance = distance_from_center
-                    best_match_page = i
-        
-        # If no page matched the strict criteria, use the closest page match
-        if best_match_page is not None and best_match_page != self.current_page_index:
-            self.current_page_index = best_match_page
-            return True  # Page changed
-            
-        return False  # No change
+        candidate = self.get_page_at_position(center_y)
+        if candidate == old_page or not (0 <= candidate < len(self.image_positions)):
+            return False
+
+        self.current_page_index = candidate
+        return True
     
     def update_page_on_click(self, scene_pos: QPointF) -> bool:
         """Check if a click occurred on a new page and update current page. Returns True if changed."""
@@ -328,6 +311,7 @@ class WebtoonLayoutManager:
         self.webtoon_width = 0
         self.image_positions.clear()
         self.image_heights.clear()
+        self.page_bottoms.clear()
 
     def _recalculate_layout(self):
         """Recalculate layout positions after page addition/removal."""
@@ -350,6 +334,7 @@ class WebtoonLayoutManager:
         
         # Update layout manager with new positions
         self.image_positions = new_positions
+        self._rebuild_page_bottoms()
         
         # Update total height
         self.total_height = current_y - self.image_spacing if new_positions else 0
@@ -380,3 +365,13 @@ class WebtoonLayoutManager:
                 placeholder = self.image_loader.placeholder_items[page_idx]
                 y_pos = self.image_positions[page_idx]
                 placeholder.setPos(0, y_pos)
+
+    def _rebuild_page_bottoms(self, start_idx: int = 0):
+        if start_idx <= 0 or len(self.page_bottoms) != len(self.image_positions):
+            self.page_bottoms = [
+                pos + height for pos, height in zip(self.image_positions, self.image_heights)
+            ]
+            return
+
+        for idx in range(start_idx, len(self.image_positions)):
+            self.page_bottoms[idx] = self.image_positions[idx] + self.image_heights[idx]

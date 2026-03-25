@@ -1,8 +1,9 @@
 import os
+from collections import deque
 from typing import Set
 import imkit as imk
 from PIL import Image
-from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize
+from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize, Qt, QPoint
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QListWidget
 from app.path_materialization import ensure_path_materialized
@@ -11,11 +12,11 @@ from app.path_materialization import ensure_path_materialized
 class ImageLoadWorker(QObject):
     """Worker thread for loading images in the background."""
     
-    image_loaded = Signal(int, QPixmap)  # index, pixmap
+    image_loaded = Signal(int, str, QPixmap)  # index, file_path, pixmap
     
     def __init__(self):
         super().__init__()
-        self.load_queue = []
+        self.load_queue = deque()
         self.should_stop = False
         
         # Timer for processing queue
@@ -45,12 +46,12 @@ class ImageLoadWorker(QObject):
         if not self.load_queue or self.should_stop:
             return
             
-        index, file_path, target_size = self.load_queue.pop(0)
+        index, file_path, target_size = self.load_queue.popleft()
         
         # Load and resize image
         pixmap = self._load_and_resize_image(file_path, target_size)
         if pixmap and not pixmap.isNull():
-            self.image_loaded.emit(index, pixmap)
+            self.image_loaded.emit(index, file_path, pixmap)
                 
     def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
         """Load and resize an image to the target size."""
@@ -98,7 +99,6 @@ class ListViewImageLoader:
         self.loaded_images: dict[int, QPixmap] = {}
         self.visible_items: Set[int] = set()
         self.file_paths: list[str] = []
-        self.cards = []  # Reference to the actual card widgets
         
         # Worker thread for background loading
         self.worker_thread = QThread()
@@ -122,14 +122,10 @@ class ListViewImageLoader:
         self.max_loaded_images = 20  # Maximum images to keep in memory
         self.preload_buffer = 2  # Number of items to preload outside visible area
         
-    def set_file_paths(self, file_paths: list[str], cards: list):
-        """Set the file paths and card references for lazy loading."""
-        # Store cards reference before clearing (to avoid clearing the passed list)
-        cards_copy = cards.copy() if cards else []
-        
+    def set_file_paths(self, file_paths: list[str]):
+        """Set the file paths for lazy loading."""
         self.clear()
         self.file_paths = file_paths.copy()
-        self.cards = cards_copy  # Use the copy instead of the original reference
         
         # Start the worker thread if not already running
         if not self.worker_thread.isRunning():
@@ -143,10 +139,39 @@ class ListViewImageLoader:
         self.loaded_images.clear()
         self.visible_items.clear()
         self.file_paths.clear()
-        self.cards.clear()
+        if self.list_widget:
+            for row in range(self.list_widget.count()):
+                item = self.list_widget.item(row)
+                if item:
+                    item.setData(Qt.ItemDataRole.DecorationRole, None)
         
         if self.worker:
             self.worker.clear_queue()
+
+    def remove_indices(self, removed_indices: list[int], file_paths: list[str]):
+        """Remap loader state after rows have been removed from the list."""
+        removed = sorted(set(removed_indices))
+        if not removed:
+            self.file_paths = file_paths.copy()
+            return
+
+        self.file_paths = file_paths.copy()
+        self.visible_items = {
+            new_idx for new_idx in (
+                self._remap_index(idx, removed)
+                for idx in self.visible_items
+            ) if new_idx is not None
+        }
+        self.loaded_images = {
+            new_idx: pixmap for old_idx, pixmap in self.loaded_images.items()
+            for new_idx in [self._remap_index(old_idx, removed)]
+            if new_idx is not None
+        }
+
+        if self.worker:
+            self.worker.clear_queue()
+
+        self._schedule_update()
             
     def _on_scroll(self):
         """Handle scroll events with debouncing."""
@@ -191,16 +216,34 @@ class ListViewImageLoader:
             
         # Get the viewport rect
         viewport_rect = self.list_widget.viewport().rect()
-        
-        # Check each item to see if it's visible
-        for i in range(self.list_widget.count()):
-            item = self.list_widget.item(i)
-            if item:
-                item_rect = self.list_widget.visualItemRect(item)
-                if viewport_rect.intersects(item_rect):
-                    visible_indices.add(i)
-                    
+
+        probe_x = max(1, viewport_rect.center().x())
+        top_item = self._find_visible_item(probe_x, viewport_rect.top(), 1, viewport_rect.bottom())
+        bottom_item = self._find_visible_item(probe_x, max(0, viewport_rect.bottom() - 1), -1, viewport_rect.top())
+
+        if top_item is None:
+            return visible_indices
+
+        top_index = self.list_widget.row(top_item)
+        if bottom_item is not None:
+            bottom_index = self.list_widget.row(bottom_item)
+        else:
+            row_height = max(1, self.list_widget.sizeHintForRow(top_index))
+            visible_rows = max(1, (viewport_rect.height() // row_height) + 1)
+            bottom_index = min(self.list_widget.count() - 1, top_index + visible_rows)
+
+        visible_indices.update(range(top_index, bottom_index + 1))
         return visible_indices
+
+    def _find_visible_item(self, x: int, start_y: int, step: int, limit_y: int):
+        """Probe vertically within the viewport until a row is found."""
+        y = start_y
+        while (y <= limit_y) if step > 0 else (y >= limit_y):
+            item = self.list_widget.itemAt(QPoint(x, y))
+            if item is not None:
+                return item
+            y += step
+        return None
         
     def _queue_image_load(self, index: int):
         """Queue an image for loading."""
@@ -216,22 +259,19 @@ class ListViewImageLoader:
                 # Process the queue
                 QTimer.singleShot(0, self.worker.process_queue)
                 
-    def _on_image_loaded(self, index: int, pixmap: QPixmap):
+    def _on_image_loaded(self, index: int, file_path: str, pixmap: QPixmap):
         """Handle when an image has been loaded."""
-        if 0 <= index < len(self.cards):
+        if (
+            0 <= index < self.list_widget.count()
+            and index < len(self.file_paths)
+            and self.file_paths[index] == file_path
+        ):
             # Store the loaded pixmap
             self.loaded_images[index] = pixmap
-            
-            # Update the card's avatar
-            card = self.cards[index]
-            if card and hasattr(card, '_avatar'):
-                card._avatar.set_dayu_image(pixmap)
-                card._avatar.setVisible(True)
-                
-                # Update the list item size hint to ensure proper display
-                list_item = self.list_widget.item(index)
-                if list_item:
-                    list_item.setSizeHint(card.sizeHint())
+            list_item = self.list_widget.item(index)
+            if list_item:
+                list_item.setData(Qt.ItemDataRole.DecorationRole, pixmap)
+                self.list_widget.viewport().update(self.list_widget.visualItemRect(list_item))
                 
     def _manage_memory(self, needed_items: Set[int]):
         """Manage memory by unloading images that are no longer needed."""
@@ -240,7 +280,7 @@ class ListViewImageLoader:
             
         # Find items to unload (not in needed_items)
         items_to_unload = []
-        for index in self.loaded_images.keys():
+        for index in list(self.loaded_images.keys()):
             if index not in needed_items:
                 items_to_unload.append(index)
                 
@@ -254,12 +294,11 @@ class ListViewImageLoader:
                 
             # Remove from memory
             del self.loaded_images[index]
-            
-            # Hide avatar in card
-            if 0 <= index < len(self.cards):
-                card = self.cards[index]
-                if card and hasattr(card, '_avatar'):
-                    card._avatar.setVisible(False)
+
+            if 0 <= index < self.list_widget.count():
+                item = self.list_widget.item(index)
+                if item:
+                    item.setData(Qt.ItemDataRole.DecorationRole, None)
                     
     def force_load_image(self, index: int):
         """Force load an image immediately (for current selection)."""
@@ -277,4 +316,11 @@ class ListViewImageLoader:
             self.worker_thread.wait(5000)  # Wait up to 5 seconds
             
         self.clear()
+
+    @staticmethod
+    def _remap_index(old_idx: int, removed_indices: list[int]) -> int | None:
+        if old_idx in removed_indices:
+            return None
+        removed_before = sum(1 for rem_idx in removed_indices if rem_idx < old_idx)
+        return old_idx - removed_before
 

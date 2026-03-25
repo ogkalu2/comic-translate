@@ -6,7 +6,6 @@ import numpy as np
 from typing import TYPE_CHECKING, List
 from PySide6 import QtCore, QtWidgets, QtGui
 
-from app.ui.dayu_widgets.clickable_card import ClickMeta
 from app.ui.dayu_widgets.message import MMessage
 from app.ui.messages import Messages
 from app.ui.commands.image import SetImageCommand, ToggleSkipImagesCommand
@@ -31,6 +30,7 @@ class ImageStateController:
         self._active_page_error_path: str | None = None
         self._suppress_dismiss_message_ids: set[int] = set()
         self._active_transient_skip_message: MMessage | None = None
+        self._highlighted_card_indices: set[int] = set()
         
         # Initialize lazy image loader for list view
         self.page_list_loader = ListViewImageLoader(
@@ -310,6 +310,7 @@ class ImageStateController:
         self.main.page_list.clear()
         self.main.page_list.blockSignals(False)
         self.page_list_loader.clear()
+        self._highlighted_card_indices.clear()
 
         # Reset current_image_index
         self.main.curr_img_idx = -1
@@ -455,34 +456,55 @@ class ImageStateController:
             self.main.mark_project_dirty()
 
     def update_image_cards(self):
-        # Clear existing items
-        self.main.page_list.clear()
-        self.main.image_cards.clear()
-        self.main.current_card = None
+        page_list = self.main.page_list
+        page_list.setUpdatesEnabled(False)
+        try:
+            page_list.clear()
+            self.main.image_cards.clear()
+            self.main.current_card = None
+            self._highlighted_card_indices.clear()
 
-        # Add new items
-        for index, file_path in enumerate(self.main.image_files):
-            file_name = os.path.basename(file_path)
-            list_item = QtWidgets.QListWidgetItem(file_name)
-            list_item.setData(QtCore.Qt.ItemDataRole.UserRole, file_path)
-            card = ClickMeta(extra=False, avatar_size=(35, 50))
-            card.setup_data({
-                "title": file_name,
-                # Avatar will be loaded lazily
-            })
-            
-            # Set the list item size hint to match the card size
-            list_item.setSizeHint(card.sizeHint())
-            
-            # re-apply strike-through if previously skipped
-            if self.main.image_states.get(file_path, {}).get('skip'):
-                card.set_skipped(True)
-            self.main.page_list.addItem(list_item)
-            self.main.page_list.setItemWidget(list_item, card)
-            self.main.image_cards.append(card)
+            for file_path in self.main.image_files:
+                file_name = os.path.basename(file_path)
+                list_item = QtWidgets.QListWidgetItem(file_name)
+                list_item.setData(QtCore.Qt.ItemDataRole.UserRole, file_path)
+                if self.main.image_states.get(file_path, {}).get('skip'):
+                    font = list_item.font()
+                    font.setStrikeOut(True)
+                    list_item.setFont(font)
+                page_list.addItem(list_item)
 
-        # Initialize lazy loading for the new cards
-        self.page_list_loader.set_file_paths(self.main.image_files, self.main.image_cards)
+            self.page_list_loader.set_file_paths(self.main.image_files)
+        finally:
+            page_list.setUpdatesEnabled(True)
+            page_list.viewport().update()
+
+    def remove_image_cards(self, removed_indices: list[int]):
+        """Remove list rows in place to avoid rebuilding the entire sidebar."""
+        if not removed_indices:
+            return
+
+        page_list = self.main.page_list
+        ordered_indices = sorted(set(removed_indices), reverse=True)
+        page_list.blockSignals(True)
+        page_list.setUpdatesEnabled(False)
+        try:
+            for index in ordered_indices:
+                if 0 <= index < page_list.count():
+                    page_list.takeItem(index)
+
+            self.page_list_loader.remove_indices(ordered_indices, self.main.image_files)
+            self._highlighted_card_indices = {
+                new_idx for new_idx in (
+                    self._recalculate_removed_index(index, ordered_indices)
+                    for index in self._highlighted_card_indices
+                ) if new_idx is not None
+            }
+            self.main.current_card = None
+        finally:
+            page_list.setUpdatesEnabled(True)
+            page_list.blockSignals(False)
+            page_list.viewport().update()
 
     def _resolve_reordered_paths(self, ordered_items: list[str]) -> list[str] | None:
         current_files = self.main.image_files
@@ -548,7 +570,7 @@ class ImageStateController:
         if self.main.webtoon_mode and hasattr(self.main.image_viewer, "webtoon_manager"):
             manager = self.main.image_viewer.webtoon_manager
             try:
-                manager.scene_item_manager.save_all_scene_items_to_states()
+                manager.scene_item_manager.save_loaded_scene_items_to_states()
             except Exception:
                 pass
             current_page = max(0, self.main.curr_img_idx)
@@ -572,15 +594,15 @@ class ImageStateController:
             self._hide_active_page_skip_error()
             return
 
-        file_path = current.data(QtCore.Qt.ItemDataRole.UserRole)
-        if isinstance(file_path, str) and file_path in self.main.image_files:
-            index = self.main.image_files.index(file_path)
-        else:
-            index = self.main.page_list.row(current)
-            if not (0 <= index < len(self.main.image_files)):
+        index = self.main.page_list.row(current)
+        if not (0 <= index < len(self.main.image_files)):
+            file_path = current.data(QtCore.Qt.ItemDataRole.UserRole)
+            if isinstance(file_path, str) and file_path in self.main.image_files:
+                index = self.main.image_files.index(file_path)
+            else:
                 self._hide_active_page_skip_error()
                 return
-            file_path = self.main.image_files[index]
+        file_path = self.main.image_files[index]
         self.main.curr_tblock_item = None
         # Force load the selected image thumbnail
         self.page_list_loader.force_load_image(index)
@@ -700,49 +722,52 @@ class ImageStateController:
 
     def highlight_card(self, index: int):
         """Highlight a single card (used for programmatic selection when signals are blocked)."""
-        # Clear highlights from all cards first
-        for card in self.main.image_cards:
-            card.set_highlight(False)
-            
-        # Highlight the specified card
-        if 0 <= index < len(self.main.image_cards):
-            self.main.image_cards[index].set_highlight(True)
-            self.main.current_card = self.main.image_cards[index]
+        if 0 <= index < self.main.page_list.count():
+            self._highlighted_card_indices = {index}
+            self.main.current_card = self.main.page_list.item(index)
+            self.main.page_list.viewport().update()
         else:
+            self._highlighted_card_indices.clear()
             self.main.current_card = None
 
     def on_selection_changed(self, selected_indices: list):
         """Handle selection changes and update visual highlighting for all selected cards."""
-        # Clear highlights from all cards first
-        for card in self.main.image_cards:
-            card.set_highlight(False)
-        
-        # Highlight all selected cards
-        for index in selected_indices:
-            if 0 <= index < len(self.main.image_cards):
-                self.main.image_cards[index].set_highlight(True)
-        
-        # Keep track of the current card
-        if selected_indices:
-            current_index = selected_indices[-1]  # Use the last selected as current
-            if 0 <= current_index < len(self.main.image_cards):
-                self.main.current_card = self.main.image_cards[current_index]
+        valid_indices = {
+            index for index in selected_indices
+            if 0 <= index < self.main.page_list.count()
+        }
+        self._highlighted_card_indices = valid_indices
+
+        if valid_indices:
+            current_index = self.main.page_list.currentRow()
+            if current_index not in valid_indices:
+                current_index = max(valid_indices)
+            self.main.current_card = self.main.page_list.item(current_index)
         else:
             self.main.current_card = None
+        self.main.page_list.viewport().update()
 
     def handle_image_deletion(self, file_names: list[str]):
         """Handles the deletion of images based on the provided file names."""
 
         self.save_current_image_state()
         removed_any = False
+        removed_file_paths: list[str] = []
+        path_to_index = {path: idx for idx, path in enumerate(self.main.image_files)}
+        removed_indices: list[int] = []
         
         # Delete the files first.
         for file_name in file_names:
-            # Find the full file path based on the file name
-            file_path = next((f for f in self.main.image_files if os.path.basename(f) == file_name), None)
+            file_path = file_name if file_name in path_to_index else next(
+                (f for f in self.main.image_files if os.path.basename(f) == file_name),
+                None,
+            )
             
             if file_path:
                 # Remove from the image_files list
+                removed_file_paths.append(file_path)
+                if file_path in path_to_index:
+                    removed_indices.append(path_to_index[file_path])
                 self.main.image_files.remove(file_path)
                 removed_any = True
                 self._clear_page_skip_error(file_path)
@@ -773,16 +798,8 @@ class ImageStateController:
         if self.main.webtoon_mode:
             # Use non-destructive page removal in webtoon mode
             if self.main.image_files:
-                # Get full file paths of deleted files from the webtoon manager's file paths
-                webtoon_file_paths = self.main.image_viewer.webtoon_manager.image_loader.image_file_paths
-                deleted_file_paths = []
-                for file_name in file_names:
-                    # Find matching file paths in webtoon manager
-                    matching_paths = [fp for fp in webtoon_file_paths if os.path.basename(fp) == file_name]
-                    deleted_file_paths.extend(matching_paths)
-                
                 # Remove pages non-destructively from webtoon manager
-                success = self.main.image_viewer.webtoon_manager.remove_pages(deleted_file_paths)
+                success = self.main.image_viewer.webtoon_manager.remove_pages(removed_file_paths)
                 
                 if success:
                     # Adjust current index if necessary
@@ -790,7 +807,7 @@ class ImageStateController:
                         self.main.curr_img_idx = len(self.main.image_files) - 1
                     
                     current_page = max(0, self.main.curr_img_idx)
-                    self.update_image_cards()
+                    self.remove_image_cards(removed_indices)
                     self.main.page_list.blockSignals(True)
                     self.main.page_list.setCurrentRow(current_page)
                     self.highlight_card(current_page)
@@ -825,7 +842,7 @@ class ImageStateController:
                 file = self.main.image_files[new_index]
                 im = self.load_image(file)
                 self.display_image_from_loaded(im, new_index, False)
-                self.update_image_cards()
+                self.remove_image_cards(removed_indices)
                 self.main.page_list.blockSignals(True)
                 self.main.page_list.setCurrentRow(new_index)
                 self.highlight_card(new_index)
@@ -847,6 +864,12 @@ class ImageStateController:
         if removed_any:
             self.main.mark_project_dirty()
 
+    @staticmethod
+    def _recalculate_removed_index(old_idx: int, removed_indices: list[int]) -> int | None:
+        if old_idx in removed_indices:
+            return None
+        removed_before = sum(1 for rem_idx in removed_indices if rem_idx < old_idx)
+        return old_idx - removed_before
 
     def handle_toggle_skip_images(self, file_names: list[str], skip_status: bool):
         """

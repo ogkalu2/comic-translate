@@ -1,3 +1,4 @@
+from collections import deque
 import numpy as np
 from typing import Set, Optional
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsRectItem
@@ -35,7 +36,7 @@ class LazyImageLoader:
         self.load_timer.timeout.connect(self._process_load_queue)
         
         # Loading queue and state
-        self.load_queue: list[int] = []
+        self.load_queue: deque[int] = deque()
         self.loading_pages: Set[int] = set()
         
         # References to other managers (will be set by LazyWebtoonManager)
@@ -47,6 +48,12 @@ class LazyImageLoader:
     def initialize_images(self, file_paths: list[str], current_page: int = 0):
         """Initialize image loading with file paths."""
         self.image_file_paths = file_paths.copy()
+        self.loaded_pages.clear()
+        self.image_items.clear()
+        self.image_data.clear()
+        self.placeholder_items.clear()
+        self.load_queue.clear()
+        self.loading_pages.clear()
         
         # Create placeholders for all pages
         self._create_placeholders()
@@ -55,24 +62,28 @@ class LazyImageLoader:
         self._initial_load(current_page)
     
     def _create_placeholders(self):
-        """Create placeholder rectangles for all pages."""
-        for i in range(len(self.image_file_paths)):
-            height = self.layout_manager.image_heights[i] if i < len(self.layout_manager.image_heights) else 1000
-            placeholder = QGraphicsRectItem(0, 0, self.layout_manager.webtoon_width, height)
-            placeholder.setBrush(QBrush(QColor(50, 50, 50)))  # Dark placeholder
-            placeholder.setPen(QPen(QColor(80, 80, 80)))
-            
-            # Position placeholder
-            y_pos = self.layout_manager.image_positions[i] if i < len(self.layout_manager.image_positions) else 0
-            placeholder.setPos(0, y_pos)
-            
-            # Add loading text
-            text_item = self._scene.addText(f"Loading page {i+1}...", self.viewer.font() if hasattr(self.viewer, 'font') else None)
-            text_item.setDefaultTextColor(QColor(150, 150, 150))
-            text_item.setPos(self.layout_manager.webtoon_width / 2 - 50, y_pos + height / 2)
-            
-            self._scene.addItem(placeholder)
-            self.placeholder_items[i] = placeholder
+        """Defer placeholder creation until a page is actually visible."""
+        return
+
+    def _ensure_placeholder(self, page_idx: int):
+        """Create a lightweight placeholder for a specific page on demand."""
+        if (
+            page_idx in self.placeholder_items
+            or page_idx in self.image_items
+            or not (0 <= page_idx < len(self.image_file_paths))
+        ):
+            return
+
+        height = self.layout_manager.image_heights[page_idx] if page_idx < len(self.layout_manager.image_heights) else 1000
+        placeholder = QGraphicsRectItem(0, 0, self.layout_manager.webtoon_width, height)
+        placeholder.setBrush(QBrush(QColor(50, 50, 50)))
+        placeholder.setPen(QPen(QColor(80, 80, 80)))
+
+        y_pos = self.layout_manager.image_positions[page_idx] if page_idx < len(self.layout_manager.image_positions) else 0
+        placeholder.setPos(0, y_pos)
+
+        self._scene.addItem(placeholder)
+        self.placeholder_items[page_idx] = placeholder
     
     def _initial_load(self, current_page: int):
         """Load initial pages centered around current page."""
@@ -101,6 +112,7 @@ class LazyImageLoader:
             page_idx not in self.load_queue and
             0 <= page_idx < len(self.image_file_paths)):
             
+            self._ensure_placeholder(page_idx)
             self.load_queue.append(page_idx)
     
     def _process_load_queue(self):
@@ -110,7 +122,7 @@ class LazyImageLoader:
             return
             
         # Load one page per timer tick for responsiveness
-        page_idx = self.load_queue.pop(0)
+        page_idx = self.load_queue.popleft()
         self._load_single_page(page_idx)
         
         # Continue processing if queue not empty
@@ -119,7 +131,11 @@ class LazyImageLoader:
     
     def _load_single_page(self, page_idx: int):
         """Load a single page's image and content."""
-        if page_idx in self.loaded_pages or page_idx in self.loading_pages:
+        if (
+            page_idx in self.loaded_pages
+            or page_idx in self.loading_pages
+            or not (0 <= page_idx < len(self.image_file_paths))
+        ):
             return
             
         self.loading_pages.add(page_idx)
@@ -188,16 +204,13 @@ class LazyImageLoader:
     
     def _adjust_subsequent_items(self, page_idx: int, height_diff: int):
         """Adjust positions of subsequent loaded items after layout change."""
-        for i in range(page_idx + 1, len(self.image_file_paths)):
-            # Move any loaded items
-            if i in self.image_items:
-                item = self.image_items[i]
+        for i, item in self.image_items.items():
+            if i > page_idx:
                 pos = item.pos()
                 item.setPos(pos.x(), pos.y() + height_diff)
-                
-            # Move placeholders
-            if i in self.placeholder_items:
-                item = self.placeholder_items[i]
+
+        for i, item in self.placeholder_items.items():
+            if i > page_idx:
                 pos = item.pos()
                 item.setPos(pos.x(), pos.y() + height_diff)
         
@@ -211,8 +224,13 @@ class LazyImageLoader:
         from app.ui.canvas.text_item import TextBlockItem
         from app.ui.canvas.rectangle import MoveableRectItem
         
-        # Get the Y position threshold - items below this need to be shifted
-        threshold_y = self.layout_manager.image_positions[changed_page_idx + 1] if changed_page_idx + 1 < len(self.layout_manager.image_positions) else float('inf')
+        # image_positions already includes the height adjustment, so shift the
+        # threshold back to the pre-adjustment page boundary before deciding
+        # which existing scene items still need to move.
+        if changed_page_idx + 1 < len(self.layout_manager.image_positions):
+            threshold_y = self.layout_manager.image_positions[changed_page_idx + 1] - height_diff
+        else:
+            threshold_y = float('inf')
         
         # Adjust all scene items that are positioned after the changed page
         for item in self._scene.items():
@@ -243,6 +261,7 @@ class LazyImageLoader:
         # Queue visible pages that aren't loaded
         for page_idx in visible_pages:
             if page_idx not in self.loaded_pages:
+                self._ensure_placeholder(page_idx)
                 self._queue_page_load(page_idx)
                 
         # Start loading if queue has items
@@ -276,32 +295,25 @@ class LazyImageLoader:
         """Unload a specific page from memory."""
         if page_idx not in self.loaded_pages:
             return
-            
+
+        # Persist scene items while the page's actual image width is still
+        # available. Otherwise scene_to_page_local_position falls back to
+        # webtoon_width and stores incorrect local X coordinates.
+        # Notify webtoon manager that image is unloaded (for scene item unloading)
+        if self.webtoon_manager and hasattr(self.webtoon_manager, 'on_image_unloaded'):
+            self.webtoon_manager.on_image_unloaded(page_idx)
+
         # Remove image item from scene
         if page_idx in self.image_items:
             self._scene.removeItem(self.image_items[page_idx])
             del self.image_items[page_idx]
-            
-        # Remove image data from memory
+
+        # Remove image data from memory only after scene items were serialized
         if page_idx in self.image_data:
             del self.image_data[page_idx]
-            
-        # Recreate placeholder
-        height = self.layout_manager.image_heights[page_idx] if page_idx < len(self.layout_manager.image_heights) else 1000
-        placeholder = QGraphicsRectItem(0, 0, self.layout_manager.webtoon_width, height)
-        placeholder.setBrush(QBrush(QColor(50, 50, 50)))
-        placeholder.setPen(QPen(QColor(80, 80, 80)))
-        y_pos = self.layout_manager.image_positions[page_idx] if page_idx < len(self.layout_manager.image_positions) else 0
-        placeholder.setPos(0, y_pos)
-        
-        self._scene.addItem(placeholder)
-        self.placeholder_items[page_idx] = placeholder
-        
+
+        self._ensure_placeholder(page_idx)
         self.loaded_pages.remove(page_idx)
-            
-        # Notify webtoon manager that image is unloaded (for scene item unloading)
-        if self.webtoon_manager and hasattr(self.webtoon_manager, 'on_image_unloaded'):
-            self.webtoon_manager.on_image_unloaded(page_idx)
             
         print(f"Unloaded page {page_idx + 1}")
     
@@ -343,6 +355,10 @@ class LazyImageLoader:
         self.load_timer.stop()
         
         # Clear all data structures
+        for item in self.image_items.values():
+            self._scene.removeItem(item)
+        for placeholder in self.placeholder_items.values():
+            self._scene.removeItem(placeholder)
         self.image_file_paths.clear()
         self.loaded_pages.clear()
         self.image_items.clear()
@@ -366,7 +382,10 @@ class LazyImageLoader:
         visible_pages_data = []
         
         # Find all pages that are visible in the viewport
-        for i, (y, h) in enumerate(zip(self.layout_manager.image_positions, self.layout_manager.image_heights)):
+        visible_page_indices = sorted(self.layout_manager.get_pages_for_scene_bounds(vp_rect))
+        for i in visible_page_indices:
+            y = self.layout_manager.image_positions[i]
+            h = self.layout_manager.image_heights[i]
             if y < vp_rect.bottom() and y + h > vp_rect.top():
                 # Calculate crop boundaries for this page
                 crop_top = max(0, vp_rect.top() - y)
@@ -587,14 +606,17 @@ class LazyImageLoader:
     def remove_pages(self, file_paths_to_remove: list[str]) -> bool:
         """Remove specific pages from the webtoon manager without full reload."""
         try:
-            # Find indices of pages to remove
-            indices_to_remove = []
-            for file_path in file_paths_to_remove:
-                try:
-                    index = self.image_file_paths.index(file_path)
-                    indices_to_remove.append(index)
-                except ValueError:
-                    continue
+            path_to_index = {
+                file_path: index for index, file_path in enumerate(self.image_file_paths)
+            }
+            indices_to_remove = sorted(
+                {
+                    path_to_index[file_path]
+                    for file_path in file_paths_to_remove
+                    if file_path in path_to_index
+                },
+                reverse=True,
+            )
             
             if not indices_to_remove:
                 return True  # Nothing to remove
@@ -605,75 +627,64 @@ class LazyImageLoader:
             # Save current page for adjustment
             current_page = self.layout_manager.current_page_index
             
-            # Save scene items for all pages before removing any pages
-            self.scene_item_manager.save_all_scene_items_to_states()
-            
-            # Remove pages from each component (from highest index to lowest)
-            for page_idx in indices_to_remove:
-                
-                # Force unload the page from memory
-                if page_idx in self.loaded_pages:
-                    self.loaded_pages.discard(page_idx)
-                    if page_idx in self.image_items:
-                        self._scene.removeItem(self.image_items[page_idx])
-                        del self.image_items[page_idx]
-                    if page_idx in self.image_data:
-                        del self.image_data[page_idx]
-                
-                # Remove placeholder if it exists
-                if page_idx in self.placeholder_items:
-                    self._scene.removeItem(self.placeholder_items[page_idx])
-                    del self.placeholder_items[page_idx]
-                
-                # Remove from OWNED data structures
-                if page_idx < len(self.image_file_paths):
-                    self.image_file_paths.pop(page_idx)
-                
-                # Remove from layout manager's OWNED data
-                if page_idx < len(self.layout_manager.image_positions):
-                    self.layout_manager.image_positions.pop(page_idx)
-                if page_idx < len(self.layout_manager.image_heights):
-                    self.layout_manager.image_heights.pop(page_idx)
-            
-            # Adjust indices of all tracked items
-            new_loaded_pages = {self._recalculate_index(old_idx, indices_to_remove) for old_idx in self.loaded_pages}
-            self.loaded_pages = {idx for idx in new_loaded_pages if idx is not None}
-            
-            self.image_items = {self._recalculate_index(k, indices_to_remove): v for k, v in self.image_items.items() if self._recalculate_index(k, indices_to_remove) is not None}
-            self.image_data = {self._recalculate_index(k, indices_to_remove): v for k, v in self.image_data.items() if self._recalculate_index(k, indices_to_remove) is not None}
-            self.placeholder_items = {self._recalculate_index(k, indices_to_remove): v for k, v in self.placeholder_items.items() if self._recalculate_index(k, indices_to_remove) is not None}
-            
-            # Adjust current page index
-            removed_before_current = sum(1 for idx in indices_to_remove if idx < current_page)
-            new_current_page = max(0, current_page - removed_before_current)
-            if new_current_page >= len(self.image_file_paths):
-                new_current_page = max(0, len(self.image_file_paths) - 1)
-            
-            # Update layout positions for remaining pages
-            self.layout_manager._recalculate_layout()
-            
-            # Update current page
-            if self.image_file_paths:
-                self.layout_manager.current_page_index = new_current_page
-                
-                from PySide6.QtWidgets import QApplication
-                QApplication.processEvents()
-                
-                # Scroll to the new current page
-                if new_current_page < len(self.image_file_paths):
-                    self.scroll_to_page(new_current_page)
-                
-                print(f"Removed {len(indices_to_remove)} pages. New total: {len(self.image_file_paths)}")
-                
-                # Reload scene items for currently loaded pages
-                self.scene_item_manager._clear_all_scene_items()
-                for page_idx in list(self.loaded_pages):
+            # Persist only the loaded pages; unloaded pages already live in image_states.
+            self.scene_item_manager.save_loaded_scene_items_to_states()
+            self.viewer.setUpdatesEnabled(False)
+            try:
+                for page_idx in indices_to_remove:
+                    self._remove_page_visuals(page_idx)
+
                     if page_idx < len(self.image_file_paths):
-                        self.scene_item_manager.load_page_scene_items(page_idx)
-            else:
-                self.clear()
-                self.layout_manager.clear()
-                return False
+                        self.image_file_paths.pop(page_idx)
+                    if page_idx < len(self.layout_manager.image_positions):
+                        self.layout_manager.image_positions.pop(page_idx)
+                    if page_idx < len(self.layout_manager.image_heights):
+                        self.layout_manager.image_heights.pop(page_idx)
+
+                self.loaded_pages = {
+                    idx for idx in (
+                        self._recalculate_index(old_idx, indices_to_remove)
+                        for old_idx in self.loaded_pages
+                    ) if idx is not None
+                }
+                self.loading_pages = {
+                    idx for idx in (
+                        self._recalculate_index(old_idx, indices_to_remove)
+                        for old_idx in self.loading_pages
+                    ) if idx is not None
+                }
+                self.load_queue = deque(
+                    idx for idx in (
+                        self._recalculate_index(old_idx, indices_to_remove)
+                        for old_idx in self.load_queue
+                    ) if idx is not None
+                )
+                self.image_items = self._remap_indexed_dict(self.image_items, indices_to_remove)
+                self.image_data = self._remap_indexed_dict(self.image_data, indices_to_remove)
+                self.placeholder_items = self._remap_indexed_dict(self.placeholder_items, indices_to_remove)
+
+                removed_before_current = sum(1 for idx in indices_to_remove if idx < current_page)
+                new_current_page = max(0, current_page - removed_before_current)
+                if new_current_page >= len(self.image_file_paths):
+                    new_current_page = max(0, len(self.image_file_paths) - 1)
+
+                self.layout_manager._recalculate_layout()
+
+                if self.image_file_paths:
+                    self.layout_manager.current_page_index = new_current_page
+                    self.scene_item_manager._clear_all_scene_items()
+                    for page_idx in sorted(self.loaded_pages):
+                        if page_idx < len(self.image_file_paths):
+                            self.scene_item_manager.load_page_scene_items(page_idx)
+                    self.scroll_to_page(new_current_page)
+                    print(f"Removed {len(indices_to_remove)} pages. New total: {len(self.image_file_paths)}")
+                else:
+                    self.clear()
+                    self.layout_manager.clear()
+                    return False
+            finally:
+                self.viewer.setUpdatesEnabled(True)
+                self.viewer.viewport().update()
             
             return True
             
@@ -694,51 +705,60 @@ class LazyImageLoader:
             else:
                 insert_position = max(0, min(insert_position, len(self.image_file_paths)))
             
-            # Save current scene items before making changes
-            self.scene_item_manager.save_all_scene_items_to_states()
-            
-            # Insert new file paths into OWNED list
-            for i, file_path in enumerate(new_file_paths):
-                self.image_file_paths.insert(insert_position + i, file_path)
-            
-            # Estimate layout heights for new pages
-            new_heights = []
-            for file_path in new_file_paths:
-                try:
-                    img = imk.read_image(file_path)
-                    estimated_height = img.shape[0] if img is not None else 1000
-                except:
-                    estimated_height = 1000
-                new_heights.append(estimated_height)
-            
-            # Insert new heights into layout manager's OWNED list
-            for i, height in enumerate(new_heights):
-                self.layout_manager.image_heights.insert(insert_position + i, height)
-            
-            # Adjust indices of all tracked items
-            num_inserted = len(new_file_paths)
-            self.loaded_pages = {idx + num_inserted if idx >= insert_position else idx for idx in self.loaded_pages}
-            self.image_items = {k + num_inserted if k >= insert_position else k: v for k, v in self.image_items.items()}
-            self.image_data = {k + num_inserted if k >= insert_position else k: v for k, v in self.image_data.items()}
-            self.placeholder_items = {k + num_inserted if k >= insert_position else k: v for k, v in self.placeholder_items.items()}
-            
-            # Adjust current page index
-            if self.layout_manager.current_page_index >= insert_position:
-                self.layout_manager.current_page_index += num_inserted
+            # Persist only the loaded pages; unloaded pages already live in image_states.
+            self.scene_item_manager.save_loaded_scene_items_to_states()
+            self.viewer.setUpdatesEnabled(False)
+            try:
+                for i, file_path in enumerate(new_file_paths):
+                    self.image_file_paths.insert(insert_position + i, file_path)
 
-            # Recalculate all layout positions and update scene
-            self.layout_manager._recalculate_layout()
-            
-            # Clear existing scene items and reload them with correct positions
-            self.scene_item_manager._clear_all_scene_items()
-            for page_idx in list(self.loaded_pages):
-                if page_idx < len(self.image_file_paths):
-                    self.scene_item_manager.load_page_scene_items(page_idx)
-            
-            from PySide6.QtWidgets import QApplication
-            QApplication.processEvents()
-            
-            print(f"Inserted {len(new_file_paths)} pages. New total: {len(self.image_file_paths)}")
+                new_heights = []
+                for file_path in new_file_paths:
+                    try:
+                        ensure_path_materialized(file_path)
+                        img = imk.read_image(file_path)
+                        estimated_height = img.shape[0] if img is not None else 1000
+                    except Exception:
+                        estimated_height = 1000
+                    new_heights.append(estimated_height)
+
+                for i, height in enumerate(new_heights):
+                    self.layout_manager.image_heights.insert(insert_position + i, height)
+
+                num_inserted = len(new_file_paths)
+                self.loaded_pages = {idx + num_inserted if idx >= insert_position else idx for idx in self.loaded_pages}
+                self.loading_pages = {idx + num_inserted if idx >= insert_position else idx for idx in self.loading_pages}
+                self.load_queue = deque(
+                    idx + num_inserted if idx >= insert_position else idx
+                    for idx in self.load_queue
+                )
+                self.image_items = {
+                    k + num_inserted if k >= insert_position else k: v
+                    for k, v in self.image_items.items()
+                }
+                self.image_data = {
+                    k + num_inserted if k >= insert_position else k: v
+                    for k, v in self.image_data.items()
+                }
+                self.placeholder_items = {
+                    k + num_inserted if k >= insert_position else k: v
+                    for k, v in self.placeholder_items.items()
+                }
+
+                if self.layout_manager.current_page_index >= insert_position:
+                    self.layout_manager.current_page_index += num_inserted
+
+                self.layout_manager._recalculate_layout()
+                self.scene_item_manager._clear_all_scene_items()
+                for page_idx in sorted(self.loaded_pages):
+                    if page_idx < len(self.image_file_paths):
+                        self.scene_item_manager.load_page_scene_items(page_idx)
+
+                self.update_loaded_pages()
+                print(f"Inserted {len(new_file_paths)} pages. New total: {len(self.image_file_paths)}")
+            finally:
+                self.viewer.setUpdatesEnabled(True)
+                self.viewer.viewport().update()
             
             return True
             
@@ -754,4 +774,26 @@ class LazyImageLoader:
             return None
         removed_before = sum(1 for rem_idx in removed_indices if rem_idx < old_idx)
         return old_idx - removed_before
+
+    def _remove_page_visuals(self, page_idx: int):
+        self.loaded_pages.discard(page_idx)
+        self.loading_pages.discard(page_idx)
+
+        item = self.image_items.pop(page_idx, None)
+        if item is not None:
+            self._scene.removeItem(item)
+
+        self.image_data.pop(page_idx, None)
+
+        placeholder = self.placeholder_items.pop(page_idx, None)
+        if placeholder is not None:
+            self._scene.removeItem(placeholder)
+
+    def _remap_indexed_dict(self, items: dict[int, object], removed_indices: list[int]) -> dict[int, object]:
+        remapped: dict[int, object] = {}
+        for old_idx, value in items.items():
+            new_idx = self._recalculate_index(old_idx, removed_indices)
+            if new_idx is not None:
+                remapped[new_idx] = value
+        return remapped
 

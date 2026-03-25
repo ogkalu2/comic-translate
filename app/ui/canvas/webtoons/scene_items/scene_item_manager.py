@@ -5,6 +5,7 @@ Handles scene items (rectangles, text, brush strokes, patches) management with s
 Refactored to delegate to specialized managers and reference live data from other main managers.
 """
 
+from collections import defaultdict
 from PySide6.QtGui import QTextDocument
 from .rectangle_manager import RectangleManager
 from .text_item_manager import TextItemManager
@@ -107,11 +108,8 @@ class SceneItemManager:
         if not self.main_controller:
             return
 
-        # Initialize a dictionary to hold categorized items for each page
-        scene_items_by_page = {
-            i: {'rectangles': [], 'text_items': [], 'brush_strokes': [], 'text_blocks': []}
-            for i in range(len(self.image_loader.image_file_paths))
-        }
+        relevant_pages = self._get_relevant_page_indices()
+        scene_items_by_page = defaultdict(self._new_page_bucket)
 
         # Delegate saving of currently visible items to sub-managers
         self.text_block_manager.save_text_blocks_to_states(scene_items_by_page)
@@ -125,7 +123,7 @@ class SceneItemManager:
         all_existing_blk_list = []
         existing_text_items_by_page = {}
         
-        for page_idx in range(len(self.image_loader.image_file_paths)):
+        for page_idx in relevant_pages:
             file_path = self.image_loader.image_file_paths[page_idx]
             if file_path not in self.main_controller.image_states:
                 self.main_controller.image_states[file_path] = {'viewer_state': {}}
@@ -154,10 +152,16 @@ class SceneItemManager:
         self.text_item_manager.redistribute_existing_text_items(existing_text_items_by_page, scene_items_by_page)
         
         # Append all categorized items back to the main image_states, avoiding duplicates
-        for page_idx, items in scene_items_by_page.items():
+        for page_idx, items in sorted(scene_items_by_page.items()):
+            if not (0 <= page_idx < len(self.image_loader.image_file_paths)):
+                continue
             file_path = self.image_loader.image_file_paths[page_idx]
-            state = self.main_controller.image_states[file_path]
-            viewer_state = state['viewer_state']
+            state = self.main_controller.image_states.setdefault(file_path, {})
+            viewer_state = state.setdefault('viewer_state', {})
+            viewer_state.setdefault('rectangles', [])
+            viewer_state.setdefault('text_items_state', [])
+            state.setdefault('brush_strokes', [])
+            state.setdefault('blk_list', [])
             
             # Use sets for faster duplicate checking where possible
             existing_rectangles = viewer_state['rectangles']
@@ -182,6 +186,15 @@ class SceneItemManager:
         
         # Final consistency check
         self._update_text_blocks_with_clipped_text()
+
+    def save_loaded_scene_items_to_states(self):
+        """Persist only the currently loaded pages back to page state."""
+        if not self.main_controller:
+            return
+
+        for page_idx in sorted(self.image_loader.loaded_pages):
+            if 0 <= page_idx < len(self.image_loader.image_file_paths):
+                self.unload_page_scene_items(page_idx)
     
     def merge_clipped_items_back(self):
         """
@@ -205,11 +218,13 @@ class SceneItemManager:
         if not self.main_controller: 
             return
         
-        for page_idx in range(len(self.image_loader.image_file_paths)):
+        for page_idx in self._get_relevant_page_indices():
             file_path = self.image_loader.image_file_paths[page_idx]
             state = self.main_controller.image_states.get(file_path, {})
             text_items = state.get('viewer_state', {}).get('text_items_state', [])
             text_blocks = state.get('blk_list', [])
+            if not text_items or not text_blocks:
+                continue
             
             for text_item_data in text_items:
                 text_item_pos = text_item_data['position']
@@ -251,10 +266,11 @@ class SceneItemManager:
         if not self._scene:
             return
             
+        preserved_items = set(self.image_loader.image_items.values()) | set(self.image_loader.placeholder_items.values())
         items_to_remove = []
         for item in self._scene.items():
             # Exclude the main image pixmap items and their placeholders
-            if item in self.image_loader.image_items.values() or item in self.image_loader.placeholder_items.values():
+            if item in preserved_items:
                 continue
             items_to_remove.append(item)
         
@@ -262,3 +278,23 @@ class SceneItemManager:
             self._scene.removeItem(item)
 
         self.patch_manager.clear()
+
+    def _get_relevant_page_indices(self) -> list[int]:
+        relevant_pages = set(self.image_loader.loaded_pages)
+
+        for page_idx, file_path in enumerate(self.image_loader.image_file_paths):
+            state = self.main_controller.image_states.get(file_path, {})
+            viewer_state = state.get('viewer_state', {})
+            if (
+                viewer_state.get('rectangles')
+                or viewer_state.get('text_items_state')
+                or state.get('brush_strokes')
+                or state.get('blk_list')
+            ):
+                relevant_pages.add(page_idx)
+
+        return sorted(relevant_pages)
+
+    @staticmethod
+    def _new_page_bucket():
+        return {'rectangles': [], 'text_items': [], 'brush_strokes': [], 'text_blocks': []}

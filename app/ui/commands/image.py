@@ -138,10 +138,6 @@ class ToggleSkipImagesCommand(QUndoCommand):
             fnt.setStrikeOut(skip_status)
             item.setFont(fnt)
 
-        card = self.main.page_list.itemWidget(item) if item else None
-        if card:
-            card.set_skipped(skip_status)
-
     def redo(self):
         for file_path in self.file_paths:
             self._apply_status(file_path, self.new_status)

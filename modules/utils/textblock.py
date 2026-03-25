@@ -87,10 +87,10 @@ class TextBlock(object):
         new_block = TextBlock()
         
         # Copy numpy arrays properly
-        new_block.xyxy = self.xyxy.copy() if isinstance(self.xyxy, np.ndarray) else self.xyxy
-        new_block.segm_pts = self.segm_pts.copy() if isinstance(self.segm_pts, np.ndarray) else self.segm_pts
-        new_block.bubble_xyxy = self.bubble_xyxy.copy() if isinstance(self.bubble_xyxy, np.ndarray) else self.bubble_xyxy
-        new_block.inpaint_bboxes = self.inpaint_bboxes.copy() if isinstance(self.inpaint_bboxes, np.ndarray) else self.inpaint_bboxes
+        new_block.xyxy = self.xyxy.copy() if isinstance(self.xyxy, np.ndarray) else copy.deepcopy(self.xyxy)
+        new_block.segm_pts = self.segm_pts.copy() if isinstance(self.segm_pts, np.ndarray) else copy.deepcopy(self.segm_pts)
+        new_block.bubble_xyxy = self.bubble_xyxy.copy() if isinstance(self.bubble_xyxy, np.ndarray) else copy.deepcopy(self.bubble_xyxy)
+        new_block.inpaint_bboxes = self.inpaint_bboxes.copy() if isinstance(self.inpaint_bboxes, np.ndarray) else copy.deepcopy(self.inpaint_bboxes)
         
         # Copy simple attributes
         new_block.text_class = self.text_class
