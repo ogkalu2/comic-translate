@@ -372,9 +372,9 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
 
     # Serialize batch report if available
     batch_report_blob = None
-    if hasattr(comic_translate, 'batch_report_controller') and comic_translate.batch_report_controller._latest_batch_report:
+    if hasattr(comic_translate, 'batch_report_ctrl') and comic_translate.batch_report_ctrl._latest_batch_report:
         batch_report_blob = msgpack.packb(
-            comic_translate.batch_report_controller._latest_batch_report,
+            comic_translate.batch_report_ctrl._latest_batch_report,
             default=encoder.encode,
             use_bin_type=True
         )
@@ -653,8 +653,8 @@ def load_state_from_proj_file_v2(comic_translate: "ComicTranslate", file_name: s
         batch_report_row = conn.execute("SELECT report_blob FROM batch_report WHERE id = 1").fetchone()
         if batch_report_row and batch_report_row[0]:
             batch_report = msgpack.unpackb(batch_report_row[0], object_hook=decoder.decode, strict_map_key=True)
-            if hasattr(comic_translate, 'batch_report_controller'):
-                comic_translate.batch_report_controller._latest_batch_report = batch_report
+            if hasattr(comic_translate, 'batch_report_ctrl'):
+                comic_translate.batch_report_ctrl._latest_batch_report = batch_report
                 comic_translate.batch_report_button.setEnabled(True)
         
         return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
