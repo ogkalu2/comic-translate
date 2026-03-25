@@ -675,11 +675,15 @@ class ProjectController:
 
     @staticmethod
     def _build_export_page_name(page_number: int, file_path: str) -> str:
-        ext = os.path.splitext(file_path)[1].lower() or ".png"
-        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.splitext(os.path.basename(file_path))[0]).strip("._-")
+        # Use the original filename directly
+        basename = os.path.basename(file_path)
+        # Sanitize the filename to remove any problematic characters
+        stem = os.path.splitext(basename)[0]
+        ext = os.path.splitext(basename)[1].lower() or ".png"
+        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._-")
         if not stem:
-            stem = "page"
-        return f"{page_number:04d}_{stem}{ext}"
+            stem = f"page_{page_number:04d}"
+        return f"{stem}{ext}"
 
     def _build_export_plan(self, output_path: str, chapter_names_by_path: dict[str, str]) -> list[dict]:
         extension = os.path.splitext(output_path)[1] or ".zip"
