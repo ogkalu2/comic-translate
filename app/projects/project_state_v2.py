@@ -373,11 +373,8 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     # Serialize batch report if available
     batch_report_blob = None
     if hasattr(comic_translate, 'batch_report_ctrl') and comic_translate.batch_report_ctrl._latest_batch_report:
-        serialized_batch_report = comic_translate.batch_report_ctrl.serialize_report(
-            comic_translate.batch_report_ctrl._latest_batch_report
-        )
         batch_report_blob = msgpack.packb(
-            serialized_batch_report,
+            comic_translate.batch_report_ctrl._latest_batch_report,
             default=encoder.encode,
             use_bin_type=True
         )

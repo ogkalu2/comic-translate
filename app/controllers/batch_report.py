@@ -27,33 +27,8 @@ class BatchReportController:
         self._latest_batch_report = None
         self.refresh_button_state()
 
-    @staticmethod
-    def serialize_report(report: dict | None) -> dict | None:
-        if not report:
-            return None
-        serialized = dict(report)
-        for field in ("started_at", "finished_at"):
-            value = serialized.get(field)
-            if isinstance(value, datetime):
-                serialized[field] = value.isoformat()
-        return serialized
-
-    @staticmethod
-    def deserialize_report(report: dict | None) -> dict | None:
-        if not report:
-            return None
-        deserialized = dict(report)
-        for field in ("started_at", "finished_at"):
-            value = deserialized.get(field)
-            if isinstance(value, str):
-                try:
-                    deserialized[field] = datetime.fromisoformat(value)
-                except ValueError:
-                    pass
-        return deserialized
-
     def restore_latest_batch_report(self, report: dict | None):
-        self._latest_batch_report = self.deserialize_report(report)
+        self._latest_batch_report = report
 
     def start_batch_report(self, batch_paths: list[str]):
         tracked_paths = [

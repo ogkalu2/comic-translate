@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import numpy as np
 from PySide6 import QtGui
 from PySide6.QtCore import Qt
@@ -14,7 +16,8 @@ class ProjectEncoder:
             (Qt.AlignmentFlag, self.encode_alignment_flag),
             (tuple, self.encode_tuple), 
             (OutlineInfo, self.encode_outline_info),
-            (Qt.LayoutDirection, self.encode_layout_flag)
+            (Qt.LayoutDirection, self.encode_layout_flag),
+            (datetime, self.encode_datetime),
         ]
 
     def encode(self, obj):
@@ -114,6 +117,13 @@ class ProjectEncoder:
             'type': 'layoutflag',
             'data': obj.value
         }
+
+    @staticmethod
+    def encode_datetime(obj):
+        return {
+            'type': 'datetime',
+            'data': obj.isoformat()
+        }
     
 
 class ProjectDecoder:
@@ -128,6 +138,7 @@ class ProjectDecoder:
             'tuple': self.decode_tuple,  
             'selection_outline_info': self.decode_outline_info,
             'layoutflag': self.decode_layout_flag,
+            'datetime': self.decode_datetime,
         }
 
     def decode(self, obj):
@@ -211,6 +222,10 @@ class ProjectDecoder:
     @staticmethod
     def decode_layout_flag(obj):
         return Qt.LayoutDirection(obj['data'])
+
+    @staticmethod
+    def decode_datetime(obj):
+        return datetime.fromisoformat(obj['data'])
     
 def ensure_string_keys(d):
     """ Recursively ensures that all dictionary keys are strings. """
