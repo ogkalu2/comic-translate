@@ -94,7 +94,7 @@ class ProjectController:
         mtimes  = settings.value("mtimes",  []) or []
         pinneds = settings.value("pinned",  []) or []
         settings.endGroup()
-        # Normalise types â€” QSettings may return a single string if only 1 entry
+        # Normalise types — QSettings may return a single string if only 1 entry
         if isinstance(paths, str):   paths   = [paths]
         if not isinstance(mtimes,  list): mtimes  = [mtimes]
         if not isinstance(pinneds, list): pinneds = [pinneds]
@@ -748,7 +748,15 @@ class ProjectController:
                 os.makedirs(group_dir, exist_ok=True)
                 for page_number, page_idx in enumerate(group["page_indices"], start=1):
                     file_path = self.main.image_files[page_idx]
-                    rgb_img = self.main.load_image(file_path)
+                    
+                    # Try to load the image with error handling
+                    try:
+                        rgb_img = self.main.load_image(file_path)
+                    except Exception as e:
+                        print(f"Warning: Could not load image for page {page_idx} ({file_path}): {e}")
+                        print(f"  Skipping this page in export")
+                        continue
+                    
                     renderer = ImageSaveRenderer(rgb_img)
                     viewer_state = all_pages_current_state[file_path]['viewer_state']
 
@@ -764,6 +772,7 @@ class ProjectController:
                 os.makedirs(os.path.dirname(group["output_path"]) or ".", exist_ok=True)
                 make(group_dir, group["output_path"])
         finally:
+            # Clean up temp directory
             shutil.rmtree(temp_dir)
 
     def _build_all_pages_current_state(self) -> dict[str, dict]:
