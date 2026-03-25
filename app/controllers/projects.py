@@ -945,6 +945,7 @@ class ProjectController:
         save_state_to_proj_file(self.main, file_name)
 
     def update_ui_from_project(self):
+        self.main.batch_report_ctrl.refresh_button_state()
         if not self.main.image_files:
             self.main.curr_img_idx = -1
             self.main.central_stack.setCurrentWidget(self.main.drag_browser)

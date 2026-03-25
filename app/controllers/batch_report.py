@@ -20,6 +20,41 @@ class BatchReportController:
         self._latest_batch_report = None
         self._batch_report_drawer: MDrawer | None = None
 
+    def refresh_button_state(self):
+        self.main.batch_report_button.setEnabled(self._latest_batch_report is not None)
+
+    def clear_latest_batch_report(self):
+        self._latest_batch_report = None
+        self.refresh_button_state()
+
+    @staticmethod
+    def serialize_report(report: dict | None) -> dict | None:
+        if not report:
+            return None
+        serialized = dict(report)
+        for field in ("started_at", "finished_at"):
+            value = serialized.get(field)
+            if isinstance(value, datetime):
+                serialized[field] = value.isoformat()
+        return serialized
+
+    @staticmethod
+    def deserialize_report(report: dict | None) -> dict | None:
+        if not report:
+            return None
+        deserialized = dict(report)
+        for field in ("started_at", "finished_at"):
+            value = deserialized.get(field)
+            if isinstance(value, str):
+                try:
+                    deserialized[field] = datetime.fromisoformat(value)
+                except ValueError:
+                    pass
+        return deserialized
+
+    def restore_latest_batch_report(self, report: dict | None):
+        self._latest_batch_report = self.deserialize_report(report)
+
     def start_batch_report(self, batch_paths: list[str]):
         tracked_paths = [
             path
@@ -245,7 +280,7 @@ class BatchReportController:
             "skipped_entries": skipped_entries,
         }
         self._latest_batch_report = finalized
-        self.main.batch_report_button.setEnabled(True)
+        self.refresh_button_state()
         self.main.mark_project_dirty()
         return finalized
 

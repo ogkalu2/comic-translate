@@ -125,6 +125,7 @@ class ImageStateController:
         t = QtCore.QCoreApplication.translate
 
         message_map = {
+            "Image Load": t("Messages", "Could not open image.\nSkipping:"),
             "Text Blocks": t("Messages", "No Text Blocks Detected.\nSkipping:"),
             "OCR": t("Messages", "Could not recognize detected text.\nSkipping:"),
             "Translator": t("Messages", "Could not get translations.\nSkipping:"),
@@ -285,6 +286,7 @@ class ImageStateController:
         self._hide_active_page_skip_error()
         self._page_skip_errors.clear()
         self._suppress_dismiss_message_ids.clear()
+        self.main.batch_report_ctrl.clear_latest_batch_report()
         self.main.image_files = []
         self.main.image_states.clear()
         self.main.image_data.clear()
