@@ -668,6 +668,10 @@ class ComicTranslate(ComicTranslateUI):
         except Exception:
             pass
 
+        # Trigger autosave after batch to persist batch report
+        if report:
+            self.project_ctrl.autosave_project(prefer_project_file=True)
+
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(False)
