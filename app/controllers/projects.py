@@ -915,9 +915,13 @@ class ProjectController:
     def save_current_state(self):
         if self.main.webtoon_mode:
             webtoon_manager = self.main.image_viewer.webtoon_manager
-            self.main.curr_img_idx = webtoon_manager.layout_manager.current_page_index
             webtoon_manager.scene_item_manager.save_all_scene_items_to_states()
-            webtoon_manager.save_view_state()
+            saved_view_state = webtoon_manager.save_view_state()
+            saved_page_index = saved_view_state.get("current_page_index")
+            if isinstance(saved_page_index, int):
+                self.main.curr_img_idx = saved_page_index
+            else:
+                self.main.curr_img_idx = webtoon_manager.layout_manager.current_page_index
         else:
             self.main.image_ctrl.save_current_image_state()
 
@@ -993,6 +997,8 @@ class ProjectController:
         if self.main.webtoon_mode:
             self.main.webtoon_toggle.setChecked(True)
             self.main.webtoon_ctrl.switch_to_webtoon_mode()
+            QtCore.QTimer.singleShot(0, self.main.image_viewer.webtoon_manager.restore_view_state)
+            QtCore.QTimer.singleShot(150, self.main.image_viewer.webtoon_manager.restore_view_state)
         self.main.set_project_clean()
 
     def _refresh_home_screen(self) -> None:

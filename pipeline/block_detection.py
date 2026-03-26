@@ -25,14 +25,13 @@ class BlockDetectionHandler:
             self.main_page.image_viewer.clear_rectangles_in_visible_area()
         else:
             self.main_page.image_viewer.clear_rectangles()
-            
+
         if self.main_page.image_viewer.hasPhoto() and blk_list:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
                 rect = QtCore.QRectF(0, 0, x2 - x1, y2 - y1)
                 transform_origin = QtCore.QPointF(*blk.tr_origin_point) if blk.tr_origin_point else None
-                
-                # Use the new add_rectangle method for consistent handling
+
                 rect_item = self.main_page.image_viewer.add_rectangle(
                     rect, QtCore.QPointF(x1, y1), blk.angle, transform_origin
                 )
@@ -42,10 +41,10 @@ class BlockDetectionHandler:
             if self.main_page.webtoon_mode:
                 first_block = get_first_visible_block(self.main_page.blk_list, self.main_page.image_viewer)
                 if first_block is None:
-                    first_block = self.main_page.blk_list[0]  # Fallback to first block if no visible blocks
+                    first_block = self.main_page.blk_list[0]
             else:
                 first_block = self.main_page.blk_list[0]
-            
+
             rect = self.main_page.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
             self.main_page.image_viewer.select_rectangle(rect)
             self.main_page.set_tool('box')

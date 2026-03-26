@@ -83,6 +83,41 @@ class ManualWorkflowController:
         scene_mgr.load_page_scene_items(page_idx)
         self.main.text_ctrl.clear_text_edits()
 
+    def _copy_blocks_for_current_webtoon_page(self, blk_list: list[TextBlock]) -> list[TextBlock]:
+        blocks = [
+            blk.deep_copy() if hasattr(blk, "deep_copy") else blk
+            for blk in (blk_list or [])
+        ]
+        if not blocks or not self.main.webtoon_mode:
+            return blocks
+
+        manager = getattr(self.main.image_viewer, "webtoon_manager", None)
+        scene_mgr = getattr(manager, "scene_item_manager", None) if manager is not None else None
+        text_block_mgr = getattr(scene_mgr, "text_block_manager", None) if scene_mgr is not None else None
+        page_idx = self.main.curr_img_idx
+        if text_block_mgr is None or page_idx < 0 or page_idx >= len(self.main.image_files):
+            return blocks
+
+        for blk in blocks:
+            text_block_mgr._convert_textblock_coordinates(blk, page_idx, to_scene=True)
+        return blocks
+
+    def _set_current_blocks_from_page_state(
+        self,
+        blk_list: list[TextBlock],
+        *,
+        current_page_unloaded: bool = False,
+    ) -> None:
+        if not self.main.webtoon_mode:
+            self.main.blk_list = [blk.deep_copy() if hasattr(blk, "deep_copy") else blk for blk in blk_list]
+            return
+
+        if current_page_unloaded:
+            self._reload_current_webtoon_page()
+            return
+
+        self.main.blk_list = self._copy_blocks_for_current_webtoon_page(blk_list)
+
     def _serialize_rectangles_from_blocks(self, blk_list: list[TextBlock]) -> list[dict]:
         rects: list[dict] = []
         for blk in blk_list:
@@ -149,11 +184,13 @@ class ManualWorkflowController:
                         current_blocks = blk_list
 
                 if current_blocks is not None:
-                    self.main.blk_list = current_blocks.copy()
                     if self.main.webtoon_mode:
-                        if context["current_page_unloaded"]:
-                            self._reload_current_webtoon_page()
+                        self._set_current_blocks_from_page_state(
+                            current_blocks,
+                            current_page_unloaded=context["current_page_unloaded"],
+                        )
                     elif load_rects:
+                        self.main.blk_list = [blk.deep_copy() if hasattr(blk, "deep_copy") else blk for blk in current_blocks]
                         self.main.pipeline.load_box_coords(self.main.blk_list)
 
                 if results:
@@ -238,10 +275,10 @@ class ManualWorkflowController:
                         continue
                     state["blk_list"] = blk_list
                     if file_path == current_file:
-                        self.main.blk_list = blk_list.copy()
-
-                if self.main.webtoon_mode and context["current_page_unloaded"]:
-                    self._reload_current_webtoon_page()
+                        self._set_current_blocks_from_page_state(
+                            blk_list,
+                            current_page_unloaded=context["current_page_unloaded"],
+                        )
 
                 if results:
                     self.main.mark_project_dirty()
@@ -338,10 +375,10 @@ class ManualWorkflowController:
                         continue
                     state["blk_list"] = blk_list
                     if file_path == current_file:
-                        self.main.blk_list = blk_list.copy()
-
-                if self.main.webtoon_mode and context["current_page_unloaded"]:
-                    self._reload_current_webtoon_page()
+                        self._set_current_blocks_from_page_state(
+                            blk_list,
+                            current_page_unloaded=context["current_page_unloaded"],
+                        )
 
                 if results:
                     self.main.mark_project_dirty()
@@ -617,7 +654,10 @@ class ManualWorkflowController:
                         viewer_state["rectangles"] = []
                         state["brush_strokes"] = self._serialize_segmentation_strokes(blk_list)
                         if file_path == current_file:
-                            self.main.blk_list = blk_list.copy()
+                            self._set_current_blocks_from_page_state(
+                                blk_list,
+                                current_page_unloaded=context["current_page_unloaded"],
+                            )
 
                     if (
                         not self.main.webtoon_mode
@@ -628,9 +668,6 @@ class ManualWorkflowController:
                             bboxes = blk.inpaint_bboxes
                             if bboxes is not None and len(bboxes) > 0:
                                 self.main.image_viewer.draw_segmentation_lines(bboxes)
-
-                    if self.main.webtoon_mode and context["current_page_unloaded"]:
-                        self._reload_current_webtoon_page()
 
                     if results:
                         self.main.mark_project_dirty()

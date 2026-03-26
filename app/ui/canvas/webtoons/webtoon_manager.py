@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import numpy as np
 from typing import Set, TYPE_CHECKING
-from PySide6.QtCore import QTimer, QPointF, QRectF
+from PySide6.QtCore import QTimer, QPointF
 from PySide6.QtWidgets import QGraphicsPixmapItem
+from PySide6.QtGui import QTransform
 from .image_loader import LazyImageLoader
 from .webtoon_layout_manager import WebtoonLayoutManager
 from .scene_items.scene_item_manager import SceneItemManager
@@ -158,6 +159,8 @@ class LazyWebtoonManager:
         """Save the current viewer state for persistence."""
         transform = self.viewer.transform()
         center = self.viewer.mapToScene(self.viewer.viewport().rect().center())
+        current_page_index = self.layout_manager.get_page_at_position(center.y())
+        self.layout_manager.current_page_index = current_page_index
 
         state = {
             'transform': (transform.m11(), transform.m12(), transform.m13(),
@@ -166,7 +169,7 @@ class LazyWebtoonManager:
             'center': (center.x(), center.y()),
             'scene_rect': (self.viewer.sceneRect().x(), self.viewer.sceneRect().y(), 
                            self.viewer.sceneRect().width(), self.viewer.sceneRect().height()),
-            'current_page_index': self.layout_manager.current_page_index,
+            'current_page_index': current_page_index,
         }
         self.viewer.webtoon_view_state = state
         return state
@@ -185,27 +188,18 @@ class LazyWebtoonManager:
                 min(current_page_index, len(self.image_loader.image_file_paths) - 1),
             )
 
-        full_scene_rect = (
-            0,
-            0,
-            self.layout_manager.webtoon_width,
-            self.layout_manager.total_height,
-        )
-        self._scene.setSceneRect(*full_scene_rect)
-        self.viewer.setSceneRect(*full_scene_rect)
-        self.viewer.resetTransform()
-        self._fit_current_page_in_view()
-
-        center = state.get('center')
-        if center and len(center) == 2:
-            self.viewer.centerOn(self.layout_manager.webtoon_width / 2, center[1])
-        elif self.image_loader.image_file_paths:
+        if self.image_loader.image_file_paths:
             current_page = self.layout_manager.current_page_index
             page_center_y = (
                 self.layout_manager.image_positions[current_page]
                 + (self.layout_manager.image_heights[current_page] / 2)
             )
+            self.viewer.setSceneRect(0, 0, self.layout_manager.webtoon_width, self.layout_manager.total_height)
             self.viewer.centerOn(self.layout_manager.webtoon_width / 2, page_center_y)
+
+        transform_values = state.get('transform')
+        if transform_values and len(transform_values) == 9:
+            self.viewer.setTransform(QTransform(*transform_values))
 
         self._prime_restored_view()
 
@@ -218,47 +212,6 @@ class LazyWebtoonManager:
         self._update_loaded_pages()
         QTimer.singleShot(0, self._update_loaded_pages)
         QTimer.singleShot(150, self._update_loaded_pages)
-
-    def _fit_current_page_in_view(self):
-        """Fit the current page bounds into the viewport."""
-        current_page = self.layout_manager.current_page_index
-        if not (0 <= current_page < len(self.image_loader.image_file_paths)):
-            return
-
-        page_y = self.layout_manager.image_positions[current_page]
-        page_height = self.layout_manager.image_heights[current_page]
-
-        if current_page in self.image_loader.image_data:
-            page_width = self.image_loader.image_data[current_page].shape[1]
-        else:
-            page_width = self.layout_manager.webtoon_width
-
-        x_offset = (self.layout_manager.webtoon_width - page_width) / 2
-        page_rect = QRectF(x_offset, page_y, page_width, page_height)
-        if page_rect.isNull():
-            return
-
-        padding = 20
-        padded_rect = page_rect.adjusted(-padding, -padding, padding, padding)
-        self.viewer.setSceneRect(padded_rect)
-
-        unity = self.viewer.transform().mapRect(QRectF(0, 0, 1, 1))
-        if unity.isNull():
-            return
-        self.viewer.scale(1 / unity.width(), 1 / unity.height())
-
-        viewport_rect = self.viewer.viewport().rect()
-        scene_rect = self.viewer.transform().mapRect(padded_rect)
-        if scene_rect.isNull():
-            return
-
-        factor = min(
-            viewport_rect.width() / scene_rect.width(),
-            viewport_rect.height() / scene_rect.height(),
-        )
-        self.viewer.scale(factor, factor)
-        self.viewer.centerOn(page_rect.center())
-        self.viewer.setSceneRect(0, 0, self.layout_manager.webtoon_width, self.layout_manager.total_height)
 
     # PROXY PROPERTIES to access data from the correct owner
 

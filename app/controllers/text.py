@@ -890,11 +890,13 @@ class TextController:
 
                 current_file = context["current_file"]
                 if current_file in updated_paths:
-                    self.main.blk_list = self.main.image_states.get(current_file, {}).get("blk_list", []).copy()
                     if self.main.webtoon_mode:
-                        if context["current_page_unloaded"]:
-                            self.main.manual_workflow_ctrl._reload_current_webtoon_page()
+                        self.main.manual_workflow_ctrl._set_current_blocks_from_page_state(
+                            self.main.image_states.get(current_file, {}).get("blk_list", []),
+                            current_page_unloaded=context["current_page_unloaded"],
+                        )
                     else:
+                        self.main.blk_list = self.main.image_states.get(current_file, {}).get("blk_list", []).copy()
                         self.main.image_ctrl.on_render_state_ready(current_file)
 
                 self.main.mark_project_dirty()
