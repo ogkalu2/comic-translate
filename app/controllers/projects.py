@@ -16,6 +16,7 @@ from app.thread_worker import GenericWorker
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from app.ui.commands.inpaint import PatchInsertCommand
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
@@ -40,9 +41,15 @@ class ProjectController:
         self._realtime_autosave_timer.setSingleShot(True)
         self._realtime_autosave_timer.setInterval(800)
         self._realtime_autosave_timer.timeout.connect(self._on_realtime_autosave_timeout)
+        self._batch_autosave_timer = QtCore.QTimer(self.main)
+        self._batch_autosave_timer.setSingleShot(True)
+        self._batch_autosave_timer.setInterval(1500)
+        self._batch_autosave_timer.timeout.connect(self._perform_batch_project_autosave)
         self._autosave_signals_connected = False
         self._autosave_save_pending = False
         self._autosave_retrigger_requested = False
+        self._batch_autosave_requested = False
+        self._batch_autosave_last_image_path: str | None = None
         self._active_save_workers: list = []  # keeps Python refs alive until workers finish
 
     # Recent projects (persisted via QSettings)
@@ -231,6 +238,10 @@ class ProjectController:
             self._realtime_autosave_timer.stop()
         except Exception:
             pass
+        try:
+            self._batch_autosave_timer.stop()
+        except Exception:
+            pass
         close_state_store()
         if clear_recovery:
             self.clear_recovery_checkpoint()
@@ -290,31 +301,50 @@ class ProjectController:
         # Real-time autosave writes directly to the open project file.
         self.autosave_project(prefer_project_file=True)
 
-    def _on_batch_page_done(self, image_path: str):
-        """Triggered by render_state_ready after each page is processed during batch.
-        Saves the project file immediately so progress is not lost between pages.
-
-        NOTE: this deliberately bypasses the task_runner_ctrl queue (which is
-        blocked while the batch is running) and avoids touching current_worker
-        (which the batch processor uses for cancel detection). A GenericWorker
-        is started directly on the shared threadpool instead.
-        """
+    def _schedule_batch_project_autosave(self, image_path: str | None = None, immediate: bool = False):
         autosave_enabled = bool(
             self.main.settings_page.get_export_settings().get("project_autosave_enabled", False)
         )
         if not autosave_enabled or not self.main.project_file:
             return
+
+        self._batch_autosave_requested = True
+        if image_path:
+            self._batch_autosave_last_image_path = image_path
+
+        if immediate:
+            try:
+                self._batch_autosave_timer.stop()
+            except Exception:
+                pass
+            self._perform_batch_project_autosave()
+            return
+
+        self._batch_autosave_timer.start()
+
+    def _perform_batch_project_autosave(self):
+        autosave_enabled = bool(
+            self.main.settings_page.get_export_settings().get("project_autosave_enabled", False)
+        )
+        if not autosave_enabled or not self.main.project_file:
+            self._batch_autosave_requested = False
+            return
+
+        if not self._batch_autosave_requested:
+            return
+
         if self._autosave_save_pending:
-            # A save is already in flight; request a follow-up once it finishes.
             self._autosave_retrigger_requested = True
             return
 
         autosave_start_revision = self.main._dirty_revision
         self._autosave_save_pending = True
+        self._batch_autosave_requested = False
         target_file = self.main.project_file
+        log_image_path = self._batch_autosave_last_image_path or target_file
 
         worker = GenericWorker(self.save_project, target_file)
-        self._active_save_workers.append(worker)  # prevent GC until done
+        self._active_save_workers.append(worker)
 
         def on_error(error_tuple):
             try:
@@ -323,10 +353,10 @@ class ProjectController:
                 pass
             self._autosave_save_pending = False
             exctype, value, _ = error_tuple
-            logger.warning("Per-page autosave failed for %s: %s: %s", image_path, exctype.__name__, value)
+            logger.warning("Batch autosave failed for %s: %s: %s", log_image_path, exctype.__name__, value)
             if self._autosave_retrigger_requested:
                 self._autosave_retrigger_requested = False
-                self._on_batch_page_done(image_path)
+                self._schedule_batch_project_autosave(self._batch_autosave_last_image_path)
 
         def on_finished():
             try:
@@ -341,7 +371,10 @@ class ProjectController:
                 self.main.set_project_clean()
             if self._autosave_retrigger_requested:
                 self._autosave_retrigger_requested = False
-                self._on_batch_page_done(image_path)
+                if getattr(self.main, "_batch_active", False):
+                    self._schedule_batch_project_autosave(self._batch_autosave_last_image_path)
+                else:
+                    self._realtime_autosave_timer.start()
 
         worker.signals.error.connect(
             lambda err: QtCore.QTimer.singleShot(0, lambda: on_error(err))
@@ -350,6 +383,30 @@ class ProjectController:
             lambda: QtCore.QTimer.singleShot(0, on_finished)
         )
         self.main.threadpool.start(worker)
+
+    def _on_batch_page_done(self, image_path: str):
+        """Triggered by render_state_ready after each page is processed during batch.
+        Coalesces direct project saves during batch to reduce I/O stalls while
+        still persisting progress incrementally.
+
+        NOTE: this deliberately bypasses the task_runner_ctrl queue (which is
+        blocked while the batch is running) and avoids touching current_worker
+        (which the batch processor uses for cancel detection). The actual save
+        still runs on the shared threadpool via GenericWorker.
+        """
+        self._schedule_batch_project_autosave(image_path)
+
+    def flush_batch_project_autosave(self):
+        if self._batch_autosave_timer.isActive():
+            self._batch_autosave_timer.stop()
+
+        if self._autosave_save_pending:
+            self._autosave_retrigger_requested = True
+            self._batch_autosave_requested = True
+            return
+
+        if self._batch_autosave_requested:
+            self._perform_batch_project_autosave()
 
     def notify_project_dirty_revision_changed(self):
         autosave_enabled = bool(
@@ -697,11 +754,50 @@ class ProjectController:
             self.main.undo_stacks[file] = stack
             self.main.undo_group.addStack(stack)
 
+        self._restore_inpaint_undo_history()
+        self.main.image_ctrl.mark_text_stack_restore_pending()
+
         self.main.run_threaded(
             lambda: self.main.load_image(self.main.image_files[index]),
             lambda result: self._display_image_and_set_mode(result, index),
             self.main.default_error_handler
         )
+
+    def _restore_inpaint_undo_history(self):
+        saved_patches = {
+            file_path: [dict(patch) for patch in patch_list]
+            for file_path, patch_list in self.main.image_patches.items()
+            if patch_list
+        }
+        if not saved_patches:
+            return
+
+        self.main.image_patches = {}
+        self.main.in_memory_patches.clear()
+
+        for file_path, patch_list in saved_patches.items():
+            stack = self.main.undo_stacks.get(file_path)
+            if stack is None:
+                self.main.image_patches[file_path] = patch_list
+                continue
+
+            grouped_patches: dict[str, list[dict]] = {}
+            ordered_groups: list[str] = []
+            for patch in patch_list:
+                group_id = patch.get("group_id") or patch.get("hash")
+                if group_id not in grouped_patches:
+                    grouped_patches[group_id] = []
+                    ordered_groups.append(group_id)
+                grouped_patches[group_id].append(patch)
+
+            for group_id in ordered_groups:
+                stack.push(
+                    PatchInsertCommand.from_saved_properties(
+                        self.main,
+                        grouped_patches[group_id],
+                        file_path,
+                    )
+                )
 
     def _display_image_and_set_mode(self, rgb_image, index: int):
         """Display the image and then set the appropriate mode."""

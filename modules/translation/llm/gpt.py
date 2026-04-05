@@ -4,6 +4,7 @@ import numpy as np
 import requests
 import logging
 from .base import BaseLLMTranslation
+from ...utils.local_vllm import post_json_with_wsl_fallback
 from ...utils.translator_utils import MODEL_MAP
 
 
@@ -61,10 +62,10 @@ class GPTTranslation(BaseLLMTranslation):
         payload = {
             "model": self.model,
             "messages": messages,
-            "temperature": 0,
-            "top_p": 1,
+            "temperature": 0.0,
+            "top_p": 1.0,
             "max_tokens": int(self.max_tokens),
-            "presence_penalty" : 0,
+            "presence_penalty" : 0.0,
             "repetition_penalty" : 1.0,
             "response_format": {"type": "json_object"},
         }
@@ -73,11 +74,11 @@ class GPTTranslation(BaseLLMTranslation):
 
     def _make_api_request(self, payload):
         try:
-            response = requests.post(
+            response = post_json_with_wsl_fallback(
                 f"{self.api_base_url}/chat/completions",
+                payload=payload,
                 headers={"Content-Type": "application/json"},
-                data=json.dumps(payload, ensure_ascii=False),
-                timeout=self.timeout
+                timeout=self.timeout,
             )
 
             response.raise_for_status()
@@ -88,7 +89,7 @@ class GPTTranslation(BaseLLMTranslation):
             if usage:
                 self.last_usage = usage
                 logger = logging.getLogger(__name__)
-                logger.info(
+                logger.debug(
                     "TOKENS | prompt=%s completion=%s total=%s",
                     usage.get("prompt_tokens"),
                     usage.get("completion_tokens"),
@@ -98,7 +99,7 @@ class GPTTranslation(BaseLLMTranslation):
             content = response_data["choices"][0]["message"]["content"]
 
             logger = logging.getLogger(__name__)
-            logger.info("LLM RESPONSE | %s", content)
+            logger.debug("LLM RESPONSE | %s", content)
 
             return content
 
@@ -115,7 +116,7 @@ class GPTTranslation(BaseLLMTranslation):
     @staticmethod
     def build_minimal_json_translate_prompts(lines: List[str], target_lang: str) -> (str, str):
         system_prompt = (
-            f"Translate EN to {target_lang}. "
+            f"Translate to {target_lang}. "
             f"Return ONLY a JSON object: {{\"r\": [<strings>]}}. "
             f"Keep array length and order. No extra keys. No explanations."
         )

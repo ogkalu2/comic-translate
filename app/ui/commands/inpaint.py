@@ -17,6 +17,8 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
         self.scene = self.viewer._scene
         self.file_path = file_path     # page the patches belong to
         self.display = display
+        self.group_id = uuid.uuid4().hex
+        self._skip_next_draw = False
 
         # prepare lists of patch properties with composite hashes for deduplication
         self.properties_list = []
@@ -42,7 +44,8 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
             prop = {
                 'bbox': bbox,
                 'png_path': png_path,
-                'hash': img_hash
+                'hash': img_hash,
+                'group_id': self.group_id,
             }
             
             # Add webtoon mode information if present
@@ -53,11 +56,56 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
                 
             self.properties_list.append(prop)
 
+    @classmethod
+    def from_saved_properties(cls, ct, properties_list, file_path):
+        cmd = cls.__new__(cls)
+        QUndoCommand.__init__(cmd, "Insert patches")
+        cmd.ct = ct
+        cmd.viewer = ct.image_viewer
+        cmd.scene = cmd.viewer._scene
+        cmd.file_path = file_path
+        cmd.display = True
+        cmd._skip_next_draw = True
+
+        normalized = []
+        group_id = None
+        fallback_group_id = uuid.uuid4().hex
+        for prop in properties_list:
+            entry = dict(prop)
+            entry_group_id = entry.get("group_id") or fallback_group_id
+            entry["group_id"] = entry_group_id
+            if group_id is None:
+                group_id = entry_group_id
+            normalized.append(entry)
+
+        cmd.group_id = group_id or fallback_group_id
+        cmd.properties_list = normalized
+        return cmd
+
+    def _is_target_page_visible(self):
+        if self.ct.webtoon_mode:
+            try:
+                page_index = self.ct.image_files.index(self.file_path)
+            except ValueError:
+                return False
+            manager = getattr(self.ct.image_viewer, "webtoon_manager", None)
+            loaded_pages = getattr(manager, "loaded_pages", set()) if manager is not None else set()
+            return page_index in loaded_pages
+
+        if self.ct.curr_img_idx < 0 or self.ct.curr_img_idx >= len(self.ct.image_files):
+            return False
+        current_file = self.ct.image_files[self.ct.curr_img_idx]
+        return (
+            current_file == self.file_path
+            and self.ct.central_stack.currentWidget() == self.ct.viewer_page
+            and self.ct.image_viewer.hasPhoto()
+        )
+
     def _register_patches(self):
         # Ensure top-level storage exists
         patches_list = self.ct.image_patches.setdefault(self.file_path, [])
-        if self.display:
-            mem_list = self.ct.in_memory_patches.setdefault(self.file_path, [])
+        mem_list = self.ct.in_memory_patches.setdefault(self.file_path, [])
+        should_draw = self._is_target_page_visible()
 
         for prop in self.properties_list:
             # skip duplicates by composite hash
@@ -68,7 +116,8 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
             patch_entry = {
                 'bbox': prop['bbox'],
                 'png_path': prop['png_path'],
-                'hash': prop['hash']
+                'hash': prop['hash'],
+                'group_id': prop['group_id'],
             }
             # Save scene position and page index for webtoon mode
             if 'scene_pos' in prop:
@@ -78,7 +127,7 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
             patches_list.append(patch_entry)
 
             # only load into memory if being displayed
-            if self.display:
+            if should_draw and not any(p['hash'] == prop['hash'] for p in mem_list):
                 img_data = imk.read_image(prop['png_path'])
                 mem_list.append({
                     'bbox': prop['bbox'],
@@ -88,17 +137,14 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
 
     def _unregister_patches(self):
         patches_list = self.ct.image_patches.get(self.file_path, [])
-        if self.display:
-            mem_list = self.ct.in_memory_patches.get(self.file_path, [])
+        mem_list = self.ct.in_memory_patches.get(self.file_path, [])
 
         for prop in self.properties_list:
             patches_list[:] = [p for p in patches_list if p['hash'] != prop['hash']]
-            if self.display:
-                mem_list[:] = [p for p in mem_list if p['hash'] != prop['hash']]
+            mem_list[:] = [p for p in mem_list if p['hash'] != prop['hash']]
 
     def _draw_pixmaps(self):
-        # only draw when display=True
-        if not self.display:
+        if not self._is_target_page_visible():
             return
         
         # add new patch items
@@ -107,9 +153,6 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
                 self.create_patch_item(prop, self.viewer)
 
     def _remove_pixmaps(self):
-        # only remove when display=True
-        if not self.display:
-            return
         # remove items matching each prop
         for prop in self.properties_list:
             existing = self.find_matching_item(self.scene, prop)
@@ -118,8 +161,10 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
 
     def redo(self):
         self._register_patches()
+        if self._skip_next_draw:
+            self._skip_next_draw = False
+            return
         self._draw_pixmaps()
-        self.display = True
 
     def undo(self):
         self._remove_pixmaps()

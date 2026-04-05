@@ -19,3 +19,11 @@ class TextBlockDetector:
             self.settings, self.detector
         )
         return engine.detect(img)
+
+    def detect_many(self, images: list[np.ndarray]) -> list[list[TextBlock]]:
+        self.detector = self.settings.get_tool_selection('detector') or self.detector
+        engine = DetectionEngineFactory.create_engine(
+            self.settings,
+            self.detector,
+        )
+        return engine.detect_many(images)

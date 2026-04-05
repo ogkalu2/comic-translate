@@ -38,13 +38,16 @@ class PPOCRv5Engine(OCREngine):
 		)
 		self.decoder: Optional[CTCLabelDecoder] = None
 		self.rec_img_shape = (3, 48, 320)
+		self.rec_batch_size = 8
 
 	def initialize(
 		self, 
 		lang: str = 'ch', 
 		device: str = 'cpu', 
-		det_model: str = 'mobile'
+		det_model: str = 'mobile',
+		recognition_batch_size: int = 8,
 	) -> None:
+		self.rec_batch_size = max(1, int(recognition_batch_size))
 		# Ensure models present
 		det_id = ModelID.PPOCR_V5_DET_MOBILE if det_model == 'mobile' else ModelID.PPOCR_V5_DET_SERVER
 		rec_id = LANG_TO_REC_MODEL.get(lang, ModelID.PPOCR_V5_REC_LATIN_MOBILE)
@@ -78,14 +81,17 @@ class PPOCRv5Engine(OCREngine):
 
 	def _det_infer(self, img: np.ndarray) -> Tuple[np.ndarray, List[float]]:
 		assert self.det_sess is not None
-		inp = det_preprocess(img, limit_side_len=960, limit_type='min')
+		inp = det_preprocess(img, limit_side_len=2, limit_type='min')
 		input_name = self.det_sess.get_inputs()[0].name
 		output_name = self.det_sess.get_outputs()[0].name
 		pred = self.det_sess.run([output_name], {input_name: inp})[0]
 		boxes, scores = self.det_post(pred, (img.shape[0], img.shape[1]))
 		return boxes, scores
 
-	def _rec_infer(self, crops: List[np.ndarray]) -> Tuple[List[str], List[float]]:
+	def supports_crop_batching(self) -> bool:
+		return True
+
+	def _rec_infer(self, crops: List[np.ndarray], batch_size: Optional[int] = None) -> Tuple[List[str], List[float]]:
 		assert self.rec_sess is not None and self.decoder is not None
 		if not crops:
 			return [], []
@@ -94,7 +100,7 @@ class PPOCRv5Engine(OCREngine):
 		order = np.argsort(ratios)
 		texts = [""] * len(crops)
 		confs = [0.0] * len(crops)
-		bs = 8
+		bs = max(1, int(batch_size or self.rec_batch_size))
 		c, H, W = self.rec_img_shape
 		for b in range(0, len(crops), bs):
 			idxs = order[b:b+bs]
@@ -113,6 +119,13 @@ class PPOCRv5Engine(OCREngine):
 				texts[oi] = t
 				confs[oi] = float(s)
 		return texts, confs
+
+	def process_crops(
+		self,
+		crops: List[np.ndarray],
+		batch_size: int | None = None,
+	) -> Tuple[List[str], List[float]]:
+		return self._rec_infer(crops, batch_size=batch_size)
 
 	def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
 		if self.det_sess is None or self.rec_sess is None or self.decoder is None:

@@ -111,6 +111,40 @@ class ComicTranslatePipeline:
         """Webtoon batch processing with overlapping sliding windows."""
         return self.webtoon_batch_processor.webtoon_batch_process(selected_paths)
 
+    def release_model_caches(self):
+        """Release cached model instances to reduce GPU/CPU memory pressure."""
+        self.block_detection.block_detector_cache = None
+        self.inpainting.inpainter_cache = None
+        self.inpainting.cached_inpainter_key = None
+
+        try:
+            from modules.detection.factory import DetectionEngineFactory
+
+            DetectionEngineFactory._engines.clear()
+        except Exception:
+            logger.debug("Failed to clear detection engine cache.", exc_info=True)
+
+        try:
+            from modules.detection.font.engine import FontEngineFactory
+
+            FontEngineFactory._engines.clear()
+        except Exception:
+            logger.debug("Failed to clear font engine cache.", exc_info=True)
+
+        try:
+            from modules.ocr.factory import OCRFactory
+
+            OCRFactory._engines.clear()
+        except Exception:
+            logger.debug("Failed to clear OCR engine cache.", exc_info=True)
+
+        try:
+            from modules.translation.factory import TranslationFactory
+
+            TranslationFactory._engines.clear()
+        except Exception:
+            logger.debug("Failed to clear translation engine cache.", exc_info=True)
+
     # Segmentation methods (delegate to segmentation_handler)
     def segment_webtoon_visible_area(self):
         """Perform segmentation on visible area in webtoon mode."""

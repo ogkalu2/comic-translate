@@ -11,6 +11,7 @@ class PageListView(QListWidget):
     del_img = Signal(list)
     toggle_skip_img = Signal(list, bool)  # list of images, bool for skip status (True=skip, False=unskip)
     translate_imgs = Signal(list)
+    clear_translation_cache_imgs = Signal(list)
     selection_changed = Signal(list)  # list of selected indices
     order_changed = Signal(list)  # reordered item identities (file paths when available)
 
@@ -19,6 +20,7 @@ class PageListView(QListWidget):
         self.setSpacing(5)
         self.setMinimumWidth(100)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setUniformItemSizes(True)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) 
         self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.setDragEnabled(True)
@@ -51,6 +53,12 @@ class PageListView(QListWidget):
         if isinstance(data, str) and data:
             return data
         return item.text()
+
+    def _selected_item_refs(self) -> list[str]:
+        selected_refs: list[str] = []
+        for item in self.selectedItems():
+            selected_refs.append(self._item_identity(item))
+        return selected_refs
 
     def _current_item_order(self) -> list[str]:
         order = []
@@ -88,6 +96,9 @@ class PageListView(QListWidget):
         translate_act = menu.addAction(self.tr('Translate'))
         translate_act.triggered.connect(self.translate_selected_items)
 
+        clear_translation_cache_act = menu.addAction(self.tr('Clear Translation Cache'))
+        clear_translation_cache_act.triggered.connect(self.clear_translation_cache_selected_items)
+
         menu.exec_(event.globalPos())
         super().contextMenuEvent(event)
 
@@ -104,27 +115,30 @@ class PageListView(QListWidget):
         self.viewport().update()
 
     def delete_selected_items(self):
-        selected_items = self.selectedItems()
-        if not selected_items:
+        selected_refs = self._selected_item_refs()
+        if not selected_refs:
             return
-
-        selected_file_names = [item.text() for item in selected_items]
-        self.del_img.emit(selected_file_names)
+        self.del_img.emit(selected_refs)
 
     def toggle_skip_status(self):
         selected = self.selectedItems()
         if not selected:
             return
-            
-        names = [item.text() for item in selected]
+
+        selected_refs = self._selected_item_refs()
         # If all selected items are striked out, we're unskipping (False)
         # Otherwise, we're skipping (True)
         skip_status = not all(item.font().strikeOut() for item in selected)
-        self.toggle_skip_img.emit(names, skip_status)
+        self.toggle_skip_img.emit(selected_refs, skip_status)
 
     def translate_selected_items(self):
-        selected = self.selectedItems()
-        if not selected:
+        selected_refs = self._selected_item_refs()
+        if not selected_refs:
             return
-        names = [item.text() for item in selected]
-        self.translate_imgs.emit(names)
+        self.translate_imgs.emit(selected_refs)
+
+    def clear_translation_cache_selected_items(self):
+        selected_refs = self._selected_item_refs()
+        if not selected_refs:
+            return
+        self.clear_translation_cache_imgs.emit(selected_refs)

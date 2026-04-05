@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import threading
+import uuid
 
 from .archives import (
     list_archive_image_entries,
@@ -105,6 +106,80 @@ class FileHandler:
 
         self.file_paths = self.file_paths + all_image_paths if extend else all_image_paths
         return all_image_paths
+
+    def renumber_archive_pages(self, remaining_paths: list[str]) -> dict[str, str]:
+        remaining_set = set(remaining_paths)
+        path_mapping: dict[str, str] = {}
+
+        for archive in self.archive_info:
+            extracted_images = [
+                path for path in archive.get("extracted_images", [])
+                if path in remaining_set
+            ]
+            archive["extracted_images"] = extracted_images
+            if not extracted_images:
+                continue
+
+            digit_width = self._get_archive_digit_width(extracted_images)
+            temp_dir = archive["temp_dir"]
+            rename_pairs: list[tuple[str, str]] = []
+            renumbered_paths: list[str] = []
+
+            for index, old_path in enumerate(extracted_images, start=1):
+                ext = os.path.splitext(old_path)[1].lower() or ".png"
+                new_path = os.path.join(temp_dir, f"{index:0{digit_width}d}{ext}")
+                renumbered_paths.append(new_path)
+                if old_path != new_path:
+                    rename_pairs.append((old_path, new_path))
+                    path_mapping[old_path] = new_path
+
+            self._apply_archive_path_renames(rename_pairs)
+            archive["extracted_images"] = renumbered_paths
+
+        return path_mapping
+
+    @staticmethod
+    def _get_archive_digit_width(paths: list[str]) -> int:
+        digit_width = 1
+        for path in paths:
+            stem = os.path.splitext(os.path.basename(path))[0]
+            if stem.isdigit():
+                digit_width = max(digit_width, len(stem))
+        return digit_width
+
+    def _apply_archive_path_renames(self, rename_pairs: list[tuple[str, str]]) -> None:
+        if not rename_pairs:
+            return
+
+        temp_pairs: list[tuple[str | None, str]] = []
+        lazy_mapping_updates: dict[str, dict] = {}
+
+        for old_path, new_path in rename_pairs:
+            abs_old = os.path.abspath(old_path)
+            abs_new = os.path.abspath(new_path)
+
+            with _LAZY_SOURCE_LOCK:
+                source = _LAZY_SOURCE_BY_PATH.pop(abs_old, None)
+            if source is not None:
+                lazy_mapping_updates[abs_new] = source
+
+            temp_path = None
+            if os.path.exists(abs_old):
+                temp_path = os.path.join(
+                    os.path.dirname(old_path),
+                    f".ct_renumber_{uuid.uuid4().hex}{os.path.splitext(new_path)[1]}",
+                )
+                os.replace(abs_old, temp_path)
+
+            temp_pairs.append((temp_path, new_path))
+
+        for temp_path, new_path in temp_pairs:
+            if temp_path and os.path.exists(temp_path):
+                os.replace(temp_path, new_path)
+
+        if lazy_mapping_updates:
+            with _LAZY_SOURCE_LOCK:
+                _LAZY_SOURCE_BY_PATH.update(lazy_mapping_updates)
 
     def should_pre_materialize(self, target_paths: list[str] | None = None) -> bool:
         paths = list(target_paths or [])

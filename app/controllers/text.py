@@ -52,6 +52,7 @@ class TextController:
     def connect_text_item_signals(self, text_item: TextBlockItem, force_reconnect: bool = False):
         if getattr(text_item, "_ct_signals_connected", False) and not force_reconnect:
             return
+        is_bulk_restore = bool(getattr(self.main.image_viewer, "_bulk_text_restore", False))
 
         if force_reconnect:
             try:
@@ -87,7 +88,8 @@ class TextController:
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
         self._last_item_text[text_item] = text_item.toPlainText()
-        self._last_item_html[text_item] = text_item.document().toHtml()
+        if not is_bulk_restore:
+            self._last_item_html[text_item] = text_item.document().toHtml()
         text_item._ct_signals_connected = True
 
     def clear_text_edits(self):
@@ -827,6 +829,11 @@ class TextController:
                     return
 
                 current_file = context["current_file"]
+                batch_report_ctrl = getattr(self.main, "batch_report_ctrl", None)
+                if batch_report_ctrl is not None:
+                    for file_path in updated_paths:
+                        batch_report_ctrl.register_batch_success(file_path)
+
                 if current_file in updated_paths:
                     self.main.blk_list = self.main.image_states.get(current_file, {}).get("blk_list", []).copy()
                     if self.main.webtoon_mode:
@@ -924,6 +931,12 @@ class TextController:
 
     def on_render_complete(self, rendered_image: np.ndarray):
         # self.main.set_image(rendered_image) 
+        current_file = None
+        if 0 <= self.main.curr_img_idx < len(self.main.image_files):
+            current_file = self.main.image_files[self.main.curr_img_idx]
+        batch_report_ctrl = getattr(self.main, "batch_report_ctrl", None)
+        if batch_report_ctrl is not None and current_file:
+            batch_report_ctrl.register_batch_success(current_file)
         self.main.loading.setVisible(False)
         self.main.enable_hbutton_group()
         self.main.undo_group.activeStack().endMacro()

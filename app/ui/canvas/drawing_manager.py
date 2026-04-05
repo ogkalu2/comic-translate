@@ -45,6 +45,7 @@ class DrawingManager:
                        Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
             self.current_path_item = self._scene.addPath(self.current_path, pen)
             self.current_path_item.setZValue(0.8)  
+            self.viewer.register_brush_stroke(self.current_path_item)
         
         elif self.viewer.current_tool == 'eraser':
             # Capture the current state before starting erase operation
@@ -173,6 +174,7 @@ class DrawingManager:
 
         if new_path.isEmpty():
             self._scene.removeItem(item)
+            self.viewer.unregister_brush_stroke(item)
         else:
             item.setPath(new_path)
 
@@ -205,20 +207,20 @@ class DrawingManager:
     def save_brush_strokes(self) -> List[Dict]:
         strokes = []
         
-        # Also collect any currently visible strokes
-        for item in self._scene.items():
-            if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:
-                strokes.append({
-                    'path': item.path(),
-                    'pen': item.pen().color().name(QColor.HexArgb),
-                    'brush': item.brush().color().name(QColor.HexArgb),
-                    'width': item.pen().width()
-                })
+        for item in self.viewer.brush_strokes:
+            if item is None or item.scene() is not self._scene:
+                continue
+            strokes.append({
+                'path': item.path(),
+                'pen': item.pen().color().name(QColor.HexArgb),
+                'brush': item.brush().color().name(QColor.HexArgb),
+                'width': item.pen().width()
+            })
         return strokes
 
     def load_brush_strokes(self, strokes: List[Dict]):
         self.clear_brush_strokes(page_switch=True)
-        for stroke in reversed(strokes):
+        for stroke in strokes:
             pen = QPen()
             pen.setColor(QColor(stroke['pen']))
             pen.setWidth(stroke['width'])
@@ -227,24 +229,25 @@ class DrawingManager:
             pen.setJoinStyle(Qt.RoundJoin)
             brush = QBrush(QColor(stroke['brush']))
             if brush.color() == QColor("#80ff0000"):
-                self._scene.addPath(stroke['path'], pen, brush)
+                item = self._scene.addPath(stroke['path'], pen, brush)
             else:
-                self._scene.addPath(stroke['path'], pen)
+                item = self._scene.addPath(stroke['path'], pen)
+            self.viewer.register_brush_stroke(item)
                 
     def clear_brush_strokes(self, page_switch=False):
         if page_switch:      
-            items_to_remove = [item for item in self._scene.items()
-                               if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo]
+            items_to_remove = list(self.viewer.brush_strokes)
             for item in items_to_remove:
                 self._scene.removeItem(item)
+                self.viewer.unregister_brush_stroke(item)
             self._scene.update()
         else:
             command = ClearBrushStrokesCommand(self.viewer)
             self.viewer.command_emitted.emit(command)
             
     def has_drawn_elements(self):
-        for item in self._scene.items():
-            if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:
+        for item in self.viewer.brush_strokes:
+            if item is not None and item.scene() is self._scene:
                 return True
         return False
         
@@ -310,8 +313,9 @@ class DrawingManager:
         human_painter.setBrush(brush)
         gen_painter.setBrush(brush)
 
-        for item in self._scene.items():
-            if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:
+        for item in self.viewer.brush_strokes:
+            if item is None or item.scene() is not self._scene:
+                continue
                 painter = gen_painter if QColor(item.brush().color().name(QColor.HexArgb)) == "#80ff0000" else human_painter
                 # Get the path bounding rect to see where the stroke is
                 item_pos = item.pos()

@@ -1,5 +1,6 @@
 import hashlib
 import logging
+from modules.utils.translator_utils import sanitize_translation_result_text
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,32 @@ class CacheManager:
         """Clear the translation cache. Note: Cache now persists across image and model changes automatically."""
         self.translation_cache = {}
         logger.info("Translation cache manually cleared")
+
+    def clear_translation_cache_for_images(self, images) -> int:
+        """Clear translation cache entries for the provided images, regardless of translator settings."""
+        image_hashes = {
+            self._generate_image_hash(image)
+            for image in images
+            if image is not None
+        }
+        if not image_hashes:
+            return 0
+
+        keys_to_remove = [
+            cache_key
+            for cache_key in list(self.translation_cache.keys())
+            if cache_key and cache_key[0] in image_hashes
+        ]
+        for cache_key in keys_to_remove:
+            self.translation_cache.pop(cache_key, None)
+
+        if keys_to_remove:
+            logger.info(
+                "Cleared %d translation cache entries for %d image hashes",
+                len(keys_to_remove),
+                len(image_hashes),
+            )
+        return len(keys_to_remove)
 
     def _generate_image_hash(self, image):
         """Generate a hash for the image to use as cache key"""
@@ -290,7 +317,7 @@ class CacheManager:
                 current_source_text = getattr(block, 'text', '') or ''
                 
                 if cached_source_text == current_source_text:
-                    return result.get('translation', '')
+                    return sanitize_translation_result_text(result.get('translation', ''))
                 else:
                     # Source text has changed, cache is invalid for this block
                     logger.debug(f"Cache invalid: source text changed from '{cached_source_text}' to '{current_source_text}'")
@@ -343,4 +370,4 @@ class CacheManager:
         for block in block_list:
             cached_translation = self._get_cached_translation_for_block(cache_key, block)
             if cached_translation is not None: 
-                block.translation = cached_translation  
+                block.translation = sanitize_translation_result_text(cached_translation)

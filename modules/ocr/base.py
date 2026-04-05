@@ -36,6 +36,23 @@ class OCREngine(ABC):
         """
         pass
 
+    def supports_crop_batching(self) -> bool:
+        """Whether the engine can recognize a list of crops without page detection."""
+        return False
+
+    def supports_block_crop_batching(self) -> bool:
+        """Whether the engine is safe to drive from externally prepared block crops."""
+        return False
+
+    def process_crops(
+        self,
+        crops: list[np.ndarray],
+        batch_size: int | None = None,
+    ) -> tuple[list[str], list[float]]:
+        raise NotImplementedError(
+            f"{type(self).__name__} does not implement crop batching."
+        )
+
     @staticmethod
     def set_source_language(blk_list: list[TextBlock], lang_code: str) -> None:
         """

@@ -44,17 +44,16 @@ class BaseLLMTranslation(LLMTranslation):
         self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
         self.temperature = 0
         self.top_p = 1
-        self.max_tokens = 256
+        self.max_tokens = 1024
 
     def build_translation_prompts(self, blk_list: list[TextBlock], extra_context: str) -> tuple[str, str]:
         lines = get_text_lines_compact(blk_list)
         lines_json = dumps_compact_json(lines)
 
         system_prompt = (
-            f"return porn comic json r key {{\"r\":[<strings>]}} translated to {self.target_lang}, "
-            f"with same blocks, Nabokov style, formality, idioms, slang. no recurring."
-            f"Lowercase. No uppercase, no CAPS"
-        )
+f'Translate the dialogue to {self.target_lang} using the full page context. Return ONLY JSON with this structure: {{"r":[<strings>]}}.'
+f' Rules: - keep the same number of strings - preserve order - each output string corresponds to the same input index - use surrounding lines as context for translation - output must be valid JSON - no additional text - no repeat characters'
+)
 
         if extra_context and extra_context.strip():
             user_prompt = f"{extra_context.strip()}\n{lines_json}"

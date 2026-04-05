@@ -58,6 +58,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Default"), 
             self.tr('Microsoft OCR'), 
             self.tr('Gemini-2.0-Flash'), 
+            self.tr('Tencent/HunyuanOCR'),
         ]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
@@ -125,6 +126,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Default"): "Default",
             self.tr("Microsoft OCR"): "Microsoft OCR",
             self.tr("Google Cloud Vision"): "Google Cloud Vision",
+            self.tr("Tencent/HunyuanOCR"): "Tencent/HunyuanOCR",
 
             # Inpainter mappings
             "LaMa": "LaMa",
@@ -225,6 +227,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.uppercase_checkbox = self.text_rendering_page.uppercase_checkbox
 
         # Export
+        self.batch_size_spinbox = self.export_page.batch_size_spinbox
+        self.ocr_batch_size_spinbox = self.export_page.ocr_batch_size_spinbox
         self.raw_text_checkbox = self.export_page.raw_text_checkbox
         self.translated_text_checkbox = self.export_page.translated_text_checkbox
         self.inpainted_image_checkbox = self.export_page.inpainted_image_checkbox

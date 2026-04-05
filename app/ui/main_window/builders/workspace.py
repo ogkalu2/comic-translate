@@ -83,15 +83,30 @@ class WorkspaceMixin:
         self.batch_report_button = MPushButton(self.tr("Report"))
         self.batch_report_button.setEnabled(False)
         self.batch_report_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.error_pages_button = MPushButton(self.tr("Error Pages"))
+        self.error_pages_button.setEnabled(False)
+        self.error_pages_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.preview_button = MPushButton(self.tr("Preview"))
+        self.preview_button.setEnabled(True)
+        self.preview_button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.preview_button.setToolTip(self.tr("Open the edited page preview in full screen (F5 / F11)"))
+        self.page_position_label = QtWidgets.QLabel(self.tr("Page 0 / 0"))
+        self.page_position_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.page_position_label.setStyleSheet("font-weight: 600; padding: 0 8px;")
 
         header_layout.addWidget(self.hbutton_group)
         header_layout.addWidget(self.loading)
         header_layout.addStretch()
+        header_layout.addWidget(self.page_position_label)
         header_layout.addWidget(self.webtoon_toggle)
         header_layout.addWidget(self.manual_radio)
         header_layout.addWidget(self.automatic_radio)
+        header_layout.addWidget(self.preview_button)
         header_layout.addWidget(self.translate_button)
         header_layout.addWidget(self.cancel_button)
+        header_layout.addWidget(self.error_pages_button)
         header_layout.addWidget(self.batch_report_button)
 
         self.search_panel = SearchReplacePanel(self)
@@ -134,7 +149,44 @@ class WorkspaceMixin:
             self.tr("Import Images, PDFs, Epubs or Comic Book Archive Files(cbr, cbz, etc)")
         )
         self.central_stack.addWidget(self.drag_browser)
-        self.central_stack.addWidget(self.image_viewer)
+
+        original_header = QtWidgets.QLabel(self.tr("Original"))
+        original_header.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        original_header.setStyleSheet("font-weight: 600; padding: 4px;")
+
+        result_header = QtWidgets.QLabel(self.tr("Edited"))
+        result_header.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        result_header.setStyleSheet("font-weight: 600; padding: 4px;")
+
+        self.original_preview_panel = QtWidgets.QWidget()
+        original_layout = QtWidgets.QVBoxLayout(self.original_preview_panel)
+        original_layout.setContentsMargins(0, 0, 0, 0)
+        original_layout.setSpacing(6)
+        original_layout.addWidget(original_header)
+        original_layout.addWidget(self.original_image_viewer, 1)
+
+        result_panel = QtWidgets.QWidget()
+        result_layout = QtWidgets.QVBoxLayout(result_panel)
+        result_layout.setContentsMargins(0, 0, 0, 0)
+        result_layout.setSpacing(6)
+        result_layout.addWidget(result_header)
+        result_layout.addWidget(self.image_viewer, 1)
+
+        self.compare_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self.compare_splitter.setChildrenCollapsible(False)
+        self.compare_splitter.addWidget(self.original_preview_panel)
+        self.compare_splitter.addWidget(result_panel)
+        self.compare_splitter.setStretchFactor(0, 1)
+        self.compare_splitter.setStretchFactor(1, 1)
+        self.compare_splitter.setSizes([1, 1])
+
+        self.viewer_page = QtWidgets.QWidget()
+        viewer_layout = QtWidgets.QVBoxLayout(self.viewer_page)
+        viewer_layout.setContentsMargins(0, 0, 0, 0)
+        viewer_layout.setSpacing(0)
+        viewer_layout.addWidget(self.compare_splitter)
+
+        self.central_stack.addWidget(self.viewer_page)
 
         central_widget = QtWidgets.QWidget()
         central_layout = QtWidgets.QVBoxLayout(central_widget)
@@ -285,9 +337,15 @@ class WorkspaceMixin:
         self.set_all_button.setToolTip(
             self.tr("Sets the Source and Target Language on the current page for all pages")
         )
+        self.select_all_pages_button = MPushButton(self.tr("Select All Pages"))
+        self.select_all_pages_button.setToolTip(
+            self.tr("Selects every page in the page list for manual batch operations")
+        )
+        self.select_all_pages_button.setEnabled(False)
 
         misc_lay.addWidget(self.pan_button)
         misc_lay.addWidget(self.set_all_button)
+        misc_lay.addWidget(self.select_all_pages_button)
         misc_lay.addStretch()
 
         box_tools_lay = QtWidgets.QHBoxLayout()

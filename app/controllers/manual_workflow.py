@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING, Any, Sequence
 
 from PySide6 import QtCore
@@ -14,7 +15,12 @@ from modules.utils.device import resolve_device
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.pipeline_config import validate_ocr, validate_translator
 from modules.utils.textblock import sort_blk_list
-from modules.utils.translator_utils import is_there_text, format_translations, set_upper_case
+from modules.utils.translator_utils import (
+    is_there_text,
+    format_translations,
+    sanitize_translation_source_blocks,
+    set_upper_case,
+)
 from pipeline.webtoon_utils import get_visible_text_items, get_first_visible_block
 
 if TYPE_CHECKING:
@@ -22,15 +28,28 @@ if TYPE_CHECKING:
     from controller import ComicTranslate
     from modules.utils.textblock import TextBlock
 
-
 class ManualWorkflowController:
     def __init__(self, main: ComicTranslate) -> None:
         self.main = main
+
+    @staticmethod
+    def _iter_chunks(items: Sequence[str], chunk_size: int):
+        chunk_size = max(1, int(chunk_size))
+        for start in range(0, len(items), chunk_size):
+            yield items[start:start + chunk_size]
 
     def _current_file_path(self) -> str | None:
         if 0 <= self.main.curr_img_idx < len(self.main.image_files):
             return self.main.image_files[self.main.curr_img_idx]
         return None
+
+    def _mark_error_pages_resolved(self, file_paths: Sequence[str]) -> None:
+        batch_report_ctrl = getattr(self.main, "batch_report_ctrl", None)
+        if batch_report_ctrl is None:
+            return
+        for file_path in file_paths:
+            if file_path:
+                batch_report_ctrl.register_batch_success(file_path)
 
     def _selected_page_paths(self) -> list[str]:
         return self.main.get_selected_page_paths()
@@ -42,6 +61,25 @@ class ManualWorkflowController:
             if img is not None:
                 self.main.image_data[file_path] = img
         return img
+
+    def _get_batch_settings(self) -> dict[str, int]:
+        try:
+            return self.main.settings_page.get_batch_settings()
+        except Exception:
+            return {"batch_size": 32, "ocr_batch_size": 8}
+
+    def _sort_blocks_for_path(
+        self,
+        file_path: str,
+        blk_list: list[TextBlock],
+        source_lang_fallback: str,
+    ) -> list[TextBlock]:
+        OCRProcessor.sanitize_block_texts(blk_list)
+        state = self.main.image_states.get(file_path, {})
+        source_lang = state.get("source_lang", source_lang_fallback)
+        source_lang_en = self.main.lang_mapping.get(source_lang, source_lang)
+        rtl = source_lang_en == "Japanese"
+        return sort_blk_list(blk_list, rtl)
 
     def _prepare_multi_page_context(self, selected_paths: list[str]) -> dict[str, Any]:
         current_file = self._current_file_path()
@@ -115,24 +153,45 @@ class ManualWorkflowController:
             self.main.disable_hbutton_group()
             context = self._prepare_multi_page_context(selected_paths)
             source_lang_fallback = self.main.s_combo.currentText()
+            page_batch_size = self._get_batch_settings()["batch_size"]
 
             def detect_selected_pages() -> dict[str, list[TextBlock]]:
                 if self.main.pipeline.block_detection.block_detector_cache is None:
                     self.main.pipeline.block_detection.block_detector_cache = TextBlockDetector(self.main.settings_page)
                 detector = self.main.pipeline.block_detection.block_detector_cache
                 results: dict[str, list[TextBlock]] = {}
-                for file_path in selected_paths:
-                    image = self._load_page_image(file_path)
-                    if image is None:
+                for chunk_paths in self._iter_chunks(selected_paths, page_batch_size):
+                    chunk_records: list[tuple[str, Any]] = []
+                    for file_path in chunk_paths:
+                        image = self._load_page_image(file_path)
+                        if image is not None:
+                            chunk_records.append((file_path, image))
+
+                    if not chunk_records:
                         continue
-                    blk_list = detector.detect(image)
-                    if blk_list:
-                        get_best_render_area(blk_list, image)
-                    state = self.main.image_states.get(file_path, {})
-                    source_lang = state.get("source_lang", source_lang_fallback)
-                    source_lang_en = self.main.lang_mapping.get(source_lang, source_lang)
-                    rtl = source_lang_en == "Japanese"
-                    results[file_path] = sort_blk_list(blk_list, rtl)
+
+                    try:
+                        detected_blk_lists = detector.detect_many(
+                            [image for _, image in chunk_records]
+                        )
+                        if len(detected_blk_lists) != len(chunk_records):
+                            raise RuntimeError(
+                                f"Detector returned {len(detected_blk_lists)} results for {len(chunk_records)} pages."
+                            )
+                    except Exception:
+                        detected_blk_lists = [
+                            detector.detect(image)
+                            for _, image in chunk_records
+                        ]
+
+                    for (file_path, image), blk_list in zip(chunk_records, detected_blk_lists):
+                        if blk_list:
+                            get_best_render_area(blk_list, image)
+                        results[file_path] = self._sort_blocks_for_path(
+                            file_path,
+                            blk_list,
+                            source_lang_fallback,
+                        )
                 return results
 
             def on_detect_ready(results: dict[str, list[TextBlock]]) -> None:
@@ -204,6 +263,9 @@ class ManualWorkflowController:
             self.main.disable_hbutton_group()
             context = self._prepare_multi_page_context(selected_paths)
             source_lang_fallback = self.main.s_combo.currentText()
+            batch_settings = self._get_batch_settings()
+            page_batch_size = batch_settings["batch_size"]
+            ocr_batch_size = batch_settings["ocr_batch_size"]
 
             def ocr_selected_pages() -> dict[str, list[TextBlock]]:
                 cache_manager = self.main.pipeline.cache_manager
@@ -211,23 +273,66 @@ class ManualWorkflowController:
                 ocr_model = self.main.settings_page.get_tool_selection("ocr")
                 device = resolve_device(self.main.settings_page.is_gpu_enabled())
                 results: dict[str, list[TextBlock]] = {}
-                for file_path in selected_paths:
-                    state = self.main.image_states.get(file_path, {})
-                    blk_list = state.get("blk_list", [])
-                    if not blk_list:
+                for chunk_paths in self._iter_chunks(selected_paths, page_batch_size):
+                    pending_pages: list[tuple[str, Any, list[TextBlock], str, str]] = []
+
+                    for file_path in chunk_paths:
+                        state = self.main.image_states.get(file_path, {})
+                        blk_list = state.get("blk_list", [])
+                        if not blk_list:
+                            continue
+                        image = self._load_page_image(file_path)
+                        if image is None:
+                            continue
+                        source_lang = state.get("source_lang", source_lang_fallback)
+                        cache_key = cache_manager._get_ocr_cache_key(
+                            image,
+                            source_lang,
+                            ocr_model,
+                            device,
+                        )
+                        if cache_manager._can_serve_all_blocks_from_ocr_cache(cache_key, blk_list):
+                            cache_manager._apply_cached_ocr_to_blocks(cache_key, blk_list)
+                            results[file_path] = self._sort_blocks_for_path(
+                                file_path,
+                                blk_list,
+                                source_lang_fallback,
+                            )
+                            continue
+
+                        pending_pages.append((file_path, image, blk_list, source_lang, cache_key))
+
+                    if not pending_pages:
                         continue
-                    image = self._load_page_image(file_path)
-                    if image is None:
-                        continue
-                    source_lang = state.get("source_lang", source_lang_fallback)
-                    cache_key = cache_manager._get_ocr_cache_key(image, source_lang, ocr_model, device)
-                    if cache_manager._can_serve_all_blocks_from_ocr_cache(cache_key, blk_list):
-                        cache_manager._apply_cached_ocr_to_blocks(cache_key, blk_list)
-                    else:
-                        ocr.initialize(self.main, source_lang)
-                        ocr.process(image, blk_list)
-                        cache_manager._cache_ocr_results(cache_key, blk_list)
-                    results[file_path] = blk_list
+
+                    try:
+                        processed_blk_lists = ocr.process_page_block_batches(
+                            [
+                                (image, blk_list, source_lang)
+                                for _, image, blk_list, source_lang, _ in pending_pages
+                            ],
+                            batch_size=ocr_batch_size,
+                            main_page=self.main,
+                        )
+                    except Exception:
+                        processed_blk_lists = []
+                        for _file_path, image, blk_list, source_lang, _cache_key in pending_pages:
+                            ocr.initialize(self.main, source_lang)
+                            processed_blk_lists.append(ocr.process(image, blk_list))
+
+                    for (
+                        file_path,
+                        _image,
+                        _blk_list,
+                        _source_lang,
+                        cache_key,
+                    ), processed_blk_list in zip(pending_pages, processed_blk_lists):
+                        cache_manager._cache_ocr_results(cache_key, processed_blk_list)
+                        results[file_path] = self._sort_blocks_for_path(
+                            file_path,
+                            processed_blk_list,
+                            source_lang_fallback,
+                        )
                 return results
 
             def on_ocr_ready(results: dict[str, list[TextBlock]]) -> None:
@@ -299,35 +404,88 @@ class ManualWorkflowController:
             extra_context = settings_page.get_llm_settings()["extra_context"]
             translator_key = settings_page.get_tool_selection("translator")
             upper_case = settings_page.ui.uppercase_checkbox.isChecked()
+            page_batch_size = self._get_batch_settings()["batch_size"]
 
             def translate_selected_pages() -> dict[str, list[TextBlock]]:
                 cache_manager = self.main.pipeline.cache_manager
                 results: dict[str, list[TextBlock]] = {}
-                for file_path in selected_paths:
-                    state = self.main.image_states.get(file_path, {})
-                    blk_list = state.get("blk_list", [])
-                    if not blk_list:
-                        continue
-                    image = self._load_page_image(file_path)
-                    if image is None:
-                        continue
-                    source_lang = state.get("source_lang", source_lang_fallback)
-                    target_lang = state.get("target_lang", target_lang_fallback)
+
+                def translate_one_page(
+                    file_path: str,
+                    image,
+                    blk_list: list[TextBlock],
+                    source_lang: str,
+                    target_lang: str,
+                    cache_key,
+                ) -> tuple[str, list[TextBlock]]:
                     translator = Translator(self.main, source_lang, target_lang)
-                    cache_key = cache_manager._get_translation_cache_key(
-                        image,
-                        source_lang,
-                        target_lang,
-                        translator_key,
-                        extra_context,
-                    )
+                    sanitize_translation_source_blocks(blk_list)
                     if cache_manager._can_serve_all_blocks_from_translation_cache(cache_key, blk_list):
                         cache_manager._apply_cached_translations_to_blocks(cache_key, blk_list)
                     else:
-                        translator.translate(blk_list, image, extra_context)
+                        translator.translate(
+                            blk_list,
+                            image,
+                            extra_context,
+                        )
                         cache_manager._cache_translation_results(cache_key, blk_list)
+
                     set_upper_case(blk_list, upper_case)
-                    results[file_path] = blk_list
+                    return file_path, blk_list
+
+                for chunk_paths in self._iter_chunks(selected_paths, page_batch_size):
+                    pending_pages: list[tuple[str, Any, list[TextBlock], str, str, object]] = []
+                    for file_path in chunk_paths:
+                        state = self.main.image_states.get(file_path, {})
+                        blk_list = state.get("blk_list", [])
+                        if not blk_list:
+                            continue
+                        sanitize_translation_source_blocks(blk_list)
+                        image = self._load_page_image(file_path)
+                        if image is None:
+                            continue
+                        source_lang = state.get("source_lang", source_lang_fallback)
+                        target_lang = state.get("target_lang", target_lang_fallback)
+                        cache_key = cache_manager._get_translation_cache_key(
+                            image,
+                            source_lang,
+                            target_lang,
+                            translator_key,
+                            extra_context,
+                        )
+                        pending_pages.append(
+                            (file_path, image, blk_list, source_lang, target_lang, cache_key)
+                        )
+
+                    if not pending_pages:
+                        continue
+
+                    max_workers = min(page_batch_size, len(pending_pages))
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        future_to_path = {
+                            executor.submit(
+                                translate_one_page,
+                                file_path,
+                                image,
+                                blk_list,
+                                source_lang,
+                                target_lang,
+                                cache_key,
+                            ): file_path
+                            for (
+                                file_path,
+                                image,
+                                blk_list,
+                                source_lang,
+                                target_lang,
+                                cache_key,
+                            ) in pending_pages
+                        }
+
+                        for future in as_completed(future_to_path):
+                            file_path, blk_list = future.result()
+                            results[file_path] = blk_list
+
                 return results
 
             def on_translation_ready(results: dict[str, list[TextBlock]]) -> None:
@@ -344,6 +502,7 @@ class ManualWorkflowController:
                     self._reload_current_webtoon_page()
 
                 if results:
+                    self._mark_error_pages_resolved(results.keys())
                     self.main.mark_project_dirty()
 
             self.main.run_threaded(
@@ -362,19 +521,25 @@ class ManualWorkflowController:
         self.main.loading.setVisible(True)
         self.main.disable_hbutton_group()
 
+        resolved_paths = []
+        if not single_block:
+            current_file = self._current_file_path()
+            if current_file:
+                resolved_paths = [current_file]
+
         if self.main.webtoon_mode:
             self.main.run_threaded(
                 lambda: self.main.pipeline.translate_webtoon_visible_area(single_block),
                 None,
                 self.main.default_error_handler,
-                lambda: self.update_translated_text_items(single_block),
+                lambda: self.update_translated_text_items(single_block, resolved_paths),
             )
         else:
             self.main.run_threaded(
                 lambda: self.main.pipeline.translate_image(single_block),
                 None,
                 self.main.default_error_handler,
-                lambda: self.update_translated_text_items(single_block),
+                lambda: self.update_translated_text_items(single_block, resolved_paths),
             )
 
     def _get_visible_text_items(self) -> list[TextBlockItem]:
@@ -384,7 +549,11 @@ class ManualWorkflowController:
             self.main.image_viewer.text_items, self.main.image_viewer.webtoon_manager
         )
 
-    def update_translated_text_items(self, single_blk: bool) -> None:
+    def update_translated_text_items(
+        self,
+        single_blk: bool,
+        resolved_paths: Sequence[str] | None = None,
+    ) -> None:
         
         def set_new_text(
             text_item: TextBlockItem, 
@@ -454,6 +623,8 @@ class ManualWorkflowController:
                     *wrap_args,
                 )
 
+            if resolved_paths:
+                self._mark_error_pages_resolved(resolved_paths)
             self.main.run_finish_only(finished_callback=self.main.on_manual_finished)
 
         self.main.run_threaded(

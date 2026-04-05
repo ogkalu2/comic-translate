@@ -52,6 +52,12 @@ class InpaintModel:
         """
         ...
 
+    def supports_image_batching(self, config: Optional[Config] = None) -> bool:
+        return False
+
+    def forward_many(self, images, masks, config: Config):
+        return [self.forward(image, mask, config) for image, mask in zip(images, masks)]
+
     def _pad_forward(self, image, mask, config: Config):
         origin_height, origin_width = image.shape[:2]
         pad_image = pad_img_to_modulo(
@@ -71,6 +77,54 @@ class InpaintModel:
         mask = mask[:, :, np.newaxis]
         result = result * (mask / 255) + image * (1 - (mask / 255))
         return result
+
+    def _pad_forward_many(self, images, masks, config: Config):
+        if not images:
+            return []
+
+        pad_images = []
+        pad_masks = []
+        origin_sizes = []
+        for image, mask in zip(images, masks):
+            origin_sizes.append(image.shape[:2])
+            pad_images.append(
+                pad_img_to_modulo(
+                    image,
+                    mod=self.pad_mod,
+                    square=self.pad_to_square,
+                    min_size=self.min_size,
+                )
+            )
+            pad_masks.append(
+                pad_img_to_modulo(
+                    mask,
+                    mod=self.pad_mod,
+                    square=self.pad_to_square,
+                    min_size=self.min_size,
+                )
+            )
+
+        padded_shapes = {(image.shape, mask.shape) for image, mask in zip(pad_images, pad_masks)}
+        if len(padded_shapes) != 1:
+            return [self._pad_forward(image, mask, config) for image, mask in zip(images, masks)]
+
+        results = self.forward_many(pad_images, pad_masks, config)
+        final_results = []
+        for result, image, mask, (origin_height, origin_width) in zip(
+            results,
+            images,
+            masks,
+            origin_sizes,
+        ):
+            result = result[0:origin_height, 0:origin_width, :]
+            result, image, mask = self.forward_post_process(result, image, mask, config)
+            if mask.ndim == 3:
+                mask = mask[:, :, 0]
+            mask = mask[:, :, np.newaxis]
+            result = result * (mask / 255) + image * (1 - (mask / 255))
+            final_results.append(result)
+
+        return final_results
 
     def forward_post_process(self, result, image, mask, config):
         return result, image, mask
@@ -140,6 +194,86 @@ class InpaintModel:
                 inpaint_result = self._pad_forward(image, mask, config)
 
             return inpaint_result
+
+    def inpaint_many(self, images, masks, config: Config):
+        if not images:
+            return []
+
+        if not self.supports_image_batching(config):
+            return [self(image, mask, config) for image, mask in zip(images, masks)]
+
+        backend = getattr(self, "backend", "torch")
+        if backend == "onnx":
+            no_grad_ctx = nullcontext()
+        else:
+            try:
+                import torch  # noqa
+
+                no_grad_ctx = torch.no_grad()
+            except ImportError as e:
+                raise RuntimeError(
+                    "Torch backend selected but torch is not installed. Install torch or use backend='onnx'."
+                ) from e
+
+        with no_grad_ctx:
+            if config.hd_strategy == HDStrategy.CROP:
+                return [self(image, mask, config) for image, mask in zip(images, masks)]
+
+            if config.hd_strategy == HDStrategy.RESIZE:
+                resized_inputs = []
+                resize_metadata = []
+                for image, mask in zip(images, masks):
+                    if max(image.shape) > config.hd_strategy_resize_limit:
+                        origin_size = image.shape[:2]
+                        downsize_image = resize_max_size(
+                            image,
+                            size_limit=config.hd_strategy_resize_limit,
+                        )
+                        downsize_mask = resize_max_size(
+                            mask,
+                            size_limit=config.hd_strategy_resize_limit,
+                        )
+                        resized_inputs.append((downsize_image, downsize_mask))
+                        resize_metadata.append((True, image, mask, origin_size))
+                    else:
+                        resized_inputs.append((image, mask))
+                        resize_metadata.append((False, image, mask, image.shape[:2]))
+
+                resized_shapes = {
+                    (image.shape, mask.shape)
+                    for image, mask in resized_inputs
+                }
+                if len(resized_shapes) != 1:
+                    return [self(image, mask, config) for image, mask in zip(images, masks)]
+
+                batched_results = self._pad_forward_many(
+                    [image for image, _ in resized_inputs],
+                    [mask for _, mask in resized_inputs],
+                    config,
+                )
+
+                final_results = []
+                for result, (was_resized, original_image, original_mask, origin_size) in zip(
+                    batched_results,
+                    resize_metadata,
+                ):
+                    if was_resized:
+                        result = imk.resize(
+                            result,
+                            (origin_size[1], origin_size[0]),
+                            mode=Image.Resampling.BICUBIC,
+                        )
+                        original_pixel_indices = original_mask < 127
+                        result[original_pixel_indices] = original_image[original_pixel_indices]
+                    final_results.append(result)
+
+                return final_results
+
+            image_shapes = {(image.shape, mask.shape) for image, mask in zip(images, masks)}
+            if len(image_shapes) != 1:
+                return [self(image, mask, config) for image, mask in zip(images, masks)]
+
+            return self._pad_forward_many(images, masks, config)
 
     def _crop_box(self, image, mask, box, config: Config):
         """

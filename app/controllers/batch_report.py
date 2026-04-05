@@ -19,6 +19,51 @@ class BatchReportController:
         self._current_batch_report = None
         self._latest_batch_report = None
         self._batch_report_drawer: MDrawer | None = None
+        self._error_registry: dict[str, dict] = {}
+
+    def _refresh_latest_report(
+        self,
+        *,
+        update_buttons: bool,
+        was_cancelled: bool | None = None,
+    ) -> dict:
+        now = datetime.now()
+        current_report = self._current_batch_report or {}
+        latest_report = self._latest_batch_report or {}
+        skipped_entries = self._build_current_error_entries()
+        skipped_count = len(skipped_entries)
+
+        report = {
+            "started_at": current_report.get(
+                "started_at",
+                latest_report.get("started_at", now),
+            ),
+            "finished_at": now,
+            "was_cancelled": bool(
+                latest_report.get("was_cancelled", False)
+                if was_cancelled is None else was_cancelled
+            ),
+            "total_images": len(self.main.image_files),
+            "batch_total_images": len(current_report.get("paths", [])),
+            "skipped_count": skipped_count,
+            "completed_count": max(0, len(self.main.image_files) - skipped_count),
+            "skipped_entries": skipped_entries,
+        }
+        self._latest_batch_report = report
+
+        if update_buttons:
+            self.main.batch_report_button.setEnabled(True)
+            self.main.error_pages_button.setEnabled(skipped_count > 0)
+
+        if self._batch_report_drawer is not None:
+            try:
+                self._batch_report_drawer.set_widget(
+                    self._build_batch_report_widget(report)
+                )
+            except Exception:
+                pass
+
+        return report
 
     def start_batch_report(self, batch_paths: list[str]):
         tracked_paths = [
@@ -30,7 +75,23 @@ class BatchReportController:
             "started_at": datetime.now(),
             "paths": tracked_paths,
             "path_set": set(tracked_paths),
+            "path_to_page_number": {
+                path: index + 1 for index, path in enumerate(tracked_paths)
+            },
             "skipped": {},
+        }
+        self.main.batch_report_button.setEnabled(False)
+        self.main.error_pages_button.setEnabled(False)
+
+    def _make_error_entry(self, image_path: str, reasons: list[str]) -> dict:
+        page_number = 0
+        if image_path in self.main.image_files:
+            page_number = self.main.image_files.index(image_path) + 1
+        return {
+            "image_path": image_path,
+            "image_name": os.path.basename(image_path),
+            "page_number": page_number,
+            "reasons": list(reasons),
         }
 
     def _sanitize_batch_skip_error(self, error: str) -> str:
@@ -115,71 +176,8 @@ class BatchReportController:
             return self.main.tr("Invalid translation response")
         return self.main.tr("Unexpected tool error")
 
-    def _localize_batch_skip_action(self, skip_reason: str, error: str) -> str:
-        summary = self._sanitize_batch_skip_error(error)
-        lowered = summary.lower()
-
-        if self._is_content_flagged_error_text(summary):
-            if "ocr" in (skip_reason or "").lower():
-                return self.main.tr("Try another text recognition tool")
-            if "translator" in (skip_reason or "").lower() or "translation" in (
-                skip_reason or ""
-            ).lower():
-                return self.main.tr("Try another translator")
-            return self.main.tr("Try another tool")
-        if "insufficient credit" in lowered:
-            return self.main.tr("Buy more credits")
-        if "timed out" in lowered or "timeout" in lowered:
-            return self.main.tr("Try again")
-        if (
-            "too many requests" in lowered
-            or "rate limit" in lowered
-            or "429" in lowered
-        ):
-            return self.main.tr("Wait and try again")
-        if (
-            "unauthorized" in lowered
-            or "invalid api key" in lowered
-            or "401" in lowered
-            or "403" in lowered
-        ):
-            return self.main.tr("Check API settings")
-        if (
-            "connection" in lowered
-            or "network" in lowered
-            or "name or service not known" in lowered
-            or "failed to establish" in lowered
-        ):
-            return self.main.tr("Check your connection")
-        if (
-            "bad gateway" in lowered
-            or "service unavailable" in lowered
-            or "gateway timeout" in lowered
-            or "502" in lowered
-            or "503" in lowered
-            or "504" in lowered
-        ):
-            return self.main.tr("Try again later")
-        if (
-            "jsondecodeerror" in lowered
-            or "empty json" in lowered
-            or "expecting value" in lowered
-        ):
-            return self.main.tr("Try again")
-
-        if skip_reason == "Text Blocks":
-            return ""
-        if "ocr" in (skip_reason or "").lower():
-            return self.main.tr("Try another text recognition tool")
-        if "translator" in (skip_reason or "").lower() or "translation" in (
-            skip_reason or ""
-        ).lower():
-            return self.main.tr("Try another translator")
-        return self.main.tr("Try again")
-
     def _format_batch_skip_reason(self, skip_reason: str, error: str) -> str:
         detail = self._localize_batch_skip_detail(error)
-        action = self._localize_batch_skip_action(skip_reason, error)
         reason_map = {
             "Text Blocks": self.main.tr("No text blocks detected"),
             "OCR": self.main.tr("Text recognition failed"),
@@ -190,12 +188,7 @@ class BatchReportController:
             ),
         }
         base_reason = reason_map.get(skip_reason, self.main.tr("Page processing failed"))
-        reason = base_reason
-        if detail:
-            reason = f"{base_reason}: {detail}"
-        if action:
-            reason = f"{reason}. {action}."
-        return reason
+        return f"{base_reason}: {detail}" if detail else base_reason
 
     def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
         report = self._current_batch_report
@@ -206,20 +199,65 @@ class BatchReportController:
         if self._is_user_skip_reason(skip_reason, error):
             return
         if self._is_no_text_detection_skip(skip_reason):
+            self._error_registry.pop(image_path, None)
+            self._refresh_latest_report(update_buttons=False)
             return
 
         reason_text = self._format_batch_skip_reason(skip_reason, error)
         existing = report["skipped"].get(image_path)
         if existing is None:
-            report["skipped"][image_path] = {
-                "image_path": image_path,
-                "image_name": os.path.basename(image_path),
-                "reasons": [reason_text] if reason_text else [],
-            }
+            entry = self._make_error_entry(
+                image_path,
+                [reason_text] if reason_text else [],
+            )
+            entry["page_number"] = report["path_to_page_number"].get(image_path, 0)
+            report["skipped"][image_path] = entry
+            self._error_registry[image_path] = self._make_error_entry(
+                image_path,
+                [reason_text] if reason_text else [],
+            )
+            self._refresh_latest_report(update_buttons=False)
             return
 
         if reason_text and reason_text not in existing["reasons"]:
             existing["reasons"].append(reason_text)
+        self._error_registry[image_path] = self._make_error_entry(
+            image_path,
+            existing["reasons"],
+        )
+        self._refresh_latest_report(update_buttons=False)
+
+    def register_batch_success(self, image_path: str):
+        if not image_path:
+            return
+        self._error_registry.pop(image_path, None)
+        image_ctrl = getattr(self.main, "image_ctrl", None)
+        if image_ctrl is not None:
+            try:
+                image_ctrl.clear_page_skip_errors_for_paths([image_path])
+            except Exception:
+                pass
+        self._refresh_latest_report(update_buttons=not bool(self._current_batch_report))
+
+    def _build_current_error_entries(self) -> list[dict]:
+        active_entries: list[dict] = []
+        stale_paths: list[str] = []
+
+        for image_path, entry in self._error_registry.items():
+            if image_path not in self.main.image_files:
+                stale_paths.append(image_path)
+                continue
+            active_entries.append(
+                self._make_error_entry(image_path, entry.get("reasons", []))
+            )
+
+        for image_path in stale_paths:
+            self._error_registry.pop(image_path, None)
+
+        active_entries.sort(
+            key=lambda entry: (entry.get("page_number", 0), entry["image_name"].lower())
+        )
+        return active_entries
 
     def finalize_batch_report(self, was_cancelled: bool):
         report = self._current_batch_report
@@ -227,25 +265,10 @@ class BatchReportController:
         if not report:
             return None
 
-        total_images = len(report["paths"])
-        skipped_entries = sorted(
-            report["skipped"].values(),
-            key=lambda entry: entry["image_name"].lower(),
+        return self._refresh_latest_report(
+            update_buttons=True,
+            was_cancelled=was_cancelled,
         )
-        skipped_count = len(skipped_entries)
-
-        finalized = {
-            "started_at": report["started_at"],
-            "finished_at": datetime.now(),
-            "was_cancelled": bool(was_cancelled),
-            "total_images": total_images,
-            "skipped_count": skipped_count,
-            "completed_count": max(0, total_images - skipped_count),
-            "skipped_entries": skipped_entries,
-        }
-        self._latest_batch_report = finalized
-        self.main.batch_report_button.setEnabled(True)
-        return finalized
 
     def _open_image_from_batch_report(self, image_path: str):
         if image_path not in self.main.image_files:
@@ -262,7 +285,7 @@ class BatchReportController:
         self.main.page_list.setCurrentRow(index)
 
     def _open_report_row_image(self, table: QtWidgets.QTableWidget, row: int):
-        item = table.item(row, 0)
+        item = table.item(row, 1)
         if item is None:
             return
         image_path = item.data(QtCore.Qt.ItemDataRole.UserRole)
@@ -317,19 +340,23 @@ class BatchReportController:
         )
 
         header_label = QtWidgets.QLabel(
-            self.main.tr("Skipped Images ({0})").format(report["skipped_count"])
+            self.main.tr("Pages With Errors ({0})").format(report["skipped_count"])
         )
         header_label.setStyleSheet("font-weight: 600;")
         layout.addWidget(header_label)
 
         skipped_entries = report["skipped_entries"]
         if skipped_entries:
-            hint = QtWidgets.QLabel(self.main.tr("Double-click a row to open that page."))
+            hint = QtWidgets.QLabel(
+                self.main.tr("Double-click a row to open that page, or use the error-pages button.")
+            )
             hint.setWordWrap(True)
             layout.addWidget(hint)
 
-            table = QtWidgets.QTableWidget(len(skipped_entries), 2)
-            table.setHorizontalHeaderLabels([self.main.tr("Image"), self.main.tr("Reason")])
+            table = QtWidgets.QTableWidget(len(skipped_entries), 3)
+            table.setHorizontalHeaderLabels(
+                [self.main.tr("Page"), self.main.tr("Image"), self.main.tr("Error")]
+            )
             table.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
             table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
             table.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
@@ -338,7 +365,10 @@ class BatchReportController:
             table.horizontalHeader().setSectionResizeMode(
                 0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
             )
-            table.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+            table.horizontalHeader().setSectionResizeMode(
+                1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents
+            )
+            table.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
             table.setWordWrap(False)
             table.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollMode.ScrollPerPixel)
             table.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -348,22 +378,27 @@ class BatchReportController:
             table.setMaximumHeight(table_height)
 
             for row, entry in enumerate(skipped_entries):
+                page_item = QtWidgets.QTableWidgetItem(str(entry.get("page_number", "")))
+                page_item.setTextAlignment(
+                    QtCore.Qt.AlignmentFlag.AlignCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
+                )
+                table.setItem(row, 0, page_item)
                 image_item = QtWidgets.QTableWidgetItem(entry["image_name"])
                 image_item.setData(QtCore.Qt.ItemDataRole.UserRole, entry["image_path"])
                 image_item.setToolTip(entry["image_path"])
-                table.setItem(row, 0, image_item)
+                table.setItem(row, 1, image_item)
                 reason_item = QtWidgets.QTableWidgetItem(
                     "; ".join(entry["reasons"]) or self.main.tr("Skipped")
                 )
                 reason_item.setToolTip(reason_item.text())
-                table.setItem(row, 1, reason_item)
+                table.setItem(row, 2, reason_item)
 
             table.itemDoubleClicked.connect(
                 lambda item, t=table: self._open_report_row_image(t, item.row())
             )
             layout.addWidget(table)
         else:
-            empty_label = QtWidgets.QLabel(self.main.tr("No skipped images in this batch."))
+            empty_label = QtWidgets.QLabel(self.main.tr("No pages with errors right now."))
             empty_label.setWordWrap(True)
             layout.addWidget(empty_label)
 
@@ -371,15 +406,7 @@ class BatchReportController:
         return container
 
     def show_latest_batch_report(self):
-        report = self._latest_batch_report
-        if report is None:
-            MMessage.info(
-                text=self.main.tr("No batch report is available yet."),
-                parent=self.main,
-                duration=5,
-                closable=True,
-            )
-            return
+        report = self._refresh_latest_report(update_buttons=True)
 
         if self._batch_report_drawer is not None:
             try:
@@ -395,10 +422,58 @@ class BatchReportController:
         self._batch_report_drawer = drawer
         drawer.show()
 
-    def shutdown(self):
+    def select_pages_with_errors(self):
+        report = self._refresh_latest_report(update_buttons=True)
+        if not report["skipped_entries"]:
+            MMessage.info(
+                text=self.main.tr("No pages with errors are available."),
+                parent=self.main,
+                duration=5,
+                closable=True,
+            )
+            return
+
+        selected_rows: list[int] = []
+        for entry in report["skipped_entries"]:
+            image_path = entry["image_path"]
+            if image_path in self.main.image_files:
+                selected_rows.append(self.main.image_files.index(image_path))
+
+        if not selected_rows:
+            MMessage.info(
+                text=self.main.tr("The error pages are not in the current project."),
+                parent=self.main,
+                duration=5,
+                closable=True,
+            )
+            return
+
+        self.main.show_main_page()
+        self.main.page_list.blockSignals(True)
+        self.main.page_list.clearSelection()
+        for row in selected_rows:
+            item = self.main.page_list.item(row)
+            if item is not None:
+                item.setSelected(True)
+        first_row = selected_rows[0]
+        self.main.page_list.setCurrentRow(first_row)
+        self.main.page_list.blockSignals(False)
+
+        self.main.image_ctrl.on_selection_changed(selected_rows)
+        self.main.image_ctrl.on_card_selected(self.main.page_list.item(first_row), None)
+
+    def reset(self):
+        self._current_batch_report = None
+        self._latest_batch_report = None
+        self._error_registry = {}
         try:
             if self._batch_report_drawer is not None:
                 self._batch_report_drawer.close()
-                self._batch_report_drawer = None
         except Exception:
             pass
+        self._batch_report_drawer = None
+        self.main.batch_report_button.setEnabled(False)
+        self.main.error_pages_button.setEnabled(False)
+
+    def shutdown(self):
+        self.reset()

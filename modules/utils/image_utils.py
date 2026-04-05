@@ -102,10 +102,6 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
         if not polys:
             continue
 
-        # 7) Create per-block mask and fill all polygons
-        block_mask = np.zeros((h, w), dtype=np.uint8)
-        block_mask = imk.fill_poly(block_mask, polys, 255)
-
         # 8) Determine dilation kernel size
         kernel_size = default_padding
         src_lang = getattr(blk, 'source_lang', None)
@@ -131,11 +127,39 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
                 if kernel_size >= min_dist:
                     kernel_size = max(1, int(min_dist * 0.8))
 
-        # 9) Dilate the block mask
+        # 9) Fill and dilate only the local ROI for this block instead of the
+        # full page. This preserves behavior while avoiding full-image work
+        # for every block on large pages.
+        poly_min_x = min(int(p[:, 0].min()) for p in polys)
+        poly_max_x = max(int(p[:, 0].max()) for p in polys)
+        poly_min_y = min(int(p[:, 1].min()) for p in polys)
+        poly_max_y = max(int(p[:, 1].max()) for p in polys)
+
+        dilation_pad = max(2, kernel_size * 2 + 2)
+        roi_x1 = max(0, poly_min_x - dilation_pad)
+        roi_y1 = max(0, poly_min_y - dilation_pad)
+        roi_x2 = min(w, poly_max_x + dilation_pad + 1)
+        roi_y2 = min(h, poly_max_y + dilation_pad + 1)
+
+        if roi_x1 >= roi_x2 or roi_y1 >= roi_y2:
+            continue
+
+        local_polys = []
+        for poly in polys:
+            local_poly = poly.copy()
+            local_poly[:, 0] -= roi_x1
+            local_poly[:, 1] -= roi_y1
+            local_polys.append(local_poly)
+
+        block_mask = np.zeros((roi_y2 - roi_y1, roi_x2 - roi_x1), dtype=np.uint8)
+        block_mask = imk.fill_poly(block_mask, local_polys, 255)
+
+        # 10) Dilate the local block mask
         dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
         dilated = imk.dilate(block_mask, dil_kernel, iterations=4)
 
-        # 10) Combine with global mask
-        mask = np.bitwise_or(mask, dilated)
+        # 11) Combine with global mask only inside the ROI
+        mask_roi = mask[roi_y1:roi_y2, roi_x1:roi_x2]
+        np.bitwise_or(mask_roi, dilated, out=mask_roi)
 
     return mask

@@ -25,9 +25,12 @@ class ImageViewer(QGraphicsView):
     connect_text_item =  Signal(TextBlockItem)
     page_changed = Signal(int)
     clear_text_edits = Signal()
+    page_wheel_requested = Signal(int)
+    view_state_changed = Signal()
 
-    def __init__(self, parent):
+    def __init__(self, parent, read_only: bool = False):
         super().__init__(parent)
+        self.read_only = read_only
         
         # Core Setup
         self._scene = QGraphicsScene(self)
@@ -65,6 +68,8 @@ class ImageViewer(QGraphicsView):
         self.total_scale_factor = 0.2 
         self.rotate_cursors = RotateHandleCursors()
         self.webtoon_view_state = {}
+        self._view_state_notifications_enabled = True
+        self._bulk_text_restore = False
 
         # Page detection state (used by webtoon and event handlers)
         self._programmatic_scroll = False
@@ -72,6 +77,8 @@ class ImageViewer(QGraphicsView):
         # Item lists
         self.rectangles: list[MoveableRectItem] = []
         self.text_items: list[TextBlockItem] = []
+        self.brush_strokes: list[QtWidgets.QGraphicsPathItem] = []
+        self._brush_stroke_ids: set[int] = set()
         self.selected_rect: MoveableRectItem = None
         
         # Box drawing state
@@ -89,6 +96,41 @@ class ImageViewer(QGraphicsView):
         if self.webtoon_mode:
             return not self.empty and len(self.webtoon_manager.loaded_pages) > 0
         return not self.empty
+
+    def set_view_state_notifications_enabled(self, enabled: bool):
+        self._view_state_notifications_enabled = enabled
+
+    def notify_view_state_changed(self):
+        if self._view_state_notifications_enabled:
+            self.view_state_changed.emit()
+
+    def set_bulk_text_restore(self, enabled: bool):
+        self._bulk_text_restore = enabled
+
+    def register_brush_stroke(self, item: QtWidgets.QGraphicsPathItem):
+        if item is None or item is self.photo:
+            return
+        item_id = id(item)
+        if item_id in self._brush_stroke_ids:
+            return
+        self._brush_stroke_ids.add(item_id)
+        self.brush_strokes.append(item)
+
+    def unregister_brush_stroke(self, item: QtWidgets.QGraphicsPathItem):
+        if item is None:
+            return
+        item_id = id(item)
+        if item_id not in self._brush_stroke_ids:
+            return
+        self._brush_stroke_ids.discard(item_id)
+        try:
+            self.brush_strokes.remove(item)
+        except ValueError:
+            pass
+
+    def clear_brush_stroke_items(self):
+        self.brush_strokes.clear()
+        self._brush_stroke_ids.clear()
     
     def load_images_webtoon(self, file_paths: List[str], current_page: int = 0) -> bool:
         """Load images using lazy loading strategy."""
@@ -134,6 +176,7 @@ class ImageViewer(QGraphicsView):
                     
                     # Set the full scene rect for scrolling
                     self.setSceneRect(0, 0, self.webtoon_manager.webtoon_width, self.webtoon_manager.total_height)
+                    self.notify_view_state_changed()
 
         elif self.hasPhoto():
             rect = self.photo.boundingRect()
@@ -147,6 +190,7 @@ class ImageViewer(QGraphicsView):
                              viewrect.height() / scenerect.height())
                 self.scale(factor, factor)
                 self.centerOn(rect.center())
+                self.notify_view_state_changed()
 
     def set_tool(self, tool: str):
         self.current_tool = tool
@@ -222,7 +266,13 @@ class ImageViewer(QGraphicsView):
             )
         return point
 
-    def get_image_array(self, paint_all=False, include_patches=True):
+    def get_image_array(
+        self,
+        paint_all=False,
+        include_patches=True,
+        render_scale_factor=None,
+        max_output_pixels=None,
+    ):
         """
         Get image array data. In webtoon mode, returns the visible area image.
         In regular mode, returns the single photo image with optional patches/scene items.
@@ -241,11 +291,27 @@ class ImageViewer(QGraphicsView):
 
         qimage = None
         if paint_all:
-            # Create a high-resolution QImage
-            scale_factor = 2 # Increase this for higher resolution
+            # Create a QImage for scene rendering. Callers can override the
+            # render scale for lighter-weight previews on very tall pages.
+            scale_factor = 2.0 if render_scale_factor is None else max(0.1, float(render_scale_factor))
             pixmap = self.photo.pixmap()
             original_size = pixmap.size()
-            scaled_size = original_size * scale_factor
+            render_width = max(1, int(round(original_size.width() * scale_factor)))
+            render_height = max(1, int(round(original_size.height() * scale_factor)))
+
+            if max_output_pixels is not None:
+                try:
+                    max_pixels = int(max_output_pixels)
+                except Exception:
+                    max_pixels = 0
+                if max_pixels > 0:
+                    current_pixels = render_width * render_height
+                    if current_pixels > max_pixels:
+                        shrink = (max_pixels / float(current_pixels)) ** 0.5
+                        render_width = max(1, int(render_width * shrink))
+                        render_height = max(1, int(render_height * shrink))
+
+            scaled_size = QtCore.QSize(render_width, render_height)
 
             qimage = QtGui.QImage(scaled_size, QtGui.QImage.Format_ARGB32)
             qimage.fill(Qt.transparent)
@@ -264,12 +330,13 @@ class ImageViewer(QGraphicsView):
             painter.end()
 
 
-            # Scale down the image to the original size
-            qimage = qimage.scaled(
-                original_size, 
-                QtCore.Qt.AspectRatioMode.KeepAspectRatio, 
-                QtCore.Qt.TransformationMode.SmoothTransformation
-            )
+            # Only supersampled renders need to be scaled back down.
+            if scaled_size.width() > original_size.width() or scaled_size.height() > original_size.height():
+                qimage = qimage.scaled(
+                    original_size,
+                    QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                    QtCore.Qt.TransformationMode.SmoothTransformation
+                )
 
             # Restore the original transformation
             self._scene.views()[0].setTransform(original_transform)
@@ -329,16 +396,19 @@ class ImageViewer(QGraphicsView):
         pixmap = QtGui.QPixmap.fromImage(qimage)
         self.clear_scene()
         self.setPhoto(pixmap, fit=fit)
+        self.notify_view_state_changed()
 
     def clear_scene(self):
         self.webtoon_manager.clear() 
         self._scene.clear()
         self.rectangles.clear()
         self.text_items.clear()
+        self.clear_brush_stroke_items()
         self.selected_rect = None
         self.photo = QGraphicsPixmapItem()
         self.photo.setShapeMode(QGraphicsPixmapItem.BoundingRectShape)
         self._scene.addItem(self.photo)
+        self.notify_view_state_changed()
 
     def setPhoto(self, pixmap: QtGui.QPixmap = None, fit: bool = True):
         if pixmap and not pixmap.isNull():
@@ -350,6 +420,7 @@ class ImageViewer(QGraphicsView):
             self.empty = True
             self.photo.setPixmap(QtGui.QPixmap())
         self.zoom = 0
+        self.notify_view_state_changed()
 
     def get_mask_for_inpainting(self):
         mask = self.drawing_manager.generate_mask_from_strokes()
@@ -493,20 +564,22 @@ class ImageViewer(QGraphicsView):
         center = self.mapToScene(self.viewport().rect().center())
         
         rectangles_state = []
-        for item in self._scene.items():
-            if isinstance(item, MoveableRectItem):
-                rectangles_state.append({
-                    'rect': (item.pos().x(), item.pos().y(), item.boundingRect().width(), item.boundingRect().height()),
-                    'rotation': item.rotation(),
-                    'transform_origin': (item.transformOriginPoint().x(), item.transformOriginPoint().y())
-                })
+        for item in self.rectangles:
+            if item is None or item.scene() is not self._scene:
+                continue
+            rectangles_state.append({
+                'rect': (item.pos().x(), item.pos().y(), item.boundingRect().width(), item.boundingRect().height()),
+                'rotation': item.rotation(),
+                'transform_origin': (item.transformOriginPoint().x(), item.transformOriginPoint().y())
+            })
             
         text_items_state = []
-        for item in self._scene.items():
-            if isinstance(item, TextBlockItem):
-                # Use TextItemProperties for consistent serialization
-                text_props = TextItemProperties.from_text_item(item)
-                text_items_state.append(text_props.to_dict())
+        for item in self.text_items:
+            if item is None or item.scene() is not self._scene:
+                continue
+            # Use TextItemProperties for consistent serialization
+            text_props = TextItemProperties.from_text_item(item)
+            text_items_state.append(text_props.to_dict())
 
         return {
             'rectangles': rectangles_state,
@@ -524,11 +597,24 @@ class ImageViewer(QGraphicsView):
         self.centerOn(QPointF(*state['center']))
         self.setSceneRect(QRectF(*state['scene_rect']))
 
-        for data in state['rectangles']:
-            x, y, w, h = data['rect']
-            origin = QPointF(*data.get('transform_origin', (0,0))) if 'transform_origin' in data else None
-            self.add_rectangle(QRectF(0,0,w,h), QPointF(x,y), data.get('rotation', 0), origin)
+        self.set_bulk_text_restore(True)
+        try:
+            for data in state['rectangles']:
+                x, y, w, h = data['rect']
+                origin = QPointF(*data.get('transform_origin', (0,0))) if 'transform_origin' in data else None
+                self.add_rectangle(QRectF(0,0,w,h), QPointF(x,y), data.get('rotation', 0), origin)
 
-        for data in state.get('text_items_state', []):
-            # Use the new add_text_item function for consistency
-            self.add_text_item(data)
+            for data in state.get('text_items_state', []):
+                # Use the new add_text_item function for consistency
+                self.add_text_item(data)
+        finally:
+            self.set_bulk_text_restore(False)
+        self.notify_view_state_changed()
+
+    def scrollContentsBy(self, dx: int, dy: int) -> None:
+        super().scrollContentsBy(dx, dy)
+        self.notify_view_state_changed()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.notify_view_state_changed()

@@ -5,7 +5,7 @@ import onnxruntime as ort
 from modules.utils.device import get_providers
 
 from .base import InpaintModel
-from .schema import Config
+from .schema import Config, HDStrategy
 
 from modules.utils.inpainting import (
     load_jit_model,
@@ -34,6 +34,11 @@ class AOT(InpaintModel):
     @staticmethod
     def is_downloaded() -> bool:
         return ModelDownloader.is_downloaded(ModelID.AOT_ONNX)
+
+    def supports_image_batching(self, config: Config | None = None) -> bool:
+        if getattr(self, "backend", None) != "onnx":
+            return False
+        return config is None or config.hd_strategy != HDStrategy.CROP
 
     def forward(self, image, mask, config: Config):
         """Input image and output image have same size
@@ -98,11 +103,37 @@ class AOT(InpaintModel):
         
         return img_inpainted
 
+    def forward_many(self, images, masks, config: Config):
+        if getattr(self, "backend", None) != "onnx":
+            return super().forward_many(images, masks, config)
+
+        image_batch = []
+        mask_batch = []
+        for image, mask in zip(images, masks):
+            if len(mask.shape) == 3:
+                mask = mask[:, :, 0]
+
+            img_np = (image.astype(np.float32) / 127.5) - 1.0
+            mask_np = (mask.astype(np.float32) / 255.0)
+            mask_np = (mask_np >= 0.5).astype(np.float32)
+            img_np = img_np * (1 - mask_np[..., None])
+            image_batch.append(np.transpose(img_np, (2, 0, 1)))
+            mask_batch.append(mask_np[np.newaxis, ...])
+
+        ort_inputs = {
+            self.session.get_inputs()[0].name: np.stack(image_batch, axis=0).astype(np.float32),
+            self.session.get_inputs()[1].name: np.stack(mask_batch, axis=0).astype(np.float32),
+        }
+        out_batch = self.session.run(None, ort_inputs)[0]
+        return [
+            np.clip(np.round((out.transpose(1, 2, 0) + 1.0) * 127.5), 0, 255).astype(np.uint8)
+            for out in out_batch
+        ]
+
 def resize_keep_aspect(img, target_size):
     max_dim = max(img.shape[:2])  
     scale = target_size / max_dim  
     new_size = (round(img.shape[1] * scale), round(img.shape[0] * scale))  
     return imk.resize(img, new_size, mode=Image.Resampling.BILINEAR)
     
-
 

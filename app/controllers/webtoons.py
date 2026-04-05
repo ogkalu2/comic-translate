@@ -89,6 +89,7 @@ class WebtoonController:
         self._setup_lazy_scene_items()
         self._connect_lazy_loading_events()
         self.image_viewer.webtoon_manager.restore_view_state()
+        self.main.set_compare_preview_visible(False)
 
         return True
 
@@ -168,7 +169,8 @@ class WebtoonController:
         self.image_viewer.clear_scene()
         
         # Make sure the image viewer is the current widget
-        self.main.central_stack.setCurrentWidget(self.image_viewer)
+        self.main.central_stack.setCurrentWidget(self.main.viewer_page)
+        self.main.set_compare_preview_visible(True)
         
         # Ensure the image viewer has focus
         self.image_viewer.setFocus()
@@ -265,4 +267,5 @@ class WebtoonController:
             # Switch back to regular mode
             self.main.webtoon_mode = False
             self.switch_to_regular_mode()
+            self.main.set_compare_preview_visible(True)
             self.main.mark_project_dirty()

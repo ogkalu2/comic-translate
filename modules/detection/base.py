@@ -40,6 +40,12 @@ class DetectionEngine(ABC):
             List of TextBlock objects with detected regions
         """
         pass
+
+    def supports_image_batching(self) -> bool:
+        return False
+
+    def detect_many(self, images: list[np.ndarray]) -> list[list[TextBlock]]:
+        return [self.detect(image) for image in images]
         
     def create_text_blocks(
         self, 

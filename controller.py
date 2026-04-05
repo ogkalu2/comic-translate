@@ -5,7 +5,7 @@ import shutil
 import tempfile
 from typing import Callable, Tuple
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QCoreApplication, QThreadPool
 from PySide6.QtGui import QUndoGroup, QUndoStack, QIcon
 
@@ -127,6 +127,10 @@ class ComicTranslate(ComicTranslateUI):
         except Exception:
             pass
 
+        app = QtWidgets.QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
+
         self.image_skipped.connect(self.image_ctrl.on_image_skipped)
         self.image_processed.connect(self.image_ctrl.on_image_processed)
         self.patches_processed.connect(self.image_ctrl.on_inpaint_patches_processed)
@@ -134,6 +138,7 @@ class ComicTranslate(ComicTranslateUI):
         self.blk_rendered.connect(self.text_ctrl.on_blk_rendered)
         self.render_state_ready.connect(self.image_ctrl.on_render_state_ready)
         self.render_state_ready.connect(self.project_ctrl._on_batch_page_done)
+        self.render_state_ready.connect(self.batch_report_ctrl.register_batch_success)
         self.download_event.connect(self.on_download_event)
 
         self.connect_ui_elements()
@@ -189,14 +194,17 @@ class ComicTranslate(ComicTranslateUI):
         self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
         self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.text_ctrl.render_text)
 
-        self.undo_tool_group.get_button_group().buttons()[0].clicked.connect(self.undo_group.undo)
-        self.undo_tool_group.get_button_group().buttons()[1].clicked.connect(self.undo_group.redo)
+        self.undo_tool_group.get_button_group().buttons()[0].clicked.connect(self.undo_selected_pages)
+        self.undo_tool_group.get_button_group().buttons()[1].clicked.connect(self.redo_selected_pages)
 
         # Connect other buttons and widgets
         self.translate_button.clicked.connect(self.start_batch_process)
         self.cancel_button.clicked.connect(self.cancel_current_task)
         self.batch_report_button.clicked.connect(self.show_latest_batch_report)
+        self.error_pages_button.clicked.connect(self.select_pages_with_errors)
+        self.preview_button.clicked.connect(self.toggle_fullscreen_preview)
         self.set_all_button.clicked.connect(self.text_ctrl.set_src_trg_all)
+        self.select_all_pages_button.clicked.connect(self.select_all_pages)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
         self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
         self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
@@ -220,6 +228,12 @@ class ComicTranslate(ComicTranslateUI):
         self.image_viewer.connect_text_item.connect(self.text_ctrl.connect_text_item_signals)
         self.image_viewer.page_changed.connect(self.webtoon_ctrl.on_page_changed)
         self.image_viewer.clear_text_edits.connect(self.text_ctrl.clear_text_edits)
+        self.image_viewer.page_wheel_requested.connect(self.image_ctrl.navigate_images)
+        self.original_image_viewer.page_wheel_requested.connect(self.image_ctrl.navigate_images)
+        self.fullscreen_preview.image_viewer.page_wheel_requested.connect(self.image_ctrl.navigate_images)
+        self.fullscreen_preview.set_navigation_callback(self.image_ctrl.navigate_images)
+        self.image_viewer.view_state_changed.connect(self.sync_compare_viewers)
+        self._install_preview_shortcuts()
 
         try:
             if self._memlogger is not None:
@@ -250,6 +264,7 @@ class ComicTranslate(ComicTranslateUI):
         self.page_list.insert_browser.sig_files_changed.connect(self.image_ctrl.thread_insert)
         self.page_list.toggle_skip_img.connect(self.image_ctrl.handle_toggle_skip_images)
         self.page_list.translate_imgs.connect(self.batch_translate_selected)
+        self.page_list.clear_translation_cache_imgs.connect(self.image_ctrl.clear_translation_cache_for_pages)
 
         # New project and safety confirmations
         self.new_project_button.clicked.connect(self._on_new_project_clicked)
@@ -374,6 +389,12 @@ class ComicTranslate(ComicTranslateUI):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
 
+    def undo_selected_pages(self):
+        self.image_ctrl.apply_undo_redo_to_selected(redo=False)
+
+    def redo_selected_pages(self):
+        self.image_ctrl.apply_undo_redo_to_selected(redo=True)
+
     def delete_selected_box(self):
         if self.curr_tblock:
             # Create and push the delete command
@@ -390,15 +411,19 @@ class ComicTranslate(ComicTranslateUI):
         self.disable_hbutton_group()
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
+        self.select_all_pages_button.setEnabled(False)
 
     def manual_mode_selected(self):
         self.enable_hbutton_group()
         self.translate_button.setEnabled(False)
         self.cancel_button.setEnabled(False)
+        self.select_all_pages_button.setEnabled(True)
 
     def on_manual_finished(self):
         self.loading.setVisible(False)
         self.enable_hbutton_group()
+        if self.manual_radio.isChecked():
+            self.select_all_pages_button.setEnabled(True)
 
     def run_threaded(self, callback: Callable, result_callback: Callable=None,
                     error_callback: Callable=None, finished_callback: Callable=None,
@@ -502,6 +527,9 @@ class ComicTranslate(ComicTranslateUI):
     def show_latest_batch_report(self):
         self.batch_report_ctrl.show_latest_batch_report()
 
+    def select_pages_with_errors(self):
+        self.batch_report_ctrl.select_pages_with_errors()
+
     def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
         self.batch_report_ctrl.register_batch_skip(image_path, skip_reason, error)
 
@@ -524,6 +552,7 @@ class ComicTranslate(ComicTranslateUI):
         self.cancel_button.setEnabled(True)
         self.save_as_project_button.setEnabled(False)
         self.webtoon_toggle.setEnabled(False)
+        self.error_pages_button.setEnabled(False)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -538,11 +567,18 @@ class ComicTranslate(ComicTranslateUI):
                 self._memlogger.emit("batch_start_selected")
         except Exception:
             pass
-        # map base‐name back to full paths
-        selected_paths = [
-            p for p in self.image_files
-            if os.path.basename(p) in selected_file_names
-        ]
+        selected_paths: list[str] = []
+        seen: set[str] = set()
+        for ref in selected_file_names:
+            path = ref if ref in self.image_files else None
+            if path is None:
+                path = next(
+                    (candidate for candidate in self.image_files if os.path.basename(candidate) == ref),
+                    None,
+                )
+            if path and path not in seen:
+                selected_paths.append(path)
+                seen.add(path)
         if not selected_paths:
             return
 
@@ -566,6 +602,7 @@ class ComicTranslate(ComicTranslateUI):
         self.cancel_button.setEnabled(True)
         self.save_as_project_button.setEnabled(False)
         self.webtoon_toggle.setEnabled(False)
+        self.error_pages_button.setEnabled(False)
         self.progress_bar.setVisible(True)
         
         # Choose batch processor based on webtoon mode
@@ -596,6 +633,10 @@ class ComicTranslate(ComicTranslateUI):
         report = self._finalize_batch_report(was_cancelled)
         self._batch_active = False
         self._batch_cancel_requested = False
+        try:
+            self.project_ctrl.flush_batch_project_autosave()
+        except Exception:
+            pass
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
@@ -603,7 +644,7 @@ class ComicTranslate(ComicTranslateUI):
         self.webtoon_toggle.setEnabled(True)
         self.selected_batch = []
         if report and report["skipped_count"] > 0:
-            Messages.show_batch_skipped_summary(self, report["skipped_count"])
+            self.error_pages_button.setEnabled(True)
         elif not was_cancelled:
             Messages.show_translation_complete(self)
 
@@ -619,10 +660,143 @@ class ComicTranslate(ComicTranslateUI):
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(False)
+        self.select_all_pages_button.setEnabled(False)
 
     def enable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(True)
+        if self.manual_radio.isChecked():
+            self.select_all_pages_button.setEnabled(True)
+
+    def select_all_pages(self):
+        self.page_list.selectAll()
+
+    def set_compare_preview_visible(self, visible: bool):
+        panel = getattr(self, "original_preview_panel", None)
+        splitter = getattr(self, "compare_splitter", None)
+        if panel is None or splitter is None:
+            return
+        panel.setVisible(visible)
+        if visible:
+            splitter.setSizes([1, 1])
+        else:
+            splitter.setSizes([0, 1])
+
+    def update_page_position_label(self):
+        label = getattr(self, "page_position_label", None)
+        if label is None:
+            return
+        total = len(self.image_files)
+        current = self.curr_img_idx + 1 if 0 <= self.curr_img_idx < total else 0
+        label.setText(self.tr(f"Page {current} / {total}"))
+
+    def _install_preview_shortcuts(self):
+        shortcut_targets = [
+            self,
+            self.viewer_page,
+            self.central_stack,
+            self.image_viewer,
+            self.original_image_viewer,
+            self.page_list,
+            self.s_text_edit,
+            self.t_text_edit,
+        ]
+        shortcut_specs = [
+            ("F5", self.toggle_fullscreen_preview),
+            ("F11", self.toggle_fullscreen_preview),
+        ]
+
+        self._preview_shortcuts = []
+        for target in shortcut_targets:
+            for keyseq, callback in shortcut_specs:
+                shortcut = QtGui.QShortcut(QtGui.QKeySequence(keyseq), target)
+                shortcut.setContext(QtCore.Qt.ShortcutContext.WidgetWithChildrenShortcut)
+                shortcut.activated.connect(callback)
+                self._preview_shortcuts.append(shortcut)
+
+    def sync_compare_viewers(self):
+        if getattr(self, "_syncing_compare_view", False):
+            return
+        if self.webtoon_mode:
+            return
+        if not getattr(self, "original_preview_panel", None) or not self.original_preview_panel.isVisible():
+            return
+        if not self.image_viewer.hasPhoto() or not self.original_image_viewer.hasPhoto():
+            return
+
+        self._syncing_compare_view = True
+        try:
+            self.original_image_viewer.setUpdatesEnabled(False)
+            self.original_image_viewer.setTransform(self.image_viewer.transform())
+            self.original_image_viewer.setSceneRect(self.image_viewer.sceneRect())
+            center = self.image_viewer.mapToScene(self.image_viewer.viewport().rect().center())
+            self.original_image_viewer.centerOn(center)
+        finally:
+            self.original_image_viewer.setUpdatesEnabled(True)
+            self.original_image_viewer.viewport().update()
+            self._syncing_compare_view = False
+
+    def refresh_original_preview(self, file_path: str | None, original_image=None):
+        if self.webtoon_mode:
+            self.set_compare_preview_visible(False)
+            return
+
+        self.set_compare_preview_visible(True)
+        if not file_path:
+            self.original_image_viewer.clear_scene()
+            return
+
+        if original_image is None:
+            original_image = self.image_ctrl.load_original_image(file_path)
+        if original_image is None:
+            return
+
+        self.original_image_viewer.display_image_array(original_image, fit=False)
+        self.sync_compare_viewers()
+
+    def refresh_fullscreen_preview(self, force_show: bool = False):
+        if not self.image_viewer.hasPhoto():
+            return
+        if not force_show and not self.fullscreen_preview.isVisible():
+            return
+
+        screen = None
+        try:
+            screen = self.windowHandle().screen() if self.windowHandle() else None
+        except Exception:
+            screen = None
+        if screen is None:
+            screen = QtWidgets.QApplication.primaryScreen()
+
+        max_output_pixels = None
+        if screen is not None:
+            geometry = screen.availableGeometry()
+            # Fullscreen preview does not need huge supersampled renders.
+            # Cap output to a few screenfuls to keep very tall pages responsive.
+            max_output_pixels = max(1, geometry.width() * geometry.height() * 4)
+
+        if self.webtoon_mode:
+            image, _ = self.image_viewer.get_visible_area_image(paint_all=True)
+        else:
+            image = self.image_viewer.get_image_array(
+                paint_all=True,
+                render_scale_factor=1.0,
+                max_output_pixels=max_output_pixels,
+            )
+
+        page_name = ""
+        if 0 <= self.curr_img_idx < len(self.image_files):
+            page_name = os.path.basename(self.image_files[self.curr_img_idx])
+
+        self.fullscreen_preview.show_preview(image, page_name)
+
+    def toggle_fullscreen_preview(self):
+        if self.fullscreen_preview.isVisible():
+            self.fullscreen_preview.close()
+            return
+        if not self.image_viewer.hasPhoto():
+            return
+        self.refresh_fullscreen_preview(force_show=True)
 
     def block_detect(self, load_rects: bool = True):
         self.manual_workflow_ctrl.block_detect(load_rects)
@@ -731,12 +905,30 @@ class ComicTranslate(ComicTranslateUI):
                 # Do not change the main window loading spinner here; it's managed by the running task lifecycle
 
     def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Left:
+        if event.key() == QtCore.Qt.Key_F5:
+            self.toggle_fullscreen_preview()
+        elif event.key() == QtCore.Qt.Key_Left:
             self.image_ctrl.navigate_images(-1)
         elif event.key() == QtCore.Qt.Key_Right:
             self.image_ctrl.navigate_images(1)
         else:
             super().keyPressEvent(event)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QtCore.QEvent.Type.KeyPress:
+            key = event.key()
+            if key in (QtCore.Qt.Key_F5, QtCore.Qt.Key_F11):
+                try:
+                    active_window = QtWidgets.QApplication.activeWindow()
+                except Exception:
+                    active_window = None
+
+                watched_window = watched.window() if isinstance(watched, QtWidgets.QWidget) else None
+                if active_window in (self, self.fullscreen_preview) or watched_window in (self, self.fullscreen_preview):
+                    self.toggle_fullscreen_preview()
+                    return True
+
+        return super().eventFilter(watched, event)
 
     def closeEvent(self, event):
         try:

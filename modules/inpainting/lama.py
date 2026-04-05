@@ -31,6 +31,9 @@ class LaMa(InpaintModel):
     def is_downloaded() -> bool:
         return ModelDownloader.is_downloaded(ModelID.LAMA_JIT)
 
+    def supports_image_batching(self, config: Config | None = None) -> bool:
+        return getattr(self, "backend", None) == "onnx"
+
     def forward(self, image, mask, config: Config):
         """Input image and output image have same size
         image: [H, W, C] RGB
@@ -61,4 +64,24 @@ class LaMa(InpaintModel):
             cur_res = np.clip(cur_res * 255, 0, 255).astype("uint8")
             # cur_res is already in RGB format
             return cur_res
+
+    def forward_many(self, images, masks, config: Config):
+        if getattr(self, "backend", None) != "onnx":
+            return super().forward_many(images, masks, config)
+
+        image_batch = np.stack([norm_img(image) for image in images], axis=0).astype(np.float32)
+        mask_batch = np.stack(
+            [(norm_img(mask) > 0).astype("float32") for mask in masks],
+            axis=0,
+        ).astype(np.float32)
+
+        ort_inputs = {
+            self.session.get_inputs()[0].name: image_batch,
+            self.session.get_inputs()[1].name: mask_batch,
+        }
+        inpainted_batch = self.session.run(None, ort_inputs)[0]
+        return [
+            np.clip(inpainted.transpose(1, 2, 0) * 255, 0, 255).astype("uint8")
+            for inpainted in inpainted_batch
+        ]
     

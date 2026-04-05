@@ -39,11 +39,11 @@ class OCRHandler:
                     # Check if block exists in cache (even if text is empty)
                     cached_text = self.cache_manager._get_cached_text_for_block(cache_key, blk)
                     if cached_text is not None:  # Block was processed before (even if text is empty)
-                        blk.text = cached_text
-                        logger.info(f"Using cached OCR result for block: '{cached_text}'")
+                        blk.text = self.ocr.sanitize_ocr_text(cached_text)
+                        logger.debug(f"Using cached OCR result for block: '{cached_text}'")
                         return
                     else:
-                        logger.info("Block not found in cache, processing single block...")
+                        logger.debug("Block not found in cache, processing single block...")
                         # Process just this single block
                         self.ocr.initialize(self.main_page, source_lang)
                         single_block_list = [blk]
@@ -52,10 +52,10 @@ class OCRHandler:
                         # Update the cache with this new result using the cache manager's method
                         self.cache_manager.update_ocr_cache_for_block(cache_key, blk)
                         
-                        logger.info(f"Processed single block and updated cache: '{blk.text}'")
+                        logger.debug(f"Processed single block and updated cache: '{blk.text}'")
                 else:
                     # Run OCR on all blocks and cache the results
-                    logger.info("No cached OCR results found, running OCR on entire page...")
+                    logger.debug("No cached OCR results found, running OCR on entire page...")
                     self.ocr.initialize(self.main_page, source_lang)
                     # Create a mapping between original blocks and their copies
                     original_to_copy = {}
@@ -73,21 +73,22 @@ class OCRHandler:
                         # Cache using the original blocks to maintain consistent IDs
                         self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list, all_blocks_copy)
                         cached_text = self.cache_manager._get_cached_text_for_block(cache_key, blk)
-                        blk.text = cached_text
-                        logger.info(f"Cached OCR results and extracted text for block: {cached_text}")
+                        blk.text = self.ocr.sanitize_ocr_text(cached_text)
+                        logger.debug(f"Cached OCR results and extracted text for block: {cached_text}")
             else:
                 # For full page OCR, check if we can use cached results
                 if self.cache_manager._can_serve_all_blocks_from_ocr_cache(cache_key, self.main_page.blk_list):
                     # All blocks can be served from cache
                     self.cache_manager._apply_cached_ocr_to_blocks(cache_key, self.main_page.blk_list)
-                    logger.info(f"Using cached OCR results for all {len(self.main_page.blk_list)} blocks")
+                    self.ocr.sanitize_block_texts(self.main_page.blk_list)
+                    logger.debug(f"Using cached OCR results for all {len(self.main_page.blk_list)} blocks")
                 else:
                     # Need to run OCR and cache results
                     self.ocr.initialize(self.main_page, source_lang)
                     if self.main_page.blk_list:  
                         self.ocr.process(image, self.main_page.blk_list)
                         self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list)
-                        logger.info("OCR completed and cached for %d blocks", len(self.main_page.blk_list))
+                        logger.debug("OCR completed and cached for %d blocks", len(self.main_page.blk_list))
 
     def OCR_webtoon_visible_area(self, single_block: bool = False):
         """Perform OCR on the visible area in webtoon mode."""

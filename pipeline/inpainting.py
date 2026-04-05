@@ -30,6 +30,74 @@ class InpaintingHandler:
             self.cached_inpainter_key = inpainter_key
         return self.inpainter_cache
 
+    @staticmethod
+    def _is_probable_oom(exc: Exception) -> bool:
+        text = str(exc).lower()
+        return any(
+            marker in text
+            for marker in (
+                "out of memory",
+                "cuda error",
+                "cudnn",
+                "failed to allocate",
+                "memory allocation",
+            )
+        )
+
+    def supports_image_batching(self, config=None) -> bool:
+        inpainter = self._ensure_inpainter()
+        return bool(
+            getattr(inpainter, "supports_image_batching", lambda _config=None: False)(config)
+        )
+
+    def inpaint_many(self, images, masks, config, batch_size: int | None = None):
+        inpainter = self._ensure_inpainter()
+        if not images:
+            return []
+
+        if not self.supports_image_batching(config):
+            return [inpainter(image, mask, config) for image, mask in zip(images, masks)]
+
+        effective_batch_size = max(1, int(batch_size or len(images)))
+        results = [None] * len(images)
+        next_index = 0
+        current_batch_size = min(effective_batch_size, len(images))
+
+        while next_index < len(images):
+            chunk_end = min(len(images), next_index + current_batch_size)
+            chunk_images = images[next_index:chunk_end]
+            chunk_masks = masks[next_index:chunk_end]
+
+            try:
+                chunk_results = inpainter.inpaint_many(chunk_images, chunk_masks, config)
+                if len(chunk_results) != len(chunk_images):
+                    raise RuntimeError(
+                        f"Inpainter returned {len(chunk_results)} results for {len(chunk_images)} images."
+                    )
+                for offset, result in enumerate(chunk_results):
+                    results[next_index + offset] = result
+                next_index = chunk_end
+                current_batch_size = min(effective_batch_size, len(images) - next_index)
+            except Exception as exc:
+                if current_batch_size > 1 and self._is_probable_oom(exc):
+                    logger.warning(
+                        "Inpainting batch hit probable OOM at batch_size=%s. Retrying with a smaller batch.",
+                        current_batch_size,
+                    )
+                    current_batch_size = max(1, current_batch_size // 2)
+                    continue
+
+                logger.debug(
+                    "Batch inpainting failed; falling back to per-image processing for current chunk.",
+                    exc_info=True,
+                )
+                for offset, (image, mask) in enumerate(zip(chunk_images, chunk_masks)):
+                    results[next_index + offset] = inpainter(image, mask, config)
+                next_index = chunk_end
+                current_batch_size = min(effective_batch_size, len(images) - next_index)
+
+        return results
+
     def manual_inpaint(self):
         image_viewer = self.main_page.image_viewer
         settings_page = self.main_page.settings_page

@@ -1,6 +1,10 @@
 import numpy as np
 
 from ..utils.textblock import TextBlock
+from ..utils.translator_utils import (
+    sanitize_translation_result_blocks,
+    sanitize_translation_source_blocks,
+)
 from .base import LLMTranslation
 from .factory import TranslationFactory
 
@@ -13,7 +17,7 @@ class Translator:
     - Traditional translators (e.g Google, Microsoft, DeepL, Yandex)
     - LLM-based translators (e.g GPT, Claude, Gemini, Deepseek, Custom)
     """
-    
+
     def __init__(self, main_page, source_lang: str = "", target_lang: str = ""):
         """
         Initialize translator with settings and languages.
@@ -94,9 +98,11 @@ class Translator:
         Returns:
             List of updated TextBlock objects with translations
         """
+        sanitize_translation_source_blocks(blk_list)
         if self.is_llm_engine:
             # LLM translators need image and extra context
-            return self.engine.translate(blk_list, image, extra_context)
+            result = self.engine.translate(blk_list, image, extra_context)
         else:
             # Text-based translators only need the text blocks
-            return self.engine.translate(blk_list)
+            result = self.engine.translate(blk_list)
+        return sanitize_translation_result_blocks(result)

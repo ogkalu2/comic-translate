@@ -111,6 +111,44 @@ def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
 
+
+def sanitize_translation_source_text(text: str) -> str:
+    if not text:
+        return ""
+    quote_chars = "\"'`‘’‚‛“”„‟«»‹›〝〞＂＇´"
+    cleaned = text.translate(str.maketrans("", "", quote_chars))
+    cleaned = " ".join(cleaned.split())
+    return cleaned.strip()
+
+
+def sanitize_translation_source_blocks(blk_list: list[TextBlock]) -> list[TextBlock]:
+    for blk in blk_list:
+        blk.text = sanitize_translation_source_text(getattr(blk, "text", ""))
+        texts = getattr(blk, "texts", None)
+        if texts is not None:
+            blk.texts = [
+                sanitized
+                for sanitized in (
+                    sanitize_translation_source_text(text) for text in texts
+                )
+                if sanitized
+            ]
+    return blk_list
+
+
+def sanitize_translation_result_text(text: str) -> str:
+    if not text:
+        return ""
+    return text
+
+
+def sanitize_translation_result_blocks(blk_list: list[TextBlock]) -> list[TextBlock]:
+    for blk in blk_list:
+        blk.translation = sanitize_translation_result_text(
+            getattr(blk, "translation", "")
+        )
+    return blk_list
+
 import json
 from typing import List
 from .textblock import TextBlock
@@ -119,6 +157,7 @@ def get_text_lines_compact(blk_list: list[TextBlock]) -> List[str]:
     """
     Минимальный по токенам вход для LLM: массив строк без ключей block_i.
     """
+    sanitize_translation_source_blocks(blk_list)
     return [(blk.text or "") for blk in blk_list]
 
 def dumps_compact_json(obj) -> str:
@@ -142,4 +181,4 @@ def set_translations_from_result_array(blk_list: list[TextBlock], content: str, 
         raise ValueError(f"Length mismatch: got {len(arr)} translations for {len(blk_list)} blocks")
 
     for i, blk in enumerate(blk_list):
-        blk.translation = arr[i]
+        blk.translation = sanitize_translation_result_text(arr[i])

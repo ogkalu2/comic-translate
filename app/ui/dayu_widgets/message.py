@@ -39,13 +39,20 @@ class MMessage(QtWidgets.QWidget):
         super(MMessage, self).__init__(parent)
         self.setObjectName("message")
         self._sig_closed_emitted = False
+        self._previous_focus_widget = QtWidgets.QApplication.focusWidget()
         self.setWindowFlags(
             QtCore.Qt.WindowType.FramelessWindowHint
             | QtCore.Qt.WindowType.Dialog
             | QtCore.Qt.WindowType.WindowStaysOnTopHint
         )
+        try:
+            self.setWindowFlag(QtCore.Qt.WindowType.WindowDoesNotAcceptFocus, True)
+        except AttributeError:
+            pass
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setAttribute(QtCore.Qt.WA_StyledBackground)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_ShowWithoutActivating, True)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         if dayu_type == MMessage.LoadingType:
             _icon_label = MLoading.tiny()
@@ -117,6 +124,17 @@ class MMessage(QtWidgets.QWidget):
         self._set_proper_position(parent)
         self._fade_int()
 
+    def _restore_previous_focus(self):
+        widget = self._previous_focus_widget
+        if widget is None:
+            return
+        try:
+            if not widget.isVisible():
+                return
+            widget.setFocus(QtCore.Qt.FocusReason.OtherFocusReason)
+        except Exception:
+            pass
+
     def closeEvent(self, event):
         if not self._sig_closed_emitted:
             self._sig_closed_emitted = True
@@ -164,6 +182,7 @@ class MMessage(QtWidgets.QWidget):
             parent=parent,
         )
         inst.show()
+        QtCore.QTimer.singleShot(0, inst._restore_previous_focus)
         return inst
 
     @classmethod
@@ -178,6 +197,7 @@ class MMessage(QtWidgets.QWidget):
         )
 
         inst.show()
+        QtCore.QTimer.singleShot(0, inst._restore_previous_focus)
         return inst
 
     @classmethod
@@ -191,6 +211,7 @@ class MMessage(QtWidgets.QWidget):
             parent=parent,
         )
         inst.show()
+        QtCore.QTimer.singleShot(0, inst._restore_previous_focus)
         return inst
 
     @classmethod
@@ -204,6 +225,7 @@ class MMessage(QtWidgets.QWidget):
             parent=parent,
         )
         inst.show()
+        QtCore.QTimer.singleShot(0, inst._restore_previous_focus)
         return inst
 
     @classmethod
@@ -211,6 +233,7 @@ class MMessage(QtWidgets.QWidget):
         """Show a message with loading animation"""
         inst = cls(text, dayu_type=MMessage.LoadingType, parent=parent)
         inst.show()
+        QtCore.QTimer.singleShot(0, inst._restore_previous_focus)
         return inst
 
     @classmethod

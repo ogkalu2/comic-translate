@@ -15,12 +15,14 @@ class BrushStrokeCommand(QUndoCommand, PathCommandBase):
         if not self.find_matching_item(self.scene, self.properties):
             path_item = self.create_path_item(self.properties)
             self.scene.addItem(path_item)
+            self.viewer.register_brush_stroke(path_item)
             self.scene.update()
 
     def undo(self):
         matching_item = self.find_matching_item(self.scene, self.properties)
         if matching_item:
             self.scene.removeItem(matching_item)
+            self.viewer.unregister_brush_stroke(matching_item)
             self.scene.update()
 
 class SegmentBoxesCommand(QUndoCommand, PathCommandBase):
@@ -35,6 +37,7 @@ class SegmentBoxesCommand(QUndoCommand, PathCommandBase):
             if not self.find_matching_item(self.scene, properties):
                 path_item = self.create_path_item(properties)
                 self.scene.addItem(path_item)
+                self.viewer.register_brush_stroke(path_item)
         self.scene.update()
 
     def undo(self):
@@ -42,6 +45,7 @@ class SegmentBoxesCommand(QUndoCommand, PathCommandBase):
             item = self.find_matching_item(self.scene, properties)
             if item:
                 self.scene.removeItem(item)
+                self.viewer.unregister_brush_stroke(item)
         self.scene.update()
 
 class ClearBrushStrokesCommand(QUndoCommand, PathCommandBase):
@@ -53,16 +57,18 @@ class ClearBrushStrokesCommand(QUndoCommand, PathCommandBase):
 
     def redo(self):
         self.properties_list = []
-        for item in self.scene.items():
-            if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:
+        for item in list(self.viewer.brush_strokes):
+            if item is not None and item.scene() is self.scene:
                 self.properties_list.append(self.save_path_properties(item))
                 self.scene.removeItem(item)
+                self.viewer.unregister_brush_stroke(item)
         self.scene.update()
         
     def undo(self):
         for properties in self.properties_list:
             path_item = self.create_path_item(properties)
             self.scene.addItem(path_item)
+            self.viewer.register_brush_stroke(path_item)
         self.scene.update()
         
 class EraseUndoCommand(QUndoCommand, PathCommandBase):
@@ -141,6 +147,7 @@ class EraseUndoCommand(QUndoCommand, PathCommandBase):
         for item in items_to_remove:
             try:
                 self.scene.removeItem(item)
+                self.viewer.unregister_brush_stroke(item)
             except Exception as e:
                 print(f"Warning: Failed to remove item: {e}")
         
@@ -156,6 +163,7 @@ class EraseUndoCommand(QUndoCommand, PathCommandBase):
                 path_item = self.create_path_item(properties)
                 if path_item:  # Only add if creation was successful
                     self.scene.addItem(path_item)
+                    self.viewer.register_brush_stroke(path_item)
             except Exception as e:
                 print(f"Warning: Failed to create path item during undo/redo: {e}")
                 continue

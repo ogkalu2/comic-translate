@@ -2,7 +2,7 @@ import os
 from typing import Set
 import imkit as imk
 from PIL import Image
-from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize
+from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize, QPoint
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QListWidget
 from app.path_materialization import ensure_path_materialized
@@ -11,11 +11,12 @@ from app.path_materialization import ensure_path_materialized
 class ImageLoadWorker(QObject):
     """Worker thread for loading images in the background."""
     
-    image_loaded = Signal(int, QPixmap)  # index, pixmap
+    image_loaded = Signal(int, str, QPixmap)  # index, file_path, pixmap
     
     def __init__(self):
         super().__init__()
         self.load_queue = []
+        self.queued_indices: set[int] = set()
         self.should_stop = False
         
         # Timer for processing queue
@@ -25,15 +26,15 @@ class ImageLoadWorker(QObject):
         
     def add_to_queue(self, index: int, file_path: str, target_size: QSize):
         """Add an image to the loading queue."""
-        # Avoid duplicates
-        for queued_index, _, _ in self.load_queue:
-            if queued_index == index:
-                return
+        if index in self.queued_indices:
+            return
         self.load_queue.append((index, file_path, target_size))
+        self.queued_indices.add(index)
     
     def clear_queue(self):
         """Clear the loading queue."""
         self.load_queue.clear()
+        self.queued_indices.clear()
         
     def stop(self):
         """Stop the worker."""
@@ -46,11 +47,12 @@ class ImageLoadWorker(QObject):
             return
             
         index, file_path, target_size = self.load_queue.pop(0)
+        self.queued_indices.discard(index)
         
         # Load and resize image
         pixmap = self._load_and_resize_image(file_path, target_size)
         if pixmap and not pixmap.isNull():
-            self.image_loaded.emit(index, pixmap)
+            self.image_loaded.emit(index, file_path, pixmap)
                 
     def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
         """Load and resize an image to the target size."""
@@ -184,23 +186,44 @@ class ListViewImageLoader:
         
     def _get_visible_item_indices(self) -> Set[int]:
         """Get indices of currently visible items."""
-        visible_indices = set()
-        
         if not self.list_widget:
-            return visible_indices
+            return set()
             
-        # Get the viewport rect
         viewport_rect = self.list_widget.viewport().rect()
-        
-        # Check each item to see if it's visible
-        for i in range(self.list_widget.count()):
-            item = self.list_widget.item(i)
-            if item:
-                item_rect = self.list_widget.visualItemRect(item)
-                if viewport_rect.intersects(item_rect):
-                    visible_indices.add(i)
-                    
-        return visible_indices
+        first_row = self._find_visible_row(viewport_rect, from_top=True)
+        last_row = self._find_visible_row(viewport_rect, from_top=False)
+
+        if first_row is None or last_row is None or last_row < first_row:
+            return set()
+
+        return set(range(first_row, last_row + 1))
+
+    def _find_visible_row(self, viewport_rect, from_top: bool) -> int | None:
+        count = self.list_widget.count()
+        if count == 0:
+            return None
+
+        probe_x = min(max(1, viewport_rect.center().x()), max(1, viewport_rect.width() - 2))
+        start_y = viewport_rect.top() if from_top else viewport_rect.bottom()
+        end_y = viewport_rect.bottom() if from_top else viewport_rect.top()
+        step = 8 if from_top else -8
+
+        y = start_y
+        while (y <= end_y) if from_top else (y >= end_y):
+            item = self.list_widget.itemAt(QPoint(probe_x, y))
+            if item is not None:
+                row = self.list_widget.row(item)
+                if row >= 0:
+                    return row
+            y += step
+
+        fallback_item = self.list_widget.itemAt(QPoint(probe_x, viewport_rect.center().y()))
+        if fallback_item is not None:
+            row = self.list_widget.row(fallback_item)
+            if row >= 0:
+                return row
+
+        return None
         
     def _queue_image_load(self, index: int):
         """Queue an image for loading."""
@@ -216,9 +239,11 @@ class ListViewImageLoader:
                 # Process the queue
                 QTimer.singleShot(0, self.worker.process_queue)
                 
-    def _on_image_loaded(self, index: int, pixmap: QPixmap):
+    def _on_image_loaded(self, index: int, file_path: str, pixmap: QPixmap):
         """Handle when an image has been loaded."""
-        if 0 <= index < len(self.cards):
+        if 0 <= index < len(self.cards) and 0 <= index < len(self.file_paths):
+            if self.file_paths[index] != file_path:
+                return
             # Store the loaded pixmap
             self.loaded_images[index] = pixmap
             

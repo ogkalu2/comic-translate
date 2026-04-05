@@ -18,6 +18,10 @@ class EventHandler:
     # Main Event Handlers
 
     def handle_mouse_press(self, event: QtGui.QMouseEvent):
+        if self.viewer.read_only:
+            QtWidgets.QGraphicsView.mousePressEvent(self.viewer, event)
+            return
+
         scene_pos = self.viewer.mapToScene(event.position().toPoint())
         clicked_item = self._resolve_top_level_item(self.viewer.itemAt(event.pos()))
         
@@ -73,6 +77,10 @@ class EventHandler:
             QtWidgets.QGraphicsView.mousePressEvent(self.viewer, event)
     
     def handle_mouse_move(self, event: QtGui.QMouseEvent):
+        if self.viewer.read_only:
+            QtWidgets.QGraphicsView.mouseMoveEvent(self.viewer, event)
+            return
+
         scene_pos = self.viewer.mapToScene(event.position().toPoint())
 
         # Explicitly handle dragging our items first
@@ -101,6 +109,10 @@ class EventHandler:
         self.last_scene_pos = scene_pos
 
     def handle_mouse_release(self, event: QtGui.QMouseEvent):
+        if self.viewer.read_only:
+            QtWidgets.QGraphicsView.mouseReleaseEvent(self.viewer, event)
+            return
+
         interaction_finished = False # Flag to track if we handled the event
 
         if event.button() == Qt.LeftButton:
@@ -144,6 +156,13 @@ class EventHandler:
             factor = 1.25 if event.angleDelta().y() > 0 else 1 / 1.25
             self.viewer.scale(factor, factor)
             self.viewer.zoom += 1 if factor > 1 else -1
+            self.viewer.notify_view_state_changed()
+        elif not self.viewer.webtoon_mode:
+            delta = event.angleDelta().y()
+            if delta != 0:
+                direction = -1 if delta > 0 else 1
+                self.viewer.page_wheel_requested.emit(direction)
+                event.accept()
         else:
             # Call QGraphicsView's wheelEvent directly
             QtWidgets.QGraphicsView.wheelEvent(self.viewer, event)
@@ -151,6 +170,7 @@ class EventHandler:
             # Handle lazy webtoon manager scroll events
             if self.viewer.webtoon_mode:
                 self.viewer.webtoon_manager.on_scroll()
+            self.viewer.notify_view_state_changed()
 
     def handle_viewport_event(self, event: QtCore.QEvent):
         if event.type() in (QEvent.Type.TouchBegin, QEvent.Type.TouchUpdate, QEvent.Type.TouchEnd):

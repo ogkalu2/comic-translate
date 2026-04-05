@@ -10,6 +10,7 @@ from app.ui.list_view import PageListView
 from app.ui.settings.settings_page import SettingsPage
 from app.ui.startup_home import StartupHomeScreen
 from app.ui.title_bar import CustomTitleBar
+from .fullscreen_preview import FullscreenResultPreview
 from .builders import MainWindowBuildersMixin
 from .frame import EdgeResizer
 from .tools import ToolStateMixin
@@ -40,6 +41,8 @@ class ComicTranslateUI(
         self.setGeometry(x, y, w, h)
 
         self.image_viewer = ImageViewer(self)
+        self.original_image_viewer = ImageViewer(self, read_only=True)
+        self.fullscreen_preview = FullscreenResultPreview(self)
         self.settings_page = SettingsPage(self)
         self.settings_page.theme_changed.connect(self.apply_theme)
         self.settings_page.font_imported.connect(self.set_font)
@@ -47,6 +50,9 @@ class ComicTranslateUI(
         self._workspace_initialized = False
         self.tool_buttons = {}
         self.page_list = PageListView()
+        self.viewer_page = None
+        self.compare_splitter = None
+        self.original_preview_panel = None
 
         self.webtoon_mode = False
 

@@ -156,6 +156,19 @@ def register_lazy_blob_path(project_file: str, output_path: str, blob_hash: str)
         _LAZY_BLOBS_BY_PATH[abs_path] = (db_key, str(blob_hash))
 
 
+def remap_lazy_blob_paths(path_mapping: dict[str, str]) -> None:
+    if not path_mapping:
+        return
+
+    with _LAZY_BLOB_LOCK:
+        updates: dict[str, tuple[str, str]] = {}
+        for old_path, new_path in path_mapping.items():
+            mapped = _LAZY_BLOBS_BY_PATH.pop(os.path.abspath(old_path), None)
+            if mapped is not None:
+                updates[os.path.abspath(new_path)] = mapped
+        _LAZY_BLOBS_BY_PATH.update(updates)
+
+
 def ensure_lazy_blob_materialized(path: str) -> bool:
     if not path:
         return False
@@ -299,9 +312,14 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
         for patch in patch_list:
             src_png = patch["png_path"]
             blob_hash = add_blob_if_needed(src_png, "patch")
-            image_patches_references[page_path].append(
-                {"bbox": patch["bbox"], "png_hash": blob_hash, "hash": patch["hash"]}
-            )
+            patch_entry = {"bbox": patch["bbox"], "png_hash": blob_hash, "hash": patch["hash"]}
+            if patch.get("group_id"):
+                patch_entry["group_id"] = patch["group_id"]
+            if "scene_pos" in patch:
+                patch_entry["scene_pos"] = patch["scene_pos"]
+            if "page_index" in patch:
+                patch_entry["page_index"] = patch["page_index"]
+            image_patches_references[page_path].append(patch_entry)
 
     page_paths = list(
         dict.fromkeys(
@@ -539,7 +557,14 @@ def _materialize_from_manifest_and_pages(
             patch_disk_path = os.path.join(page_folder, f"{idx}_{png_hash[:12]}{ext}")
             register_lazy_blob_path(project_file, patch_disk_path, str(png_hash))
 
-            new_list.append({"bbox": patch["bbox"], "png_path": patch_disk_path, "hash": patch["hash"]})
+            patch_entry = {"bbox": patch["bbox"], "png_path": patch_disk_path, "hash": patch["hash"]}
+            if patch.get("group_id"):
+                patch_entry["group_id"] = patch["group_id"]
+            if "scene_pos" in patch:
+                patch_entry["scene_pos"] = patch["scene_pos"]
+            if "page_index" in patch:
+                patch_entry["page_index"] = patch["page_index"]
+            new_list.append(patch_entry)
 
         if new_list:
             reconstructed[page_path] = new_list

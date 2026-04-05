@@ -8,6 +8,7 @@ from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
 from .ppocr import PPOCRv5Engine
+from .ppocr.engine2 import HunyuanOCREngine
 from .manga_ocr.onnx_engine import MangaOCREngineONNX
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
@@ -99,11 +100,14 @@ class OCRFactory:
 
         creds = settings.get_credentials(ocr_key)
         device = resolve_device(settings.is_gpu_enabled(), backend)
+        batch_settings = settings.get_batch_settings()
 
         if creds:
             extras["credentials"] = creds
         if device:
             extras["device"] = device
+        if batch_settings:
+            extras["ocr_batch_size"] = batch_settings.get("ocr_batch_size")
 
         # The LLM OCR engines currently don't use the settings in the LLMs tab
         # so exclude this for now
@@ -145,6 +149,7 @@ class OCRFactory:
             'Google Cloud Vision': cls._create_google_ocr,
             'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
             'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model),
+            'Tencent/HunyuanOCR': cls._create_hunyuan_ocr,
         }
         
         # Language-specific factory functions (for Default model)
@@ -227,19 +232,32 @@ class OCRFactory:
     @staticmethod
     def _create_ppocr(settings, lang: str, backend: str = 'onnx') -> OCREngine:
         device = resolve_device(settings.is_gpu_enabled(), backend)
+        ocr_batch_size = settings.get_batch_settings().get("ocr_batch_size", 8)
         if backend.lower() == 'torch' and torch_available():
-            from .ppocr.torch.engine import PPOCRv5TorchEngine
-            device = resolve_device(settings.is_gpu_enabled(), 'torch')
-            engine = PPOCRv5TorchEngine()
-            engine.initialize(lang=lang, device=device)
-        else:
-            engine = PPOCRv5Engine()
-            engine.initialize(lang=lang, device=device)
-        
+            try:
+                from .ppocr.torch.engine import PPOCRv5TorchEngine
+            except ImportError:
+                PPOCRv5TorchEngine = None
+            if PPOCRv5TorchEngine is not None:
+                device = resolve_device(settings.is_gpu_enabled(), 'torch')
+                engine = PPOCRv5TorchEngine()
+                engine.initialize(lang=lang, device=device, recognition_batch_size=ocr_batch_size)
+                return engine
+
+        engine = PPOCRv5Engine()
+        engine.initialize(lang=lang, device=device, recognition_batch_size=ocr_batch_size)
         return engine
     
     @staticmethod
     def _create_gemini_ocr(settings, model) -> OCREngine:
         engine = GeminiOCR()
         engine.initialize(settings, model)
+        return engine
+
+    @staticmethod
+    def _create_hunyuan_ocr(settings) -> OCREngine:
+        engine = HunyuanOCREngine()
+        engine.initialize(
+            recognition_batch_size=settings.get_batch_settings().get("ocr_batch_size", 8)
+        )
         return engine

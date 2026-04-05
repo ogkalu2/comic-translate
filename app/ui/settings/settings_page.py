@@ -123,6 +123,12 @@ class SettingsPage(QtWidgets.QWidget):
             'image_input_enabled': self.ui.image_checkbox.isChecked(),
         }
 
+    def get_batch_settings(self):
+        return {
+            'batch_size': max(1, int(self.ui.batch_size_spinbox.value())),
+            'ocr_batch_size': max(1, int(self.ui.ocr_batch_size_spinbox.value())),
+        }
+
     def get_export_settings(self):
         owner = self.window()
         title_bar = getattr(owner, "title_bar", None)
@@ -199,7 +205,8 @@ class SettingsPage(QtWidgets.QWidget):
                 'detector': self.get_tool_selection('detector'),
                 'inpainter': self.get_tool_selection('inpainter'),
                 'use_gpu': self.is_gpu_enabled(),
-                'hd_strategy': self.get_hd_strategy_settings()
+                'hd_strategy': self.get_hd_strategy_settings(),
+                'batch': self.get_batch_settings(),
             },
             'llm': self.get_llm_settings(),
             'export': self.get_export_settings(),
@@ -359,6 +366,15 @@ class SettingsPage(QtWidgets.QWidget):
             self.ui.crop_margin_spinbox.setValue(settings.value('crop_margin', 512, type=int))
             self.ui.crop_trigger_spinbox.setValue(settings.value('crop_trigger_size', 512, type=int))
         settings.endGroup()  # hd_strategy
+
+        settings.beginGroup('batch')
+        self.ui.batch_size_spinbox.setValue(
+            max(1, settings.value('batch_size', 32, type=int))
+        )
+        self.ui.ocr_batch_size_spinbox.setValue(
+            max(1, settings.value('ocr_batch_size', 8, type=int))
+        )
+        settings.endGroup()  # batch
         settings.endGroup()  # tools
 
         # Load LLM settings
