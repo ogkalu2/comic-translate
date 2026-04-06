@@ -374,9 +374,13 @@ class ImageStateController:
             self.main.image_viewer.clear_scene()
             return
 
+        warnings: list[str] = []
+
         for page in pages:
             file_path = page.image_path
             rgb_image = page.rgb_image
+            if page.warning:
+                warnings.append(f"{os.path.basename(page.source_path)}: {page.warning}")
 
             self.main.image_files.append(file_path)
             self.main.image_data[file_path] = rgb_image
@@ -410,6 +414,9 @@ class ImageStateController:
         self.main.image_viewer.resetTransform()
         self.main.image_viewer.fitInView()
         self.main.mark_project_dirty()
+        unique_warnings = list(dict.fromkeys(warnings))
+        if unique_warnings:
+            self._show_transient_skip_notice(unique_warnings[0], MMessage.WarningType)
 
     def thread_insert(self, paths: List[str]):
         if self.main.image_files:

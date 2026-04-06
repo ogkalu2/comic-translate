@@ -27,6 +27,13 @@ class ImportedPsdPage:
     image_path: str
     rgb_image: np.ndarray
     viewer_state: dict[str, Any]
+    warning: str | None = None
+
+
+@dataclass(frozen=True)
+class PsdImportContext:
+    is_app_export: bool
+    warning: str | None
 
 
 def import_psd_files(paths: list[str]) -> list[ImportedPsdPage]:
@@ -38,7 +45,7 @@ def import_psd_files(paths: list[str]) -> list[ImportedPsdPage]:
     pages: list[ImportedPsdPage] = []
 
     for src_path in paths:
-        rgb_image, text_items_state = _read_single_psd(src_path)
+        rgb_image, text_items_state, context = _read_single_psd(src_path)
         file_name = _unique_png_name(_safe_stem(src_path), used_names)
         out_path = os.path.join(out_dir, file_name)
         imk.write_image(out_path, rgb_image)
@@ -57,27 +64,33 @@ def import_psd_files(paths: list[str]) -> list[ImportedPsdPage]:
                 image_path=out_path,
                 rgb_image=rgb_image,
                 viewer_state=viewer_state,
+                warning=context.warning,
             )
         )
 
     return pages
 
 
-def _read_single_psd(path: str) -> tuple[np.ndarray, list[dict[str, Any]]]:
+def _read_single_psd(path: str) -> tuple[np.ndarray, list[dict[str, Any]], PsdImportContext]:
     document = psapi.LayeredFile.read(path)
     flat_layers = _flat_layers(document)
+    context = _classify_psd_document(document, flat_layers)
 
-    base_layer = _find_named_image_layer(flat_layers, "Raw Image")
-    if base_layer is None:
-        base_layer = _find_base_image_layer(flat_layers)
+    if context.is_app_export:
+        base_layer = _find_named_image_layer(flat_layers, "Raw Image")
+        if base_layer is None:
+            base_layer = _find_base_image_layer(flat_layers)
 
-    if base_layer is None:
-        rgb_image = np.full((int(document.height), int(document.width), 3), 255, dtype=np.uint8)
+        if base_layer is None:
+            rgb_image = np.full((int(document.height), int(document.width), 3), 255, dtype=np.uint8)
+        else:
+            rgb_image = _image_layer_to_rgb(base_layer)
     else:
-        rgb_image = _image_layer_to_rgb(base_layer)
+        rgb_image = _flatten_visible_image_layers(flat_layers, int(document.height), int(document.width))
 
-    for patch_layer in _patch_layers(document):
-        _blend_image_layer(rgb_image, patch_layer)
+    if context.is_app_export:
+        for patch_layer in _patch_layers(document):
+            _blend_image_layer(rgb_image, patch_layer)
 
     text_items_state: list[dict[str, Any]] = []
     for layer in _text_layers(document, flat_layers):
@@ -89,7 +102,63 @@ def _read_single_psd(path: str) -> tuple[np.ndarray, list[dict[str, Any]]]:
         if imported is not None:
             text_items_state.append(imported)
 
-    return rgb_image, text_items_state
+    return rgb_image, text_items_state, context
+
+
+def _classify_psd_document(document: Any, flat_layers: list[Any]) -> PsdImportContext:
+    has_raw_image = _find_named_image_layer(flat_layers, "Raw Image") is not None
+    has_editable_text = _find_group_by_name(getattr(document, "layers", []), "Editable Text") is not None
+    has_patch_group = _find_group_by_name(getattr(document, "layers", []), "Inpaint Patches") is not None
+    is_app_export = has_raw_image or has_editable_text or has_patch_group
+    if is_app_export:
+        unsupported_features = _collect_unsupported_import_features(flat_layers)
+        if unsupported_features:
+            return PsdImportContext(
+                is_app_export=True,
+                warning=(
+                    "This PSD was exported by this application, but it now contains Photoshop features "
+                    "that are not fully supported on import. "
+                    "It may not appear exactly as it did in Photoshop."
+                ),
+            )
+        return PsdImportContext(is_app_export=True, warning=None)
+    return PsdImportContext(
+        is_app_export=False,
+        warning=(
+            "Imported a PSD that was not exported by this application. "
+            "Visible image layers were flattened, and unsupported Photoshop features may not match exactly."
+        ),
+    )
+
+
+def _collect_unsupported_import_features(flat_layers: list[Any]) -> list[str]:
+    features: list[str] = []
+    has_unknown_layers = False
+    for layer in flat_layers:
+        if not bool(getattr(layer, "is_visible", True)):
+            continue
+
+        if _is_smart_object_layer(layer):
+            _append_unique(features, "smart objects")
+        if _layer_has_mask(layer):
+            _append_unique(features, "pixel masks")
+        if bool(getattr(layer, "clipping_mask", False)):
+            _append_unique(features, "clipping masks")
+        if _layer_has_non_default_blend_mode(layer):
+            _append_unique(features, "blend modes")
+        if _layer_has_non_default_opacity(layer):
+            _append_unique(features, "layer opacity")
+        if not (_is_group_layer(layer) or _is_image_layer(layer) or _is_text_layer(layer) or _is_smart_object_layer(layer)):
+            has_unknown_layers = True
+
+    if has_unknown_layers:
+        _append_unique(features, "unsupported layer types")
+    return features
+
+
+def _append_unique(items: list[str], value: str) -> None:
+    if value not in items:
+        items.append(value)
 
 
 def _flat_layers(document: Any) -> list[Any]:
@@ -162,6 +231,17 @@ def _find_base_image_layer(flat_layers: list[Any]) -> Any | None:
     return None
 
 
+def _flatten_visible_image_layers(flat_layers: list[Any], height: int, width: int) -> np.ndarray:
+    base_rgb = np.full((height, width, 3), 255, dtype=np.uint8)
+    visible_layers = [
+        layer for layer in flat_layers
+        if _is_image_layer(layer) and bool(getattr(layer, "is_visible", True))
+    ]
+    for layer in reversed(visible_layers):
+        _blend_image_layer(base_rgb, layer)
+    return base_rgb
+
+
 def _layer_type_tuple(*names: str) -> tuple[type, ...]:
     return tuple(getattr(psapi, name) for name in names if hasattr(psapi, name))
 
@@ -170,12 +250,61 @@ def _group_types() -> tuple[type, ...]:
     return _layer_type_tuple("GroupLayer_8bit", "GroupLayer_16bit", "GroupLayer_32bit")
 
 
+def _smart_object_types() -> tuple[type, ...]:
+    return _layer_type_tuple("SmartObjectLayer_8bit", "SmartObjectLayer_16bit", "SmartObjectLayer_32bit")
+
+
+def _is_group_layer(layer: Any) -> bool:
+    return isinstance(layer, _group_types())
+
+
 def _is_text_layer(layer: Any) -> bool:
     return isinstance(layer, _layer_type_tuple("TextLayer_8bit", "TextLayer_16bit", "TextLayer_32bit"))
 
 
 def _is_image_layer(layer: Any) -> bool:
     return isinstance(layer, _layer_type_tuple("ImageLayer_8bit", "ImageLayer_16bit", "ImageLayer_32bit"))
+
+
+def _is_smart_object_layer(layer: Any) -> bool:
+    return isinstance(layer, _smart_object_types())
+
+
+def _layer_has_mask(layer: Any) -> bool:
+    has_mask = getattr(layer, "has_mask", None)
+    if callable(has_mask):
+        try:
+            return bool(has_mask("mask"))
+        except Exception:
+            try:
+                return bool(has_mask(""))
+            except Exception:
+                pass
+    try:
+        mask = getattr(layer, "mask", None)
+        if mask is None:
+            return False
+        return bool(np.asarray(mask).size)
+    except Exception:
+        return False
+
+
+def _layer_has_non_default_blend_mode(layer: Any) -> bool:
+    blend_mode = getattr(layer, "blend_mode", None)
+    enum_cls = getattr(getattr(psapi, "enum", None), "BlendMode", None)
+    if enum_cls is None or blend_mode is None:
+        return False
+    if _is_group_layer(layer):
+        return not (_enum_eq(blend_mode, enum_cls, "normal") or _enum_eq(blend_mode, enum_cls, "passthrough"))
+    return not _enum_eq(blend_mode, enum_cls, "normal")
+
+
+def _layer_has_non_default_opacity(layer: Any) -> bool:
+    try:
+        opacity = float(getattr(layer, "opacity", 1.0))
+    except Exception:
+        return False
+    return abs(opacity - 1.0) > 1e-6
 
 
 def _image_layer_to_rgb(layer: Any) -> np.ndarray:
