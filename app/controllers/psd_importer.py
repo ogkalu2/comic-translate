@@ -115,18 +115,19 @@ def _classify_psd_document(document: Any, flat_layers: list[Any]) -> PsdImportCo
         if unsupported_features:
             return PsdImportContext(
                 is_app_export=True,
-                warning=(
+                warning=QtCore.QCoreApplication.translate(
+                    "Messages",
                     "This PSD was exported by this application, but it now contains Photoshop features "
-                    "that are not fully supported on import. "
-                    "It may not appear exactly as it did in Photoshop."
+                    "that are not fully supported on import. It may not appear exactly as it did in Photoshop.",
                 ),
             )
         return PsdImportContext(is_app_export=True, warning=None)
     return PsdImportContext(
         is_app_export=False,
-        warning=(
-            "Imported a PSD that was not exported by this application. "
-            "Visible image layers were flattened, and unsupported Photoshop features may not match exactly."
+        warning=QtCore.QCoreApplication.translate(
+            "Messages",
+            "Imported a PSD that was not exported by this application. Visible image layers were flattened, "
+            "and unsupported Photoshop features may not match exactly.",
         ),
     )
 

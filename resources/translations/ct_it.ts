@@ -4,7 +4,7 @@
 <context>
     <name></name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="78"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="76"/>
         <source>Custom</source>
         <translation>Personalizzato</translation>
     </message>
@@ -84,39 +84,39 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="483"/>
-        <location filename="../../controller.py" line="493"/>
+        <location filename="../../controller.py" line="533"/>
+        <location filename="../../controller.py" line="543"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="710"/>
-        <location filename="../../controller.py" line="721"/>
+        <location filename="../../controller.py" line="764"/>
+        <location filename="../../controller.py" line="775"/>
         <source>Downloading model file: {filename}</source>
         <translation>Download del file modello: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="752"/>
+        <location filename="../../controller.py" line="806"/>
         <source>Unsaved Changes</source>
         <translation>Modifiche non salvate</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="753"/>
+        <location filename="../../controller.py" line="807"/>
         <source>Save changes to this file?</source>
         <translation>Salvare le modifiche a questo file?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="754"/>
+        <location filename="../../controller.py" line="808"/>
         <source>Save</source>
         <translation>Salva</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="755"/>
+        <location filename="../../controller.py" line="809"/>
         <source>Don&apos;t Save</source>
         <translation>Non salvare</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="756"/>
+        <location filename="../../controller.py" line="810"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
@@ -324,6 +324,94 @@
     </message>
 </context>
 <context>
+    <name>ExportChaptersDialog</name>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="28"/>
+        <source>Partition Export</source>
+        <translation>Esportazione partizionata</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="41"/>
+        <source>Pages with the same chapter name are exported into the same file. Edit the Chapter column to merge or split chapters.</source>
+        <translation>Le pagine con lo stesso nome di capitolo vengono esportate nello stesso file. Modifica la colonna Capitolo per unire o dividere i capitoli.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="49"/>
+        <source>Output folder</source>
+        <translation>Cartella di output</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="53"/>
+        <source>Browse</source>
+        <translation>Sfoglia</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="59"/>
+        <source>Selected pages</source>
+        <translation>Pagine selezionate</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="61"/>
+        <source>New chapter name</source>
+        <translation>Nuovo nome capitolo</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="63"/>
+        <source>Apply</source>
+        <translation>Applica</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="70"/>
+        <source>Page</source>
+        <translation>Pagina</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="71"/>
+        <source>File</source>
+        <translation>File</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="72"/>
+        <source>Chapter</source>
+        <translation>Capitolo</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="84"/>
+        <source>Export files</source>
+        <translation>Esporta file</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="93"/>
+        <source>Reset Chapters</source>
+        <translation>Reimposta capitoli</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="136"/>
+        <source>Select Export Folder</source>
+        <translation>Seleziona cartella di esportazione</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="189"/>
+        <source>Output Folder Required</source>
+        <translation>Cartella di output richiesta</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="190"/>
+        <source>Choose an existing output folder.</source>
+        <translation>Scegli una cartella di output esistente.</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="199"/>
+        <source>Chapter Name Required</source>
+        <translation>Nome capitolo richiesto</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="200"/>
+        <source>Each page must belong to a non-empty chapter.</source>
+        <translation>Ogni pagina deve appartenere a un capitolo non vuoto.</translation>
+    </message>
+</context>
+<context>
     <name>ExportPage</name>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="11"/>
@@ -367,7 +455,7 @@
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../app/controllers/image.py" line="1183"/>
+        <location filename="../../app/controllers/image.py" line="1273"/>
         <source>Skipping:</source>
         <translation>Salto:</translation>
     </message>
@@ -377,12 +465,12 @@
         <translation>Annullamento... %p%</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="675"/>
+        <location filename="../../controller.py" line="729"/>
         <source>Processing:</source>
         <translation>Elaborazione:</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="678"/>
+        <location filename="../../controller.py" line="732"/>
         <source>Archiving:</source>
         <translation>Archiviazione:</translation>
     </message>
@@ -536,14 +624,24 @@ Please check your internet connection.</source>
 Verifica la tua connessione Internet.</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="49"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="47"/>
         <source>Text Recognition model</source>
         <translation>Modello di riconoscimento testo</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="68"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="66"/>
         <source>Translator</source>
         <translation>Traduttore</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/psd_importer.py" line="118"/>
+        <source>This PSD was exported by this application, but it now contains Photoshop features that are not fully supported on import. It may not appear exactly as it did in Photoshop.</source>
+        <translation>Questo PSD è stato esportato da questa applicazione, ma ora contiene funzionalità di Photoshop che non sono pienamente supportate in importazione. Potrebbe non apparire esattamente come in Photoshop.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/psd_importer.py" line="127"/>
+        <source>Imported a PSD that was not exported by this application. Visible image layers were flattened, and unsupported Photoshop features may not match exactly.</source>
+        <translation>È stato importato un PSD che non è stato esportato da questa applicazione. I livelli immagine visibili sono stati appiattiti e le funzionalità di Photoshop non supportate potrebbero non corrispondere esattamente.</translation>
     </message>
 </context>
 <context>
@@ -559,107 +657,108 @@ Verifica la tua connessione Internet.</translation>
         <translation>Importa immagini, PDF, ePub o file di archivio di fumetti (cbr, cbz, ecc.). Questo aprirà un nuovo progetto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="54"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
         <source>Images</source>
         <translation>Immagini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="63"/>
         <source>Document</source>
         <translation>Documento</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="66"/>
         <source>Archive</source>
         <translation>Archivio</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="64"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="70"/>
         <source>Comic Book Archive</source>
         <translation>Archivio di fumetti</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="68"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="74"/>
         <source>Project File</source>
         <translation>File di progetto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="75"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="81"/>
         <source>Save Currently Loaded Image</source>
         <translation>Salva l&apos;immagine attualmente caricata</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="79"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="85"/>
         <source>Save Project</source>
         <translation>Salva progetto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="83"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="89"/>
         <source>Save as</source>
         <translation>Salva come</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="94"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="100"/>
         <source>Export all Images</source>
         <translation>Esporta tutte le immagini</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="105"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
         <source>ZIP</source>
         <translation>ZIP</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="117"/>
         <source>CBZ</source>
         <translation>CBZ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="117"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="123"/>
         <source>PDF</source>
         <translation>PDF</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="123"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="129"/>
         <source>PSD</source>
         <translation>PSD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="129"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="135"/>
         <source>Home</source>
         <translation>Home</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="133"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="139"/>
         <source>Settings</source>
         <translation>Impostazioni</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="142"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="148"/>
         <source>Search / Replace (Ctrl+F)</source>
         <translation>Cerca / Sostituisci (Ctrl+F)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="149"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="155"/>
         <source>Insert files into current project</source>
         <translation>Inserisci file nel progetto attuale</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="240"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="246"/>
         <source>Start New Project</source>
         <translation>Avvia nuovo progetto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="241"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="247"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>Il progetto attuale ha modifiche non salvate. Avviare un nuovo progetto?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="242"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="248"/>
         <source>Yes</source>
         <translation>Sì</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="243"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="249"/>
         <source>No</source>
         <translation>No</translation>
     </message>
@@ -667,27 +766,27 @@ Verifica la tua connessione Internet.</translation>
 <context>
     <name>PageListView</name>
     <message>
-        <location filename="../../app/ui/list_view.py" line="73"/>
+        <location filename="../../app/ui/list_view.py" line="146"/>
         <source>Insert</source>
         <translation>Inserisci</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="74"/>
+        <location filename="../../app/ui/list_view.py" line="147"/>
         <source>Delete</source>
         <translation>Elimina</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="79"/>
+        <location filename="../../app/ui/list_view.py" line="152"/>
         <source>Unskip</source>
         <translation>Annulla salto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="82"/>
+        <location filename="../../app/ui/list_view.py" line="155"/>
         <source>Skip</source>
         <translation>Salta</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="88"/>
+        <location filename="../../app/ui/list_view.py" line="161"/>
         <source>Translate</source>
         <translation>Traduci</translation>
     </message>
@@ -1154,19 +1253,19 @@ Riavviare ora?</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="138"/>
         <source>Resize</source>
         <translation>Ridimensiona</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
         <source>Original</source>
         <translation>Originale</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
         <source>Crop</source>
         <translation>Ritaglia</translation>
     </message>
@@ -1184,19 +1283,19 @@ Riavviare ora?</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="65"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="143"/>
         <source>Left</source>
         <translation>Sinistra</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="65"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
         <source>Center</source>
         <translation>Centro</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="65"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Right</source>
         <translation>Destra</translation>
     </message>
@@ -1207,42 +1306,42 @@ Riavviare ora?</translation>
         <translation>Gemini-3.0-Flash</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
         <source>LLMs</source>
         <translation>LLMs</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Project</source>
         <translation>Progetto</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Shortcuts</source>
         <translation>Scorciatoie</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Advanced</source>
         <translation>Avanzate</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>About</source>
         <translation>Informazioni</translation>
     </message>
@@ -1250,34 +1349,34 @@ Riavviare ora?</translation>
         <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="113"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="148"/>
         <source>Custom</source>
         <translation>Personalizzato</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
         <source>Deepseek</source>
         <translation>Deepseek</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
         <source>Google Gemini</source>
         <translation>Google Gemini</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
         <source>DeepL</source>
         <translation>DeepL</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
         <source>Anthropic Claude</source>
         <translation>Anthropic Claude</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
         <source>Yandex</source>
         <translation>Yandex</translation>
     </message>
@@ -1311,7 +1410,7 @@ Riavviare ora?</translation>
         <translation>Gemini-2.5-Pro</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Account</source>
         <translation>Account</translation>
     </message>
@@ -1321,22 +1420,22 @@ Riavviare ora?</translation>
         <translation>Microsoft Translator</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Personalization</source>
         <translation>Personalizzazione</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>Tools</source>
         <translation>Strumenti</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
         <source>Text Rendering</source>
         <translation>Rendering testo</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Export</source>
         <translation>Esporta</translation>
     </message>
@@ -1838,229 +1937,234 @@ back on the Image (for further editing)</source>
 <context>
     <name>self.main</name>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="76"/>
+        <location filename="../../app/controllers/batch_report.py" line="86"/>
         <source>The AI provider flagged this content</source>
         <translation>Il fornitore AI ha segnalato questo contenuto</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="78"/>
+        <location filename="../../app/controllers/batch_report.py" line="88"/>
         <source>Insufficient credits</source>
         <translation>Crediti insufficienti</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="80"/>
+        <location filename="../../app/controllers/batch_report.py" line="90"/>
         <source>Request timed out</source>
         <translation>Richiesta scaduta</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="86"/>
+        <location filename="../../app/controllers/batch_report.py" line="96"/>
         <source>Rate limited by provider</source>
         <translation>Limite di frequenza del fornitore</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="93"/>
+        <location filename="../../app/controllers/batch_report.py" line="103"/>
         <source>Authentication failed</source>
         <translation>Autenticazione non riuscita</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="100"/>
+        <location filename="../../app/controllers/batch_report.py" line="110"/>
         <source>Network or connection error</source>
         <translation>Errore di rete o connessione</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="109"/>
+        <location filename="../../app/controllers/batch_report.py" line="119"/>
         <source>Provider unavailable</source>
         <translation>Fornitore non disponibile</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="115"/>
+        <location filename="../../app/controllers/batch_report.py" line="125"/>
         <source>Invalid translation response</source>
         <translation>Risposta di traduzione non valida</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="116"/>
+        <location filename="../../app/controllers/batch_report.py" line="126"/>
         <source>Unexpected tool error</source>
         <translation>Errore imprevisto dello strumento</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="124"/>
-        <location filename="../../app/controllers/batch_report.py" line="173"/>
+        <location filename="../../app/controllers/batch_report.py" line="134"/>
+        <location filename="../../app/controllers/batch_report.py" line="183"/>
         <source>Try another text recognition tool</source>
         <translation>Prova un altro strumento di riconoscimento testo</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="128"/>
-        <location filename="../../app/controllers/batch_report.py" line="177"/>
+        <location filename="../../app/controllers/batch_report.py" line="138"/>
+        <location filename="../../app/controllers/batch_report.py" line="187"/>
         <source>Try another translator</source>
         <translation>Prova un altro traduttore</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="129"/>
+        <location filename="../../app/controllers/batch_report.py" line="139"/>
         <source>Try another tool</source>
         <translation>Prova un altro strumento</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="131"/>
+        <location filename="../../app/controllers/batch_report.py" line="141"/>
         <source>Buy more credits</source>
         <translation>Acquista più crediti</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="133"/>
-        <location filename="../../app/controllers/batch_report.py" line="168"/>
+        <location filename="../../app/controllers/batch_report.py" line="143"/>
         <location filename="../../app/controllers/batch_report.py" line="178"/>
+        <location filename="../../app/controllers/batch_report.py" line="188"/>
         <source>Try again</source>
         <translation>Riprova</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="139"/>
+        <location filename="../../app/controllers/batch_report.py" line="149"/>
         <source>Wait and try again</source>
         <translation>Attendi e riprova</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="146"/>
+        <location filename="../../app/controllers/batch_report.py" line="156"/>
         <source>Check API settings</source>
         <translation>Controlla le impostazioni API</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="153"/>
+        <location filename="../../app/controllers/batch_report.py" line="163"/>
         <source>Check your connection</source>
         <translation>Controlla la connessione</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="162"/>
+        <location filename="../../app/controllers/batch_report.py" line="172"/>
         <source>Try again later</source>
         <translation>Riprova più tardi</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="184"/>
+        <location filename="../../app/controllers/batch_report.py" line="194"/>
+        <source>Image could not be opened</source>
+        <translation>Impossibile aprire l'immagine</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="195"/>
         <source>No text blocks detected</source>
         <translation>Nessun blocco di testo rilevato</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="185"/>
+        <location filename="../../app/controllers/batch_report.py" line="196"/>
         <source>Text recognition failed</source>
         <translation>Riconoscimento testo non riuscito</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="186"/>
+        <location filename="../../app/controllers/batch_report.py" line="197"/>
         <source>Translation failed</source>
         <translation>Traduzione non riuscita</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="187"/>
+        <location filename="../../app/controllers/batch_report.py" line="198"/>
         <source>Webtoon text recognition chunk failed</source>
         <translation>Blocco di riconoscimento testo webtoon non riuscito</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="189"/>
+        <location filename="../../app/controllers/batch_report.py" line="200"/>
         <source>Webtoon translation chunk failed</source>
         <translation>Blocco di traduzione webtoon non riuscito</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="192"/>
+        <location filename="../../app/controllers/batch_report.py" line="203"/>
         <source>Page processing failed</source>
         <translation>Elaborazione pagina non riuscita</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="253"/>
+        <location filename="../../app/controllers/batch_report.py" line="265"/>
         <source>This image is not in the current project.</source>
         <translation>Questa immagine non è nel progetto corrente.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <location filename="../../app/controllers/batch_report.py" line="291"/>
         <source>Cancelled</source>
         <translation>Annullato</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <location filename="../../app/controllers/batch_report.py" line="291"/>
         <source>Completed</source>
         <translation>Completato</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="282"/>
+        <location filename="../../app/controllers/batch_report.py" line="294"/>
         <source>{0}  |  Updated {1}</source>
         <translation>{0}  |  Aggiornato {1}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="309"/>
+        <location filename="../../app/controllers/batch_report.py" line="321"/>
         <source>Total</source>
         <translation>Totale</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="310"/>
-        <location filename="../../app/controllers/batch_report.py" line="356"/>
+        <location filename="../../app/controllers/batch_report.py" line="322"/>
+        <location filename="../../app/controllers/batch_report.py" line="368"/>
         <source>Skipped</source>
         <translation>Ignorato</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="320"/>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
         <source>Skipped Images ({0})</source>
         <translation>Immagini ignorate ({0})</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="327"/>
+        <location filename="../../app/controllers/batch_report.py" line="339"/>
         <source>Double-click a row to open that page.</source>
         <translation>Doppio clic su una riga per aprire quella pagina.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <location filename="../../app/controllers/batch_report.py" line="344"/>
         <source>Image</source>
         <translation>Immagine</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <location filename="../../app/controllers/batch_report.py" line="344"/>
         <source>Reason</source>
         <translation>Motivo</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="366"/>
+        <location filename="../../app/controllers/batch_report.py" line="378"/>
         <source>No skipped images in this batch.</source>
         <translation>Nessuna immagine ignorata in questo batch.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="377"/>
+        <location filename="../../app/controllers/batch_report.py" line="389"/>
         <source>No batch report is available yet.</source>
         <translation>Nessun rapporto batch disponibile ancora.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="391"/>
+        <location filename="../../app/controllers/batch_report.py" line="403"/>
         <source>Batch Report</source>
         <translation>Rapporto batch</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="438"/>
+        <location filename="../../app/controllers/projects.py" line="442"/>
         <source>Project Recovery</source>
         <translation>Recupero del progetto</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="439"/>
+        <location filename="../../app/controllers/projects.py" line="443"/>
         <source>An autosaved project from a previous session was found.</source>
         <translation>È stato trovato un progetto salvato automaticamente da una sessione precedente.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="441"/>
+        <location filename="../../app/controllers/projects.py" line="445"/>
         <source>Last autosave: {saved_at}
 Do you want to restore it?</source>
         <translation>Ultimo salvataggio automatico: {saved_at}
 Vuoi ripristinarlo?</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="443"/>
+        <location filename="../../app/controllers/projects.py" line="447"/>
         <source>Restore</source>
         <translation>Ripristinare</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="444"/>
+        <location filename="../../app/controllers/projects.py" line="448"/>
         <source>Discard</source>
         <translation>Scarta</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="843"/>
+        <location filename="../../app/controllers/projects.py" line="1116"/>
         <source>Project Not Found</source>
         <translation>Progetto non trovato</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="845"/>
+        <location filename="../../app/controllers/projects.py" line="1118"/>
         <source>The selected project file could not be found.
 It may have been moved, renamed, or deleted.
 
@@ -2071,12 +2175,12 @@ Potrebbe essere stato spostato, rinominato o eliminato.
 {sentiero}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="923"/>
+        <location filename="../../app/controllers/projects.py" line="1196"/>
         <source>Korean</source>
         <translation>Coreano</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="924"/>
+        <location filename="../../app/controllers/projects.py" line="1197"/>
         <source>English</source>
         <translation>Inglese</translation>
     </message>
@@ -2207,18 +2311,18 @@ back on the Image (for further editing)</source>
 <context>
     <name>settings.ui</name>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="176"/>
+        <location filename="../../modules/ocr/factory.py" line="188"/>
         <location filename="../../modules/translation/microsoft.py" line="25"/>
         <source>Microsoft Azure</source>
         <translation>Microsoft Azure</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="186"/>
+        <location filename="../../modules/ocr/factory.py" line="198"/>
         <source>Google Cloud</source>
         <translation>Google Cloud</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="193"/>
+        <location filename="../../modules/ocr/factory.py" line="205"/>
         <location filename="../../modules/translation/llm/gpt.py" line="33"/>
         <source>Open AI GPT</source>
         <translation>Open AI GPT</translation>
@@ -2253,12 +2357,12 @@ back on the Image (for further editing)</source>
 <context>
     <name>settings_page.ui</name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="30"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="28"/>
         <source>Resize</source>
         <translation>Ridimensiona</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="32"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="30"/>
         <source>Crop</source>
         <translation>Ritaglia</translation>
     </message>

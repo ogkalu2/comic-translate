@@ -4,7 +4,7 @@
 <context>
     <name></name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="78"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="76"/>
         <source>Custom</source>
         <translation>カスタム</translation>
     </message>
@@ -84,39 +84,39 @@
 <context>
     <name>ComicTranslate</name>
     <message>
-        <location filename="../../controller.py" line="483"/>
-        <location filename="../../controller.py" line="493"/>
+        <location filename="../../controller.py" line="533"/>
+        <location filename="../../controller.py" line="543"/>
         <source>Error</source>
         <translation>エラー</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="710"/>
-        <location filename="../../controller.py" line="721"/>
+        <location filename="../../controller.py" line="764"/>
+        <location filename="../../controller.py" line="775"/>
         <source>Downloading model file: {filename}</source>
         <translation>モデル ファイルをダウンロードしています: {filename}</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="752"/>
+        <location filename="../../controller.py" line="806"/>
         <source>Unsaved Changes</source>
         <translation>未保存の変更</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="753"/>
+        <location filename="../../controller.py" line="807"/>
         <source>Save changes to this file?</source>
         <translation>このファイルへの変更を保存しますか?</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="754"/>
+        <location filename="../../controller.py" line="808"/>
         <source>Save</source>
         <translation>保存</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="755"/>
+        <location filename="../../controller.py" line="809"/>
         <source>Don&apos;t Save</source>
         <translation>保存しないでください</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="756"/>
+        <location filename="../../controller.py" line="810"/>
         <source>Cancel</source>
         <translation>キャンセル</translation>
     </message>
@@ -324,6 +324,94 @@
     </message>
 </context>
 <context>
+    <name>ExportChaptersDialog</name>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="28"/>
+        <source>Partition Export</source>
+        <translation>分割エクスポート</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="41"/>
+        <source>Pages with the same chapter name are exported into the same file. Edit the Chapter column to merge or split chapters.</source>
+        <translation>同じ章名のページは同じファイルにエクスポートされます。章を結合または分割するには、［章］列を編集してください。</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="49"/>
+        <source>Output folder</source>
+        <translation>出力フォルダー</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="53"/>
+        <source>Browse</source>
+        <translation>参照</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="59"/>
+        <source>Selected pages</source>
+        <translation>選択したページ</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="61"/>
+        <source>New chapter name</source>
+        <translation>新しい章名</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="63"/>
+        <source>Apply</source>
+        <translation>適用</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="70"/>
+        <source>Page</source>
+        <translation>ページ</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="71"/>
+        <source>File</source>
+        <translation>ファイル</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="72"/>
+        <source>Chapter</source>
+        <translation>章</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="84"/>
+        <source>Export files</source>
+        <translation>ファイルをエクスポート</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="93"/>
+        <source>Reset Chapters</source>
+        <translation>章をリセット</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="136"/>
+        <source>Select Export Folder</source>
+        <translation>エクスポート先フォルダーを選択</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="189"/>
+        <source>Output Folder Required</source>
+        <translation>出力フォルダーが必要です</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="190"/>
+        <source>Choose an existing output folder.</source>
+        <translation>既存の出力フォルダーを選択してください。</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="199"/>
+        <source>Chapter Name Required</source>
+        <translation>章名が必要です</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/export_chapters_dialog.py" line="200"/>
+        <source>Each page must belong to a non-empty chapter.</source>
+        <translation>各ページは空でない章に属している必要があります。</translation>
+    </message>
+</context>
+<context>
     <name>ExportPage</name>
     <message>
         <location filename="../../app/ui/settings/export_page.py" line="11"/>
@@ -367,17 +455,17 @@
 <context>
     <name>Messages</name>
     <message>
-        <location filename="../../controller.py" line="675"/>
+        <location filename="../../controller.py" line="729"/>
         <source>Processing:</source>
         <translation>処理：</translation>
     </message>
     <message>
-        <location filename="../../controller.py" line="678"/>
+        <location filename="../../controller.py" line="732"/>
         <source>Archiving:</source>
         <translation>アーカイブ:</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/image.py" line="1183"/>
+        <location filename="../../app/controllers/image.py" line="1273"/>
         <source>Skipping:</source>
         <translation>スキップ:</translation>
     </message>
@@ -536,14 +624,24 @@ Open Batch Report to see all skipped images and reasons.</source>
 バッチ レポートを開いて、スキップされたすべての画像とその理由を確認します。</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="49"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="47"/>
         <source>Text Recognition model</source>
         <translation>テキスト認識モデル</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="68"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="66"/>
         <source>Translator</source>
         <translation>翻訳者</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/psd_importer.py" line="118"/>
+        <source>This PSD was exported by this application, but it now contains Photoshop features that are not fully supported on import. It may not appear exactly as it did in Photoshop.</source>
+        <translation>このPSDはこのアプリケーションから書き出されたものですが、現在はインポート時に完全にはサポートされないPhotoshop機能が含まれています。Photoshopでの表示と完全には一致しない場合があります。</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/psd_importer.py" line="127"/>
+        <source>Imported a PSD that was not exported by this application. Visible image layers were flattened, and unsupported Photoshop features may not match exactly.</source>
+        <translation>このアプリケーションから書き出されたものではないPSDがインポートされました。表示されている画像レイヤーはフラット化され、未対応のPhotoshop機能は正確に一致しない場合があります。</translation>
     </message>
 </context>
 <context>
@@ -559,107 +657,108 @@ Open Batch Report to see all skipped images and reasons.</source>
         <translation>画像、PDF、Epub、またはコミック ブック アーカイブ ファイル (cbr、cbz など) をインポートします。新しいプロジェクトが開きます</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="54"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
         <source>Images</source>
         <translation>画像</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="57"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="63"/>
         <source>Document</source>
         <translation>書類</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="66"/>
         <source>Archive</source>
         <translation>アーカイブ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="64"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="70"/>
         <source>Comic Book Archive</source>
         <translation>コミックブックアーカイブ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="68"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="74"/>
         <source>Project File</source>
         <translation>プロジェクトファイル</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="75"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="81"/>
         <source>Save Currently Loaded Image</source>
         <translation>現在ロードされている画像を保存</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="79"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="85"/>
         <source>Save Project</source>
         <translation>プロジェクトの保存</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="83"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="89"/>
         <source>Save as</source>
         <translation>名前を付けて保存</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="94"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="100"/>
         <source>Export all Images</source>
         <translation>すべての画像をエクスポート</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="105"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
         <source>ZIP</source>
         <translation>ZIP</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="111"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="117"/>
         <source>CBZ</source>
         <translation>CBZ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="117"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="123"/>
         <source>PDF</source>
         <translation>PDF</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="123"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="60"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="129"/>
         <source>PSD</source>
         <translation>PSD</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="129"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="135"/>
         <source>Home</source>
         <translation>家</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="133"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="139"/>
         <source>Settings</source>
         <translation>設定</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="142"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="148"/>
         <source>Search / Replace (Ctrl+F)</source>
         <translation>検索/置換 (Ctrl+F)</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="149"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="155"/>
         <source>Insert files into current project</source>
         <translation>現在のプロジェクトにファイルを挿入する</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="240"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="246"/>
         <source>Start New Project</source>
         <translation>新しいプロジェクトを開始する</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="241"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="247"/>
         <source>Your current project has unsaved changes. Start a new project?</source>
         <translation>現在のプロジェクトには保存されていない変更があります。新しいプロジェクトを始めますか?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="242"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="248"/>
         <source>Yes</source>
         <translation>はい</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/builders/nav.py" line="243"/>
+        <location filename="../../app/ui/main_window/builders/nav.py" line="249"/>
         <source>No</source>
         <translation>いいえ</translation>
     </message>
@@ -667,27 +766,27 @@ Open Batch Report to see all skipped images and reasons.</source>
 <context>
     <name>PageListView</name>
     <message>
-        <location filename="../../app/ui/list_view.py" line="73"/>
+        <location filename="../../app/ui/list_view.py" line="146"/>
         <source>Insert</source>
         <translation>入れる</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="74"/>
+        <location filename="../../app/ui/list_view.py" line="147"/>
         <source>Delete</source>
         <translation>消去</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="79"/>
+        <location filename="../../app/ui/list_view.py" line="152"/>
         <source>Unskip</source>
         <translation>スキップを解除する</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="82"/>
+        <location filename="../../app/ui/list_view.py" line="155"/>
         <source>Skip</source>
         <translation>スキップ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/list_view.py" line="88"/>
+        <location filename="../../app/ui/list_view.py" line="161"/>
         <source>Translate</source>
         <translation>翻訳する</translation>
     </message>
@@ -749,7 +848,7 @@ This folder is separate from Auto-Recover snapshots.</source>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="54"/>
         <source>Browse</source>
-        <translation>ブラウズ</translation>
+        <translation>参照</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/project_page.py" line="56"/>
@@ -1143,19 +1242,19 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="138"/>
         <source>Resize</source>
         <translation>サイズ変更</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="139"/>
         <source>Original</source>
         <translation>オリジナル</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="63"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="141"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="140"/>
         <source>Crop</source>
         <translation>作物</translation>
     </message>
@@ -1173,19 +1272,19 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="65"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="143"/>
         <source>Left</source>
         <translation>左</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="65"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="144"/>
         <source>Center</source>
         <translation>中心</translation>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="65"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="146"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="145"/>
         <source>Right</source>
         <translation>右</translation>
     </message>
@@ -1193,7 +1292,7 @@ Restart now?</source>
         <location filename="../../app/ui/settings/settings_ui.py" line="68"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="78"/>
         <location filename="../../app/ui/settings/settings_ui.py" line="113"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="148"/>
         <source>Custom</source>
         <translation>カスタム</translation>
     </message>
@@ -1235,7 +1334,7 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="117"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
         <source>DeepL</source>
         <translation>ディープL</translation>
     </message>
@@ -1246,7 +1345,7 @@ Restart now?</source>
     </message>
     <message>
         <location filename="../../app/ui/settings/settings_ui.py" line="122"/>
-        <location filename="../../app/ui/settings/settings_ui.py" line="157"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
         <source>Yandex</source>
         <translation>ヤンデックス</translation>
     </message>
@@ -1261,82 +1360,82 @@ Restart now?</source>
         <translation>Googleクラウドビジョン</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="149"/>
         <source>Deepseek</source>
         <translation>ディープシーク</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="150"/>
         <source>Open AI GPT</source>
         <translation>AI GPT を開く</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="151"/>
         <source>Microsoft Azure</source>
         <translation>マイクロソフトアジュール</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="152"/>
         <source>Google Cloud</source>
         <translation>グーグルクラウド</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="154"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="153"/>
         <source>Google Gemini</source>
         <translation>Google ジェミニ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="156"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="155"/>
         <source>Anthropic Claude</source>
         <translation>人間的なクロード</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="306"/>
         <source>Personalization</source>
         <translation>パーソナライゼーション</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="307"/>
         <source>Account</source>
         <translation>アカウント</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="308"/>
         <source>Tools</source>
         <translation>ツール</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="309"/>
         <source>LLMs</source>
         <translation>LLM</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="310"/>
         <source>Text Rendering</source>
         <translation>テキストのレンダリング</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="311"/>
         <source>Project</source>
         <translation>プロジェクト</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="312"/>
         <source>Export</source>
         <translation>輸出</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="313"/>
         <source>Shortcuts</source>
         <translation>ショートカット</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="314"/>
         <source>Advanced</source>
         <translation>高度な</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_ui.py" line="316"/>
+        <location filename="../../app/ui/settings/settings_ui.py" line="315"/>
         <source>About</source>
         <translation>について</translation>
     </message>
@@ -1838,229 +1937,234 @@ back on the Image (for further editing)</source>
 <context>
     <name>self.main</name>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="76"/>
+        <location filename="../../app/controllers/batch_report.py" line="86"/>
         <source>The AI provider flagged this content</source>
         <translation>AI プロバイダーがこのコンテンツにフラグを立てました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="78"/>
+        <location filename="../../app/controllers/batch_report.py" line="88"/>
         <source>Insufficient credits</source>
         <translation>クレジットが不十分です</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="80"/>
+        <location filename="../../app/controllers/batch_report.py" line="90"/>
         <source>Request timed out</source>
         <translation>リクエストがタイムアウトしました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="86"/>
+        <location filename="../../app/controllers/batch_report.py" line="96"/>
         <source>Rate limited by provider</source>
         <translation>プロバイダーによる料金制限</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="93"/>
+        <location filename="../../app/controllers/batch_report.py" line="103"/>
         <source>Authentication failed</source>
         <translation>認証に失敗しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="100"/>
+        <location filename="../../app/controllers/batch_report.py" line="110"/>
         <source>Network or connection error</source>
         <translation>ネットワークまたは接続エラー</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="109"/>
+        <location filename="../../app/controllers/batch_report.py" line="119"/>
         <source>Provider unavailable</source>
         <translation>プロバイダーが利用できない</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="115"/>
+        <location filename="../../app/controllers/batch_report.py" line="125"/>
         <source>Invalid translation response</source>
         <translation>無効な翻訳応答</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="116"/>
+        <location filename="../../app/controllers/batch_report.py" line="126"/>
         <source>Unexpected tool error</source>
         <translation>予期しないツールエラー</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="124"/>
-        <location filename="../../app/controllers/batch_report.py" line="173"/>
+        <location filename="../../app/controllers/batch_report.py" line="134"/>
+        <location filename="../../app/controllers/batch_report.py" line="183"/>
         <source>Try another text recognition tool</source>
         <translation>別のテキスト認識ツールを試してください</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="128"/>
-        <location filename="../../app/controllers/batch_report.py" line="177"/>
+        <location filename="../../app/controllers/batch_report.py" line="138"/>
+        <location filename="../../app/controllers/batch_report.py" line="187"/>
         <source>Try another translator</source>
         <translation>別の翻訳者を試してください</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="129"/>
+        <location filename="../../app/controllers/batch_report.py" line="139"/>
         <source>Try another tool</source>
         <translation>別のツールを試してみる</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="131"/>
+        <location filename="../../app/controllers/batch_report.py" line="141"/>
         <source>Buy more credits</source>
         <translation>さらにクレジットを購入する</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="133"/>
-        <location filename="../../app/controllers/batch_report.py" line="168"/>
+        <location filename="../../app/controllers/batch_report.py" line="143"/>
         <location filename="../../app/controllers/batch_report.py" line="178"/>
+        <location filename="../../app/controllers/batch_report.py" line="188"/>
         <source>Try again</source>
         <translation>もう一度やり直してください</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="139"/>
+        <location filename="../../app/controllers/batch_report.py" line="149"/>
         <source>Wait and try again</source>
         <translation>待ってからもう一度試してください</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="146"/>
+        <location filename="../../app/controllers/batch_report.py" line="156"/>
         <source>Check API settings</source>
         <translation>API設定を確認する</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="153"/>
+        <location filename="../../app/controllers/batch_report.py" line="163"/>
         <source>Check your connection</source>
         <translation>接続を確認してください</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="162"/>
+        <location filename="../../app/controllers/batch_report.py" line="172"/>
         <source>Try again later</source>
         <translation>後でもう一度試してください</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="184"/>
+        <location filename="../../app/controllers/batch_report.py" line="194"/>
+        <source>Image could not be opened</source>
+        <translation>画像を開けませんでした</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/batch_report.py" line="195"/>
         <source>No text blocks detected</source>
         <translation>テキストブロックは検出されませんでした</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="185"/>
+        <location filename="../../app/controllers/batch_report.py" line="196"/>
         <source>Text recognition failed</source>
         <translation>テキスト認識に失敗しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="186"/>
+        <location filename="../../app/controllers/batch_report.py" line="197"/>
         <source>Translation failed</source>
         <translation>翻訳に失敗しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="187"/>
+        <location filename="../../app/controllers/batch_report.py" line="198"/>
         <source>Webtoon text recognition chunk failed</source>
         <translation>ウェブトゥーンのテキスト認識チャンクが失敗しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="189"/>
+        <location filename="../../app/controllers/batch_report.py" line="200"/>
         <source>Webtoon translation chunk failed</source>
         <translation>ウェブトゥーン翻訳チャンクが失敗しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="192"/>
+        <location filename="../../app/controllers/batch_report.py" line="203"/>
         <source>Page processing failed</source>
         <translation>ページ処理に失敗しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="253"/>
+        <location filename="../../app/controllers/batch_report.py" line="265"/>
         <source>This image is not in the current project.</source>
         <translation>この画像は現在のプロジェクトにはありません。</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <location filename="../../app/controllers/batch_report.py" line="291"/>
         <source>Cancelled</source>
         <translation>キャンセル</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="279"/>
+        <location filename="../../app/controllers/batch_report.py" line="291"/>
         <source>Completed</source>
         <translation>完了</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="282"/>
+        <location filename="../../app/controllers/batch_report.py" line="294"/>
         <source>{0}  |  Updated {1}</source>
         <translation>{0} |  {1} を更新しました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="309"/>
+        <location filename="../../app/controllers/batch_report.py" line="321"/>
         <source>Total</source>
         <translation>合計</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="310"/>
-        <location filename="../../app/controllers/batch_report.py" line="356"/>
+        <location filename="../../app/controllers/batch_report.py" line="322"/>
+        <location filename="../../app/controllers/batch_report.py" line="368"/>
         <source>Skipped</source>
         <translation>スキップされました</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="320"/>
+        <location filename="../../app/controllers/batch_report.py" line="332"/>
         <source>Skipped Images ({0})</source>
         <translation>スキップされた画像 ({0})</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="327"/>
+        <location filename="../../app/controllers/batch_report.py" line="339"/>
         <source>Double-click a row to open that page.</source>
         <translation>行をダブルクリックしてそのページを開きます。</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <location filename="../../app/controllers/batch_report.py" line="344"/>
         <source>Image</source>
         <translation>画像</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="332"/>
+        <location filename="../../app/controllers/batch_report.py" line="344"/>
         <source>Reason</source>
         <translation>理由</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="366"/>
+        <location filename="../../app/controllers/batch_report.py" line="378"/>
         <source>No skipped images in this batch.</source>
         <translation>このバッチにはスキップされた画像はありません。</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="377"/>
+        <location filename="../../app/controllers/batch_report.py" line="389"/>
         <source>No batch report is available yet.</source>
         <translation>バッチ レポートはまだありません。</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/batch_report.py" line="391"/>
+        <location filename="../../app/controllers/batch_report.py" line="403"/>
         <source>Batch Report</source>
         <translation>バッチレポート</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="438"/>
+        <location filename="../../app/controllers/projects.py" line="442"/>
         <source>Project Recovery</source>
         <translation>プロジェクトの回復</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="439"/>
+        <location filename="../../app/controllers/projects.py" line="443"/>
         <source>An autosaved project from a previous session was found.</source>
         <translation>以前のセッションから自動保存されたプロジェクトが見つかりました。</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="441"/>
+        <location filename="../../app/controllers/projects.py" line="445"/>
         <source>Last autosave: {saved_at}
 Do you want to restore it?</source>
         <translation>最後の自動保存: {saved_at}
 復元しますか?</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="443"/>
+        <location filename="../../app/controllers/projects.py" line="447"/>
         <source>Restore</source>
         <translation>復元する</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="444"/>
+        <location filename="../../app/controllers/projects.py" line="448"/>
         <source>Discard</source>
         <translation>破棄</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="843"/>
+        <location filename="../../app/controllers/projects.py" line="1116"/>
         <source>Project Not Found</source>
         <translation>プロジェクトが見つかりません</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="845"/>
+        <location filename="../../app/controllers/projects.py" line="1118"/>
         <source>The selected project file could not be found.
 It may have been moved, renamed, or deleted.
 
@@ -2071,12 +2175,12 @@ It may have been moved, renamed, or deleted.
 {path}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="923"/>
+        <location filename="../../app/controllers/projects.py" line="1196"/>
         <source>Korean</source>
         <translation>韓国人</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="924"/>
+        <location filename="../../app/controllers/projects.py" line="1197"/>
         <source>English</source>
         <translation>英語</translation>
     </message>
@@ -2207,18 +2311,18 @@ back on the Image (for further editing)</source>
 <context>
     <name>settings.ui</name>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="176"/>
+        <location filename="../../modules/ocr/factory.py" line="188"/>
         <location filename="../../modules/translation/microsoft.py" line="25"/>
         <source>Microsoft Azure</source>
         <translation>マイクロソフトアジュール</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="186"/>
+        <location filename="../../modules/ocr/factory.py" line="198"/>
         <source>Google Cloud</source>
         <translation>グーグルクラウド</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="193"/>
+        <location filename="../../modules/ocr/factory.py" line="205"/>
         <location filename="../../modules/translation/llm/gpt.py" line="33"/>
         <source>Open AI GPT</source>
         <translation>AI GPT を開く</translation>
@@ -2253,12 +2357,12 @@ back on the Image (for further editing)</source>
 <context>
     <name>settings_page.ui</name>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="30"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="28"/>
         <source>Resize</source>
         <translation>サイズ変更</translation>
     </message>
     <message>
-        <location filename="../../modules/utils/pipeline_config.py" line="32"/>
+        <location filename="../../modules/utils/pipeline_config.py" line="30"/>
         <source>Crop</source>
         <translation>作物</translation>
     </message>
