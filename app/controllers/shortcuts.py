@@ -34,7 +34,6 @@ class ShortcutController:
         current_shortcuts = self.get_current_shortcuts()
         for shortcut_id, shortcut in self._shortcuts.items():
             shortcut.setKey(QtGui.QKeySequence(current_shortcuts.get(shortcut_id, "")))
-        self._update_tooltips(current_shortcuts)
 
     def get_current_shortcuts(self) -> dict[str, str]:
         shortcuts = get_default_shortcuts()
@@ -101,40 +100,3 @@ class ShortcutController:
             return
         if self.main.blk_list:
             self.main.pipeline.load_box_coords(self.main.blk_list)
-
-    def _update_tooltips(self, shortcuts: dict[str, str]) -> None:
-        delete_sequence = self._format_shortcut(shortcuts.get("delete_selected_box", ""))
-        restore_sequence = self._format_shortcut(shortcuts.get("restore_text_blocks", ""))
-
-        delete_tooltip = self.main.tr("Delete Selected Box")
-        restore_tooltip = self.main.tr(
-            "Draws all the Text Blocks in the existing Text Block List\nback on the Image (for further editing)"
-        )
-
-        if delete_sequence:
-            delete_tooltip = f"{delete_tooltip} ({delete_sequence})"
-        if restore_sequence:
-            restore_tooltip = f"{restore_tooltip}\n{self.main.tr('Shortcut')}: {restore_sequence}"
-
-        self.main.delete_button.setToolTip(delete_tooltip)
-        self.main.draw_blklist_blks.setToolTip(restore_tooltip)
-
-        try:
-            undo_button, redo_button = self.main.undo_tool_group.get_button_group().buttons()[:2]
-        except Exception:
-            return
-
-        undo_tooltip = self.main.tr("Undo")
-        redo_tooltip = self.main.tr("Redo")
-        undo_sequence = self._format_shortcut(shortcuts.get("undo", ""))
-        redo_sequence = self._format_shortcut(shortcuts.get("redo", ""))
-        if undo_sequence:
-            undo_tooltip = f"{undo_tooltip} ({undo_sequence})"
-        if redo_sequence:
-            redo_tooltip = f"{redo_tooltip} ({redo_sequence})"
-        undo_button.setToolTip(undo_tooltip)
-        redo_button.setToolTip(redo_tooltip)
-
-    @staticmethod
-    def _format_shortcut(sequence: str) -> str:
-        return QtGui.QKeySequence(sequence).toString(QtGui.QKeySequence.SequenceFormat.NativeText)
