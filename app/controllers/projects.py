@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import os
 import re
@@ -19,6 +20,7 @@ from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.ui.export_chapters_dialog import ExportChaptersDialog, ExportChapterRow
+from app.controllers.psd_exporter import PsdPageData, export_psd_pages
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
@@ -622,6 +624,60 @@ class ProjectController:
             selected_path = f"{selected_path}.{normalized_ext}"
         return selected_path
 
+    def export_to_psd_dialog(self):
+        if not self.main.image_files:
+            return
+
+        default_dir = self._get_default_psd_export_dir()
+        if len(self.main.image_files) == 1:
+            default_name = f"{os.path.splitext(os.path.basename(self.main.image_files[0]))[0]}.psd"
+            selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self.main,
+                "Export PSD As",
+                os.path.join(default_dir, default_name),
+                "PSD Files (*.psd);;All Files (*)",
+            )
+            if not selected_path:
+                return
+            if not selected_path.lower().endswith(".psd"):
+                selected_path = f"{selected_path}.psd"
+            self.export_to_psd(os.path.dirname(selected_path), single_file_path=selected_path)
+            return
+
+        selected_folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self.main,
+            "Export PSD",
+            default_dir,
+        )
+        if selected_folder:
+            self.export_to_psd(selected_folder)
+
+    def export_to_psd(self, output_folder: str, single_file_path: str | None = None):
+        # Gather all data on the main thread (GUI access required for scene items)
+        self.main.image_ctrl.save_current_image_state()
+        pages = self._gather_psd_pages()
+        bundle_name = self._get_export_bundle_name()
+        self.main.loading.setVisible(True)
+        # Do the heavy PSD writing on the worker thread
+        self.main.run_threaded(
+            self._write_psd_worker, None, self.main.default_error_handler, lambda: self.main.loading.setVisible(False),
+            output_folder, pages, bundle_name, single_file_path,
+        )
+
+    def _write_psd_worker(
+        self,
+        output_folder: str,
+        pages: list[PsdPageData],
+        bundle_name: str,
+        single_file_path: str | None = None,
+    ):
+        export_psd_pages(
+            output_folder=output_folder,
+            pages=pages,
+            bundle_name=bundle_name,
+            single_file_path=single_file_path,
+        )
+
     @staticmethod
     def _sanitize_export_stem(value: str) -> str:
         sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())
@@ -778,6 +834,46 @@ class ProjectController:
         finally:
             # Clean up temp directory
             shutil.rmtree(temp_dir)
+
+    def _gather_psd_pages(self) -> list[PsdPageData]:
+        """Collect page data on the main thread where GUI access is safe."""
+        all_pages_current_state = self._build_all_pages_current_state()
+
+        temp_main_page_context = None
+        if self.main.webtoon_mode:
+            temp_main_page_context = type('TempMainPage', (object,), {
+                'image_files': self.main.image_files,
+                'image_states': all_pages_current_state
+            })()
+
+        pages: list[PsdPageData] = []
+        for page_idx, file_path in enumerate(self.main.image_files):
+            rgb_img = self.main.load_image(file_path)
+            viewer_state = copy.deepcopy(all_pages_current_state[file_path].get('viewer_state', {}))
+
+            if self.main.webtoon_mode and temp_main_page_context is not None:
+                renderer = ImageSaveRenderer(rgb_img)
+                renderer.add_spanning_text_items(viewer_state, page_idx, temp_main_page_context)
+
+            patch_list = copy.deepcopy(self.main.image_patches.get(file_path, []))
+            text_items = viewer_state.get('text_items_state', [])
+            logger.info(
+                "PSD page %d (%s): patches=%d, text_items=%d, viewer_state_keys=%s",
+                page_idx, os.path.basename(file_path),
+                len(patch_list), len(text_items) if text_items else 0,
+                list(viewer_state.keys()),
+            )
+
+            pages.append(
+                PsdPageData(
+                    file_path=file_path,
+                    rgb_image=rgb_img,
+                    viewer_state=viewer_state,
+                    patches=patch_list,
+                )
+            )
+
+        return pages
 
     def _build_all_pages_current_state(self) -> dict[str, dict]:
         all_pages_current_state: dict[str, dict] = {}

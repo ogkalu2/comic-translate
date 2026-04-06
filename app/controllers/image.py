@@ -15,6 +15,7 @@ from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
 from app.path_materialization import ensure_path_materialized
+from app.controllers.psd_importer import ImportedPsdPage, import_psd_files
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -333,12 +334,82 @@ class ImageStateController:
             autosave_enabled = False
         prev_project_file = self.main.project_file if autosave_enabled else None
 
+        psd_paths = [p for p in (paths or []) if isinstance(p, str) and p.lower().endswith(".psd")]
+        if psd_paths:
+            if len(psd_paths) != len(paths):
+                self.main.default_error_handler(
+                    (
+                        ValueError,
+                        ValueError("PSD import does not support mixing PSD files with other file types in one load request."),
+                        "",
+                    )
+                )
+                return
+            self.main.project_ctrl.clear_recovery_checkpoint()
+            self.clear_state()
+            if prev_project_file:
+                self.main.project_file = prev_project_file
+                self.main.setWindowTitle(f"{os.path.basename(prev_project_file)}[*]")
+            self.main.run_threaded(
+                self._import_psd_files,
+                self.on_psd_imported,
+                self.main.default_error_handler,
+                None,
+                psd_paths,
+            )
+            return
+
         self.main.project_ctrl.clear_recovery_checkpoint()
         self.clear_state()
         if prev_project_file:
             self.main.project_file = prev_project_file
             self.main.setWindowTitle(f"{os.path.basename(prev_project_file)}[*]")
         self.main.run_threaded(self.load_initial_image, self.on_initial_image_loaded, self.main.default_error_handler, None, paths)
+
+    def _import_psd_files(self, psd_paths: List[str]) -> list[ImportedPsdPage]:
+        return import_psd_files(psd_paths)
+
+    def on_psd_imported(self, pages: list[ImportedPsdPage]):
+        if not pages:
+            self.main.image_viewer.clear_scene()
+            return
+
+        for page in pages:
+            file_path = page.image_path
+            rgb_image = page.rgb_image
+
+            self.main.image_files.append(file_path)
+            self.main.image_data[file_path] = rgb_image
+            self.main.image_history[file_path] = [file_path]
+            self.main.in_memory_history[file_path] = [rgb_image.copy()]
+            self.main.current_history_index[file_path] = 0
+            self.main.image_states[file_path] = self._build_image_state(
+                file_path,
+                page.viewer_state,
+                [],
+                [],
+                False,
+            )
+
+            stack = QtGui.QUndoStack(self.main)
+            stack.cleanChanged.connect(self.main._update_window_modified)
+            stack.indexChanged.connect(self.main._bump_dirty_revision)
+            try:
+                if hasattr(self.main, "search_ctrl") and self.main.search_ctrl is not None:
+                    stack.indexChanged.connect(self.main.search_ctrl.on_undo_redo)
+            except Exception:
+                pass
+            self.main.undo_stacks[file_path] = stack
+            self.main.undo_group.addStack(stack)
+
+        self.main.page_list.blockSignals(True)
+        self.update_image_cards()
+        self.main.page_list.blockSignals(False)
+        self.main.page_list.setCurrentRow(0)
+        self.main.loaded_images.append(self.main.image_files[0])
+        self.main.image_viewer.resetTransform()
+        self.main.image_viewer.fitInView()
+        self.main.mark_project_dirty()
 
     def thread_insert(self, paths: List[str]):
         if self.main.image_files:
