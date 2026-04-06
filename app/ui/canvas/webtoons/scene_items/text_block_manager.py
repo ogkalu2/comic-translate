@@ -179,13 +179,9 @@ class TextBlockManager:
             return
             
         file_path = self.image_loader.image_file_paths[page_idx]
-        stored_blks = [
-            blk.deep_copy() if hasattr(blk, 'deep_copy') else blk
-            for blk in self.main_controller.image_states[file_path].get('blk_list', [])
-        ]
-        
-        # Convert coordinates from page-local to scene coordinates on copies so the
-        # persisted page-local state does not drift across repeated lazy loads.
+        stored_blks = self.main_controller.image_states[file_path].get('blk_list', []).copy()
+
+        # Convert coordinates from page-local to scene coordinates for webtoon mode.
         for blk in stored_blks:
             self._convert_textblock_coordinates(blk, page_idx, to_scene=True)
 
