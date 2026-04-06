@@ -98,5 +98,4 @@ class ShortcutController:
     def _restore_text_blocks(self) -> None:
         if not self._workspace_is_active() or self._is_text_input_focused():
             return
-        if self.main.blk_list:
-            self.main.pipeline.load_box_coords(self.main.blk_list)
+        self.main.restore_text_blocks()

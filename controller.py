@@ -201,7 +201,7 @@ class ComicTranslate(ComicTranslateUI):
         self.set_all_button.clicked.connect(self.text_ctrl.set_src_trg_all)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
         self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
-        self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
+        self.draw_blklist_blks.clicked.connect(self.restore_text_blocks)
         self.change_all_blocks_size_dec.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
         self.change_all_blocks_size_inc.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
         self.delete_button.clicked.connect(self.delete_selected_box)
@@ -328,6 +328,41 @@ class ComicTranslate(ComicTranslateUI):
                 selected_paths.append(path)
                 seen.add(path)
         return selected_paths
+
+    def restore_text_blocks(self):
+        if not self.webtoon_mode:
+            if self.blk_list:
+                self.pipeline.load_box_coords(self.blk_list)
+            return
+
+        manager = getattr(self.image_viewer, "webtoon_manager", None)
+        page_idx = self.curr_img_idx
+        if manager is None or not (0 <= page_idx < len(self.image_files)):
+            if self.blk_list:
+                self.pipeline.load_box_coords(self.blk_list)
+            return
+
+        page_y = manager.image_positions[page_idx]
+        page_bottom = page_y + manager.image_heights[page_idx]
+
+        current_page_blocks = []
+        for blk in self.blk_list:
+            if blk.xyxy is None or len(blk.xyxy) < 4:
+                continue
+            blk_y = blk.xyxy[1]
+            blk_bottom = blk.xyxy[3]
+            if (
+                (blk_y >= page_y and blk_y < page_bottom)
+                or (blk_bottom > page_y and blk_bottom <= page_bottom)
+                or (blk_y < page_y and blk_bottom > page_bottom)
+            ):
+                current_page_blocks.append(blk)
+
+        if current_page_blocks:
+            self.pipeline.load_box_coords(current_page_blocks)
+            return
+
+        return
 
     def _any_undo_dirty(self) -> bool:
         for stack in self.undo_stacks.values():
