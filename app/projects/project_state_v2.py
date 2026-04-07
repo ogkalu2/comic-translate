@@ -155,12 +155,18 @@ def remap_project_file_path(old_file_name: str, new_file_name: str) -> None:
     if old_key == new_key:
         return
 
+    with _LAZY_BLOB_LOCK:
+        remapped_entries = [
+            (path, blob_hash)
+            for path, (mapped_db, blob_hash) in _LAZY_BLOBS_BY_PATH.items()
+            if mapped_db == old_key
+        ]
+
     close_cached_connection(old_key)
 
     with _LAZY_BLOB_LOCK:
-        for path, (mapped_db, blob_hash) in list(_LAZY_BLOBS_BY_PATH.items()):
-            if mapped_db == old_key:
-                _LAZY_BLOBS_BY_PATH[path] = (new_key, blob_hash)
+        for path, blob_hash in remapped_entries:
+            _LAZY_BLOBS_BY_PATH[path] = (new_key, blob_hash)
 
 
 def register_lazy_blob_path(project_file: str, output_path: str, blob_hash: str) -> None:
