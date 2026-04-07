@@ -132,7 +132,18 @@ class NavRailMixin:
 
         nav_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Vertical, exclusive=True)
         nav_tools = [
-            {"svg": "home_line.svg", "checkable": True, "tooltip": self.tr("Home"), "clicked": self.show_home},
+            {
+                "svg": "startup_line.svg",
+                "checkable": True,
+                "tooltip": self.tr("Start"),
+                "clicked": self.show_home_screen,
+            },
+            {
+                "svg": "home_line.svg",
+                "checkable": True,
+                "tooltip": self.tr("Home"),
+                "clicked": self.show_main_page,
+            },
             {
                 "svg": "settings.svg",
                 "checkable": True,
@@ -141,7 +152,12 @@ class NavRailMixin:
             },
         ]
         nav_tool_group.set_button_list(nav_tools)
-        nav_tool_group.get_button_group().buttons()[0].setChecked(True)
+        nav_buttons = nav_tool_group.get_button_group().buttons()
+        self.nav_tool_group = nav_tool_group
+        self.startup_nav_button = nav_buttons[0]
+        self.home_nav_button = nav_buttons[1]
+        self.settings_nav_button = nav_buttons[2]
+        self.startup_nav_button.setChecked(True)
 
         self.search_sidebar_button = MToolButton()
         self.search_sidebar_button.set_dayu_svg("search_line.svg")

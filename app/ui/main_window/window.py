@@ -204,10 +204,27 @@ class ComicTranslateUI(
             if hasattr(self.title_bar, "webtoon_toggle"):
                 self.title_bar.webtoon_toggle.setVisible(visible)
 
+    def _set_active_nav_button(self, page: str) -> None:
+        page_to_button = {
+            "startup": getattr(self, "startup_nav_button", None),
+            "home": getattr(self, "home_nav_button", None),
+            "settings": getattr(self, "settings_nav_button", None),
+        }
+        for name, button in page_to_button.items():
+            if button is None:
+                continue
+            checked = name == page
+            try:
+                with QtCore.QSignalBlocker(button):
+                    button.setChecked(checked)
+            except Exception:
+                button.setChecked(checked)
+
     def show_home_screen(self) -> None:
         self._finish_settings_resize_preview()
         self._set_document_tools_visible(False)
         self._center_stack.setCurrentWidget(self.startup_home)
+        self._set_active_nav_button("startup")
 
     def show_home(self) -> None:
         if self._workspace_initialized:
@@ -220,6 +237,7 @@ class ComicTranslateUI(
             self.settings_page = SettingsPage(self)
         self._finish_settings_resize_preview()
         self._center_stack.setCurrentWidget(self.settings_page)
+        self._set_active_nav_button("settings")
 
     def show_main_page(self):
         self._finish_settings_resize_preview()
@@ -227,6 +245,7 @@ class ComicTranslateUI(
             self._workspace_initialized = True
             self._set_document_tools_visible(True)
             self._center_stack.setCurrentWidget(self.main_content_widget)
+            self._set_active_nav_button("home")
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:  # type: ignore[override]
         super().resizeEvent(event)
