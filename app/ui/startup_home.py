@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtGui, QtWidgets
+from send2trash import send2trash
 
 from .dayu_widgets import dayu_theme
 
@@ -355,7 +356,7 @@ class _RecentRow(QtWidgets.QFrame):
             return
 
         try:
-            os.remove(normalized_path)
+            send2trash(normalized_path)
         except OSError as exc:
             QtWidgets.QMessageBox.critical(
                 dialog_parent,
