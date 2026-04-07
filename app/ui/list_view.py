@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QListWidget
 from PySide6.QtWidgets import QSizePolicy, QAbstractItemView, QStyledItemDelegate, QStyle
 from PySide6.QtCore import Signal, Qt, QSize, QRect, QEvent
 from PySide6.QtGui import QContextMenuEvent, QDropEvent, QPainter, QPixmap, QFont, QColor
+from .dayu_widgets import dayu_theme
 from .dayu_widgets.menu import MMenu
 from .dayu_widgets.browser import MClickBrowserFilePushButton
 
@@ -71,11 +72,11 @@ class PageListItemDelegate(QStyledItemDelegate):
         return QSize(self.THUMB_SIZE.width() + 120, self.ROW_HEIGHT)
 
     def _background_color(self, option) -> QColor:
-        base = option.palette.base().color()
+        base = QColor(dayu_theme.background_color)
         if option.state & QStyle.StateFlag.State_Selected:
-            return option.palette.highlight().color()
+            return QColor(dayu_theme.background_selected_color)
         if option.state & QStyle.StateFlag.State_MouseOver:
-            return self._blend_colors(base, option.palette.highlight().color(), 0.18)
+            return self._blend_colors(base, QColor(dayu_theme.background_selected_color), 0.18)
         return base
 
     @staticmethod
