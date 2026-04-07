@@ -626,6 +626,43 @@ class ProjectController:
             selected_path = f"{selected_path}.{normalized_ext}"
         return selected_path
 
+    def _launch_export_folder_dialog(
+        self,
+        title: str,
+        suggested_name: str | None = None,
+        initial_dir: str | None = None,
+    ) -> str:
+        default_dir = initial_dir or self._get_default_export_dir()
+        default_name = self._sanitize_export_stem(suggested_name or self._get_export_bundle_name())
+        selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self.main,
+            title,
+            os.path.join(default_dir, default_name),
+            "Folders (*)",
+        )
+        selected_path = str(selected_path or "").strip()
+        if not selected_path:
+            return ""
+        if os.path.isfile(selected_path):
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Export Folder"),
+                self.main.tr("Choose a folder path, not an existing file."),
+            )
+            return ""
+        try:
+            os.makedirs(selected_path, exist_ok=True)
+        except OSError as exc:
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Export Folder"),
+                self.main.tr(
+                    "Could not create the selected export folder.\n\n{error}"
+                ).format(error=str(exc)),
+            )
+            return ""
+        return selected_path
+
     def export_to_psd_dialog(self):
         if not self.main.image_files:
             return
@@ -659,10 +696,10 @@ class ProjectController:
             self.export_psd_plan(export_plan)
             return
 
-        selected_folder = QtWidgets.QFileDialog.getExistingDirectory(
-            self.main,
+        selected_folder = self._launch_export_folder_dialog(
             "Export PSD",
-            default_dir,
+            suggested_name=self._get_export_bundle_name(),
+            initial_dir=default_dir,
         )
         if selected_folder:
             self.export_to_psd(selected_folder)
