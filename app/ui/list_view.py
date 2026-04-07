@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QListWidget
 from PySide6.QtWidgets import QSizePolicy, QAbstractItemView, QStyledItemDelegate, QStyle
-from PySide6.QtCore import Signal, Qt, QSize, QRect
-from PySide6.QtGui import QContextMenuEvent, QDropEvent, QPainter, QPixmap, QFont
+from PySide6.QtCore import Signal, Qt, QSize, QRect, QEvent
+from PySide6.QtGui import QContextMenuEvent, QDropEvent, QPainter, QPixmap, QFont, QColor
 from .dayu_widgets.menu import MMenu
 from .dayu_widgets.browser import MClickBrowserFilePushButton
 
@@ -18,7 +18,7 @@ class PageListItemDelegate(QStyledItemDelegate):
         painter.save()
 
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
-        background = option.palette.highlight().color() if selected else option.palette.base().color()
+        background = self._background_color(option)
         painter.fillRect(option.rect, background)
 
         thumb_rect = self._thumbnail_rect(option.rect)
@@ -70,6 +70,24 @@ class PageListItemDelegate(QStyledItemDelegate):
     def sizeHint(self, option, index):
         return QSize(self.THUMB_SIZE.width() + 120, self.ROW_HEIGHT)
 
+    def _background_color(self, option) -> QColor:
+        base = option.palette.base().color()
+        if option.state & QStyle.StateFlag.State_Selected:
+            return option.palette.highlight().color()
+        if option.state & QStyle.StateFlag.State_MouseOver:
+            return self._blend_colors(base, option.palette.highlight().color(), 0.18)
+        return base
+
+    @staticmethod
+    def _blend_colors(base: QColor, accent: QColor, accent_weight: float) -> QColor:
+        accent_weight = max(0.0, min(1.0, accent_weight))
+        base_weight = 1.0 - accent_weight
+        return QColor(
+            round(base.red() * base_weight + accent.red() * accent_weight),
+            round(base.green() * base_weight + accent.green() * accent_weight),
+            round(base.blue() * base_weight + accent.blue() * accent_weight),
+        )
+
     def _thumbnail_rect(self, rect):
         top = rect.y() + (rect.height() - self.THUMB_SIZE.height()) // 2
         return QRect(self.MARGIN_X + rect.x(), top, self.THUMB_SIZE.width(), self.THUMB_SIZE.height())
@@ -85,6 +103,7 @@ class PageListView(QListWidget):
 
     def __init__(self) -> None:
         super().__init__()
+        self._hovered_row = -1
         self.setSpacing(5)
         self.setMinimumWidth(100)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -97,12 +116,17 @@ class PageListView(QListWidget):
         self.setDropIndicatorShown(True)
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.viewport().setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setIconSize(PageListItemDelegate.THUMB_SIZE)
         self.setItemDelegate(PageListItemDelegate(self))
         self.ui_elements()
         
         # Connect selection model changes to emit our custom signal
         self.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.itemEntered.connect(self._on_item_entered)
 
     def ui_elements(self):
         self.insert_browser = MClickBrowserFilePushButton(multiple=True)
@@ -118,6 +142,35 @@ class PageListView(QListWidget):
             if index >= 0:
                 selected_indices.append(index)
         self.selection_changed.emit(selected_indices)
+
+    def _on_item_entered(self, item):
+        self._set_hovered_row(self.row(item) if item else -1)
+
+    def _set_hovered_row(self, row: int) -> None:
+        if row == self._hovered_row:
+            return
+
+        previous_row = self._hovered_row
+        self._hovered_row = row
+
+        for changed_row in (previous_row, row):
+            if changed_row < 0:
+                continue
+            index = self.model().index(changed_row, 0)
+            if index.isValid():
+                self.viewport().update(self.visualRect(index))
+
+        cursor = Qt.CursorShape.PointingHandCursor if row >= 0 else Qt.CursorShape.ArrowCursor
+        self.viewport().setCursor(cursor)
+
+    def viewportEvent(self, event):
+        if event.type() in (QEvent.Type.MouseMove, QEvent.Type.HoverMove):
+            pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+            index = self.indexAt(pos)
+            self._set_hovered_row(index.row() if index.isValid() else -1)
+        elif event.type() in (QEvent.Type.Leave, QEvent.Type.HoverLeave):
+            self._set_hovered_row(-1)
+        return super().viewportEvent(event)
 
     def _item_identity(self, item) -> str:
         data = item.data(Qt.ItemDataRole.UserRole)
