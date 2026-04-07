@@ -834,8 +834,8 @@ class CustomTitleBar(QtWidgets.QWidget):
 
     def apply_style(self, bg: str, fg: str, hover: str) -> None:
         """Apply theme-aware colours.  Call from ``apply_theme``."""
-        fg_color    = QtGui.QColor(fg)
-        hover_color = QtGui.QColor(hover)
+        fg_color = QtGui.QColor(fg)
+        hover_color = _parse_qcolor(hover)
         switch_width = int(getattr(dayu_theme, "switch_width_small", 28))
         switch_height = int(getattr(dayu_theme, "switch_height_small", 14))
         # Keep the unchecked switch visible against both light and dark bars.
@@ -1047,6 +1047,26 @@ def _clean_title(title: str, is_modified: bool = False) -> str:
     """Render Qt's [*] marker as * only while the window is modified."""
     marker = "*" if is_modified else ""
     return title.replace("[*]", marker).strip()
+
+
+def _parse_qcolor(value: str) -> QtGui.QColor:
+    color = QtGui.QColor(value)
+    if color.isValid():
+        return color
+
+    text = str(value).strip()
+    if text.startswith("rgba(") and text.endswith(")"):
+        parts = [part.strip() for part in text[5:-1].split(",")]
+        if len(parts) == 4:
+            try:
+                r, g, b = (int(parts[0]), int(parts[1]), int(parts[2]))
+                a = float(parts[3])
+                if a <= 1:
+                    a = int(a * 255)
+                return QtGui.QColor(r, g, b, int(max(0, min(255, a))))
+            except ValueError:
+                pass
+    return QtGui.QColor("#000000")
 
 
 def _project_stem_from_title(title: str) -> str:
