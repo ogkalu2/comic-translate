@@ -117,7 +117,9 @@ class ImageSaveRenderer:
             for text_item in other_text_items:
                 pos = text_item.get('position', (0, 0))
                 item_x1, item_y1 = pos
-                height = text_item.get('height')
+                height = self._resolve_text_item_height(text_item)
+                if height is None:
+                    continue
                 item_y2 = item_y1 + height
 
                 new_pos = None
@@ -148,6 +150,35 @@ class ImageSaveRenderer:
                     existing_text_items.append(spanning_text_item)
 
         viewer_state['text_items_state'] = existing_text_items
+
+    def _resolve_text_item_height(self, text_item_state):
+        height = text_item_state.get('height')
+        if isinstance(height, (int, float)):
+            return float(height)
+
+        try:
+            text_props = TextItemProperties.from_dict(text_item_state)
+            text_item = TextBlockItem(
+                text=text_props.text,
+                font_family=text_props.font_family,
+                font_size=text_props.font_size,
+                render_color=text_props.text_color,
+                alignment=text_props.alignment,
+                line_spacing=text_props.line_spacing,
+                outline_color=text_props.outline_color,
+                outline_width=text_props.outline_width,
+                bold=text_props.bold,
+                italic=text_props.italic,
+                underline=text_props.underline,
+                direction=text_props.direction,
+            )
+            text_item.set_text(text_props.text, text_props.width)
+            if text_props.direction:
+                text_item.set_direction(text_props.direction)
+            text_item.set_vertical(bool(text_props.vertical))
+            return float(text_item.boundingRect().height())
+        except Exception:
+            return None
 
     def render_to_image(self):
         # Create a high-resolution QImage
