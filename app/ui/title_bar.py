@@ -974,6 +974,8 @@ class CustomTitleBar(QtWidgets.QWidget):
     def _toggle_project_popup(self) -> None:
         if self._ignore_next_project_chip_click:
             self._ignore_next_project_chip_click = False
+            with QtCore.QSignalBlocker(self.project_chip):
+                self.project_chip.setChecked(self._project_popup.isVisible())
             return
         if self._project_popup.isVisible():
             self._project_popup.hide()
