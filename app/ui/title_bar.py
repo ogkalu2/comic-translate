@@ -655,6 +655,7 @@ class CustomTitleBar(QtWidgets.QWidget):
         super().__init__(parent)
         self.setFixedHeight(TITLE_BAR_HEIGHT)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._ignore_next_project_chip_click = False
         self._init_ui()
 
     # Build UI
@@ -967,6 +968,9 @@ class CustomTitleBar(QtWidgets.QWidget):
         return result
 
     def _toggle_project_popup(self) -> None:
+        if self._ignore_next_project_chip_click:
+            self._ignore_next_project_chip_click = False
+            return
         if self._project_popup.isVisible():
             self._project_popup.hide()
             return
@@ -976,6 +980,13 @@ class CustomTitleBar(QtWidgets.QWidget):
     def _sync_project_popup_state(self, visible: bool) -> None:
         with QtCore.QSignalBlocker(self.project_chip):
             self.project_chip.setChecked(bool(visible))
+        if not visible:
+            chip_rect = QtCore.QRect(
+                self.project_chip.mapToGlobal(QtCore.QPoint(0, 0)),
+                self.project_chip.size(),
+            )
+            if chip_rect.contains(QtGui.QCursor.pos()):
+                self._ignore_next_project_chip_click = True
 
     # Window controls
     def _toggle_maximize(self) -> None:
