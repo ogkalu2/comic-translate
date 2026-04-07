@@ -1113,8 +1113,8 @@ class ProjectController:
             if overwrite != QtWidgets.QMessageBox.StandardButton.Yes:
                 return False
 
-        if current_path and os.path.dirname(current_path) == os.path.dirname(target_path):
-            return self._rename_project_file(current_path, target_path)
+        if current_path and self._same_volume(current_path, target_path):
+            return self._move_project_file(current_path, target_path)
 
         self.save_current_state()
 
@@ -1146,7 +1146,7 @@ class ProjectController:
         self.run_save_proj(target_path, post_save_callback=_post_save)
         return True
 
-    def _rename_project_file(self, current_path: str, target_path: str) -> bool:
+    def _move_project_file(self, current_path: str, target_path: str) -> bool:
         if not os.path.isfile(current_path):
             return False
 
@@ -1162,7 +1162,7 @@ class ProjectController:
                 self.main,
                 self.main.tr("Project File"),
                 self.main.tr(
-                    "Could not rename the project file.\n\n{error}"
+                    "Could not move the project file.\n\n{error}"
                 ).format(error=str(exc)),
             )
             return False
@@ -1172,12 +1172,23 @@ class ProjectController:
         self.remove_recent_project(current_path)
         self.add_recent_project(target_path)
         self._refresh_home_screen()
+        action_text = (
+            self.main.tr("Project file renamed.")
+            if os.path.dirname(current_path) == os.path.dirname(target_path)
+            else self.main.tr("Project file moved.")
+        )
         MMessage.success(
-            self.main.tr("Project file renamed."),
+            action_text,
             parent=self.main,
             duration=2,
         )
         return True
+
+    @staticmethod
+    def _same_volume(path_a: str, path_b: str) -> bool:
+        drive_a = os.path.splitdrive(os.path.abspath(path_a))[0].lower()
+        drive_b = os.path.splitdrive(os.path.abspath(path_b))[0].lower()
+        return drive_a == drive_b
         
     def save_current_state(self):
         if self.main.webtoon_mode:
