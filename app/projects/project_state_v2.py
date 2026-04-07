@@ -149,6 +149,20 @@ def close_cached_connection(file_name: str | None = None) -> None:
         _LAZY_BLOBS_BY_PATH.clear()
 
 
+def remap_project_file_path(old_file_name: str, new_file_name: str) -> None:
+    old_key = os.path.abspath(old_file_name)
+    new_key = os.path.abspath(new_file_name)
+    if old_key == new_key:
+        return
+
+    close_cached_connection(old_key)
+
+    with _LAZY_BLOB_LOCK:
+        for path, (mapped_db, blob_hash) in list(_LAZY_BLOBS_BY_PATH.items()):
+            if mapped_db == old_key:
+                _LAZY_BLOBS_BY_PATH[path] = (new_key, blob_hash)
+
+
 def register_lazy_blob_path(project_file: str, output_path: str, blob_hash: str) -> None:
     if not output_path or not blob_hash:
         return

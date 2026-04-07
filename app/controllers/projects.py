@@ -25,6 +25,7 @@ from app.controllers.psd_exporter import PsdPageData, export_psd_pages
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
+    remap_project_file_path,
     save_state_to_proj_file,
 )
 from modules.utils.archives import make
@@ -1112,6 +1113,9 @@ class ProjectController:
             if overwrite != QtWidgets.QMessageBox.StandardButton.Yes:
                 return False
 
+        if current_path and os.path.dirname(current_path) == os.path.dirname(target_path):
+            return self._rename_project_file(current_path, target_path)
+
         self.save_current_state()
 
         def _post_save() -> None:
@@ -1140,6 +1144,39 @@ class ProjectController:
             )
 
         self.run_save_proj(target_path, post_save_callback=_post_save)
+        return True
+
+    def _rename_project_file(self, current_path: str, target_path: str) -> bool:
+        if not os.path.isfile(current_path):
+            return False
+
+        try:
+            remap_project_file_path(current_path, target_path)
+            os.replace(current_path, target_path)
+        except OSError as exc:
+            try:
+                remap_project_file_path(target_path, current_path)
+            except OSError:
+                pass
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Project File"),
+                self.main.tr(
+                    "Could not rename the project file.\n\n{error}"
+                ).format(error=str(exc)),
+            )
+            return False
+
+        self.main.project_file = target_path
+        self.main.setWindowTitle(f"{os.path.basename(target_path)}[*]")
+        self.remove_recent_project(current_path)
+        self.add_recent_project(target_path)
+        self._refresh_home_screen()
+        MMessage.success(
+            self.main.tr("Project file renamed."),
+            parent=self.main,
+            duration=2,
+        )
         return True
         
     def save_current_state(self):
