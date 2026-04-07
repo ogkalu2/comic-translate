@@ -937,7 +937,11 @@ class CustomTitleBar(QtWidgets.QWidget):
         y = int((self.height() - PROJECT_CHIP_HEIGHT) / 2)
         self.project_chip.setGeometry(x, y, desired_width, PROJECT_CHIP_HEIGHT)
         self.project_chip.set_display_text(
-            fm.elidedText(self._title_text, Qt.TextElideMode.ElideRight, max(0, desired_width - 40))
+            _elide_title_preserving_dirty_marker(
+                self._title_text,
+                fm,
+                max(0, desired_width - 40),
+            )
         )
         self.project_chip.show()
 
@@ -1058,6 +1062,30 @@ def _clean_title(title: str, is_modified: bool = False) -> str:
     """Render Qt's [*] marker as * only while the window is modified."""
     marker = "*" if is_modified else ""
     return title.replace("[*]", marker).strip()
+
+
+def _elide_title_preserving_dirty_marker(
+    title: str,
+    font_metrics: QtGui.QFontMetrics,
+    width: int,
+) -> str:
+    if width <= 0:
+        return ""
+    if not title.endswith("*"):
+        return font_metrics.elidedText(title, Qt.TextElideMode.ElideRight, width)
+
+    base_title = title[:-1].rstrip()
+    dirty_marker = "*"
+    dirty_width = font_metrics.horizontalAdvance(dirty_marker)
+    if width <= dirty_width:
+        return dirty_marker
+
+    elided_base = font_metrics.elidedText(
+        base_title,
+        Qt.TextElideMode.ElideRight,
+        width - dirty_width,
+    )
+    return f"{elided_base}{dirty_marker}"
 
 
 def _parse_qcolor(value: str) -> QtGui.QColor:
