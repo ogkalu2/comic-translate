@@ -332,8 +332,8 @@
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="41" />
-        <source>Pages with the same chapter name are exported into the same file. Edit the Chapter column to merge or split chapters.</source>
-        <translation>Le pagine con lo stesso nome di capitolo vengono esportate nello stesso file. Modifica la colonna Capitolo per unire o dividere i capitoli.</translation>
+        <source>Pages with the same chapter name are exported together. Edit the Chapter column to merge or split chapters.</source>
+        <translation>Le pagine con lo stesso nome di capitolo vengono esportate insieme. Modifica la colonna Capitolo per unire o dividere i capitoli.</translation>
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="49" />
@@ -377,8 +377,8 @@
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="84" />
-        <source>Export files</source>
-        <translation>Esporta file</translation>
+        <source>Export targets</source>
+        <translation>Destinazioni di esportazione</translation>
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="93" />
@@ -2274,19 +2274,37 @@ Vuoi ripristinarlo?</translation>
         <translation>Scarta</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1083" />
-        <location filename="../../app/controllers/projects.py" line="1093" />
-        <location filename="../../app/controllers/projects.py" line="1163" />
+        <location filename="../../app/controllers/projects.py" line="649" />
+        <location filename="../../app/controllers/projects.py" line="658" />
+        <source>Export Folder</source>
+        <translation>Cartella di esportazione</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/projects.py" line="650" />
+        <source>Choose a folder path, not an existing file.</source>
+        <translation>Scegli il percorso di una cartella, non un file esistente.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/projects.py" line="660" />
+        <source>Could not create the selected export folder.
+
+{error}</source>
+        <translation>{error}</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/projects.py" line="1129" />
+        <location filename="../../app/controllers/projects.py" line="1139" />
+        <location filename="../../app/controllers/projects.py" line="1209" />
         <source>Project File</source>
         <translation>File di progetto</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1084" />
+        <location filename="../../app/controllers/projects.py" line="1130" />
         <source>Choose an existing folder for the project file.</source>
         <translation>Scegli una cartella esistente per il file di progetto.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1095" />
+        <location filename="../../app/controllers/projects.py" line="1141" />
         <source>Could not create the selected project folder.
 
 {error}</source>
@@ -2295,12 +2313,12 @@ Vuoi ripristinarlo?</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1106" />
+        <location filename="../../app/controllers/projects.py" line="1152" />
         <source>Overwrite Project File</source>
         <translation>Sovrascrivi file di progetto</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1108" />
+        <location filename="../../app/controllers/projects.py" line="1154" />
         <source>A project file already exists at this location.
 
 {path}
@@ -2313,12 +2331,12 @@ Overwrite it?</source>
 Sovrascriverlo?</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1131" />
+        <location filename="../../app/controllers/projects.py" line="1177" />
         <source>Old Project File Kept</source>
         <translation>Vecchio file di progetto mantenuto</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1133" />
+        <location filename="../../app/controllers/projects.py" line="1179" />
         <source>The project was saved to the new location, but the old file could not be removed.
 
 {path}
@@ -2331,12 +2349,12 @@ Sovrascriverlo?</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1141" />
+        <location filename="../../app/controllers/projects.py" line="1187" />
         <source>Project file updated.</source>
         <translation>File di progetto aggiornato.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1165" />
+        <location filename="../../app/controllers/projects.py" line="1211" />
         <source>Could not move the project file.
 
 {error}</source>
@@ -2345,22 +2363,22 @@ Sovrascriverlo?</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1176" />
+        <location filename="../../app/controllers/projects.py" line="1222" />
         <source>Project file renamed.</source>
         <translation>File di progetto rinominato.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1178" />
+        <location filename="../../app/controllers/projects.py" line="1224" />
         <source>Project file moved.</source>
         <translation>File di progetto spostato.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1298" />
+        <location filename="../../app/controllers/projects.py" line="1344" />
         <source>Project Not Found</source>
         <translation>Progetto non trovato</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1300" />
+        <location filename="../../app/controllers/projects.py" line="1346" />
         <source>The selected project file could not be found.
 It may have been moved, renamed, or deleted.
 
@@ -2371,12 +2389,12 @@ Potrebbe essere stato spostato, rinominato o eliminato.
 {sentiero}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1380" />
+        <location filename="../../app/controllers/projects.py" line="1426" />
         <source>Korean</source>
         <translation>Coreano</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1381" />
+        <location filename="../../app/controllers/projects.py" line="1427" />
         <source>English</source>
         <translation>Inglese</translation>
     </message>

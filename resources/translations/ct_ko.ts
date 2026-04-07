@@ -332,8 +332,8 @@
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="41" />
-        <source>Pages with the same chapter name are exported into the same file. Edit the Chapter column to merge or split chapters.</source>
-        <translation>같은 챕터 이름을 가진 페이지는 같은 파일로 내보내집니다. 챕터를 병합하거나 분할하려면 챕터 열을 편집하세요.</translation>
+        <source>Pages with the same chapter name are exported together. Edit the Chapter column to merge or split chapters.</source>
+        <translation>같은 챕터 이름을 가진 페이지는 함께 내보내집니다. 챕터를 병합하거나 분할하려면 챕터 열을 편집하세요.</translation>
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="49" />
@@ -377,8 +377,8 @@
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="84" />
-        <source>Export files</source>
-        <translation>파일 내보내기</translation>
+        <source>Export targets</source>
+        <translation>내보내기 대상</translation>
     </message>
     <message>
         <location filename="../../app/ui/export_chapters_dialog.py" line="93" />
@@ -2274,19 +2274,37 @@ Do you want to restore it?</source>
         <translation>저장 안 함</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1083" />
-        <location filename="../../app/controllers/projects.py" line="1093" />
-        <location filename="../../app/controllers/projects.py" line="1163" />
+        <location filename="../../app/controllers/projects.py" line="649" />
+        <location filename="../../app/controllers/projects.py" line="658" />
+        <source>Export Folder</source>
+        <translation>내보내기 폴더</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/projects.py" line="650" />
+        <source>Choose a folder path, not an existing file.</source>
+        <translation>기존 파일이 아닌 폴더 경로를 선택하세요.</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/projects.py" line="660" />
+        <source>Could not create the selected export folder.
+
+{error}</source>
+        <translation>{error}</translation>
+    </message>
+    <message>
+        <location filename="../../app/controllers/projects.py" line="1129" />
+        <location filename="../../app/controllers/projects.py" line="1139" />
+        <location filename="../../app/controllers/projects.py" line="1209" />
         <source>Project File</source>
         <translation>프로젝트 파일</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1084" />
+        <location filename="../../app/controllers/projects.py" line="1130" />
         <source>Choose an existing folder for the project file.</source>
         <translation>프로젝트 파일용 기존 폴더를 선택하세요.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1095" />
+        <location filename="../../app/controllers/projects.py" line="1141" />
         <source>Could not create the selected project folder.
 
 {error}</source>
@@ -2295,12 +2313,12 @@ Do you want to restore it?</source>
 {error}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1106" />
+        <location filename="../../app/controllers/projects.py" line="1152" />
         <source>Overwrite Project File</source>
         <translation>프로젝트 파일 덮어쓰기</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1108" />
+        <location filename="../../app/controllers/projects.py" line="1154" />
         <source>A project file already exists at this location.
 
 {path}
@@ -2313,12 +2331,12 @@ Overwrite it?</source>
 덮어쓰시겠습니까?</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1131" />
+        <location filename="../../app/controllers/projects.py" line="1177" />
         <source>Old Project File Kept</source>
         <translation>이전 프로젝트 파일 유지됨</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1133" />
+        <location filename="../../app/controllers/projects.py" line="1179" />
         <source>The project was saved to the new location, but the old file could not be removed.
 
 {path}
@@ -2331,12 +2349,12 @@ Overwrite it?</source>
 {error}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1141" />
+        <location filename="../../app/controllers/projects.py" line="1187" />
         <source>Project file updated.</source>
         <translation>프로젝트 파일이 업데이트되었습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1165" />
+        <location filename="../../app/controllers/projects.py" line="1211" />
         <source>Could not move the project file.
 
 {error}</source>
@@ -2345,22 +2363,22 @@ Overwrite it?</source>
 {error}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1176" />
+        <location filename="../../app/controllers/projects.py" line="1222" />
         <source>Project file renamed.</source>
         <translation>프로젝트 파일 이름이 변경되었습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1178" />
+        <location filename="../../app/controllers/projects.py" line="1224" />
         <source>Project file moved.</source>
         <translation>프로젝트 파일이 이동되었습니다.</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1298" />
+        <location filename="../../app/controllers/projects.py" line="1344" />
         <source>Project Not Found</source>
         <translation>프로젝트를 찾을 수 없음</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1300" />
+        <location filename="../../app/controllers/projects.py" line="1346" />
         <source>The selected project file could not be found.
 It may have been moved, renamed, or deleted.
 
@@ -2371,12 +2389,12 @@ It may have been moved, renamed, or deleted.
 {길}</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1380" />
+        <location filename="../../app/controllers/projects.py" line="1426" />
         <source>Korean</source>
         <translation>한국어</translation>
     </message>
     <message>
-        <location filename="../../app/controllers/projects.py" line="1381" />
+        <location filename="../../app/controllers/projects.py" line="1427" />
         <source>English</source>
         <translation>영어</translation>
     </message>
