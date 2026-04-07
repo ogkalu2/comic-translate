@@ -1286,7 +1286,7 @@ class ProjectController:
             return
         home.populate(self.get_recent_projects())
 
-    def thread_load_project(self, file_name: str, clear_recovery: bool = True):
+    def thread_load_project(self, file_name: str, clear_recovery: bool = True, on_success=None):
         normalized_path = os.path.normpath(os.path.abspath(file_name))
         if not os.path.isfile(normalized_path):
             self.remove_recent_project(normalized_path)
@@ -1315,6 +1315,8 @@ class ProjectController:
             self.add_recent_project(normalized_path)
             self._refresh_home_screen()
             self.update_ui_from_project()
+            if callable(on_success):
+                on_success()
 
         def _on_load_error(error_tuple):
             self.main.default_error_handler(error_tuple)

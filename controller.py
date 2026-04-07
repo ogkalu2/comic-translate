@@ -301,8 +301,7 @@ class ComicTranslate(ComicTranslateUI):
             # Treat as generic files
             self._guarded_thread_load_images([path])
             return
-        self.project_ctrl.thread_load_project(path)
-        self.show_main_page()
+        self.project_ctrl.thread_load_project(path, on_success=self.show_main_page)
 
     def _on_home_remove_recent(self, path: str):
         """Persist removal of one entry from the recent list."""
