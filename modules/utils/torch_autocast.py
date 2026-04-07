@@ -10,7 +10,11 @@ def configure_torch_autocast(torch_module: Any, device: str) -> tuple[str, Any, 
         device_type != "cpu"
         and torch_module.amp.autocast_mode.is_autocast_available(device_type)
     )
-    return device_type, torch_module.float16, use_autocast
+    dtype = torch_module.float16
+    if device_type == "xpu" and hasattr(torch_module, "bfloat16"):
+        # Intel XPU TorchScript paths may reject Half for FFT-backed models like LaMa.
+        dtype = torch_module.bfloat16
+    return device_type, dtype, use_autocast
 
 
 def autocast_context(torch_module: Any, enabled: bool, device_type: str, dtype: Any):
