@@ -31,7 +31,6 @@ class ImageStateController:
         self._active_page_error_path: str | None = None
         self._suppress_dismiss_message_ids: set[int] = set()
         self._active_transient_skip_message: MMessage | None = None
-        self._highlighted_card_indices: set[int] = set()
         self._force_default_view_once = False
         
         # Initialize lazy image loader for list view
@@ -306,13 +305,10 @@ class ImageStateController:
         self.main.image_patches.clear()
         self.main.in_memory_patches.clear()
         self.main.project_file = None
-        self.main.image_cards.clear()
-        self.main.current_card = None
         self.main.page_list.blockSignals(True)
         self.main.page_list.clear()
         self.main.page_list.blockSignals(False)
         self.page_list_loader.clear()
-        self._highlighted_card_indices.clear()
 
         # Reset current_image_index
         self.main.curr_img_idx = -1
@@ -407,7 +403,7 @@ class ImageStateController:
             self.main.undo_group.addStack(stack)
 
         self.main.page_list.blockSignals(True)
-        self.update_image_cards()
+        self.refresh_page_list()
         self.main.page_list.blockSignals(False)
         self.main.page_list.setCurrentRow(0)
         self.main.loaded_images.append(self.main.image_files[0])
@@ -462,12 +458,9 @@ class ImageStateController:
                     success = self.main.image_viewer.webtoon_manager.insert_pages(prepared_files, insert_position)
                     
                     if success:
-                        # Update image cards and set selection to the first inserted image
-                        self.update_image_cards()
-                        self.main.page_list.blockSignals(True)
-                        self.main.page_list.setCurrentRow(insert_position)
-                        self.highlight_card(insert_position)
-                        self.main.page_list.blockSignals(False)
+                        # Refresh the page list and select the first inserted image.
+                        self.refresh_page_list()
+                        self.set_page_list_current_row(insert_position, emit_signal=False)
                         
                         # Update current index to the first inserted image
                         self.main.curr_img_idx = insert_position
@@ -475,14 +468,11 @@ class ImageStateController:
                         # Fallback to full reload if insert failed
                         current_page = max(0, self.main.curr_img_idx)
                         self.main.image_viewer.webtoon_manager.load_images_lazy(self.main.image_files, current_page)
-                        self.update_image_cards()
-                        self.main.page_list.blockSignals(True)
-                        self.main.page_list.setCurrentRow(current_page)
-                        self.highlight_card(current_page)
-                        self.main.page_list.blockSignals(False)
+                        self.refresh_page_list()
+                        self.set_page_list_current_row(current_page, emit_signal=False)
                 else:
                     # Handle normal mode
-                    self.update_image_cards()
+                    self.refresh_page_list()
                     self.main.page_list.setCurrentRow(insert_position)
                     
                     # Load and display the first inserted image
@@ -522,7 +512,7 @@ class ImageStateController:
 
         if self.main.image_files:
             self.main.page_list.blockSignals(True)
-            self.update_image_cards()
+            self.refresh_page_list()
             self.main.page_list.blockSignals(False)
             self.main.page_list.setCurrentRow(0)
             self.main.loaded_images.append(self.main.image_files[0])
@@ -534,14 +524,11 @@ class ImageStateController:
         if self.main.image_files:
             self.main.mark_project_dirty()
 
-    def update_image_cards(self):
+    def refresh_page_list(self):
         page_list = self.main.page_list
         page_list.setUpdatesEnabled(False)
         try:
             page_list.clear()
-            self.main.image_cards.clear()
-            self.main.current_card = None
-            self._highlighted_card_indices.clear()
 
             for file_path in self.main.image_files:
                 file_name = os.path.basename(file_path)
@@ -558,7 +545,7 @@ class ImageStateController:
             page_list.setUpdatesEnabled(True)
             page_list.viewport().update()
 
-    def remove_image_cards(self, removed_indices: list[int]):
+    def remove_page_list_rows(self, removed_indices: list[int]):
         """Remove list rows in place to avoid rebuilding the entire sidebar."""
         if not removed_indices:
             return
@@ -573,13 +560,6 @@ class ImageStateController:
                     page_list.takeItem(index)
 
             self.page_list_loader.remove_indices(ordered_indices, self.main.image_files)
-            self._highlighted_card_indices = {
-                new_idx for new_idx in (
-                    self._recalculate_removed_index(index, ordered_indices)
-                    for index in self._highlighted_card_indices
-                ) if new_idx is not None
-            }
-            self.main.current_card = None
         finally:
             page_list.setUpdatesEnabled(True)
             page_list.blockSignals(False)
@@ -656,10 +636,9 @@ class ImageStateController:
             manager.load_images_lazy(self.main.image_files, current_page)
 
         self.main.page_list.blockSignals(True)
-        self.update_image_cards()
+        self.refresh_page_list()
         if 0 <= self.main.curr_img_idx < len(self.main.image_files):
-            self.main.page_list.setCurrentRow(self.main.curr_img_idx)
-            self.highlight_card(self.main.curr_img_idx)
+            self.set_page_list_current_row(self.main.curr_img_idx, emit_signal=False)
             self.page_list_loader.force_load_image(self.main.curr_img_idx)
             current_path = self.main.image_files[self.main.curr_img_idx]
             if current_path in self.main.undo_stacks:
@@ -668,7 +647,7 @@ class ImageStateController:
 
         self.main.mark_project_dirty()
 
-    def on_card_selected(self, current, previous):
+    def on_page_list_current_item_changed(self, current, previous):
         if not current:
             self._hide_active_page_skip_error()
             return
@@ -702,7 +681,6 @@ class ImageStateController:
                 
                 # Scroll to the page (this will set _programmatic_scroll = True)
                 self.main.image_viewer.scroll_to_page(index)
-                # Note: highlighting is now handled by on_selection_changed
                 
                 # Load minimal page state without interfering with the webtoon view
                 if file_path in self.main.image_states:
@@ -799,32 +777,22 @@ class ImageStateController:
         if loaded:
             self.main.in_memory_patches.setdefault(file_path, []).extend(loaded)
 
-    def highlight_card(self, index: int):
-        """Highlight a single card (used for programmatic selection when signals are blocked)."""
-        if 0 <= index < self.main.page_list.count():
-            self._highlighted_card_indices = {index}
-            self.main.current_card = self.main.page_list.item(index)
-            self.main.page_list.viewport().update()
-        else:
-            self._highlighted_card_indices.clear()
-            self.main.current_card = None
+    def set_page_list_current_row(self, row: int, *, emit_signal: bool) -> None:
+        """Update the real list selection, optionally suppressing currentItemChanged side effects."""
+        if not (0 <= row < self.main.page_list.count()):
+            return
 
-    def on_selection_changed(self, selected_indices: list):
-        """Handle selection changes and update visual highlighting for all selected cards."""
-        valid_indices = {
-            index for index in selected_indices
-            if 0 <= index < self.main.page_list.count()
-        }
-        self._highlighted_card_indices = valid_indices
-
-        if valid_indices:
-            current_index = self.main.page_list.currentRow()
-            if current_index not in valid_indices:
-                current_index = max(valid_indices)
-            self.main.current_card = self.main.page_list.item(current_index)
+        page_list = self.main.page_list
+        if emit_signal:
+            page_list.setCurrentRow(row)
         else:
-            self.main.current_card = None
-        self.main.page_list.viewport().update()
+            was_blocked = page_list.signalsBlocked()
+            page_list.blockSignals(True)
+            try:
+                page_list.setCurrentRow(row)
+            finally:
+                page_list.blockSignals(was_blocked)
+            page_list.viewport().update()
 
     def handle_image_deletion(self, file_names: list[str]):
         """Handles the deletion of images based on the provided file names."""
@@ -886,20 +854,14 @@ class ImageStateController:
                         self.main.curr_img_idx = len(self.main.image_files) - 1
                     
                     current_page = max(0, self.main.curr_img_idx)
-                    self.remove_image_cards(removed_indices)
-                    self.main.page_list.blockSignals(True)
-                    self.main.page_list.setCurrentRow(current_page)
-                    self.highlight_card(current_page)
-                    self.main.page_list.blockSignals(False)
+                    self.remove_page_list_rows(removed_indices)
+                    self.set_page_list_current_row(current_page, emit_signal=False)
                 else:
                     # Fallback to full reload if non-destructive removal failed
                     current_page = max(0, self.main.curr_img_idx)
                     self.main.image_viewer.webtoon_manager.load_images_lazy(self.main.image_files, current_page)
-                    self.update_image_cards()
-                    self.main.page_list.blockSignals(True)
-                    self.main.page_list.setCurrentRow(current_page)
-                    self.highlight_card(current_page)
-                    self.main.page_list.blockSignals(False)
+                    self.refresh_page_list()
+                    self.set_page_list_current_row(current_page, emit_signal=False)
             else:
                 # If no images remain, exit webtoon mode and reset to drag browser
                 self.main.webtoon_mode = False
@@ -910,7 +872,7 @@ class ImageStateController:
                     self.main.show_home_screen()
                 except Exception:
                     pass
-                self.update_image_cards()
+                self.refresh_page_list()
         else:
             # Handle normal mode
             if self.main.image_files:
@@ -921,11 +883,8 @@ class ImageStateController:
                 file = self.main.image_files[new_index]
                 im = self.load_image(file)
                 self.display_image_from_loaded(im, new_index, False)
-                self.remove_image_cards(removed_indices)
-                self.main.page_list.blockSignals(True)
-                self.main.page_list.setCurrentRow(new_index)
-                self.highlight_card(new_index)
-                self.main.page_list.blockSignals(False)
+                self.remove_page_list_rows(removed_indices)
+                self.set_page_list_current_row(new_index, emit_signal=False)
             else:
                 # If no images remain, reset the view to the drag browser.
                 self.main.curr_img_idx = -1
@@ -934,7 +893,7 @@ class ImageStateController:
                     self.main.show_home_screen()
                 except Exception:
                     pass
-                self.update_image_cards()
+                self.refresh_page_list()
 
         # If the project has been emptied via deletion, drop stale crash recovery data.
         if not self.main.image_files:
@@ -942,13 +901,6 @@ class ImageStateController:
 
         if removed_any:
             self.main.mark_project_dirty()
-
-    @staticmethod
-    def _recalculate_removed_index(old_idx: int, removed_indices: list[int]) -> int | None:
-        if old_idx in removed_indices:
-            return None
-        removed_before = sum(1 for rem_idx in removed_indices if rem_idx < old_idx)
-        return old_idx - removed_before
 
     def handle_toggle_skip_images(self, file_names: list[str], skip_status: bool):
         """

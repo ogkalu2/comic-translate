@@ -202,11 +202,8 @@ class WebtoonController:
                 old_index = self.main.curr_img_idx
                 self.main.curr_img_idx = page_index
                 
-                # Update the page list selection without triggering signals
-                self.main.page_list.blockSignals(True)
-                self.main.page_list.setCurrentRow(page_index)
-                self.main.image_ctrl.highlight_card(page_index)
-                self.main.page_list.blockSignals(False)
+                # Update the page list selection without triggering signals.
+                self.main.image_ctrl.set_page_list_current_row(page_index, emit_signal=False)
                 
                 # In lazy webtoon mode, do minimal state management to avoid interfering with scrolling
                 # Only load language settings and basic state

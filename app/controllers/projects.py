@@ -1290,14 +1290,8 @@ class ProjectController:
         if not (0 <= index < len(self.main.image_files)):
             index = 0
             self.main.curr_img_idx = 0
-        self.main.image_ctrl.update_image_cards()
-
-        # highlight the row that matches the current image
-        self.main.page_list.blockSignals(True)
-        if 0 <= index < self.main.page_list.count():
-            self.main.page_list.setCurrentRow(index)
-            self.main.image_ctrl.highlight_card(index)
-        self.main.page_list.blockSignals(False)
+        self.main.image_ctrl.refresh_page_list()
+        self.main.image_ctrl.set_page_list_current_row(index, emit_signal=False)
 
         for file in self.main.image_files:
             stack = QUndoStack(self.main)

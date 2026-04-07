@@ -98,7 +98,6 @@ class PageListView(QListWidget):
     del_img = Signal(list)
     toggle_skip_img = Signal(list, bool)  # list of images, bool for skip status (True=skip, False=unskip)
     translate_imgs = Signal(list)
-    selection_changed = Signal(list)  # list of selected indices
     order_changed = Signal(list)  # reordered item identities (file paths when available)
 
     def __init__(self) -> None:
@@ -123,9 +122,6 @@ class PageListView(QListWidget):
         self.setIconSize(PageListItemDelegate.THUMB_SIZE)
         self.setItemDelegate(PageListItemDelegate(self))
         self.ui_elements()
-        
-        # Connect selection model changes to emit our custom signal
-        self.selectionModel().selectionChanged.connect(self._on_selection_changed)
         self.itemEntered.connect(self._on_item_entered)
 
     def ui_elements(self):
@@ -133,15 +129,6 @@ class PageListView(QListWidget):
         self.insert_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
-
-    def _on_selection_changed(self, selected, deselected):
-        """Handle selection changes and emit signal with selected indices."""
-        selected_indices = []
-        for item in self.selectedItems():
-            index = self.row(item)
-            if index >= 0:
-                selected_indices.append(index)
-        self.selection_changed.emit(selected_indices)
 
     def _on_item_entered(self, item):
         self._set_hovered_row(self.row(item) if item else -1)

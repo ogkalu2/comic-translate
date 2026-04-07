@@ -88,8 +88,6 @@ class ComicTranslate(ComicTranslateUI):
         self.displayed_images = set()  # Set to track displayed images
         self.image_patches = {}  # Store patches for each image
         self.in_memory_patches = {}  # Store patches in memory for each image
-        self.image_cards = []
-        self.current_card = None
         self.max_images_in_memory = 5
         self.loaded_images = []
 
@@ -246,8 +244,7 @@ class ComicTranslate(ComicTranslateUI):
         self.outline_checkbox.stateChanged.connect(self.text_ctrl.toggle_outline_settings)
 
         # Page List
-        self.page_list.currentItemChanged.connect(self.image_ctrl.on_card_selected)
-        self.page_list.selection_changed.connect(self.image_ctrl.on_selection_changed)
+        self.page_list.currentItemChanged.connect(self.image_ctrl.on_page_list_current_item_changed)
         self.page_list.order_changed.connect(self.image_ctrl.handle_image_reorder)
         self.page_list.del_img.connect(self.image_ctrl.handle_image_deletion)
         self.page_list.insert_browser.sig_files_changed.connect(self.image_ctrl.thread_insert)
