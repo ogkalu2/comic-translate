@@ -668,20 +668,19 @@ class ProjectController:
             self.export_to_psd(selected_folder)
 
     def export_to_psd(self, output_folder: str, single_file_path: str | None = None):
-        # Gather all data on the main thread (GUI access required for scene items)
         self.main.image_ctrl.save_current_image_state()
-        pages = self._gather_psd_pages()
+        all_pages_current_state = self._build_all_pages_current_state()
         bundle_name = self._get_export_bundle_name()
         self.main.loading.setVisible(True)
-        # Do the heavy PSD writing on the worker thread
         self.main.run_threaded(
             self._write_psd_worker, None, self.main.default_error_handler, lambda: self.main.loading.setVisible(False),
-            output_folder, pages, bundle_name, single_file_path,
+            output_folder, all_pages_current_state, bundle_name, single_file_path,
         )
 
     def export_psd_plan(self, export_plan: list[dict]) -> None:
         self.main.image_ctrl.save_current_image_state()
-        pages = self._gather_psd_pages()
+        all_pages_current_state = self._build_all_pages_current_state()
+        bundle_name = self._get_export_bundle_name()
         self.main.loading.setVisible(True)
         self.main.run_threaded(
             self._write_psd_plan_worker,
@@ -689,16 +688,18 @@ class ProjectController:
             self.main.default_error_handler,
             lambda: self.main.loading.setVisible(False),
             export_plan,
-            pages,
+            all_pages_current_state,
+            bundle_name,
         )
 
     def _write_psd_worker(
         self,
         output_folder: str,
-        pages: list[PsdPageData],
+        all_pages_current_state: dict[str, dict],
         bundle_name: str,
         single_file_path: str | None = None,
     ):
+        pages = self._gather_psd_pages(all_pages_current_state)
         export_psd_pages(
             output_folder=output_folder,
             pages=pages,
@@ -709,8 +710,10 @@ class ProjectController:
     def _write_psd_plan_worker(
         self,
         export_plan: list[dict],
-        pages: list[PsdPageData],
+        all_pages_current_state: dict[str, dict],
+        default_bundle_name: str,
     ) -> None:
+        pages = self._gather_psd_pages(all_pages_current_state)
         for group in export_plan:
             group_pages = [
                 pages[page_idx]
@@ -725,7 +728,7 @@ class ProjectController:
             export_psd_pages(
                 output_folder=output_path,
                 pages=group_pages,
-                bundle_name=str(group.get("group_name") or self._get_export_bundle_name()),
+                bundle_name=str(group.get("group_name") or default_bundle_name),
             )
 
     @staticmethod
@@ -888,9 +891,14 @@ class ProjectController:
             # Clean up temp directory
             shutil.rmtree(temp_dir)
 
-    def _gather_psd_pages(self) -> list[PsdPageData]:
-        """Collect page data on the main thread where GUI access is safe."""
-        all_pages_current_state = self._build_all_pages_current_state()
+    def _gather_psd_pages(self, all_pages_current_state: dict[str, dict]) -> list[PsdPageData]:
+        """Collect PSD page data from the captured viewer state."""
+        try:
+            if self.main.file_handler.should_pre_materialize(self.main.image_files):
+                count = self.main.file_handler.pre_materialize(self.main.image_files)
+                logger.info("PSD export pre-materialized %d paths before writing.", count)
+        except Exception:
+            logger.debug("PSD export pre-materialization failed; continuing lazily.", exc_info=True)
 
         temp_main_page_context = None
         if self.main.webtoon_mode:
