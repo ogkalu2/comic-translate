@@ -175,6 +175,7 @@ class ComicTranslate(ComicTranslateUI):
         self.save_all_browser.sig_file_changed.connect(self.project_ctrl.save_and_make)
         self.save_project_button.clicked.connect(self.project_ctrl.thread_save_project)
         self.save_as_project_button.clicked.connect(self.project_ctrl.thread_save_as_project)
+        self.title_bar.project_target_requested.connect(self.project_ctrl.thread_change_project_file)
         self.drag_browser.sig_files_changed.connect(self._guarded_thread_load_images)
        
         self.manual_radio.clicked.connect(self.manual_mode_selected)

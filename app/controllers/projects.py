@@ -16,6 +16,7 @@ from PySide6.QtCore import QSettings
 from PySide6.QtGui import QUndoStack
 
 from app.thread_worker import GenericWorker
+from app.ui.dayu_widgets.message import MMessage
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
@@ -980,6 +981,7 @@ class ProjectController:
 
     def run_save_proj(self, file_name, post_save_callback=None):
         prev_project_file = self.main.project_file
+        prev_window_title = self.main.windowTitle()
         self.main.project_file = file_name
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.loading.setVisible(True)
@@ -989,6 +991,8 @@ class ProjectController:
 
         def on_error(error_tuple):
             save_failed['value'] = True
+            self.main.project_file = prev_project_file
+            self.main.setWindowTitle(prev_window_title)
             self.main.default_error_handler(error_tuple)
 
         def on_finished():
@@ -1007,6 +1011,86 @@ class ProjectController:
                     post_save_callback()
 
         self.main.run_threaded(self.save_project, None, on_error, on_finished, file_name)
+
+    def thread_change_project_file(self, target_path: str) -> bool:
+        target_path = os.path.normpath(os.path.abspath(os.path.expanduser(target_path or "")))
+        if not target_path:
+            return False
+        if not target_path.lower().endswith(".ctpr"):
+            target_path = f"{target_path}.ctpr"
+
+        current_path = (
+            os.path.normpath(os.path.abspath(self.main.project_file))
+            if self.main.project_file
+            else None
+        )
+
+        target_dir = os.path.dirname(target_path)
+        if not target_dir:
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Project File"),
+                self.main.tr("Choose an existing folder for the project file."),
+            )
+            return False
+
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+        except OSError as exc:
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Project File"),
+                self.main.tr(
+                    "Could not create the selected project folder.\n\n{error}"
+                ).format(error=str(exc)),
+            )
+            return False
+
+        if current_path and target_path == current_path:
+            return self.thread_save_project()
+
+        if os.path.exists(target_path) and target_path != current_path:
+            overwrite = QtWidgets.QMessageBox.question(
+                self.main,
+                self.main.tr("Overwrite Project File"),
+                self.main.tr(
+                    "A project file already exists at this location.\n\n{path}\n\nOverwrite it?"
+                ).format(path=target_path),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if overwrite != QtWidgets.QMessageBox.StandardButton.Yes:
+                return False
+
+        self.save_current_state()
+
+        def _post_save() -> None:
+            if current_path and current_path != target_path:
+                removed_old_file = False
+                if os.path.isfile(current_path):
+                    try:
+                        os.remove(current_path)
+                        removed_old_file = True
+                    except OSError as exc:
+                        QtWidgets.QMessageBox.warning(
+                            self.main,
+                            self.main.tr("Old Project File Kept"),
+                            self.main.tr(
+                                "The project was saved to the new location, but the old file could not be removed.\n\n{path}\n\n{error}"
+                            ).format(path=current_path, error=str(exc)),
+                        )
+                if removed_old_file or not os.path.exists(current_path):
+                    self.remove_recent_project(current_path)
+                    self._refresh_home_screen()
+
+            MMessage.success(
+                self.main.tr("Project file updated."),
+                parent=self.main,
+                duration=2,
+            )
+
+        self.run_save_proj(target_path, post_save_callback=_post_save)
+        return True
         
     def save_current_state(self):
         if self.main.webtoon_mode:
