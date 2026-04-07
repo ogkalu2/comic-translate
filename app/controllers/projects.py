@@ -730,7 +730,8 @@ class ProjectController:
 
     @staticmethod
     def _sanitize_export_stem(value: str) -> str:
-        sanitized = re.sub(r"[^A-Za-z0-9._-]+", "_", str(value or "").strip())
+        sanitized = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", str(value or ""))
+        sanitized = re.sub(r"\s+", " ", sanitized).strip().strip(".")
         return sanitized.strip("._-") or "chapter"
 
     def _default_export_group_name(self, file_path: str) -> str:
