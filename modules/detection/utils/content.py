@@ -178,12 +178,12 @@ def detect_content_in_bbox(
     gray = imk.to_gray(image)
     threshold = mahotas.thresholding.otsu(gray)
     
-    binary_black_text = (gray < threshold)
-    binary_white_text = (gray > threshold)
+    binary_black_text = (gray < threshold).astype(np.uint8)
+    binary_white_text = (gray > threshold).astype(np.uint8)
     
     # Convert boolean to uint8 for connectedComponentsWithStats
-    _, _, stats_white, _ = imk.connected_components_with_stats(binary_white_text.astype(np.uint8), connectivity=8)
-    _, _, stats_black, _ = imk.connected_components_with_stats(binary_black_text.astype(np.uint8), connectivity=8)
+    _, _, stats_white, _ = imk.connected_components_with_stats(binary_white_text, connectivity=8)
+    _, _, stats_black, _ = imk.connected_components_with_stats(binary_black_text, connectivity=8)
 
     image_shape = image.shape[:2]
 
