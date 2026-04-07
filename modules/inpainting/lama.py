@@ -19,6 +19,10 @@ class LaMa(TorchAutocastMixin, InpaintModel):
     name = "lama"
     pad_mod = 8
 
+    @staticmethod
+    def should_use_autocast(device: str) -> bool:
+        return str(device).split(":", 1)[0].lower() != "xpu"
+
     def init_model(self, device, **kwargs):
         self.backend = kwargs.get("backend")
         if self.backend == "onnx":
@@ -32,6 +36,12 @@ class LaMa(TorchAutocastMixin, InpaintModel):
             local_path = ModelDownloader.primary_path(ModelID.LAMA_JIT) 
             self.model = load_jit_model(local_path, device)
             self.setup_torch_autocast(torch, device)
+            if not self.should_use_autocast(device):
+                logger.info(
+                    "Disabling LaMa autocast on device '%s' because the TorchScript FFT path requires float32.",
+                    device,
+                )
+                self.use_autocast = False
 
     @staticmethod
     def is_downloaded() -> bool:
