@@ -645,6 +645,19 @@ class ProjectController:
             self.export_to_psd(os.path.dirname(selected_path), single_file_path=selected_path)
             return
 
+        export_rows = self._build_export_rows()
+        if self._should_show_partition_dialog(export_rows):
+            partition_result = self._prompt_for_partition(
+                export_rows,
+                os.path.join(default_dir, "untitled.zip"),
+            )
+            if partition_result is None:
+                return
+            chapter_names_by_path, output_dir = partition_result
+            export_plan = self._build_export_plan_for_directory(output_dir, ".zip", chapter_names_by_path)
+            self.export_psd_plan(export_plan)
+            return
+
         selected_folder = QtWidgets.QFileDialog.getExistingDirectory(
             self.main,
             "Export PSD",
@@ -665,6 +678,19 @@ class ProjectController:
             output_folder, pages, bundle_name, single_file_path,
         )
 
+    def export_psd_plan(self, export_plan: list[dict]) -> None:
+        self.main.image_ctrl.save_current_image_state()
+        pages = self._gather_psd_pages()
+        self.main.loading.setVisible(True)
+        self.main.run_threaded(
+            self._write_psd_plan_worker,
+            None,
+            self.main.default_error_handler,
+            lambda: self.main.loading.setVisible(False),
+            export_plan,
+            pages,
+        )
+
     def _write_psd_worker(
         self,
         output_folder: str,
@@ -678,6 +704,30 @@ class ProjectController:
             bundle_name=bundle_name,
             single_file_path=single_file_path,
         )
+
+    def _write_psd_plan_worker(
+        self,
+        export_plan: list[dict],
+        pages: list[PsdPageData],
+    ) -> None:
+        for group in export_plan:
+            group_pages = [
+                pages[page_idx]
+                for page_idx in group.get("page_indices", [])
+                if 0 <= int(page_idx) < len(pages)
+            ]
+            if not group_pages:
+                continue
+            output_path = str(group.get("output_path") or "").strip()
+            if not output_path:
+                continue
+            export_psd_pages(
+                output_folder=os.path.dirname(output_path) or os.path.expanduser("~"),
+                pages=group_pages,
+                bundle_name=str(group.get("group_name") or self._get_export_bundle_name()),
+                archive_path=output_path,
+                archive_single_page=True,
+            )
 
     @staticmethod
     def _sanitize_export_stem(value: str) -> str:
