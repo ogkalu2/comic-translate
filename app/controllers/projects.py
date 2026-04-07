@@ -630,7 +630,7 @@ class ProjectController:
         if not self.main.image_files:
             return
 
-        default_dir = self._get_default_psd_export_dir()
+        default_dir = self._get_default_export_dir()
         if len(self.main.image_files) == 1:
             default_name = f"{os.path.splitext(os.path.basename(self.main.image_files[0]))[0]}.psd"
             selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
