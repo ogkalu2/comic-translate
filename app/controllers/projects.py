@@ -650,12 +650,12 @@ class ProjectController:
         if self._should_show_partition_dialog(export_rows):
             partition_result = self._prompt_for_partition(
                 export_rows,
-                os.path.join(default_dir, "untitled.zip"),
+                os.path.join(default_dir, "untitled"),
             )
             if partition_result is None:
                 return
             chapter_names_by_path, output_dir = partition_result
-            export_plan = self._build_export_plan_for_directory(output_dir, ".zip", chapter_names_by_path)
+            export_plan = self._build_export_plan_for_directory(output_dir, "", chapter_names_by_path)
             self.export_psd_plan(export_plan)
             return
 
@@ -723,11 +723,9 @@ class ProjectController:
             if not output_path:
                 continue
             export_psd_pages(
-                output_folder=os.path.dirname(output_path) or os.path.expanduser("~"),
+                output_folder=output_path,
                 pages=group_pages,
                 bundle_name=str(group.get("group_name") or self._get_export_bundle_name()),
-                archive_path=output_path,
-                archive_single_page=True,
             )
 
     @staticmethod
@@ -771,7 +769,9 @@ class ProjectController:
         return len(set(basenames)) != len(basenames)
 
     def _build_export_filename(self, group_name: str, extension: str, used_names: set[str]) -> str:
-        ext = extension if str(extension).startswith(".") else f".{extension}"
+        ext = str(extension or "").strip()
+        if ext and not ext.startswith("."):
+            ext = f".{ext}"
         stem = self._sanitize_export_stem(group_name)
         candidate = f"{stem}{ext}"
         suffix = 2

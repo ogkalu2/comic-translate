@@ -38,7 +38,7 @@ class ExportChaptersDialog(QtWidgets.QDialog):
 
         note = QtWidgets.QLabel(
             self.tr(
-                "Pages with the same chapter name are exported into the same file. "
+                "Pages with the same chapter name are exported together. "
                 "Edit the Chapter column to merge or split chapters."
             )
         )
@@ -81,7 +81,7 @@ class ExportChaptersDialog(QtWidgets.QDialog):
         self.table.itemChanged.connect(self._on_item_changed)
         layout.addWidget(self.table, 1)
 
-        summary_label = QtWidgets.QLabel(self.tr("Export files"))
+        summary_label = QtWidgets.QLabel(self.tr("Export targets"))
         layout.addWidget(summary_label)
 
         self.summary_list = QtWidgets.QListWidget(self)

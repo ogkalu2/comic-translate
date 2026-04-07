@@ -3,10 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shutil
 import struct
-import tempfile
-import zipfile
 from dataclasses import dataclass
 from typing import Any
 
@@ -66,39 +63,22 @@ def export_psd_pages(
 	pages: list[PsdPageData],
 	bundle_name: str,
 	single_file_path: str | None = None,
-	archive_path: str | None = None,
-	archive_single_page: bool = False,
 ) -> str:
 	if not pages:
 		raise ValueError("No images available to export.")
 
 	os.makedirs(output_folder, exist_ok=True)
 
-	if len(pages) == 1 and not archive_single_page:
+	if len(pages) == 1:
 		page = pages[0]
 		out_path = single_file_path or os.path.join(output_folder, f"{_safe_stem(page.file_path)}.psd")
 		_write_page_psd(page, out_path)
 		return out_path
 
-	tmp_dir = tempfile.mkdtemp(prefix="comic_translate_psd_")
-	try:
-		for page in pages:
-			out_path = os.path.join(tmp_dir, f"{_safe_stem(page.file_path)}.psd")
-			_write_page_psd(page, out_path)
-
-		final_archive_path = archive_path or os.path.join(
-			output_folder,
-			f"{_safe_name(bundle_name) or 'comic_translate_export'}.zip",
-		)
-		os.makedirs(os.path.dirname(final_archive_path) or output_folder, exist_ok=True)
-		with zipfile.ZipFile(final_archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-			for file_name in sorted(os.listdir(tmp_dir)):
-				file_path = os.path.join(tmp_dir, file_name)
-				if os.path.isfile(file_path):
-					zf.write(file_path, arcname=file_name)
-		return final_archive_path
-	finally:
-		shutil.rmtree(tmp_dir, ignore_errors=True)
+	for page in pages:
+		out_path = os.path.join(output_folder, f"{_safe_stem(page.file_path)}.psd")
+		_write_page_psd(page, out_path)
+	return output_folder
 
 
 def _write_page_psd(page: PsdPageData, out_path: str) -> None:
