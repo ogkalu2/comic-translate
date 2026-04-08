@@ -71,6 +71,10 @@ def import_psd_files(paths: list[str]) -> list[ImportedPsdPage]:
     return pages
 
 
+def prepare_psd_font_catalog() -> None:
+    _ensure_font_catalog()
+
+
 def _read_single_psd(path: str) -> tuple[np.ndarray, list[dict[str, Any]], PsdImportContext]:
     document = psapi.LayeredFile.read(path)
     flat_layers = _flat_layers(document)
@@ -325,6 +329,10 @@ def _image_layer_to_rgba(layer: Any) -> np.ndarray:
         try:
             data = dict(get_image_data())
         except Exception:
+            logger.exception(
+                "PSD image decode failed in get_image_data() for layer '%s'",
+                getattr(layer, "name", "<unnamed>"),
+            )
             data = {}
 
     channel_enum = getattr(getattr(psapi, "enum", None), "ChannelID", None)
@@ -339,6 +347,10 @@ def _image_layer_to_rgba(layer: Any) -> np.ndarray:
     alpha = _read_channel(layer, data, alpha_id, -1, height, width)
 
     if red is None and green is None and blue is None:
+        logger.error(
+            "PSD image layer '%s' produced no RGB channels during import.",
+            getattr(layer, "name", "<unnamed>"),
+        )
         return np.zeros((height, width, 4), dtype=np.uint8)
 
     if red is None:
@@ -371,6 +383,11 @@ def _read_channel(
         try:
             return _to_uint8_2d(get_by_id(channel_id), height, width)
         except Exception:
+            logger.exception(
+                "PSD channel read failed via get_channel_by_id() for layer '%s', channel_id=%s",
+                getattr(layer, "name", "<unnamed>"),
+                channel_id,
+            )
             pass
 
     get_by_index = getattr(layer, "get_channel_by_index", None)
@@ -378,6 +395,11 @@ def _read_channel(
         try:
             return _to_uint8_2d(get_by_index(channel_index), height, width)
         except Exception:
+            logger.exception(
+                "PSD channel read failed via get_channel_by_index() for layer '%s', channel_index=%s",
+                getattr(layer, "name", "<unnamed>"),
+                channel_index,
+            )
             pass
 
     return None
@@ -856,7 +878,8 @@ def _font_name(layer: Any, index: Any) -> str | None:
 
 
 def _resolve_font_face_from_postscript(postscript_name: str) -> tuple[str, str | None, bool, bool]:
-    _ensure_font_catalog()
+    if _can_build_font_catalog_in_current_thread():
+        _ensure_font_catalog()
     key = (postscript_name or "").strip()
     if key and key in _ps_to_qt_font_cache:
         return _ps_to_qt_font_cache[key]
@@ -897,6 +920,16 @@ def _ensure_font_catalog() -> None:
                 _ps_to_qt_font_cache.setdefault(ps_name, (family, style_name, bold, italic))
     except Exception:
         pass
+
+
+def _can_build_font_catalog_in_current_thread() -> bool:
+    try:
+        app = QtCore.QCoreApplication.instance()
+        if app is None:
+            return False
+        return QtCore.QThread.currentThread() == app.thread()
+    except Exception:
+        return False
 
 
 def _postscript_name_from_qfont(font: QtGui.QFont) -> str | None:
