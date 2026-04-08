@@ -745,10 +745,12 @@ class ImageStateController:
             self.display_image_from_loaded(result, index)
 
         worker.signals.result.connect(
-            lambda result: QtCore.QTimer.singleShot(0, lambda: _on_result(result))
+            lambda result: QtCore.QTimer.singleShot(0, self.main, lambda: _on_result(result))
         )
         worker.signals.error.connect(
-            lambda error: QtCore.QTimer.singleShot(0, lambda: self.main.default_error_handler(error))
+            lambda error: QtCore.QTimer.singleShot(
+                0, self.main, lambda: self.main.default_error_handler(error)
+            )
         )
         self._nav_worker = worker
         self.main.threadpool.start(worker)

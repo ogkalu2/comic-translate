@@ -352,10 +352,10 @@ class ProjectController:
                 self._on_batch_page_done(image_path)
 
         worker.signals.error.connect(
-            lambda err: QtCore.QTimer.singleShot(0, lambda: on_error(err))
+            lambda err: QtCore.QTimer.singleShot(0, self.main, lambda: on_error(err))
         )
         worker.signals.finished.connect(
-            lambda: QtCore.QTimer.singleShot(0, on_finished)
+            lambda: QtCore.QTimer.singleShot(0, self.main, on_finished)
         )
         self.main.threadpool.start(worker)
 
