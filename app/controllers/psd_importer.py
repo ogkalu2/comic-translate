@@ -329,6 +329,10 @@ def _image_layer_to_rgba(layer: Any) -> np.ndarray:
         try:
             data = dict(get_image_data())
         except Exception:
+            logger.exception(
+                "PSD image decode failed in get_image_data() for layer '%s'",
+                getattr(layer, "name", "<unnamed>"),
+            )
             data = {}
 
     channel_enum = getattr(getattr(psapi, "enum", None), "ChannelID", None)
@@ -343,6 +347,10 @@ def _image_layer_to_rgba(layer: Any) -> np.ndarray:
     alpha = _read_channel(layer, data, alpha_id, -1, height, width)
 
     if red is None and green is None and blue is None:
+        logger.error(
+            "PSD image layer '%s' produced no RGB channels during import.",
+            getattr(layer, "name", "<unnamed>"),
+        )
         return np.zeros((height, width, 4), dtype=np.uint8)
 
     if red is None:
@@ -375,6 +383,11 @@ def _read_channel(
         try:
             return _to_uint8_2d(get_by_id(channel_id), height, width)
         except Exception:
+            logger.exception(
+                "PSD channel read failed via get_channel_by_id() for layer '%s', channel_id=%s",
+                getattr(layer, "name", "<unnamed>"),
+                channel_id,
+            )
             pass
 
     get_by_index = getattr(layer, "get_channel_by_index", None)
@@ -382,6 +395,11 @@ def _read_channel(
         try:
             return _to_uint8_2d(get_by_index(channel_index), height, width)
         except Exception:
+            logger.exception(
+                "PSD channel read failed via get_channel_by_index() for layer '%s', channel_index=%s",
+                getattr(layer, "name", "<unnamed>"),
+                channel_index,
+            )
             pass
 
     return None
