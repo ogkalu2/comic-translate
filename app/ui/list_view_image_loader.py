@@ -3,7 +3,7 @@ from collections import deque
 from typing import Set
 import imkit as imk
 from PIL import Image
-from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize, Qt, QPoint
+from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize, Qt, QPoint, Slot
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QListWidget
 from app.path_materialization import ensure_path_materialized
@@ -12,54 +12,61 @@ from app.path_materialization import ensure_path_materialized
 class ImageLoadWorker(QObject):
     """Worker thread for loading images in the background."""
     
-    image_loaded = Signal(int, str, QPixmap)  # index, file_path, pixmap
+    image_loaded = Signal(int, str, QImage)  # index, file_path, image
     
     def __init__(self):
         super().__init__()
         self.load_queue = deque()
+        self._queued_indices: set[int] = set()
         self.should_stop = False
-        
-        # Timer for processing queue
-        self.process_timer = QTimer()
-        self.process_timer.timeout.connect(self.process_queue)
-        self.process_timer.start(50)  # Process every 50ms
-        
+        self._processing = False
+
+    @Slot(int, str, QSize)
     def add_to_queue(self, index: int, file_path: str, target_size: QSize):
         """Add an image to the loading queue."""
-        # Avoid duplicates
-        for queued_index, _, _ in self.load_queue:
-            if queued_index == index:
-                return
+        if self.should_stop or index in self._queued_indices:
+            return
         self.load_queue.append((index, file_path, target_size))
-    
+        self._queued_indices.add(index)
+        if not self._processing:
+            self.process_queue()
+
+    @Slot()
     def clear_queue(self):
         """Clear the loading queue."""
         self.load_queue.clear()
-        
+        self._queued_indices.clear()
+
+    @Slot()
     def stop(self):
         """Stop the worker."""
         self.should_stop = True
-        self.process_timer.stop()
-        
+
+    @Slot()
     def process_queue(self):
         """Process the loading queue."""
-        if not self.load_queue or self.should_stop:
+        if self._processing or self.should_stop:
             return
-            
-        index, file_path, target_size = self.load_queue.popleft()
-        
-        # Load and resize image
-        pixmap = self._load_and_resize_image(file_path, target_size)
-        if pixmap and not pixmap.isNull():
-            self.image_loaded.emit(index, file_path, pixmap)
-                
-    def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
+
+        self._processing = True
+        try:
+            while self.load_queue and not self.should_stop:
+                index, file_path, target_size = self.load_queue.popleft()
+                self._queued_indices.discard(index)
+
+                image = self._load_and_resize_image(file_path, target_size)
+                if image is not None and not image.isNull():
+                    self.image_loaded.emit(index, file_path, image)
+        finally:
+            self._processing = False
+
+    def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QImage | None:
         """Load and resize an image to the target size."""
         try:
             ensure_path_materialized(file_path)
             image = imk.read_image(file_path)
             if image is None:
-                return QPixmap()
+                return None
             
             # Resize maintaining aspect ratio
             height, width = image.shape[:2]
@@ -75,23 +82,28 @@ class ImageLoadWorker(QObject):
             
             resized_image = imk.resize(image, (new_width, new_height), mode=Image.Resampling.LANCZOS)
             
-            # Convert to QPixmap
+            # Convert to QImage. Use a deep copy so the image outlives the numpy buffer.
             h, w, ch = resized_image.shape
             bytes_per_line = ch * w
             qt_image = QImage(resized_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            return QPixmap.fromImage(qt_image)
+            return qt_image.copy()
             
         except Exception as e:
             print(f"Error processing image {file_path}: {e}")
-            return QPixmap()
+            return None
 
 
-class ListViewImageLoader:
+class ListViewImageLoader(QObject):
     """
     Lazy image loader for QListWidget that loads thumbnails only when visible.
     """
+
+    queue_image_load_requested = Signal(int, str, QSize)
+    clear_queue_requested = Signal()
+    stop_worker_requested = Signal()
     
     def __init__(self, list_widget: QListWidget, avatar_size: tuple = (60, 80)):
+        super().__init__(list_widget)
         self.list_widget = list_widget
         self.avatar_size = QSize(avatar_size[0], avatar_size[1])
         
@@ -101,14 +113,17 @@ class ListViewImageLoader:
         self.file_paths: list[str] = []
         
         # Worker thread for background loading
-        self.worker_thread = QThread()
+        self.worker_thread = QThread(self)
         self.worker = ImageLoadWorker()
         self.worker.moveToThread(self.worker_thread)
         self.worker.image_loaded.connect(self._on_image_loaded)
+        self.queue_image_load_requested.connect(self.worker.add_to_queue, Qt.ConnectionType.QueuedConnection)
+        self.clear_queue_requested.connect(self.worker.clear_queue, Qt.ConnectionType.QueuedConnection)
+        self.stop_worker_requested.connect(self.worker.stop, Qt.ConnectionType.QueuedConnection)
         self.worker_thread.start()  # Start thread immediately
         
         # Timer for debouncing scroll events
-        self.update_timer = QTimer()
+        self.update_timer = QTimer(self)
         self.update_timer.setSingleShot(True)
         self.update_timer.timeout.connect(self._update_visible_items)
         
@@ -146,7 +161,7 @@ class ListViewImageLoader:
                     item.setData(Qt.ItemDataRole.DecorationRole, None)
         
         if self.worker:
-            self.worker.clear_queue()
+            self.clear_queue_requested.emit()
 
     def remove_indices(self, removed_indices: list[int], file_paths: list[str]):
         """Remap loader state after rows have been removed from the list."""
@@ -169,7 +184,7 @@ class ListViewImageLoader:
         }
 
         if self.worker:
-            self.worker.clear_queue()
+            self.clear_queue_requested.emit()
 
         self._schedule_update()
             
@@ -250,16 +265,13 @@ class ListViewImageLoader:
         if 0 <= index < len(self.file_paths):
             file_path = self.file_paths[index]
             if ensure_path_materialized(file_path) or os.path.exists(file_path):
-                self.worker.add_to_queue(index, file_path, self.avatar_size)
+                self.queue_image_load_requested.emit(index, file_path, self.avatar_size)
                 
                 # Start worker thread and process queue if not already running
                 if not self.worker_thread.isRunning():
                     self.worker_thread.start()
-                
-                # Process the queue
-                QTimer.singleShot(0, self.worker.process_queue)
-                
-    def _on_image_loaded(self, index: int, file_path: str, pixmap: QPixmap):
+
+    def _on_image_loaded(self, index: int, file_path: str, image: QImage):
         """Handle when an image has been loaded."""
         if (
             0 <= index < self.list_widget.count()
@@ -267,6 +279,7 @@ class ListViewImageLoader:
             and self.file_paths[index] == file_path
         ):
             # Store the loaded pixmap
+            pixmap = QPixmap.fromImage(image)
             self.loaded_images[index] = pixmap
             list_item = self.list_widget.item(index)
             if list_item:
@@ -309,7 +322,7 @@ class ListViewImageLoader:
     def shutdown(self):
         """Shutdown the loader and clean up resources."""
         if self.worker:
-            self.worker.stop()
+            self.stop_worker_requested.emit()
             
         if self.worker_thread.isRunning():
             self.worker_thread.quit()
