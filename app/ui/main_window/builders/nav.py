@@ -57,9 +57,6 @@ class NavRailMixin:
         image_action = self.tool_menu.addAction(MIcon("ion--image-outline.svg"), self.tr("Images"))
         image_action.triggered.connect(self.image_browser_button.clicked)
 
-        psd_action = self.tool_menu.addAction(MIcon("psd-file.svg"), self.tr("PSD"))
-        psd_action.triggered.connect(self.psd_browser_button.clicked)
-
         document_action = self.tool_menu.addAction(MIcon("mingcute--document-line.svg"), self.tr("Document"))
         document_action.triggered.connect(self.document_browser_button.clicked)
 
@@ -73,6 +70,9 @@ class NavRailMixin:
 
         project_action = self.tool_menu.addAction(MIcon("ct-file-icon.svg"), self.tr("Project File"))
         project_action.triggered.connect(self.project_browser_button.clicked)
+
+        psd_action = self.tool_menu.addAction(MIcon("psd-file.svg"), self.tr("PSD"))
+        psd_action.triggered.connect(self.psd_browser_button.clicked)
 
         self.save_browser = MClickSaveFileToolButton()
         save_file_types = [("Images", ["png", "jpg", "jpeg", "webp", "bmp"])]
