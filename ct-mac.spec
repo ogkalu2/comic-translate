@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import os
+from PyInstaller.utils.hooks import collect_all
 
 
 block_cipher = None
@@ -28,24 +29,33 @@ resources_dir = os.path.join(here, "resources")
 icon_path = os.path.join(resources_dir, "icons", "icon.icns")
 file_icon_path = os.path.join(resources_dir, "icons", "file_icon.icns")
 
+psd_datas, psd_binaries, psd_hiddenimports = collect_all("photoshopapi")
+np_datas, np_binaries, np_hiddenimports = collect_all("numpy")
 
 a = Analysis(
     [entrypoint],
     pathex=[here],
-    binaries=[],
+    binaries=psd_binaries + np_binaries,
     datas=[
         # Mirrors: --add-data "resources:resources"
         (resources_dir, "resources"),
         # Also place the icon at bundle Resources root so Info.plist can reference it.
         (file_icon_path, "."),
-    ],
-    hiddenimports=[
-        # Mirrors: --hidden-import=requests
-        "requests",
-    ],
+    ] + psd_datas + np_datas,
+    hiddenimports=sorted(set(
+        psd_hiddenimports
+        + np_hiddenimports
+        + [
+            # Mirrors: --hidden-import=requests
+            "requests",
+            "numpy.core.multiarray",
+            "numpy.core._multiarray_umath",
+            "numpy.core.umath",
+        ]
+    )),
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[os.path.join(here, "pyinstaller_rth_numpy_compat.py")],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
