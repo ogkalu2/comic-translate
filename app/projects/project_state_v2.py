@@ -97,6 +97,14 @@ def _init_schema(conn: sqlite3.Connection) -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS batch_report (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            report_blob BLOB
+        )
+        """
+    )
 
 
 def _configure_connection(conn: sqlite3.Connection) -> None:
@@ -139,6 +147,26 @@ def close_cached_connection(file_name: str | None = None) -> None:
         _CONN_CACHE.clear()
     with _LAZY_BLOB_LOCK:
         _LAZY_BLOBS_BY_PATH.clear()
+
+
+def remap_project_file_path(old_file_name: str, new_file_name: str) -> None:
+    old_key = os.path.abspath(old_file_name)
+    new_key = os.path.abspath(new_file_name)
+    if old_key == new_key:
+        return
+
+    with _LAZY_BLOB_LOCK:
+        remapped_entries = [
+            (path, blob_hash)
+            for path, (mapped_db, blob_hash) in _LAZY_BLOBS_BY_PATH.items()
+            if mapped_db == old_key
+        ]
+
+    close_cached_connection(old_key)
+
+    with _LAZY_BLOB_LOCK:
+        for path, blob_hash in remapped_entries:
+            _LAZY_BLOBS_BY_PATH[path] = (new_key, blob_hash)
 
 
 def register_lazy_blob_path(project_file: str, output_path: str, blob_hash: str) -> None:
@@ -235,6 +263,28 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     image_patches_references: dict[str, list[dict]] = {}
 
     def add_blob_if_needed(path: str, kind: str) -> str:
+        abs_path = os.path.abspath(path)
+        with _LAZY_BLOB_LOCK:
+            lazy_mapped = _LAZY_BLOBS_BY_PATH.get(abs_path)
+        if lazy_mapped is not None:
+            _, lazy_hash = lazy_mapped
+            blob_exists = conn.execute(
+                "SELECT 1 FROM blobs WHERE hash = ? LIMIT 1",
+                (lazy_hash,),
+            ).fetchone()
+            if blob_exists:
+                try:
+                    stat = os.stat(path)
+                    fingerprint_updates[path] = (
+                        int(stat.st_size),
+                        int(stat.st_mtime_ns),
+                        lazy_hash,
+                    )
+                except OSError:
+                    pass
+                _written_blob_hashes.add(lazy_hash)
+                return lazy_hash
+
         if not ensure_lazy_blob_materialized(path):
             ensure_prepared_path_materialized(path)
         stat = os.stat(path)
@@ -260,20 +310,6 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
         # Fast path: if this file was materialised from a project blob we
         # already know the content-hash without reading the file.  Verify the
         # blob still exists in the DB and return immediately.
-        abs_path = os.path.abspath(path)
-        with _LAZY_BLOB_LOCK:
-            lazy_mapped = _LAZY_BLOBS_BY_PATH.get(abs_path)
-        if lazy_mapped is not None:
-            _, lazy_hash = lazy_mapped
-            blob_exists = conn.execute(
-                "SELECT 1 FROM blobs WHERE hash = ? LIMIT 1",
-                (lazy_hash,),
-            ).fetchone()
-            if blob_exists:
-                fingerprint_updates[path] = (size, mtime_ns, lazy_hash)
-                _written_blob_hashes.add(lazy_hash)
-                return lazy_hash
-
         payload = _read_file_bytes(path)
         blob_hash = _sha256_bytes(payload)
         if blob_hash not in _written_blob_hashes:
@@ -362,6 +398,15 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     }
     manifest_blob = msgpack.packb(manifest, default=encoder.encode, use_bin_type=True)
 
+    # Serialize batch report if available
+    batch_report_blob = None
+    if hasattr(comic_translate, 'batch_report_ctrl') and comic_translate.batch_report_ctrl._latest_batch_report:
+        batch_report_blob = msgpack.packb(
+            comic_translate.batch_report_ctrl._latest_batch_report,
+            default=encoder.encode,
+            use_bin_type=True
+        )
+
     try:
         with conn_lock:
             with conn:
@@ -406,6 +451,16 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
                         """,
                         (src_path, size, mtime_ns, blob_hash),
                     )
+
+                # Save batch report if available
+                if batch_report_blob is not None:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO batch_report(id, report_blob) VALUES(1, ?)",
+                        (sqlite3.Binary(batch_report_blob),),
+                    )
+                else:
+                    # Clear batch report if none exists
+                    conn.execute("DELETE FROM batch_report WHERE id = 1")
 
     finally:
         if use_temp_and_replace:
@@ -621,4 +676,14 @@ def load_state_from_proj_file_v2(comic_translate: "ComicTranslate", file_name: s
             row[0]: msgpack.unpackb(row[1], object_hook=decoder.decode, strict_map_key=True)
             for row in conn.execute("SELECT page_path, row_blob FROM page_state")
         }
+        
+        # Load batch report if available
+        batch_report_row = conn.execute("SELECT report_blob FROM batch_report WHERE id = 1").fetchone()
+        if hasattr(comic_translate, 'batch_report_ctrl'):
+            comic_translate.batch_report_ctrl.restore_latest_batch_report(None)
+        if batch_report_row and batch_report_row[0]:
+            batch_report = msgpack.unpackb(batch_report_row[0], object_hook=decoder.decode, strict_map_key=True)
+            if hasattr(comic_translate, 'batch_report_ctrl'):
+                comic_translate.batch_report_ctrl.restore_latest_batch_report(batch_report)
+        
         return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)

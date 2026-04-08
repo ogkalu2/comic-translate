@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from PySide6 import QtCore, QtGui, QtWidgets
+from send2trash import send2trash
 
 from .dayu_widgets import dayu_theme
 
@@ -293,10 +294,13 @@ class _RecentRow(QtWidgets.QFrame):
         """)
         menu.addAction(self.tr("Open"), lambda: self.sig_open.emit(self._path))
         menu.addAction(self.tr("Open File Location"), self._open_folder)
+        menu.addAction(self.tr("Copy Path"), self._copy_path_to_clipboard)
         menu.addSeparator()
         pin_label = self.tr("Unpin") if self._pinned else self.tr("Pin to list")
         menu.addAction(pin_label, self._toggle_pin)
         menu.addAction(self.tr("Remove from Recent"), lambda: self.sig_remove.emit(self._path))
+        menu.addSeparator()
+        menu.addAction(self.tr("Delete File"), self._delete_file)
         menu.exec(gpos)
 
     def _open_folder(self):
@@ -311,6 +315,59 @@ class _RecentRow(QtWidgets.QFrame):
     def _toggle_pin(self):
         self._pinned = not self._pinned
         self.sig_pin.emit(self._path, self._pinned)
+
+    def _copy_path_to_clipboard(self):
+        clipboard = QtWidgets.QApplication.clipboard()
+        if clipboard is not None:
+            clipboard.setText(os.path.normpath(self._path))
+
+    def _delete_file(self):
+        normalized_path = os.path.normpath(self._path)
+        dialog_parent = self.window() if isinstance(self.window(), QtWidgets.QWidget) else self
+        if not os.path.exists(normalized_path):
+            QtWidgets.QMessageBox.warning(
+                dialog_parent,
+                self.tr("File Not Found"),
+                self.tr(
+                    "The selected project file could not be found.\n"
+                    "It may have already been moved, renamed, or deleted.\n\n{path}"
+                ).format(path=normalized_path),
+            )
+            self.sig_remove.emit(self._path)
+            return
+
+        msg_box = QtWidgets.QMessageBox(dialog_parent)
+        msg_box.setIcon(QtWidgets.QMessageBox.Icon.Warning)
+        msg_box.setWindowTitle(self.tr("Delete File"))
+        msg_box.setText(self.tr("Are you sure you want to permanently delete this project file?"))
+        msg_box.setInformativeText(normalized_path)
+        delete_btn = msg_box.addButton(
+            self.tr("Delete"),
+            QtWidgets.QMessageBox.ButtonRole.DestructiveRole,
+        )
+        cancel_btn = msg_box.addButton(
+            self.tr("Cancel"),
+            QtWidgets.QMessageBox.ButtonRole.RejectRole,
+        )
+        msg_box.setDefaultButton(cancel_btn)
+        msg_box.exec()
+
+        if msg_box.clickedButton() is not delete_btn:
+            return
+
+        try:
+            send2trash(normalized_path)
+        except OSError as exc:
+            QtWidgets.QMessageBox.critical(
+                dialog_parent,
+                self.tr("Delete Failed"),
+                self.tr("Could not delete the selected project file.\n\n{error}").format(
+                    error=str(exc)
+                ),
+            )
+            return
+
+        self.sig_remove.emit(self._path)
 
 
 # Filter pill button

@@ -6,6 +6,7 @@ from modules.detection.processor import TextBlockDetector
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.rendering.render import get_best_render_area
 from pipeline.webtoon_utils import get_first_visible_block
+from app.ui.commands.box import ReplaceDetectedBlocksCommand
 
 
 logger = logging.getLogger(__name__)
@@ -24,14 +25,13 @@ class BlockDetectionHandler:
             self.main_page.image_viewer.clear_rectangles_in_visible_area()
         else:
             self.main_page.image_viewer.clear_rectangles()
-            
+
         if self.main_page.image_viewer.hasPhoto() and blk_list:
             for blk in blk_list:
                 x1, y1, x2, y2 = blk.xyxy
                 rect = QtCore.QRectF(0, 0, x2 - x1, y2 - y1)
                 transform_origin = QtCore.QPointF(*blk.tr_origin_point) if blk.tr_origin_point else None
-                
-                # Use the new add_rectangle method for consistent handling
+
                 rect_item = self.main_page.image_viewer.add_rectangle(
                     rect, QtCore.QPointF(x1, y1), blk.angle, transform_origin
                 )
@@ -41,13 +41,24 @@ class BlockDetectionHandler:
             if self.main_page.webtoon_mode:
                 first_block = get_first_visible_block(self.main_page.blk_list, self.main_page.image_viewer)
                 if first_block is None:
-                    first_block = self.main_page.blk_list[0]  # Fallback to first block if no visible blocks
+                    first_block = self.main_page.blk_list[0]
             else:
                 first_block = self.main_page.blk_list[0]
-            
+
             rect = self.main_page.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
             self.main_page.image_viewer.select_rectangle(rect)
             self.main_page.set_tool('box')
+
+    def _sync_current_page_blocks(self):
+        if not self.main_page.image_files or self.main_page.curr_img_idx >= len(self.main_page.image_files):
+            return
+
+        file_path = self.main_page.image_files[self.main_page.curr_img_idx]
+        state = self.main_page.image_states.get(file_path)
+        if state is None:
+            return
+
+        state["blk_list"] = [blk.deep_copy() for blk in self.main_page.blk_list]
 
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
@@ -119,6 +130,7 @@ class BlockDetectionHandler:
 
     def on_blk_detect_complete(self, result): 
         blk_list, load_rects, page_mappings_or_current_page = result
+        previous_blocks = [blk.deep_copy() for blk in self.main_page.blk_list]
         
         # Handle webtoon mode with visible area detection
         if self.main_page.webtoon_mode and isinstance(page_mappings_or_current_page, list):
@@ -155,7 +167,21 @@ class BlockDetectionHandler:
         source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
         rtl = True if source_lang_english == 'Japanese' else False
         self.main_page.blk_list = sort_blk_list(self.main_page.blk_list, rtl)
-        
+
+        if load_rects and not self.main_page.webtoon_mode:
+            stack = self.main_page.undo_group.activeStack()
+            if stack is not None:
+                command = ReplaceDetectedBlocksCommand(
+                    self.main_page,
+                    previous_blocks,
+                    self.main_page.blk_list,
+                )
+                stack.push(command)
+                return
+
+        if not self.main_page.webtoon_mode:
+            self._sync_current_page_blocks()
+
         if load_rects:
             # For visible area detection, we pass the detected blocks only for rectangle loading
             blocks_to_load = blk_list

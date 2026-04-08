@@ -6,7 +6,6 @@ import numpy as np
 from typing import TYPE_CHECKING, List
 from PySide6 import QtCore, QtWidgets, QtGui
 
-from app.ui.dayu_widgets.clickable_card import ClickMeta
 from app.ui.dayu_widgets.message import MMessage
 from app.ui.messages import Messages
 from app.ui.commands.image import SetImageCommand, ToggleSkipImagesCommand
@@ -16,6 +15,7 @@ from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
 from app.path_materialization import ensure_path_materialized
+from app.controllers.psd_importer import ImportedPsdPage, import_psd_files
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -31,12 +31,57 @@ class ImageStateController:
         self._active_page_error_path: str | None = None
         self._suppress_dismiss_message_ids: set[int] = set()
         self._active_transient_skip_message: MMessage | None = None
+        self._force_default_view_once = False
         
         # Initialize lazy image loader for list view
         self.page_list_loader = ListViewImageLoader(
             self.main.page_list,
             avatar_size=(35, 50)
         )
+
+    def _default_export_group_name(self, file_path: str) -> str:
+        source_label = None
+        try:
+            source_label = self.main.file_handler.get_prepared_source_label(file_path)
+        except Exception:
+            source_label = None
+
+        if source_label:
+            return source_label
+
+        project_ctrl = getattr(self.main, "project_ctrl", None)
+        if project_ctrl is not None:
+            try:
+                bundle_name = project_ctrl._get_export_bundle_name()
+            except Exception:
+                bundle_name = ""
+            if bundle_name:
+                return bundle_name
+
+        return "comic_translate_export"
+
+    def _build_image_state(
+        self,
+        file_path: str,
+        viewer_state: dict,
+        brush_strokes: list,
+        blk_list: list,
+        skip_status: bool,
+        existing_state: dict | None = None,
+    ) -> dict:
+        state = dict(existing_state or self.main.image_states.get(file_path, {}) or {})
+        state.update({
+            "viewer_state": viewer_state,
+            "source_lang": self.main.s_combo.currentText(),
+            "target_lang": self.main.t_combo.currentText(),
+            "brush_strokes": brush_strokes,
+            "blk_list": blk_list,
+            "skip": skip_status,
+            "export_group_name": str(
+                state.get("export_group_name") or self._default_export_group_name(file_path)
+            ),
+        })
+        return state
 
     def _is_content_flagged_error(self, error: str) -> bool:
         lowered = (error or "").lower()
@@ -80,6 +125,7 @@ class ImageStateController:
         t = QtCore.QCoreApplication.translate
 
         message_map = {
+            "Image Load": t("Messages", "Could not open image.\nSkipping:"),
             "Text Blocks": t("Messages", "No Text Blocks Detected.\nSkipping:"),
             "OCR": t("Messages", "Could not recognize detected text.\nSkipping:"),
             "Translator": t("Messages", "Could not get translations.\nSkipping:"),
@@ -240,6 +286,7 @@ class ImageStateController:
         self._hide_active_page_skip_error()
         self._page_skip_errors.clear()
         self._suppress_dismiss_message_ids.clear()
+        self.main.batch_report_ctrl.clear_latest_batch_report()
         self.main.image_files = []
         self.main.image_states.clear()
         self.main.image_data.clear()
@@ -258,8 +305,6 @@ class ImageStateController:
         self.main.image_patches.clear()
         self.main.in_memory_patches.clear()
         self.main.project_file = None
-        self.main.image_cards.clear()
-        self.main.current_card = None
         self.main.page_list.blockSignals(True)
         self.main.page_list.clear()
         self.main.page_list.blockSignals(False)
@@ -285,12 +330,89 @@ class ImageStateController:
             autosave_enabled = False
         prev_project_file = self.main.project_file if autosave_enabled else None
 
+        psd_paths = [p for p in (paths or []) if isinstance(p, str) and p.lower().endswith(".psd")]
+        if psd_paths:
+            if len(psd_paths) != len(paths):
+                self.main.default_error_handler(
+                    (
+                        ValueError,
+                        ValueError("PSD import does not support mixing PSD files with other file types in one load request."),
+                        "",
+                    )
+                )
+                return
+            self.main.project_ctrl.clear_recovery_checkpoint()
+            self.clear_state()
+            if prev_project_file:
+                self.main.project_file = prev_project_file
+                self.main.setWindowTitle(f"{os.path.basename(prev_project_file)}[*]")
+            self.main.run_threaded(
+                self._import_psd_files,
+                self.on_psd_imported,
+                self.main.default_error_handler,
+                None,
+                psd_paths,
+            )
+            return
+
         self.main.project_ctrl.clear_recovery_checkpoint()
         self.clear_state()
         if prev_project_file:
             self.main.project_file = prev_project_file
             self.main.setWindowTitle(f"{os.path.basename(prev_project_file)}[*]")
         self.main.run_threaded(self.load_initial_image, self.on_initial_image_loaded, self.main.default_error_handler, None, paths)
+
+    def _import_psd_files(self, psd_paths: List[str]) -> list[ImportedPsdPage]:
+        return import_psd_files(psd_paths)
+
+    def on_psd_imported(self, pages: list[ImportedPsdPage]):
+        if not pages:
+            self.main.image_viewer.clear_scene()
+            return
+
+        warnings: list[str] = []
+
+        for page in pages:
+            file_path = page.image_path
+            rgb_image = page.rgb_image
+            if page.warning:
+                warnings.append(f"{os.path.basename(page.source_path)}: {page.warning}")
+
+            self.main.image_files.append(file_path)
+            self.main.image_data[file_path] = rgb_image
+            self.main.image_history[file_path] = [file_path]
+            self.main.in_memory_history[file_path] = [rgb_image.copy()]
+            self.main.current_history_index[file_path] = 0
+            self.main.image_states[file_path] = self._build_image_state(
+                file_path,
+                page.viewer_state,
+                [],
+                [],
+                False,
+            )
+
+            stack = QtGui.QUndoStack(self.main)
+            stack.cleanChanged.connect(self.main._update_window_modified)
+            stack.indexChanged.connect(self.main._bump_dirty_revision)
+            try:
+                if hasattr(self.main, "search_ctrl") and self.main.search_ctrl is not None:
+                    stack.indexChanged.connect(self.main.search_ctrl.on_undo_redo)
+            except Exception:
+                pass
+            self.main.undo_stacks[file_path] = stack
+            self.main.undo_group.addStack(stack)
+
+        self.main.page_list.blockSignals(True)
+        self.refresh_page_list()
+        self.main.page_list.blockSignals(False)
+        self.main.page_list.setCurrentRow(0)
+        self.main.loaded_images.append(self.main.image_files[0])
+        self.main.image_viewer.resetTransform()
+        self.main.image_viewer.fitInView()
+        self.main.mark_project_dirty()
+        unique_warnings = list(dict.fromkeys(warnings))
+        if unique_warnings:
+            self._show_transient_skip_notice(unique_warnings[0], MMessage.WarningType)
 
     def thread_insert(self, paths: List[str]):
         if self.main.image_files:
@@ -315,14 +437,13 @@ class ImageStateController:
                     
                     # Initialize empty image state for new files
                     skip_status = False
-                    self.main.image_states[file_path] = {
-                        'viewer_state': {},
-                        'source_lang': self.main.s_combo.currentText(),
-                        'target_lang': self.main.t_combo.currentText(),
-                        'brush_strokes': [],
-                        'blk_list': [],  # New images start with empty block list
-                        'skip': skip_status,
-                    }
+                    self.main.image_states[file_path] = self._build_image_state(
+                        file_path,
+                        {},
+                        [],
+                        [],
+                        skip_status,
+                    )
                     
                     # Create undo stack for new file
                     stack = QtGui.QUndoStack(self.main)
@@ -337,12 +458,9 @@ class ImageStateController:
                     success = self.main.image_viewer.webtoon_manager.insert_pages(prepared_files, insert_position)
                     
                     if success:
-                        # Update image cards and set selection to the first inserted image
-                        self.update_image_cards()
-                        self.main.page_list.blockSignals(True)
-                        self.main.page_list.setCurrentRow(insert_position)
-                        self.highlight_card(insert_position)
-                        self.main.page_list.blockSignals(False)
+                        # Refresh the page list and select the first inserted image.
+                        self.refresh_page_list()
+                        self.set_page_list_current_row(insert_position, emit_signal=False)
                         
                         # Update current index to the first inserted image
                         self.main.curr_img_idx = insert_position
@@ -350,14 +468,11 @@ class ImageStateController:
                         # Fallback to full reload if insert failed
                         current_page = max(0, self.main.curr_img_idx)
                         self.main.image_viewer.webtoon_manager.load_images_lazy(self.main.image_files, current_page)
-                        self.update_image_cards()
-                        self.main.page_list.blockSignals(True)
-                        self.main.page_list.setCurrentRow(current_page)
-                        self.highlight_card(current_page)
-                        self.main.page_list.blockSignals(False)
+                        self.refresh_page_list()
+                        self.set_page_list_current_row(current_page, emit_signal=False)
                 else:
                     # Handle normal mode
-                    self.update_image_cards()
+                    self.refresh_page_list()
                     self.main.page_list.setCurrentRow(insert_position)
                     
                     # Load and display the first inserted image
@@ -397,7 +512,7 @@ class ImageStateController:
 
         if self.main.image_files:
             self.main.page_list.blockSignals(True)
-            self.update_image_cards()
+            self.refresh_page_list()
             self.main.page_list.blockSignals(False)
             self.main.page_list.setCurrentRow(0)
             self.main.loaded_images.append(self.main.image_files[0])
@@ -409,35 +524,46 @@ class ImageStateController:
         if self.main.image_files:
             self.main.mark_project_dirty()
 
-    def update_image_cards(self):
-        # Clear existing items
-        self.main.page_list.clear()
-        self.main.image_cards.clear()
-        self.main.current_card = None
+    def refresh_page_list(self):
+        page_list = self.main.page_list
+        page_list.setUpdatesEnabled(False)
+        try:
+            page_list.clear()
 
-        # Add new items
-        for index, file_path in enumerate(self.main.image_files):
-            file_name = os.path.basename(file_path)
-            list_item = QtWidgets.QListWidgetItem(file_name)
-            list_item.setData(QtCore.Qt.ItemDataRole.UserRole, file_path)
-            card = ClickMeta(extra=False, avatar_size=(35, 50))
-            card.setup_data({
-                "title": file_name,
-                # Avatar will be loaded lazily
-            })
-            
-            # Set the list item size hint to match the card size
-            list_item.setSizeHint(card.sizeHint())
-            
-            # re-apply strike-through if previously skipped
-            if self.main.image_states.get(file_path, {}).get('skip'):
-                card.set_skipped(True)
-            self.main.page_list.addItem(list_item)
-            self.main.page_list.setItemWidget(list_item, card)
-            self.main.image_cards.append(card)
+            for file_path in self.main.image_files:
+                file_name = os.path.basename(file_path)
+                list_item = QtWidgets.QListWidgetItem(file_name)
+                list_item.setData(QtCore.Qt.ItemDataRole.UserRole, file_path)
+                if self.main.image_states.get(file_path, {}).get('skip'):
+                    font = list_item.font()
+                    font.setStrikeOut(True)
+                    list_item.setFont(font)
+                page_list.addItem(list_item)
 
-        # Initialize lazy loading for the new cards
-        self.page_list_loader.set_file_paths(self.main.image_files, self.main.image_cards)
+            self.page_list_loader.set_file_paths(self.main.image_files)
+        finally:
+            page_list.setUpdatesEnabled(True)
+            page_list.viewport().update()
+
+    def remove_page_list_rows(self, removed_indices: list[int]):
+        """Remove list rows in place to avoid rebuilding the entire sidebar."""
+        if not removed_indices:
+            return
+
+        page_list = self.main.page_list
+        ordered_indices = sorted(set(removed_indices), reverse=True)
+        page_list.blockSignals(True)
+        page_list.setUpdatesEnabled(False)
+        try:
+            for index in ordered_indices:
+                if 0 <= index < page_list.count():
+                    page_list.takeItem(index)
+
+            self.page_list_loader.remove_indices(ordered_indices, self.main.image_files)
+        finally:
+            page_list.setUpdatesEnabled(True)
+            page_list.blockSignals(False)
+            page_list.viewport().update()
 
     def _resolve_reordered_paths(self, ordered_items: list[str]) -> list[str] | None:
         current_files = self.main.image_files
@@ -503,17 +629,16 @@ class ImageStateController:
         if self.main.webtoon_mode and hasattr(self.main.image_viewer, "webtoon_manager"):
             manager = self.main.image_viewer.webtoon_manager
             try:
-                manager.scene_item_manager.save_all_scene_items_to_states()
+                manager.scene_item_manager.save_loaded_scene_items_to_states()
             except Exception:
                 pass
             current_page = max(0, self.main.curr_img_idx)
             manager.load_images_lazy(self.main.image_files, current_page)
 
         self.main.page_list.blockSignals(True)
-        self.update_image_cards()
+        self.refresh_page_list()
         if 0 <= self.main.curr_img_idx < len(self.main.image_files):
-            self.main.page_list.setCurrentRow(self.main.curr_img_idx)
-            self.highlight_card(self.main.curr_img_idx)
+            self.set_page_list_current_row(self.main.curr_img_idx, emit_signal=False)
             self.page_list_loader.force_load_image(self.main.curr_img_idx)
             current_path = self.main.image_files[self.main.curr_img_idx]
             if current_path in self.main.undo_stacks:
@@ -522,20 +647,20 @@ class ImageStateController:
 
         self.main.mark_project_dirty()
 
-    def on_card_selected(self, current, previous):
+    def on_page_list_current_item_changed(self, current, previous):
         if not current:
             self._hide_active_page_skip_error()
             return
 
-        file_path = current.data(QtCore.Qt.ItemDataRole.UserRole)
-        if isinstance(file_path, str) and file_path in self.main.image_files:
-            index = self.main.image_files.index(file_path)
-        else:
-            index = self.main.page_list.row(current)
-            if not (0 <= index < len(self.main.image_files)):
+        index = self.main.page_list.row(current)
+        if not (0 <= index < len(self.main.image_files)):
+            file_path = current.data(QtCore.Qt.ItemDataRole.UserRole)
+            if isinstance(file_path, str) and file_path in self.main.image_files:
+                index = self.main.image_files.index(file_path)
+            else:
                 self._hide_active_page_skip_error()
                 return
-            file_path = self.main.image_files[index]
+        file_path = self.main.image_files[index]
         self.main.curr_tblock_item = None
         # Force load the selected image thumbnail
         self.page_list_loader.force_load_image(index)
@@ -556,7 +681,6 @@ class ImageStateController:
                 
                 # Scroll to the page (this will set _programmatic_scroll = True)
                 self.main.image_viewer.scroll_to_page(index)
-                # Note: highlighting is now handled by on_selection_changed
                 
                 # Load minimal page state without interfering with the webtoon view
                 if file_path in self.main.image_states:
@@ -653,51 +777,44 @@ class ImageStateController:
         if loaded:
             self.main.in_memory_patches.setdefault(file_path, []).extend(loaded)
 
-    def highlight_card(self, index: int):
-        """Highlight a single card (used for programmatic selection when signals are blocked)."""
-        # Clear highlights from all cards first
-        for card in self.main.image_cards:
-            card.set_highlight(False)
-            
-        # Highlight the specified card
-        if 0 <= index < len(self.main.image_cards):
-            self.main.image_cards[index].set_highlight(True)
-            self.main.current_card = self.main.image_cards[index]
-        else:
-            self.main.current_card = None
+    def set_page_list_current_row(self, row: int, *, emit_signal: bool) -> None:
+        """Update the real list selection, optionally suppressing currentItemChanged side effects."""
+        if not (0 <= row < self.main.page_list.count()):
+            return
 
-    def on_selection_changed(self, selected_indices: list):
-        """Handle selection changes and update visual highlighting for all selected cards."""
-        # Clear highlights from all cards first
-        for card in self.main.image_cards:
-            card.set_highlight(False)
-        
-        # Highlight all selected cards
-        for index in selected_indices:
-            if 0 <= index < len(self.main.image_cards):
-                self.main.image_cards[index].set_highlight(True)
-        
-        # Keep track of the current card
-        if selected_indices:
-            current_index = selected_indices[-1]  # Use the last selected as current
-            if 0 <= current_index < len(self.main.image_cards):
-                self.main.current_card = self.main.image_cards[current_index]
+        page_list = self.main.page_list
+        if emit_signal:
+            page_list.setCurrentRow(row)
         else:
-            self.main.current_card = None
+            was_blocked = page_list.signalsBlocked()
+            page_list.blockSignals(True)
+            try:
+                page_list.setCurrentRow(row)
+            finally:
+                page_list.blockSignals(was_blocked)
+            page_list.viewport().update()
 
     def handle_image_deletion(self, file_names: list[str]):
         """Handles the deletion of images based on the provided file names."""
 
         self.save_current_image_state()
         removed_any = False
+        removed_file_paths: list[str] = []
+        path_to_index = {path: idx for idx, path in enumerate(self.main.image_files)}
+        removed_indices: list[int] = []
         
         # Delete the files first.
         for file_name in file_names:
-            # Find the full file path based on the file name
-            file_path = next((f for f in self.main.image_files if os.path.basename(f) == file_name), None)
+            file_path = file_name if file_name in path_to_index else next(
+                (f for f in self.main.image_files if os.path.basename(f) == file_name),
+                None,
+            )
             
             if file_path:
                 # Remove from the image_files list
+                removed_file_paths.append(file_path)
+                if file_path in path_to_index:
+                    removed_indices.append(path_to_index[file_path])
                 self.main.image_files.remove(file_path)
                 removed_any = True
                 self._clear_page_skip_error(file_path)
@@ -728,16 +845,8 @@ class ImageStateController:
         if self.main.webtoon_mode:
             # Use non-destructive page removal in webtoon mode
             if self.main.image_files:
-                # Get full file paths of deleted files from the webtoon manager's file paths
-                webtoon_file_paths = self.main.image_viewer.webtoon_manager.image_loader.image_file_paths
-                deleted_file_paths = []
-                for file_name in file_names:
-                    # Find matching file paths in webtoon manager
-                    matching_paths = [fp for fp in webtoon_file_paths if os.path.basename(fp) == file_name]
-                    deleted_file_paths.extend(matching_paths)
-                
                 # Remove pages non-destructively from webtoon manager
-                success = self.main.image_viewer.webtoon_manager.remove_pages(deleted_file_paths)
+                success = self.main.image_viewer.webtoon_manager.remove_pages(removed_file_paths)
                 
                 if success:
                     # Adjust current index if necessary
@@ -745,20 +854,14 @@ class ImageStateController:
                         self.main.curr_img_idx = len(self.main.image_files) - 1
                     
                     current_page = max(0, self.main.curr_img_idx)
-                    self.update_image_cards()
-                    self.main.page_list.blockSignals(True)
-                    self.main.page_list.setCurrentRow(current_page)
-                    self.highlight_card(current_page)
-                    self.main.page_list.blockSignals(False)
+                    self.remove_page_list_rows(removed_indices)
+                    self.set_page_list_current_row(current_page, emit_signal=False)
                 else:
                     # Fallback to full reload if non-destructive removal failed
                     current_page = max(0, self.main.curr_img_idx)
                     self.main.image_viewer.webtoon_manager.load_images_lazy(self.main.image_files, current_page)
-                    self.update_image_cards()
-                    self.main.page_list.blockSignals(True)
-                    self.main.page_list.setCurrentRow(current_page)
-                    self.highlight_card(current_page)
-                    self.main.page_list.blockSignals(False)
+                    self.refresh_page_list()
+                    self.set_page_list_current_row(current_page, emit_signal=False)
             else:
                 # If no images remain, exit webtoon mode and reset to drag browser
                 self.main.webtoon_mode = False
@@ -769,7 +872,7 @@ class ImageStateController:
                     self.main.show_home_screen()
                 except Exception:
                     pass
-                self.update_image_cards()
+                self.refresh_page_list()
         else:
             # Handle normal mode
             if self.main.image_files:
@@ -780,11 +883,8 @@ class ImageStateController:
                 file = self.main.image_files[new_index]
                 im = self.load_image(file)
                 self.display_image_from_loaded(im, new_index, False)
-                self.update_image_cards()
-                self.main.page_list.blockSignals(True)
-                self.main.page_list.setCurrentRow(new_index)
-                self.highlight_card(new_index)
-                self.main.page_list.blockSignals(False)
+                self.remove_page_list_rows(removed_indices)
+                self.set_page_list_current_row(new_index, emit_signal=False)
             else:
                 # If no images remain, reset the view to the drag browser.
                 self.main.curr_img_idx = -1
@@ -793,7 +893,7 @@ class ImageStateController:
                     self.main.show_home_screen()
                 except Exception:
                     pass
-                self.update_image_cards()
+                self.refresh_page_list()
 
         # If the project has been emptied via deletion, drop stale crash recovery data.
         if not self.main.image_files:
@@ -801,7 +901,6 @@ class ImageStateController:
 
         if removed_any:
             self.main.mark_project_dirty()
-
 
     def handle_toggle_skip_images(self, file_names: list[str], skip_status: bool):
         """
@@ -908,14 +1007,13 @@ class ImageStateController:
     def save_image_state(self, file: str):
         # For regular mode only
         skip_status = self.main.image_states.get(file, {}).get('skip', False)
-        self.main.image_states[file] = {
-            'viewer_state': self.main.image_viewer.save_state(),
-            'source_lang': self.main.s_combo.currentText(),
-            'target_lang': self.main.t_combo.currentText(),
-            'brush_strokes': self.main.image_viewer.save_brush_strokes(),
-            'blk_list': self.main.blk_list.copy(),  # Store a copy of the list, not a reference
-            'skip': skip_status,
-        }
+        self.main.image_states[file] = self._build_image_state(
+            file,
+            self.main.image_viewer.save_state(),
+            self.main.image_viewer.save_brush_strokes(),
+            self.main.blk_list.copy(),
+            skip_status,
+        )
 
     def save_current_image_state(self):
         if self.main.curr_img_idx >= 0:
@@ -925,6 +1023,8 @@ class ImageStateController:
     def load_image_state(self, file_path: str):
         rgb_image = self.main.image_data[file_path]
         viewer = self.main.image_viewer
+        needs_default_fit = self._force_default_view_once
+        self._force_default_view_once = False
 
         # Avoid repeated repaints while restoring many items during page switches.
         viewer.setUpdatesEnabled(False)
@@ -983,11 +1083,22 @@ class ImageStateController:
                     viewer.clear_rectangles(page_switch=True)
                     viewer.clear_brush_strokes(page_switch=True)
                     viewer.clear_text_items()
+                    needs_default_fit = True
+            else:
+                self.main.blk_list = []
+                viewer.clear_rectangles(page_switch=True)
+                viewer.clear_brush_strokes(page_switch=True)
+                viewer.clear_text_items()
+                needs_default_fit = True
 
             self.main.text_ctrl.clear_text_edits()
         finally:
             viewer.setUpdatesEnabled(True)
             viewer.viewport().update()
+
+        if needs_default_fit:
+            viewer.resetTransform()
+            viewer.fitInView()
 
     def display_image(self, index: int, switch_page: bool = True):
         if 0 <= index < len(self.main.image_files):
@@ -1028,6 +1139,9 @@ class ImageStateController:
             if first_time_display and not self.main.webtoon_mode:
                 self.main.image_viewer.fitInView()
                 self.main.displayed_images.add(file_path)  # Mark this image as displayed
+
+    def force_default_view_on_next_image_load(self):
+        self._force_default_view_once = True
 
     def on_image_processed(self, index: int, image: np.ndarray, image_path: str):
         file_on_display = self.main.image_files[self.main.curr_img_idx]

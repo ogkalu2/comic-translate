@@ -166,6 +166,7 @@ class WebtoonController:
         # Clear the scene to remove multi-page items
         self.main.blk_list.clear()
         self.image_viewer.clear_scene()
+        self.main.image_ctrl.force_default_view_on_next_image_load()
         
         # Make sure the image viewer is the current widget
         self.main.central_stack.setCurrentWidget(self.image_viewer)
@@ -201,11 +202,8 @@ class WebtoonController:
                 old_index = self.main.curr_img_idx
                 self.main.curr_img_idx = page_index
                 
-                # Update the page list selection without triggering signals
-                self.main.page_list.blockSignals(True)
-                self.main.page_list.setCurrentRow(page_index)
-                self.main.image_ctrl.highlight_card(page_index)
-                self.main.page_list.blockSignals(False)
+                # Update the page list selection without triggering signals.
+                self.main.image_ctrl.set_page_list_current_row(page_index, emit_signal=False)
                 
                 # In lazy webtoon mode, do minimal state management to avoid interfering with scrolling
                 # Only load language settings and basic state

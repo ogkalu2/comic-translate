@@ -435,6 +435,12 @@ class ImageViewer(QGraphicsView):
         self.connect_text_item.emit(item)
         
         return item
+
+    def get_selected_text_items(self) -> list[TextBlockItem]:
+        return [item for item in self.text_items if item.selected]
+
+    def get_selected_rectangles(self) -> list[MoveableRectItem]:
+        return [item for item in self.rectangles if item.selected]
     
     # InteractionManager proxy methods
     def sel_rot_item(self):
@@ -520,9 +526,17 @@ class ImageViewer(QGraphicsView):
         }
 
     def load_state(self, state: Dict):
-        self.setTransform(QtGui.QTransform(*state['transform']))
-        self.centerOn(QPointF(*state['center']))
-        self.setSceneRect(QRectF(*state['scene_rect']))
+        scene_rect = state.get('scene_rect')
+        if scene_rect:
+            self.setSceneRect(QRectF(*scene_rect))
+
+        transform = state.get('transform')
+        if transform:
+            self.setTransform(QtGui.QTransform(*transform))
+
+        center = state.get('center')
+        if center:
+            self.centerOn(QPointF(*center))
 
         for data in state['rectangles']:
             x, y, w, h = data['rect']

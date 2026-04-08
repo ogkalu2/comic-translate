@@ -1,17 +1,19 @@
 import os
-import torch
+import logging
 import numpy as np
 from PIL import Image
-from transformers import RTDetrV2ForObjectDetection, RTDetrImageProcessor
 
 from .base import DetectionEngine
 from modules.utils.textblock import TextBlock
 from modules.detection.utils.slicer import ImageSlicer
 from modules.utils.device import tensors_to_device
 from modules.utils.download import models_base_dir
+from modules.utils.torch_autocast import TorchAutocastMixin
+
+logger = logging.getLogger(__name__)
 
 
-class RTDetrV2Detection(DetectionEngine):
+class RTDetrV2Detection(TorchAutocastMixin, DetectionEngine):
     """Detection engine using a fine-tuned RT-DETR-v2 model from Hugging Face."""
     
     def __init__(self, settings=None):
@@ -33,6 +35,9 @@ class RTDetrV2Detection(DetectionEngine):
         
     def initialize(self, device: str = 'cpu', 
                   confidence_threshold: float = 0.3, **kwargs) -> None:
+        import torch
+        from transformers import RTDetrImageProcessor, RTDetrV2ForObjectDetection
+
         self.device = device
         self.confidence_threshold = confidence_threshold
         
@@ -49,6 +54,7 @@ class RTDetrV2Detection(DetectionEngine):
             
             # Move model to appropriate device
             self.model = self.model.to(self.device)
+            self.setup_torch_autocast(torch, self.device)
     
     def detect(self, image: np.ndarray) -> list[TextBlock]:
         # The slicer does not slice images below the width to height threshold
@@ -68,6 +74,8 @@ class RTDetrV2Detection(DetectionEngine):
         Returns:
             Tuple of (bubble_boxes, text_boxes) as numpy arrays
         """
+        import torch
+
         # Convert OpenCV image (BGR) to PIL image (RGB)
         pil_image = Image.fromarray(image)  # image is already in RGB format
         
@@ -77,8 +85,13 @@ class RTDetrV2Detection(DetectionEngine):
         inputs = tensors_to_device(inputs, self.device)
 
         # Run inference
-        with torch.no_grad():
-            outputs = self.model(**inputs)
+        with torch.inference_mode():
+            outputs = self.run_with_torch_autocast(
+                torch_module=torch,
+                fn=lambda: self.model(**inputs),
+                logger=logger,
+                engine_name=self.__class__.__name__,
+            )
 
         # Post-process results
         target_sizes = torch.tensor([pil_image.size[::-1]], device=self.device)

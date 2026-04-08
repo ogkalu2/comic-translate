@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 import numpy as np
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from app.path_materialization import ensure_path_materialized
 from modules.utils.textblock import sort_blk_list
@@ -19,6 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 class FlowMixin:
+    def _report_image_load_failure(
+        self: WebtoonBatchProcessor, image_path: str, error: Exception
+    ) -> None:
+        if image_path in self._reported_image_load_failures:
+            return
+        self._reported_image_load_failures.add(image_path)
+        logger.warning("Skipping unreadable image '%s': %s", image_path, error)
+        self.main_page.image_skipped.emit(image_path, "Image Load", str(error))
+
     def _emit_progress(
         self: WebtoonBatchProcessor,
         index: int,
@@ -150,13 +159,17 @@ class FlowMixin:
         self: WebtoonBatchProcessor, vpage: VirtualPage
     ) -> Optional[np.ndarray]:
         ensure_path_materialized(vpage.physical_page_path)
-        with Image.open(vpage.physical_page_path) as image:
-            crop = image.crop(
-                (0, int(vpage.crop_top), int(vpage.physical_width), int(vpage.crop_bottom))
-            )
-            if crop.mode != "RGB":
-                crop = crop.convert("RGB")
-            arr = np.array(crop)
+        try:
+            with Image.open(vpage.physical_page_path) as image:
+                crop = image.crop(
+                    (0, int(vpage.crop_top), int(vpage.physical_width), int(vpage.crop_bottom))
+                )
+                if crop.mode != "RGB":
+                    crop = crop.convert("RGB")
+                arr = np.array(crop)
+        except (UnidentifiedImageError, OSError, ValueError) as exc:
+            self._report_image_load_failure(vpage.physical_page_path, exc)
+            return None
         if arr is None or arr.size == 0:
             return None
         return arr
@@ -372,6 +385,7 @@ class FlowMixin:
     ):
         try:
             timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
+            self._reported_image_load_failures.clear()
             image_list = selected_paths if selected_paths is not None else self.main_page.image_files
             total_images = len(image_list)
             if total_images < 1:
@@ -429,8 +443,12 @@ class FlowMixin:
                     continue
 
                 ensure_path_materialized(image_path)
-                with Image.open(image_path) as pil_image:
-                    width, height = pil_image.size
+                try:
+                    with Image.open(image_path) as pil_image:
+                        width, height = pil_image.size
+                except (UnidentifiedImageError, OSError, ValueError) as exc:
+                    self._report_image_load_failure(image_path, exc)
+                    continue
 
                 page_info = {
                     "path": image_path,

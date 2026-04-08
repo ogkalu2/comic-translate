@@ -18,6 +18,11 @@ def _register_lazy_source(path: str, source: dict) -> None:
         _LAZY_SOURCE_BY_PATH[os.path.abspath(path)] = source
 
 
+def _source_label_from_path(path: str) -> str:
+    base_name = os.path.splitext(os.path.basename(path))[0].strip()
+    return base_name or "chapter"
+
+
 def _clear_lazy_sources_under_dir(base_dir: str) -> None:
     base = os.path.abspath(base_dir)
     with _LAZY_SOURCE_LOCK:
@@ -86,7 +91,11 @@ class FileHandler:
                     lazy_path = os.path.join(temp_dir, f"{index:0{digits}d}{ext.lower()}")
                     _register_lazy_source(
                         lazy_path,
-                        {"archive_path": path, "entry": entry},
+                        {
+                            "archive_path": path,
+                            "entry": entry,
+                            "source_label": _source_label_from_path(path),
+                        },
                     )
                     image_paths.append(lazy_path)
 
@@ -105,6 +114,16 @@ class FileHandler:
 
         self.file_paths = self.file_paths + all_image_paths if extend else all_image_paths
         return all_image_paths
+
+    def get_prepared_source_label(self, path: str) -> str | None:
+        if not path:
+            return None
+        with _LAZY_SOURCE_LOCK:
+            source = _LAZY_SOURCE_BY_PATH.get(os.path.abspath(path))
+        if source is None:
+            return None
+        label = str(source.get("source_label", "")).strip()
+        return label or None
 
     def should_pre_materialize(self, target_paths: list[str] | None = None) -> bool:
         paths = list(target_paths or [])

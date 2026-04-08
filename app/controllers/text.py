@@ -48,6 +48,7 @@ class TextController:
         self._last_item_html = {}
         self._suspend_text_command = False
         self._is_updating_from_edit = False
+        self._render_macro_stack = None
 
     def connect_text_item_signals(self, text_item: TextBlockItem, force_reconnect: bool = False):
         if getattr(text_item, "_ct_signals_connected", False) and not force_reconnect:
@@ -189,7 +190,45 @@ class TextController:
 
     def on_text_item_deselected(self):
         self._commit_pending_text_command()
+        selected_items = self.main.image_viewer.get_selected_text_items()
+        if selected_items:
+            if self.main.curr_tblock_item not in selected_items:
+                self.on_text_item_selected(selected_items[-1])
+            return
         self.clear_text_edits()
+
+    def _selected_text_items(self) -> list[TextBlockItem]:
+        selected_items = self.main.image_viewer.get_selected_text_items()
+        if selected_items:
+            return selected_items
+        return [self.main.curr_tblock_item] if self.main.curr_tblock_item else []
+
+    def _apply_format_to_selected(self, macro_name: str, apply_fn):
+        items = self._selected_text_items()
+        if not items:
+            return
+
+        commands = []
+        for item in items:
+            old_item = copy.copy(item)
+            apply_fn(item)
+            commands.append(TextFormatCommand(self.main.image_viewer, old_item, item))
+
+        stack = self.main.undo_group.activeStack()
+        if stack is None:
+            return
+
+        if len(commands) > 1:
+            stack.beginMacro(macro_name)
+        try:
+            for command in commands:
+                stack.push(command)
+        finally:
+            if len(commands) > 1:
+                stack.endMacro()
+
+        if self.main.curr_tblock_item in items:
+            self.set_values_for_blk_item(self.main.curr_tblock_item)
 
     def update_text_block(self):
         if self.main.curr_tblock:
@@ -427,22 +466,20 @@ class TextController:
 
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):
-        if self.main.curr_tblock_item and font_family:
-            old_item = copy.copy(self.main.curr_tblock_item)
+        if self._selected_text_items() and font_family:
             font_size = int(self.main.font_size_dropdown.currentText())
-            self.main.curr_tblock_item.set_font(font_family, font_size)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._apply_format_to_selected(
+                "change_text_font",
+                lambda item: item.set_font(font_family, font_size),
+            )
 
     def on_font_size_change(self, font_size: str):
-        if self.main.curr_tblock_item and font_size:
-            old_item = copy.copy(self.main.curr_tblock_item)
+        if self._selected_text_items() and font_size:
             font_size = float(font_size)
-            self.main.curr_tblock_item.set_font_size(font_size)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._apply_format_to_selected(
+                "change_text_font_size",
+                lambda item: item.set_font_size(font_size),
+            )
 
     def on_line_spacing_change(self, line_spacing: str):
         if self.main.curr_tblock_item and line_spacing:
@@ -460,12 +497,11 @@ class TextController:
                 f"background-color: {font_color.name()}; border: none; border-radius: 5px;"
             )
             self.main.block_font_color_button.setProperty('selected_color', font_color.name())
-            if self.main.curr_tblock_item:
-                old_item = copy.copy(self.main.curr_tblock_item)
-                self.main.curr_tblock_item.set_color(font_color)
-
-                command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-                self.main.push_command(command)
+            if self._selected_text_items():
+                self._apply_format_to_selected(
+                    "change_text_color",
+                    lambda item: item.set_color(font_color),
+                )
 
     def left_align(self):
         if self.main.curr_tblock_item:
@@ -702,6 +738,32 @@ class TextController:
             self.unblock_text_item_widgets(self.widgets_to_block)
 
     # Rendering
+    def _begin_render_macro(self):
+        if self._render_macro_stack is not None:
+            return
+
+        stack = self.main.undo_group.activeStack()
+        if stack is None:
+            return
+
+        stack.beginMacro("render_text")
+        self._render_macro_stack = stack
+
+    def _end_render_macro(self):
+        stack = self._render_macro_stack
+        self._render_macro_stack = None
+        if stack is None:
+            return
+
+        try:
+            stack.endMacro()
+        except RuntimeError:
+            pass
+
+    def _handle_render_error(self, error_tuple: tuple):
+        self._end_render_macro()
+        self.main.default_error_handler(error_tuple)
+
     def render_text(self):
         selected_paths = self.main.get_selected_page_paths()
         if self.main.image_viewer.hasPhoto() and len(selected_paths) > 1:
@@ -828,11 +890,13 @@ class TextController:
 
                 current_file = context["current_file"]
                 if current_file in updated_paths:
-                    self.main.blk_list = self.main.image_states.get(current_file, {}).get("blk_list", []).copy()
                     if self.main.webtoon_mode:
-                        if context["current_page_unloaded"]:
-                            self.main.manual_workflow_ctrl._reload_current_webtoon_page()
+                        self.main.manual_workflow_ctrl._set_current_blocks_from_page_state(
+                            self.main.image_states.get(current_file, {}).get("blk_list", []),
+                            current_page_unloaded=context["current_page_unloaded"],
+                        )
                     else:
+                        self.main.blk_list = self.main.image_states.get(current_file, {}).get("blk_list", []).copy()
                         self.main.image_ctrl.on_render_state_ready(current_file)
 
                 self.main.mark_project_dirty()
@@ -902,10 +966,13 @@ class TextController:
             if 0 <= self.main.curr_img_idx < len(self.main.image_files):
                 image_path = self.main.image_files[self.main.curr_img_idx]
 
+            if new_blocks:
+                self._begin_render_macro()
+
             self.main.run_threaded(
                 manual_wrap, 
                 self.on_render_complete, 
-                self.main.default_error_handler,
+                self._handle_render_error,
                 None, 
                 self.main, 
                 new_blocks, 
@@ -926,7 +993,7 @@ class TextController:
         # self.main.set_image(rendered_image) 
         self.main.loading.setVisible(False)
         self.main.enable_hbutton_group()
-        self.main.undo_group.activeStack().endMacro()
+        self._end_render_macro()
 
     def render_settings(self) -> TextRenderingSettings:
         target_lang = self.main.lang_mapping.get(self.main.t_combo.currentText(), None)

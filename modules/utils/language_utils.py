@@ -23,14 +23,17 @@ language_codes = {
     "Hungarian": "hu",
     "Finnish": "fi",
     "Arabic": "ar",
+    "Hebrew": "he",
     "Czech": "cs",
+    "Croatian": "hr",
     "Persian": "fa",
     "Romanian": "ro",
     "Mongolian": "mn",
 }
 
 def get_layout_direction(language: str) -> Qt.LayoutDirection:
-    return Qt.LayoutDirection.RightToLeft if language == 'Arabic' else Qt.LayoutDirection.LeftToRight
+    rtl_languages = {"Arabic", "Hebrew", "Persian"}
+    return Qt.LayoutDirection.RightToLeft if language in rtl_languages else Qt.LayoutDirection.LeftToRight
 
 def get_language_code(lng: str):
     lng_cd = language_codes.get(lng, None)

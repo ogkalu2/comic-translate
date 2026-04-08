@@ -20,15 +20,26 @@ class EventHandler:
     def handle_mouse_press(self, event: QtGui.QMouseEvent):
         scene_pos = self.viewer.mapToScene(event.position().toPoint())
         clicked_item = self._resolve_top_level_item(self.viewer.itemAt(event.pos()))
+        ctrl_pressed = bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier)
         
         # Delegate page change detection to the appropriate manager
         if self.viewer.webtoon_mode:
             self.viewer.webtoon_manager.update_page_on_click(scene_pos)
 
         if isinstance(clicked_item, (TextBlockItem, MoveableRectItem)):
-            if not clicked_item.selected:
-                # Emit item-specific signals
-                if isinstance(clicked_item, TextBlockItem):
+            if isinstance(clicked_item, TextBlockItem):
+                if ctrl_pressed and not clicked_item.editing_mode:
+                    if clicked_item.selected:
+                        clicked_item.handleDeselection()
+                    else:
+                        clicked_item.selected = True
+                        clicked_item.setSelected(True)
+                        try:
+                            clicked_item.last_selection = clicked_item.textCursor().selection()
+                        except Exception:
+                            clicked_item.last_selection = None
+                        clicked_item.item_selected.emit(clicked_item)
+                elif not clicked_item.selected:
                     self.viewer.deselect_all()
                     clicked_item.selected = True 
                     clicked_item.setSelected(True)
@@ -39,7 +50,28 @@ class EventHandler:
                         clicked_item.last_selection = None
                     if not clicked_item.editing_mode:
                         clicked_item.item_selected.emit(clicked_item)
-                elif isinstance(clicked_item, MoveableRectItem):
+                elif (
+                    clicked_item.selected
+                    and len(self.viewer.get_selected_text_items()) > 1
+                    and not clicked_item.editing_mode
+                ):
+                    for item in self.viewer.get_selected_text_items():
+                        if item is not clicked_item:
+                            item.handleDeselection()
+                    clicked_item.item_selected.emit(clicked_item)
+            elif isinstance(clicked_item, MoveableRectItem):
+                if ctrl_pressed:
+                    if clicked_item.selected:
+                        self.viewer.deselect_rect(clicked_item)
+                    else:
+                        self.viewer.interaction_manager.add_rectangle_to_selection(clicked_item)
+                elif clicked_item.selected and len(self.viewer.get_selected_rectangles()) > 1:
+                    for item in self.viewer.get_selected_rectangles():
+                        if item is not clicked_item:
+                            self.viewer.deselect_rect(item)
+                    self.viewer.selected_rect = clicked_item
+                    self.viewer.rectangle_selected.emit(clicked_item.mapRectToScene(clicked_item.rect()))
+                elif not clicked_item.selected:
                     self.viewer.select_rectangle(clicked_item)
         
         if event.button() == Qt.LeftButton:
@@ -47,7 +79,7 @@ class EventHandler:
             if self._press_handle_resize(event, scene_pos): return
             if self._press_handle_rotation(event, scene_pos): return
             if self._press_handle_drag(event, scene_pos): return
-            self._press_handle_deselection(clicked_item)
+            self._press_handle_deselection(clicked_item, ctrl_pressed)
 
             if self.viewer.current_tool == 'box' and not isinstance(clicked_item, (TextBlockItem, MoveableRectItem)):
                 if self._is_on_image(scene_pos):
@@ -272,7 +304,7 @@ class EventHandler:
                 return True
         return False
 
-    def _press_handle_deselection(self, clicked_item):
+    def _press_handle_deselection(self, clicked_item, ctrl_pressed: bool = False):
         if clicked_item is None or isinstance(clicked_item, QGraphicsPixmapItem):
             self.viewer.clear_text_edits.emit()
             self.viewer.deselect_all()
@@ -285,7 +317,7 @@ class EventHandler:
                         item.handleDeselection()
                     else: 
                         self.viewer.deselect_rect(item)
-        else:
+        elif not ctrl_pressed:
             for item in self.viewer._scene.items():
                 if isinstance(item, (TextBlockItem, MoveableRectItem)) and item != clicked_item:
                     if isinstance(item, TextBlockItem): 

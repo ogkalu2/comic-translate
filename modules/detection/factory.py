@@ -7,13 +7,14 @@ class DetectionEngineFactory:
     """Factory for creating appropriate detection engines based on settings."""
     
     _engines = {}  # Cache of created engines
+    _DEFAULT_BACKEND = "onnx"
     
     @classmethod
     def create_engine(
         cls, 
         settings, 
         model_name: str = 'RT-DETR-v2', 
-        backend: str = 'onnx'
+        backend: str | None = None
     ) -> DetectionEngine:
         """
         Create or retrieve an appropriate detection engine.
@@ -21,14 +22,16 @@ class DetectionEngineFactory:
         Args:
             settings: Settings object with detection configuration
             model_name: Name of the detection model to use
-            backend: Backend to use ('onnx' or 'torch')
+            backend: Optional backend override ('onnx' or 'torch')
             
         Returns:
             Appropriate detection engine instance
         """
+        effective_backend = cls._resolve_backend(backend)
+
         # build cache key
-        device = resolve_device(settings.is_gpu_enabled(), backend)
-        cache_key = f"{model_name}_{backend}_{device}"
+        device = resolve_device(settings.is_gpu_enabled(), effective_backend)
+        cache_key = f"{model_name}_{effective_backend}_{device}"
 
         # Return cached engine if available
         if cache_key in cls._engines:
@@ -43,9 +46,16 @@ class DetectionEngineFactory:
         factory_method = engine_factories.get(model_name, cls._create_rtdetr_v2)
 
         # Create and cache the engine
-        engine = factory_method(settings, backend)
+        engine = factory_method(settings, effective_backend)
         cls._engines[cache_key] = engine
         return engine
+
+    @classmethod
+    def _resolve_backend(cls, backend: str | None = None) -> str:
+        effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
+        if effective_backend == "torch" and not torch_available():
+            return "onnx"
+        return effective_backend
 
     @staticmethod
     def _create_rtdetr_v2(settings, backend: str = 'onnx'):

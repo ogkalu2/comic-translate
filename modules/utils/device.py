@@ -15,6 +15,36 @@ def torch_available() -> bool:
         return False
 
 
+def _get_available_torch_accelerators() -> list[str]:
+    """Return supported non-CPU torch accelerator names that are currently usable."""
+    try:
+        import torch
+    except ImportError:
+        return []
+
+    accelerators: list[str] = []
+
+    try:
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            accelerators.append("mps")
+    except Exception:
+        pass
+
+    try:
+        if torch.cuda.is_available():
+            accelerators.append("cuda")
+    except Exception:
+        pass
+
+    try:
+        if hasattr(torch, "xpu") and torch.xpu.is_available():
+            accelerators.append("xpu")
+    except Exception:
+        pass
+
+    return accelerators
+
+
 def resolve_device(use_gpu: bool, backend: str = "onnx") -> str:
     """Return the best available device string for the specified backend.
 
@@ -36,28 +66,15 @@ def resolve_device(use_gpu: bool, backend: str = "onnx") -> str:
 
 def _resolve_torch_device(fallback_to_onnx: bool = False) -> str:
     """Resolve the best available PyTorch device."""
-    try:
-        import torch
-    except ImportError:
+    if not torch_available():
         # Torch not available, fallback to ONNX resolution if requested
         if fallback_to_onnx:
             return _resolve_onnx_device()
         return "cpu"
 
-    # Check for MPS (Apple Silicon)
-    if hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-        return "mps"
-
-    # Check for CUDA
-    if torch.cuda.is_available():
-        return "cuda"
-
-    # Check for XPU (Intel GPU)
-    try:
-        if hasattr(torch, 'xpu') and torch.xpu.is_available():
-            return "xpu"
-    except Exception:
-        pass
+    accelerators = _get_available_torch_accelerators()
+    if accelerators:
+        return accelerators[0]
 
     # Fallback to CPU
     return "cpu"
@@ -178,22 +195,16 @@ def get_providers(device: Optional[str] = None) -> list[Any]:
 
 
 def is_gpu_available() -> bool:
-    """Check if a valid GPU provider is available.
-    
-    Returns False if only AzureExecutionProvider and/or CPUExecutionProvider are present.
-    Returns True if any other provider (CUDA, CoreML, etc.) is found.
-    """
+    """Check if either ONNX or torch can use a supported non-CPU accelerator."""
     try:
         providers = ort.get_available_providers()
     except Exception:
-        return False
+        providers = []
 
     ignored_providers = {'AzureExecutionProvider', 'CPUExecutionProvider'}
     available = set(providers)
-    
-    # If the only available providers are in the ignored list, return False
-    # logic: if available is a subset of ignored_providers, then we have nothing else.
-    if available.issubset(ignored_providers):
-        return False
-        
-    return True
+
+    if not available.issubset(ignored_providers):
+        return True
+
+    return bool(_get_available_torch_accelerators())

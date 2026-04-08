@@ -1,24 +1,31 @@
 from __future__ import annotations
 
+import copy
 import logging
 import os
+import re
 import shutil
 import tempfile
 from datetime import datetime
 from typing import TYPE_CHECKING
 from dataclasses import asdict, is_dataclass
+from collections import OrderedDict
 
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtCore import QSettings
 from PySide6.QtGui import QUndoStack
 
 from app.thread_worker import GenericWorker
+from app.ui.dayu_widgets.message import MMessage
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from app.ui.export_chapters_dialog import ExportChaptersDialog, ExportChapterRow
+from app.controllers.psd_exporter import PsdPageData, export_psd_pages
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
+    remap_project_file_path,
     save_state_to_proj_file,
 )
 from modules.utils.archives import make
@@ -44,6 +51,7 @@ class ProjectController:
         self._autosave_save_pending = False
         self._autosave_retrigger_requested = False
         self._active_save_workers: list = []  # keeps Python refs alive until workers finish
+        self._last_project_dialog_dir = ""
 
     # Recent projects (persisted via QSettings)
 
@@ -485,25 +493,401 @@ class ProjectController:
         )
 
     def save_and_make(self, output_path: str):
+        self._save_and_make_internal(output_path)
+
+    def start_export_as(self, extension: str) -> None:
+        extension = (extension or "").lower().lstrip(".")
+        if not self.main.image_files:
+            return
+
+        export_rows = self._build_export_rows()
+        if not self._should_show_partition_dialog(export_rows):
+            output_path = self._launch_export_file_dialog(extension)
+            if output_path:
+                self._save_and_make_internal(output_path, skip_partition_dialog=True)
+            return
+
+        partition_result = self._prompt_for_partition(
+            export_rows,
+            os.path.join(self._get_default_export_dir(), f"untitled.{extension}"),
+        )
+        if partition_result is None:
+            return
+        chapter_names_by_path, output_dir = partition_result
+
+        groups = self._group_page_indices(chapter_names_by_path)
+        if len(groups) == 1:
+            only_group_name = next(iter(groups.keys()))
+            suggested_name = self._build_export_filename(only_group_name, f".{extension}", set())
+            output_path = self._launch_export_file_dialog(
+                extension,
+                suggested_name=suggested_name,
+                initial_dir=output_dir,
+            )
+            if output_path:
+                self._save_and_make_internal(
+                    output_path,
+                    chapter_names_by_path=chapter_names_by_path,
+                    skip_partition_dialog=True,
+                )
+            return
+
+        export_plan = self._build_export_plan_for_directory(output_dir, f".{extension}", chapter_names_by_path)
+        self._run_export_plan(export_plan)
+
+    def _save_and_make_internal(
+        self,
+        output_path: str,
+        chapter_names_by_path: dict[str, str] | None = None,
+        skip_partition_dialog: bool = False,
+    ) -> None:
+        if not self.main.image_files:
+            return
+
+        export_rows = self._build_export_rows()
+        resolved_chapter_names = chapter_names_by_path or {
+            row.file_path: row.group_name for row in export_rows
+        }
+        if not skip_partition_dialog and self._should_show_partition_dialog(export_rows):
+            partition_result = self._prompt_for_partition(export_rows, output_path)
+            if partition_result is None:
+                return
+            resolved_chapter_names = partition_result[0]
+
+        export_plan = self._build_export_plan(output_path, resolved_chapter_names)
+        self._run_export_plan(export_plan)
+
+    def _run_export_plan(self, export_plan: list[dict]) -> None:
+        self.main.image_ctrl.save_current_image_state()
+        all_pages_current_state = self._build_all_pages_current_state()
         self.main.loading.setVisible(True)
         self.main.run_threaded(
             self.save_and_make_worker,
             None,
             self.main.default_error_handler,
             lambda: self.main.loading.setVisible(False),
-            output_path,
+            export_plan,
+            all_pages_current_state,
         )
 
-    def save_and_make_worker(self, output_path: str):
+    def _prompt_for_partition(
+        self,
+        export_rows: list[ExportChapterRow],
+        output_path_hint: str,
+    ) -> tuple[dict[str, str], str] | None:
+        dialog = ExportChaptersDialog(
+            export_rows,
+            os.path.dirname(output_path_hint) or os.path.expanduser("~"),
+            os.path.splitext(output_path_hint)[1],
+            self._build_export_filename,
+            parent=self.main,
+        )
+        if dialog.exec() != QtWidgets.QDialog.Accepted:
+            return None
+        chapter_names_by_path = dialog.chapter_names_by_path()
+        self._persist_export_group_names(chapter_names_by_path)
+        return chapter_names_by_path, dialog.selected_output_dir()
+
+    def _persist_export_group_names(self, chapter_names_by_path: dict[str, str]) -> None:
+        changed = False
+        for file_path, group_name in chapter_names_by_path.items():
+            state = self.main.image_states.setdefault(file_path, {})
+            if state.get("export_group_name") != group_name:
+                state["export_group_name"] = group_name
+                changed = True
+        if changed:
+            self.main.mark_project_dirty()
+
+    def _launch_export_file_dialog(
+        self,
+        extension: str,
+        suggested_name: str | None = None,
+        initial_dir: str | None = None,
+    ) -> str:
+        export_types = {
+            "zip": "ZIP files (*.zip)",
+            "cbz": "CBZ files (*.cbz)",
+            "cb7": "CB7 files (*.cb7)",
+            "pdf": "PDF files (*.pdf)",
+        }
+        normalized_ext = (extension or "").lower().lstrip(".")
+        if normalized_ext not in export_types:
+            return ""
+        default_name = suggested_name or f"untitled.{normalized_ext}"
+        selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self.main,
+            "Save File",
+            os.path.join(initial_dir or self._get_default_export_dir(), default_name),
+            export_types[normalized_ext],
+        )
+        if not selected_path:
+            return ""
+        if not selected_path.lower().endswith(f".{normalized_ext}"):
+            selected_path = f"{selected_path}.{normalized_ext}"
+        return selected_path
+
+    def _launch_export_folder_dialog(
+        self,
+        title: str,
+        suggested_name: str | None = None,
+        initial_dir: str | None = None,
+    ) -> str:
+        default_dir = initial_dir or self._get_default_export_dir()
+        default_name = self._sanitize_export_stem(suggested_name or self._get_export_bundle_name())
+        selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self.main,
+            title,
+            os.path.join(default_dir, default_name),
+            "Folders (*)",
+        )
+        selected_path = str(selected_path or "").strip()
+        if not selected_path:
+            return ""
+        if os.path.isfile(selected_path):
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Export Folder"),
+                self.main.tr("Choose a folder path, not an existing file."),
+            )
+            return ""
+        try:
+            os.makedirs(selected_path, exist_ok=True)
+        except OSError as exc:
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Export Folder"),
+                self.main.tr(
+                    "Could not create the selected export folder.\n\n{error}"
+                ).format(error=str(exc)),
+            )
+            return ""
+        return selected_path
+
+    def export_to_psd_dialog(self):
+        if not self.main.image_files:
+            return
+
+        default_dir = self._get_default_export_dir()
+        if len(self.main.image_files) == 1:
+            default_name = f"{os.path.splitext(os.path.basename(self.main.image_files[0]))[0]}.psd"
+            selected_path, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self.main,
+                "Export PSD As",
+                os.path.join(default_dir, default_name),
+                "PSD Files (*.psd);;All Files (*)",
+            )
+            if not selected_path:
+                return
+            if not selected_path.lower().endswith(".psd"):
+                selected_path = f"{selected_path}.psd"
+            self.export_to_psd(os.path.dirname(selected_path), single_file_path=selected_path)
+            return
+
+        export_rows = self._build_export_rows()
+        if self._should_show_partition_dialog(export_rows):
+            partition_result = self._prompt_for_partition(
+                export_rows,
+                os.path.join(default_dir, "untitled"),
+            )
+            if partition_result is None:
+                return
+            chapter_names_by_path, output_dir = partition_result
+            export_plan = self._build_export_plan_for_directory(output_dir, "", chapter_names_by_path)
+            self.export_psd_plan(export_plan)
+            return
+
+        selected_folder = self._launch_export_folder_dialog(
+            "Export PSD",
+            suggested_name=self._get_export_bundle_name(),
+            initial_dir=default_dir,
+        )
+        if selected_folder:
+            self.export_to_psd(selected_folder)
+
+    def export_to_psd(self, output_folder: str, single_file_path: str | None = None):
         self.main.image_ctrl.save_current_image_state()
         all_pages_current_state = self._build_all_pages_current_state()
+        bundle_name = self._get_export_bundle_name()
+        self.main.loading.setVisible(True)
+        self.main.run_threaded(
+            self._write_psd_worker, None, self.main.default_error_handler, lambda: self.main.loading.setVisible(False),
+            output_folder, all_pages_current_state, bundle_name, single_file_path,
+        )
+
+    def export_psd_plan(self, export_plan: list[dict]) -> None:
+        self.main.image_ctrl.save_current_image_state()
+        all_pages_current_state = self._build_all_pages_current_state()
+        bundle_name = self._get_export_bundle_name()
+        self.main.loading.setVisible(True)
+        self.main.run_threaded(
+            self._write_psd_plan_worker,
+            None,
+            self.main.default_error_handler,
+            lambda: self.main.loading.setVisible(False),
+            export_plan,
+            all_pages_current_state,
+            bundle_name,
+        )
+
+    def _write_psd_worker(
+        self,
+        output_folder: str,
+        all_pages_current_state: dict[str, dict],
+        bundle_name: str,
+        single_file_path: str | None = None,
+    ):
+        pages = self._gather_psd_pages(all_pages_current_state)
+        export_psd_pages(
+            output_folder=output_folder,
+            pages=pages,
+            bundle_name=bundle_name,
+            single_file_path=single_file_path,
+        )
+
+    def _write_psd_plan_worker(
+        self,
+        export_plan: list[dict],
+        all_pages_current_state: dict[str, dict],
+        default_bundle_name: str,
+    ) -> None:
+        pages = self._gather_psd_pages(all_pages_current_state)
+        for group in export_plan:
+            group_pages = [
+                pages[page_idx]
+                for page_idx in group.get("page_indices", [])
+                if 0 <= int(page_idx) < len(pages)
+            ]
+            if not group_pages:
+                continue
+            output_path = str(group.get("output_path") or "").strip()
+            if not output_path:
+                continue
+            export_psd_pages(
+                output_folder=output_path,
+                pages=group_pages,
+                bundle_name=str(group.get("group_name") or default_bundle_name),
+            )
+
+    @staticmethod
+    def _sanitize_export_stem(value: str) -> str:
+        sanitized = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", str(value or ""))
+        sanitized = re.sub(r"\s+", " ", sanitized).strip().strip(".")
+        return sanitized.strip("._-") or "chapter"
+
+    def _default_export_group_name(self, file_path: str) -> str:
+        state = self.main.image_states.get(file_path, {})
+        group_name = str(state.get("export_group_name", "")).strip()
+        if group_name:
+            return group_name
+        try:
+            source_label = self.main.file_handler.get_prepared_source_label(file_path)
+        except Exception:
+            source_label = None
+        if source_label:
+            return source_label
+        return self._get_export_bundle_name()
+
+    def _build_export_rows(self) -> list[ExportChapterRow]:
+        rows: list[ExportChapterRow] = []
+        for page_index, file_path in enumerate(self.main.image_files):
+            rows.append(
+                ExportChapterRow(
+                    page_index=page_index,
+                    file_path=file_path,
+                    file_name=os.path.basename(file_path),
+                    group_name=self._default_export_group_name(file_path),
+                )
+            )
+        return rows
+
+    def _should_show_partition_dialog(self, rows: list[ExportChapterRow]) -> bool:
+        if len(rows) <= 1:
+            return False
+        distinct_groups = {row.group_name for row in rows if row.group_name}
+        if len(distinct_groups) > 1:
+            return True
+        basenames = [row.file_name.lower() for row in rows]
+        return len(set(basenames)) != len(basenames)
+
+    def _build_export_filename(self, group_name: str, extension: str, used_names: set[str]) -> str:
+        ext = str(extension or "").strip()
+        if ext and not ext.startswith("."):
+            ext = f".{ext}"
+        stem = self._sanitize_export_stem(group_name)
+        candidate = f"{stem}{ext}"
+        suffix = 2
+        while candidate.lower() in used_names:
+            candidate = f"{stem}_{suffix:02d}{ext}"
+            suffix += 1
+        used_names.add(candidate.lower())
+        return candidate
+
+    @staticmethod
+    def _build_export_page_name(page_number: int, file_path: str) -> str:
+        # Use the original filename directly
+        basename = os.path.basename(file_path)
+        # Sanitize the filename to remove any problematic characters
+        stem = os.path.splitext(basename)[0]
+        ext = os.path.splitext(basename)[1].lower() or ".png"
+        stem = re.sub(r"[^A-Za-z0-9._-]+", "_", stem).strip("._-")
+        if not stem:
+            stem = f"page_{page_number:04d}"
+        return f"{stem}{ext}"
+
+    def _build_export_plan(self, output_path: str, chapter_names_by_path: dict[str, str]) -> list[dict]:
+        extension = os.path.splitext(output_path)[1] or ".zip"
+        output_dir = os.path.dirname(output_path) or os.path.expanduser("~")
+        groups = self._group_page_indices(chapter_names_by_path)
+
+        single_group = len(groups) == 1
+        used_names: set[str] = set()
+        plan: list[dict] = []
+        for group_name, page_indices in groups.items():
+            if single_group:
+                group_output_path = output_path
+            else:
+                file_name = self._build_export_filename(group_name, extension, used_names)
+                group_output_path = os.path.join(output_dir, file_name)
+            plan.append({
+                "group_name": group_name,
+                "page_indices": page_indices,
+                "output_path": group_output_path,
+            })
+        return plan
+
+    def _build_export_plan_for_directory(
+        self,
+        output_dir: str,
+        extension: str,
+        chapter_names_by_path: dict[str, str],
+    ) -> list[dict]:
+        groups = self._group_page_indices(chapter_names_by_path)
+        used_names: set[str] = set()
+        plan: list[dict] = []
+        for group_name, page_indices in groups.items():
+            file_name = self._build_export_filename(group_name, extension, used_names)
+            plan.append({
+                "group_name": group_name,
+                "page_indices": page_indices,
+                "output_path": os.path.join(output_dir, file_name),
+            })
+        return plan
+
+    def _group_page_indices(self, chapter_names_by_path: dict[str, str]) -> OrderedDict[str, list[int]]:
+        groups: OrderedDict[str, list[int]] = OrderedDict()
+        for page_index, file_path in enumerate(self.main.image_files):
+            group_name = str(chapter_names_by_path.get(file_path) or self._default_export_group_name(file_path)).strip()
+            groups.setdefault(group_name, []).append(page_index)
+        return groups
+
+    def save_and_make_worker(self, export_plan: list[dict], all_pages_current_state: dict[str, dict]):
         try:
             if self.main.file_handler.should_pre_materialize(self.main.image_files):
                 count = self.main.file_handler.pre_materialize(self.main.image_files)
                 logger.info("Export pre-materialized %d paths before save-and-make.", count)
         except Exception:
             logger.debug("Export pre-materialization failed; continuing lazily.", exc_info=True)
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp(prefix="comic_translate_export_")
         try:            
             temp_main_page_context = None
             if self.main.webtoon_mode:
@@ -512,26 +896,82 @@ class ProjectController:
                     'image_states': all_pages_current_state
                 })()
 
-            for page_idx, file_path in enumerate(self.main.image_files):
-                bname = os.path.basename(file_path)
-                rgb_img = self.main.load_image(file_path)
-                renderer = ImageSaveRenderer(rgb_img)
-                viewer_state = all_pages_current_state[file_path]['viewer_state']
+            for group_index, group in enumerate(export_plan, start=1):
+                group_dir = os.path.join(temp_dir, f"group_{group_index:03d}")
+                os.makedirs(group_dir, exist_ok=True)
+                for page_number, page_idx in enumerate(group["page_indices"], start=1):
+                    file_path = self.main.image_files[page_idx]
+                    
+                    # Try to load the image with error handling
+                    try:
+                        rgb_img = self.main.load_image(file_path)
+                    except Exception as e:
+                        print(f"Warning: Could not load image for page {page_idx} ({file_path}): {e}")
+                        print(f"  Skipping this page in export")
+                        continue
+                    
+                    renderer = ImageSaveRenderer(rgb_img)
+                    viewer_state = all_pages_current_state[file_path]['viewer_state']
 
-                renderer.apply_patches(self.main.image_patches.get(file_path, []))
-                if self.main.webtoon_mode and temp_main_page_context is not None:
-                    renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
-                else:
-                    renderer.add_state_to_image(viewer_state)
+                    renderer.apply_patches(self.main.image_patches.get(file_path, []))
+                    if self.main.webtoon_mode and temp_main_page_context is not None:
+                        renderer.add_state_to_image(viewer_state, page_idx, temp_main_page_context)
+                    else:
+                        renderer.add_state_to_image(viewer_state)
 
-                sv_pth = os.path.join(temp_dir, bname)
-                renderer.save_image(sv_pth)
+                    sv_pth = os.path.join(group_dir, self._build_export_page_name(page_number, file_path))
+                    renderer.save_image(sv_pth)
 
-            # Call make function
-            make(temp_dir, output_path)
+                os.makedirs(os.path.dirname(group["output_path"]) or ".", exist_ok=True)
+                make(group_dir, group["output_path"])
         finally:
             # Clean up temp directory
             shutil.rmtree(temp_dir)
+
+    def _gather_psd_pages(self, all_pages_current_state: dict[str, dict]) -> list[PsdPageData]:
+        """Collect PSD page data from the captured viewer state."""
+        try:
+            if self.main.file_handler.should_pre_materialize(self.main.image_files):
+                count = self.main.file_handler.pre_materialize(self.main.image_files)
+                logger.info("PSD export pre-materialized %d paths before writing.", count)
+        except Exception:
+            logger.debug("PSD export pre-materialization failed; continuing lazily.", exc_info=True)
+
+        temp_main_page_context = None
+        if self.main.webtoon_mode:
+            temp_main_page_context = type('TempMainPage', (object,), {
+                'image_files': self.main.image_files,
+                'image_states': all_pages_current_state
+            })()
+
+        pages: list[PsdPageData] = []
+        for page_idx, file_path in enumerate(self.main.image_files):
+            rgb_img = self.main.load_image(file_path)
+            viewer_state = copy.deepcopy(all_pages_current_state[file_path].get('viewer_state', {}))
+
+            if self.main.webtoon_mode and temp_main_page_context is not None:
+                renderer = ImageSaveRenderer(rgb_img)
+                renderer.add_spanning_text_items(viewer_state, page_idx, temp_main_page_context)
+
+            patch_list = copy.deepcopy(self.main.image_patches.get(file_path, []))
+            text_items = viewer_state.get('text_items_state', [])
+            logger.info(
+                "PSD page %d (%s): patches=%d, text_items=%d, viewer_state_keys=%s",
+                page_idx, os.path.basename(file_path),
+                len(patch_list), len(text_items) if text_items else 0,
+                list(viewer_state.keys()),
+            )
+
+            pages.append(
+                PsdPageData(
+                    file_path=file_path,
+                    rgb_image=rgb_img,
+                    viewer_state=viewer_state,
+                    patches=patch_list,
+                )
+            )
+
+        return pages
 
     def _build_all_pages_current_state(self) -> dict[str, dict]:
         all_pages_current_state: dict[str, dict] = {}
@@ -551,6 +991,20 @@ class ProjectController:
             all_pages_current_state[file_path] = {'viewer_state': viewer_state}
 
         return all_pages_current_state
+
+    def _get_export_bundle_name(self) -> str:
+        if self.main.project_file:
+            return os.path.splitext(os.path.basename(self.main.project_file))[0]
+        if self.main.image_files:
+            return os.path.splitext(os.path.basename(self.main.image_files[0]))[0]
+        return "comic_translate_export"
+
+    def _get_default_export_dir(self) -> str:
+        if self.main.project_file:
+            return os.path.dirname(self.main.project_file)
+        if self.main.image_files:
+            return os.path.dirname(self.main.image_files[0])
+        return os.path.expanduser("~")
 
     def _create_text_items_state_from_scene(self, page_idx: int) -> dict:
         """
@@ -600,17 +1054,31 @@ class ProjectController:
 
     def launch_save_proj_dialog(self):
         file_dialog = QtWidgets.QFileDialog()
+        initial_dir = self._get_default_project_dialog_dir()
+        initial_path = os.path.join(initial_dir, "untitled.ctpr")
         file_name, _ = file_dialog.getSaveFileName(
             self.main,
             "Save Project As",
-            "untitled",
+            initial_path,
             "Project Files (*.ctpr);;All Files (*)"
         )
+        if file_name:
+            self._last_project_dialog_dir = os.path.dirname(file_name)
 
         return file_name
 
+    def _get_default_project_dialog_dir(self) -> str:
+        if self._last_project_dialog_dir:
+            return self._last_project_dialog_dir
+        if self.main.project_file:
+            return os.path.dirname(self.main.project_file)
+        if self.main.image_files:
+            return os.path.dirname(self.main.image_files[0])
+        return os.path.expanduser("~")
+
     def run_save_proj(self, file_name, post_save_callback=None):
         prev_project_file = self.main.project_file
+        prev_window_title = self.main.windowTitle()
         self.main.project_file = file_name
         self.main.setWindowTitle(f"{os.path.basename(file_name)}[*]")
         self.main.loading.setVisible(True)
@@ -620,6 +1088,8 @@ class ProjectController:
 
         def on_error(error_tuple):
             save_failed['value'] = True
+            self.main.project_file = prev_project_file
+            self.main.setWindowTitle(prev_window_title)
             self.main.default_error_handler(error_tuple)
 
         def on_finished():
@@ -638,12 +1108,144 @@ class ProjectController:
                     post_save_callback()
 
         self.main.run_threaded(self.save_project, None, on_error, on_finished, file_name)
+
+    def thread_change_project_file(self, target_path: str) -> bool:
+        target_path = os.path.normpath(os.path.abspath(os.path.expanduser(target_path or "")))
+        if not target_path:
+            return False
+        if not target_path.lower().endswith(".ctpr"):
+            target_path = f"{target_path}.ctpr"
+
+        current_path = (
+            os.path.normpath(os.path.abspath(self.main.project_file))
+            if self.main.project_file
+            else None
+        )
+
+        target_dir = os.path.dirname(target_path)
+        if not target_dir:
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Project File"),
+                self.main.tr("Choose an existing folder for the project file."),
+            )
+            return False
+
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+        except OSError as exc:
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Project File"),
+                self.main.tr(
+                    "Could not create the selected project folder.\n\n{error}"
+                ).format(error=str(exc)),
+            )
+            return False
+
+        if current_path and target_path == current_path:
+            return self.thread_save_project()
+
+        if os.path.exists(target_path) and target_path != current_path:
+            overwrite = QtWidgets.QMessageBox.question(
+                self.main,
+                self.main.tr("Overwrite Project File"),
+                self.main.tr(
+                    "A project file already exists at this location.\n\n{path}\n\nOverwrite it?"
+                ).format(path=target_path),
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+                QtWidgets.QMessageBox.StandardButton.No,
+            )
+            if overwrite != QtWidgets.QMessageBox.StandardButton.Yes:
+                return False
+
+        if current_path and self._same_volume(current_path, target_path):
+            return self._move_project_file(current_path, target_path)
+
+        self.save_current_state()
+
+        def _post_save() -> None:
+            if current_path and current_path != target_path:
+                removed_old_file = False
+                if os.path.isfile(current_path):
+                    try:
+                        os.remove(current_path)
+                        removed_old_file = True
+                    except OSError as exc:
+                        QtWidgets.QMessageBox.warning(
+                            self.main,
+                            self.main.tr("Old Project File Kept"),
+                            self.main.tr(
+                                "The project was saved to the new location, but the old file could not be removed.\n\n{path}\n\n{error}"
+                            ).format(path=current_path, error=str(exc)),
+                        )
+                if removed_old_file or not os.path.exists(current_path):
+                    self.remove_recent_project(current_path)
+                    self._refresh_home_screen()
+
+            MMessage.success(
+                self.main.tr("Project file updated."),
+                parent=self.main,
+                duration=2,
+            )
+
+        self.run_save_proj(target_path, post_save_callback=_post_save)
+        return True
+
+    def _move_project_file(self, current_path: str, target_path: str) -> bool:
+        if not os.path.isfile(current_path):
+            return False
+
+        try:
+            remap_project_file_path(current_path, target_path)
+            os.replace(current_path, target_path)
+        except OSError as exc:
+            try:
+                remap_project_file_path(target_path, current_path)
+            except OSError:
+                pass
+            QtWidgets.QMessageBox.warning(
+                self.main,
+                self.main.tr("Project File"),
+                self.main.tr(
+                    "Could not move the project file.\n\n{error}"
+                ).format(error=str(exc)),
+            )
+            return False
+
+        self.main.project_file = target_path
+        self.main.setWindowTitle(f"{os.path.basename(target_path)}[*]")
+        self.remove_recent_project(current_path)
+        self.add_recent_project(target_path)
+        self._refresh_home_screen()
+        action_text = (
+            self.main.tr("Project file renamed.")
+            if os.path.dirname(current_path) == os.path.dirname(target_path)
+            else self.main.tr("Project file moved.")
+        )
+        MMessage.success(
+            action_text,
+            parent=self.main,
+            duration=2,
+        )
+        return True
+
+    @staticmethod
+    def _same_volume(path_a: str, path_b: str) -> bool:
+        drive_a = os.path.splitdrive(os.path.abspath(path_a))[0].lower()
+        drive_b = os.path.splitdrive(os.path.abspath(path_b))[0].lower()
+        return drive_a == drive_b
         
     def save_current_state(self):
         if self.main.webtoon_mode:
             webtoon_manager = self.main.image_viewer.webtoon_manager
             webtoon_manager.scene_item_manager.save_all_scene_items_to_states()
-            webtoon_manager.save_view_state()
+            saved_view_state = webtoon_manager.save_view_state()
+            saved_page_index = saved_view_state.get("current_page_index")
+            if isinstance(saved_page_index, int):
+                self.main.curr_img_idx = saved_page_index
+            else:
+                self.main.curr_img_idx = webtoon_manager.layout_manager.current_page_index
         else:
             self.main.image_ctrl.save_current_image_state()
 
@@ -672,23 +1274,24 @@ class ProjectController:
         save_state_to_proj_file(self.main, file_name)
 
     def update_ui_from_project(self):
+        self.main.batch_report_ctrl.refresh_button_state()
         if not self.main.image_files:
             self.main.curr_img_idx = -1
             self.main.central_stack.setCurrentWidget(self.main.drag_browser)
             return
 
         index = self.main.curr_img_idx
+        if self.main.webtoon_mode:
+            saved_view_state = getattr(self.main.image_viewer, "webtoon_view_state", {}) or {}
+            saved_page_index = saved_view_state.get("current_page_index")
+            if isinstance(saved_page_index, int):
+                index = saved_page_index
+                self.main.curr_img_idx = saved_page_index
         if not (0 <= index < len(self.main.image_files)):
             index = 0
             self.main.curr_img_idx = 0
-        self.main.image_ctrl.update_image_cards()
-
-        # highlight the row that matches the current image
-        self.main.page_list.blockSignals(True)
-        if 0 <= index < self.main.page_list.count():
-            self.main.page_list.setCurrentRow(index)
-            self.main.image_ctrl.highlight_card(index)
-        self.main.page_list.blockSignals(False)
+        self.main.image_ctrl.refresh_page_list()
+        self.main.image_ctrl.set_page_list_current_row(index, emit_signal=False)
 
         for file in self.main.image_files:
             stack = QUndoStack(self.main)
@@ -712,6 +1315,8 @@ class ProjectController:
         if self.main.webtoon_mode:
             self.main.webtoon_toggle.setChecked(True)
             self.main.webtoon_ctrl.switch_to_webtoon_mode()
+            QtCore.QTimer.singleShot(0, self.main.image_viewer.webtoon_manager.restore_view_state)
+            QtCore.QTimer.singleShot(150, self.main.image_viewer.webtoon_manager.restore_view_state)
         self.main.set_project_clean()
 
     def _refresh_home_screen(self) -> None:
@@ -721,7 +1326,7 @@ class ProjectController:
             return
         home.populate(self.get_recent_projects())
 
-    def thread_load_project(self, file_name: str, clear_recovery: bool = True):
+    def thread_load_project(self, file_name: str, clear_recovery: bool = True, on_success=None):
         normalized_path = os.path.normpath(os.path.abspath(file_name))
         if not os.path.isfile(normalized_path):
             self.remove_recent_project(normalized_path)
@@ -750,6 +1355,8 @@ class ProjectController:
             self.add_recent_project(normalized_path)
             self._refresh_home_screen()
             self.update_ui_from_project()
+            if callable(on_success):
+                on_success()
 
         def _on_load_error(error_tuple):
             self.main.default_error_handler(error_tuple)

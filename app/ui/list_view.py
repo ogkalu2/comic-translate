@@ -1,9 +1,97 @@
 from PySide6.QtWidgets import QListWidget
-from PySide6.QtWidgets import QSizePolicy, QAbstractItemView
-from PySide6.QtCore import Signal, Qt, QSize
-from PySide6.QtGui import QContextMenuEvent, QDropEvent
+from PySide6.QtWidgets import QSizePolicy, QAbstractItemView, QStyledItemDelegate, QStyle
+from PySide6.QtCore import Signal, Qt, QSize, QRect, QEvent
+from PySide6.QtGui import QContextMenuEvent, QDropEvent, QPainter, QPixmap, QFont, QColor
+from .dayu_widgets import dayu_theme
 from .dayu_widgets.menu import MMenu
 from .dayu_widgets.browser import MClickBrowserFilePushButton
+
+
+class PageListItemDelegate(QStyledItemDelegate):
+    """Paint lightweight page rows without instantiating a widget per item."""
+
+    THUMB_SIZE = QSize(35, 50)
+    ROW_HEIGHT = 60
+    MARGIN_X = 8
+    GAP = 10
+
+    def paint(self, painter: QPainter, option, index):
+        painter.save()
+
+        selected = bool(option.state & QStyle.StateFlag.State_Selected)
+        background = self._background_color(option)
+        painter.fillRect(option.rect, background)
+
+        thumb_rect = self._thumbnail_rect(option.rect)
+        thumb_data = index.data(Qt.ItemDataRole.DecorationRole)
+        pixmap = thumb_data if isinstance(thumb_data, QPixmap) else None
+
+        if pixmap is not None and not pixmap.isNull():
+            scaled = pixmap.scaled(
+                self.THUMB_SIZE,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            draw_x = thumb_rect.x() + (thumb_rect.width() - scaled.width()) // 2
+            draw_y = thumb_rect.y() + (thumb_rect.height() - scaled.height()) // 2
+            painter.drawPixmap(draw_x, draw_y, scaled)
+        else:
+            painter.fillRect(thumb_rect, option.palette.alternateBase())
+            painter.setPen(option.palette.mid().color())
+            painter.drawRect(thumb_rect.adjusted(0, 0, -1, -1))
+
+        text_rect = option.rect.adjusted(
+            self.MARGIN_X + self.THUMB_SIZE.width() + self.GAP,
+            0,
+            -self.MARGIN_X,
+            0,
+        )
+        font = option.font
+        font_data = index.data(Qt.ItemDataRole.FontRole)
+        strike_out = isinstance(font_data, QFont) and font_data.strikeOut()
+        font.setStrikeOut(False)
+        painter.setFont(font)
+
+        text = index.data(Qt.ItemDataRole.DisplayRole) or ""
+        metrics = painter.fontMetrics()
+        text = metrics.elidedText(str(text), Qt.TextElideMode.ElideMiddle, text_rect.width())
+
+        pen_color = option.palette.highlightedText().color() if selected else option.palette.text().color()
+        if strike_out and not selected:
+            pen_color = option.palette.mid().color()
+        painter.setPen(pen_color)
+        painter.drawText(text_rect, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, text)
+
+        if strike_out:
+            line_y = text_rect.center().y()
+            painter.drawLine(text_rect.left(), line_y, text_rect.left() + metrics.horizontalAdvance(text), line_y)
+
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        return QSize(self.THUMB_SIZE.width() + 120, self.ROW_HEIGHT)
+
+    def _background_color(self, option) -> QColor:
+        base = QColor(dayu_theme.background_color)
+        if option.state & QStyle.StateFlag.State_Selected:
+            return QColor(dayu_theme.background_selected_color)
+        if option.state & QStyle.StateFlag.State_MouseOver:
+            return self._blend_colors(base, QColor(dayu_theme.background_selected_color), 0.18)
+        return base
+
+    @staticmethod
+    def _blend_colors(base: QColor, accent: QColor, accent_weight: float) -> QColor:
+        accent_weight = max(0.0, min(1.0, accent_weight))
+        base_weight = 1.0 - accent_weight
+        return QColor(
+            round(base.red() * base_weight + accent.red() * accent_weight),
+            round(base.green() * base_weight + accent.green() * accent_weight),
+            round(base.blue() * base_weight + accent.blue() * accent_weight),
+        )
+
+    def _thumbnail_rect(self, rect):
+        top = rect.y() + (rect.height() - self.THUMB_SIZE.height()) // 2
+        return QRect(self.MARGIN_X + rect.x(), top, self.THUMB_SIZE.width(), self.THUMB_SIZE.height())
 
 
 class PageListView(QListWidget):
@@ -11,14 +99,16 @@ class PageListView(QListWidget):
     del_img = Signal(list)
     toggle_skip_img = Signal(list, bool)  # list of images, bool for skip status (True=skip, False=unskip)
     translate_imgs = Signal(list)
-    selection_changed = Signal(list)  # list of selected indices
     order_changed = Signal(list)  # reordered item identities (file paths when available)
 
     def __init__(self) -> None:
         super().__init__()
+        self._hovered_row = -1
         self.setSpacing(5)
         self.setMinimumWidth(100)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.setUniformItemSizes(True)
+        self.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) 
         self.setDragDropMode(QAbstractItemView.DragDropMode.InternalMove)
         self.setDragEnabled(True)
@@ -26,10 +116,14 @@ class PageListView(QListWidget):
         self.setDropIndicatorShown(True)
         self.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.viewport().setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.setIconSize(PageListItemDelegate.THUMB_SIZE)
+        self.setItemDelegate(PageListItemDelegate(self))
         self.ui_elements()
-        
-        # Connect selection model changes to emit our custom signal
-        self.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.itemEntered.connect(self._on_item_entered)
 
     def ui_elements(self):
         self.insert_browser = MClickBrowserFilePushButton(multiple=True)
@@ -37,14 +131,34 @@ class PageListView(QListWidget):
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
 
-    def _on_selection_changed(self, selected, deselected):
-        """Handle selection changes and emit signal with selected indices."""
-        selected_indices = []
-        for item in self.selectedItems():
-            index = self.row(item)
-            if index >= 0:
-                selected_indices.append(index)
-        self.selection_changed.emit(selected_indices)
+    def _on_item_entered(self, item):
+        self._set_hovered_row(self.row(item) if item else -1)
+
+    def _set_hovered_row(self, row: int) -> None:
+        if row == self._hovered_row:
+            return
+
+        previous_row = self._hovered_row
+        self._hovered_row = row
+
+        for changed_row in (previous_row, row):
+            if changed_row < 0:
+                continue
+            index = self.model().index(changed_row, 0)
+            if index.isValid():
+                self.viewport().update(self.visualRect(index))
+
+        cursor = Qt.CursorShape.PointingHandCursor if row >= 0 else Qt.CursorShape.ArrowCursor
+        self.viewport().setCursor(cursor)
+
+    def viewportEvent(self, event):
+        if event.type() in (QEvent.Type.MouseMove, QEvent.Type.HoverMove):
+            pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+            index = self.indexAt(pos)
+            self._set_hovered_row(index.row() if index.isValid() else -1)
+        elif event.type() in (QEvent.Type.Leave, QEvent.Type.HoverLeave):
+            self._set_hovered_row(-1)
+        return super().viewportEvent(event)
 
     def _item_identity(self, item) -> str:
         data = item.data(Qt.ItemDataRole.UserRole)
@@ -108,8 +222,11 @@ class PageListView(QListWidget):
         if not selected_items:
             return
 
-        selected_file_names = [item.text() for item in selected_items]
-        self.del_img.emit(selected_file_names)
+        selected_paths = []
+        for item in selected_items:
+            data = item.data(Qt.ItemDataRole.UserRole)
+            selected_paths.append(data if isinstance(data, str) and data else item.text())
+        self.del_img.emit(selected_paths)
 
     def toggle_skip_status(self):
         selected = self.selectedItems()

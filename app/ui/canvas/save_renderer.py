@@ -77,7 +77,13 @@ class ImageSaveRenderer:
 
         current_image_path = main_page.image_files[page_idx]
         ensure_path_materialized(current_image_path)
-        current_image = imk.read_image(current_image_path)
+        
+        try:
+            current_image = imk.read_image(current_image_path)
+        except Exception as e:
+            print(f"Warning: Could not read current image {current_image_path}: {e}")
+            return
+            
         current_page_height = current_image.shape[0]
 
         for other_page_idx, other_image_path in enumerate(main_page.image_files):
@@ -92,7 +98,15 @@ class ImageSaveRenderer:
                 continue
 
             ensure_path_materialized(other_image_path)
-            other_image = imk.read_image(other_image_path)
+            
+            # SAFETY: Check if file exists and is readable before trying to load
+            try:
+                other_image = imk.read_image(other_image_path)
+            except Exception as e:
+                print(f"Warning: Could not read adjacent image {other_image_path}: {e}")
+                print(f"  Skipping spanning text items from page {other_page_idx} to page {page_idx}")
+                continue
+                
             other_page_height = other_image.shape[0]
             other_viewer_state = main_page.image_states[other_image_path].get('viewer_state', {})
             other_text_items = other_viewer_state.get('text_items_state', [])
@@ -103,7 +117,9 @@ class ImageSaveRenderer:
             for text_item in other_text_items:
                 pos = text_item.get('position', (0, 0))
                 item_x1, item_y1 = pos
-                height = text_item.get('height')
+                height = self._resolve_text_item_height(text_item)
+                if height is None:
+                    continue
                 item_y2 = item_y1 + height
 
                 new_pos = None
@@ -134,6 +150,35 @@ class ImageSaveRenderer:
                     existing_text_items.append(spanning_text_item)
 
         viewer_state['text_items_state'] = existing_text_items
+
+    def _resolve_text_item_height(self, text_item_state):
+        height = text_item_state.get('height')
+        if isinstance(height, (int, float)):
+            return float(height)
+
+        try:
+            text_props = TextItemProperties.from_dict(text_item_state)
+            text_item = TextBlockItem(
+                text=text_props.text,
+                font_family=text_props.font_family,
+                font_size=text_props.font_size,
+                render_color=text_props.text_color,
+                alignment=text_props.alignment,
+                line_spacing=text_props.line_spacing,
+                outline_color=text_props.outline_color,
+                outline_width=text_props.outline_width,
+                bold=text_props.bold,
+                italic=text_props.italic,
+                underline=text_props.underline,
+                direction=text_props.direction,
+            )
+            text_item.set_text(text_props.text, text_props.width)
+            if text_props.direction:
+                text_item.set_direction(text_props.direction)
+            text_item.set_vertical(bool(text_props.vertical))
+            return float(text_item.boundingRect().height())
+        except Exception:
+            return None
 
     def render_to_image(self):
         # Create a high-resolution QImage

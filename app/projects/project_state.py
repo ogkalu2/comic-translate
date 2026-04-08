@@ -17,6 +17,7 @@ from .project_state_v2 import (
     ensure_lazy_blob_materialized,
     is_sqlite_project_file,
     load_state_from_proj_file_v2,
+    remap_project_file_path,
     save_state_to_proj_file_v2,
 )
 
@@ -48,7 +49,6 @@ def close_state_store(file_name: str | None = None) -> None:
     close_state_v2_cached_connection(file_name)
     # Release cached pdfplumber objects to free memory.
     close_pdf_cache()
-
 
 def ensure_project_blob_materialized(path: str) -> bool:
     return ensure_lazy_blob_materialized(path)

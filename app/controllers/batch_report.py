@@ -20,6 +20,16 @@ class BatchReportController:
         self._latest_batch_report = None
         self._batch_report_drawer: MDrawer | None = None
 
+    def refresh_button_state(self):
+        self.main.batch_report_button.setEnabled(self._latest_batch_report is not None)
+
+    def clear_latest_batch_report(self):
+        self._latest_batch_report = None
+        self.refresh_button_state()
+
+    def restore_latest_batch_report(self, report: dict | None):
+        self._latest_batch_report = report
+
     def start_batch_report(self, batch_paths: list[str]):
         tracked_paths = [
             path
@@ -181,6 +191,7 @@ class BatchReportController:
         detail = self._localize_batch_skip_detail(error)
         action = self._localize_batch_skip_action(skip_reason, error)
         reason_map = {
+            "Image Load": self.main.tr("Image could not be opened"),
             "Text Blocks": self.main.tr("No text blocks detected"),
             "OCR": self.main.tr("Text recognition failed"),
             "Translator": self.main.tr("Translation failed"),
@@ -244,7 +255,8 @@ class BatchReportController:
             "skipped_entries": skipped_entries,
         }
         self._latest_batch_report = finalized
-        self.main.batch_report_button.setEnabled(True)
+        self.refresh_button_state()
+        self.main.mark_project_dirty()
         return finalized
 
     def _open_image_from_batch_report(self, image_path: str):

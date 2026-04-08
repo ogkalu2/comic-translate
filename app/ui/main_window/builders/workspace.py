@@ -126,6 +126,7 @@ class WorkspaceMixin:
                 ".pdf",
                 ".epub",
                 ".ctpr",
+                ".psd",
             ]
         )
         self.drag_browser.setToolTip(

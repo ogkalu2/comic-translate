@@ -15,7 +15,6 @@ from typing import Set, TYPE_CHECKING
 from PySide6.QtCore import QTimer, QPointF
 from PySide6.QtWidgets import QGraphicsPixmapItem
 from PySide6.QtGui import QTransform
-
 from .image_loader import LazyImageLoader
 from .webtoon_layout_manager import WebtoonLayoutManager
 from .scene_items.scene_item_manager import SceneItemManager
@@ -66,6 +65,7 @@ class LazyWebtoonManager:
             if self.main_controller:
                 self.main_controller.blk_list.clear()
             self.viewer.clear_scene()
+            self.viewer.resetTransform()
             
             if not file_paths:
                 self.viewer.empty = True
@@ -159,6 +159,8 @@ class LazyWebtoonManager:
         """Save the current viewer state for persistence."""
         transform = self.viewer.transform()
         center = self.viewer.mapToScene(self.viewer.viewport().rect().center())
+        current_page_index = self.layout_manager.get_page_at_position(center.y())
+        self.layout_manager.current_page_index = current_page_index
 
         state = {
             'transform': (transform.m11(), transform.m12(), transform.m13(),
@@ -167,6 +169,7 @@ class LazyWebtoonManager:
             'center': (center.x(), center.y()),
             'scene_rect': (self.viewer.sceneRect().x(), self.viewer.sceneRect().y(), 
                            self.viewer.sceneRect().width(), self.viewer.sceneRect().height()),
+            'current_page_index': current_page_index,
         }
         self.viewer.webtoon_view_state = state
         return state
@@ -175,9 +178,40 @@ class LazyWebtoonManager:
         """Restore the viewer state from a saved state."""
         state = self.viewer.webtoon_view_state
         if not state:
+            self._prime_restored_view()
             return
-        
-        self.viewer.setTransform(QTransform(*state['transform']))
+
+        current_page_index = state.get('current_page_index')
+        if isinstance(current_page_index, int):
+            self.layout_manager.current_page_index = max(
+                0,
+                min(current_page_index, len(self.image_loader.image_file_paths) - 1),
+            )
+
+        if self.image_loader.image_file_paths:
+            current_page = self.layout_manager.current_page_index
+            page_center_y = (
+                self.layout_manager.image_positions[current_page]
+                + (self.layout_manager.image_heights[current_page] / 2)
+            )
+            self.viewer.setSceneRect(0, 0, self.layout_manager.webtoon_width, self.layout_manager.total_height)
+            self.viewer.centerOn(self.layout_manager.webtoon_width / 2, page_center_y)
+
+        transform_values = state.get('transform')
+        if transform_values and len(transform_values) == 9:
+            self.viewer.setTransform(QTransform(*transform_values))
+
+        self._prime_restored_view()
+
+    def _prime_restored_view(self):
+        """Queue visible pages immediately after initial load/restore."""
+        current_page = self.layout_manager.current_page_index
+        for page_idx in range(max(0, current_page - 1), min(len(self.image_loader.image_file_paths), current_page + 2)):
+            self.image_loader.queue_page_for_loading(page_idx)
+
+        self._update_loaded_pages()
+        QTimer.singleShot(0, self._update_loaded_pages)
+        QTimer.singleShot(150, self._update_loaded_pages)
 
     # PROXY PROPERTIES to access data from the correct owner
 

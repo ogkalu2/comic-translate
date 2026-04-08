@@ -3,6 +3,7 @@ from PySide6 import QtCore, QtWidgets
 from ...dayu_widgets import dayu_theme
 from ...dayu_widgets.browser import (
     MClickBrowserFileToolButton,
+    MClickBrowserFolderToolButton,
     MClickSaveFileToolButton,
 )
 from ...dayu_widgets.button_group import MToolButtonGroup
@@ -36,6 +37,9 @@ class NavRailMixin:
         self.image_browser_button = MClickBrowserFileToolButton(multiple=True)
         self.image_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"])
 
+        self.psd_browser_button = MClickBrowserFileToolButton(multiple=True)
+        self.psd_browser_button.set_dayu_filters([".psd"])
+
         self.document_browser_button = MClickBrowserFileToolButton(multiple=True)
         self.document_browser_button.set_dayu_filters([".pdf", ".epub"])
 
@@ -52,6 +56,9 @@ class NavRailMixin:
 
         image_action = self.tool_menu.addAction(MIcon("ion--image-outline.svg"), self.tr("Images"))
         image_action.triggered.connect(self.image_browser_button.clicked)
+
+        psd_action = self.tool_menu.addAction(MIcon("psd-file.svg"), self.tr("PSD"))
+        psd_action.triggered.connect(self.psd_browser_button.clicked)
 
         document_action = self.tool_menu.addAction(MIcon("mingcute--document-line.svg"), self.tr("Document"))
         document_action.triggered.connect(self.document_browser_button.clicked)
@@ -95,6 +102,7 @@ class NavRailMixin:
 
         self.save_all_browser = MClickSaveFileToolButton()
         self.save_all_browser.set_file_types(save_all_file_types)
+        self.export_psd_folder_browser = MClickBrowserFolderToolButton(multiple=False)
 
         self.export_menu = MMenu(parent=self)
         self.export_menu.setMinimumWidth(80)
@@ -116,10 +124,26 @@ class NavRailMixin:
         )
         export_document_action.triggered.connect(lambda: self._export_all_as("pdf"))
 
+        export_psd_action = self.export_menu.addAction(
+            MIcon("psd-file.svg"),
+            self.tr("PSD"),
+        )
+        export_psd_action.triggered.connect(self._on_export_psd_requested)
 
         nav_tool_group = MToolButtonGroup(orientation=QtCore.Qt.Vertical, exclusive=True)
         nav_tools = [
-            {"svg": "home_line.svg", "checkable": True, "tooltip": self.tr("Home"), "clicked": self.show_home},
+            {
+                "svg": "startup_line.svg",
+                "checkable": True,
+                "tooltip": self.tr("Start"),
+                "clicked": self.show_home_screen,
+            },
+            {
+                "svg": "home_line.svg",
+                "checkable": True,
+                "tooltip": self.tr("Home"),
+                "clicked": self.show_main_page,
+            },
             {
                 "svg": "settings.svg",
                 "checkable": True,
@@ -128,7 +152,12 @@ class NavRailMixin:
             },
         ]
         nav_tool_group.set_button_list(nav_tools)
-        nav_tool_group.get_button_group().buttons()[0].setChecked(True)
+        nav_buttons = nav_tool_group.get_button_group().buttons()
+        self.nav_tool_group = nav_tool_group
+        self.startup_nav_button = nav_buttons[0]
+        self.home_nav_button = nav_buttons[1]
+        self.settings_nav_button = nav_buttons[2]
+        self.startup_nav_button.setChecked(True)
 
         self.search_sidebar_button = MToolButton()
         self.search_sidebar_button.set_dayu_svg("search_line.svg")
@@ -249,17 +278,17 @@ class NavRailMixin:
 
     def _export_all_as(self, extension: str):
         extension = (extension or "").lower().lstrip(".")
-        export_types = {
-            "zip": ("ZIP files", "zip"),
-            "cbz": ("CBZ files", "cbz"),
-            "cb7": ("CB7 files", "cb7"),
-            "pdf": ("PDF files", "pdf"),
-        }
-        file_type = export_types.get(extension)
-        if file_type is None:
+        project_ctrl = getattr(self, "project_ctrl", None)
+        if project_ctrl is None or not hasattr(project_ctrl, "start_export_as"):
             return
-        self.save_all_browser.set_file_types([file_type])
-        self.save_all_browser.clicked.emit()
+        project_ctrl.start_export_as(extension)
+
+    def _on_export_psd_requested(self):
+        project_ctrl = getattr(self, "project_ctrl", None)
+        if project_ctrl is not None and hasattr(project_ctrl, "export_to_psd_dialog"):
+            project_ctrl.export_to_psd_dialog()
+            return
+        self.export_psd_folder_browser.click()
 
     def create_push_button(self, text: str, clicked=None):
         button = MPushButton(text)

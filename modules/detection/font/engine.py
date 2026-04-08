@@ -8,8 +8,25 @@ from . import config
 from modules.utils.device import resolve_device, get_providers
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
+from modules.utils.torch_autocast import TorchAutocastMixin
 
 logger = logging.getLogger(__name__)
+
+
+def get_torch_font_runtime_error() -> str | None:
+    """Return the import error for the Torch font runtime, if any."""
+    try:
+        import torch  # noqa: F401
+        from torchvision import transforms  # noqa: F401
+        from .model import FontDetector  # noqa: F401
+        return None
+    except ImportError as exc:
+        return str(exc)
+
+
+def torch_font_runtime_available() -> bool:
+    """Return whether the Torch font runtime dependencies are importable."""
+    return get_torch_font_runtime_error() is None
 
 
 def extract_foreground_color(image: np.ndarray) -> list[int] | None:
@@ -181,6 +198,14 @@ class FontEngine(ABC):
         """
         pass
 
+    def process_batch(self, images: list) -> list:
+        """Process a list of image crops in one batched inference call.
+
+        Subclasses should override this for efficiency.  The default
+        implementation falls back to calling process() per image.
+        """
+        return [self.process(img) for img in images]
+
     def decode_output(self, output_vec: np.ndarray, original_width: int) -> dict:
         """
         Decode the non-font attributes from the detector output.
@@ -234,16 +259,19 @@ class FontEngine(ABC):
             "angle": angle_deg, # Renamed from angle_deg to angle for consistency
         }
 
-class TorchFontEngine(FontEngine):
+class TorchFontEngine(TorchAutocastMixin, FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
-        try:
-            import torch
-            from torchvision import transforms
-            from .model import FontDetector
-        except ImportError:
-            logger.warning("Warning: Torch not available, cannot initialize TorchFontEngine")
+        runtime_error = get_torch_font_runtime_error()
+        if runtime_error is not None:
+            logger.warning(
+                "Warning: Torch font runtime unavailable, cannot initialize TorchFontEngine: %s",
+                runtime_error,
+            )
             self.detector = None
             return
+        import torch
+        from torchvision import transforms
+        from .model import FontDetector
 
         self.device = torch.device(device)   
         self.model_name = "resnet50"
@@ -282,6 +310,7 @@ class TorchFontEngine(FontEngine):
             self.detector.load_state_dict(fixed_state, strict=True)
             self.detector = self.detector.to(self.device)
             self.detector.eval()
+            self.setup_torch_autocast(torch, self.device)
             
             self.transform = transforms.Compose([
                 transforms.Resize((self.input_size, self.input_size)),
@@ -304,8 +333,14 @@ class TorchFontEngine(FontEngine):
             
             x = self.transform(pil_image).unsqueeze(0).to(self.device)
             
-            with torch.no_grad():
-                out = self.detector(x)[0].float().cpu().numpy()
+            with torch.inference_mode():
+                out = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.detector(x),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
+                out = out[0].float().cpu().numpy()
                 
             result = self.decode_output(out, original_width)
 
@@ -319,6 +354,45 @@ class TorchFontEngine(FontEngine):
         except Exception as e:
             logger.error(f"Error in font detection (Torch): {e}")
             return {"available": False}
+
+    def process_batch(self, images: list) -> list:
+        """Run a single batched forward pass for all crops."""
+        if self.detector is None or not images:
+            return [{"available": False}] * len(images)
+
+        import torch
+
+        try:
+            original_widths = []
+            tensors = []
+            for image in images:
+                pil_image = Image.fromarray(image).convert("RGB")
+                original_widths.append(pil_image.width)
+                tensors.append(self.transform(pil_image))
+
+            batch = torch.stack(tensors).to(self.device)  # (N, 3, H, W)
+
+            with torch.inference_mode():
+                batch_out = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.detector(batch),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
+                batch_out = batch_out.float().cpu().numpy()  # (N, output_dim)
+
+            results = []
+            for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):
+                result = self.decode_output(out, orig_w)
+                cv_color = extract_foreground_color(images[i])
+                if cv_color is not None:
+                    result["text_color"] = cv_color
+                results.append(result)
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in batch font detection (Torch): {e}")
+            return [self.process(img) for img in images]
 
 class ONNXFontEngine(FontEngine):
     def initialize(self, device=None, **kwargs) -> None:
@@ -366,18 +440,53 @@ class ONNXFontEngine(FontEngine):
             logger.error(f"Error in font detection (ONNX): {e}")
             return {"available": False}
 
+    def process_batch(self, images: list) -> list:
+        """Run a single batched ONNX inference pass for all crops."""
+        if self.session is None or not images:
+            return [{"available": False}] * len(images)
+
+        try:
+            original_widths = []
+            batch_data = []
+            for image in images:
+                pil_image = Image.fromarray(image).convert("RGB")
+                original_widths.append(pil_image.width)
+                img = pil_image.resize((self.input_size, self.input_size), Image.BILINEAR)
+                img_data = np.array(img).astype(np.float32) / 255.0
+                img_data = img_data.transpose(2, 0, 1)  # HWC -> CHW
+                batch_data.append(img_data)
+
+            batch_tensor = np.stack(batch_data, axis=0)  # (N, 3, H, W)
+            outputs = self.session.run(None, {self.input_name: batch_tensor})
+            batch_out = outputs[0]  # (N, output_dim)
+
+            results = []
+            for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):
+                result = self.decode_output(out, orig_w)
+                cv_color = extract_foreground_color(images[i])
+                if cv_color is not None:
+                    result["text_color"] = cv_color
+                results.append(result)
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in batch font detection (ONNX): {e}")
+            return [self.process(img) for img in images]
+
 class FontEngineFactory:
     _engines = {}
+    _DEFAULT_BACKEND = "onnx"
 
     @classmethod
-    def create_engine(cls, settings, backend='onnx') -> FontEngine:
-        device = resolve_device(settings.is_gpu_enabled() if settings else True, backend)
-        cache_key = f"{backend}_{device}"
+    def create_engine(cls, settings, backend: str | None = None) -> FontEngine:
+        effective_backend = cls._resolve_backend(backend)
+        device = resolve_device(settings.is_gpu_enabled() if settings else True, effective_backend)
+        cache_key = f"{effective_backend}_{device}"
         
         if cache_key in cls._engines:
             return cls._engines[cache_key]
             
-        if backend == 'onnx':
+        if effective_backend == 'onnx':
             engine = ONNXFontEngine(settings)
         else:
             engine = TorchFontEngine(settings)
@@ -385,3 +494,21 @@ class FontEngineFactory:
         engine.initialize(device=device)
         cls._engines[cache_key] = engine
         return engine
+
+    @classmethod
+    def _resolve_backend(cls, backend: str | None = None) -> str:
+        effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
+        if effective_backend == "torch":
+            runtime_error = get_torch_font_runtime_error()
+            if runtime_error is None:
+                return effective_backend
+            if backend is not None:
+                raise RuntimeError(
+                    f"Torch font backend requested but unavailable: {runtime_error}"
+                )
+            logger.warning(
+                "Falling back to ONNX font backend because Torch font runtime is incomplete: %s",
+                runtime_error,
+            )
+            return "onnx"
+        return effective_backend

@@ -185,9 +185,19 @@ class InteractionManager:
             self.viewer.selected_rect = rect
             self.viewer.rectangle_selected.emit(rect.mapRectToScene(rect.rect()))
 
+    def add_rectangle_to_selection(self, rect: MoveableRectItem):
+        if rect:
+            rect.selected = True
+            rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 0, 0, 100)))
+            self.viewer.selected_rect = rect
+            self.viewer.rectangle_selected.emit(rect.mapRectToScene(rect.rect()))
+
     def deselect_rect(self, rect: MoveableRectItem):
         rect.setBrush(QtGui.QBrush(QtGui.QColor(255, 192, 203, 125)))
         rect.selected = False
+        if self.viewer.selected_rect is rect:
+            remaining = self.viewer.get_selected_rectangles()
+            self.viewer.selected_rect = remaining[-1] if remaining else None
 
     def deselect_all(self):
         for rect in self.viewer.rectangles:

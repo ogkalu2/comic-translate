@@ -44,6 +44,7 @@ class WebtoonBatchProcessor(FlowMixin, ChunkMixin, RenderMixin):
 
         # State tracking for per-page patch accumulation.
         self.final_patches_for_save = defaultdict(list)
+        self._reported_image_load_failures = set()
 
         # Seam matching / crop settings.
         self.min_virtual_chunk_height = 2000

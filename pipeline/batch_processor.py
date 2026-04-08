@@ -16,7 +16,7 @@ from PySide6.QtGui import QColor
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.textblock import sort_blk_list
-from modules.utils.pipeline_config import inpaint_map, get_config
+from modules.utils.pipeline_config import get_config
 from modules.utils.image_utils import generate_mask, get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
@@ -210,20 +210,7 @@ class BatchProcessor:
             export_settings = settings_page.get_export_settings()
 
             # Use the shared inpainter from the handler
-            if self.inpainting.inpainter_cache is None or self.inpainting.cached_inpainter_key != settings_page.get_tool_selection('inpainter'):
-                backend = 'onnx'
-                device = resolve_device(
-                    settings_page.is_gpu_enabled(),
-                    backend=backend
-                )
-                inpainter_key = settings_page.get_tool_selection('inpainter')
-                InpainterClass = inpaint_map[inpainter_key]
-                logger.info("pre-inpaint: initializing inpainter '%s' on device %s", inpainter_key, device)
-                t0 = time.time()
-                self.inpainting.inpainter_cache = InpainterClass(device, backend=backend)
-                self.inpainting.cached_inpainter_key = inpainter_key
-                t1 = time.time()
-                logger.info("pre-inpaint: inpainter initialized in %.2fs", t1 - t0)
+            self.inpainting._ensure_inpainter()
 
             config = get_config(settings_page)
             logger.info("pre-inpaint: generating mask (blk_list=%d blocks)", len(blk_list))

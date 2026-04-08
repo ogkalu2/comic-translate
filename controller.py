@@ -29,6 +29,7 @@ from app.controllers.projects import ProjectController
 from app.controllers.text import TextController
 from app.controllers.webtoons import WebtoonController
 from app.controllers.search_replace import SearchReplaceController
+from app.controllers.shortcuts import ShortcutController
 from app.controllers.task_runner import TaskRunnerController
 from app.controllers.batch_report import BatchReportController
 from app.controllers.manual_workflow import ManualWorkflowController
@@ -87,8 +88,6 @@ class ComicTranslate(ComicTranslateUI):
         self.displayed_images = set()  # Set to track displayed images
         self.image_patches = {}  # Store patches for each image
         self.in_memory_patches = {}  # Store patches in memory for each image
-        self.image_cards = []
-        self.current_card = None
         self.max_images_in_memory = 5
         self.loaded_images = []
 
@@ -118,6 +117,7 @@ class ComicTranslate(ComicTranslateUI):
         self.text_ctrl = TextController(self)
         self.webtoon_ctrl = WebtoonController(self)
         self.search_ctrl = SearchReplaceController(self)
+        self.shortcut_ctrl = ShortcutController(self)
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
         self.manual_workflow_ctrl = ManualWorkflowController(self)
@@ -173,6 +173,7 @@ class ComicTranslate(ComicTranslateUI):
         self.save_all_browser.sig_file_changed.connect(self.project_ctrl.save_and_make)
         self.save_project_button.clicked.connect(self.project_ctrl.thread_save_project)
         self.save_as_project_button.clicked.connect(self.project_ctrl.thread_save_as_project)
+        self.title_bar.project_target_requested.connect(self.project_ctrl.thread_change_project_file)
         self.drag_browser.sig_files_changed.connect(self._guarded_thread_load_images)
        
         self.manual_radio.clicked.connect(self.manual_mode_selected)
@@ -199,7 +200,7 @@ class ComicTranslate(ComicTranslateUI):
         self.set_all_button.clicked.connect(self.text_ctrl.set_src_trg_all)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
         self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
-        self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
+        self.draw_blklist_blks.clicked.connect(self.restore_text_blocks)
         self.change_all_blocks_size_dec.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
         self.change_all_blocks_size_inc.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
         self.delete_button.clicked.connect(self.delete_selected_box)
@@ -243,8 +244,7 @@ class ComicTranslate(ComicTranslateUI):
         self.outline_checkbox.stateChanged.connect(self.text_ctrl.toggle_outline_settings)
 
         # Page List
-        self.page_list.currentItemChanged.connect(self.image_ctrl.on_card_selected)
-        self.page_list.selection_changed.connect(self.image_ctrl.on_selection_changed)
+        self.page_list.currentItemChanged.connect(self.image_ctrl.on_page_list_current_item_changed)
         self.page_list.order_changed.connect(self.image_ctrl.handle_image_reorder)
         self.page_list.del_img.connect(self.image_ctrl.handle_image_deletion)
         self.page_list.insert_browser.sig_files_changed.connect(self.image_ctrl.thread_insert)
@@ -298,8 +298,7 @@ class ComicTranslate(ComicTranslateUI):
             # Treat as generic files
             self._guarded_thread_load_images([path])
             return
-        self.project_ctrl.thread_load_project(path)
-        self.show_main_page()
+        self.project_ctrl.thread_load_project(path, on_success=self.show_main_page)
 
     def _on_home_remove_recent(self, path: str):
         """Persist removal of one entry from the recent list."""
@@ -326,6 +325,41 @@ class ComicTranslate(ComicTranslateUI):
                 selected_paths.append(path)
                 seen.add(path)
         return selected_paths
+
+    def restore_text_blocks(self):
+        if not self.webtoon_mode:
+            if self.blk_list:
+                self.pipeline.load_box_coords(self.blk_list)
+            return
+
+        manager = getattr(self.image_viewer, "webtoon_manager", None)
+        page_idx = self.curr_img_idx
+        if manager is None or not (0 <= page_idx < len(self.image_files)):
+            if self.blk_list:
+                self.pipeline.load_box_coords(self.blk_list)
+            return
+
+        page_y = manager.image_positions[page_idx]
+        page_bottom = page_y + manager.image_heights[page_idx]
+
+        current_page_blocks = []
+        for blk in self.blk_list:
+            if blk.xyxy is None or len(blk.xyxy) < 4:
+                continue
+            blk_y = blk.xyxy[1]
+            blk_bottom = blk.xyxy[3]
+            if (
+                (blk_y >= page_y and blk_y < page_bottom)
+                or (blk_bottom > page_y and blk_bottom <= page_bottom)
+                or (blk_y < page_y and blk_bottom > page_bottom)
+            ):
+                current_page_blocks.append(blk)
+
+        if current_page_blocks:
+            self.pipeline.load_box_coords(current_page_blocks)
+            return
+
+        return
 
     def _any_undo_dirty(self) -> bool:
         for stack in self.undo_stacks.values():
@@ -374,17 +408,67 @@ class ComicTranslate(ComicTranslateUI):
         if self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
 
-    def delete_selected_box(self):
-        if self.curr_tblock:
-            # Create and push the delete command
-            command = DeleteBoxesCommand(
-                self,
+    def _selected_delete_targets(self):
+        targets = []
+        seen = set()
+
+        for rect_item in self.image_viewer.get_selected_rectangles():
+            rect_coords = rect_item.mapRectToScene(rect_item.rect()).getCoords()
+            blk = self.rect_item_ctrl.find_corresponding_text_block(rect_coords, 0.5)
+            text_item = None
+            for candidate in self.image_viewer.text_items:
+                if self.text_ctrl._find_text_block_for_item(candidate) is blk:
+                    text_item = candidate
+                    break
+
+            key = ("blk", id(blk)) if blk is not None else ("rect", id(rect_item))
+            if key in seen:
+                continue
+            seen.add(key)
+            targets.append((rect_item, text_item, blk))
+
+        for text_item in self.image_viewer.get_selected_text_items():
+            blk = self.text_ctrl._find_text_block_for_item(text_item)
+            rect_item = self.rect_item_ctrl.find_corresponding_rect(blk, 0.5) if blk else None
+            key = ("blk", id(blk)) if blk is not None else ("text", id(text_item))
+            if key in seen:
+                continue
+            seen.add(key)
+            targets.append((rect_item, text_item, blk))
+
+        if not targets and self.curr_tblock:
+            targets.append((
                 self.image_viewer.selected_rect,
                 self.curr_tblock_item,
                 self.curr_tblock,
-                self.blk_list,
-            )
-            self.undo_group.activeStack().push(command)
+            ))
+
+        return targets
+
+    def delete_selected_box(self):
+        targets = [target for target in self._selected_delete_targets() if target[2] is not None]
+        if not targets:
+            return
+
+        stack = self.undo_group.activeStack()
+        if stack is None:
+            return
+
+        if len(targets) > 1:
+            stack.beginMacro("delete_selected_boxes")
+        try:
+            for rect_item, text_item, blk in targets:
+                command = DeleteBoxesCommand(
+                    self,
+                    rect_item,
+                    text_item,
+                    blk,
+                    self.blk_list,
+                )
+                stack.push(command)
+        finally:
+            if len(targets) > 1:
+                stack.endMacro()
 
     def batch_mode_selected(self):
         self.disable_hbutton_group()
@@ -615,6 +699,10 @@ class ComicTranslate(ComicTranslateUI):
                 self._memlogger.emit("model_caches_released")
         except Exception:
             pass
+
+        # Trigger autosave after batch to persist batch report
+        if report:
+            self.project_ctrl.autosave_project(prefer_project_file=True)
 
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
