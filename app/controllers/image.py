@@ -15,7 +15,7 @@ from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
 from app.path_materialization import ensure_path_materialized
-from app.controllers.psd_importer import ImportedPsdPage, import_psd_files
+from app.controllers.psd_importer import ImportedPsdPage, import_psd_files, prepare_psd_font_catalog
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -341,6 +341,10 @@ class ImageStateController:
                     )
                 )
                 return
+            try:
+                prepare_psd_font_catalog()
+            except Exception:
+                pass
             self.main.project_ctrl.clear_recovery_checkpoint()
             self.clear_state()
             if prev_project_file:

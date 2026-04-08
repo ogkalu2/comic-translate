@@ -71,6 +71,10 @@ def import_psd_files(paths: list[str]) -> list[ImportedPsdPage]:
     return pages
 
 
+def prepare_psd_font_catalog() -> None:
+    _ensure_font_catalog()
+
+
 def _read_single_psd(path: str) -> tuple[np.ndarray, list[dict[str, Any]], PsdImportContext]:
     document = psapi.LayeredFile.read(path)
     flat_layers = _flat_layers(document)
@@ -856,7 +860,8 @@ def _font_name(layer: Any, index: Any) -> str | None:
 
 
 def _resolve_font_face_from_postscript(postscript_name: str) -> tuple[str, str | None, bool, bool]:
-    _ensure_font_catalog()
+    if _can_build_font_catalog_in_current_thread():
+        _ensure_font_catalog()
     key = (postscript_name or "").strip()
     if key and key in _ps_to_qt_font_cache:
         return _ps_to_qt_font_cache[key]
@@ -897,6 +902,16 @@ def _ensure_font_catalog() -> None:
                 _ps_to_qt_font_cache.setdefault(ps_name, (family, style_name, bold, italic))
     except Exception:
         pass
+
+
+def _can_build_font_catalog_in_current_thread() -> bool:
+    try:
+        app = QtCore.QCoreApplication.instance()
+        if app is None:
+            return False
+        return QtCore.QThread.currentThread() == app.thread()
+    except Exception:
+        return False
 
 
 def _postscript_name_from_qfont(font: QtGui.QFont) -> str | None:
