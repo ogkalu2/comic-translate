@@ -3,6 +3,7 @@ import requests
 import numpy as np
 import shutil
 import tempfile
+from functools import partial
 from typing import Callable, Tuple
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -187,12 +188,7 @@ class ComicTranslate(ComicTranslateUI):
         self.webtoon_toggle.clicked.connect(self.webtoon_ctrl.toggle_webtoon_mode)
 
         # Connect buttons from button_groups
-        self.hbutton_group.get_button_group().buttons()[0].clicked.connect(lambda: self.block_detect())
-        self.hbutton_group.get_button_group().buttons()[1].clicked.connect(self.ocr)
-        self.hbutton_group.get_button_group().buttons()[2].clicked.connect(self.translate_image)
-        self.hbutton_group.get_button_group().buttons()[3].clicked.connect(self.load_segmentation_points)
-        self.hbutton_group.get_button_group().buttons()[4].clicked.connect(self.inpaint_and_set)
-        self.hbutton_group.get_button_group().buttons()[5].clicked.connect(self.text_ctrl.render_text)
+        self._connect_horizontal_buttons()
 
         self.undo_tool_group.get_button_group().buttons()[0].clicked.connect(self.undo_selected_pages)
         self.undo_tool_group.get_button_group().buttons()[1].clicked.connect(self.redo_selected_pages)
@@ -205,11 +201,12 @@ class ComicTranslate(ComicTranslateUI):
         self.preview_button.clicked.connect(self.toggle_fullscreen_preview)
         self.set_all_button.clicked.connect(self.text_ctrl.set_src_trg_all)
         self.select_all_pages_button.clicked.connect(self.select_all_pages)
+        self.bulk_text_action_dropdown.currentIndexChanged.connect(self.text_ctrl.handle_bulk_text_action_change)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
         self.clear_brush_strokes_button.clicked.connect(self.image_viewer.clear_brush_strokes)
-        self.draw_blklist_blks.clicked.connect(lambda: self.pipeline.load_box_coords(self.blk_list))
-        self.change_all_blocks_size_dec.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(-int(self.change_all_blocks_size_diff.text())))
-        self.change_all_blocks_size_inc.clicked.connect(lambda: self.text_ctrl.change_all_blocks_size(int(self.change_all_blocks_size_diff.text())))
+        self.draw_blklist_blks.clicked.connect(partial(self.pipeline.load_box_coords, self.blk_list))
+        self.change_all_blocks_size_dec.clicked.connect(self._decrease_all_blocks_size)
+        self.change_all_blocks_size_inc.clicked.connect(self._increase_all_blocks_size)
         self.delete_button.clicked.connect(self.delete_selected_box)
 
         # Connect text edit widgets
@@ -274,9 +271,7 @@ class ComicTranslate(ComicTranslateUI):
         self.startup_home.sig_open_project.connect(self._open_project_from_home)
         self.startup_home._sig_remove_one.connect(self._on_home_remove_recent)
         self.startup_home._sig_clear_all.connect(self._on_home_clear_recent)
-        self.startup_home._sig_pin.connect(
-            lambda path, pinned: self.project_ctrl.toggle_pin_project(path, pinned)
-        )
+        self.startup_home._sig_pin.connect(self.project_ctrl.toggle_pin_project)
 
     def _guarded_thread_load_images(self, paths: list[str]):
         """Wrap thread_load_images with unsaved-project confirmation and clear state."""
@@ -315,6 +310,18 @@ class ComicTranslate(ComicTranslateUI):
             return
         self.project_ctrl.thread_load_project(path)
         self.show_main_page()
+
+    def _block_size_diff(self) -> int:
+        try:
+            return int(self.change_all_blocks_size_diff.text())
+        except Exception:
+            return 0
+
+    def _decrease_all_blocks_size(self):
+        self.text_ctrl.change_all_blocks_size(-self._block_size_diff())
+
+    def _increase_all_blocks_size(self):
+        self.text_ctrl.change_all_blocks_size(self._block_size_diff())
 
     def _on_home_remove_recent(self, path: str):
         """Persist removal of one entry from the recent list."""
@@ -609,7 +616,7 @@ class ComicTranslate(ComicTranslateUI):
         if self.webtoon_mode:
             # pass our subset into webtoon_batch_process
             self.run_threaded(
-                lambda: self.pipeline.webtoon_batch_process(selected_paths),
+                partial(self.pipeline.webtoon_batch_process, selected_paths),
                 None,
                 self.default_error_handler,
                 self.on_batch_process_finished
@@ -617,7 +624,7 @@ class ComicTranslate(ComicTranslateUI):
         else:
             # pass our subset into batch_process
             self.run_threaded(
-                lambda: self.pipeline.batch_process(selected_paths),
+                partial(self.pipeline.batch_process, selected_paths),
                 None,
                 self.default_error_handler,
                 self.on_batch_process_finished
@@ -691,16 +698,7 @@ class ComicTranslate(ComicTranslateUI):
         label.setText(self.tr(f"Page {current} / {total}"))
 
     def _install_preview_shortcuts(self):
-        shortcut_targets = [
-            self,
-            self.viewer_page,
-            self.central_stack,
-            self.image_viewer,
-            self.original_image_viewer,
-            self.page_list,
-            self.s_text_edit,
-            self.t_text_edit,
-        ]
+        shortcut_targets = [self]
         shortcut_specs = [
             ("F5", self.toggle_fullscreen_preview),
             ("F11", self.toggle_fullscreen_preview),
@@ -710,7 +708,7 @@ class ComicTranslate(ComicTranslateUI):
         for target in shortcut_targets:
             for keyseq, callback in shortcut_specs:
                 shortcut = QtGui.QShortcut(QtGui.QKeySequence(keyseq), target)
-                shortcut.setContext(QtCore.Qt.ShortcutContext.WidgetWithChildrenShortcut)
+                shortcut.setContext(QtCore.Qt.ShortcutContext.ApplicationShortcut)
                 shortcut.activated.connect(callback)
                 self._preview_shortcuts.append(shortcut)
 
@@ -797,6 +795,33 @@ class ComicTranslate(ComicTranslateUI):
         if not self.image_viewer.hasPhoto():
             return
         self.refresh_fullscreen_preview(force_show=True)
+
+    def _connect_horizontal_buttons(self):
+        buttons = self.hbutton_group.get_button_group().buttons()
+        buttons[0].clicked.connect(self._on_block_detect_clicked)
+        buttons[1].clicked.connect(self._on_ocr_clicked)
+        buttons[2].clicked.connect(self._on_translate_image_clicked)
+        buttons[3].clicked.connect(self._on_load_segmentation_points_clicked)
+        buttons[4].clicked.connect(self._on_inpaint_and_set_clicked)
+        buttons[5].clicked.connect(self._on_render_text_clicked)
+
+    def _on_block_detect_clicked(self, *_args):
+        self.block_detect()
+
+    def _on_ocr_clicked(self, *_args):
+        self.ocr()
+
+    def _on_translate_image_clicked(self, *_args):
+        self.translate_image()
+
+    def _on_load_segmentation_points_clicked(self, *_args):
+        self.load_segmentation_points()
+
+    def _on_inpaint_and_set_clicked(self, *_args):
+        self.inpaint_and_set()
+
+    def _on_render_text_clicked(self, *_args):
+        self.text_ctrl.render_text()
 
     def block_detect(self, load_rects: bool = True):
         self.manual_workflow_ctrl.block_detect(load_rects)

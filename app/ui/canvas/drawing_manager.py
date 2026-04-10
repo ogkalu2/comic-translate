@@ -8,7 +8,11 @@ from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, QCursor, QPixmap, 
 
 from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, \
                             SegmentBoxesCommand, EraseUndoCommand
-from app.ui.commands.base import PathCommandBase as pcb
+from app.ui.commands.base import (
+    PathCommandBase as pcb,
+    SEGMENT_BBOXES_DATA_KEY,
+    SEGMENT_META_DATA_KEY,
+)
 import imkit as imk
 
 
@@ -210,12 +214,21 @@ class DrawingManager:
         for item in self.viewer.brush_strokes:
             if item is None or item.scene() is not self._scene:
                 continue
-            strokes.append({
+            stroke = {
                 'path': item.path(),
                 'pen': item.pen().color().name(QColor.HexArgb),
                 'brush': item.brush().color().name(QColor.HexArgb),
                 'width': item.pen().width()
-            })
+            }
+            segment_bboxes = item.data(SEGMENT_BBOXES_DATA_KEY)
+            if segment_bboxes is not None:
+                if isinstance(segment_bboxes, np.ndarray):
+                    segment_bboxes = segment_bboxes.astype(int).tolist()
+                stroke['segment_bboxes'] = segment_bboxes
+            segment_meta = item.data(SEGMENT_META_DATA_KEY)
+            if segment_meta is not None:
+                stroke['segment_meta'] = dict(segment_meta)
+            strokes.append(stroke)
         return strokes
 
     def load_brush_strokes(self, strokes: List[Dict]):
@@ -316,15 +329,18 @@ class DrawingManager:
         for item in self.viewer.brush_strokes:
             if item is None or item.scene() is not self._scene:
                 continue
-                painter = gen_painter if QColor(item.brush().color().name(QColor.HexArgb)) == "#80ff0000" else human_painter
-                # Get the path bounding rect to see where the stroke is
-                item_pos = item.pos()
-                # Draw the path - the painter already has the transformation applied
-                # We need to draw at the item position + path coordinates
-                painter.save()
-                painter.translate(item_pos)
-                painter.drawPath(item.path())
-                painter.restore()
+
+            painter = (
+                gen_painter
+                if QColor(item.brush().color().name(QColor.HexArgb)) == "#80ff0000"
+                else human_painter
+            )
+            # Draw the path into the mask using the item's local coordinates.
+            item_pos = item.pos()
+            painter.save()
+            painter.translate(item_pos)
+            painter.drawPath(item.path())
+            painter.restore()
         
         human_painter.end()
         gen_painter.end()
@@ -350,7 +366,7 @@ class DrawingManager:
         final_mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         return final_mask
     
-    def draw_segmentation_lines(self, bboxes):
+    def draw_segmentation_lines(self, bboxes, text_bbox=None, bubble_xyxy=None, text_class=None, source_lang=None):
         stroke = self.make_segmentation_stroke_data(bboxes)
         if stroke is None:
             return
@@ -361,6 +377,17 @@ class DrawingManager:
         item = QtWidgets.QGraphicsPathItem(stroke['path'])
         item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
         item.setBrush(QtGui.QBrush(fill_color))
+        item.setData(SEGMENT_BBOXES_DATA_KEY, [list(map(int, bbox)) for bbox in bboxes])
+        if text_bbox is not None or bubble_xyxy is not None or text_class is not None or source_lang is not None:
+            item.setData(
+                SEGMENT_META_DATA_KEY,
+                {
+                    "text_bbox": list(map(int, text_bbox)) if text_bbox is not None else None,
+                    "bubble_xyxy": list(map(int, bubble_xyxy)) if bubble_xyxy is not None else None,
+                    "text_class": text_class,
+                    "source_lang": source_lang,
+                },
+            )
 
         self.viewer.command_emitted.emit(SegmentBoxesCommand(self.viewer, [item]))
         

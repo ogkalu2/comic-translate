@@ -43,7 +43,7 @@ class TranslationHandler:
         file_path = self._get_current_file_path()
         if file_path:
             try:
-                image = self.main_page.image_ctrl.load_image(file_path)
+                image = self.main_page.image_ctrl.load_original_image(file_path)
                 if image is not None:
                     return image
             except Exception:

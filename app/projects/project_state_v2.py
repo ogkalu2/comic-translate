@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import sqlite3
 import tempfile
@@ -21,6 +22,7 @@ _CONN_CACHE_LOCK = threading.RLock()
 _CONN_CACHE: dict[str, tuple[sqlite3.Connection, threading.RLock]] = {}
 _LAZY_BLOB_LOCK = threading.RLock()
 _LAZY_BLOBS_BY_PATH: dict[str, tuple[str, str]] = {}
+logger = logging.getLogger(__name__)
 
 
 def is_sqlite_project_file(file_name: str) -> bool:
@@ -84,6 +86,14 @@ def _init_schema(conn: sqlite3.Connection) -> None:
             ext TEXT NOT NULL,
             size INTEGER NOT NULL,
             data BLOB NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS cache_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            cache_blob BLOB NOT NULL
         )
         """
     )
@@ -356,6 +366,13 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
     }
     manifest_blob = msgpack.packb(manifest, default=encoder.encode, use_bin_type=True)
 
+    cache_manager = getattr(getattr(comic_translate, "pipeline", None), "cache_manager", None)
+    cache_blob = None
+    if cache_manager is not None:
+        cache_state = cache_manager.export_state()
+        if cache_state.get("ocr_cache") or cache_state.get("translation_cache"):
+            cache_blob = msgpack.packb(cache_state, default=encoder.encode, use_bin_type=True)
+
     try:
         with conn_lock:
             with conn:
@@ -372,6 +389,18 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
                         "INSERT OR REPLACE INTO project_manifest(id, manifest_blob) VALUES(1, ?)",
                         (sqlite3.Binary(manifest_blob),),
                     )
+
+                if cache_blob is not None:
+                    current_cache_row = conn.execute(
+                        "SELECT cache_blob FROM cache_state WHERE id = 1"
+                    ).fetchone()
+                    if not current_cache_row or current_cache_row[0] != cache_blob:
+                        conn.execute(
+                            "INSERT OR REPLACE INTO cache_state(id, cache_blob) VALUES(1, ?)",
+                            (sqlite3.Binary(cache_blob),),
+                        )
+                else:
+                    conn.execute("DELETE FROM cache_state WHERE id = 1")
 
                 existing_rows = {
                     row[0]: row[1]
@@ -629,4 +658,45 @@ def load_state_from_proj_file_v2(comic_translate: "ComicTranslate", file_name: s
             row[0]: msgpack.unpackb(row[1], object_hook=decoder.decode, strict_map_key=True)
             for row in conn.execute("SELECT page_path, row_blob FROM page_state")
         }
-        return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
+        saved_ctx = _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
+
+        page_rows_with_blocks = [
+            page_path
+            for page_path, row in page_rows.items()
+            if (row.get("image_state", {}) or {}).get("blk_list")
+        ]
+        pages_missing_viewer_state = [
+            page_path
+            for page_path in page_rows_with_blocks
+            if not (page_rows.get(page_path, {}).get("image_state", {}) or {}).get("viewer_state")
+        ]
+        if page_rows_with_blocks:
+            logger.info(
+                "Loaded project state: %d pages with blocks, %d without viewer_state.",
+                len(page_rows_with_blocks),
+                len(pages_missing_viewer_state),
+            )
+            if pages_missing_viewer_state:
+                preview = ", ".join(os.path.basename(p) for p in pages_missing_viewer_state[:5])
+                if len(pages_missing_viewer_state) > 5:
+                    preview += ", ..."
+                logger.debug(
+                    "Pages missing viewer_state but keeping blk_list: %s",
+                    preview,
+                )
+
+        cache_row = conn.execute("SELECT cache_blob FROM cache_state WHERE id = 1").fetchone()
+        if cache_row is not None and cache_row[0] is not None:
+            cache_state = msgpack.unpackb(cache_row[0], object_hook=decoder.decode, strict_map_key=True)
+            cache_manager = getattr(getattr(comic_translate, "pipeline", None), "cache_manager", None)
+            if cache_manager is not None:
+                cache_manager.import_state(cache_state)
+                logger.info(
+                    "Project cache restored: %d OCR entries, %d translation entries.",
+                    len(cache_manager.ocr_cache),
+                    len(cache_manager.translation_cache),
+                )
+        else:
+            logger.info("Project cache restored: 0 OCR entries, 0 translation entries.")
+
+        return saved_ctx

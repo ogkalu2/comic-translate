@@ -38,6 +38,7 @@ class ImageSaveRenderer:
             
             text_item = TextBlockItem(
                 text=text_props.text,
+                source_text=getattr(text_props, "source_text", ""),
                 font_family=text_props.font_family,
                 font_size=text_props.font_size,
                 render_color=text_props.text_color,
@@ -51,7 +52,11 @@ class ImageSaveRenderer:
                 direction=text_props.direction,
             )
 
-            text_item.set_text(text_props.text, text_props.width)
+            text_item.set_text(
+                text_props.text,
+                text_props.width,
+                preserve_source_text=True,
+            )
             if text_props.direction:
                 text_item.set_direction(text_props.direction)
             if text_props.transform_origin:
@@ -60,6 +65,20 @@ class ImageSaveRenderer:
             text_item.setRotation(text_props.rotation)
             text_item.setScale(text_props.scale)
             text_item.set_vertical(bool(text_props.vertical))
+            text_item.set_layout_box_size(text_props.width, text_props.height)
+            if (
+                text_props.width is not None
+                and text_props.height is not None
+                and text_props.width > 0
+                and text_props.height > 0
+                and not text_item.is_html(text_props.text)
+            ):
+                max_font_size = int(round(text_props.font_size)) if text_props.font_size else None
+                text_item.reflow_from_source_text(
+                    text_props.width,
+                    text_props.height,
+                    max_font_size=max_font_size,
+                )
             text_item.selection_outlines = text_props.selection_outlines
             text_item.update()
 

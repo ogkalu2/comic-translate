@@ -225,7 +225,7 @@ class EventHandler:
             return False
 
         local_pos = sel_item.mapFromScene(scene_pos)
-        if sel_item.boundingRect().contains(local_pos):
+        if self.viewer.interaction_manager.get_item_bounds(sel_item).contains(local_pos):
             self.dragged_item = sel_item
             # Store the initial position for drag calculations
             self.last_scene_pos = scene_pos
@@ -271,7 +271,7 @@ class EventHandler:
             return False
         if sel_item and self.viewer.interaction_manager._in_rotate_ring(sel_item, scene_pos):
             angle = sel_item.rotation()
-            inner_rect = sel_item.boundingRect()
+            inner_rect = self.viewer.interaction_manager.get_item_bounds(sel_item)
             outer_rect = inner_rect.adjusted(-self.viewer.interaction_manager.rotate_margin_max, 
                                            -self.viewer.interaction_manager.rotate_margin_max, 
                                            self.viewer.interaction_manager.rotate_margin_max, 
@@ -371,7 +371,7 @@ class EventHandler:
             return True
         
         if self.viewer.interaction_manager._in_rotate_ring(sel_item, scene_pos):
-            outer_rect = sel_item.boundingRect().adjusted(-self.viewer.interaction_manager.rotate_margin_max, 
+            outer_rect = self.viewer.interaction_manager.get_item_bounds(sel_item).adjusted(-self.viewer.interaction_manager.rotate_margin_max, 
                                            -self.viewer.interaction_manager.rotate_margin_max, 
                                            self.viewer.interaction_manager.rotate_margin_max, 
                                            self.viewer.interaction_manager.rotate_margin_max)
@@ -379,7 +379,7 @@ class EventHandler:
             self.viewer.viewport().setCursor(cursor)
             return True
         
-        if sel_item.boundingRect().contains(local_pos):
+        if self.viewer.interaction_manager.get_item_bounds(sel_item).contains(local_pos):
             self.viewer.viewport().setCursor(Qt.CursorShape.SizeAllCursor)
             return True
 

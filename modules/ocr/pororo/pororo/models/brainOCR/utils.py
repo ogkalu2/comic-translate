@@ -411,23 +411,27 @@ def group_text_box(
             height = np.linalg.norm([poly[6] - poly[0], poly[7] - poly[1]])
             margin = int(1.44 * add_margin * height)
 
-            theta13 = abs(
-                np.arctan(
-                    (poly[1] - poly[5]) / np.maximum(10, (poly[0] - poly[4]))))
-            theta24 = abs(
-                np.arctan(
-                    (poly[3] - poly[7]) / np.maximum(10, (poly[2] - poly[6]))))
-            # do I need to clip minimum, maximum value here?
-            x1 = poly[0] - np.cos(theta13) * margin
-            y1 = poly[1] - np.sin(theta13) * margin
-            x2 = poly[2] + np.cos(theta24) * margin
-            y2 = poly[3] - np.sin(theta24) * margin
-            x3 = poly[4] + np.cos(theta13) * margin
-            y3 = poly[5] + np.sin(theta13) * margin
-            x4 = poly[6] - np.cos(theta24) * margin
-            y4 = poly[7] + np.sin(theta24) * margin
+            # Expand the rotated box uniformly instead of nudging the corners
+            # with diagonal-based trigonometry. The latter can drift on the
+            # lower edge for slanted polygons.
+            poly_points = np.array(poly, dtype=np.float32).reshape(-1, 2)
+            rect = imk.min_area_rect(poly_points)
+            center, size, angle = rect
+            expanded_rect = (
+                center,
+                (size[0] + 2 * margin, size[1] + 2 * margin),
+                angle,
+            )
+            box = np.array(imk.box_points(expanded_rect), dtype=np.float32)
 
-            free_list.append([[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
+            # Normalize to tl, tr, br, bl for downstream perspective cropping.
+            left_first = box[np.argsort(box[:, 0])]
+            left = left_first[:2]
+            right = left_first[2:]
+            tl, bl = left[np.argsort(left[:, 1])]
+            tr, br = right[np.argsort(right[:, 1])]
+
+            free_list.append([[tl[0], tl[1]], [tr[0], tr[1]], [br[0], br[1]], [bl[0], bl[1]]])
     horizontal_list = sorted(horizontal_list, key=lambda item: item[4])
 
     # combine box

@@ -73,7 +73,10 @@ class FontMetricsCache:
         self._pixel_bounds = {}
 
     def _get_font_key(self, font: QFont) -> FontKey:
-        return FontKey(font.family(), font.pointSizeF(), font.weight(), font.italic())
+        size = font.pixelSize()
+        if size <= 0:
+            size = font.pointSizeF()
+        return FontKey(font.family(), size, font.weight(), font.italic())
 
     def get_metrics(self, font: QFont) -> QFontMetricsF:
         key = self._get_font_key(font)

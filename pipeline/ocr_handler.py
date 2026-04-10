@@ -15,10 +15,27 @@ class OCRHandler:
         self.pipeline = pipeline
         self.ocr = OCRProcessor()
 
+    def _get_ocr_image(self):
+        """Return the stable page image used for OCR/cache keying."""
+        file_path = None
+        if 0 <= self.main_page.curr_img_idx < len(self.main_page.image_files):
+            file_path = self.main_page.image_files[self.main_page.curr_img_idx]
+        if file_path:
+            try:
+                image = self.main_page.image_ctrl.load_original_image(file_path)
+                if image is not None:
+                    return image
+            except Exception:
+                logger.debug(
+                    "Failed to load stable page image for OCR; falling back to viewer snapshot.",
+                    exc_info=True,
+                )
+        return self.main_page.image_viewer.get_image_array()
+
     def OCR_image(self, single_block: bool = False):
         source_lang = self.main_page.s_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
-            image = self.main_page.image_viewer.get_image_array()
+            image = self._get_ocr_image()
             ocr_model = self.main_page.settings_page.get_tool_selection('ocr')
             device = resolve_device(
                 self.main_page.settings_page.is_gpu_enabled()

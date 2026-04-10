@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
 from typing import TYPE_CHECKING, Any, Sequence
 
 from PySide6 import QtCore
@@ -61,6 +62,29 @@ class ManualWorkflowController:
             if img is not None:
                 self.main.image_data[file_path] = img
         return img
+
+    def _load_translation_image(self, file_path: str):
+        image = self.main.image_ctrl.load_original_image(file_path)
+        if image is None:
+            image = self._load_page_image(file_path)
+        return image
+
+    def _finish_ocr_and_translate(self, single_block: bool) -> None:
+        self.finish_ocr_translate(single_block)
+
+    def _update_translated_items_for_paths(
+        self,
+        single_block: bool,
+        resolved_paths: Sequence[str] | None = None,
+    ) -> None:
+        self.update_translated_text_items(single_block, resolved_paths)
+
+    def _format_current_blocks(self, trg_lng_cd: str, upper_case: bool) -> None:
+        format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper_case)
+
+    def _apply_wrapped_text(self, text_item: TextBlockItem, wrap_res) -> None:
+        text_item.font_size = wrap_res[1]
+        text_item.set_plain_text(wrap_res[0], preserve_source_text=True)
 
     def _get_batch_settings(self) -> dict[str, int]:
         try:
@@ -143,6 +167,12 @@ class ManualWorkflowController:
                 continue
             stroke = build_stroke(bboxes)
             if stroke is not None:
+                stroke["segment_meta"] = {
+                    "text_bbox": list(map(int, blk.xyxy)) if blk.xyxy is not None else None,
+                    "bubble_xyxy": list(map(int, blk.bubble_xyxy)) if blk.bubble_xyxy is not None else None,
+                    "text_class": blk.text_class,
+                    "source_lang": blk.source_lang,
+                }
                 strokes.append(stroke)
         return strokes
 
@@ -281,7 +311,7 @@ class ManualWorkflowController:
                         blk_list = state.get("blk_list", [])
                         if not blk_list:
                             continue
-                        image = self._load_page_image(file_path)
+                        image = self._load_translation_image(file_path)
                         if image is None:
                             continue
                         source_lang = state.get("source_lang", source_lang_fallback)
@@ -342,6 +372,9 @@ class ManualWorkflowController:
                     if state is None:
                         continue
                     state["blk_list"] = blk_list
+                    viewer_state = state.setdefault("viewer_state", {})
+                    if not viewer_state.get("rectangles"):
+                        viewer_state["rectangles"] = self._serialize_rectangles_from_blocks(blk_list)
                     if file_path == current_file:
                         self.main.blk_list = blk_list.copy()
 
@@ -355,7 +388,7 @@ class ManualWorkflowController:
                 ocr_selected_pages,
                 on_ocr_ready,
                 self.main.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block),
+                partial(self._finish_ocr_and_translate, single_block),
             )
             return
 
@@ -364,17 +397,17 @@ class ManualWorkflowController:
 
         if self.main.webtoon_mode:
             self.main.run_threaded(
-                lambda: self.main.pipeline.OCR_webtoon_visible_area(single_block),
+                partial(self.main.pipeline.OCR_webtoon_visible_area, single_block),
                 None,
                 self.main.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block),
+                partial(self._finish_ocr_and_translate, single_block),
             )
         else:
             self.main.run_threaded(
-                lambda: self.main.pipeline.OCR_image(single_block),
+                partial(self.main.pipeline.OCR_image, single_block),
                 None,
                 self.main.default_error_handler,
-                lambda: self.finish_ocr_translate(single_block),
+                partial(self._finish_ocr_and_translate, single_block),
             )
 
     def translate_image(self, single_block: bool = False) -> None:
@@ -441,7 +474,7 @@ class ManualWorkflowController:
                         if not blk_list:
                             continue
                         sanitize_translation_source_blocks(blk_list)
-                        image = self._load_page_image(file_path)
+                        image = self._load_translation_image(file_path)
                         if image is None:
                             continue
                         source_lang = state.get("source_lang", source_lang_fallback)
@@ -495,6 +528,9 @@ class ManualWorkflowController:
                     if state is None:
                         continue
                     state["blk_list"] = blk_list
+                    viewer_state = state.setdefault("viewer_state", {})
+                    if not viewer_state.get("rectangles"):
+                        viewer_state["rectangles"] = self._serialize_rectangles_from_blocks(blk_list)
                     if file_path == current_file:
                         self.main.blk_list = blk_list.copy()
 
@@ -509,7 +545,7 @@ class ManualWorkflowController:
                 translate_selected_pages,
                 on_translation_ready,
                 self.main.default_error_handler,
-                lambda: self.update_translated_text_items(single_block),
+                partial(self._update_translated_items_for_paths, single_block),
             )
             return
 
@@ -529,17 +565,17 @@ class ManualWorkflowController:
 
         if self.main.webtoon_mode:
             self.main.run_threaded(
-                lambda: self.main.pipeline.translate_webtoon_visible_area(single_block),
+                partial(self.main.pipeline.translate_webtoon_visible_area, single_block),
                 None,
                 self.main.default_error_handler,
-                lambda: self.update_translated_text_items(single_block, resolved_paths),
+                partial(self._update_translated_items_for_paths, single_block, resolved_paths),
             )
         else:
             self.main.run_threaded(
-                lambda: self.main.pipeline.translate_image(single_block),
+                partial(self.main.pipeline.translate_image, single_block),
                 None,
                 self.main.default_error_handler,
-                lambda: self.update_translated_text_items(single_block, resolved_paths),
+                partial(self._update_translated_items_for_paths, single_block, resolved_paths),
             )
 
     def _get_visible_text_items(self) -> list[TextBlockItem]:
@@ -554,18 +590,6 @@ class ManualWorkflowController:
         single_blk: bool,
         resolved_paths: Sequence[str] | None = None,
     ) -> None:
-        
-        def set_new_text(
-            text_item: TextBlockItem, 
-            wrapped: str, 
-            font_size: int
-        ) -> None:
-            
-            if is_no_space_lang(trg_lng_cd):
-                wrapped = wrapped.replace(" ", "")
-            text_item.set_plain_text(wrapped)
-            text_item.set_font_size(font_size)
-
         text_items_to_process = self._get_visible_text_items()
         if not text_items_to_process:
             self.finish_ocr_translate(single_blk)
@@ -595,6 +619,7 @@ class ManualWorkflowController:
                 if not (blk and blk.translation):
                     continue
 
+                text_item.set_source_text(blk.translation)
                 vertical = is_vertical_block(blk, trg_lng_cd)
                 wrap_args = (
                     blk.translation,
@@ -615,9 +640,7 @@ class ManualWorkflowController:
 
                 self.main.run_threaded(
                     pyside_word_wrap,
-                    lambda wrap_res, ti=text_item: set_new_text(
-                        ti, wrap_res[0], wrap_res[1]
-                    ),
+                    partial(self._apply_wrapped_text, text_item),
                     self.main.default_error_handler,
                     None,
                     *wrap_args,
@@ -628,7 +651,7 @@ class ManualWorkflowController:
             self.main.run_finish_only(finished_callback=self.main.on_manual_finished)
 
         self.main.run_threaded(
-            lambda: format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper),
+            partial(self._format_current_blocks, trg_lng_cd, upper),
             None,
             self.main.default_error_handler,
             on_format_finished,
@@ -743,7 +766,13 @@ class ManualWorkflowController:
         for blk in self.main.blk_list:
             bboxes = blk.inpaint_bboxes
             if bboxes is not None and len(bboxes) > 0:
-                self.main.image_viewer.draw_segmentation_lines(bboxes)
+                self.main.image_viewer.draw_segmentation_lines(
+                    bboxes,
+                    text_bbox=blk.xyxy,
+                    bubble_xyxy=blk.bubble_xyxy,
+                    text_class=blk.text_class,
+                    source_lang=blk.source_lang,
+                )
         self.main.undo_group.activeStack().endMacro()
 
     def load_segmentation_points(self) -> None:
@@ -798,7 +827,13 @@ class ManualWorkflowController:
                         for blk in self.main.blk_list:
                             bboxes = blk.inpaint_bboxes
                             if bboxes is not None and len(bboxes) > 0:
-                                self.main.image_viewer.draw_segmentation_lines(bboxes)
+                                self.main.image_viewer.draw_segmentation_lines(
+                                    bboxes,
+                                    text_bbox=blk.xyxy,
+                                    bubble_xyxy=blk.bubble_xyxy,
+                                    text_class=blk.text_class,
+                                    source_lang=blk.source_lang,
+                                )
 
                     if self.main.webtoon_mode and context["current_page_unloaded"]:
                         self._reload_current_webtoon_page()
@@ -827,7 +862,7 @@ class ManualWorkflowController:
 
                 if self.main.webtoon_mode:
                     self.main.run_threaded(
-                        lambda: self.main.pipeline.segment_webtoon_visible_area(),
+                        self.main.pipeline.segment_webtoon_visible_area,
                         self._on_segmentation_bboxes_ready,
                         self.main.default_error_handler,
                         self.main.on_manual_finished,
@@ -864,5 +899,11 @@ class ManualWorkflowController:
         for blk, bboxes in results:
             blk.inpaint_bboxes = bboxes
             if bboxes is not None and len(bboxes) > 0:
-                self.main.image_viewer.draw_segmentation_lines(bboxes)
+                self.main.image_viewer.draw_segmentation_lines(
+                    bboxes,
+                    text_bbox=blk.xyxy,
+                    bubble_xyxy=blk.bubble_xyxy,
+                    text_class=blk.text_class,
+                    source_lang=blk.source_lang,
+                )
         self.main.undo_group.activeStack().endMacro()

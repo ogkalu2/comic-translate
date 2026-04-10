@@ -257,3 +257,59 @@ class Messages:
             closable=True
         )
 
+    @staticmethod
+    def bulk_apply_font_all_label():
+        return QCoreApplication.translate("Messages", "Apply Font All")
+
+    @staticmethod
+    def bulk_restore_font_all_label():
+        return QCoreApplication.translate("Messages", "Restore Font All")
+
+    @staticmethod
+    def bulk_upper_all_label():
+        return QCoreApplication.translate("Messages", "Upper All")
+
+    @staticmethod
+    def bulk_lower_all_label():
+        return QCoreApplication.translate("Messages", "Lower All")
+
+    @staticmethod
+    def bulk_italic_all_label():
+        return QCoreApplication.translate("Messages", "Italic All")
+
+    @staticmethod
+    def bulk_bold_all_label():
+        return QCoreApplication.translate("Messages", "Bold All")
+
+    @staticmethod
+    def bulk_underline_all_label():
+        return QCoreApplication.translate("Messages", "Underline All")
+
+    @staticmethod
+    def bulk_bold_off_all_label():
+        return QCoreApplication.translate("Messages", "Bold Off All")
+
+    @staticmethod
+    def bulk_italic_off_all_label():
+        return QCoreApplication.translate("Messages", "Italic Off All")
+
+    @staticmethod
+    def bulk_underline_off_all_label():
+        return QCoreApplication.translate("Messages", "Underline Off All")
+
+    @staticmethod
+    def show_bulk_text_update(parent, action_name: str, updated_pages: int):
+        """
+        Show a short toast after a bulk text operation.
+        """
+        text = QCoreApplication.translate(
+            "Messages",
+            "{0}: {1} page(s) updated"
+        ).format(action_name, updated_pages)
+        return MMessage.info(
+            text=text,
+            parent=parent,
+            duration=2,
+            closable=False
+        )
+

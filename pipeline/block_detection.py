@@ -18,12 +18,26 @@ class BlockDetectionHandler:
         self.main_page = main_page
         self.block_detector_cache = None
 
+    @staticmethod
+    def _serialize_rectangles_from_blocks(blk_list: List[TextBlock]) -> list[dict]:
+        rects: list[dict] = []
+        for blk in blk_list:
+            x1, y1, x2, y2 = blk.xyxy
+            rects.append(
+                {
+                    "rect": (float(x1), float(y1), float(x2 - x1), float(y2 - y1)),
+                    "rotation": float(getattr(blk, "angle", 0)),
+                    "transform_origin": tuple(blk.tr_origin_point) if getattr(blk, "tr_origin_point", None) else (0.0, 0.0),
+                }
+            )
+        return rects
+
     def load_box_coords(self, blk_list: List[TextBlock]):
         # Clear rectangles appropriately based on mode
         if self.main_page.webtoon_mode:
             self.main_page.image_viewer.clear_rectangles_in_visible_area()
         else:
-            self.main_page.image_viewer.clear_rectangles()
+            self.main_page.image_viewer.clear_rectangles(page_switch=True)
             
         if self.main_page.image_viewer.hasPhoto() and blk_list:
             for blk in blk_list:
@@ -48,6 +62,8 @@ class BlockDetectionHandler:
             rect = self.main_page.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
             self.main_page.image_viewer.select_rectangle(rect)
             self.main_page.set_tool('box')
+            self.main_page.image_viewer._scene.update()
+            self.main_page.image_viewer.viewport().update()
 
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
@@ -150,6 +166,14 @@ class BlockDetectionHandler:
         else:
             # In single image mode, replace entirely
             self.main_page.blk_list = blk_list
+
+        current_idx = getattr(self.main_page, "curr_img_idx", -1)
+        if 0 <= current_idx < len(self.main_page.image_files):
+            current_file = self.main_page.image_files[current_idx]
+            state = self.main_page.image_states.get(current_file)
+            if state is not None:
+                viewer_state = state.setdefault("viewer_state", {})
+                viewer_state["rectangles"] = self._serialize_rectangles_from_blocks(self.main_page.blk_list)
         
         source_lang = self.main_page.s_combo.currentText()
         source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)

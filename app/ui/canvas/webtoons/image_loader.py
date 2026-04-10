@@ -79,14 +79,19 @@ class LazyImageLoader:
         # Load pages around the current page instead of always starting from 0
         start_page = max(0, current_page - 1)
         end_page = min(len(self.image_file_paths), current_page + 2)
-        initial_pages = set(range(start_page, end_page))
-        
+        initial_pages = list(range(start_page, end_page))
+
         # Also determine what should be visible in the current viewport
-        visible_pages = self.layout_manager.get_visible_pages()
-        
-        # Combine initial and visible pages
-        pages_to_load = initial_pages | visible_pages
-        
+        visible_pages = sorted(self.layout_manager.get_visible_pages())
+
+        # Combine initial and visible pages while preserving deterministic order.
+        # Make sure the current page is queued first so the first fit/center logic
+        # always anchors to the intended page.
+        pages_to_load = [current_page]
+        for page_idx in initial_pages + visible_pages:
+            if page_idx not in pages_to_load:
+                pages_to_load.append(page_idx)
+
         # Queue initial pages for loading
         for page_idx in pages_to_load:
             self._queue_page_load(page_idx)
@@ -170,8 +175,10 @@ class LazyImageLoader:
                 if self.webtoon_manager and hasattr(self.webtoon_manager, 'on_image_loaded'):
                     self.webtoon_manager.on_image_loaded(page_idx, img)
                 
-                # If this is the current page being loaded, ensure proper view setup
-                if page_idx == self.layout_manager.current_page_index and len(self.loaded_pages) == 1:
+                # If this is the current page being loaded, ensure proper view setup.
+                # Do this whenever the current page arrives, not only for the first
+                # loaded item, so page 0 does not get replaced by a neighbor page.
+                if page_idx == self.layout_manager.current_page_index:
                     QTimer.singleShot(100, lambda: self.layout_manager.ensure_current_page_visible(self.image_items))
                     # Also emit page change signal to ensure UI is synchronized
                     QTimer.singleShot(150, lambda: self.viewer.page_changed.emit(page_idx))

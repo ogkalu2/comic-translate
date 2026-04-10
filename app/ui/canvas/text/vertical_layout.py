@@ -906,11 +906,17 @@ class VerticalTextDocumentLayout(QAbstractTextDocumentLayout):
         return QRectF(0, 0, max(self.document().pageSize().width(), self.max_width), 2147483647)
 
     def max_font_size(self) -> float:
-        max_fs = self.document().defaultFont().pointSizeF()
+        default_font = self.document().defaultFont()
+        max_fs = default_font.pixelSize()
+        if max_fs <= 0:
+            max_fs = default_font.pointSizeF()
         if self._layout_state and self._layout_state.nodes:
             for node in self._layout_state.nodes:
                 for char_style in node.char_style_list:
-                    max_fs = max(max_fs, char_style.font.pointSizeF())
+                    char_size = char_style.font.pixelSize()
+                    if char_size <= 0:
+                        char_size = char_style.font.pointSizeF()
+                    max_fs = max(max_fs, char_size)
         return max_fs
 
     def min_size(self):

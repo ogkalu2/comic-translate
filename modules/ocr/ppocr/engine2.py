@@ -20,7 +20,7 @@ from modules.utils.textblock import TextBlock
 class VLLMOcrClient:
     MAX_PREPARED_LONG_SIDE = 512
     MAX_PREPARED_AREA = 256 * 256
-    MIN_PREPARED_SIDE = 24
+    MIN_PREPARED_SIDE = 64
 
     def __init__(self, url: str = "http://127.0.0.1:8001/v1", model: str = "hunyuanocr", timeout: int = 300):
         self.url = url.rstrip("/")
@@ -149,7 +149,7 @@ class HunyuanOCREngine(OCREngine):
     def __init__(self):
         self.client = VLLMOcrClient()
         self.expansion_percentage = 5
-        self.recognition_batch_size = 8
+        self.recognition_batch_size = 32
 
     def initialize(
         self,
@@ -157,7 +157,7 @@ class HunyuanOCREngine(OCREngine):
         model: str = "hunyuanocr",
         timeout: int = 300,
         expansion_percentage: int = 5,
-        recognition_batch_size: int = 8,
+        recognition_batch_size: int = 32,
         **kwargs,
     ) -> None:
         self.client = VLLMOcrClient(url=url, model=model, timeout=timeout)

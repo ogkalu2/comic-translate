@@ -247,13 +247,32 @@ class WorkspaceMixin:
 
         self.line_spacing_dropdown = MComboBox().small()
         self.line_spacing_dropdown.setToolTip(self.tr("Line Spacing"))
-        self.line_spacing_dropdown.addItems(["1.0", "1.1", "1.2", "1.3", "1.4", "1.5"])
+        self.line_spacing_dropdown.addItems([
+            "0.7", "0.8", "0.9", "1.0", "1.1", "1.2", "1.3", "1.4", "1.5"
+        ])
         self.line_spacing_dropdown.setFixedWidth(60)
         self.line_spacing_dropdown.set_editable(True)
+
+        self.bulk_text_action_dropdown = MComboBox().small()
+        self.bulk_text_action_dropdown.setToolTip(self.tr("Bulk Text Action"))
+        self.bulk_text_action_dropdown.addItem(self.tr("Bulk Text Action"), "noop")
+        self.bulk_text_action_dropdown.addItem(self.tr("Apply Font All"), "apply_font_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Restore Font All"), "restore_font_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Upper All"), "upper_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Lower All"), "lower_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Bold All"), "bold_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Bold Off All"), "bold_off_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Italic All"), "italic_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Italic Off All"), "italic_off_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Underline All"), "underline_all")
+        self.bulk_text_action_dropdown.addItem(self.tr("Underline Off All"), "underline_off_all")
+        self.bulk_text_action_dropdown.setCurrentIndex(0)
+        self.bulk_text_action_dropdown.setFixedWidth(180)
 
         font_settings_layout.addWidget(self.font_dropdown)
         font_settings_layout.addWidget(self.font_size_dropdown)
         font_settings_layout.addWidget(self.line_spacing_dropdown)
+        font_settings_layout.addWidget(self.bulk_text_action_dropdown)
         font_settings_layout.addStretch()
 
         main_text_settings_layout = QtWidgets.QHBoxLayout()

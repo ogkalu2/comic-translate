@@ -45,11 +45,22 @@ class InteractionManager:
             ),  None )
         return blk_item, rect_item
 
+    def get_item_bounds(self, item: Optional[MoveableRectItem | TextBlockItem]) -> QRectF:
+        """Return the bounds used for hover, resize and rotate detection."""
+        if not item:
+            return QRectF()
+        if hasattr(item, "get_text_box_rect"):
+            rect = item.boundingRect()
+            if rect.isEmpty():
+                return item.get_text_box_rect()
+            return rect
+        return item.boundingRect()
+
     def _in_rotate_ring(self, item: Optional[MoveableRectItem|TextBlockItem], scene_pos) -> bool:
         """Checks if a scene position is within the item's rotation ring."""
         if not item: return False
         local = item.mapFromScene(scene_pos)
-        r = item.boundingRect()
+        r = self.get_item_bounds(item)
         dx = max(r.left() - local.x(), 0, local.x() - r.right())
         dy = max(r.top() - local.y(), 0, local.y() - r.bottom())
         dist = math.hypot(dx, dy)
@@ -59,7 +70,7 @@ class InteractionManager:
         """Checks if a scene position is within the item's resize area."""
         if not item: return False
         local = item.mapFromScene(scene_pos)
-        r = item.boundingRect()
+        r = self.get_item_bounds(item)
         dx = max(r.left() - local.x(), 0, local.x() - r.right())
         dy = max(r.top() - local.y(), 0, local.y() - r.bottom())
         dist = math.hypot(dx, dy)
@@ -76,7 +87,7 @@ class InteractionManager:
 
     def get_resize_cursor(self, item: MoveableRectItem | TextBlockItem, pos: QPointF) -> QtGui.QCursor:
         """Gets the appropriate resize cursor for a given position."""
-        rect = item.boundingRect()
+        rect = self.get_item_bounds(item)
         handle = self.get_handle_at_position(pos, rect)
         
         cursors = {
@@ -117,23 +128,25 @@ class InteractionManager:
 
     def get_resize_handle(self, item: MoveableRectItem | TextBlockItem, pos: QPointF) -> str | None:
         """Determines which resize handle is at a position (pos is in item's local coordinates)."""
-        return self.get_handle_at_position(pos, item.boundingRect())
+        return self.get_handle_at_position(pos, self.get_item_bounds(item))
 
     def get_handle_at_position(self, pos, rect):
         handle_size = self.resize_margin_max # Use manager's property
-        rect_rect = rect.toRect()
-        top_left = rect_rect.topLeft()
-        bottom_right = rect_rect.bottomRight()
+        if rect.isEmpty():
+            return None
+
+        top_left = rect.topLeft()
+        bottom_right = rect.bottomRight()
 
         handles = {
             'top_left': QRectF(top_left.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
             'top_right': QRectF(bottom_right.x() - handle_size/2, top_left.y() - handle_size/2, handle_size, handle_size),
             'bottom_left': QRectF(top_left.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
             'bottom_right': QRectF(bottom_right.x() - handle_size/2, bottom_right.y() - handle_size/2, handle_size, handle_size),
-            'top': QRectF(top_left.x(), top_left.y() - handle_size/2, rect_rect.width(), handle_size),
-            'bottom': QRectF(top_left.x(), bottom_right.y() - handle_size/2, rect_rect.width(), handle_size),
-            'left': QRectF(top_left.x() - handle_size/2, top_left.y(), handle_size, rect_rect.height()),
-            'right': QRectF(bottom_right.x() - handle_size/2, top_left.y(), handle_size, rect_rect.height()),
+            'top': QRectF(top_left.x(), top_left.y() - handle_size/2, rect.width(), handle_size),
+            'bottom': QRectF(top_left.x(), bottom_right.y() - handle_size/2, rect.width(), handle_size),
+            'left': QRectF(top_left.x() - handle_size/2, top_left.y(), handle_size, rect.height()),
+            'right': QRectF(bottom_right.x() - handle_size/2, top_left.y(), handle_size, rect.height()),
         }
 
         # Check corners first, as they overlap with sides

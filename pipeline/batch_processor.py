@@ -24,11 +24,12 @@ from modules.rendering.render import (
     get_best_render_area,
     is_vertical_block,
     pyside_word_wrap,
+    resolve_init_font_size,
 )
 from modules.translation.processor import Translator
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
-from modules.utils.image_utils import generate_mask, get_smart_text_color
+from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.pipeline_config import get_config
 from modules.utils.textblock import sort_blk_list
@@ -459,7 +460,7 @@ class BatchProcessor:
             self.main_page.image_skipped.emit(page.image_path, "Generate Mask", err_msg)
             return None
 
-        page.mask = generate_mask(page.image, page.blk_list)
+        page.mask = self.inpainting.build_mask_from_blocks(page.image, page.blk_list)
 
         self.emit_progress(page.index, total_images, 4, 10, False)
         if self._is_cancelled():
@@ -755,7 +756,8 @@ class BatchProcessor:
                 continue
 
             vertical = is_vertical_block(blk, page.trg_lng_cd)
-            translation, font_size, rendered_width, rendered_height = pyside_word_wrap(
+            block_init_font_size = resolve_init_font_size(blk, max_font_size, min_font_size)
+            translation, font_size = pyside_word_wrap(
                 translation,
                 font,
                 block_width,
@@ -767,10 +769,9 @@ class BatchProcessor:
                 underline,
                 alignment,
                 direction,
-                max_font_size,
+                block_init_font_size,
                 min_font_size,
                 vertical,
-                return_metrics=True,
             )
 
             if page.image_path == file_on_display:
@@ -796,8 +797,8 @@ class BatchProcessor:
                 rotation=blk.angle,
                 scale=1.0,
                 transform_origin=blk.tr_origin_point,
-                width=rendered_width,
-                height=rendered_height,
+                width=block_width,
+                height=block_height,
                 direction=direction,
                 vertical=vertical,
                 selection_outlines=[

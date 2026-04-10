@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import re
 import jieba
 import janome.tokenizer
@@ -20,6 +21,36 @@ MODEL_MAP = {
     "Gemini-3.0-Flash": "gemini-3-flash-preview",
     "Gemini-2.5-Pro": "gemini-2.5-pro"
 }
+
+HTML_TEXT_SPLIT_RE = re.compile(r"(<[^>]+>|&[A-Za-z0-9#]+;)")
+logger = logging.getLogger(__name__)
+
+
+def _json_decode_error_preview(content: str, exc: json.JSONDecodeError, radius: int = 160) -> str:
+    text = content if isinstance(content, str) else str(content)
+    if not text:
+        return "<empty>"
+
+    pos = getattr(exc, "pos", -1)
+    if pos < 0:
+        return text[: radius * 2]
+
+    start = max(0, pos - radius)
+    end = min(len(text), pos + radius)
+    return text[start:end]
+
+
+def log_json_decode_failure(context: str, content: str, exc: json.JSONDecodeError) -> None:
+    preview = _json_decode_error_preview(content, exc)
+    logger.error(
+        "%s JSON decode failed at line %s col %s pos %s: %s | raw preview: %r",
+        context,
+        getattr(exc, "lineno", "?"),
+        getattr(exc, "colno", "?"),
+        getattr(exc, "pos", "?"),
+        getattr(exc, "msg", str(exc)),
+        preview,
+    )
 
 def encode_image_array(img_array: np.ndarray):
     img_bytes = imk.encode_image(img_array, ".png")
@@ -50,7 +81,11 @@ def set_texts_from_json(blk_list: list[TextBlock], json_string: str):
     if match:
         # Extract the JSON string from the matched regular expression
         json_string = match.group(0)
-        translation_dict = json.loads(json_string)
+        try:
+            translation_dict = json.loads(json_string)
+        except json.JSONDecodeError as exc:
+            log_json_decode_failure("set_texts_from_json", json_string, exc)
+            raise
         
         for idx, blk in enumerate(blk_list):
             block_key = f"block_{idx}"
@@ -66,12 +101,8 @@ def set_upper_case(blk_list: list[TextBlock], upper_case: bool):
         translation = blk.translation
         if translation is None:
             continue
-        if upper_case and not translation.isupper():
-            blk.translation = translation.upper() 
-        elif not upper_case and translation.isupper():
-            blk.translation = translation.lower().capitalize()
-        else:
-            blk.translation = translation
+        cleaned = normalize_translation_result_text(translation, upper_case=upper_case)
+        blk.translation = cleaned
 
 def get_chinese_tokens(text):
     return list(jieba.cut(text, cut_all=False))
@@ -83,6 +114,8 @@ def get_japanese_tokens(text):
 def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: bool = True):
     for blk in blk_list:
         translation = blk.translation
+        if translation is None:
+            continue
         trg_lng_code_lower = trg_lng_cd.lower()
         seg_result = []
 
@@ -96,17 +129,16 @@ def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: 
             seg_result = word_tokenize(translation)
 
         if seg_result:
-            blk.translation = ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result).lstrip()
+            blk.translation = normalize_translation_result_text(
+                ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result),
+                upper_case=True,
+            )
         else:
-            # apply casing/formatting for this single block when no segmentation is done
-            if translation is None:
-                continue
-            if upper_case and not translation.isupper():
-                blk.translation = translation.upper()
-            elif not upper_case and translation.isupper():
-                blk.translation = translation.lower().capitalize()
-            else:
-                blk.translation = translation
+            # Apply whitespace cleanup and force uppercase for rendered text.
+            blk.translation = normalize_translation_result_text(
+                translation,
+                upper_case=True,
+            )
 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
@@ -139,7 +171,38 @@ def sanitize_translation_source_blocks(blk_list: list[TextBlock]) -> list[TextBl
 def sanitize_translation_result_text(text: str) -> str:
     if not text:
         return ""
-    return text
+    return normalize_translation_result_text(text, upper_case=False)
+
+
+def normalize_translation_result_text(text: str, upper_case: bool = True) -> str:
+    if not text:
+        return ""
+
+    cleaned = " ".join(str(text).split())
+    cleaned = cleaned.strip()
+    if upper_case:
+        cleaned = cleaned.upper()
+    return cleaned
+
+
+def transform_text_case_preserving_html(text: str, upper_case: bool = True) -> str:
+    """Apply case conversion to text while leaving HTML tags/entities intact."""
+    if not text:
+        return ""
+
+    parts = HTML_TEXT_SPLIT_RE.split(str(text))
+    transformed = []
+    for part in parts:
+        if not part:
+            continue
+        if part.startswith("<") and part.endswith(">"):
+            transformed.append(part)
+            continue
+        if part.startswith("&") and part.endswith(";"):
+            transformed.append(part)
+            continue
+        transformed.append(part.upper() if upper_case else part.lower())
+    return "".join(transformed)
 
 
 def sanitize_translation_result_blocks(blk_list: list[TextBlock]) -> list[TextBlock]:
@@ -171,7 +234,11 @@ def set_translations_from_result_array(blk_list: list[TextBlock], content: str, 
     Ожидает строгий JSON object формата {"r":[...]} (ключ по умолчанию 'r').
     Маппинг по индексу блока.
     """
-    obj = json.loads(content)
+    try:
+        obj = json.loads(content)
+    except json.JSONDecodeError as exc:
+        log_json_decode_failure("set_translations_from_result_array", content, exc)
+        raise
     arr = obj[key]
     if not isinstance(arr, list) or not all(isinstance(x, str) for x in arr):
         raise ValueError(f"Invalid result format: expected {{{json.dumps(key)}:[str,...]}}")

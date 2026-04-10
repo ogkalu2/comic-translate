@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 import os
 import imkit as imk
 import numpy as np
 import uuid
+from functools import partial
 from typing import TYPE_CHECKING, List
 from PySide6 import QtCore, QtWidgets, QtGui
 
@@ -21,6 +23,9 @@ from app.projects.project_state_v2 import remap_lazy_blob_paths
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
+
+
+logger = logging.getLogger(__name__)
 
 
 class ImageStateController:
@@ -113,6 +118,15 @@ class ImageStateController:
         except Exception:
             pass
         self._active_transient_skip_message = None
+
+    def _dispatch_to_main_thread(self, fn, *args):
+        QtCore.QTimer.singleShot(0, lambda: fn(*args))
+
+    def _dispatch_result(self, on_result, result):
+        self._dispatch_to_main_thread(on_result, result)
+
+    def _dispatch_error(self, error_handler, error):
+        self._dispatch_to_main_thread(error_handler, error)
 
     def _show_transient_skip_notice(self, text: str, dayu_type: str):
         self._close_transient_skip_notice()
@@ -520,6 +534,7 @@ class ImageStateController:
         self._hide_active_page_skip_error()
         self._page_skip_errors.clear()
         self._suppress_dismiss_message_ids.clear()
+        self.main.curr_img_idx = -1
         self.main.image_files = []
         self.main.image_states.clear()
         self.main.image_data.clear()
@@ -527,18 +542,25 @@ class ImageStateController:
         self.main.current_history_index.clear()
         self.main.blk_list = []
         self.main.displayed_images.clear()
-        self.main.image_viewer.clear_rectangles(page_switch=True)
-        self.main.image_viewer.clear_brush_strokes(page_switch=True)
+        self.main.image_viewer.clear_scene()
+        self.main.image_viewer.resetTransform()
+        self.main.image_viewer.webtoon_view_state = {}
+        self.main.image_viewer._programmatic_scroll = False
+        self.main.image_viewer.empty = True
         self.main.s_text_edit.clear()
         self.main.t_text_edit.clear()
-        self.main.image_viewer.clear_text_items()
         self.main.original_image_viewer.clear_scene()
+        self.main.original_image_viewer.resetTransform()
         self.main.fullscreen_preview.close()
         self.main.loaded_images = []
         self.main.in_memory_history.clear()
         self.main.undo_stacks.clear()
         self.main.image_patches.clear()
         self.main.in_memory_patches.clear()
+        try:
+            self.main.pipeline.cache_manager.clear_all_caches()
+        except Exception:
+            pass
         self.main.project_file = None
         self.main.image_cards.clear()
         self.main.current_card = None
@@ -556,8 +578,6 @@ class ImageStateController:
         except Exception:
             pass
 
-        # Reset current_image_index
-        self.main.curr_img_idx = -1
         self.main.update_page_position_label()
         self.main.set_project_clean()
 
@@ -660,7 +680,7 @@ class ImageStateController:
                 self.main.mark_project_dirty()
 
             self.main.run_threaded(
-                lambda: self.main.file_handler.prepare_files(paths, True),
+                partial(self.main.file_handler.prepare_files, paths, True),
                 on_files_prepared,
                 self.main.default_error_handler)
         else:
@@ -922,12 +942,8 @@ class ImageStateController:
             if original_image is None:
                 self._run_async_original_preview_load(index, req_id)
 
-        worker.signals.result.connect(
-            lambda result: QtCore.QTimer.singleShot(0, lambda: _on_result(result))
-        )
-        worker.signals.error.connect(
-            lambda error: QtCore.QTimer.singleShot(0, lambda: self.main.default_error_handler(error))
-        )
+        worker.signals.result.connect(partial(self._dispatch_result, _on_result))
+        worker.signals.error.connect(partial(self._dispatch_error, self.main.default_error_handler))
         self._nav_worker = worker
         self.main.threadpool.start(worker)
 
@@ -950,12 +966,8 @@ class ImageStateController:
                 return
             self.main.refresh_original_preview(file_path, original_image=original_image)
 
-        worker.signals.result.connect(
-            lambda result: QtCore.QTimer.singleShot(0, lambda: _on_result(result))
-        )
-        worker.signals.error.connect(
-            lambda error: QtCore.QTimer.singleShot(0, lambda: self.main.default_error_handler(error))
-        )
+        worker.signals.result.connect(partial(self._dispatch_result, _on_result))
+        worker.signals.error.connect(partial(self._dispatch_error, self.main.default_error_handler))
         self._original_nav_worker = worker
         self.main.threadpool.start(worker)
 
@@ -1366,6 +1378,8 @@ class ImageStateController:
 
             if file_path in self.main.image_states:
                 state = self.main.image_states[file_path]
+                stored_blks = state.get('blk_list', [])
+                stored_brush_strokes = state.get('brush_strokes', [])
 
                 # Skip state loading for newly inserted images (which have empty viewer_state)
                 # This prevents loading of incomplete state or invalid transform data.
@@ -1402,8 +1416,18 @@ class ImageStateController:
 
                     self.load_patch_state(file_path)
                 else:
-                    # New image - just set language preferences and clear everything else
-                    self.main.blk_list = []
+                    # New or partially populated image state.
+                    # Preserve any already-saved text blocks so we do not lose
+                    # OCR/translation data just because the richer viewer_state
+                    # has not been populated yet.
+                    self.main.blk_list = stored_blks.copy()
+                    if stored_blks:
+                        logger.info(
+                            "Loaded page state without viewer_state but with %d stored blocks: %s",
+                            len(stored_blks),
+                            os.path.basename(file_path),
+                        )
+
                     # Block signals to prevent triggering save when loading state
                     self.main.s_combo.blockSignals(True)
                     self.main.t_combo.blockSignals(True)
@@ -1415,9 +1439,14 @@ class ImageStateController:
                         self.main.t_combo.setCurrentText(target_lang)
                     self.main.s_combo.blockSignals(False)
                     self.main.t_combo.blockSignals(False)
-                    viewer.clear_rectangles(page_switch=True)
-                    viewer.clear_brush_strokes(page_switch=True)
-                    viewer.clear_text_items()
+
+                    if stored_brush_strokes:
+                        viewer.load_brush_strokes(stored_brush_strokes)
+
+                    if self.main.blk_list:
+                        # Rebuild boxes from the stored blocks so the page still
+                        # looks and behaves like an already processed page.
+                        self.main.pipeline.load_box_coords(self.main.blk_list)
 
             self.main.text_ctrl.clear_text_edits()
         finally:

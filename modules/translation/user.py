@@ -205,13 +205,30 @@ class UserTranslator(TranslationEngine):
 
             except ValueError:
                 # JSON parsing failed, just raise the original error
+                logger.error(
+                    "UserTranslator: failed to parse error response JSON (status=%s). Body preview: %r",
+                    response.status_code,
+                    response.text[:2000],
+                    exc_info=True,
+                )
                 pass
             # Re-raise the original error if we didn't handle it
             raise e
 
         # 7. Process Response
         if response.status_code == 200:
-            response_data = response.json()
+            try:
+                response_data = response.json()
+            except ValueError as exc:
+                logger.error(
+                    "UserTranslator: invalid JSON response from API (status=%s). Body preview: %r",
+                    response.status_code,
+                    response.text[:4000],
+                    exc_info=True,
+                )
+                raise RuntimeError(
+                    f"Translation API returned invalid JSON (status={response.status_code})."
+                ) from exc
             translations_map = {item['id']: item['translation'] for item in response_data.get('translations', [])}
             credits_info = response_data.get('credits') or response_data.get('credits_remaining')
 

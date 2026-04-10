@@ -88,6 +88,7 @@ class DetectionEngine(ABC):
 
                 direction = font_attrs.get('direction', '')
                 text_color = tuple(font_attrs.get('text_color', ()))
+                font_size_px = float(font_attrs.get('font_size_px') or 0.0)
 
                 # If no bubble boxes, all text is free text
                 if len(bubble_boxes) == 0:
@@ -97,6 +98,8 @@ class DetectionEngine(ABC):
                             text_class='text_free',
                             direction=direction,
                             font_color=text_color,
+                            font_size_px=font_size_px,
+                            max_font_size=int(round(font_size_px)) if font_size_px > 0 else 0,
                         )
                     )
                     continue
@@ -113,6 +116,8 @@ class DetectionEngine(ABC):
                                 text_class='text_bubble',
                                 direction=direction,
                                 font_color=text_color,
+                                font_size_px=font_size_px,
+                                max_font_size=int(round(font_size_px)) if font_size_px > 0 else 0,
                             )
                         )
                         text_matched[txt_idx] = True  
@@ -126,6 +131,8 @@ class DetectionEngine(ABC):
                                 text_class='text_bubble',
                                 direction=direction,
                                 font_color=text_color,
+                                font_size_px=font_size_px,
+                                max_font_size=int(round(font_size_px)) if font_size_px > 0 else 0,
                             )
                         )
                         text_matched[txt_idx] = True  
@@ -138,6 +145,8 @@ class DetectionEngine(ABC):
                             text_class='text_free',
                             direction=direction,
                             font_color=text_color,
+                            font_size_px=font_size_px,
+                            max_font_size=int(round(font_size_px)) if font_size_px > 0 else 0,
                         )
                     )
         

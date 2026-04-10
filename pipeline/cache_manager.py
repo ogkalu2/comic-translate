@@ -1,5 +1,6 @@
 import hashlib
 import logging
+from copy import deepcopy
 from modules.utils.translator_utils import sanitize_translation_result_text
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,55 @@ class CacheManager:
         """Clear the translation cache. Note: Cache now persists across image and model changes automatically."""
         self.translation_cache = {}
         logger.info("Translation cache manually cleared")
+
+    def clear_all_caches(self):
+        """Clear both OCR and translation caches."""
+        self.clear_ocr_cache()
+        self.clear_translation_cache()
+
+    def export_state(self) -> dict:
+        """Export cache contents in a project-serializable form."""
+        return {
+            "version": 1,
+            "ocr_cache": [
+                {
+                    "cache_key": cache_key,
+                    "blocks": deepcopy(blocks),
+                }
+                for cache_key, blocks in self.ocr_cache.items()
+            ],
+            "translation_cache": [
+                {
+                    "cache_key": cache_key,
+                    "blocks": deepcopy(blocks),
+                }
+                for cache_key, blocks in self.translation_cache.items()
+            ],
+        }
+
+    def import_state(self, state: dict | None) -> None:
+        """Restore cache contents from a project-serialized form."""
+        self.clear_all_caches()
+        if not state:
+            return
+
+        for entry in state.get("ocr_cache", []) or []:
+            cache_key = entry.get("cache_key")
+            blocks = entry.get("blocks") or {}
+            if cache_key is not None:
+                self.ocr_cache[tuple(cache_key) if isinstance(cache_key, list) else cache_key] = dict(blocks)
+
+        for entry in state.get("translation_cache", []) or []:
+            cache_key = entry.get("cache_key")
+            blocks = entry.get("blocks") or {}
+            if cache_key is not None:
+                self.translation_cache[tuple(cache_key) if isinstance(cache_key, list) else cache_key] = dict(blocks)
+
+        logger.info(
+            "Restored cache state: %d OCR entries, %d translation entries",
+            len(self.ocr_cache),
+            len(self.translation_cache),
+        )
 
     def clear_translation_cache_for_images(self, images) -> int:
         """Clear translation cache entries for the provided images, regardless of translator settings."""

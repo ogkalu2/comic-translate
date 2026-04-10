@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import copy
+import logging
 import numpy as np
 from typing import TYPE_CHECKING
 
@@ -13,17 +14,29 @@ from app.ui.commands.box import AddTextItemCommand, ResizeBlocksCommand
 from app.ui.commands.text_edit import TextEditCommand
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
+from app.ui.messages import Messages
 
 from modules.utils.textblock import TextBlock
-from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block, pyside_word_wrap
+from modules.rendering.render import (
+    TextRenderingSettings,
+    manual_wrap,
+    is_vertical_block,
+    pyside_word_wrap,
+    resolve_init_font_size,
+)
 from modules.utils.pipeline_config import font_selected
 from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.common_utils import is_close
-from modules.utils.translator_utils import format_translations
+from modules.utils.translator_utils import (
+    format_translations,
+    transform_text_case_preserving_html,
+)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
+
+logger = logging.getLogger(__name__)
 
 class TextController:
     def __init__(self, main: ComicTranslate):
@@ -48,6 +61,7 @@ class TextController:
         self._last_item_html = {}
         self._suspend_text_command = False
         self._is_updating_from_edit = False
+        self._bulk_font_restore_snapshot = None
 
     def connect_text_item_signals(self, text_item: TextBlockItem, force_reconnect: bool = False):
         if getattr(text_item, "_ct_signals_connected", False) and not force_reconnect:
@@ -137,6 +151,7 @@ class TextController:
 
         properties = TextItemProperties(
             text=text,
+            source_text=blk.translation or blk.text or text,
             font_family=font_family,
             font_size=font_size,
             text_color=text_color,
@@ -151,10 +166,12 @@ class TextController:
             position=(blk.xyxy[0], blk.xyxy[1]),
             rotation=blk.angle,
             vertical=vertical,
+            width=blk.xywh[2],
+            height=blk.xywh[3],
         )
         
         text_item = self.main.image_viewer.add_text_item(properties)
-        text_item.set_plain_text(text)
+        text_item.set_plain_text(text, preserve_source_text=True, update_width=False)
 
         command = AddTextItemCommand(self.main, text_item)
         self.main.push_command(command)
@@ -197,6 +214,8 @@ class TextController:
         if self.main.curr_tblock:
             self.main.curr_tblock.text = self.main.s_text_edit.toPlainText()
             self.main.curr_tblock.translation = self.main.t_text_edit.toPlainText()
+            if self.main.curr_tblock_item:
+                self.main.curr_tblock_item.set_source_text(self.main.t_text_edit.toPlainText())
             self.main.mark_project_dirty()
 
     def update_text_block_from_edit(self):
@@ -208,6 +227,8 @@ class TextController:
             if self.main.curr_tblock:
                 old_translation = self.main.curr_tblock.translation
                 self.main.curr_tblock.translation = new_text
+            if self.main.curr_tblock_item:
+                self.main.curr_tblock_item.set_source_text(new_text)
 
             if self.main.curr_tblock_item and self.main.curr_tblock_item in self.main.image_viewer._scene.items():
                 old_item_text = self.main.curr_tblock_item.toPlainText()
@@ -238,6 +259,8 @@ class TextController:
             self.main.t_text_edit.setPlainText(new_text)
             self.main.t_text_edit.blockSignals(False)
 
+        if text_item:
+            text_item.set_source_text(new_text)
         self._schedule_text_change_command(text_item, new_text, blk)
 
     def _apply_text_item_text_delta(self, text_item: TextBlockItem, new_text: str):
@@ -424,6 +447,7 @@ class TextController:
         finally:
             self._suspend_text_command = False
         if text_item:
+            text_item.set_source_text(text)
             self._last_item_text[text_item] = text
             self._last_item_html[text_item] = text_item.document().toHtml()
 
@@ -433,6 +457,8 @@ class TextController:
             old_item = copy.copy(self.main.curr_tblock_item)
             font_size = int(self.main.font_size_dropdown.currentText())
             self.main.curr_tblock_item.set_font(font_family, font_size)
+            if not self.main.curr_tblock_item.textCursor().hasSelection():
+                self._reflow_current_text_item(max_font_size=font_size)
 
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
@@ -442,6 +468,8 @@ class TextController:
             old_item = copy.copy(self.main.curr_tblock_item)
             font_size = float(font_size)
             self.main.curr_tblock_item.set_font_size(font_size)
+            if not self.main.curr_tblock_item.textCursor().hasSelection():
+                self._reflow_current_text_item(max_font_size=int(round(font_size)))
 
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
@@ -451,6 +479,8 @@ class TextController:
             old_item = copy.copy(self.main.curr_tblock_item)
             spacing = float(line_spacing)
             self.main.curr_tblock_item.set_line_spacing(spacing)
+            if not self.main.curr_tblock_item.textCursor().hasSelection():
+                self._reflow_current_text_item(max_font_size=int(round(self.main.curr_tblock_item.font_size)))
 
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
@@ -519,6 +549,653 @@ class TextController:
 
             command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
             self.main.push_command(command)
+
+    def _get_image_state_for_path(self, file_path: str):
+        state = self.main.image_states.get(file_path)
+        if state is not None:
+            return state
+        target_norm = os.path.normcase(file_path)
+        for key, value in self.main.image_states.items():
+            if os.path.normcase(key) == target_norm:
+                return value
+        return None
+
+    def _apply_bulk_text_update(self, per_page_fn=None, per_scene_fn=None, action_name: str = "bulk text update"):
+        updated_any = False
+        updated_pages = 0
+        for file_path in self.main.image_files:
+            state = self._get_image_state_for_path(file_path)
+            if state is None:
+                continue
+            if per_page_fn is not None:
+                try:
+                    if per_page_fn(file_path, state):
+                        updated_any = True
+                        updated_pages += 1
+                except Exception:
+                    continue
+
+        if per_scene_fn is not None:
+            try:
+                if per_scene_fn():
+                    updated_any = True
+            except Exception:
+                pass
+
+        self._refresh_current_text_controls()
+
+        if updated_any:
+            self.main.mark_project_dirty()
+            logger.info("%s applied to %d page(s).", action_name, updated_pages)
+            self._show_bulk_update_message(action_name, updated_pages)
+
+    def _current_file_path(self) -> str:
+        if 0 <= self.main.curr_img_idx < len(self.main.image_files):
+            return self.main.image_files[self.main.curr_img_idx]
+        return ""
+
+    def _capture_bulk_font_snapshot(self):
+        snapshot = {}
+        for file_path in self.main.image_files:
+            state = self._get_image_state_for_path(file_path)
+            if not state:
+                continue
+            text_items_state = state.get("viewer_state", {}).get("text_items_state", [])
+            snapshot[file_path] = [
+                {
+                    "font_family": item_state.get("font_family", ""),
+                    "line_spacing": item_state.get("line_spacing", 0),
+                }
+                if isinstance(item_state, dict)
+                else {"font_family": "", "line_spacing": 0}
+                for item_state in text_items_state
+            ]
+
+        current_path = self._current_file_path()
+        current_items = []
+        if self.main.image_viewer and self.main.image_viewer.text_items:
+            current_items = [
+                {
+                    "font_family": getattr(item, "font_family", ""),
+                    "line_spacing": getattr(item, "line_spacing", 0),
+                }
+                for item in self.main.image_viewer.text_items
+            ]
+        if current_path:
+            snapshot[current_path] = current_items
+        self._bulk_font_restore_snapshot = snapshot
+
+    def _get_bulk_font_snapshot(self):
+        snapshot = self._bulk_font_restore_snapshot or {}
+        if not snapshot:
+            return {}
+        return snapshot
+
+    @staticmethod
+    def _normalize_bulk_font_snapshot_entry(entry):
+        if isinstance(entry, dict):
+            return {
+                "font_family": entry.get("font_family", ""),
+                "line_spacing": entry.get("line_spacing", 0),
+            }
+        if isinstance(entry, str):
+            return {"font_family": entry, "line_spacing": 0}
+        return {"font_family": "", "line_spacing": 0}
+
+    def _show_bulk_update_message(self, action_name: str, updated_pages: int):
+        if updated_pages <= 0:
+            return
+        try:
+            Messages.show_bulk_text_update(self.main, action_name, updated_pages)
+        except Exception:
+            pass
+
+    def _make_temp_text_item(self, props: TextItemProperties, font_family: str) -> TextBlockItem:
+        render_color = props.text_color
+        if render_color is None:
+            selected_color = self.main.block_font_color_button.property("selected_color")
+            render_color = QColor(selected_color) if selected_color else QColor("#000000")
+
+        temp_width = props.width if props.width is not None and props.width > 0 else 1000
+        temp_item = TextBlockItem(
+            text=props.text,
+            font_family=props.font_family,
+            font_size=props.font_size,
+            render_color=render_color,
+            alignment=props.alignment,
+            line_spacing=props.line_spacing,
+            outline_color=props.outline_color,
+            outline_width=props.outline_width,
+            bold=props.bold,
+            italic=props.italic,
+            underline=props.underline,
+            direction=props.direction,
+        )
+        temp_item.set_text(props.text, temp_width)
+        temp_item.set_font(font_family, props.font_size)
+        source_text = props.source_text or temp_item.get_source_text()
+        if source_text:
+            temp_item.set_source_text(source_text)
+            temp_height = props.height if props.height is not None and props.height > 0 else temp_item.get_text_box_size()[1]
+            temp_item.reflow_from_source_text(
+                temp_width,
+                temp_height,
+                max_font_size=int(round(props.font_size)) if props.font_size else None,
+            )
+        return temp_item
+
+    def _reflow_current_text_item(self, max_font_size: int | None = None):
+        text_item = self.main.curr_tblock_item
+        if not text_item:
+            return
+        width, height = text_item.get_text_box_size()
+        text_item.reflow_from_source_text(width, height, max_font_size=max_font_size)
+
+    def _get_saved_item_source_text(self, item_state: dict) -> str:
+        source_text = item_state.get("source_text", "")
+        if source_text:
+            return source_text
+
+        try:
+            props = TextItemProperties.from_dict(item_state)
+            temp_item = self._make_temp_text_item(props, props.font_family)
+            return temp_item.get_source_text()
+        except Exception:
+            return item_state.get("text", "")
+
+    def _rebuild_saved_item_layout(self, item_state: dict) -> bool:
+        try:
+            props = TextItemProperties.from_dict(item_state)
+            temp_item = self._make_temp_text_item(props, props.font_family)
+            item_state["text"] = temp_item.toHtml()
+            item_state["source_text"] = temp_item.get_source_text()
+            item_state["font_family"] = temp_item.font_family
+            width, height = temp_item.get_text_box_size()
+            item_state["width"] = width
+            item_state["height"] = height
+            return True
+        except Exception:
+            return False
+
+    def _transform_text_item_html(
+        self,
+        html: str,
+        item_state: dict | None = None,
+        font_family: str | None = None,
+        transform_font_fn=None,
+        transform_case_fn=None,
+    ) -> str:
+        if not html:
+            return html
+
+        if transform_case_fn is not None:
+            return transform_case_fn(html)
+
+        if item_state is None or transform_font_fn is None:
+            return html
+
+        try:
+            props = TextItemProperties.from_dict(item_state)
+            temp_item = self._make_temp_text_item(props, font_family or props.font_family)
+            return temp_item.toHtml()
+        except Exception:
+            return html
+
+    def _update_saved_text_items(
+        self,
+        state,
+        transform_text_fn=None,
+        transform_font_fn=None,
+        transform_source_text_fn=None,
+    ) -> bool:
+        updated = False
+        text_items_state = state.setdefault("viewer_state", {}).get("text_items_state", [])
+
+        for item_state in text_items_state:
+            if not isinstance(item_state, dict):
+                continue
+
+            old_html = item_state.get("text", "")
+            old_font_family = item_state.get("font_family") if transform_font_fn is not None else None
+            old_source_text = item_state.get("source_text", "") if transform_source_text_fn is not None else None
+            if transform_font_fn is not None:
+                transform_font_fn(item_state)
+
+            if transform_source_text_fn is not None:
+                source_text = self._get_saved_item_source_text(item_state)
+                transformed_source_text = transform_source_text_fn(source_text)
+                if transformed_source_text != source_text:
+                    item_state["source_text"] = transformed_source_text
+                    updated = True
+
+            if transform_text_fn is not None and old_html:
+                new_html = transform_text_fn(old_html, item_state)
+                if new_html != old_html:
+                    item_state["text"] = new_html
+                    updated = True
+
+            if transform_font_fn is not None and old_font_family != item_state.get("font_family"):
+                updated = True
+
+            if transform_source_text_fn is not None and old_source_text != item_state.get("source_text"):
+                updated = True
+
+            if (transform_font_fn is not None or transform_source_text_fn is not None) and self._rebuild_saved_item_layout(item_state):
+                updated = True
+
+        return updated
+
+    def _update_current_scene_text_items(
+        self,
+        transform_text_fn=None,
+        transform_font_fn=None,
+        transform_source_text_fn=None,
+    ) -> bool:
+        if not (self.main.image_viewer and self.main.image_viewer.text_items):
+            return False
+
+        updated = False
+        for item in self.main.image_viewer.text_items:
+            try:
+                source_changed = False
+                style_before = (
+                    getattr(item, "font_family", ""),
+                    getattr(item, "font_size", 0),
+                    getattr(item, "bold", False),
+                    getattr(item, "italic", False),
+                    getattr(item, "underline", False),
+                    getattr(item, "line_spacing", 0),
+                )
+                if transform_text_fn is not None:
+                    html = item.toHtml()
+                    transformed_html = transform_text_fn(html, item)
+                    if transformed_html != html:
+                        width = item.textWidth()
+                        if width is None or width <= 0:
+                            width = item.document().size().width()
+                        item.set_text(transformed_html, width)
+                        updated = True
+                if transform_source_text_fn is not None and hasattr(item, "get_source_text"):
+                    source_text = item.get_source_text()
+                    transformed_source_text = transform_source_text_fn(source_text)
+                    if transformed_source_text != source_text:
+                        item.set_source_text(transformed_source_text)
+                        source_changed = True
+                if transform_font_fn is not None:
+                    transform_font_fn(item)
+                style_after = (
+                    getattr(item, "font_family", ""),
+                    getattr(item, "font_size", 0),
+                    getattr(item, "bold", False),
+                    getattr(item, "italic", False),
+                    getattr(item, "underline", False),
+                    getattr(item, "line_spacing", 0),
+                )
+                style_changed = style_after != style_before
+                if style_changed:
+                    updated = True
+                if (source_changed or style_changed) and hasattr(item, "reflow_from_source_text"):
+                    width, height = item.get_text_box_size()
+                    item.reflow_from_source_text(
+                        width,
+                        height,
+                        max_font_size=int(round(getattr(item, "font_size", 1))),
+                    )
+                    updated = True
+            except Exception:
+                continue
+        return updated
+
+    def apply_font_to_all_pages(self):
+        font_family = self.main.font_dropdown.currentText()
+        if not font_family:
+            return
+
+        try:
+            line_spacing = float(self.main.line_spacing_dropdown.currentText())
+        except Exception:
+            line_spacing = None
+
+        self._capture_bulk_font_snapshot()
+
+        def _set_item_font(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["font_family"] = font_family
+                if line_spacing is not None:
+                    item_or_state["line_spacing"] = line_spacing
+            else:
+                item_or_state.set_font(font_family, item_or_state.font_size)
+                if line_spacing is not None:
+                    item_or_state.set_line_spacing(line_spacing)
+
+        def _transform_saved_html(old_html, item_state):
+            return self._transform_text_item_html(
+                old_html,
+                item_state=item_state,
+                font_family=font_family,
+                transform_font_fn=_set_item_font,
+            )
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_text_fn=_transform_saved_html,
+                transform_font_fn=_set_item_font,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_font,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_apply_font_all_label(),
+        )
+
+    def restore_font_to_all_pages(self):
+        snapshot = self._get_bulk_font_snapshot()
+        if not snapshot:
+            return
+
+        def _update_page(file_path, state):
+            page_snapshot = snapshot.get(file_path, [])
+            if not page_snapshot:
+                return False
+
+            text_items_state = state.get("viewer_state", {}).get("text_items_state", [])
+            updated = False
+            for idx, item_state in enumerate(text_items_state):
+                if not isinstance(item_state, dict):
+                    continue
+                prev_state = self._normalize_bulk_font_snapshot_entry(
+                    page_snapshot[idx] if idx < len(page_snapshot) else {}
+                )
+                font_family = prev_state.get("font_family", "")
+                line_spacing = prev_state.get("line_spacing", 0)
+                if font_family and item_state.get("font_family") != font_family:
+                    item_state["font_family"] = font_family
+                    updated = True
+                if item_state.get("line_spacing", 0) != line_spacing:
+                    item_state["line_spacing"] = line_spacing
+                    updated = True
+                    self._rebuild_saved_item_layout(item_state)
+            return updated
+
+        def _update_scene():
+            current_path = self._current_file_path()
+            page_snapshot = snapshot.get(current_path, [])
+            if not page_snapshot or not self.main.image_viewer.text_items:
+                return False
+
+            updated = False
+            for idx, item in enumerate(self.main.image_viewer.text_items):
+                prev_state = self._normalize_bulk_font_snapshot_entry(
+                    page_snapshot[idx] if idx < len(page_snapshot) else {}
+                )
+                font_family = prev_state.get("font_family", "")
+                line_spacing = prev_state.get("line_spacing", 0)
+                if font_family and getattr(item, "font_family", "") != font_family:
+                    item.set_font(font_family, item.font_size)
+                    updated = True
+                if line_spacing is not None and getattr(item, "line_spacing", 0) != line_spacing:
+                    item.set_line_spacing(line_spacing)
+                    updated = True
+                if font_family or line_spacing is not None:
+                    width, height = item.get_text_box_size()
+                    item.reflow_from_source_text(
+                        width,
+                        height,
+                        max_font_size=int(round(getattr(item, "font_size", 1))),
+                    )
+                    updated = True
+            return updated
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_restore_font_all_label(),
+        )
+
+    def apply_italic_to_all_pages(self):
+        def _set_item_italic(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["italic"] = True
+            else:
+                item_or_state.set_italic(True)
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_font_fn=_set_item_italic,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_italic,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_italic_all_label(),
+        )
+
+    def apply_italic_off_to_all_pages(self):
+        def _set_item_italic(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["italic"] = False
+            else:
+                item_or_state.set_italic(False)
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_font_fn=_set_item_italic,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_italic,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_italic_off_all_label(),
+        )
+
+    def apply_bold_to_all_pages(self):
+        def _set_item_bold(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["bold"] = True
+            else:
+                item_or_state.set_bold(True)
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_font_fn=_set_item_bold,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_bold,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_bold_all_label(),
+        )
+
+    def apply_bold_off_to_all_pages(self):
+        def _set_item_bold(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["bold"] = False
+            else:
+                item_or_state.set_bold(False)
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_font_fn=_set_item_bold,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_bold,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_bold_off_all_label(),
+        )
+
+    def apply_underline_to_all_pages(self):
+        def _set_item_underline(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["underline"] = True
+            else:
+                item_or_state.set_underline(True)
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_font_fn=_set_item_underline,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_underline,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_underline_all_label(),
+        )
+
+    def apply_underline_off_to_all_pages(self):
+        def _set_item_underline(item_or_state):
+            if isinstance(item_or_state, dict):
+                item_or_state["underline"] = False
+            else:
+                item_or_state.set_underline(False)
+
+        def _update_page(_file_path, state):
+            return self._update_saved_text_items(
+                state,
+                transform_font_fn=_set_item_underline,
+            )
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_font_fn=_set_item_underline,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=Messages.bulk_underline_off_all_label(),
+        )
+
+    def apply_text_case_to_all_pages(self, upper_case: bool):
+        def _transform_case_text(text: str) -> str:
+            return text.upper() if upper_case else text.lower()
+
+        def _transform_case_html(text: str) -> str:
+            return transform_text_case_preserving_html(text, upper_case=upper_case)
+
+        def _transform_saved_html(old_html, _item_state):
+            return self._transform_text_item_html(
+                old_html,
+                transform_case_fn=_transform_case_html,
+            )
+
+        action_name = (
+            Messages.bulk_upper_all_label()
+            if upper_case
+            else Messages.bulk_lower_all_label()
+        )
+
+        def _update_page(_file_path, state):
+            updated = False
+            for blk in state.get("blk_list", []):
+                translation = getattr(blk, "translation", "")
+                if not translation:
+                    continue
+                transformed_translation = translation.upper() if upper_case else translation.lower()
+                if transformed_translation != translation:
+                    blk.translation = transformed_translation
+                    updated = True
+
+            if self._update_saved_text_items(
+                state,
+                transform_text_fn=_transform_saved_html,
+                transform_source_text_fn=_transform_case_text,
+            ):
+                updated = True
+            return updated
+
+        def _update_scene():
+            return self._update_current_scene_text_items(
+                transform_text_fn=_transform_saved_html,
+                transform_source_text_fn=_transform_case_text,
+            )
+
+        self._apply_bulk_text_update(
+            _update_page,
+            _update_scene,
+            action_name=action_name,
+        )
+
+    def handle_bulk_text_action_change(self, index: int):
+        dropdown = self.main.bulk_text_action_dropdown
+        if not dropdown or index <= 0:
+            return
+
+        action = dropdown.itemData(index)
+        try:
+            if action == "apply_font_all":
+                self.apply_font_to_all_pages()
+            elif action == "restore_font_all":
+                self.restore_font_to_all_pages()
+            elif action == "upper_all":
+                self.apply_text_case_to_all_pages(True)
+            elif action == "lower_all":
+                self.apply_text_case_to_all_pages(False)
+            elif action == "bold_all":
+                self.apply_bold_to_all_pages()
+            elif action == "bold_off_all":
+                self.apply_bold_off_to_all_pages()
+            elif action == "italic_all":
+                self.apply_italic_to_all_pages()
+            elif action == "italic_off_all":
+                self.apply_italic_off_to_all_pages()
+            elif action == "underline_all":
+                self.apply_underline_to_all_pages()
+            elif action == "underline_off_all":
+                self.apply_underline_off_to_all_pages()
+        finally:
+            dropdown.blockSignals(True)
+            dropdown.setCurrentIndex(0)
+            dropdown.blockSignals(False)
+
+    def _refresh_current_text_controls(self):
+        if not self.main.curr_tblock_item:
+            return
+        try:
+            self.set_values_for_blk_item(self.main.curr_tblock_item)
+        except Exception:
+            pass
+        try:
+            self.main.t_text_edit.blockSignals(True)
+            self.main.t_text_edit.setPlainText(self.main.curr_tblock_item.toPlainText())
+        finally:
+            self.main.t_text_edit.blockSignals(False)
 
     def on_outline_color_change(self):
         outline_color = self.main.get_color()
@@ -767,12 +1444,13 @@ class TextController:
                             continue
 
                         x1, y1, block_width, block_height = blk.xywh
-                        translation = blk.translation
+                        translation = blk.translation or blk.text
                         if not translation or len(translation) == 1:
                             continue
 
                         vertical = is_vertical_block(blk, trg_lng_cd)
-                        wrapped, font_size, rendered_width, rendered_height = pyside_word_wrap(
+                        block_init_font_size = resolve_init_font_size(blk, max_font_size, min_font_size)
+                        wrapped, font_size = pyside_word_wrap(
                             translation,
                             font_family,
                             block_width,
@@ -784,10 +1462,9 @@ class TextController:
                             underline,
                             alignment,
                             direction,
-                            max_font_size,
+                            block_init_font_size,
                             min_font_size,
                             vertical,
-                            return_metrics=True,
                         )
                         if is_no_space_lang(trg_lng_cd):
                             wrapped = wrapped.replace(" ", "")
@@ -795,6 +1472,7 @@ class TextController:
                         font_color = get_smart_text_color(blk.font_color, setting_font_color)
                         text_props = TextItemProperties(
                             text=wrapped,
+                            source_text=translation,
                             font_family=font_family,
                             font_size=font_size,
                             text_color=font_color,
@@ -810,8 +1488,8 @@ class TextController:
                             rotation=blk.angle,
                             scale=1.0,
                             transform_origin=blk.tr_origin_point if blk.tr_origin_point else (0, 0),
-                            width=rendered_width,
-                            height=rendered_height,
+                            width=block_width,
+                            height=block_height,
                             vertical=vertical,
                         )
                         new_text_items_state.append(text_props.to_dict())

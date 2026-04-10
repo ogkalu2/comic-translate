@@ -386,6 +386,7 @@ class ImageViewer(QGraphicsView):
         return arr
     
     def qimage_from_array(self, img_array: np.ndarray):
+        img_array = np.ascontiguousarray(img_array)
         height, width, channel = img_array.shape
         bytes_per_line = 3 * width
         qimage = QtGui.QImage(img_array.data, width, height, bytes_per_line, QtGui.QImage.Format.Format_RGB888)
@@ -460,6 +461,7 @@ class ImageViewer(QGraphicsView):
         # Based on the load_state function which has the most complete setup
         item = TextBlockItem(
             text=properties.text, 
+            source_text=getattr(properties, "source_text", ""),
             font_family=properties.font_family,
             font_size=properties.font_size, 
             render_color=properties.text_color,
@@ -475,7 +477,7 @@ class ImageViewer(QGraphicsView):
         
         # Apply width if specified
         if properties.width is not None:
-            item.set_text(properties.text, properties.width)
+            item.set_text(properties.text, properties.width, preserve_source_text=True)
         
         # Set direction if specified
         item.set_direction(properties.direction)
@@ -490,6 +492,21 @@ class ImageViewer(QGraphicsView):
         item.setScale(properties.scale)
 
         item.set_vertical(bool(properties.vertical))
+        item.set_layout_box_size(properties.width, properties.height)
+        item.set_color(properties.text_color)
+        if (
+            properties.width is not None
+            and properties.height is not None
+            and properties.width > 0
+            and properties.height > 0
+            and not item.is_html(properties.text)
+        ):
+            max_font_size = int(round(properties.font_size)) if properties.font_size else None
+            item.reflow_from_source_text(
+                properties.width,
+                properties.height,
+                max_font_size=max_font_size,
+            )
         item.set_color(properties.text_color)
             
         # Set selection outlines
@@ -540,8 +557,14 @@ class ImageViewer(QGraphicsView):
     def save_brush_strokes(self) -> List[Dict]:
         return self.drawing_manager.save_brush_strokes()
 
-    def draw_segmentation_lines(self, bboxes):
-        self.drawing_manager.draw_segmentation_lines(bboxes)
+    def draw_segmentation_lines(self, bboxes, text_bbox=None, bubble_xyxy=None, text_class=None, source_lang=None):
+        self.drawing_manager.draw_segmentation_lines(
+            bboxes,
+            text_bbox=text_bbox,
+            bubble_xyxy=bubble_xyxy,
+            text_class=text_class,
+            source_lang=source_lang,
+        )
 
     def has_drawn_elements(self) -> bool:
         return self.drawing_manager.has_drawn_elements()

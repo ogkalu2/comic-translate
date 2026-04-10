@@ -165,6 +165,10 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
     def undo(self):
         for properties in self.properties_list:
             self.create_rect_item(properties, self.viewer)
+        self.viewer.rectangles = [
+            item for item in self.viewer.rectangles
+            if isinstance(item, MoveableRectItem) and item in self.scene.items()
+        ]
         self.scene.update()
         
     def redo(self):
@@ -174,6 +178,7 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
                 self.properties_list.append(self.save_rect_properties(item))
                 self.scene.removeItem(item)
                 self.viewer.selected_rect = None
+        self.viewer.rectangles.clear()
         self.scene.update()
     
 class DeleteBoxesCommand(QUndoCommand, RectCommandBase):

@@ -2,10 +2,11 @@ from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
      QApplication, QWidget, QStyleOptionGraphicsItem
 from PySide6.QtGui import QFont, QCursor, QColor, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QPainter
-from PySide6.QtCore import Qt, QRectF, Signal, QPointF
+from PySide6.QtCore import Qt, QRectF, Signal, QPointF, QSizeF
 import math, copy
 from dataclasses import dataclass
 from enum import Enum
+from modules.rendering.render import pyside_word_wrap
 from .text.vertical_layout import VerticalTextDocumentLayout
 
 
@@ -18,7 +19,20 @@ class TextBlockState:
     @classmethod
     def from_item(cls, item: QGraphicsTextItem):
         """Create TextBlockState from a TextBlockItem"""
-        rect = QRectF(item.pos(), item.boundingRect().size()).getCoords()
+        if hasattr(item, "get_text_box_size"):
+            width, height = item.get_text_box_size()
+        else:
+            width = item.textWidth() if hasattr(item, "textWidth") else -1
+            if width is None or width <= 0:
+                width = item.document().size().width()
+            if width is None or width <= 0:
+                width = item.boundingRect().width()
+
+            height = item.document().size().height()
+            if height is None or height <= 0:
+                height = item.boundingRect().height()
+
+        rect = QRectF(item.pos(), QSizeF(width, height)).getCoords()
         return cls(
             rect=rect,
             rotation=item.rotation(),
@@ -46,9 +60,10 @@ class TextBlockItem(QGraphicsTextItem):
     
     def __init__(self, 
              text = "", 
+             source_text = "",
              font_family = "", 
              font_size = 20, 
-             render_color = QColor(0, 0, 0), 
+             render_color = QColor(0, 0, 0),
              alignment = Qt.AlignmentFlag.AlignCenter, 
              line_spacing = 1.2, 
              outline_color = QColor(255, 255, 255), 
@@ -59,6 +74,7 @@ class TextBlockItem(QGraphicsTextItem):
              direction=Qt.LayoutDirection.LeftToRight):
 
         super().__init__(text)
+        self.source_text = source_text if source_text else ""
         self.text_color = render_color
         self.outline = True if outline_color else False
         self.outline_color = outline_color
@@ -74,11 +90,16 @@ class TextBlockItem(QGraphicsTextItem):
 
         self.layout = None
         self.vertical = False
+        self._layout_box_width = None
+        self._layout_box_height = None
 
         self.selected = False
         self.resizing = False
         self.resize_handle = None
+        self.resizing = False
+        self.resize_handle = None
         self.resize_start = None
+        self.resize_start_rect = None
         self.editing_mode = False
         self.last_selection = None 
         self._drag_selecting = False
@@ -94,6 +115,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.old_state = None
 
         self.selection_outlines = []
+        self._suspend_text_changed = False
 
         self.setAcceptHoverEvents(True)
         self.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
@@ -184,35 +206,258 @@ class TextBlockItem(QGraphicsTextItem):
             self._apply_text_direction()
             self.update()
 
-    def set_text(self, text, width):
+    def set_text(self, text, width, preserve_source_text: bool = False):
         if self.is_html(text):
             self.setHtml(text)
             self.setTextWidth(width)
             self.set_outline(self.outline_color, self.outline_width)
         else:
-            self.set_plain_text(text)
+            self.set_plain_text(text, preserve_source_text=preserve_source_text)
 
-    def set_plain_text(self, text):
+    def set_plain_text(self, text, preserve_source_text: bool = False, update_width: bool = True):
+        if not preserve_source_text:
+            self.source_text = text
         self.setPlainText(text)
         self.apply_all_attributes()
 
+    def set_source_text(self, text: str):
+        self.source_text = text or ""
+
+    def set_layout_box_size(self, width: float | None = None, height: float | None = None):
+        if width is not None and width > 0:
+            self._layout_box_width = float(width)
+        if height is not None and height > 0:
+            self._layout_box_height = float(height)
+
+        if self.vertical:
+            if self.layout:
+                current_width = self._layout_box_width if self._layout_box_width and self._layout_box_width > 0 else self.get_text_box_size()[0]
+                current_height = self._layout_box_height if self._layout_box_height and self._layout_box_height > 0 else self.get_text_box_size()[1]
+                self.layout.set_max_size(current_width, current_height)
+        elif self._layout_box_width is not None and self._layout_box_width > 0:
+            self.setTextWidth(self._layout_box_width)
+
+    def get_text_box_size(self):
+        if self._layout_box_width is not None and self._layout_box_width > 0:
+            width = self._layout_box_width
+        else:
+            width = self.textWidth() if hasattr(self, "textWidth") else -1
+        if width is None or width <= 0:
+            width = self.document().size().width()
+        if width is None or width <= 0:
+            width = self.boundingRect().width()
+
+        if self._layout_box_height is not None and self._layout_box_height > 0:
+            height = self._layout_box_height
+        else:
+            height = self.document().size().height()
+        if height is None or height <= 0:
+            height = self.boundingRect().height()
+
+        return float(width), float(height)
+
+    def get_text_box_rect(self):
+        width, height = self.get_text_box_size()
+        return QRectF(0, 0, width, height)
+
+    def get_source_text(self) -> str:
+        source = self.source_text or self.toPlainText()
+        if not source:
+            return ""
+        # Normalize existing wrapped text when we do not have a preserved
+        # source string (e.g. old projects) so a resize can reflow cleanly.
+        if not self.source_text:
+            return " ".join(source.split())
+        return source
+
+    def _apply_font_change_to_range(
+        self,
+        start: int,
+        end: int,
+        font_family: str | None = None,
+        font_size: float | None = None,
+    ):
+        text = self.toPlainText()
+        if not text:
+            return
+
+        start = max(0, int(start))
+        end = min(len(text), max(start, int(end)))
+        if end <= start:
+            return
+
+        cursor = QTextCursor(self.document())
+        cursor.beginEditBlock()
+        for pos in range(start, end):
+            if pos >= len(text) or text[pos] == "\n":
+                continue
+
+            cursor.setPosition(pos)
+            cursor.setPosition(pos + 1, QTextCursor.KeepAnchor)
+            char_format = QTextCharFormat(cursor.charFormat())
+            font = char_format.font()
+            if font_family is not None and font_family.strip():
+                font.setFamily(font_family)
+            if font_size is not None:
+                font.setPixelSize(max(1, int(round(font_size))))
+            char_format.setFont(font)
+            cursor.mergeCharFormat(char_format)
+        cursor.endEditBlock()
+
+    def _capture_character_formats(self) -> list[QTextCharFormat]:
+        text = self.toPlainText()
+        if not text:
+            return []
+
+        cursor = QTextCursor(self.document())
+        formats: list[QTextCharFormat] = []
+        for pos, ch in enumerate(text):
+            if ch == "\n":
+                continue
+            cursor.setPosition(pos)
+            cursor.setPosition(pos + 1, QTextCursor.KeepAnchor)
+            formats.append(QTextCharFormat(cursor.charFormat()))
+        return formats
+
+    def _restore_character_formats(
+        self,
+        text: str,
+        formats: list[QTextCharFormat],
+        font_size: float | None = None,
+    ):
+        if not text or not formats:
+            return
+
+        cursor = QTextCursor(self.document())
+        cursor.beginEditBlock()
+        fmt_index = 0
+        for pos, ch in enumerate(text):
+            if ch == "\n":
+                continue
+            if fmt_index >= len(formats):
+                break
+
+            char_format = QTextCharFormat(formats[fmt_index])
+            if font_size is not None:
+                font = char_format.font()
+                font.setPixelSize(max(1, int(round(font_size))))
+                char_format.setFont(font)
+
+            cursor.setPosition(pos)
+            cursor.setPosition(pos + 1, QTextCursor.KeepAnchor)
+            cursor.mergeCharFormat(char_format)
+            fmt_index += 1
+        cursor.endEditBlock()
+
+    def fit_text_to_rect(self, width: float, height: float, max_font_size: int | None = None):
+        source_text = self.get_source_text()
+        if not source_text:
+            return self.toPlainText(), max(1, int(round(self.font_size)))
+
+        if max_font_size is None:
+            max_font_size = min(
+                2048,
+                max(
+                    256,
+                    int(round(self.font_size)) * 2,
+                    int(round(max(width, height))) * 2,
+                ),
+            )
+        else:
+            max_font_size = max(1, int(round(max_font_size)))
+        outline_width = float(self.outline_width) if self.outline else 0.0
+        wrapped, font_size, _rendered_width, _rendered_height = pyside_word_wrap(
+            source_text,
+            self.font_family,
+            int(max(1, round(width))),
+            int(max(1, round(height))),
+            float(self.line_spacing),
+            outline_width,
+            self.bold,
+            self.italic,
+            self.underline,
+            self.alignment,
+            self.direction,
+            max_font_size,
+            1,
+            self.vertical,
+            return_metrics=True,
+        )
+        return wrapped, font_size
+
+    def reflow_from_source_text(
+        self,
+        width: float | None = None,
+        height: float | None = None,
+        max_font_size: int | None = None,
+    ):
+        source_text = self.get_source_text()
+        if not source_text:
+            return self.toPlainText(), max(1, int(round(self.font_size)))
+
+        if width is None or height is None:
+            box_width, box_height = self.get_text_box_size()
+            if width is None:
+                width = box_width
+            if height is None:
+                height = box_height
+
+        preserved_formats = self._capture_character_formats()
+        wrapped_text, new_font_size = self.fit_text_to_rect(width, height, max_font_size=max_font_size)
+        self._suspend_text_changed = True
+        try:
+            self.setPlainText(wrapped_text)
+            self._restore_character_formats(wrapped_text, preserved_formats, font_size=new_font_size)
+        finally:
+            self._suspend_text_changed = False
+
+        self.font_size = new_font_size
+        default_font = self.document().defaultFont()
+        effective_family = self.font_family.strip() if isinstance(self.font_family, str) and self.font_family.strip() else QApplication.font().family()
+        default_font.setFamily(effective_family)
+        default_font.setPixelSize(max(1, int(round(new_font_size))))
+        self.document().setDefaultFont(default_font)
+
+        self.set_layout_box_size(width, height)
+        self.set_line_spacing(self.line_spacing)
+        self.set_alignment(self.alignment)
+
+        self.setCenterTransform()
+        return wrapped_text, new_font_size
+    
     def is_html(self, text):
         import re
         # Simple check for HTML tags
         return bool(re.search(r'<[^>]+>', text))
 
     def set_font(self, font_family, font_size):
-        if not self.textCursor().hasSelection():
-            self.font_family = font_family
-            self.font_size = font_size
+        has_selection = self.textCursor().hasSelection()
 
         # Ensure minimum font size.
         font_size = max(1, font_size)
 
         # Fallback to application default font family if none provided
         effective_family = font_family.strip() if isinstance(font_family, str) and font_family.strip() else QApplication.font().family()
-        font = QFont(effective_family, font_size)
-        self.update_text_format('font', font)
+
+        if not has_selection:
+            self.font_family = effective_family
+            self.font_size = font_size
+
+        if has_selection:
+            self._apply_font_change_to_range(
+                self.textCursor().selectionStart(),
+                self.textCursor().selectionEnd(),
+                effective_family,
+                font_size,
+            )
+        else:
+            self._apply_font_change_to_range(0, len(self.toPlainText()), effective_family, font_size)
+
+        default_font = self.document().defaultFont()
+        default_font.setFamily(effective_family)
+        default_font.setPixelSize(font_size)
+        self.document().setDefaultFont(default_font)
+        self.update()
 
     def set_font_size(self, font_size):
         font_size = max(1, font_size)
@@ -612,6 +857,8 @@ class TextBlockItem(QGraphicsTextItem):
         self.clearFocus()
 
     def _on_text_changed(self):
+        if self._suspend_text_changed:
+            return
         new_text = self.toPlainText()
         self.text_changed.emit(new_text)
         self.update_outlines()
@@ -660,6 +907,10 @@ class TextBlockItem(QGraphicsTextItem):
     def init_resize(self, scene_pos: QPointF):
         self.resizing = True
         self.resize_start = scene_pos
+        current_rect = self.boundingRect()
+        if current_rect.isEmpty():
+            current_rect = self.get_text_box_rect()
+        self.resize_start_rect = QRectF(current_rect)
 
     def init_rotation(self, scene_pos):
         self.rotating = True
@@ -734,9 +985,8 @@ class TextBlockItem(QGraphicsTextItem):
         rotated_delta = QPointF(rotated_delta_x, rotated_delta_y)
 
         # Get the current rect and create a new one to modify
-        rect = self.boundingRect()
+        rect = QRectF(self.resize_start_rect) if self.resize_start_rect is not None else self.get_text_box_rect()
         new_rect = QRectF(rect)
-        original_height = rect.height()
 
         # Apply the delta based on which handle is being dragged
         if self.resize_handle in ['left', 'top_left', 'bottom_left']:
@@ -780,23 +1030,9 @@ class TextBlockItem(QGraphicsTextItem):
         new_pos = self.pos() + pos_delta
 
         self.setPos(new_pos)
-
-        if self.vertical:
-            if self.layout:
-                self.layout.set_max_size(new_rect.width(), new_rect.height())
-        else: # Horizontal logic
-            self.setTextWidth(new_rect.width())
-            if original_height > 0:
-                height_ratio = new_rect.height() / original_height
-                if height_ratio > 0:
-                    new_font_size = self.font_size * height_ratio
-                    # Ensure minimum font size of 1pt.
-                    if new_font_size >= 1:
-                        self.font_size = new_font_size
-                        self.set_font_size(new_font_size)
-                    else:
-                        # If font would become invalid, stop the resize.
-                        return
+        self.set_layout_box_size(new_rect.width(), new_rect.height())
+        self.reflow_from_source_text(new_rect.width(), new_rect.height())
+        self.resize_start_rect = QRectF(new_rect)
 
         self.resize_start = scene_pos
 
@@ -888,8 +1124,14 @@ class TextBlockItem(QGraphicsTextItem):
 
         return properties
     
-    def __copy__(self):
+def __copy__(self):
         cls = self.__class__
+        width = self.textWidth()
+        if width is None or width <= 0:
+            width = self.document().size().width()
+        if width is None or width <= 0:
+            width = self.boundingRect().width()
+
         new_instance = cls(
             text=self.toHtml(),
             font_family=self.font_family,
@@ -904,7 +1146,7 @@ class TextBlockItem(QGraphicsTextItem):
             underline=self.underline
         )
         
-        new_instance.set_text(self.toHtml(), self.boundingRect().width())
+        new_instance.set_text(self.toHtml(), width)
         new_instance.setTransformOriginPoint(self.transformOriginPoint())
         new_instance.setPos(self.pos())
         new_instance.setRotation(self.rotation())

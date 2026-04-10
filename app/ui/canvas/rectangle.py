@@ -15,7 +15,7 @@ class RectState:
     @classmethod
     def from_item(cls, item: QGraphicsRectItem):
         """Create RectState from a MoveableRectItem"""
-        rect = QRectF(item.pos(), item.boundingRect().size()).getCoords()
+        rect = QRectF(item.pos(), item.rect().size()).getCoords()
         return cls(
             rect=rect,
             rotation=item.rotation(),
@@ -82,30 +82,31 @@ class MoveableRectItem(QGraphicsRectItem):
     def move_item(self, local_pos: QtCore.QPointF, last_local_pos: QtCore.QPointF):
         delta = self.mapToParent(local_pos) - self.mapToParent(last_local_pos)
         new_pos = self.pos() + delta
-        
-        # Calculate the bounding rect of the rotated rectangle in scene coordinates
-        scene_rect = self.mapToScene(self.boundingRect())
-        bounding_rect = scene_rect.boundingRect()
-        
-        # Get constraint bounds - use parent if available, otherwise use scene rect
-        if self.parentItem():
-            parent_rect = self.parentItem().boundingRect()
-        else:
-            # In webtoon mode or when no parent, use scene bounds
-            scene_rect = self.scene().sceneRect()
-            parent_rect = scene_rect
-        
-        # Constrain the movement
-        if bounding_rect.left() + delta.x() < parent_rect.left():
-            new_pos.setX(self.pos().x() - (bounding_rect.left() - parent_rect.left()))
-        elif bounding_rect.right() + delta.x() > parent_rect.right():
-            new_pos.setX(self.pos().x() + parent_rect.right() - bounding_rect.right())
-        
-        if bounding_rect.top() + delta.y() < parent_rect.top():
-            new_pos.setY(self.pos().y() - (bounding_rect.top() - parent_rect.top()))
-        elif bounding_rect.bottom() + delta.y() > parent_rect.bottom():
-            new_pos.setY(self.pos().y() + parent_rect.bottom() - bounding_rect.bottom())
-        
+
+        scene = self.scene()
+        scene_rect = scene.sceneRect() if scene is not None else None
+        if scene_rect is not None and not scene_rect.isNull():
+            # Clamp against the actual post-move footprint instead of a
+            # predicted one to avoid false boundary hits on rotated items.
+            self.setPos(new_pos)
+            actual_rect = self.sceneBoundingRect()
+            epsilon = 2.0
+            fix = QPointF(0.0, 0.0)
+
+            if actual_rect.left() < scene_rect.left() - epsilon:
+                fix.setX(scene_rect.left() - actual_rect.left())
+            elif actual_rect.right() > scene_rect.right() + epsilon:
+                fix.setX(scene_rect.right() - actual_rect.right())
+
+            if actual_rect.top() < scene_rect.top() - epsilon:
+                fix.setY(scene_rect.top() - actual_rect.top())
+            elif actual_rect.bottom() > scene_rect.bottom() + epsilon:
+                fix.setY(scene_rect.bottom() - actual_rect.bottom())
+
+            if fix.x() or fix.y():
+                self.setPos(self.pos() + fix)
+            return
+
         self.setPos(new_pos)
 
     def init_resize(self, scene_pos: QPointF):

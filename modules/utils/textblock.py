@@ -28,6 +28,7 @@ class TextBlock(object):
                  target_lang: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
+                 font_size_px: float = 0.0,
                  font_color: tuple = (),
                  direction: str = "",
                  **kwargs) -> None:
@@ -56,6 +57,7 @@ class TextBlock(object):
 
         self.min_font_size = min_font_size
         self.max_font_size = max_font_size
+        self.font_size_px = font_size_px
         self.font_color = font_color
         self.direction = direction
 
@@ -106,6 +108,7 @@ class TextBlock(object):
         new_block.target_lang = self.target_lang
         new_block.min_font_size = self.min_font_size
         new_block.max_font_size = self.max_font_size
+        new_block.font_size_px = self.font_size_px
         new_block.font_color = self.font_color
         
         return new_block

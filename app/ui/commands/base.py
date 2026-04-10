@@ -31,6 +31,12 @@ class PathProperties(TypedDict):
     brush: str  # HexArgb color string
     width: int
     pen_settings: PenSettings
+    segment_bboxes: list[list[int]]
+    segment_meta: dict
+
+
+SEGMENT_BBOXES_DATA_KEY = 1
+SEGMENT_META_DATA_KEY = 2
 
 class PathCommandBase:
     """Base class with shared functionality for path-related commands"""
@@ -38,7 +44,7 @@ class PathCommandBase:
     @staticmethod
     def save_path_properties(path_item) -> PathProperties:
         """Save properties of a path item"""
-        return {
+        properties = {
             'path': path_item.path(),
             'pen': path_item.pen().color().name(QColor.HexArgb),
             'brush': path_item.brush().color().name(QColor.HexArgb),
@@ -51,6 +57,18 @@ class PathCommandBase:
                 'join': path_item.pen().joinStyle()
             }
         }
+
+        segment_bboxes = path_item.data(SEGMENT_BBOXES_DATA_KEY)
+        if segment_bboxes is not None:
+            if isinstance(segment_bboxes, np.ndarray):
+                segment_bboxes = segment_bboxes.astype(int).tolist()
+            properties['segment_bboxes'] = segment_bboxes
+
+        segment_meta = path_item.data(SEGMENT_META_DATA_KEY)
+        if segment_meta is not None:
+            properties['segment_meta'] = dict(segment_meta)
+
+        return properties
 
     @staticmethod
     def create_path_item(properties):
@@ -70,6 +88,14 @@ class PathCommandBase:
         if properties['brush'] == "#80ff0000":
             brush_color = QColor(properties['brush'])
             path_item.setBrush(QBrush(brush_color))
+
+        segment_bboxes = properties.get('segment_bboxes')
+        if segment_bboxes is not None:
+            path_item.setData(SEGMENT_BBOXES_DATA_KEY, segment_bboxes)
+
+        segment_meta = properties.get('segment_meta')
+        if segment_meta is not None:
+            path_item.setData(SEGMENT_META_DATA_KEY, segment_meta)
             
         return path_item
 
@@ -94,8 +120,8 @@ class RectCommandBase:
         return {
             'pos':(item.pos().x(), item.pos().y()),
             'rotation': item.rotation(),
-            'width': item.boundingRect().width(),
-            'height': item.boundingRect().height(),
+            'width': item.rect().width(),
+            'height': item.rect().height(),
             'transform_origin': (item.transformOriginPoint().x(), 
                                      item.transformOriginPoint().y()),
         }
@@ -120,8 +146,8 @@ class RectCommandBase:
             if isinstance(item, MoveableRectItem):
                 if (is_close(item.pos().x(), properties['pos'][0]) and
                     is_close(item.pos().y(), properties['pos'][1]) and
-                    is_close(item.boundingRect().width(), properties['width']) and
-                    is_close(item.boundingRect().height(), properties['height']) and
+                    is_close(item.rect().width(), properties['width']) and
+                    is_close(item.rect().height(), properties['height']) and
                     is_close(item.rotation(), properties['rotation']) and
                     is_close(item.transformOriginPoint().x(), properties['transform_origin'][0]) and
                     is_close(item.transformOriginPoint().y(), properties['transform_origin'][1])):
@@ -202,6 +228,11 @@ class RectCommandBase:
         """Find a TextBlockItem in the scene matching the given properties"""
         for item in scene.items():
             if isinstance(item, TextBlockItem):
+                width = item.textWidth() if hasattr(item, 'textWidth') else -1
+                if width is None or width <= 0:
+                    width = item.document().size().width()
+                if width is None or width <= 0:
+                    width = item.boundingRect().width()
                 # Compare all relevant properties with is_close for numerical values
                 if (item.font_family == properties.font_family and
                     is_close(item.font_size, properties.font_size) and
@@ -219,7 +250,7 @@ class RectCommandBase:
                     is_close(item.scale(), properties.scale) and
                     is_close(item.transformOriginPoint().x(), properties.transform_origin[0]) and
                     is_close(item.transformOriginPoint().y(), properties.transform_origin[1]) and
-                    is_close(item.boundingRect().width(), properties.width)):
+                    is_close(width, properties.width)):
                     return item
         return None
 

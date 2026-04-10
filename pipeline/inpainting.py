@@ -5,6 +5,9 @@ import imkit as imk
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
+from modules.detection.utils.content import get_inpaint_bboxes
+from modules.utils.image_utils import generate_mask
+from modules.utils.textblock import TextBlock
 from modules.utils.device import resolve_device
 from modules.utils.pipeline_config import inpaint_map, get_config
 
@@ -128,6 +131,59 @@ class InpaintingHandler:
         arr = np.array(ptr).reshape(qimg.height(), qimg.bytesPerLine())
         return arr[:, :qimg.width()]
 
+    def _make_segmentation_strokes_from_blocks(self, image: np.ndarray, blk_list: list[TextBlock]) -> list[dict]:
+        strokes: list[dict] = []
+        viewer = getattr(self.main_page, "image_viewer", None)
+        drawing_manager = getattr(viewer, "drawing_manager", None) if viewer is not None else None
+        make_segmentation_stroke_data = getattr(drawing_manager, "make_segmentation_stroke_data", None)
+        if make_segmentation_stroke_data is None:
+            return strokes
+
+        for blk in blk_list or []:
+            if not getattr(blk, "text", "") and not getattr(blk, "translation", ""):
+                continue
+
+            bboxes = getattr(blk, "inpaint_bboxes", None)
+            if bboxes is None or len(bboxes) == 0:
+                text_bbox = getattr(blk, "xyxy", None)
+                if text_bbox is None:
+                    continue
+                bboxes = get_inpaint_bboxes(text_bbox, image)
+
+            if bboxes is None or len(bboxes) == 0:
+                continue
+
+            stroke = make_segmentation_stroke_data(bboxes)
+            if stroke is None:
+                continue
+
+            stroke["segment_bboxes"] = [list(map(int, bbox)) for bbox in bboxes]
+            stroke["segment_meta"] = {
+                "text_bbox": list(map(int, blk.xyxy)) if getattr(blk, "xyxy", None) is not None else None,
+                "bubble_xyxy": list(map(int, blk.bubble_xyxy)) if getattr(blk, "bubble_xyxy", None) is not None else None,
+                "text_class": getattr(blk, "text_class", None),
+                "source_lang": getattr(blk, "source_lang", None),
+            }
+            strokes.append(stroke)
+
+        return strokes
+
+    def build_mask_from_blocks(self, image: np.ndarray, blk_list: list[TextBlock]) -> np.ndarray | None:
+        """Build an inpaint mask using the same refined stroke pipeline as manual segmentation."""
+        if image is None:
+            return None
+
+        if not blk_list:
+            return np.zeros(image.shape[:2], dtype=np.uint8)
+
+        strokes = self._make_segmentation_strokes_from_blocks(image, blk_list)
+        if strokes:
+            mask = self._generate_mask_from_saved_strokes(strokes, image)
+            if mask is not None and np.count_nonzero(mask) > 0:
+                return mask
+
+        return generate_mask(image, blk_list)
+
     def _generate_mask_from_saved_strokes(self, strokes: list[dict], image: np.ndarray):
         if image is None or not strokes:
             return None
@@ -149,7 +205,42 @@ class InpaintingHandler:
         gen_painter.setBrush(QBrush(QColor(255, 255, 255)))
 
         has_any = False
+        segment_blocks: list[TextBlock] = []
         for stroke in strokes:
+            segment_meta = stroke.get('segment_meta') or {}
+            text_bbox = segment_meta.get('text_bbox')
+            segment_bboxes = stroke.get('segment_bboxes')
+
+            if text_bbox is not None:
+                text_bbox_list = list(map(int, text_bbox))
+                bubble_xyxy = segment_meta.get('bubble_xyxy')
+                seg_blk = TextBlock(
+                    text_bbox=text_bbox_list,
+                    bubble_bbox=list(map(int, bubble_xyxy)) if bubble_xyxy is not None else None,
+                    text_class=segment_meta.get('text_class', ''),
+                    source_lang=segment_meta.get('source_lang', ''),
+                    text="segment",
+                    translation="segment",
+                )
+                seg_blk.inpaint_bboxes = get_inpaint_bboxes(text_bbox_list, image)
+                if seg_blk.inpaint_bboxes is None or len(seg_blk.inpaint_bboxes) == 0:
+                    seg_blk.inpaint_bboxes = (
+                        np.array(segment_bboxes, dtype=np.int32)
+                        if segment_bboxes
+                        else None
+                    )
+                if seg_blk.inpaint_bboxes is not None and len(seg_blk.inpaint_bboxes) > 0:
+                    segment_blocks.append(seg_blk)
+                    has_any = True
+                    continue
+
+            if segment_bboxes:
+                seg_blk = TextBlock()
+                seg_blk.inpaint_bboxes = np.array(segment_bboxes, dtype=np.int32)
+                segment_blocks.append(seg_blk)
+                has_any = True
+                continue
+
             path = stroke.get('path')
             if path is None:
                 continue
@@ -173,10 +264,46 @@ class InpaintingHandler:
 
         human_mask = self._qimage_to_np(human_qimg)
         gen_mask = self._qimage_to_np(gen_qimg)
-        kernel = np.ones((5, 5), np.uint8)
-        human_mask = imk.dilate(human_mask, kernel, iterations=2)
-        gen_mask = imk.dilate(gen_mask, kernel, iterations=3)
-        mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
+
+        def _refine_mask(mask_src: np.ndarray, base_padding: int, close_ksize: int, dilate_iters: int) -> np.ndarray:
+            if np.count_nonzero(mask_src) == 0:
+                return np.zeros_like(mask_src, dtype=np.uint8)
+
+            contours, _ = imk.find_contours(mask_src)
+            if not contours:
+                return np.zeros_like(mask_src, dtype=np.uint8)
+
+            refined = np.zeros_like(mask_src, dtype=np.uint8)
+            h, w = mask_src.shape[:2]
+            close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (close_ksize, close_ksize))
+            dil_kernel = np.ones((base_padding, base_padding), np.uint8)
+
+            for cnt in contours:
+                x, y, bw, bh = imk.bounding_rect(cnt)
+                if bw <= 0 or bh <= 0:
+                    continue
+
+                # Add a little extra room around the stroke so the inpainted
+                # region clears residual edges as well as the text itself.
+                pad = max(base_padding, int(max(bw, bh) * 0.08) + 2)
+                x1 = max(0, x - pad)
+                y1 = max(0, y - pad)
+                x2 = min(w, x + bw + pad)
+                y2 = min(h, y + bh + pad)
+                if x1 >= x2 or y1 >= y2:
+                    continue
+
+                local = mask_src[y1:y2, x1:x2].copy()
+                local = imk.morphology_ex(local, imk.MORPH_CLOSE, close_kernel)
+                local = imk.dilate(local, dil_kernel, iterations=dilate_iters)
+                refined[y1:y2, x1:x2] = np.where(local > 0, 255, refined[y1:y2, x1:x2])
+
+            return refined
+
+        segment_mask = generate_mask(image, segment_blocks) if segment_blocks else np.zeros((height, width), dtype=np.uint8)
+        human_mask = _refine_mask(human_mask, base_padding=5, close_ksize=9, dilate_iters=2)
+        gen_mask = _refine_mask(gen_mask, base_padding=8, close_ksize=15, dilate_iters=3)
+        mask = np.where((segment_mask > 0) | (human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         if np.count_nonzero(mask) == 0:
             return None
         return mask

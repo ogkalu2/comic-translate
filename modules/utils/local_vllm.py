@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 from typing import Any
 from urllib.parse import urlparse
 
 import requests
+
+
+logger = logging.getLogger(__name__)
 
 
 class LocalHTTPError(requests.HTTPError):
@@ -19,7 +23,19 @@ class LocalResponse:
         self.text = text
 
     def json(self) -> Any:
-        return json.loads(self.text)
+        try:
+            return json.loads(self.text)
+        except json.JSONDecodeError as exc:
+            logger.error(
+                "LocalResponse JSON decode failed at line %s col %s pos %s: %s | body preview: %r",
+                getattr(exc, "lineno", "?"),
+                getattr(exc, "colno", "?"),
+                getattr(exc, "pos", "?"),
+                getattr(exc, "msg", str(exc)),
+                self.text[:4000],
+                exc_info=True,
+            )
+            raise
 
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
@@ -70,6 +86,15 @@ print(json.dumps({"status_code": response.status_code, "text": response.text}, e
     try:
         result = json.loads(process.stdout)
     except json.JSONDecodeError as exc:
+        logger.error(
+            "WSL fallback returned invalid JSON at line %s col %s pos %s: %s | stdout preview: %r",
+            getattr(exc, "lineno", "?"),
+            getattr(exc, "colno", "?"),
+            getattr(exc, "pos", "?"),
+            getattr(exc, "msg", str(exc)),
+            process.stdout[:4000],
+            exc_info=True,
+        )
         raise RuntimeError(
             f"WSL fallback returned invalid JSON: {process.stdout[:500]}"
         ) from exc

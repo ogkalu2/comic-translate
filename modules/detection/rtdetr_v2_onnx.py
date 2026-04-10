@@ -31,7 +31,7 @@ class RTDetrV2ONNXDetection(DetectionEngine):
     def initialize(
         self, 
         device: str = 'cpu', 
-        confidence_threshold: float = 0.45, 
+        confidence_threshold: float = 0.35, 
     ) -> None:
         
         self.device = device

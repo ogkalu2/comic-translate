@@ -8,6 +8,7 @@ from app.ui.canvas.text_item import OutlineType
 class TextItemProperties:
     """Dataclass for TextBlockItem properties to reduce duplication in construction"""
     text: str = ""
+    source_text: str = ""
     font_family: str = ""
     font_size: float = 20
     text_color: QColor = None
@@ -42,6 +43,7 @@ class TextItemProperties:
         
         # Basic text properties
         props.text = data.get('text', '')
+        props.source_text = data.get('source_text', '')
         props.font_family = data.get('font_family', '')
         props.font_size = data.get('font_size', 20)
         props.line_spacing = data.get('line_spacing', 1.2)
@@ -110,6 +112,10 @@ class TextItemProperties:
         
         # Basic text properties
         props.text = item.toHtml()
+        if hasattr(item, 'get_source_text'):
+            props.source_text = item.get_source_text()
+        else:
+            props.source_text = getattr(item, 'source_text', '') or item.toPlainText()
         props.font_family = item.font_family
         props.font_size = item.font_size
         props.text_color = item.text_color
@@ -132,8 +138,21 @@ class TextItemProperties:
             props.transform_origin = (origin.x(), origin.y())
         
         # Layout properties
-        props.width = item.boundingRect().width()
-        props.height = item.boundingRect().height()
+        if hasattr(item, "get_text_box_size"):
+            width, height = item.get_text_box_size()
+        else:
+            width = item.textWidth() if hasattr(item, 'textWidth') else -1
+            if width is None or width <= 0:
+                width = item.document().size().width()
+            if width is None or width <= 0:
+                width = item.boundingRect().width()
+
+            height = item.document().size().height()
+            if height is None or height <= 0:
+                height = item.boundingRect().height()
+
+        props.width = width
+        props.height = height
         props.vertical = getattr(item, 'vertical', False)
         
         # Advanced properties
@@ -145,6 +164,7 @@ class TextItemProperties:
         """Convert TextItemProperties to dictionary"""
         return {
             'text': self.text,
+            'source_text': self.source_text,
             'font_family': self.font_family,
             'font_size': self.font_size,
             'text_color': self.text_color,

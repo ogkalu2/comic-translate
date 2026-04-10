@@ -13,7 +13,6 @@ from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
-from modules.utils.image_utils import generate_mask
 from modules.utils.pipeline_config import get_config, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
 from ..virtual_page import VirtualPage
@@ -262,7 +261,7 @@ class ChunkMixin:
             return None
 
         config = get_config(self.main_page.settings_page)
-        mask = generate_mask(combined_image, blk_list)
+        mask = self.inpainting.build_mask_from_blocks(combined_image, blk_list)
         inpaint_input_img = self.inpainting.inpainter_cache(combined_image, mask, config)
         inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
 
