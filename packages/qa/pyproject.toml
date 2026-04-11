@@ -7,12 +7,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+anthropic = ["anthropic>=0.30"]
 openai = ["openai>=1.0"]
 cli = ["click>=8.1"]
 dev = ["pytest>=8.0", "ruff>=0.4"]
-
-[project.scripts]
-comic-qa = "comic_translate_qa.cli:cli"
 
 [build-system]
 requires = ["hatchling"]

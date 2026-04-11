@@ -4,7 +4,7 @@ from comic_translate_core.pipeline import QAOrchestrator
 from comic_translate_core.storage import JsonFileStorage, MockExporter
 from comic_translate_qa.applicator import NoopApplicator
 from comic_translate_qa.chunking import PageBasedChunking
-from comic_translate_qa.providers import OpenAIQAProvider
+from comic_translate_qa.providers.openai_provider import OpenAIQAProvider
 
 
 @click.group()

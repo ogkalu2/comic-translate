@@ -37,18 +37,18 @@ class TranslationEngineFactory:
     """Factory for creating translation engines."""
 
     _engines = {
-        "deepl": "modules.translation.deepl.DeepLEngine",
-        "microsoft": "modules.translation.microsoft.MicrosoftEngine",
-        "yandex": "modules.translation.yandex.YandexEngine",
-        "user": "modules.translation.user.UserEngine",
-        "gpt": "modules.translation.llm.gpt.GPTEngine",
-        "claude": "modules.translation.llm.claude.ClaudeEngine",
-        "gemini": "modules.translation.llm.gemini.GeminiEngine",
-        "deepseek": "modules.translation.llm.deepseek.DeepSeekEngine",
-        "openrouter": "modules.translation.llm.openrouter.OpenRouterEngine",
-        "github": "modules.translation.llm.github.GitHubEngine",
-        "xai": "modules.translation.llm.xai.XAIEngine",
-        "custom": "modules.translation.llm.custom.CustomEngine",
+        "deepl": "modules.translation.deepl.DeepLTranslation",
+        "microsoft": "modules.translation.microsoft.MicrosoftTranslation",
+        "yandex": "modules.translation.yandex.YandexTranslation",
+        "user": "modules.translation.user.UserTranslator",
+        "gpt": "modules.translation.llm.gpt.GPTTranslation",
+        "claude": "modules.translation.llm.claude.ClaudeTranslation",
+        "gemini": "modules.translation.llm.gemini.GeminiTranslation",
+        "deepseek": "modules.translation.llm.deepseek.DeepseekTranslation",
+        "openrouter": "modules.translation.llm.openrouter.OpenRouterTranslation",
+        "github": "modules.translation.llm.github.GithubModelTranslation",
+        "xai": "modules.translation.llm.xai.xAITranslation",
+        "custom": "modules.translation.llm.custom.CustomTranslation",
     }
 
     @classmethod
