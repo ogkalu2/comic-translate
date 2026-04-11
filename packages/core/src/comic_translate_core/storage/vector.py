@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import List, Optional, Tuple
 
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from .postgres import BlockModel, ComicModel
@@ -26,6 +26,11 @@ class VectorStorage:
 
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self._session_factory = session_factory
+
+    @staticmethod
+    def _vector_literal(embedding: List[float]) -> str:
+        """Serialize an embedding to pgvector's text input format."""
+        return "[" + ",".join(f"{value:g}" for value in embedding) + "]"
 
     async def store_embedding(self, block_uid: str, embedding: List[float]) -> None:
         """Store or update an embedding for a block.
@@ -73,21 +78,21 @@ class VectorStorage:
             descending similarity. Scores range from -1 to 1 (higher is more similar).
         """
         async with self._session_factory() as session:
-            # Use raw SQL for pgvector cosine distance operator
-            # cosine_similarity = 1 - cosine_distance
             query = """
-                SELECT block_uid, 1 - (embedding <=> $1::vector) AS similarity
+                SELECT block_uid, 1 - (embedding <=> CAST(:embedding AS vector)) AS similarity
                 FROM blocks
                 WHERE embedding IS NOT NULL
             """
-            params = [str(embedding)]
+            params = {
+                "embedding": self._vector_literal(embedding),
+                "limit": limit,
+            }
 
             if base_fp:
-                query += " AND base_fp = $2"
-                params.append(base_fp)
+                query += " AND base_fp = :base_fp"
+                params["base_fp"] = base_fp
 
-            query += " ORDER BY embedding <=> $1::vector LIMIT $%d" % (len(params) + 1)
-            params.append(str(limit))
+            query += " ORDER BY embedding <=> CAST(:embedding AS vector) LIMIT :limit"
 
             result = await session.execute(text(query), params)
             rows = result.fetchall()
@@ -109,13 +114,19 @@ class VectorStorage:
         """
         async with self._session_factory() as session:
             query = """
-                SELECT base_fp, 1 - (meta_embedding <=> $1::vector) AS similarity
+                SELECT base_fp, 1 - (meta_embedding <=> CAST(:embedding AS vector)) AS similarity
                 FROM comics
                 WHERE meta_embedding IS NOT NULL
-                ORDER BY meta_embedding <=> $1::vector
-                LIMIT $2
+                ORDER BY meta_embedding <=> CAST(:embedding AS vector)
+                LIMIT :limit
             """
-            result = await session.execute(text(query), [str(embedding), str(limit)])
+            result = await session.execute(
+                text(query),
+                {
+                    "embedding": self._vector_literal(embedding),
+                    "limit": limit,
+                },
+            )
             rows = result.fetchall()
             return [(row[0], float(row[1])) for row in rows]
 

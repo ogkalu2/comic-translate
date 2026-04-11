@@ -375,6 +375,72 @@ class TestVectorStorage:
             comic = await session.get(ComicModel, "test_comic")
             assert comic.meta_embedding is not None
 
+    @pytest.mark.asyncio
+    async def test_search_similar_blocks_uses_named_bind_params(self):
+        """Vector search should use SQLAlchemy-compatible named parameters."""
+        result = MagicMock()
+        result.fetchall.return_value = [("test_comic:1:0:0", 0.98)]
+
+        session = AsyncMock()
+        session.execute.return_value = result
+
+        class _SessionFactory:
+            def __call__(self):
+                return self
+
+            async def __aenter__(self):
+                return session
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        storage = VectorStorage(_SessionFactory())
+        rows = await storage.search_similar_blocks([0.1, 0.2], limit=5, base_fp="test_comic")
+
+        assert rows == [("test_comic:1:0:0", 0.98)]
+        query = str(session.execute.await_args.args[0])
+        params = session.execute.await_args.args[1]
+        assert ":embedding" in query
+        assert ":base_fp" in query
+        assert ":limit" in query
+        assert params == {
+            "embedding": "[0.1,0.2]",
+            "base_fp": "test_comic",
+            "limit": 5,
+        }
+
+    @pytest.mark.asyncio
+    async def test_search_similar_comics_uses_named_bind_params(self):
+        """Comic similarity search should use SQLAlchemy-compatible named parameters."""
+        result = MagicMock()
+        result.fetchall.return_value = [("test_comic", 0.87)]
+
+        session = AsyncMock()
+        session.execute.return_value = result
+
+        class _SessionFactory:
+            def __call__(self):
+                return self
+
+            async def __aenter__(self):
+                return session
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return False
+
+        storage = VectorStorage(_SessionFactory())
+        rows = await storage.search_similar_comics([0.3, 0.4], limit=3)
+
+        assert rows == [("test_comic", 0.87)]
+        query = str(session.execute.await_args.args[0])
+        params = session.execute.await_args.args[1]
+        assert ":embedding" in query
+        assert ":limit" in query
+        assert params == {
+            "embedding": "[0.3,0.4]",
+            "limit": 3,
+        }
+
 
 # ---------------------------------------------------------------------------
 # Factory Function Tests
