@@ -1,43 +1,39 @@
-"""OpenAI QA Provider: Use GPT models for comic translation QA."""
+"""Claude QA Provider: Use Anthropic Claude for comic translation QA."""
 
-from typing import List, Optional
-
-from comic_translate_core.models import QAChunk, QAPatch
+from typing import Optional
 
 from .base import BaseQAProvider
 
 try:
-    from openai import OpenAI
+    from anthropic import Anthropic
 except ImportError:
-    raise ImportError("OpenAI provider requires: pip install openai")
+    raise ImportError("Claude provider requires: pip install anthropic")
 
 
-class OpenAIQAProvider(BaseQAProvider):
-    """QA provider using OpenAI GPT models.
+class ClaudeQAProvider(BaseQAProvider):
+    """QA provider using Anthropic Claude models.
 
-    Supports GPT-4o-mini, GPT-4o, and other OpenAI models.
+    Supports Claude 3.5 Sonnet, Claude 3.5 Haiku, and other Claude models.
     """
 
     def __init__(
         self,
         api_key: str,
-        model: str = "gpt-4o-mini",
+        model: str = "claude-3-5-sonnet-20241022",
         temperature: float = 0.3,
         max_tokens: int = 4000,
         max_retries: int = 3,
         retry_delay: float = 1.0,
-        base_url: Optional[str] = None,
     ):
-        """Initialize OpenAI QA provider.
+        """Initialize Claude QA provider.
 
         Args:
-            api_key: OpenAI API key.
-            model: Model name (e.g., "gpt-4o-mini", "gpt-4o").
+            api_key: Anthropic API key.
+            model: Claude model name.
             temperature: Sampling temperature.
             max_tokens: Maximum tokens in response.
             max_retries: Maximum retry attempts.
             retry_delay: Base delay between retries.
-            base_url: Optional custom API base URL.
         """
         super().__init__(
             model=model,
@@ -46,15 +42,12 @@ class OpenAIQAProvider(BaseQAProvider):
             max_retries=max_retries,
             retry_delay=retry_delay,
         )
-        client_kwargs = {"api_key": api_key}
-        if base_url:
-            client_kwargs["base_url"] = base_url
-        self.client = OpenAI(**client_kwargs)
+        self.client = Anthropic(api_key=api_key)
 
     def _call_llm(
         self, prompt: str, temperature: float, max_tokens: int
     ) -> str:
-        """Call OpenAI API.
+        """Call Anthropic Claude API.
 
         Args:
             prompt: The prompt to send.
@@ -64,10 +57,10 @@ class OpenAIQAProvider(BaseQAProvider):
         Returns:
             Raw response content string.
         """
-        response = self.client.chat.completions.create(
+        response = self.client.messages.create(
             model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
             max_tokens=max_tokens,
+            temperature=temperature,
+            messages=[{"role": "user", "content": prompt}],
         )
-        return response.choices[0].message.content.strip()
+        return response.content[0].text.strip()

@@ -1,0 +1,13 @@
+[project]
+name = "comic-translate-core"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["Pillow>=10.0", "imagehash>=4.3"]
+
+[project.optional-dependencies]
+postgres = ["sqlalchemy[asyncio]>=2.0", "asyncpg>=0.29", "pgvector>=0.2"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "aiosqlite>=0.19", "ruff>=0.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

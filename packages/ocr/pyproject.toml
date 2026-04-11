@@ -1,0 +1,21 @@
+[project]
+name = "comic-translate-ocr"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "comic-translate-core>=0.1.0",
+  "numpy>=1.24.0",
+  "Pillow>=10.0",
+  "onnxruntime>=1.16.0",
+]
+
+[project.optional-dependencies]
+google = ["google-cloud-vision>=3.0.0"]
+microsoft = ["azure-ai-vision-imageanalysis>=1.0.0b1"]
+openai = ["openai>=1.0"]
+gemini = ["google-generativeai>=0.3.0"]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

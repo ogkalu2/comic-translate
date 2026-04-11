@@ -1,0 +1,22 @@
+[project]
+name = "comic-translate-cli"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "comic-translate-core>=0.1.0",
+  "comic-translate-detection>=0.1.0",
+  "comic-translate-ocr>=0.1.0",
+  "comic-translate-translation>=0.1.0",
+  "comic-translate-rendering>=0.1.0",
+  "click>=8.1.0",
+]
+
+[project.scripts]
+comic-translate = "comic_translate_cli.main:cli"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
