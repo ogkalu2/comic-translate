@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import hashlib
 import json
 import logging
 import os
@@ -70,6 +71,7 @@ class PreparedBatchPage:
     ocr_cache_key: object | None = None
     translation_cache_key: object | None = None
     translation_failed: bool = False
+    skip_full_pipeline: bool = False  # Page is fully done and needs no reprocessing
 
 
 class BatchProcessor:
@@ -187,6 +189,69 @@ class BatchProcessor:
         if self.block_detection.block_detector_cache is None:
             self.block_detection.block_detector_cache = TextBlockDetector(settings_page)
         return self.block_detection.block_detector_cache
+
+    def _get_pipeline_state(self, image_path: str) -> dict:
+        """Get the pipeline_state dict for an image, ensuring it exists."""
+        state = self.main_page.image_states.get(image_path, {})
+        ps = state.get("pipeline_state")
+        if ps is None:
+            ps = {
+                "completed_stages": [],
+                "source_lang": "",
+                "target_lang": "",
+                "inpaint_hash": "",
+                "translator_key": "",
+                "extra_context_hash": "",
+            }
+            state["pipeline_state"] = ps
+        return ps
+
+    def _has_stages_completed(self, stages: set, pipeline_state: dict) -> bool:
+        """Check if all specified stages have been completed for a page."""
+        completed = set(pipeline_state.get("completed_stages", []))
+        return stages.issubset(completed)
+
+    def _page_is_fully_done(self, page: PreparedBatchPage, translator_key: str, extra_context: str) -> bool:
+        """Check if a page has been fully processed with the same settings and needs zero re-running."""
+        ps = self._get_pipeline_state(page.image_path)
+        all_stages = {"detection", "ocr", "inpaint", "translate", "render"}
+        if not self._has_stages_completed(all_stages, ps):
+            logger.debug(f"_page_is_fully_done: missing stages, completed={ps.get('completed_stages')} for {page.image_path}")
+            return False
+        if ps.get("source_lang") != page.source_lang or ps.get("target_lang") != page.target_lang:
+            logger.debug(f"_page_is_fully_done: language mismatch ps_src={ps.get('source_lang')} ps_trg={ps.get('target_lang')} page_src={page.source_lang} page_trg={page.target_lang} for {page.image_path}")
+            return False
+        if ps.get("translator_key") != translator_key:
+            logger.debug(f"_page_is_fully_done: translator mismatch ps={ps.get('translator_key')} now={translator_key} for {page.image_path}")
+            return False
+        current_ctx_hash = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
+        if ps.get("extra_context_hash") != current_ctx_hash:
+            logger.debug(f"_page_is_fully_done: context hash mismatch for {page.image_path}")
+            return False
+        blk_list = self.main_page.image_states.get(page.image_path, {}).get("blk_list")
+        if not blk_list:
+            logger.debug(f"_page_is_fully_done: no blk_list for {page.image_path}")
+            return False
+        return True
+
+    def _page_can_skip_detection(self, page: PreparedBatchPage) -> bool:
+        """Check if a page already has detected blocks and can skip text-block detection.
+        This is true when detection stage was completed and blk_list is available."""
+        ps = self._get_pipeline_state(page.image_path)
+        return self._has_stages_completed({"detection"}, ps)
+
+    def _load_page_state_into_blk_list(self, page: PreparedBatchPage):
+        """Load the saved blk_list from image_states into the page object, skipping
+        detection/ocr/inpaint stages. Also ensures the image is loaded."""
+        ensure_path_materialized(page.image_path)
+        if page.image is None:
+            page.image = imk.read_image(page.image_path)
+
+        state = self.main_page.image_states.get(page.image_path, {})
+        saved_blk_list = state.get("blk_list")
+        if saved_blk_list is not None and len(saved_blk_list) > 0:
+            page.blk_list = [blk for blk in saved_blk_list]  # shallow copy
+            logger.info(f"Loaded saved blk_list for {page.image_path} ({len(page.blk_list)} blocks)")
 
     def _cache_ocr_results_for_page(self, cache_key, page: PreparedBatchPage):
         if page.blk_list:
@@ -828,6 +893,8 @@ class BatchProcessor:
         page: PreparedBatchPage,
         total_images: int,
         export_settings: dict,
+        translator_key: str = "",
+        extra_context: str = "",
     ) -> bool:
         payloads = self._validate_translation_payloads(page)
         if payloads is None:
@@ -847,6 +914,22 @@ class BatchProcessor:
 
         if page.image_path == self._current_displayed_file():
             self.main_page.blk_list = page.blk_list
+
+        # Record pipeline_state to enable stage-skipping on future runs
+        state = self.main_page.image_states[page.image_path]
+        ps = state.setdefault("pipeline_state", {
+            "completed_stages": [],
+            "source_lang": "",
+            "target_lang": "",
+            "inpaint_hash": "",
+            "translator_key": "",
+            "extra_context_hash": "",
+        })
+        ps["completed_stages"] = list({"detection", "ocr", "inpaint", "translate", "render"})
+        ps["source_lang"] = page.source_lang
+        ps["target_lang"] = page.target_lang
+        ps["translator_key"] = translator_key
+        ps["extra_context_hash"] = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
 
         self.emit_progress(page.index, total_images, 10, 10, False)
         return True
@@ -972,20 +1055,41 @@ class BatchProcessor:
             self._build_page_context(page_index, image_path, timestamp)
             for page_index, image_path in enumerate(image_list)
         ]
-        detected_pages: list[PreparedBatchPage] = []
-        pending_detection_pages: list[PreparedBatchPage] = []
+
+        # Pre-filter pages: identify fully-done, skip-detection, and fresh pages
+        fully_done_pages: list[PreparedBatchPage] = []
+        skip_detection_pages: list[PreparedBatchPage] = []
+        fresh_pages: list[PreparedBatchPage] = []
 
         for page in pages:
             if self._is_cancelled():
                 return
 
             loaded_page = self._load_page(page, total_images)
-            if self._is_cancelled():
-                return
             if loaded_page is None:
                 continue
 
-            pending_detection_pages.append(loaded_page)
+            ps = self._get_pipeline_state(loaded_page.image_path)
+            logger.info(f"Page {loaded_page.image_path} pipeline_state: completed={ps.get('completed_stages')} src={ps.get('source_lang')} trg={ps.get('target_lang')}")
+
+            if self._page_is_fully_done(loaded_page, translator_key, extra_context):
+                fully_done_pages.append(loaded_page)
+                logger.info(f"Page already fully translated, skipping reprocessing: {loaded_page.image_path}")
+            elif self._page_can_skip_detection(loaded_page):
+                skip_detection_pages.append(loaded_page)
+                logger.info(f"Reusing cached blocks, skipping detection: {loaded_page.image_path}")
+            else:
+                fresh_pages.append(loaded_page)
+
+        # Process fresh pages through the full pipeline (detection → ocr → inpaint)
+        detected_pages: list[PreparedBatchPage] = []
+        pending_detection_pages: list[PreparedBatchPage] = []
+
+        for page in fresh_pages:
+            if self._is_cancelled():
+                return
+
+            pending_detection_pages.append(page)
             if len(pending_detection_pages) < detection_batch_size:
                 continue
 
@@ -1025,13 +1129,46 @@ class BatchProcessor:
                 ocr_ready_pages.extend(stage_pages)
 
         detected_pages.clear()
+
+        translated_pages: list[PreparedBatchPage] = []
+        translation_queue: list[PreparedBatchPage] = []
+
+        # === Fully done pages: skip EVERYTHING, just render with existing blocks ===
+        for page in fully_done_pages:
+            if self._is_cancelled():
+                return
+            self.emit_progress(page.index, total_images, 0, 10, True)
+            self._load_page_state_into_blk_list(page)
+            # Apply cached translations directly (they are guaranteed to match)
+            tc_key = self.cache_manager._get_translation_cache_key(
+                page.image, page.source_lang, page.target_lang, translator_key, extra_context
+            )
+            page.translation_cache_key = tc_key
+            self.cache_manager._apply_cached_translations_to_blocks(tc_key, page.blk_list)
+            # Skip inpainting — use original image as render target
+            page.inpaint_input_img = page.image
+            page.skip_full_pipeline = True
+            translated_pages.append(page)
+            self.emit_progress(page.index, total_images, 10, 10, False)
+            logger.info(f"Fully done page rendered without reprocessing: {page.image_path}")
+
+        # === Skip-detection pages: load blk_list, run OCR + inpaint, then translate ===
+        for page in skip_detection_pages:
+            if self._is_cancelled():
+                return
+            self._load_page_state_into_blk_list(page)
+        skip_detection_pages = self._run_chunk_ocr(
+            skip_detection_pages, total_images
+        )
         self._release_ocr_model_caches()
         self._trim_runtime_memory()
         if self._is_cancelled():
             return
 
-        translated_pages: list[PreparedBatchPage] = []
-        translation_queue: list[PreparedBatchPage] = []
+        # Merge skip-detection pages into the normal pipeline flow for inpaint → translate
+        ocr_ready_pages.extend(skip_detection_pages)
+        skip_detection_pages.clear()
+        fully_done_pages.clear()
 
         for page in ocr_ready_pages:
             if self._is_cancelled():
@@ -1082,12 +1219,18 @@ class BatchProcessor:
 
         self._release_translation_model_caches()
         self._trim_runtime_memory()
+
+        # Separate fully done pages (already rendered above, skip inpaint)
+        # from pages that need inpainting
+        pages_needing_inpaint = [p for p in translated_pages if getattr(p, 'skip_full_pipeline', False) is False]
+        fully_done_rendered = [p for p in translated_pages if getattr(p, 'skip_full_pipeline', False) is True]
+
         finalized_pages = self._run_chunk_inpainting(
-            translated_pages,
+            pages_needing_inpaint,
             total_images,
             export_settings,
         )
-        translated_pages.clear()
+        pages_needing_inpaint.clear()
         self._trim_runtime_memory()
         if self._is_cancelled():
             return
@@ -1097,11 +1240,29 @@ class BatchProcessor:
                 page,
                 total_images,
                 export_settings,
+                translator_key,
+                extra_context,
             ):
                 return
 
             self._release_page_buffers(page, release_blk_list=True)
 
         finalized_pages.clear()
+
+        # Finalize fully-done pages (they skipped inpaint, just need rendering)
+        for page in fully_done_rendered:
+            if not self._finalize_prepared_page(
+                page,
+                total_images,
+                export_settings,
+                translator_key,
+                extra_context,
+            ):
+                return
+
+            self._release_page_buffers(page, release_blk_list=True)
+
+        fully_done_rendered.clear()
+
         self._release_inpainting_model_caches()
         self._trim_runtime_memory()

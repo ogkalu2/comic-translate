@@ -8,10 +8,11 @@ logger = logging.getLogger(__name__)
 
 class CacheManager:
     """Manages OCR and translation caching for the pipeline."""
-    
+
     def __init__(self):
         self.ocr_cache = {}  # OCR results cache: {(image_hash, model_key, source_lang): {block_id: text}}
         self.translation_cache = {}  # Translation results cache: {(image_hash, translator_key, source_lang, target_lang, extra_context): {block_id: {source_text: str, translation: str}}}
+        self.inpaint_cache = {}  # Inpainting results cache: {(image_hash, inpainter_key): inpainted_image}
 
     def clear_ocr_cache(self):
         """Clear the OCR cache. Note: Cache now persists across image and model changes automatically."""
@@ -23,10 +24,42 @@ class CacheManager:
         self.translation_cache = {}
         logger.info("Translation cache manually cleared")
 
-    def clear_all_caches(self):
-        """Clear both OCR and translation caches."""
-        self.clear_ocr_cache()
-        self.clear_translation_cache()
+    def clear_cache_for_images(self, images) -> int:
+        """Clear all cache entries (OCR, translation, inpaint) for the provided images."""
+        image_hashes = {
+            self._generate_image_hash(image)
+            for image in images
+            if image is not None
+        }
+        if not image_hashes:
+            return 0
+
+        cleared = 0
+        # OCR cache: keys are (image_hash, model, lang, device)
+        keys_to_remove = [k for k in self.ocr_cache if k and k[0] in image_hashes]
+        for k in keys_to_remove:
+            self.ocr_cache.pop(k, None)
+            cleared += 1
+
+        # Translation cache: keys are (image_hash, translator, src, trg, ctx)
+        keys_to_remove = [k for k in self.translation_cache if k and k[0] in image_hashes]
+        for k in keys_to_remove:
+            self.translation_cache.pop(k, None)
+            cleared += 1
+
+        # Inpaint cache: keys are (image_hash, inpainter_key)
+        keys_to_remove = [k for k in self.inpaint_cache if k and k[0] in image_hashes]
+        for k in keys_to_remove:
+            self.inpaint_cache.pop(k, None)
+            cleared += 1
+
+        if cleared:
+            logger.info(
+                "Cleared %d cache entries across all caches for %d image hashes",
+                cleared,
+                len(image_hashes),
+            )
+        return cleared
 
     def export_state(self) -> dict:
         """Export cache contents in a project-serializable form."""
@@ -419,5 +452,35 @@ class CacheManager:
         """Apply cached translation results to all blocks in the list"""
         for block in block_list:
             cached_translation = self._get_cached_translation_for_block(cache_key, block)
-            if cached_translation is not None: 
+            if cached_translation is not None:
                 block.translation = sanitize_translation_result_text(cached_translation)
+
+    def _get_inpaint_cache_key(self, image, inpainter_key):
+        """Generate cache key for inpainting results"""
+        image_hash = self._generate_image_hash(image)
+        return (image_hash, inpainter_key)
+
+    def _is_inpaint_cached(self, cache_key):
+        """Check if inpainting results are cached"""
+        return cache_key in self.inpaint_cache
+
+    def _get_cached_inpaint(self, cache_key):
+        """Retrieve cached inpainted image"""
+        return self.inpaint_cache.get(cache_key)
+
+    def _cache_inpaint_result(self, cache_key, inpainted_image):
+        """Cache inpainting result"""
+        if inpainted_image is not None:
+            self.inpaint_cache[cache_key] = inpainted_image
+            logger.info(f"Cached inpainting result for key {cache_key}")
+
+    def clear_inpaint_cache(self):
+        """Clear the inpainting cache"""
+        self.inpaint_cache = {}
+        logger.info("Inpaint cache manually cleared")
+
+    def clear_all_caches(self):
+        """Clear OCR, translation, and inpaint caches."""
+        self.clear_ocr_cache()
+        self.clear_translation_cache()
+        self.clear_inpaint_cache()

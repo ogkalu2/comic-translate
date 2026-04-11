@@ -423,6 +423,10 @@ class TextBlockItem(QGraphicsTextItem):
         self.set_alignment(self.alignment)
 
         self.setCenterTransform()
+
+        # Re-apply document-level style flags that setPlainText may have stripped
+        self._apply_style_flags_to_document()
+
         return wrapped_text, new_font_size
     
     def is_html(self, text):
@@ -538,6 +542,22 @@ class TextBlockItem(QGraphicsTextItem):
         self.setTextCursor(cursor)
         self.document().setDefaultTextOption(doc_format)
         self.update()
+
+    def _apply_style_flags_to_document(self):
+        """Apply bold/italic/underline flags to the entire document.
+        Used after setPlainText/reflow operations that strip character formatting."""
+        char_format = QTextCharFormat()
+        char_format.setFontWeight(QFont.Bold if self.bold else QFont.Normal)
+        char_format.setFontItalic(self.italic)
+        char_format.setFontUnderline(self.underline)
+
+        doc = self.document()
+        cursor = QTextCursor(doc)
+        cursor.select(QTextCursor.SelectionType.Document)
+        cursor.mergeCharFormat(char_format)
+        cursor.clearSelection()
+        cursor.movePosition(QTextCursor.End)
+        self.setTextCursor(cursor)
 
     def set_line_spacing(self, spacing):
         self.line_spacing = spacing
@@ -1123,8 +1143,8 @@ class TextBlockItem(QGraphicsTextItem):
         properties.update(outline_properties)
 
         return properties
-    
-def __copy__(self):
+
+    def __copy__(self):
         cls = self.__class__
         width = self.textWidth()
         if width is None or width <= 0:

@@ -1,0 +1,19 @@
+New-Item -ItemType Directory -Force -Path .claude | Out-Null
+
+$settingsJson = @'
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_AUTH_TOKEN": "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",
+    "ANTHROPIC_API_KEY": "",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "qwen/qwen3.6-plus-preview",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "minimax/minimax-m2.7",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "google/gemini-3.1-flash-lite-preview",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "google/gemini-3-flash-preview"
+  }
+}
+'@
+
+$settingsJson | Out-File -FilePath .claude\settings.local.json -Encoding utf8
+
+'{"hasCompletedOnboarding": true}' | Out-File -FilePath "$HOME\.claude.json" -Encoding utf8

@@ -187,6 +187,18 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
     comic_translate.image_states = {
         original_to_temp.get(file, file): img_state for file, img_state in image_states.items()
     }
+    # Ensure every image state has a pipeline_state dict
+    default_pipeline_state = {
+        'completed_stages': [],
+        'source_lang': '',
+        'target_lang': '',
+        'inpaint_hash': '',
+        'translator_key': '',
+        'extra_context_hash': '',
+    }
+    for state_val in comic_translate.image_states.values():
+        if 'pipeline_state' not in state_val:
+            state_val['pipeline_state'] = dict(default_pipeline_state)
 
     current_history_index = state.get('current_history_index', {})
     comic_translate.current_history_index = {

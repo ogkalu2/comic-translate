@@ -44,7 +44,7 @@ class BaseLLMTranslation(LLMTranslation):
         self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
         self.temperature = 0
         self.top_p = 1
-        self.max_tokens = 1024
+        self.max_tokens = 256
 
     def build_translation_prompts(self, blk_list: list[TextBlock], extra_context: str) -> tuple[str, str]:
         lines = get_text_lines_compact(blk_list)

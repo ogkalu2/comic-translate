@@ -634,6 +634,14 @@ class ImageStateController:
                         'brush_strokes': [],
                         'blk_list': [],  # New images start with empty block list
                         'skip': skip_status,
+                        'pipeline_state': {
+                            'completed_stages': [],
+                            'source_lang': '',
+                            'target_lang': '',
+                            'inpaint_hash': '',
+                            'translator_key': '',
+                            'extra_context_hash': '',
+                        },
                     }
                     
                     # Create undo stack for new file
@@ -1276,7 +1284,7 @@ class ImageStateController:
             self.main.loaded_images.append(file_path)
             if len(self.main.loaded_images) > self.main.max_images_in_memory:
                 oldest_image = self.main.loaded_images.pop(0)
-                del self.main.image_data[oldest_image]
+                self.main.image_data.pop(oldest_image, None)
                 self.main.in_memory_history[oldest_image] = []
 
                 self.main.in_memory_patches.pop(oldest_image, None)
@@ -1344,7 +1352,16 @@ class ImageStateController:
 
     def save_image_state(self, file: str):
         # For regular mode only
-        skip_status = self.main.image_states.get(file, {}).get('skip', False)
+        existing = self.main.image_states.get(file, {})
+        skip_status = existing.get('skip', False)
+        pipeline_state = existing.get('pipeline_state', {
+            'completed_stages': [],
+            'source_lang': '',
+            'target_lang': '',
+            'inpaint_hash': '',
+            'translator_key': '',
+            'extra_context_hash': '',
+        })
         self.main.image_states[file] = {
             'viewer_state': self.main.image_viewer.save_state(),
             'source_lang': self.main.s_combo.currentText(),
@@ -1352,6 +1369,7 @@ class ImageStateController:
             'brush_strokes': self.main.image_viewer.save_brush_strokes(),
             'blk_list': self.main.blk_list.copy(),  # Store a copy of the list, not a reference
             'skip': skip_status,
+            'pipeline_state': pipeline_state,
         }
 
     def save_current_image_state(self):

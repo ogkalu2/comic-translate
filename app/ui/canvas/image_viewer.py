@@ -493,7 +493,6 @@ class ImageViewer(QGraphicsView):
 
         item.set_vertical(bool(properties.vertical))
         item.set_layout_box_size(properties.width, properties.height)
-        item.set_color(properties.text_color)
         if (
             properties.width is not None
             and properties.height is not None
