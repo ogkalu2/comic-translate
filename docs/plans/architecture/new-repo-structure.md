@@ -2,7 +2,7 @@
 
 ## Overview
 
-Multi-package monorepo using uv workspace. Each package is independently installable with its own dependencies. Core has zero external dependencies. Heavy ML/AI deps are isolated in optional packages.
+Multi-package monorepo using uv workspace. Current package roots are intentionally minimal, and several package implementations still act as monolith-backed bridge layers rather than fully standalone distributions. Core remains the contract-first package; concrete engines and providers should be imported from explicit submodules instead of package roots.
 
 ---
 
@@ -243,8 +243,7 @@ coreml = ["coremltools>=7.0"]
 
 **Import examples:**
 ```python
-from comic_translate_detection.panel import YoloPanelDetector
-from comic_translate_detection.bubble import MaskRCNNBubbleDetector
+from comic_translate_detection.detector import PanelDetector, BubbleDetector
 ```
 
 ### comic-translate-ocr
@@ -307,8 +306,11 @@ dependencies = [
 [project.optional-dependencies]
 openai = ["openai>=1.0"]
 anthropic = ["anthropic>=0.25"]
+cli = ["click>=8.1"]
 all = ["comic-translate-qa[openai,anthropic]"]
 ```
+
+No console script is currently published from the base QA package. CLI wiring is an explicit optional surface, not part of the base install contract.
 
 ### comic-translate-rendering
 

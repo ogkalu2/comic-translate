@@ -299,10 +299,10 @@ How to assemble components for different use cases:
 
 ```python
 # QA only (minimal install)
-from comic_translate_core.storage import JsonFileStorage
+from comic_translate_core.storage import JsonFileStorage, MockExporter
 from comic_translate_core.pipeline import QAOrchestrator
 from comic_translate_qa.chunking import PageBasedChunking
-from comic_translate_qa.providers import OpenAIQAProvider
+from comic_translate_qa.providers.openai_provider import OpenAIQAProvider
 from comic_translate_qa.applicator import NoopApplicator
 
 qa = QAOrchestrator(
@@ -314,20 +314,20 @@ qa = QAOrchestrator(
 )
 
 # Full pipeline
-from comic_translate_detection.panel import YoloPanelDetector
-from comic_translate_detection.bubble import MaskRCNNBubbleDetector
-from comic_translate_ocr import PaddleOCREngine
-from comic_translate_translation import DeepLTranslator
-from comic_translate_rendering import LamaInpainter, TextRenderer
+from comic_translate_core.adapters.detection import DetectionAdapter
+from comic_translate_core.adapters.ocr import OCRAdapter
+from comic_translate_core.adapters.translation import TranslationAdapter
+from comic_translate_core.adapters.rendering import RenderingAdapter
+from comic_translate_core.routing import SemanticRouter
 
 pipeline = PipelineOrchestrator(
-    panel_detector=YoloPanelDetector(model_path="..."),
-    bubble_detector=MaskRCNNBubbleDetector(model_path="..."),
-    ocr_engine=PaddleOCREngine(langs=["ja", "en"]),
-    router=DefaultSemanticRouter(nsfw_dict=ehtag),
-    translator=DeepLTranslator(api_key="..."),
-    inpainter=LamaInpainter(model_path="..."),
-    renderer=TextRenderer(font_dir="..."),
+    panel_detector=DetectionAdapter(),
+    bubble_detector=DetectionAdapter(),
+    ocr_engine=OCRAdapter(),
+    router=SemanticRouter(),
+    translator=TranslationAdapter(),
+    inpainter=RenderingAdapter(),
+    renderer=RenderingAdapter(),
     storage=JsonFileStorage(),
 )
 ```
