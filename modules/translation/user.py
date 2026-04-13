@@ -132,10 +132,11 @@ class UserTranslator(TranslationEngine):
         # 5. Construct Full Payload
         request_payload = {
             "translator": self.translator_key,
-            "source_language": self.source_lang,
             "target_language": self.target_lang,
             "texts": texts_payload,
         }
+        if self.source_lang:
+            request_payload["source_language"] = self.source_lang
 
         if image_base64_payload is not None:
             request_payload["image_base64"] = image_base64_payload

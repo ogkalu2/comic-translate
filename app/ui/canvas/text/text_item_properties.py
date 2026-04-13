@@ -32,6 +32,7 @@ class TextItemProperties:
     width: Optional[float] = None
     height: Optional[float] = None
     vertical: bool = False
+    block_uid: str = ""
     
     # Advanced properties
     selection_outlines: list = field(default_factory=list)
@@ -99,6 +100,7 @@ class TextItemProperties:
         props.width = data.get('width')
         props.height = data.get('height')
         props.vertical = data.get('vertical', False)
+        props.block_uid = data.get('block_uid', '')
         
         # Advanced
         props.selection_outlines = data.get('selection_outlines', [])
@@ -154,6 +156,7 @@ class TextItemProperties:
         props.width = width
         props.height = height
         props.vertical = getattr(item, 'vertical', False)
+        props.block_uid = getattr(item, 'block_uid', '')
         
         # Advanced properties
         props.selection_outlines = getattr(item, 'selection_outlines', []).copy()
@@ -184,6 +187,7 @@ class TextItemProperties:
             'width': self.width,
             'height': self.height,
             'vertical': self.vertical,
+            'block_uid': self.block_uid,
             'selection_outlines': self.selection_outlines,
         }
 

@@ -199,7 +199,6 @@ class ComicTranslate(ComicTranslateUI):
         self.batch_report_button.clicked.connect(self.show_latest_batch_report)
         self.error_pages_button.clicked.connect(self.select_pages_with_errors)
         self.preview_button.clicked.connect(self.toggle_fullscreen_preview)
-        self.set_all_button.clicked.connect(self.text_ctrl.set_src_trg_all)
         self.select_all_pages_button.clicked.connect(self.select_all_pages)
         self.bulk_text_action_dropdown.currentIndexChanged.connect(self.text_ctrl.handle_bulk_text_action_change)
         self.clear_rectangles_button.clicked.connect(self.image_viewer.clear_rectangles)
@@ -213,7 +212,6 @@ class ComicTranslate(ComicTranslateUI):
         self.s_text_edit.textChanged.connect(self.text_ctrl.update_text_block)
         self.t_text_edit.textChanged.connect(self.text_ctrl.update_text_block_from_edit)
 
-        self.s_combo.currentTextChanged.connect(self.text_ctrl.save_src_trg)
         self.t_combo.currentTextChanged.connect(self.text_ctrl.save_src_trg)
 
         # Connect image viewer signals for both modes
@@ -834,6 +832,13 @@ class ComicTranslate(ComicTranslateUI):
 
     def translate_image(self, single_block=False):
         self.manual_workflow_ctrl.translate_image(single_block)
+
+    def invalidate_page_render_pipeline(self, file_path: str | None):
+        if not file_path:
+            return
+        workflow = getattr(self, "manual_workflow_ctrl", None)
+        if workflow is not None:
+            workflow._invalidate_page_render_pipeline(file_path)
 
     def _get_visible_text_items(self):
         return self.manual_workflow_ctrl._get_visible_text_items()

@@ -178,6 +178,15 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
     comic_translate.webtoon_mode = state.get('webtoon_mode', False)
     comic_translate.image_viewer.webtoon_view_state = state.get('webtoon_view_state', {})
 
+    target_language = state.get("target_language", "English")
+    try:
+        comic_translate.t_combo.blockSignals(True)
+        comic_translate.t_combo.setCurrentText(
+            comic_translate.reverse_lang_mapping.get(target_language, comic_translate.tr("English"))
+        )
+    finally:
+        comic_translate.t_combo.blockSignals(False)
+
     original_image_files = state.get('original_image_files', [])
     comic_translate.image_files = [
         original_to_temp.get(file, file) for file in original_image_files
@@ -187,10 +196,18 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
     comic_translate.image_states = {
         original_to_temp.get(file, file): img_state for file, img_state in image_states.items()
     }
+    current_target = comic_translate.t_combo.currentText()
+    for state_val in comic_translate.image_states.values():
+        target_render_states = state_val.get("target_render_states") or {}
+        if not isinstance(target_render_states, dict):
+            target_render_states = {}
+        if state_val.get("viewer_state") and current_target and current_target not in target_render_states:
+            target_render_states[current_target] = state_val["viewer_state"]
+        state_val["target_render_states"] = target_render_states
+        state_val.setdefault("target_lang", current_target)
     # Ensure every image state has a pipeline_state dict
     default_pipeline_state = {
         'completed_stages': [],
-        'source_lang': '',
         'target_lang': '',
         'inpaint_hash': '',
         'translator_key': '',
@@ -249,6 +266,11 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
             original_to_temp.get(page, page): plist
             for page, plist in reconstructed.items()
         }
+        for page_path, state_val in comic_translate.image_states.items():
+            if not state_val.get("inpaint_cache") and comic_translate.image_patches.get(page_path):
+                state_val["inpaint_cache"] = [
+                    dict(patch) for patch in comic_translate.image_patches.get(page_path, [])
+                ]
 
     # restore LLM extra context
     saved_ctx = state.get('llm_extra_context', '')

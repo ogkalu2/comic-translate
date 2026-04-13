@@ -10,6 +10,7 @@ from PIL import Image
 
 from app.path_materialization import ensure_path_materialized
 from modules.utils.textblock import sort_blk_list
+from modules.detection.utils.orientation import infer_orientation, infer_reading_order
 from ..virtual_page import VirtualPage
 
 if TYPE_CHECKING:
@@ -334,9 +335,8 @@ class FlowMixin:
 
         blocks = list(page_accum[image_path]["blocks"])
         patches = list(page_accum[image_path]["patches"])
-        source_lang = page_state.get("source_lang", self.main_page.s_combo.currentText())
-        source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
-        rtl = source_lang_en == "Japanese"
+        orientation = infer_orientation([blk.xyxy for blk in blocks]) if blocks else "horizontal"
+        rtl = infer_reading_order(orientation) == "rtl"
         if blocks:
             blocks = sort_blk_list(blocks, rtl)
 
@@ -440,6 +440,18 @@ class FlowMixin:
                     "width": int(width),
                     "height": int(height),
                 }
+                completed_stages = set(
+                    page_state.get("pipeline_state", {}).get("completed_stages", [])
+                )
+                page_info["reuse_cached_inpaint"] = (
+                    "inpaint" in completed_stages
+                    and bool(
+                        page_state.get("inpaint_cache")
+                        or self.main_page.image_patches.get(image_path)
+                    )
+                )
+                if page_info["reuse_cached_inpaint"]:
+                    logger.info("Reusing cached inpaint layer for %s", image_path)
                 physical_pages.append(page_info)
 
                 vpages = self._create_virtual_pages_for_physical(
@@ -471,6 +483,12 @@ class FlowMixin:
                 info["path"]: {"blocks": [], "patches": []}
                 for info in physical_pages
             }
+            for info in physical_pages:
+                if info.get("reuse_cached_inpaint", False):
+                    page_state = self.main_page.image_states.get(info["path"], {})
+                    cached_patches = page_state.get("inpaint_cache") or self.main_page.image_patches.get(info["path"], [])
+                    if cached_patches:
+                        page_accum[info["path"]]["patches"] = list(cached_patches)
 
             logger.info(
                 "Starting seam-aware virtual streaming webtoon batch processing for %d pages.",
@@ -522,6 +540,9 @@ class FlowMixin:
                 current_excluded = set(current_record.get("exclude_indices_from_prev", set()))
                 split_owned_blocks = []
                 split_matches = []
+                reuse_cached_inpaint = bool(
+                    page_info_by_path[current_record["path"]].get("reuse_cached_inpaint", False)
+                )
 
                 if self._can_pair_for_seam(current_record, next_record):
                     self._emit_progress(
@@ -545,7 +566,6 @@ class FlowMixin:
 
                 self._emit_progress(current_record["selected_index"], total_images, 2, False)
                 page_state = self.main_page.image_states.get(current_record["path"], {})
-                source_lang = page_state.get("source_lang", self.main_page.s_combo.currentText())
                 ocr_image = self._build_extended_ocr_image_for_pair(
                     current_record=current_record,
                     next_record=next_record,
@@ -558,44 +578,45 @@ class FlowMixin:
                 self._run_ocr_on_blocks(
                     ocr_image,
                     ocr_blocks,
-                    source_lang,
+                    "",
                     ocr_affected_paths,
                     reason="OCR",
                     sort_after=False,
                 )
 
-                self._emit_progress(current_record["selected_index"], total_images, 4, False)
-                mask, inpainted = self._inpaint_image_with_blocks(
-                    current_record["image"], regular_blocks
-                )
-                if mask is not None and inpainted is not None:
-                    regular_patches = self._extract_page_patches_from_mask(
-                        mask=mask,
-                        inpainted=inpainted,
-                        page_index=int(current_record["global_index"]),
-                        file_path=current_record["path"],
-                        y_offset=int(current_record["y_offset"]),
+                if not reuse_cached_inpaint:
+                    self._emit_progress(current_record["selected_index"], total_images, 4, False)
+                    mask, inpainted = self._inpaint_image_with_blocks(
+                        current_record["image"], regular_blocks
                     )
-                    page_accum[current_record["path"]]["patches"].extend(regular_patches)
+                    if mask is not None and inpainted is not None:
+                        regular_patches = self._extract_page_patches_from_mask(
+                            mask=mask,
+                            inpainted=inpainted,
+                            page_index=int(current_record["global_index"]),
+                            file_path=current_record["path"],
+                            y_offset=int(current_record["y_offset"]),
+                        )
+                        page_accum[current_record["path"]]["patches"].extend(regular_patches)
 
-                if split_matches and next_record is not None:
-                    seam_patches = self._process_seam_job_ocr_and_inpaint(
-                        seam_job=SimpleNamespace(
-                            top_page_index=0,
-                            bottom_page_index=1,
-                            matches=split_matches,
-                        ),
-                        page_records=[current_record, next_record],
-                    )
-                    for patches in seam_patches.values():
-                        for patch in patches:
-                            patch_path = patch.get("file_path")
-                            if patch_path in page_accum:
-                                page_accum[patch_path]["patches"].append(patch)
+                    if split_matches and next_record is not None:
+                        seam_patches = self._process_seam_job_ocr_and_inpaint(
+                            seam_job=SimpleNamespace(
+                                top_page_index=0,
+                                bottom_page_index=1,
+                                matches=split_matches,
+                            ),
+                            page_records=[current_record, next_record],
+                        )
+                        for patches in seam_patches.values():
+                            for patch in patches:
+                                patch_path = patch.get("file_path")
+                                if patch_path in page_accum:
+                                    page_accum[patch_path]["patches"].append(patch)
 
                 final_blocks_virtual = regular_blocks + split_owned_blocks
-                source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
-                rtl = source_lang_en == "Japanese"
+                orientation = infer_orientation([blk.xyxy for blk in final_blocks_virtual]) if final_blocks_virtual else "horizontal"
+                rtl = infer_reading_order(orientation) == "rtl"
                 final_blocks_virtual = (
                     sort_blk_list(final_blocks_virtual, rtl) if final_blocks_virtual else []
                 )
@@ -603,11 +624,11 @@ class FlowMixin:
                 self._emit_progress(current_record["selected_index"], total_images, 7, False)
                 target_lang = page_state.get("target_lang", self.main_page.t_combo.currentText())
                 self._run_translation_on_blocks(
-                    image=current_record["image"],
-                    blocks=final_blocks_virtual,
-                    source_lang=source_lang,
-                    target_lang=target_lang,
-                    image_path=current_record["path"],
+                    current_record["image"],
+                    final_blocks_virtual,
+                    "",
+                    target_lang,
+                    current_record["path"],
                 )
 
                 final_blocks_physical = self._convert_blocks_to_physical(

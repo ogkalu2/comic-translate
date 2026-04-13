@@ -4,6 +4,7 @@ from PySide6.QtGui import QFont, QCursor, QColor, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QPainter
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF, QSizeF
 import math, copy
+import uuid
 from dataclasses import dataclass
 from enum import Enum
 from modules.rendering.render import pyside_word_wrap
@@ -71,10 +72,12 @@ class TextBlockItem(QGraphicsTextItem):
              bold=False, 
              italic=False, 
              underline=False,
-             direction=Qt.LayoutDirection.LeftToRight):
+             direction=Qt.LayoutDirection.LeftToRight,
+             block_uid: str = ""):
 
         super().__init__(text)
         self.source_text = source_text if source_text else ""
+        self.block_uid = block_uid or uuid.uuid4().hex
         self.text_color = render_color
         self.outline = True if outline_color else False
         self.outline_color = outline_color
@@ -402,12 +405,10 @@ class TextBlockItem(QGraphicsTextItem):
             if height is None:
                 height = box_height
 
-        preserved_formats = self._capture_character_formats()
         wrapped_text, new_font_size = self.fit_text_to_rect(width, height, max_font_size=max_font_size)
         self._suspend_text_changed = True
         try:
             self.setPlainText(wrapped_text)
-            self._restore_character_formats(wrapped_text, preserved_formats, font_size=new_font_size)
         finally:
             self._suspend_text_changed = False
 
@@ -1163,7 +1164,8 @@ class TextBlockItem(QGraphicsTextItem):
             outline_width=self.outline_width,
             bold=self.bold,
             italic=self.italic,
-            underline=self.underline
+            underline=self.underline,
+            block_uid=getattr(self, "block_uid", ""),
         )
         
         new_instance.set_text(self.toHtml(), width)

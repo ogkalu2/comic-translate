@@ -427,13 +427,25 @@ class ImageViewer(QGraphicsView):
         mask = self.drawing_manager.generate_mask_from_strokes()
         return mask
     
-    def create_rect_item(self, rect: QRectF, scene_pos: QPointF = None) -> MoveableRectItem:
-        rect_item = MoveableRectItem(rect, None)
+    def create_rect_item(
+        self,
+        rect: QRectF,
+        scene_pos: QPointF = None,
+        block_uid: str = "",
+    ) -> MoveableRectItem:
+        rect_item = MoveableRectItem(rect, None, block_uid=block_uid)
         self._scene.addItem(rect_item)
         return rect_item
 
-    def add_rectangle(self, rect: QRectF, position: QPointF, rotation: float = 0, origin: QPointF = None) -> MoveableRectItem:
-        rect_item = self.create_rect_item(rect)
+    def add_rectangle(
+        self,
+        rect: QRectF,
+        position: QPointF,
+        rotation: float = 0,
+        origin: QPointF = None,
+        block_uid: str = "",
+    ) -> MoveableRectItem:
+        rect_item = self.create_rect_item(rect, block_uid=block_uid)
         rect_item.setPos(position)
         rect_item.setRotation(rotation)
         if origin:
@@ -473,6 +485,7 @@ class ImageViewer(QGraphicsView):
             italic=properties.italic, 
             underline=properties.underline,
             direction=properties.direction,
+            block_uid=getattr(properties, "block_uid", ""),
         )
         
         # Apply width if specified
@@ -556,13 +569,12 @@ class ImageViewer(QGraphicsView):
     def save_brush_strokes(self) -> List[Dict]:
         return self.drawing_manager.save_brush_strokes()
 
-    def draw_segmentation_lines(self, bboxes, text_bbox=None, bubble_xyxy=None, text_class=None, source_lang=None):
+    def draw_segmentation_lines(self, bboxes, text_bbox=None, bubble_xyxy=None, text_class=None):
         self.drawing_manager.draw_segmentation_lines(
             bboxes,
             text_bbox=text_bbox,
             bubble_xyxy=bubble_xyxy,
             text_class=text_class,
-            source_lang=source_lang,
         )
 
     def has_drawn_elements(self) -> bool:
@@ -590,9 +602,10 @@ class ImageViewer(QGraphicsView):
             if item is None or item.scene() is not self._scene:
                 continue
             rectangles_state.append({
-                'rect': (item.pos().x(), item.pos().y(), item.boundingRect().width(), item.boundingRect().height()),
+                'rect': (item.pos().x(), item.pos().y(), item.rect().width(), item.rect().height()),
                 'rotation': item.rotation(),
-                'transform_origin': (item.transformOriginPoint().x(), item.transformOriginPoint().y())
+                'transform_origin': (item.transformOriginPoint().x(), item.transformOriginPoint().y()),
+                'block_uid': getattr(item, "block_uid", ""),
             })
             
         text_items_state = []
@@ -624,7 +637,13 @@ class ImageViewer(QGraphicsView):
             for data in state['rectangles']:
                 x, y, w, h = data['rect']
                 origin = QPointF(*data.get('transform_origin', (0,0))) if 'transform_origin' in data else None
-                self.add_rectangle(QRectF(0,0,w,h), QPointF(x,y), data.get('rotation', 0), origin)
+                self.add_rectangle(
+                    QRectF(0,0,w,h),
+                    QPointF(x,y),
+                    data.get('rotation', 0),
+                    origin,
+                    data.get('block_uid', ''),
+                )
 
             for data in state.get('text_items_state', []):
                 # Use the new add_text_item function for consistency

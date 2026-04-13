@@ -12,6 +12,7 @@ from app.ui.messages import Messages
 from modules.detection.processor import TextBlockDetector
 from modules.translation.processor import Translator
 from modules.utils.device import resolve_device
+from modules.detection.utils.orientation import infer_orientation, infer_reading_order
 from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.pipeline_config import get_config, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
@@ -187,16 +188,11 @@ class ChunkMixin:
             logger.info("No text blocks detected in virtual chunk %s", chunk_id)
 
         if blk_list:
-            source_lang = self.main_page.image_states[vpage1.physical_page_path][
-                "source_lang"
-            ]
-            self.ocr_handler.ocr.initialize(self.main_page, source_lang)
+            self.ocr_handler.ocr.initialize(self.main_page, "")
             try:
                 self.ocr_handler.ocr.process(combined_image, blk_list)
-                source_lang_english = self.main_page.lang_mapping.get(
-                    source_lang, source_lang
-                )
-                rtl = True if source_lang_english == "Japanese" else False
+                orientation = infer_orientation([blk.xyxy for blk in blk_list]) if blk_list else "horizontal"
+                rtl = infer_reading_order(orientation) == "rtl"
                 blk_list = sort_blk_list(blk_list, rtl)
             except InsufficientCreditsException:
                 raise
@@ -295,7 +291,7 @@ class ChunkMixin:
             extra_context = self.main_page.settings_page.get_llm_settings()[
                 "extra_context"
             ]
-            translator = Translator(self.main_page, source_lang, target_lang)
+            translator = Translator(self.main_page, "", target_lang)
             try:
                 translator.translate(blk_list, combined_image, extra_context)
             except InsufficientCreditsException:

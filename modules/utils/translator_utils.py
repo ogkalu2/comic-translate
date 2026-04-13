@@ -1,3 +1,4 @@
+import ast
 import base64
 import json
 import logging
@@ -51,6 +52,43 @@ def log_json_decode_failure(context: str, content: str, exc: json.JSONDecodeErro
         getattr(exc, "msg", str(exc)),
         preview,
     )
+
+
+def _strip_code_fences(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = re.sub(
+            r"^```(?:json)?\s*|\s*```$",
+            "",
+            stripped,
+            flags=re.IGNORECASE | re.DOTALL,
+        ).strip()
+    return stripped
+
+
+def _parse_loose_json(content: str):
+    if content is None:
+        return None
+
+    text = _strip_code_fences(str(content))
+    if not text:
+        return None
+
+    candidates = [text]
+    for pattern in (r"\{[\s\S]*\}", r"\[[\s\S]*\]"):
+        match = re.search(pattern, text)
+        if match:
+            candidates.append(match.group(0))
+
+    for candidate in candidates:
+        cleaned = re.sub(r",(\s*[}\]])", r"\1", candidate)
+        for parser in (json.loads, ast.literal_eval):
+            try:
+                return parser(cleaned)
+            except Exception:
+                continue
+
+    return None
 
 def encode_image_array(img_array: np.ndarray):
     img_bytes = imk.encode_image(img_array, ".png")
@@ -234,12 +272,24 @@ def set_translations_from_result_array(blk_list: list[TextBlock], content: str, 
     Ожидает строгий JSON object формата {"r":[...]} (ключ по умолчанию 'r').
     Маппинг по индексу блока.
     """
+    obj = None
     try:
         obj = json.loads(content)
     except json.JSONDecodeError as exc:
-        log_json_decode_failure("set_translations_from_result_array", content, exc)
-        raise
-    arr = obj[key]
+        obj = _parse_loose_json(content)
+        if obj is None:
+            log_json_decode_failure("set_translations_from_result_array", content, exc)
+            raise
+
+    if isinstance(obj, list):
+        arr = obj
+    elif isinstance(obj, dict):
+        arr = obj.get(key)
+        if arr is None and len(obj) == 1:
+            arr = next(iter(obj.values()))
+    else:
+        arr = None
+
     if not isinstance(arr, list) or not all(isinstance(x, str) for x in arr):
         raise ValueError(f"Invalid result format: expected {{{json.dumps(key)}:[str,...]}}")
 

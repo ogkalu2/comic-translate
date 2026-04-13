@@ -5,19 +5,6 @@ from modules.utils.paths import get_user_data_dir
 user_font_path = os.path.join(get_user_data_dir(), "fonts")
 os.makedirs(user_font_path, exist_ok=True)
 
-supported_source_languages = [
-    "Korean",
-    "Japanese",
-    "French",
-    "Chinese",
-    "English",
-    "Russian",
-    "German",
-    "Dutch",
-    "Spanish",
-    "Italian",
-]
-
 supported_target_languages = [
     "English",
     "Korean",

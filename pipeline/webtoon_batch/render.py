@@ -1,6 +1,6 @@
 import logging
+import copy
 import os
-from types import SimpleNamespace
 from typing import Dict, List
 
 import imkit as imk
@@ -10,7 +10,7 @@ from app.path_materialization import ensure_path_materialized
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
-from modules.rendering.render import get_best_render_area, is_vertical_block, pyside_word_wrap
+from modules.rendering.render import is_vertical_block, pyside_word_wrap
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.textblock import TextBlock
@@ -73,9 +73,10 @@ class RenderMixin:
                 if blk.translation:
                     blk.translation = blk.translation.replace(" ", "")
 
-        self.main_page.image_states[image_path].update({"blk_list": final_blocks})
-        if "viewer_state" in self.main_page.image_states[image_path]:
-            self.main_page.image_states[image_path]["viewer_state"]["push_to_stack"] = True
+        page_state = self.main_page.image_states[image_path]
+        page_state.update({"blk_list": final_blocks, "target_lang": target_lang})
+        if "viewer_state" in page_state:
+            page_state["viewer_state"]["push_to_stack"] = True
 
     def _emit_and_store_virtual_page_results(
         self, vpage: VirtualPage, blk_list_virtual: List[TextBlock]
@@ -132,11 +133,6 @@ class RenderMixin:
             page_y_position_in_scene = webtoon_manager.image_positions[
                 vpage.physical_page_index
             ]
-
-        # In webtoon mode this is the correct stage for bubble-aware bounds:
-        # after merge/dedupe, before wrapping/state creation.
-        virtual_img = SimpleNamespace(shape=(vpage.crop_height, vpage.physical_width, 3))
-        get_best_render_area(blk_list_virtual, virtual_img)
 
         for blk_virtual in blk_list_virtual:
             physical_coords = vpage.virtual_to_physical_coords(blk_virtual.xyxy)
@@ -221,6 +217,7 @@ class RenderMixin:
                 height=rendered_height,
                 direction=direction,
                 vertical=vertical,
+                block_uid=getattr(blk_virtual, "block_uid", ""),
                 selection_outlines=[
                     OutlineInfo(
                         0,
@@ -267,6 +264,9 @@ class RenderMixin:
                     if self._rect_area_xyxy(clipped) <= 20.0:
                         continue
                     self._spanning_claims_by_page[tgt_idx].append(clipped)
+
+        target_render_states = page_state.setdefault("target_render_states", {})
+        target_render_states[target_lang] = copy.deepcopy(viewer_state)
 
     def _finalize_and_emit_for_virtual_page(self, vpage: VirtualPage):
         """

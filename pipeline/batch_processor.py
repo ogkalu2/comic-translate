@@ -22,7 +22,6 @@ from app.ui.canvas.text_item import OutlineInfo, OutlineType
 from app.ui.messages import Messages
 from modules.detection.processor import TextBlockDetector
 from modules.rendering.render import (
-    get_best_render_area,
     is_vertical_block,
     pyside_word_wrap,
     resolve_init_font_size,
@@ -31,6 +30,7 @@ from modules.translation.processor import Translator
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.image_utils import get_smart_text_color
+from modules.detection.utils.orientation import infer_orientation, infer_reading_order
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.pipeline_config import get_config
 from modules.utils.textblock import sort_blk_list
@@ -61,9 +61,8 @@ class PreparedBatchPage:
     base_name: str
     extension: str
     archive_bname: str
-    source_lang: str
-    target_lang: str
-    trg_lng_cd: str
+    target_lang: str = ""
+    trg_lng_cd: str = ""
     image: object | None = None
     blk_list: list | None = None
     mask: object | None = None
@@ -71,7 +70,8 @@ class PreparedBatchPage:
     ocr_cache_key: object | None = None
     translation_cache_key: object | None = None
     translation_failed: bool = False
-    skip_full_pipeline: bool = False  # Page is fully done and needs no reprocessing
+    skip_full_pipeline: bool = False  # Page is fully done for the active target
+    skip_inpaint: bool = False  # Cached inpaint layer is already available for this page
 
 
 class BatchProcessor:
@@ -163,7 +163,6 @@ class BatchProcessor:
         image_path: str,
         timestamp: str,
     ) -> PreparedBatchPage:
-        source_lang = self.main_page.image_states[image_path]["source_lang"]
         target_lang = self.main_page.image_states[image_path]["target_lang"]
         target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
         trg_lng_cd = get_language_code(target_lang_en)
@@ -180,7 +179,6 @@ class BatchProcessor:
             base_name=base_name,
             extension=extension,
             archive_bname=archive_bname,
-            source_lang=source_lang,
             target_lang=target_lang,
             trg_lng_cd=trg_lng_cd,
         )
@@ -197,7 +195,6 @@ class BatchProcessor:
         if ps is None:
             ps = {
                 "completed_stages": [],
-                "source_lang": "",
                 "target_lang": "",
                 "inpaint_hash": "",
                 "translator_key": "",
@@ -218,8 +215,8 @@ class BatchProcessor:
         if not self._has_stages_completed(all_stages, ps):
             logger.debug(f"_page_is_fully_done: missing stages, completed={ps.get('completed_stages')} for {page.image_path}")
             return False
-        if ps.get("source_lang") != page.source_lang or ps.get("target_lang") != page.target_lang:
-            logger.debug(f"_page_is_fully_done: language mismatch ps_src={ps.get('source_lang')} ps_trg={ps.get('target_lang')} page_src={page.source_lang} page_trg={page.target_lang} for {page.image_path}")
+        if ps.get("target_lang") != page.target_lang:
+            logger.debug(f"_page_is_fully_done: target mismatch ps_trg={ps.get('target_lang')} page_trg={page.target_lang} for {page.image_path}")
             return False
         if ps.get("translator_key") != translator_key:
             logger.debug(f"_page_is_fully_done: translator mismatch ps={ps.get('translator_key')} now={translator_key} for {page.image_path}")
@@ -228,9 +225,51 @@ class BatchProcessor:
         if ps.get("extra_context_hash") != current_ctx_hash:
             logger.debug(f"_page_is_fully_done: context hash mismatch for {page.image_path}")
             return False
-        blk_list = self.main_page.image_states.get(page.image_path, {}).get("blk_list")
+        state = self.main_page.image_states.get(page.image_path, {})
+        blk_list = state.get("blk_list")
         if not blk_list:
             logger.debug(f"_page_is_fully_done: no blk_list for {page.image_path}")
+            return False
+        ocr_cache_key = self._get_ocr_cache_key_for_page(page)
+        if not self.cache_manager._can_serve_all_blocks_from_ocr_cache(ocr_cache_key, blk_list):
+            logger.debug(f"_page_is_fully_done: OCR cache incomplete for {page.image_path}")
+            return False
+
+        translation_cache_key = self.cache_manager._get_translation_cache_key(
+            page.image,
+            "",
+            page.target_lang,
+            translator_key,
+            extra_context,
+        )
+        if not self.cache_manager._can_serve_all_blocks_from_translation_cache(translation_cache_key, blk_list):
+            logger.debug(f"_page_is_fully_done: translation cache incomplete for {page.image_path}")
+            return False
+
+        viewer_state = (state.get("target_render_states", {}) or {}).get(page.target_lang)
+        if not viewer_state:
+            logger.debug(f"_page_is_fully_done: missing target render snapshot for {page.image_path}")
+            return False
+        text_items_state = viewer_state.get("text_items_state") or []
+        if not text_items_state:
+            logger.debug(f"_page_is_fully_done: missing rendered text items for {page.image_path}")
+            return False
+
+        rendered_uids = {
+            str(item.get("block_uid", ""))
+            for item in text_items_state
+            if isinstance(item, dict) and item.get("block_uid")
+        }
+        expected_uids = {
+            str(getattr(blk, "block_uid", ""))
+            for blk in blk_list
+            if getattr(blk, "block_uid", "") and len((getattr(blk, "translation", "") or "")) > 1
+        }
+        if rendered_uids != expected_uids:
+            logger.debug(
+                f"_page_is_fully_done: render snapshot mismatch for {page.image_path} "
+                f"rendered={len(rendered_uids)} expected={len(expected_uids)}"
+            )
             return False
         return True
 
@@ -239,6 +278,102 @@ class BatchProcessor:
         This is true when detection stage was completed and blk_list is available."""
         ps = self._get_pipeline_state(page.image_path)
         return self._has_stages_completed({"detection"}, ps)
+
+    def _page_can_skip_inpainting(self, page: PreparedBatchPage) -> bool:
+        """Check if a page already has a reusable inpaint result.
+
+        Inpaint is page-wide and target-independent. Once it has been completed
+        and the generated patches are still present in the project state, later
+        target-language reruns should reuse that cached cleanup instead of
+        recomputing a new mask/inpaint pass.
+        """
+        ps = self._get_pipeline_state(page.image_path)
+        if not self._has_stages_completed({"inpaint"}, ps):
+            return False
+        return bool(self._get_cached_inpaint_patches(page.image_path))
+
+    def _get_cached_inpaint_patches(self, image_path: str) -> list[dict]:
+        state = self.main_page.image_states.get(image_path, {})
+        inpaint_cache = state.get("inpaint_cache") or []
+        if inpaint_cache:
+            return inpaint_cache
+        return self.main_page.image_patches.get(image_path, []) or []
+
+    def _prime_runtime_inpaint_cache(self, page: PreparedBatchPage) -> list[dict]:
+        cached_patches = self._get_cached_inpaint_patches(page.image_path)
+        if cached_patches and not self.main_page.image_patches.get(page.image_path):
+            self.main_page.image_patches[page.image_path] = [
+                dict(patch) for patch in cached_patches
+            ]
+        return cached_patches
+
+    def _restore_cached_inpaint_image(self, page: PreparedBatchPage):
+        """Rebuild the cleaned page image from cached inpaint patches.
+
+        The cache stores patch slices, not a full flattened image, so reuse on a
+        later target language needs to replay those slices back onto the base
+        page image.
+        """
+        if page.image is None:
+            return None
+
+        cached_patches = self._prime_runtime_inpaint_cache(page)
+        if not cached_patches:
+            return page.image
+
+        restored = page.image.copy()
+        mem_by_hash = {
+            patch.get("hash"): patch
+            for patch in self.main_page.in_memory_patches.get(page.image_path, [])
+            if patch.get("hash")
+        }
+
+        for saved_patch in cached_patches:
+            bbox = saved_patch.get("bbox") or []
+            if len(bbox) != 4:
+                continue
+
+            x, y, w, h = (int(round(float(v))) for v in bbox)
+            if w <= 0 or h <= 0:
+                continue
+            if x >= restored.shape[1] or y >= restored.shape[0]:
+                continue
+
+            patch_image = None
+            patch_hash = saved_patch.get("hash")
+            if patch_hash and patch_hash in mem_by_hash:
+                patch_image = mem_by_hash[patch_hash].get("image")
+
+            if patch_image is None:
+                png_path = saved_patch.get("png_path")
+                if png_path:
+                    ensure_path_materialized(png_path)
+                    patch_image = imk.read_image(png_path)
+
+            if patch_image is None:
+                continue
+
+            patch_h, patch_w = patch_image.shape[:2]
+            copy_w = min(w, patch_w, restored.shape[1] - x)
+            copy_h = min(h, patch_h, restored.shape[0] - y)
+            if copy_w <= 0 or copy_h <= 0:
+                continue
+
+            restored[y : y + copy_h, x : x + copy_w] = patch_image[:copy_h, :copy_w]
+
+        return restored
+
+    def _page_can_skip_ocr(self, page: PreparedBatchPage) -> bool:
+        """Check if a page already has OCR results and can skip OCR stage.
+        This is true when OCR stage was completed and OCR settings unchanged."""
+        ps = self._get_pipeline_state(page.image_path)
+        if not self._has_stages_completed({"ocr"}, ps):
+            return False
+
+        # Check if OCR cache key matches (this validates model/device/settings)
+        expected_ocr_cache_key = self._get_ocr_cache_key_for_page(page)
+        cached_ocr_cache_key = ps.get("ocr_cache_key", "")
+        return expected_ocr_cache_key == cached_ocr_cache_key
 
     def _load_page_state_into_blk_list(self, page: PreparedBatchPage):
         """Load the saved blk_list from image_states into the page object, skipping
@@ -253,17 +388,18 @@ class BatchProcessor:
             page.blk_list = [blk for blk in saved_blk_list]  # shallow copy
             logger.info(f"Loaded saved blk_list for {page.image_path} ({len(page.blk_list)} blocks)")
 
-    def _cache_ocr_results_for_page(self, cache_key, page: PreparedBatchPage):
-        if page.blk_list:
-            self.cache_manager._cache_ocr_results(cache_key, page.blk_list)
+    def _cache_ocr_results_for_page(self, cache_key, page_or_blocks):
+        if isinstance(page_or_blocks, PreparedBatchPage):
+            blk_list = page_or_blocks.blk_list
+        else:
+            blk_list = page_or_blocks
+        if blk_list:
+            self.cache_manager._cache_ocr_results(cache_key, blk_list)
 
     def _sort_page_blocks_after_ocr(self, page: PreparedBatchPage):
         self.ocr_handler.ocr.sanitize_block_texts(page.blk_list)
-        source_lang_english = self.main_page.lang_mapping.get(
-            page.source_lang,
-            page.source_lang,
-        )
-        rtl = source_lang_english == "Japanese"
+        orientation = infer_orientation([blk.xyxy for blk in page.blk_list]) if page.blk_list else "horizontal"
+        rtl = infer_reading_order(orientation) == "rtl"
         page.blk_list = sort_blk_list(page.blk_list, rtl)
 
     def _get_ocr_cache_key_for_page(self, page: PreparedBatchPage):
@@ -272,7 +408,7 @@ class BatchProcessor:
         device = resolve_device(settings_page.is_gpu_enabled())
         return self.cache_manager._get_ocr_cache_key(
             page.image,
-            page.source_lang,
+            "",
             ocr_model,
             device,
         )
@@ -324,7 +460,7 @@ class BatchProcessor:
         )
 
     def _run_page_ocr_fallback(self, page: PreparedBatchPage) -> bool:
-        self.ocr_handler.ocr.initialize(self.main_page, page.source_lang)
+        self.ocr_handler.ocr.initialize(self.main_page, "")
         try:
             self.ocr_handler.ocr.process(page.image, page.blk_list)
             self._cache_ocr_results_for_page(page.ocr_cache_key, page)
@@ -342,12 +478,13 @@ class BatchProcessor:
         batch_size: int,
     ) -> list[PreparedBatchPage]:
         completed_pages: list[PreparedBatchPage] = []
+        page_blocks_to_process = [
+            getattr(page, "_ocr_missing_blocks", page.blk_list)
+            for page in pages
+        ]
         try:
             processed_blk_lists = self.ocr_handler.ocr.process_page_block_batches(
-                [
-                    (page.image, page.blk_list, page.source_lang)
-                    for page in pages
-                ],
+                [(page.image, missing_blocks, "") for page, missing_blocks in zip(pages, page_blocks_to_process)],
                 batch_size=batch_size,
                 main_page=self.main_page,
             )
@@ -355,8 +492,7 @@ class BatchProcessor:
             raise
         except Exception:
             logger.debug(
-                "Block-crop batch OCR failed for source_lang=%s, falling back to page OCR.",
-                pages[0].source_lang,
+                "Block-crop batch OCR failed, falling back to page OCR.",
                 exc_info=True,
             )
             for page in pages:
@@ -364,9 +500,8 @@ class BatchProcessor:
                     completed_pages.append(page)
             return completed_pages
 
-        for page, blk_list in zip(pages, processed_blk_lists):
-            page.blk_list = blk_list
-            self._cache_ocr_results_for_page(page.ocr_cache_key, page)
+        for page, blk_list, missing_blocks in zip(pages, processed_blk_lists, page_blocks_to_process):
+            self._cache_ocr_results_for_page(page.ocr_cache_key, missing_blocks)
             self._sort_page_blocks_after_ocr(page)
             completed_pages.append(page)
 
@@ -378,7 +513,7 @@ class BatchProcessor:
         total_images: int,
     ) -> list[PreparedBatchPage]:
         ready_pages: list[PreparedBatchPage] = []
-        pending_by_source: dict[str, list[PreparedBatchPage]] = {}
+        pending_pages: list[PreparedBatchPage] = []
 
         for page in prepared_pages:
             self.emit_progress(page.index, total_images, 2, 10, False)
@@ -386,21 +521,21 @@ class BatchProcessor:
                 return ready_pages
 
             page.ocr_cache_key = self._get_ocr_cache_key_for_page(page)
-            if self.cache_manager._can_serve_all_blocks_from_ocr_cache(page.ocr_cache_key, page.blk_list):
-                self.cache_manager._apply_cached_ocr_to_blocks(page.ocr_cache_key, page.blk_list)
+            self.cache_manager._apply_cached_ocr_to_blocks(page.ocr_cache_key, page.blk_list)
+            missing_blocks = self.cache_manager._get_missing_ocr_blocks(page.ocr_cache_key, page.blk_list)
+            if not missing_blocks:
                 self._sort_page_blocks_after_ocr(page)
                 ready_pages.append(page)
                 continue
 
-            pending_by_source.setdefault(page.source_lang, []).append(page)
+            page._ocr_missing_blocks = missing_blocks
+            pending_pages.append(page)
 
         ocr_batch_size = self._get_batch_settings()["ocr_batch_size"]
-        for source_lang in pending_by_source:
-            if self._is_cancelled():
-                return ready_pages
+        if pending_pages and not self._is_cancelled():
             ready_pages.extend(
                 self._run_block_crop_batch_ocr(
-                    pending_by_source[source_lang],
+                    pending_pages,
                     batch_size=ocr_batch_size,
                 )
             )
@@ -637,10 +772,11 @@ class BatchProcessor:
     def _translate_one_page_worker(self, page: PreparedBatchPage):
         settings_page = self.main_page.settings_page
         extra_context = settings_page.get_llm_settings()["extra_context"]
-        translator = Translator(self.main_page, page.source_lang, page.target_lang)
+        translator = Translator(self.main_page, "", page.target_lang)
         sanitize_translation_source_blocks(page.blk_list)
+        blocks_to_translate = getattr(page, "_translation_missing_blocks", page.blk_list)
         translated_blk_list = translator.translate(
-            page.blk_list,
+            blocks_to_translate,
             page.image,
             extra_context,
         )
@@ -683,9 +819,11 @@ class BatchProcessor:
                             page.image_path,
                         )
 
+                    translation_blocks = getattr(page, "_translation_missing_blocks", page.blk_list)
                     self.cache_manager._cache_translation_results(
                         page.translation_cache_key,
-                        page.blk_list,
+                        translation_blocks,
+                        translated_blk_list,
                     )
                 except InsufficientCreditsException:
                     raise
@@ -795,7 +933,6 @@ class BatchProcessor:
         outline = render_settings.outline
 
         format_translations(page.blk_list, page.trg_lng_cd, upper_case=upper_case)
-        get_best_render_area(page.blk_list, page.image, page.inpaint_input_img)
 
         font = render_settings.font_family
         setting_font_color = QColor(render_settings.color)
@@ -866,6 +1003,7 @@ class BatchProcessor:
                 height=block_height,
                 direction=direction,
                 vertical=vertical,
+                block_uid=getattr(blk, "block_uid", ""),
                 selection_outlines=[
                     OutlineInfo(
                         0,
@@ -880,13 +1018,19 @@ class BatchProcessor:
             )
             text_items_state.append(text_props.to_dict())
 
-        viewer_state = self.main_page.image_states[page.image_path]["viewer_state"]
+        state = self.main_page.image_states[page.image_path]
+        viewer_state = state.setdefault("viewer_state", {})
         viewer_state.update(
             {
                 "text_items_state": text_items_state,
                 "push_to_stack": True,
             }
         )
+        target_render_states = state.setdefault("target_render_states", {})
+        target_render_states[page.target_lang] = {
+            **viewer_state,
+            "text_items_state": list(text_items_state),
+        }
 
     def _finalize_prepared_page(
         self,
@@ -909,24 +1053,22 @@ class BatchProcessor:
         if self._is_cancelled():
             return False
 
-        self.main_page.image_states[page.image_path].update({"blk_list": page.blk_list})
+        state = self.main_page.image_states[page.image_path]
+        state.update({"blk_list": page.blk_list, "target_lang": page.target_lang})
         self.main_page.render_state_ready.emit(page.image_path)
 
         if page.image_path == self._current_displayed_file():
             self.main_page.blk_list = page.blk_list
 
         # Record pipeline_state to enable stage-skipping on future runs
-        state = self.main_page.image_states[page.image_path]
         ps = state.setdefault("pipeline_state", {
             "completed_stages": [],
-            "source_lang": "",
             "target_lang": "",
             "inpaint_hash": "",
             "translator_key": "",
             "extra_context_hash": "",
         })
         ps["completed_stages"] = list({"detection", "ocr", "inpaint", "translate", "render"})
-        ps["source_lang"] = page.source_lang
         ps["target_lang"] = page.target_lang
         ps["translator_key"] = translator_key
         ps["extra_context_hash"] = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
@@ -1070,7 +1212,7 @@ class BatchProcessor:
                 continue
 
             ps = self._get_pipeline_state(loaded_page.image_path)
-            logger.info(f"Page {loaded_page.image_path} pipeline_state: completed={ps.get('completed_stages')} src={ps.get('source_lang')} trg={ps.get('target_lang')}")
+            logger.info(f"Page {loaded_page.image_path} pipeline_state: completed={ps.get('completed_stages')} trg={ps.get('target_lang')}")
 
             if self._page_is_fully_done(loaded_page, translator_key, extra_context):
                 fully_done_pages.append(loaded_page)
@@ -1141,13 +1283,14 @@ class BatchProcessor:
             self._load_page_state_into_blk_list(page)
             # Apply cached translations directly (they are guaranteed to match)
             tc_key = self.cache_manager._get_translation_cache_key(
-                page.image, page.source_lang, page.target_lang, translator_key, extra_context
+                page.image, "", page.target_lang, translator_key, extra_context
             )
             page.translation_cache_key = tc_key
             self.cache_manager._apply_cached_translations_to_blocks(tc_key, page.blk_list)
-            # Skip inpainting — use original image as render target
-            page.inpaint_input_img = page.image
+            # Skip inpainting — restore the cached cleaned image as render target.
+            page.inpaint_input_img = self._restore_cached_inpaint_image(page)
             page.skip_full_pipeline = True
+            page.skip_inpaint = True
             translated_pages.append(page)
             self.emit_progress(page.index, total_images, 10, 10, False)
             logger.info(f"Fully done page rendered without reprocessing: {page.image_path}")
@@ -1175,27 +1318,33 @@ class BatchProcessor:
                 return
 
             self._reload_page_image(page)
+            page.skip_inpaint = self._page_can_skip_inpainting(page)
+            if page.skip_inpaint:
+                logger.info("Reusing cached inpaint layer for %s", page.image_path)
+                page.inpaint_input_img = self._restore_cached_inpaint_image(page)
             sanitize_translation_source_blocks(page.blk_list)
             page.translation_cache_key = self.cache_manager._get_translation_cache_key(
                 page.image,
-                page.source_lang,
+                "",
                 page.target_lang,
                 translator_key,
                 extra_context,
             )
-            if self.cache_manager._can_serve_all_blocks_from_translation_cache(
+            self.cache_manager._apply_cached_translations_to_blocks(
                 page.translation_cache_key,
                 page.blk_list,
-            ):
-                self.cache_manager._apply_cached_translations_to_blocks(
-                    page.translation_cache_key,
-                    page.blk_list,
-                )
+            )
+            missing_blocks = self.cache_manager._get_missing_translation_blocks(
+                page.translation_cache_key,
+                page.blk_list,
+            )
+            if not missing_blocks:
                 self.emit_progress(page.index, total_images, 7, 10, False)
                 self._release_page_buffers(page)
                 translated_pages.append(page)
                 continue
 
+            page._translation_missing_blocks = missing_blocks
             translation_queue.append(page)
             if len(translation_queue) >= page_batch_size:
                 translated_pages.extend(
@@ -1220,10 +1369,10 @@ class BatchProcessor:
         self._release_translation_model_caches()
         self._trim_runtime_memory()
 
-        # Separate fully done pages (already rendered above, skip inpaint)
-        # from pages that need inpainting
-        pages_needing_inpaint = [p for p in translated_pages if getattr(p, 'skip_full_pipeline', False) is False]
-        fully_done_rendered = [p for p in translated_pages if getattr(p, 'skip_full_pipeline', False) is True]
+        # Separate pages that still need a fresh inpaint pass from pages that can
+        # reuse the cached cleanup layer from a previous run/target.
+        pages_needing_inpaint = [p for p in translated_pages if getattr(p, 'skip_inpaint', False) is False]
+        fully_done_rendered = [p for p in translated_pages if getattr(p, 'skip_inpaint', False) is True]
 
         finalized_pages = self._run_chunk_inpainting(
             pages_needing_inpaint,

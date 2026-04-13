@@ -1,5 +1,6 @@
 import logging
 from modules.detection.utils.content import get_inpaint_bboxes
+from modules.rendering.render import get_best_render_area
 from .webtoon_utils import (
     filter_and_convert_visible_blocks, 
     restore_original_block_coordinates,
@@ -38,6 +39,8 @@ class SegmentationHandler:
         if not visible_blocks:
             logger.info("No blocks found in visible area for segmentation")
             return
+
+        get_best_render_area(visible_blocks, visible_image)
         
         # Perform segmentation on the visible image with filtered blocks
         results = []

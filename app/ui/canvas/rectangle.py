@@ -1,4 +1,5 @@
 import math
+import uuid
 from PySide6.QtWidgets import QGraphicsRectItem
 from PySide6.QtCore import Signal, QObject, QRectF, Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QCursor
@@ -11,6 +12,7 @@ class RectState:
     rect: tuple  # (x1, y1, x2, y2)
     rotation: float
     transform_origin: QPointF
+    block_uid: str = ""
 
     @classmethod
     def from_item(cls, item: QGraphicsRectItem):
@@ -19,7 +21,8 @@ class RectState:
         return cls(
             rect=rect,
             rotation=item.rotation(),
-            transform_origin=item.transformOriginPoint()
+            transform_origin=item.transformOriginPoint(),
+            block_uid=getattr(item, "block_uid", ""),
         )
 
 class RectSignals(QObject):
@@ -30,8 +33,9 @@ class RectSignals(QObject):
 class MoveableRectItem(QGraphicsRectItem):
     signals = RectSignals()
 
-    def __init__(self, rect=None, parent=None):
+    def __init__(self, rect=None, parent=None, block_uid: str = ""):
         super().__init__(rect, parent)
+        self.block_uid = block_uid or uuid.uuid4().hex
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setFlag(QGraphicsRectItem.GraphicsItemFlag.ItemIsMovable, True)
         self.setAcceptHoverEvents(True)

@@ -21,9 +21,9 @@ class DeepLTranslation(TraditionalTranslation):
         self.target_lang = target_lang
 
         # get the “raw” code (e.g. “en”, “zh”, etc.) then normalize for DeepL:
-        raw_src = self.get_language_code(source_lang)
+        raw_src = self.get_language_code(source_lang) if source_lang else ""
         raw_tgt = self.get_language_code(target_lang)
-        self.source_lang_code = self.preprocess_source_language_code(raw_src)
+        self.source_lang_code = self.preprocess_source_language_code(raw_src) if raw_src else None
         self.target_lang_code = self.preprocess_language_code(raw_tgt)
         
         credentials = settings.get_credentials(settings.ui.tr("DeepL"))
@@ -38,11 +38,17 @@ class DeepLTranslation(TraditionalTranslation):
                 blk.translation = ''
                 continue
             
-            result = self.translator.translate_text(
-                text, 
-                source_lang=self.source_lang_code, 
-                target_lang=self.target_lang_code
-            )
+            if self.source_lang_code:
+                result = self.translator.translate_text(
+                    text,
+                    source_lang=self.source_lang_code,
+                    target_lang=self.target_lang_code,
+                )
+            else:
+                result = self.translator.translate_text(
+                    text,
+                    target_lang=self.target_lang_code,
+                )
             
             blk.translation = result.text
             

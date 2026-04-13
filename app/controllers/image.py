@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import logging
 import os
 import imkit as imk
@@ -629,14 +630,14 @@ class ImageStateController:
                     skip_status = False
                     self.main.image_states[file_path] = {
                         'viewer_state': {},
-                        'source_lang': self.main.s_combo.currentText(),
+                        'target_render_states': {},
                         'target_lang': self.main.t_combo.currentText(),
                         'brush_strokes': [],
+                        'inpaint_cache': [],
                         'blk_list': [],  # New images start with empty block list
                         'skip': skip_status,
                         'pipeline_state': {
                             'completed_stages': [],
-                            'source_lang': '',
                             'target_lang': '',
                             'inpaint_hash': '',
                             'translator_key': '',
@@ -885,15 +886,7 @@ class ImageStateController:
                 
                 # Load minimal page state without interfering with the webtoon view
                 if file_path in self.main.image_states:
-                    state = self.main.image_states[file_path]
-                    # Only load language settings in webtoon mode
-                    # Block signals to prevent triggering save when loading state
-                    self.main.s_combo.blockSignals(True)
-                    self.main.t_combo.blockSignals(True)
-                    self.main.s_combo.setCurrentText(state.get('source_lang', ''))
-                    self.main.t_combo.setCurrentText(state.get('target_lang', ''))
-                    self.main.s_combo.blockSignals(False)
-                    self.main.t_combo.blockSignals(False)
+                    self.main.image_states[file_path].setdefault('target_render_states', {})
                     
                 # Clear text edits
                 self.main.text_ctrl.clear_text_edits()
@@ -1302,6 +1295,10 @@ class ImageStateController:
 
     def load_patch_state(self, file_path: str):
         # for every patch in the persistent store:
+        saved_patches = self.main.image_patches.get(file_path, [])
+        if not saved_patches:
+            return
+
         mem_list = self.main.in_memory_patches.setdefault(file_path, [])
         mem_by_hash = {patch['hash']: patch for patch in mem_list}
         scene_hashes = {
@@ -1309,7 +1306,7 @@ class ImageStateController:
             for item in self.main.image_viewer._scene.items()
             if item.data(PatchCommandBase.HASH_KEY) is not None
         }
-        for saved in self.main.image_patches.get(file_path, []):
+        for saved in saved_patches:
             patch_hash = saved['hash']
             match = mem_by_hash.get(patch_hash)
             if match is None:
@@ -1356,17 +1353,29 @@ class ImageStateController:
         skip_status = existing.get('skip', False)
         pipeline_state = existing.get('pipeline_state', {
             'completed_stages': [],
-            'source_lang': '',
             'target_lang': '',
             'inpaint_hash': '',
             'translator_key': '',
             'extra_context_hash': '',
         })
+        current_target = self.main.t_combo.currentText()
+        viewer_state = self.main.image_viewer.save_state()
+        target_render_states = copy.deepcopy(existing.get('target_render_states', {}) or {})
+        inpaint_cache = copy.deepcopy(existing.get('inpaint_cache', []) or [])
+        if not inpaint_cache and self.main.image_patches.get(file):
+            inpaint_cache = copy.deepcopy(self.main.image_patches.get(file, []))
+        pipeline_completed = set(pipeline_state.get("completed_stages", []) or [])
+        can_store_target_snapshot = bool(current_target) and (
+            pipeline_state.get("target_lang") == current_target
+        ) and ("render" in pipeline_completed)
+        if can_store_target_snapshot:
+            target_render_states[current_target] = copy.deepcopy(viewer_state)
         self.main.image_states[file] = {
-            'viewer_state': self.main.image_viewer.save_state(),
-            'source_lang': self.main.s_combo.currentText(),
-            'target_lang': self.main.t_combo.currentText(),
+            'viewer_state': viewer_state,
+            'target_render_states': target_render_states,
+            'target_lang': current_target,
             'brush_strokes': self.main.image_viewer.save_brush_strokes(),
+            'inpaint_cache': inpaint_cache,
             'blk_list': self.main.blk_list.copy(),  # Store a copy of the list, not a reference
             'skip': skip_status,
             'pipeline_state': pipeline_state,
@@ -1398,26 +1407,28 @@ class ImageStateController:
                 state = self.main.image_states[file_path]
                 stored_blks = state.get('blk_list', [])
                 stored_brush_strokes = state.get('brush_strokes', [])
+                current_target = self.main.t_combo.currentText()
+                viewer_state = state.get('target_render_states', {}).get(current_target) or state.get('viewer_state', {})
+
+                rectangles_state = viewer_state.get("rectangles", [])
+                if stored_blks and rectangles_state:
+                    needs_uid_migration = any(not rect.get("block_uid") for rect in rectangles_state)
+                    if needs_uid_migration:
+                        for rect_data, blk in zip(rectangles_state, stored_blks):
+                            if not rect_data.get("block_uid"):
+                                rect_data["block_uid"] = getattr(blk, "block_uid", "")
 
                 # Skip state loading for newly inserted images (which have empty viewer_state)
                 # This prevents loading of incomplete state or invalid transform data.
                 # As soon as an image is saved once, it will have a populated viewer_state.
-                if state.get('viewer_state'):
+                if viewer_state:
 
-                    push_to_stack = state.get('viewer_state', {}).get('push_to_stack', False)
+                    push_to_stack = viewer_state.get('push_to_stack', False)
                     restore_to_stack = file_path in self._pending_text_stack_restore
 
                     self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
-                    viewer.load_state(state['viewer_state'])
-                    # Block signals to prevent triggering save when loading state
-                    self.main.s_combo.blockSignals(True)
-                    self.main.t_combo.blockSignals(True)
-                    if self.main.s_combo.currentText() != state['source_lang']:
-                        self.main.s_combo.setCurrentText(state['source_lang'])
-                    if self.main.t_combo.currentText() != state['target_lang']:
-                        self.main.t_combo.setCurrentText(state['target_lang'])
-                    self.main.s_combo.blockSignals(False)
-                    self.main.t_combo.blockSignals(False)
+                    viewer.load_state(viewer_state)
+                    state['viewer_state'] = viewer_state
                     viewer.load_brush_strokes(state['brush_strokes'])
 
                     # add_text_item/add_rectangle used by load_state already emit the
@@ -1428,7 +1439,7 @@ class ImageStateController:
                             command = AddTextItemCommand(self.main, text_item)
                             self.main.undo_stacks[file_path].push(command)
                         self.main.undo_stacks[file_path].endMacro()
-                        state['viewer_state'].update({'push_to_stack': False})
+                        viewer_state['push_to_stack'] = False
                     elif restore_to_stack:
                         self._restore_text_items_to_stack_if_needed(file_path, viewer)
 
@@ -1446,18 +1457,6 @@ class ImageStateController:
                             os.path.basename(file_path),
                         )
 
-                    # Block signals to prevent triggering save when loading state
-                    self.main.s_combo.blockSignals(True)
-                    self.main.t_combo.blockSignals(True)
-                    source_lang = state.get('source_lang', self.main.s_combo.currentText())
-                    target_lang = state.get('target_lang', self.main.t_combo.currentText())
-                    if self.main.s_combo.currentText() != source_lang:
-                        self.main.s_combo.setCurrentText(source_lang)
-                    if self.main.t_combo.currentText() != target_lang:
-                        self.main.t_combo.setCurrentText(target_lang)
-                    self.main.s_combo.blockSignals(False)
-                    self.main.t_combo.blockSignals(False)
-
                     if stored_brush_strokes:
                         viewer.load_brush_strokes(stored_brush_strokes)
 
@@ -1465,6 +1464,8 @@ class ImageStateController:
                         # Rebuild boxes from the stored blocks so the page still
                         # looks and behaves like an already processed page.
                         self.main.pipeline.load_box_coords(self.main.blk_list)
+
+                    self.load_patch_state(file_path)
 
             self.main.text_ctrl.clear_text_edits()
         finally:
@@ -1554,18 +1555,27 @@ class ImageStateController:
         if current_file != file_path:
             return
 
-        viewer_state = self.main.image_states.get(file_path, {}).get('viewer_state', {})
-        if not viewer_state or not viewer_state.get('text_items_state'):
-            return
-
-        # Cancel pending async nav loads so stale callbacks can't overwrite this refresh.
-        self._nav_request_id += 1
-
-        # Only refresh text items; do not call display_image/load_state because that
-        # reapplies saved transform and causes visible zoom/pan jumps.
         viewer = self.main.image_viewer
         viewer.setUpdatesEnabled(False)
         try:
+            # Rehydrate cached inpaint patches before refreshing text items.
+            # Undo/redo and manual segmentation edits can clear the live scene while
+            # leaving the persistent patch cache intact. The render refresh must
+            # restore those cached patches so the page does not fall back to the
+            # original image underneath newly rendered text.
+            self.load_patch_state(file_path)
+
+            state = self.main.image_states.get(file_path, {})
+            viewer_state = state.get('target_render_states', {}).get(self.main.t_combo.currentText()) or state.get('viewer_state', {})
+            if not viewer_state or not viewer_state.get('text_items_state'):
+                return
+
+            # Cancel pending async nav loads so stale callbacks can't overwrite this refresh.
+            self._nav_request_id += 1
+
+            # Only refresh text items; do not call display_image/load_state because that
+            # reapplies saved transform and causes visible zoom/pan jumps.
+
             viewer.clear_text_items()
             self.main.curr_tblock_item = None
             self.main.curr_tblock = None
@@ -1673,6 +1683,10 @@ class ImageStateController:
         # Create the command for the specific page
         command = PatchInsertCommand(self.main, patches, file_path, display=should_display)
         target_stack.push(command)
+
+        state = self.main.image_states.get(file_path)
+        if state is not None:
+            state["inpaint_cache"] = copy.deepcopy(self.main.image_patches.get(file_path, []))
 
     def apply_inpaint_patches(self, patches):
         command = PatchInsertCommand(self.main, patches, self.main.image_files[self.main.curr_img_idx])

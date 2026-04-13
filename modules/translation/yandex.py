@@ -15,7 +15,7 @@ class YandexTranslation(TraditionalTranslation):
         self.folder_id = None
         
     def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
-        self.source_lang_code = self.get_language_code(source_lang)
+        self.source_lang_code = self.get_language_code(source_lang) if source_lang else None
         target_code = self.get_language_code(target_lang)
         self.target_lang_code = self.preprocess_language_code(target_code)
 
@@ -42,12 +42,14 @@ class YandexTranslation(TraditionalTranslation):
             }
             
             # Build request body with REQUIRED folderId
-            body = {
-                "texts": texts_to_translate,
-                "targetLanguageCode": self.target_lang_code,
-                "format": "PLAIN_TEXT",
-                "folderId": self.folder_id  # This is REQUIRED for user accounts
-            }
+        body = {
+            "texts": texts_to_translate,
+            "targetLanguageCode": self.target_lang_code,
+            "format": "PLAIN_TEXT",
+            "folderId": self.folder_id  # This is REQUIRED for user accounts
+        }
+        if self.source_lang_code:
+            body["sourceLanguageCode"] = self.source_lang_code
             
             # Make the API request
             response = requests.post(

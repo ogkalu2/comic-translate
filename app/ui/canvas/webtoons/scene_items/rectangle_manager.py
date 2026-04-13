@@ -29,6 +29,12 @@ class RectangleManager:
     def load_rectangles(self, state: Dict, page_idx: int):
         """Load rectangles for a specific page."""
         rectangles = state.get('viewer_state', {}).get('rectangles', [])
+        page_path = None
+        if 0 <= page_idx < len(self.image_loader.image_file_paths):
+            page_path = self.image_loader.image_file_paths[page_idx]
+        page_blocks = []
+        if self.main_controller is not None and page_path:
+            page_blocks = list(self.main_controller.image_states.get(page_path, {}).get("blk_list", []))
         for rect_data in rectangles:
             # Convert from page-local coordinates to scene coordinates
             page_local_pos = QPointF(rect_data['rect'][0], rect_data['rect'][1])
@@ -39,12 +45,17 @@ class RectangleManager:
             origin = None
             if 'transform_origin' in rect_data:
                 origin = QPointF(*rect_data['transform_origin'])
+            block_uid = rect_data.get('block_uid', '')
+            if not block_uid and page_blocks:
+                block_uid = getattr(page_blocks[0], "block_uid", "")
+                page_blocks = page_blocks[1:]
             
             rect_item = self.viewer.add_rectangle(
                 rect=rect,
                 position=scene_pos, 
                 rotation=rect_data['rotation'],
-                origin=origin
+                origin=origin,
+                block_uid=block_uid,
             )
             
             # Connect signals - the viewer's add_rectangle should handle this
@@ -61,7 +72,7 @@ class RectangleManager:
                 rect_item = item
         
                 rect_y = rect_item.pos().y()
-                rect_height = rect_item.boundingRect().height()
+                rect_height = rect_item.rect().height()
                 rect_bottom = rect_y + rect_height
                 
                 # Check if rectangle is primarily on this page
@@ -75,10 +86,11 @@ class RectangleManager:
                     
                     rect_data = {
                         'rect': (page_local_pos.x(), page_local_pos.y(), 
-                                rect_item.boundingRect().width(), rect_item.boundingRect().height()),
+                                rect_item.rect().width(), rect_item.rect().height()),
                         'rotation': rect_item.rotation(),
                         'transform_origin': (rect_item.transformOriginPoint().x(), 
-                                        rect_item.transformOriginPoint().y())
+                                        rect_item.transformOriginPoint().y()),
+                        'block_uid': getattr(rect_item, "block_uid", ""),
                     }
                     rectangles_data.append(rect_data)
                     rectangles_to_remove.append(rect_item)
@@ -100,7 +112,7 @@ class RectangleManager:
             if isinstance(item, MoveableRectItem):
                 rect_item = item
                 # Find all pages this rectangle intersects with
-                rect_bounds = rect_item.boundingRect()
+                rect_bounds = rect_item.rect()
                 rect_scene_bounds = QRectF(
                     rect_item.pos().x(), 
                     rect_item.pos().y(),
@@ -118,7 +130,8 @@ class RectangleManager:
                                 'rect': clipped_rect,
                                 'rotation': rect_item.rotation(),
                                 'transform_origin': (rect_item.transformOriginPoint().x(), 
-                                                rect_item.transformOriginPoint().y())
+                                                rect_item.transformOriginPoint().y()),
+                                'block_uid': getattr(rect_item, "block_uid", ""),
                             }
                             scene_items_by_page[page_idx]['rectangles'].append(rect_data)
     
@@ -179,7 +192,8 @@ class RectangleManager:
                         clipped_rect_data = {
                             'rect': clipped_rect,
                             'rotation': rect_data.get('rotation', 0.0),
-                            'transform_origin': rect_data.get('transform_origin', (0, 0))
+                            'transform_origin': rect_data.get('transform_origin', (0, 0)),
+                            'block_uid': rect_data.get('block_uid', ''),
                         }
                         scene_items_by_page[page_idx]['rectangles'].append(clipped_rect_data)
 

@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+import re
 
 language_codes = {
     "Korean": "ko",
@@ -45,3 +46,13 @@ def is_no_space_lang(lang_code: str | None) -> bool:
         return False
     code = lang_code.lower()
     return any(lang in code for lang in ['zh', 'ja', 'th'])
+
+
+_NO_SPACE_TEXT_RE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\u0e00-\u0e7f]")
+
+
+def is_no_space_text(text: str | None) -> bool:
+    """Heuristic for scripts that are typically written without spaces."""
+    if not text:
+        return False
+    return bool(_NO_SPACE_TEXT_RE.search(text))

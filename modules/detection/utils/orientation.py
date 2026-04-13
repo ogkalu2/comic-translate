@@ -236,9 +236,19 @@ def _prepare_items(items):
     # find first non-empty element
     first = None
     for it in items:
-        if it:
-            first = it
-            break
+        if it is None:
+            continue
+        if isinstance(it, np.ndarray):
+            if it.size == 0:
+                continue
+        else:
+            try:
+                if len(it) == 0:
+                    continue
+            except TypeError:
+                pass
+        first = it
+        break
     if first is None:
         return np.zeros((0, 2), dtype=float), 1.0, 1.0, [], []
 
@@ -263,8 +273,17 @@ def _prepare_items(items):
     widths = []
     heights = []
     for poly in items:
-        if not poly or len(poly) < 3:
+        if poly is None:
             continue
+        if isinstance(poly, np.ndarray):
+            if poly.size == 0 or len(poly) < 3:
+                continue
+        else:
+            try:
+                if len(poly) < 3:
+                    continue
+            except TypeError:
+                continue
         cnt = np.asarray(poly, dtype=np.float32)
         polys.append(cnt)
         rect = imk.min_area_rect(cnt)

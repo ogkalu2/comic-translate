@@ -26,6 +26,7 @@ from modules.rendering.render import (
 )
 from modules.utils.pipeline_config import font_selected
 from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
+from modules.utils.device import resolve_device
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.common_utils import is_close
 from modules.utils.translator_utils import (
@@ -62,6 +63,7 @@ class TextController:
         self._suspend_text_command = False
         self._is_updating_from_edit = False
         self._bulk_font_restore_snapshot = None
+        self._manual_render_macro_open = False
 
     def connect_text_item_signals(self, text_item: TextBlockItem, force_reconnect: bool = False):
         if getattr(text_item, "_ct_signals_connected", False) and not force_reconnect:
@@ -111,6 +113,67 @@ class TextController:
         self.main.curr_tblock_item = None
         self.main.s_text_edit.clear()
         self.main.t_text_edit.clear()
+
+    def _finalize_manual_render(self, current_file: str | None) -> None:
+        batch_report_ctrl = getattr(self.main, "batch_report_ctrl", None)
+
+        def _finish() -> None:
+            try:
+                if current_file is not None:
+                    self.main.image_ctrl.save_image_state(current_file)
+                if batch_report_ctrl is not None and current_file:
+                    batch_report_ctrl.register_batch_success(current_file)
+            finally:
+                if self._manual_render_macro_open:
+                    stack = self.main.undo_group.activeStack()
+                    if stack is not None:
+                        try:
+                            stack.endMacro()
+                        except Exception:
+                            pass
+                    self._manual_render_macro_open = False
+
+        QtCore.QTimer.singleShot(0, _finish)
+
+    def _sync_block_caches(self, blk: TextBlock | None) -> None:
+        if blk is None or self.main.curr_img_idx < 0 or self.main.curr_img_idx >= len(self.main.image_files):
+            return
+
+        current_file = self.main.image_files[self.main.curr_img_idx]
+        try:
+            image = self.main.image_ctrl.load_original_image(current_file)
+        except Exception:
+            image = None
+        if image is None:
+            return
+
+        cache_manager = getattr(getattr(self.main, "pipeline", None), "cache_manager", None)
+        if cache_manager is None:
+            return
+
+        settings_page = self.main.settings_page
+        try:
+            ocr_model = settings_page.get_tool_selection("ocr")
+            device = resolve_device(settings_page.is_gpu_enabled())
+            ocr_key = cache_manager._get_ocr_cache_key(image, "", ocr_model, device)
+            cache_manager.update_ocr_cache_for_block(ocr_key, blk)
+        except Exception:
+            pass
+
+        try:
+            translator_key = settings_page.get_tool_selection("translator")
+            extra_context = settings_page.get_llm_settings().get("extra_context", "")
+            target_lang = self.main.t_combo.currentText()
+            translation_key = cache_manager._get_translation_cache_key(
+                image,
+                "",
+                target_lang,
+                translator_key,
+                extra_context,
+            )
+            cache_manager.update_translation_cache_for_block(translation_key, blk)
+        except Exception:
+            pass
 
     def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock, image_path: str):
         if not self.main.webtoon_mode:
@@ -168,6 +231,7 @@ class TextController:
             vertical=vertical,
             width=blk.xywh[2],
             height=blk.xywh[3],
+            block_uid=getattr(blk, "block_uid", ""),
         )
         
         text_item = self.main.image_viewer.add_text_item(properties)
@@ -216,6 +280,7 @@ class TextController:
             self.main.curr_tblock.translation = self.main.t_text_edit.toPlainText()
             if self.main.curr_tblock_item:
                 self.main.curr_tblock_item.set_source_text(self.main.t_text_edit.toPlainText())
+            self._sync_block_caches(self.main.curr_tblock)
             self.main.mark_project_dirty()
 
     def update_text_block_from_edit(self):
@@ -243,6 +308,7 @@ class TextController:
                 old_item_text is None or old_item_text == new_text
             ):
                 return
+            self._sync_block_caches(self.main.curr_tblock)
         finally:
             self._is_updating_from_edit = False
 
@@ -252,6 +318,7 @@ class TextController:
         blk = self._find_text_block_for_item(text_item)
         if blk:
             blk.translation = new_text
+            self._sync_block_caches(blk)
 
         if self.main.curr_tblock_item == text_item and not self._is_updating_from_edit:
             self.main.curr_tblock = blk
@@ -308,13 +375,13 @@ class TextController:
         cursor.endEditBlock()
 
     def save_src_trg(self):
-        source_lang = self.main.s_combo.currentText()
         target_lang = self.main.t_combo.currentText()
-        
+
+        self.main.image_ctrl.save_current_image_state()
         if self.main.curr_img_idx >= 0:
             current_file = self.main.image_files[self.main.curr_img_idx]
-            self.main.image_states[current_file]['source_lang'] = source_lang
             self.main.image_states[current_file]['target_lang'] = target_lang
+            self.main.image_states[current_file].setdefault('target_render_states', {})
 
         target_en = self.main.lang_mapping.get(target_lang, None)
         t_direction = get_layout_direction(target_en)
@@ -322,15 +389,27 @@ class TextController:
         t_text_option.setTextDirection(t_direction)
         self.main.t_text_edit.document().setDefaultTextOption(t_text_option)
 
+        for image_path in self.main.image_files:
+            state = self.main.image_states.get(image_path)
+            if state is not None:
+                state['target_lang'] = target_lang
+                viewer_state = state.get('viewer_state')
+                if viewer_state:
+                    target_render_states = state.setdefault('target_render_states', {})
+                    target_render_states[target_lang] = copy.deepcopy(viewer_state)
+
         if self.main.curr_img_idx >= 0:
             self.main.mark_project_dirty()
 
     def set_src_trg_all(self):
-        source_lang = self.main.s_combo.currentText()
         target_lang = self.main.t_combo.currentText()
         for image_path in self.main.image_files:
-            self.main.image_states[image_path]['source_lang'] = source_lang
-            self.main.image_states[image_path]['target_lang'] = target_lang
+            state = self.main.image_states[image_path]
+            state['target_lang'] = target_lang
+            viewer_state = state.get('viewer_state')
+            if viewer_state:
+                target_render_states = state.setdefault('target_render_states', {})
+                target_render_states[target_lang] = copy.deepcopy(viewer_state)
         if self.main.image_files:
             self.main.mark_project_dirty()
 
@@ -437,6 +516,7 @@ class TextController:
                 blk = self._find_text_block_for_item(text_item)
             if blk:
                 blk.translation = text
+                self._sync_block_caches(blk)
             if self.main.curr_tblock_item == text_item:
                 self.main.curr_tblock = blk
                 # Only update if the text is actually different to avoid cursor reset
@@ -1428,19 +1508,28 @@ class TextController:
 
                     viewer_state = state.setdefault("viewer_state", {})
                     existing_text_items = list(viewer_state.get("text_items_state", []))
-                    existing_keys = {
+                    existing_uids = {
+                        str(item.get("block_uid", ""))
+                        for item in existing_text_items
+                        if isinstance(item, dict) and item.get("block_uid")
+                    }
+                    existing_legacy_keys = {
                         (
                             int(item.get("position", (0, 0))[0]),
                             int(item.get("position", (0, 0))[1]),
                             float(item.get("rotation", 0)),
                         )
                         for item in existing_text_items
+                        if isinstance(item, dict) and not item.get("block_uid")
                     }
 
                     new_text_items_state = []
                     for blk in blk_list:
+                        blk_uid = str(getattr(blk, "block_uid", "") or "")
                         blk_key = (int(blk.xyxy[0]), int(blk.xyxy[1]), float(blk.angle))
-                        if blk_key in existing_keys:
+                        if blk_uid and blk_uid in existing_uids:
+                            continue
+                        if not blk_uid and blk_key in existing_legacy_keys:
                             continue
 
                         x1, y1, block_width, block_height = blk.xywh
@@ -1491,6 +1580,7 @@ class TextController:
                             width=block_width,
                             height=block_height,
                             vertical=vertical,
+                            block_uid=getattr(blk, "block_uid", ""),
                         )
                         new_text_items_state.append(text_props.to_dict())
 
@@ -1498,6 +1588,12 @@ class TextController:
                         viewer_state["text_items_state"] = existing_text_items + new_text_items_state
                         viewer_state["push_to_stack"] = True
                         state["blk_list"] = blk_list
+                        state["target_lang"] = target_lang
+                        pipeline_state = state.setdefault("pipeline_state", {})
+                        completed_stages = set(pipeline_state.get("completed_stages", []) or [])
+                        completed_stages.add("render")
+                        pipeline_state["completed_stages"] = list(completed_stages)
+                        pipeline_state["target_lang"] = target_lang
                         updated_paths.add(file_path)
 
                 return updated_paths
@@ -1519,6 +1615,7 @@ class TextController:
                             self.main.manual_workflow_ctrl._reload_current_webtoon_page()
                     else:
                         self.main.image_ctrl.on_render_state_ready(current_file)
+                        self.main.image_ctrl.save_current_image_state()
 
                 self.main.mark_project_dirty()
 
@@ -1543,14 +1640,27 @@ class TextController:
                 if item not in self.main.image_viewer._scene.items():
                     self.main.image_viewer._scene.addItem(item)
 
-            # Create a dictionary to map text items to their positions and rotations
-            existing_text_items = {item: (int(item.pos().x()), int(item.pos().y()), item.rotation()) for item in self.main.image_viewer.text_items}
+            # Prefer stable block_uid matching; fall back to geometry for legacy items.
+            existing_text_item_uids = {
+                str(getattr(item, "block_uid", "") or "")
+                for item in self.main.image_viewer.text_items
+                if getattr(item, "block_uid", "")
+            }
+            existing_text_item_keys = {
+                (int(item.pos().x()), int(item.pos().y()), float(item.rotation()))
+                for item in self.main.image_viewer.text_items
+                if not getattr(item, "block_uid", "")
+            }
 
-            # Identify new blocks based on position and rotation
-            new_blocks = [
-                blk for blk in self.main.blk_list
-                if (int(blk.xyxy[0]), int(blk.xyxy[1]), blk.angle) not in existing_text_items.values()
-            ]
+            new_blocks = []
+            for blk in self.main.blk_list:
+                blk_uid = str(getattr(blk, "block_uid", "") or "")
+                blk_key = (int(blk.xyxy[0]), int(blk.xyxy[1]), float(blk.angle))
+                if blk_uid and blk_uid in existing_text_item_uids:
+                    continue
+                if not blk_uid and blk_key in existing_text_item_keys:
+                    continue
+                new_blocks.append(blk)
 
             self.main.image_viewer.clear_rectangles()
             self.main.curr_tblock = None
@@ -1571,6 +1681,20 @@ class TextController:
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
 
+            if self._manual_render_macro_open:
+                try:
+                    stack = self.main.undo_group.activeStack()
+                    if stack is not None:
+                        stack.endMacro()
+                except Exception:
+                    pass
+                self._manual_render_macro_open = False
+
+            stack = self.main.undo_group.activeStack()
+            if stack is not None:
+                stack.beginMacro("text_items_rendered")
+                self._manual_render_macro_open = True
+
             self.main.run_threaded(
             lambda: format_translations(self.main.blk_list, trg_lng_cd, upper_case=upper)
             )
@@ -1587,10 +1711,21 @@ class TextController:
             if 0 <= self.main.curr_img_idx < len(self.main.image_files):
                 image_path = self.main.image_files[self.main.curr_img_idx]
 
+            def on_manual_render_error(error_tuple: tuple) -> None:
+                if self._manual_render_macro_open:
+                    stack = self.main.undo_group.activeStack()
+                    if stack is not None:
+                        try:
+                            stack.endMacro()
+                        except Exception:
+                            pass
+                    self._manual_render_macro_open = False
+                self.main.default_error_handler(error_tuple)
+
             self.main.run_threaded(
                 manual_wrap, 
                 self.on_render_complete, 
-                self.main.default_error_handler,
+                on_manual_render_error,
                 None, 
                 self.main, 
                 new_blocks, 
@@ -1612,12 +1747,15 @@ class TextController:
         current_file = None
         if 0 <= self.main.curr_img_idx < len(self.main.image_files):
             current_file = self.main.image_files[self.main.curr_img_idx]
-        batch_report_ctrl = getattr(self.main, "batch_report_ctrl", None)
-        if batch_report_ctrl is not None and current_file:
-            batch_report_ctrl.register_batch_success(current_file)
-        self.main.loading.setVisible(False)
-        self.main.enable_hbutton_group()
-        self.main.undo_group.activeStack().endMacro()
+            state = self.main.image_states.get(current_file)
+            if state is not None:
+                state["target_lang"] = self.main.t_combo.currentText()
+                pipeline_state = state.setdefault("pipeline_state", {})
+                completed_stages = set(pipeline_state.get("completed_stages", []) or [])
+                completed_stages.add("render")
+                pipeline_state["completed_stages"] = list(completed_stages)
+                pipeline_state["target_lang"] = self.main.t_combo.currentText()
+        self._finalize_manual_render(current_file)
 
     def render_settings(self) -> TextRenderingSettings:
         target_lang = self.main.lang_mapping.get(self.main.t_combo.currentText(), None)

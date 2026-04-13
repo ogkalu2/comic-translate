@@ -3,6 +3,7 @@ from typing import List
 from PySide6 import QtCore
 
 from modules.detection.processor import TextBlockDetector
+from modules.detection.utils.orientation import infer_orientation, infer_reading_order
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.rendering.render import get_best_render_area
 from pipeline.webtoon_utils import get_first_visible_block
@@ -28,6 +29,7 @@ class BlockDetectionHandler:
                     "rect": (float(x1), float(y1), float(x2 - x1), float(y2 - y1)),
                     "rotation": float(getattr(blk, "angle", 0)),
                     "transform_origin": tuple(blk.tr_origin_point) if getattr(blk, "tr_origin_point", None) else (0.0, 0.0),
+                    "block_uid": getattr(blk, "block_uid", ""),
                 }
             )
         return rects
@@ -47,7 +49,11 @@ class BlockDetectionHandler:
                 
                 # Use the new add_rectangle method for consistent handling
                 rect_item = self.main_page.image_viewer.add_rectangle(
-                    rect, QtCore.QPointF(x1, y1), blk.angle, transform_origin
+                    rect,
+                    QtCore.QPointF(x1, y1),
+                    blk.angle,
+                    transform_origin,
+                    getattr(blk, "block_uid", ""),
                 )
                 self.main_page.connect_rect_item_signals(rect_item)
 
@@ -175,9 +181,8 @@ class BlockDetectionHandler:
                 viewer_state = state.setdefault("viewer_state", {})
                 viewer_state["rectangles"] = self._serialize_rectangles_from_blocks(self.main_page.blk_list)
         
-        source_lang = self.main_page.s_combo.currentText()
-        source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
-        rtl = True if source_lang_english == 'Japanese' else False
+        orientation = infer_orientation([blk.xyxy for blk in self.main_page.blk_list]) if self.main_page.blk_list else "horizontal"
+        rtl = infer_reading_order(orientation) == "rtl"
         self.main_page.blk_list = sort_blk_list(self.main_page.blk_list, rtl)
         
         if load_rects:

@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 
 from ..utils.textblock import TextBlock
-from ..utils.language_utils import is_no_space_lang
+from ..utils.language_utils import is_no_space_lang, is_no_space_text
 
 
 class TranslationEngine(ABC):
@@ -55,8 +55,8 @@ class TranslationEngine(ABC):
         # Remove newline and carriage‐return characters
         text = blk_text.replace('\r', '').replace('\n', '')
 
-        # 2) If No-Space Language, also remove all spaces
-        if is_no_space_lang(source_lang_code):
+        # 2) If the script is typically no-space, also remove spaces.
+        if is_no_space_lang(source_lang_code) or is_no_space_text(text):
             return text.replace(' ', '')
         # 3) Otherwise, return the text (with newlines already removed)
         else:

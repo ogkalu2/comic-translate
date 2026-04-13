@@ -5,6 +5,7 @@ from PySide6.QtGui import QColor
 
 from modules.utils.textblock import TextBlock
 from modules.detection.utils.content import get_inpaint_bboxes
+from modules.utils.language_utils import is_no_space_text
 
 def rgba2hex(rgba_list):
     r,g,b,a = [int(num) for num in rgba_list]
@@ -104,8 +105,8 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
 
         # 8) Determine dilation kernel size
         kernel_size = default_padding
-        src_lang = getattr(blk, 'source_lang', None)
-        if src_lang and src_lang not in ['ja', 'ko']:
+        text_probe = getattr(blk, 'translation', '') or getattr(blk, 'text', '')
+        if text_probe and not is_no_space_text(text_probe):
             kernel_size = 3
         # Adjust for text bubbles: only consider contours wholly inside the bubble
         if getattr(blk, 'text_class', None) == 'text_bubble' and getattr(blk, 'bubble_xyxy', None) is not None:

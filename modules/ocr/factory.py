@@ -93,7 +93,7 @@ class OCRFactory:
         - If no dynamic values are found, falls back to a simple key
           based on ocr and source language.
         """
-        base = f"{ocr_key}_{source_lang}_{backend}"
+        base = f"{ocr_key}_{backend}"
 
         # Gather any dynamic bits we care about:
         extras = {}
@@ -170,11 +170,15 @@ class OCRFactory:
         if ocr_model in general:
             return general[ocr_model](settings)
         
-        # For Default, use language-specific engines
+        # For Default, prefer language-specific engines when we have a hint,
+        # otherwise fall back to a generic multilingual-recognition model.
         if ocr_model == 'Default' and source_lang_english in language_factories:
             return language_factories[source_lang_english](settings)
-        
-        return 
+
+        if ocr_model == 'Default':
+            return cls._create_ppocr(settings, 'latin', backend)
+
+        return cls._create_ppocr(settings, 'latin', backend)
     
     @staticmethod
     def _create_microsoft_ocr(settings) -> OCREngine:

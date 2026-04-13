@@ -366,7 +366,7 @@ class DrawingManager:
         final_mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         return final_mask
     
-    def draw_segmentation_lines(self, bboxes, text_bbox=None, bubble_xyxy=None, text_class=None, source_lang=None):
+    def draw_segmentation_lines(self, bboxes, text_bbox=None, bubble_xyxy=None, text_class=None):
         stroke = self.make_segmentation_stroke_data(bboxes)
         if stroke is None:
             return
@@ -378,14 +378,13 @@ class DrawingManager:
         item.setPen(QtGui.QPen(outline_color, 2, QtCore.Qt.SolidLine))
         item.setBrush(QtGui.QBrush(fill_color))
         item.setData(SEGMENT_BBOXES_DATA_KEY, [list(map(int, bbox)) for bbox in bboxes])
-        if text_bbox is not None or bubble_xyxy is not None or text_class is not None or source_lang is not None:
+        if text_bbox is not None or bubble_xyxy is not None or text_class is not None:
             item.setData(
                 SEGMENT_META_DATA_KEY,
                 {
                     "text_bbox": list(map(int, text_bbox)) if text_bbox is not None else None,
                     "bubble_xyxy": list(map(int, bubble_xyxy)) if bubble_xyxy is not None else None,
                     "text_class": text_class,
-                    "source_lang": source_lang,
                 },
             )
 

@@ -55,7 +55,6 @@ class TranslationHandler:
         return self.main_page.image_viewer.get_image_array()
 
     def translate_image(self, single_block=False):
-        source_lang = self.main_page.s_combo.currentText()
         target_lang = self.main_page.t_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.blk_list:
             settings_page = self.main_page.settings_page
@@ -65,12 +64,12 @@ class TranslationHandler:
 
             upper_case = settings_page.ui.uppercase_checkbox.isChecked()
 
-            translator = Translator(self.main_page, source_lang, target_lang)
+            translator = Translator(self.main_page, "", target_lang)
             sanitize_translation_source_blocks(self.main_page.blk_list)
             
             # Get translation cache key
             translation_cache_key = self.cache_manager._get_translation_cache_key(
-                image, source_lang, target_lang, translator_key, extra_context
+                image, "", target_lang, translator_key, extra_context
             )
             
             if single_block:
@@ -134,25 +133,30 @@ class TranslationHandler:
                     set_upper_case([blk], upper_case)
             else:
                 # For full page translation, check if we can use cached results
-                if self.cache_manager._can_serve_all_blocks_from_translation_cache(translation_cache_key, self.main_page.blk_list):
-                    # All blocks can be served from cache with matching source text
-                    self.cache_manager._apply_cached_translations_to_blocks(translation_cache_key, self.main_page.blk_list)
+                self.cache_manager._apply_cached_translations_to_blocks(translation_cache_key, self.main_page.blk_list)
+                missing_blocks = self.cache_manager._get_missing_translation_blocks(
+                    translation_cache_key,
+                    self.main_page.blk_list,
+                )
+                if not missing_blocks:
                     logger.debug(f"Using cached translation results for all {len(self.main_page.blk_list)} blocks")
                 else:
-                    # Need to run translation and cache results
+                    # Need to run translation only for blocks that are not already cached.
                     translator.translate(
-                        self.main_page.blk_list,
+                        missing_blocks,
                         image,
                         extra_context,
                     )
-                    self.cache_manager._cache_translation_results(translation_cache_key, self.main_page.blk_list)
-                    logger.debug("Translation completed and cached for %d blocks", len(self.main_page.blk_list))
+                    self.cache_manager._cache_translation_results(
+                        translation_cache_key,
+                        missing_blocks,
+                    )
+                    logger.debug("Translation completed and cached for %d missing blocks", len(missing_blocks))
                 
                 set_upper_case(self.main_page.blk_list, upper_case)
 
     def translate_webtoon_visible_area(self, single_block=False):
         """Perform translation on the visible area in webtoon mode."""
-        source_lang = self.main_page.s_combo.currentText()
         target_lang = self.main_page.t_combo.currentText()
         
         if not (self.main_page.image_viewer.hasPhoto() and 
@@ -180,7 +184,7 @@ class TranslationHandler:
         extra_context = settings_page.get_llm_settings()['extra_context']
         upper_case = settings_page.ui.uppercase_checkbox.isChecked()
         
-        translator = Translator(self.main_page, source_lang, target_lang)
+        translator = Translator(self.main_page, "", target_lang)
         translator.translate(
             visible_blocks,
             visible_image,

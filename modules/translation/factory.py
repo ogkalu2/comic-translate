@@ -51,8 +51,8 @@ class TranslationFactory:
         Returns:
             Appropriate translation engine instance
         """
-        # Create a cache key based on translator and language pair
-        cache_key = cls._create_cache_key(translator_key, source_lang, target_lang, settings)
+        # Source language is no longer part of the engine identity.
+        cache_key = cls._create_cache_key(translator_key, target_lang, settings)
         
         # Return cached engine if available
         if cache_key in cls._engines:
@@ -94,10 +94,7 @@ class TranslationFactory:
         return cls.DEFAULT_LLM_ENGINE
     
     @classmethod
-    def _create_cache_key(cls, translator_key: str,
-                        source_lang: str,
-                        target_lang: str,
-                        settings) -> str:
+    def _create_cache_key(cls, translator_key: str, target_lang: str, settings) -> str:
         """
         Build a cache key for all translation engines.
 
@@ -110,7 +107,7 @@ class TranslationFactory:
         - If no dynamic values are found, falls back to a simple key
           based on translator and language pair.
         """
-        base = f"{translator_key}_{source_lang}_{target_lang}"
+        base = f"{translator_key}_{target_lang}"
 
         # Gather any dynamic bits we care about:
         extras = {}

@@ -213,15 +213,7 @@ class WebtoonController:
                 # Only load language settings and basic state
                 file_path = self.image_files[page_index]
                 if file_path in self.image_states:
-                    state = self.image_states[file_path]
-                    # Only load language settings, don't load full image state
-                    # Block signals to prevent triggering save when loading state
-                    self.main.s_combo.blockSignals(True)
-                    self.main.t_combo.blockSignals(True)
-                    self.main.s_combo.setCurrentText(state.get('source_lang', ''))
-                    self.main.t_combo.setCurrentText(state.get('target_lang', ''))
-                    self.main.s_combo.blockSignals(False)
-                    self.main.t_combo.blockSignals(False)
+                    self.image_states[file_path].setdefault('target_render_states', {})
                     
                 # Clear text edits
                 self.main.text_ctrl.clear_text_edits()

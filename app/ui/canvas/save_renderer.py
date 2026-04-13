@@ -50,6 +50,7 @@ class ImageSaveRenderer:
                 italic=text_props.italic,
                 underline=text_props.underline,
                 direction=text_props.direction,
+                block_uid=getattr(text_props, "block_uid", ""),
             )
 
             text_item.set_text(

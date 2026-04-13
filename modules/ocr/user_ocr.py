@@ -199,9 +199,10 @@ class UserOCR(OCREngine):
             "ocr_name": self.ocr_key,
             "image_base64": img_b64,
             "llm_options": llm_options,
-            "source_language": self.source_lang_english,
             "coordinates": coordinates  # New field for batch processing
         }
+        if self.source_lang_english:
+            payload["source_language"] = self.source_lang_english
 
         # 4. Send Single Request
         before_http_t = time.perf_counter()
@@ -314,8 +315,9 @@ class UserOCR(OCREngine):
         payload = {
             "ocr_name": self.ocr_key,
             "image_base64": img_b64,
-            "source_language": self.source_lang_english 
         }
+        if self.source_lang_english:
+            payload["source_language"] = self.source_lang_english
 
         # Single API call for the whole page
         before_http_t = time.perf_counter()

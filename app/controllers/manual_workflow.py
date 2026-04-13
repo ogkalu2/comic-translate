@@ -8,6 +8,7 @@ from PySide6 import QtCore
 
 from modules.detection.processor import TextBlockDetector
 from modules.detection.utils.content import get_inpaint_bboxes
+from modules.detection.utils.orientation import infer_orientation, infer_reading_order
 from modules.ocr.processor import OCRProcessor
 from modules.rendering.render import pyside_word_wrap, is_vertical_block, get_best_render_area
 from modules.translation.processor import Translator
@@ -69,6 +70,10 @@ class ManualWorkflowController:
             image = self._load_page_image(file_path)
         return image
 
+    def _prepare_segmentation_blocks(self, blk_list: list["TextBlock"], image) -> None:
+        if blk_list and image is not None:
+            get_best_render_area(blk_list, image)
+
     def _finish_ocr_and_translate(self, single_block: bool) -> None:
         self.finish_ocr_translate(single_block)
 
@@ -96,13 +101,10 @@ class ManualWorkflowController:
         self,
         file_path: str,
         blk_list: list[TextBlock],
-        source_lang_fallback: str,
     ) -> list[TextBlock]:
         OCRProcessor.sanitize_block_texts(blk_list)
-        state = self.main.image_states.get(file_path, {})
-        source_lang = state.get("source_lang", source_lang_fallback)
-        source_lang_en = self.main.lang_mapping.get(source_lang, source_lang)
-        rtl = source_lang_en == "Japanese"
+        orientation = infer_orientation([blk.xyxy for blk in blk_list]) if blk_list else "horizontal"
+        rtl = infer_reading_order(orientation) == "rtl"
         return sort_blk_list(blk_list, rtl)
 
     def _prepare_multi_page_context(self, selected_paths: list[str]) -> dict[str, Any]:
@@ -154,6 +156,7 @@ class ManualWorkflowController:
                     "rect": (float(x1), float(y1), float(x2 - x1), float(y2 - y1)),
                     "rotation": float(getattr(blk, "angle", 0)),
                     "transform_origin": tuple(blk.tr_origin_point) if getattr(blk, "tr_origin_point", None) else (0.0, 0.0),
+                    "block_uid": getattr(blk, "block_uid", ""),
                 }
             )
         return rects
@@ -171,10 +174,25 @@ class ManualWorkflowController:
                     "text_bbox": list(map(int, blk.xyxy)) if blk.xyxy is not None else None,
                     "bubble_xyxy": list(map(int, blk.bubble_xyxy)) if blk.bubble_xyxy is not None else None,
                     "text_class": blk.text_class,
-                    "source_lang": blk.source_lang,
                 }
                 strokes.append(stroke)
         return strokes
+
+    def _invalidate_page_render_pipeline(self, file_path: str) -> None:
+        state = self.main.image_states.get(file_path)
+        if not state:
+            return
+        pipeline_state = state.setdefault("pipeline_state", {})
+        completed = pipeline_state.get("completed_stages", []) or []
+        if not completed:
+            completed = []
+        pipeline_state["completed_stages"] = [
+            stage for stage in completed
+            if stage in {"detection", "ocr", "inpaint"}
+        ]
+        target_render_states = state.get("target_render_states")
+        if target_render_states is not None:
+            target_render_states.clear()
 
     def block_detect(self, load_rects: bool = True) -> None:
         selected_paths = self._selected_page_paths()
@@ -182,7 +200,6 @@ class ManualWorkflowController:
             self.main.loading.setVisible(True)
             self.main.disable_hbutton_group()
             context = self._prepare_multi_page_context(selected_paths)
-            source_lang_fallback = self.main.s_combo.currentText()
             page_batch_size = self._get_batch_settings()["batch_size"]
 
             def detect_selected_pages() -> dict[str, list[TextBlock]]:
@@ -220,7 +237,6 @@ class ManualWorkflowController:
                         results[file_path] = self._sort_blocks_for_path(
                             file_path,
                             blk_list,
-                            source_lang_fallback,
                         )
                 return results
 
@@ -232,6 +248,7 @@ class ManualWorkflowController:
                     if state is None:
                         continue
                     state["blk_list"] = blk_list
+                    self._invalidate_page_render_pipeline(file_path)
                     viewer_state = state.setdefault("viewer_state", {})
                     viewer_state["rectangles"] = self._serialize_rectangles_from_blocks(blk_list)
                     if file_path == current_file:
@@ -292,7 +309,6 @@ class ManualWorkflowController:
             self.main.loading.setVisible(True)
             self.main.disable_hbutton_group()
             context = self._prepare_multi_page_context(selected_paths)
-            source_lang_fallback = self.main.s_combo.currentText()
             batch_settings = self._get_batch_settings()
             page_batch_size = batch_settings["batch_size"]
             ocr_batch_size = batch_settings["ocr_batch_size"]
@@ -304,7 +320,7 @@ class ManualWorkflowController:
                 device = resolve_device(self.main.settings_page.is_gpu_enabled())
                 results: dict[str, list[TextBlock]] = {}
                 for chunk_paths in self._iter_chunks(selected_paths, page_batch_size):
-                    pending_pages: list[tuple[str, Any, list[TextBlock], str, str]] = []
+                    pending_pages: list[tuple[str, Any, list[TextBlock], list[TextBlock], str]] = []
 
                     for file_path in chunk_paths:
                         state = self.main.image_states.get(file_path, {})
@@ -314,23 +330,17 @@ class ManualWorkflowController:
                         image = self._load_translation_image(file_path)
                         if image is None:
                             continue
-                        source_lang = state.get("source_lang", source_lang_fallback)
-                        cache_key = cache_manager._get_ocr_cache_key(
-                            image,
-                            source_lang,
-                            ocr_model,
-                            device,
-                        )
-                        if cache_manager._can_serve_all_blocks_from_ocr_cache(cache_key, blk_list):
-                            cache_manager._apply_cached_ocr_to_blocks(cache_key, blk_list)
+                        cache_key = cache_manager._get_ocr_cache_key(image, "", ocr_model, device)
+                        cache_manager._apply_cached_ocr_to_blocks(cache_key, blk_list)
+                        missing_blocks = cache_manager._get_missing_ocr_blocks(cache_key, blk_list)
+                        if not missing_blocks:
                             results[file_path] = self._sort_blocks_for_path(
                                 file_path,
                                 blk_list,
-                                source_lang_fallback,
                             )
                             continue
 
-                        pending_pages.append((file_path, image, blk_list, source_lang, cache_key))
+                        pending_pages.append((file_path, image, blk_list, missing_blocks, cache_key))
 
                     if not pending_pages:
                         continue
@@ -338,30 +348,29 @@ class ManualWorkflowController:
                     try:
                         processed_blk_lists = ocr.process_page_block_batches(
                             [
-                                (image, blk_list, source_lang)
-                                for _, image, blk_list, source_lang, _ in pending_pages
+                                (image, missing_blocks, "")
+                                for _, image, _blk_list, missing_blocks, _ in pending_pages
                             ],
                             batch_size=ocr_batch_size,
                             main_page=self.main,
                         )
                     except Exception:
                         processed_blk_lists = []
-                        for _file_path, image, blk_list, source_lang, _cache_key in pending_pages:
-                            ocr.initialize(self.main, source_lang)
-                            processed_blk_lists.append(ocr.process(image, blk_list))
+                        for _file_path, image, _blk_list, missing_blocks, _cache_key in pending_pages:
+                            ocr.initialize(self.main, "")
+                            processed_blk_lists.append(ocr.process(image, missing_blocks))
 
                     for (
                         file_path,
                         _image,
                         _blk_list,
-                        _source_lang,
+                        missing_blocks,
                         cache_key,
                     ), processed_blk_list in zip(pending_pages, processed_blk_lists):
-                        cache_manager._cache_ocr_results(cache_key, processed_blk_list)
+                        cache_manager._cache_ocr_results(cache_key, missing_blocks, processed_blk_list)
                         results[file_path] = self._sort_blocks_for_path(
                             file_path,
-                            processed_blk_list,
-                            source_lang_fallback,
+                            _blk_list,
                         )
                 return results
 
@@ -431,8 +440,6 @@ class ManualWorkflowController:
             self.main.loading.setVisible(True)
             self.main.disable_hbutton_group()
             context = self._prepare_multi_page_context(selected_paths)
-            source_lang_fallback = self.main.s_combo.currentText()
-            target_lang_fallback = self.main.t_combo.currentText()
             settings_page = self.main.settings_page
             extra_context = settings_page.get_llm_settings()["extra_context"]
             translator_key = settings_page.get_tool_selection("translator")
@@ -447,27 +454,26 @@ class ManualWorkflowController:
                     file_path: str,
                     image,
                     blk_list: list[TextBlock],
-                    source_lang: str,
+                    missing_blocks: list[TextBlock],
                     target_lang: str,
                     cache_key,
                 ) -> tuple[str, list[TextBlock]]:
-                    translator = Translator(self.main, source_lang, target_lang)
+                    translator = Translator(self.main, "", target_lang)
                     sanitize_translation_source_blocks(blk_list)
-                    if cache_manager._can_serve_all_blocks_from_translation_cache(cache_key, blk_list):
-                        cache_manager._apply_cached_translations_to_blocks(cache_key, blk_list)
-                    else:
+                    cache_manager._apply_cached_translations_to_blocks(cache_key, blk_list)
+                    if missing_blocks:
                         translator.translate(
-                            blk_list,
+                            missing_blocks,
                             image,
                             extra_context,
                         )
-                        cache_manager._cache_translation_results(cache_key, blk_list)
+                        cache_manager._cache_translation_results(cache_key, missing_blocks)
 
                     set_upper_case(blk_list, upper_case)
                     return file_path, blk_list
 
                 for chunk_paths in self._iter_chunks(selected_paths, page_batch_size):
-                    pending_pages: list[tuple[str, Any, list[TextBlock], str, str, object]] = []
+                    pending_pages: list[tuple[str, Any, list[TextBlock], list[TextBlock], str, object]] = []
                     for file_path in chunk_paths:
                         state = self.main.image_states.get(file_path, {})
                         blk_list = state.get("blk_list", [])
@@ -477,17 +483,22 @@ class ManualWorkflowController:
                         image = self._load_translation_image(file_path)
                         if image is None:
                             continue
-                        source_lang = state.get("source_lang", source_lang_fallback)
                         target_lang = state.get("target_lang", target_lang_fallback)
                         cache_key = cache_manager._get_translation_cache_key(
                             image,
-                            source_lang,
+                            "",
                             target_lang,
                             translator_key,
                             extra_context,
                         )
+                        cache_manager._apply_cached_translations_to_blocks(cache_key, blk_list)
+                        missing_blocks = cache_manager._get_missing_translation_blocks(cache_key, blk_list)
+                        if not missing_blocks:
+                            set_upper_case(blk_list, upper_case)
+                            results[file_path] = blk_list
+                            continue
                         pending_pages.append(
-                            (file_path, image, blk_list, source_lang, target_lang, cache_key)
+                            (file_path, image, blk_list, missing_blocks, target_lang, cache_key)
                         )
 
                     if not pending_pages:
@@ -501,7 +512,7 @@ class ManualWorkflowController:
                                 file_path,
                                 image,
                                 blk_list,
-                                source_lang,
+                                missing_blocks,
                                 target_lang,
                                 cache_key,
                             ): file_path
@@ -509,7 +520,7 @@ class ManualWorkflowController:
                                 file_path,
                                 image,
                                 blk_list,
-                                source_lang,
+                                missing_blocks,
                                 target_lang,
                                 cache_key,
                             ) in pending_pages
@@ -762,6 +773,9 @@ class ManualWorkflowController:
         else:
             blk_list, load_rects = result
         self.main.blk_list = blk_list
+        current_file = self._current_file_path()
+        if current_file:
+            self._invalidate_page_render_pipeline(current_file)
         self.main.undo_group.activeStack().beginMacro("draw_segmentation_boxes")
         for blk in self.main.blk_list:
             bboxes = blk.inpaint_bboxes
@@ -771,7 +785,6 @@ class ManualWorkflowController:
                     text_bbox=blk.xyxy,
                     bubble_xyxy=blk.bubble_xyxy,
                     text_class=blk.text_class,
-                    source_lang=blk.source_lang,
                 )
         self.main.undo_group.activeStack().endMacro()
 
@@ -798,9 +811,10 @@ class ManualWorkflowController:
                         blk_list = state.get("blk_list", [])
                         if not blk_list:
                             continue
-                        image = self._load_page_image(file_path)
+                        image = self._load_translation_image(file_path)
                         if image is None:
                             continue
+                        self._prepare_segmentation_blocks(blk_list, image)
                         for blk in blk_list:
                             blk.inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
                         results[file_path] = blk_list
@@ -813,6 +827,7 @@ class ManualWorkflowController:
                         if state is None:
                             continue
                         state["blk_list"] = blk_list
+                        self._invalidate_page_render_pipeline(file_path)
                         viewer_state = state.setdefault("viewer_state", {})
                         viewer_state["rectangles"] = []
                         state["brush_strokes"] = self._serialize_segmentation_strokes(blk_list)
@@ -832,7 +847,6 @@ class ManualWorkflowController:
                                     text_bbox=blk.xyxy,
                                     bubble_xyxy=blk.bubble_xyxy,
                                     text_class=blk.text_class,
-                                    source_lang=blk.source_lang,
                                 )
 
                     if self.main.webtoon_mode and context["current_page_unloaded"]:
@@ -870,9 +884,16 @@ class ManualWorkflowController:
                 else:
 
                     def compute_all_bboxes() -> list[tuple[TextBlock, Any]]:
-                        image = self.main.image_viewer.get_image_array()
+                        current_file = self._current_file_path()
+                        if current_file is None:
+                            return []
+                        image = self._load_translation_image(current_file)
+                        if image is None:
+                            return []
                         results: list[tuple[TextBlock, Any]] = []
-                        for blk in self.main.blk_list:
+                        blk_list = self.main.blk_list
+                        self._prepare_segmentation_blocks(blk_list, image)
+                        for blk in blk_list:
                             bboxes = get_inpaint_bboxes(blk.xyxy, image)
                             results.append((blk, bboxes))
                         return results
@@ -904,6 +925,5 @@ class ManualWorkflowController:
                     text_bbox=blk.xyxy,
                     bubble_xyxy=blk.bubble_xyxy,
                     text_class=blk.text_class,
-                    source_lang=blk.source_lang,
                 )
         self.main.undo_group.activeStack().endMacro()

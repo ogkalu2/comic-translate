@@ -178,8 +178,8 @@ class CoordinateConverter:
         # Rectangle bounds in scene coordinates
         rect_x = rect_item.pos().x()
         rect_y = rect_item.pos().y()
-        rect_width = rect_item.boundingRect().width()
-        rect_height = rect_item.boundingRect().height()
+        rect_width = rect_item.rect().width()
+        rect_height = rect_item.rect().height()
         rect_right = rect_x + rect_width
         rect_bottom = rect_y + rect_height
         

@@ -360,6 +360,10 @@ def save_state_to_proj_file_v2(comic_translate: "ComicTranslate", file_name: str
         "displayed_images": list(comic_translate.displayed_images),
         "loaded_images": comic_translate.loaded_images,
         "llm_extra_context": comic_translate.settings_page.get_llm_settings().get("extra_context", ""),
+        "target_language": comic_translate.lang_mapping.get(
+            comic_translate.t_combo.currentText(),
+            comic_translate.t_combo.currentText(),
+        ),
         "webtoon_mode": comic_translate.webtoon_mode,
         "webtoon_view_state": comic_translate.image_viewer.webtoon_view_state,
         "unique_images": ensure_string_keys(unique_images),
@@ -534,6 +538,15 @@ def _materialize_from_manifest_and_pages(
     comic_translate.webtoon_mode = manifest.get("webtoon_mode", False)
     comic_translate.image_viewer.webtoon_view_state = manifest.get("webtoon_view_state", {})
 
+    target_language = manifest.get("target_language", "English")
+    try:
+        comic_translate.t_combo.blockSignals(True)
+        comic_translate.t_combo.setCurrentText(
+            comic_translate.reverse_lang_mapping.get(target_language, comic_translate.tr("English"))
+        )
+    finally:
+        comic_translate.t_combo.blockSignals(False)
+
     original_image_files = manifest.get("original_image_files", [])
     comic_translate.image_files = [original_to_temp.get(file, file) for file in original_image_files]
 
@@ -541,10 +554,18 @@ def _materialize_from_manifest_and_pages(
         original_to_temp.get(page, page): (row.get("image_state", {}) or {})
         for page, row in page_rows.items()
     }
+    current_target = comic_translate.t_combo.currentText()
+    for state in comic_translate.image_states.values():
+        target_render_states = state.get("target_render_states") or {}
+        if not isinstance(target_render_states, dict):
+            target_render_states = {}
+        if state.get("viewer_state") and current_target and current_target not in target_render_states:
+            target_render_states[current_target] = state["viewer_state"]
+        state["target_render_states"] = target_render_states
+        state.setdefault("target_lang", current_target)
     # Ensure every image state has a pipeline_state dict
     default_pipeline_state = {
         'completed_stages': [],
-        'source_lang': '',
         'target_lang': '',
         'inpaint_hash': '',
         'translator_key': '',
@@ -613,6 +634,11 @@ def _materialize_from_manifest_and_pages(
     comic_translate.image_patches = {
         original_to_temp.get(page, page): plist for page, plist in reconstructed.items()
     }
+    for page_path, state_val in comic_translate.image_states.items():
+        if not state_val.get("inpaint_cache") and comic_translate.image_patches.get(page_path):
+            state_val["inpaint_cache"] = [
+                dict(patch) for patch in comic_translate.image_patches.get(page_path, [])
+            ]
 
     return manifest.get("llm_extra_context", "")
 
@@ -649,6 +675,7 @@ def _load_from_legacy_state_blob(
         "displayed_images": state.get("displayed_images", []),
         "loaded_images": state.get("loaded_images", []),
         "llm_extra_context": state.get("llm_extra_context", ""),
+        "target_language": state.get("target_language", "English"),
         "webtoon_mode": state.get("webtoon_mode", False),
         "webtoon_view_state": state.get("webtoon_view_state", {}),
         "unique_images": state.get("unique_images", {}),

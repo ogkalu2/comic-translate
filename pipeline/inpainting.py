@@ -162,7 +162,6 @@ class InpaintingHandler:
                 "text_bbox": list(map(int, blk.xyxy)) if getattr(blk, "xyxy", None) is not None else None,
                 "bubble_xyxy": list(map(int, blk.bubble_xyxy)) if getattr(blk, "bubble_xyxy", None) is not None else None,
                 "text_class": getattr(blk, "text_class", None),
-                "source_lang": getattr(blk, "source_lang", None),
             }
             strokes.append(stroke)
 
@@ -218,7 +217,6 @@ class InpaintingHandler:
                     text_bbox=text_bbox_list,
                     bubble_bbox=list(map(int, bubble_xyxy)) if bubble_xyxy is not None else None,
                     text_class=segment_meta.get('text_class', ''),
-                    source_lang=segment_meta.get('source_lang', ''),
                     text="segment",
                     translation="segment",
                 )

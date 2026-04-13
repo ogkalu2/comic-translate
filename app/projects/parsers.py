@@ -53,7 +53,7 @@ class ProjectEncoder:
 
     @staticmethod
     def encode_textblock(obj):
-        data = obj.__dict__
+        data = {k: v for k, v in obj.__dict__.items() if k != "source_lang"}
         return {
             'type': 'textblock',
             'data': data
@@ -163,7 +163,9 @@ class ProjectDecoder:
     @staticmethod
     def decode_textblock(obj):
         text_block = TextBlock()
-        text_block.__dict__.update(obj['data'])  
+        data = dict(obj['data'])
+        data.pop("source_lang", None)
+        text_block.__dict__.update(data)
         return text_block
 
     @staticmethod

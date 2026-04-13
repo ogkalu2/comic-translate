@@ -10,8 +10,8 @@ class CacheManager:
     """Manages OCR and translation caching for the pipeline."""
 
     def __init__(self):
-        self.ocr_cache = {}  # OCR results cache: {(image_hash, model_key, source_lang): {block_id: text}}
-        self.translation_cache = {}  # Translation results cache: {(image_hash, translator_key, source_lang, target_lang, extra_context): {block_id: {source_text: str, translation: str}}}
+        self.ocr_cache = {}  # OCR results cache: {(image_hash, model_key, device): {block_id: text}}
+        self.translation_cache = {}  # Translation results cache: {(image_hash, translator_key, target_lang, extra_context): {block_id: {source_text: str, translation: str}}}
         self.inpaint_cache = {}  # Inpainting results cache: {(image_hash, inpainter_key): inpainted_image}
 
     def clear_ocr_cache(self):
@@ -91,13 +91,15 @@ class CacheManager:
             cache_key = entry.get("cache_key")
             blocks = entry.get("blocks") or {}
             if cache_key is not None:
-                self.ocr_cache[tuple(cache_key) if isinstance(cache_key, list) else cache_key] = dict(blocks)
+                normalized_key = self._normalize_ocr_cache_key(cache_key)
+                self.ocr_cache[normalized_key] = dict(blocks)
 
         for entry in state.get("translation_cache", []) or []:
             cache_key = entry.get("cache_key")
             blocks = entry.get("blocks") or {}
             if cache_key is not None:
-                self.translation_cache[tuple(cache_key) if isinstance(cache_key, list) else cache_key] = dict(blocks)
+                normalized_key = self._normalize_translation_cache_key(cache_key)
+                self.translation_cache[normalized_key] = dict(blocks)
 
         logger.info(
             "Restored cache state: %d OCR entries, %d translation entries",
@@ -144,15 +146,40 @@ class CacheManager:
             fallback_data = shape_str.encode() + str(image.dtype).encode() if hasattr(image, 'dtype') else b'fallback'
             return hashlib.md5(fallback_data).hexdigest()
 
+    def _normalize_ocr_cache_key(self, cache_key):
+        if isinstance(cache_key, list):
+            cache_key = tuple(cache_key)
+        if not isinstance(cache_key, tuple):
+            return cache_key
+        if len(cache_key) == 4:
+            image_hash, ocr_model, _source_lang, device = cache_key
+            return (image_hash, ocr_model, device)
+        return cache_key
+
+    def _normalize_translation_cache_key(self, cache_key):
+        if isinstance(cache_key, list):
+            cache_key = tuple(cache_key)
+        if not isinstance(cache_key, tuple):
+            return cache_key
+        if len(cache_key) == 5:
+            image_hash, translator_key, _source_lang, target_lang, context_hash = cache_key
+            return (image_hash, translator_key, target_lang, context_hash)
+        return cache_key
+
     def _get_ocr_cache_key(self, image, source_lang, ocr_model, device=None):
         """Generate cache key for OCR results"""
         image_hash = self._generate_image_hash(image)
         if device is None:
             device = "unknown"
-        return (image_hash, ocr_model, source_lang, device)
+        # `source_lang` is kept in the signature for backward compatibility,
+        # but it no longer participates in the cache identity.
+        return (image_hash, ocr_model, device)
 
     def _get_block_id(self, block):
-        """Generate a unique identifier for a text block based on its position"""
+        """Generate a unique identifier for a text block."""
+        block_uid = getattr(block, "block_uid", None)
+        if block_uid:
+            return str(block_uid)
         try:
             x1, y1, x2, y2 = block.xyxy
             angle = block.angle
@@ -266,23 +293,18 @@ class CacheManager:
                 for original_blk, processed_blk in zip(blk_list, processed_blk_list):
                     block_id = self._get_block_id(original_blk)  # Use original block for ID
                     text = getattr(processed_blk, 'text', '') or ''  # Get text from processed block
-                    # Only include blocks that actually have OCR text
-                    if text:
-                        block_results[block_id] = text
+                    block_results[block_id] = text
             else:
                 # Standard case: use the same blocks for both ID and text
                 for blk in blk_list:
                     block_id = self._get_block_id(blk)
                     text = getattr(blk, 'text', '') or ''
-                    # Only include blocks that actually have OCR text
-                    if text:
-                        block_results[block_id] = text
-            # Do not create a cache entry if there are no blocks with OCR text
+                    block_results[block_id] = text
             if block_results:
                 self.ocr_cache[cache_key] = block_results
                 logger.info(f"Cached OCR results for {len(block_results)} blocks")
             else:
-                logger.debug("No OCR text found in blocks; skipping OCR cache creation")
+                logger.debug("No OCR blocks found; skipping OCR cache creation")
         except Exception as e:
             logger.warning(f"Failed to cache OCR results: {e}")
             # Don't raise exception, just skip caching
@@ -291,11 +313,6 @@ class CacheManager:
         """Update or add a single block's OCR result to the cache."""
         block_id = self._get_block_id(block)
         text = getattr(block, 'text', '') or ''
-
-        # Don't create/update cache entries for empty OCR text
-        if not text:
-            logger.debug(f"Skipping OCR cache update for empty text for block ID {block_id}")
-            return
 
         if cache_key not in self.ocr_cache:
             self.ocr_cache[cache_key] = {}
@@ -324,7 +341,9 @@ class CacheManager:
         image_hash = self._generate_image_hash(image)
         # Include extra_context in cache key since it affects translation results
         context_hash = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
-        return (image_hash, translator_key, source_lang, target_lang, context_hash)
+        # `source_lang` is kept for compatibility only. Translation caches are
+        # now target-specific and reuse the same shared OCR/segmentation caches.
+        return (image_hash, translator_key, target_lang, context_hash)
 
     def _is_translation_cached(self, cache_key):
         """Check if translation results are cached for this image/translator/language combination"""
@@ -341,31 +360,26 @@ class CacheManager:
                     block_id = self._get_block_id(original_blk)  # Use original block for ID
                     translation = getattr(processed_blk, 'translation', '') or ''  # Get translation from processed block
                     source_text = getattr(original_blk, 'text', '') or ''  # Get source text from original block
-                    # Only include blocks that actually have a translation
-                    if translation:
-                        # Store both source text and translation to validate cache validity
-                        block_results[block_id] = {
-                            'source_text': source_text,
-                            'translation': translation
-                        }
+                    # Store both source text and translation to validate cache validity
+                    block_results[block_id] = {
+                        'source_text': source_text,
+                        'translation': translation
+                    }
             else:
                 # Standard case: use the same blocks for both ID and translation
                 for blk in blk_list:
                     block_id = self._get_block_id(blk)
                     translation = getattr(blk, 'translation', '') or ''
                     source_text = getattr(blk, 'text', '') or ''
-                    # Only include blocks that actually have a translation
-                    if translation:
-                        block_results[block_id] = {
-                            'source_text': source_text,
-                            'translation': translation
-                        }
-            # Do not create a translation cache entry if no translations were present
+                    block_results[block_id] = {
+                        'source_text': source_text,
+                        'translation': translation
+                    }
             if block_results:
                 self.translation_cache[cache_key] = block_results
                 logger.info(f"Cached translation results for {len(block_results)} blocks")
             else:
-                logger.debug("No translations found in blocks; skipping translation cache creation")
+                logger.debug("No translation blocks found; skipping translation cache creation")
         except Exception as e:
             logger.warning(f"Failed to cache translation results: {e}")
 
@@ -374,11 +388,6 @@ class CacheManager:
         block_id = self._get_block_id(block)
         translation = getattr(block, 'translation', '') or ''
         source_text = getattr(block, 'text', '') or ''
-
-        # Don't create/update cache entries for empty translations
-        if not translation:
-            logger.debug(f"Skipping translation cache update for empty translation for block ID {block_id}")
-            return
 
         if cache_key not in self.translation_cache:
             self.translation_cache[cache_key] = {}
@@ -429,6 +438,14 @@ class CacheManager:
         
         return True
 
+    def _get_missing_ocr_blocks(self, cache_key, block_list):
+        """Return OCR blocks that are not already satisfied by cache."""
+        return [
+            block
+            for block in block_list or []
+            if self._get_cached_text_for_block(cache_key, block) is None
+        ]
+
     def _can_serve_all_blocks_from_translation_cache(self, cache_key, block_list):
         """Check if all blocks in the list can be served from translation cache with matching source text"""
         if not self._is_translation_cached(cache_key):
@@ -440,6 +457,14 @@ class CacheManager:
                 return False
         
         return True
+
+    def _get_missing_translation_blocks(self, cache_key, block_list):
+        """Return translation blocks that are not already satisfied by cache."""
+        return [
+            block
+            for block in block_list or []
+            if self._get_cached_translation_for_block(cache_key, block) is None
+        ]
 
     def _apply_cached_ocr_to_blocks(self, cache_key, block_list):
         """Apply cached OCR results to all blocks in the list"""

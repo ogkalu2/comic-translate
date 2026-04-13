@@ -62,8 +62,8 @@ class OCREngine(ABC):
             blk_list: List of TextBlock objects
             lang_code: Language code to set for source language
         """
-        for blk in blk_list:
-            blk.source_lang = lang_code
+        # Source language is no longer persisted on blocks.
+        return
 
     @staticmethod
     def encode_image(image: np.ndarray, ext: str = '.jpg') -> str:

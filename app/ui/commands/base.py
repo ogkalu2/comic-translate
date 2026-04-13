@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import numpy as np
 from typing import TypedDict, TYPE_CHECKING
 from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, Qt
@@ -124,6 +125,7 @@ class RectCommandBase:
             'height': item.rect().height(),
             'transform_origin': (item.transformOriginPoint().x(), 
                                      item.transformOriginPoint().y()),
+            'block_uid': getattr(item, "block_uid", ""),
         }
 
     @staticmethod
@@ -133,17 +135,21 @@ class RectCommandBase:
         transform_origin = QPointF(*properties['transform_origin'])
         position = QPointF(*properties['pos'])
         rotation = properties['rotation']
+        block_uid = properties.get('block_uid', '')
         
         # Use the viewer's add_rectangle method for consistent handling
-        rect_item = viewer.add_rectangle(rect, position, rotation, transform_origin)
+        rect_item = viewer.add_rectangle(rect, position, rotation, transform_origin, block_uid)
         return rect_item
 
 
     @staticmethod
     def find_matching_rect(scene, properties):
         """Find an item in the scene matching the given properties"""
+        prop_uid = properties.get("block_uid", "")
         for item in scene.items():
             if isinstance(item, MoveableRectItem):
+                if prop_uid and getattr(item, "block_uid", "") == prop_uid:
+                    return item
                 if (is_close(item.pos().x(), properties['pos'][0]) and
                     is_close(item.pos().y(), properties['pos'][1]) and
                     is_close(item.rect().width(), properties['width']) and
@@ -156,12 +162,47 @@ class RectCommandBase:
     
     @staticmethod
     def save_blk_properties(blk):
-        prp = blk.__dict__
+        prp = copy.deepcopy(blk.__dict__)
+        prp.pop('source_lang', None)
         return prp
+
+    @staticmethod
+    def resolve_blk_list(main_page, file_path: str | None, fallback=None):
+        current_file_path = None
+        curr_idx = getattr(main_page, "curr_img_idx", -1)
+        image_files = getattr(main_page, "image_files", [])
+        if 0 <= curr_idx < len(image_files):
+            current_file_path = image_files[curr_idx]
+
+        if file_path and current_file_path and file_path == current_file_path:
+            current_live_list = getattr(main_page, "blk_list", None)
+            if current_live_list is not None:
+                return current_live_list
+
+        if file_path:
+            state = getattr(main_page, "image_states", {}).get(file_path)
+            if state is not None:
+                blk_list = state.get("blk_list")
+                if blk_list is not None:
+                    return blk_list
+        if fallback is not None:
+            return fallback
+        return getattr(main_page, "blk_list", [])
+
+    @staticmethod
+    def invalidate_page_render_pipeline(main_page, file_path: str | None):
+        if not file_path:
+            return
+        invalidate = getattr(main_page, "invalidate_page_render_pipeline", None)
+        if callable(invalidate):
+            invalidate(file_path)
     
     @staticmethod
     def find_matching_blk(blk_list, properties):
+        prop_uid = properties.get("block_uid")
         for blk in blk_list:
+            if prop_uid and getattr(blk, "block_uid", None) == prop_uid:
+                return blk
             # Get current block's properties
             current_props = blk.__dict__.copy()
             
@@ -228,6 +269,10 @@ class RectCommandBase:
         """Find a TextBlockItem in the scene matching the given properties"""
         for item in scene.items():
             if isinstance(item, TextBlockItem):
+                property_uid = getattr(properties, "block_uid", None)
+                item_uid = getattr(item, "block_uid", None)
+                if property_uid and item_uid and property_uid == item_uid:
+                    return item
                 width = item.textWidth() if hasattr(item, 'textWidth') else -1
                 if width is None or width <= 0:
                     width = item.document().size().width()

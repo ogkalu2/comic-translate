@@ -33,8 +33,8 @@ class OCRProcessor:
         """
         self.main_page = main_page
         self.settings = main_page.settings_page
-        self.source_lang = source_lang
-        self.source_lang_english = self._get_english_lang(source_lang)
+        self.source_lang = source_lang or ""
+        self.source_lang_english = self._get_english_lang(source_lang) if source_lang else ""
         self.ocr_key = self._get_ocr_key(self.settings.get_tool_selection('ocr'))
 
     @staticmethod
@@ -188,9 +188,8 @@ class OCRProcessor:
         return [result if result is not None else [] for result in results]
             
     def _set_source_language(self, blk_list: list[TextBlock]) -> None:
-        source_lang_code = language_codes.get(self.source_lang_english, 'en')
-        for blk in blk_list:
-            blk.source_lang = source_lang_code
+        # Source language is intentionally not persisted on blocks anymore.
+        return
 
     def _get_ocr_key(self, localized_ocr: str) -> str:
         translator_map = {

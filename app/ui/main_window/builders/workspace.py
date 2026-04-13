@@ -19,7 +19,7 @@ from ...dayu_widgets.slider import MSlider
 from ...dayu_widgets.text_edit import MTextEdit
 from ...dayu_widgets.tool_button import MToolButton
 from ...search_replace_panel import SearchReplacePanel
-from ..constants import supported_source_languages, supported_target_languages, user_font_path
+from ..constants import supported_target_languages, user_font_path
 
 
 class WorkspaceMixin:
@@ -198,15 +198,11 @@ class WorkspaceMixin:
 
         input_layout = QtWidgets.QHBoxLayout()
 
-        s_combo_text_layout = QtWidgets.QVBoxLayout()
-        self.s_combo = MComboBox().medium()
-        self.s_combo.addItems([self.tr(lang) for lang in supported_source_languages])
-        self.s_combo.setToolTip(self.tr("Source Language"))
-        s_combo_text_layout.addWidget(self.s_combo)
+        source_text_layout = QtWidgets.QVBoxLayout()
         self.s_text_edit = MTextEdit()
         self.s_text_edit.setFixedHeight(120)
-        s_combo_text_layout.addWidget(self.s_text_edit)
-        input_layout.addLayout(s_combo_text_layout)
+        source_text_layout.addWidget(self.s_text_edit)
+        input_layout.addLayout(source_text_layout)
 
         t_combo_text_layout = QtWidgets.QVBoxLayout()
         self.t_combo = MComboBox().medium()
@@ -352,10 +348,6 @@ class WorkspaceMixin:
         self.pan_button.clicked.connect(self.toggle_pan_tool)
         self.tool_buttons["pan"] = self.pan_button
 
-        self.set_all_button = MPushButton(self.tr("Set for all"))
-        self.set_all_button.setToolTip(
-            self.tr("Sets the Source and Target Language on the current page for all pages")
-        )
         self.select_all_pages_button = MPushButton(self.tr("Select All Pages"))
         self.select_all_pages_button.setToolTip(
             self.tr("Selects every page in the page list for manual batch operations")
@@ -363,7 +355,6 @@ class WorkspaceMixin:
         self.select_all_pages_button.setEnabled(False)
 
         misc_lay.addWidget(self.pan_button)
-        misc_lay.addWidget(self.set_all_button)
         misc_lay.addWidget(self.select_all_pages_button)
         misc_lay.addStretch()
 

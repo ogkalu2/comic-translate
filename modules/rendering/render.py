@@ -12,8 +12,9 @@ from .hyphen_textwrap import wrap as hyphen_wrap
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
+from modules.detection.utils.orientation import infer_orientation
 from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
-from modules.utils.language_utils import get_language_code
+from modules.utils.language_utils import get_language_code, is_no_space_text
 
 from dataclasses import dataclass
 
@@ -82,9 +83,6 @@ def resolve_init_font_size(blk: TextBlock | None, default_max_font_size: int, mi
 
     lower_bound = max(1, int(round(min_font_size or 1)))
     upper_bound = max(lower_bound, int(round(default_max_font_size or lower_bound)))
-    item.set_vertical(bool(property.vertical))
-    item.set_layout_box_size(property.width, property.height)
-    item.set_color(property.text_color)
     return max(lower_bound, min(candidate, upper_bound))
 
 
@@ -183,13 +181,21 @@ def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img=None):
     
     for blk in blk_list:
         if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
-            
-            if blk.source_lang_direction == 'vertical':
+            if infer_orientation([blk.xyxy]) == 'vertical' or getattr(blk, "direction", "") == "vertical":
                 text_draw_bounds = shrink_bbox(blk.bubble_xyxy, shrink_percent=0.3)
                 bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
                 blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
 
-    if blk_list and blk_list[0].source_lang not in ['ko', 'zh']:
+    combined_text = " ".join(
+        part
+        for blk in blk_list
+        for part in (
+            (getattr(blk, "translation", "") or ""),
+            (getattr(blk, "text", "") or ""),
+        )
+        if part
+    )
+    if blk_list and not is_no_space_text(combined_text):
         adjust_blks_size(blk_list, img, -5, -5)
 
     return blk_list
@@ -387,6 +393,7 @@ def manual_wrap(
     
     target_lang = main_page.lang_mapping.get(main_page.t_combo.currentText(), None)
     trg_lng_cd = get_language_code(target_lang)
+    rendered_blocks: List[tuple[str, int, TextBlock, str]] = []
 
     for blk in blk_list:
         x1, y1, width, height = blk.xywh
@@ -415,8 +422,9 @@ def manual_wrap(
             block_min_font_size,
             vertical
         )
-        
-        main_page.blk_rendered.emit(translation, font_size, blk, image_path)
+        rendered_blocks.append((translation, font_size, blk, image_path))
+
+    return rendered_blocks
 
 
 def _pixels_to_qfont_points(size_px: float) -> float:

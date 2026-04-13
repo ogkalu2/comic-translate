@@ -879,8 +879,6 @@ class ProjectController:
         self.process_group('text_rendering', self.main.render_settings(), settings)
 
         settings.beginGroup("main_page")
-        # Save languages in English
-        settings.setValue("source_language", self.main.lang_mapping[self.main.s_combo.currentText()])
         settings.setValue("target_language", self.main.lang_mapping[self.main.t_combo.currentText()])
 
         settings.setValue("mode", "manual" if self.main.manual_radio.isChecked() else "automatic")
@@ -901,12 +899,8 @@ class ProjectController:
         settings = QSettings("ComicLabs", "ComicTranslate")
         settings.beginGroup("main_page")
 
-        # Load languages and convert back to current language
-        source_lang = settings.value("source_language", "Korean")
         target_lang = settings.value("target_language", "English")
 
-        # Use reverse mapping to get the translated language names
-        self.main.s_combo.setCurrentText(self.main.reverse_lang_mapping.get(source_lang, self.main.tr("Korean")))
         self.main.t_combo.setCurrentText(self.main.reverse_lang_mapping.get(target_lang, self.main.tr("English")))
 
         mode = settings.value("mode", "manual")

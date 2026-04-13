@@ -169,4 +169,10 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
     def undo(self):
         self._remove_pixmaps()
         self._unregister_patches()
+        main = self.ct
+        if main is not None:
+            try:
+                main.invalidate_page_render_pipeline(self.file_path)
+            except Exception:
+                pass
 

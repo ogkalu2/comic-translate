@@ -1,11 +1,13 @@
 from typing import List, Tuple
 import numpy as np
 import copy
+import uuid
 from PIL import Image, ImageDraw
 from collections import defaultdict, deque
 from ..detection.utils.text_lines import group_items_into_lines
+from modules.detection.utils.orientation import infer_text_direction
 from modules.detection.utils.geometry import does_rectangle_fit, is_mostly_contained
-from modules.utils.language_utils import is_no_space_lang
+from modules.utils.language_utils import is_no_space_text
 
 class TextBlock(object):
     """
@@ -24,13 +26,13 @@ class TextBlock(object):
                  translation: str = "",
                  line_spacing = 1,
                  alignment: str = '',
-                 source_lang: str = "",
                  target_lang: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
                  font_size_px: float = 0.0,
                  font_color: tuple = (),
                  direction: str = "",
+                 block_uid: str = "",
                  **kwargs) -> None:
         
         self.xyxy = text_bbox
@@ -52,8 +54,8 @@ class TextBlock(object):
         self.line_spacing = line_spacing
         self.alignment = alignment
         
-        self.source_lang = source_lang
         self.target_lang = target_lang
+        self.block_uid = block_uid or uuid.uuid4().hex
 
         self.min_font_size = min_font_size
         self.max_font_size = max_font_size
@@ -70,13 +72,6 @@ class TextBlock(object):
     def center(self) -> np.ndarray:
         xyxy = np.array(self.xyxy)
         return (xyxy[:2] + xyxy[2:]) / 2
-    
-    @property
-    def source_lang_direction(self):
-        if self.direction == 'vertical':
-            return 'ver_rtl'
-        else:
-            return 'hor_ltr'
     
     def deep_copy(self):
         """
@@ -104,8 +99,8 @@ class TextBlock(object):
         new_block.translation = self.translation
         new_block.line_spacing = self.line_spacing
         new_block.alignment = self.alignment
-        new_block.source_lang = self.source_lang
         new_block.target_lang = self.target_lang
+        new_block.block_uid = self.block_uid
         new_block.min_font_size = self.min_font_size
         new_block.max_font_size = self.max_font_size
         new_block.font_size_px = self.font_size_px
@@ -374,12 +369,14 @@ def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_strin
                 blk_entries = [best]
 
         # Сортировка в порядок чтения + склейка
-        sorted_entries = sort_textblock_rectangles(blk_entries, blk.source_lang_direction)
+        direction = infer_text_direction([bbox for bbox, _ in blk_entries]) if blk_entries else ('ver_rtl' if getattr(blk, "direction", "") == 'vertical' else 'hor_ltr')
+        sorted_entries = sort_textblock_rectangles(blk_entries, direction)
 
-        if is_no_space_lang(blk.source_lang):
+        combined_text = ' '.join(text for _, text in sorted_entries).strip()
+        if is_no_space_text(combined_text):
             blk.text = ''.join(text for _, text in sorted_entries).strip()
         else:
-            blk.text = ' '.join(text for _, text in sorted_entries).strip()
+            blk.text = combined_text
 
         # держим совместимость с blk.texts
         blk.texts = [text for _, text in sorted_entries if text]

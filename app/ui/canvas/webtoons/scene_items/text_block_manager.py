@@ -428,9 +428,13 @@ class TextBlockManager:
             return False
             
         # Check similar properties
+        uid1 = getattr(blk1, "block_uid", None)
+        uid2 = getattr(blk2, "block_uid", None)
+        if uid1 and uid2 and uid1 != uid2:
+            return False
+
         if (blk1.text_class != blk2.text_class or
             abs(blk1.angle - blk2.angle) > 1.0 or  # 1 degree tolerance
-            blk1.source_lang != blk2.source_lang or
             blk1.target_lang != blk2.target_lang):
             return False
             

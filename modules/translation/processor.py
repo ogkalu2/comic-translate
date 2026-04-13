@@ -32,9 +32,9 @@ class Translator:
         
         self.translator_key = self._get_translator_key(self.settings.get_tool_selection('translator'))
         
-        self.source_lang = source_lang
-        self.source_lang_en = self._get_english_lang(main_page, self.source_lang)
-        self.target_lang = target_lang
+        self.source_lang = source_lang or ""
+        self.source_lang_en = self._get_english_lang(main_page, self.source_lang) if self.source_lang else ""
+        self.target_lang = target_lang or ""
         self.target_lang_en = self._get_english_lang(main_page, self.target_lang)
         
         # Create appropriate engine using factory

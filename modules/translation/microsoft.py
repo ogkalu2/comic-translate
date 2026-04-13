@@ -16,7 +16,7 @@ class MicrosoftTranslation(TraditionalTranslation):
         self.region = None
         
     def initialize(self, settings: Any, source_lang: str, target_lang: str) -> None:
-        self.source_lang_code = self.get_language_code(source_lang)
+        self.source_lang_code = self.get_language_code(source_lang) if source_lang else None
         
         # Preprocess target language code to match Microsoft's supported formats
         target_code = self.get_language_code(target_lang)
@@ -39,7 +39,7 @@ class MicrosoftTranslation(TraditionalTranslation):
             'X-ClientTraceId': str(uuid.uuid4())
         }
         
-        # Set up parameters - omitting 'from' parameter for auto-detection
+        # Set up parameters - omitting 'from' parameter for auto-detection.
         params = {
             'api-version': '3.0',
             'to': self.target_lang_code

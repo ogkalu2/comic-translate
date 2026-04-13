@@ -9,39 +9,59 @@ from pipeline.webtoon_utils import get_first_visible_block
 
 
 class AddRectangleCommand(QUndoCommand, RectCommandBase):
-    def __init__(self, main_page, rect_item, blk, blk_list):
+    def __init__(self, main_page, rect_item, blk, blk_list, file_path: str | None = None):
         super().__init__()
+        self.main = main_page
         self.viewer = main_page.image_viewer
         self.scene = self.viewer._scene
+        self.file_path = file_path or (
+            main_page.image_files[main_page.curr_img_idx]
+            if 0 <= main_page.curr_img_idx < len(main_page.image_files)
+            else None
+        )
         self.blk_list = blk_list
         self.rect_properties = self.save_rect_properties(rect_item)
         self.blk_properties = self.save_blk_properties(blk)
 
     def redo(self):
+        blk_list = self.resolve_blk_list(self.main, self.file_path, self.blk_list)
+        self.main.blk_list = blk_list
         if not self.find_matching_rect(self.scene, self.rect_properties):
             self.create_rect_item(self.rect_properties, self.viewer)
 
-        if not self.find_matching_blk(self.blk_list, self.blk_properties):
+        if not self.find_matching_blk(blk_list, self.blk_properties):
             blk = self.create_new_blk(self.blk_properties)
-            self.blk_list.append(blk)
+            blk_list.append(blk)
+        self.invalidate_page_render_pipeline(self.main, self.file_path)
 
     def undo(self):
+        blk_list = self.resolve_blk_list(self.main, self.file_path, self.blk_list)
+        self.main.blk_list = blk_list
         matching_item = self.find_matching_rect(self.scene, self.rect_properties)
-        matching_blk = self.find_matching_blk(self.blk_list, self.blk_properties)
+        matching_blk = self.find_matching_blk(blk_list, self.blk_properties)
 
         if matching_item:
             self.scene.removeItem(matching_item)
-            self.viewer.rectangles.remove(matching_item)
+            if matching_item in self.viewer.rectangles:
+                self.viewer.rectangles.remove(matching_item)
 
         if matching_blk:
-            self.blk_list.remove(matching_blk)
+            blk_list.remove(matching_blk)
+        self.invalidate_page_render_pipeline(self.main, self.file_path)
 
 class BoxesChangeCommand(QUndoCommand, RectCommandBase):
-    def __init__(self, viewer, old_state, new_state, blk_list):
+    def __init__(self, main_page, old_state, new_state, blk_list):
         super().__init__()
-        self.viewer = viewer
+        self.main = main_page
+        self.viewer = main_page.image_viewer
         self.scene = self.viewer._scene
+        self.file_path = (
+            main_page.image_files[main_page.curr_img_idx]
+            if 0 <= main_page.curr_img_idx < len(main_page.image_files)
+            else None
+        )
         self.blk_list = blk_list
+        self.block_uid = getattr(old_state, "block_uid", "") or getattr(new_state, "block_uid", "")
         
         self.old_xyxy = [int(c) for c in old_state.rect]
         self.old_angle = old_state.rotation
@@ -51,37 +71,69 @@ class BoxesChangeCommand(QUndoCommand, RectCommandBase):
         self.new_angle = new_state.rotation
         self.new_tr_origin = (new_state.transform_origin.x(), new_state.transform_origin.y())
 
-    def redo(self):
-        for blk in self.blk_list:
-            if (np.array_equal(blk.xyxy, self.old_xyxy) and
-                blk.angle == self.old_angle):
-            
-                blk.xyxy[:] = self.new_xyxy
-                blk.angle = self.new_angle
-                blk.tr_origin_point = self.new_tr_origin
+    def _resolve_target_block(self, coords):
+        blk_list = self.resolve_blk_list(self.main, self.file_path, self.blk_list)
+        self.main.blk_list = blk_list
 
-                self.find_and_update_item(self.scene, self.old_xyxy, self.old_angle, 
-                                                self.new_xyxy, self.new_angle, self.new_tr_origin)
-                self.scene.update()
+        if self.block_uid:
+            for blk in blk_list:
+                if getattr(blk, "block_uid", "") == self.block_uid:
+                    return blk, blk_list
+
+        for blk in blk_list:
+            if np.array_equal(blk.xyxy, coords) and blk.angle == self.old_angle:
+                return blk, blk_list
+
+        return None, blk_list
+
+    def redo(self):
+        blk, blk_list = self._resolve_target_block(self.old_xyxy)
+        if blk is None:
+            return
+
+        blk.xyxy[:] = self.new_xyxy
+        blk.angle = self.new_angle
+        blk.tr_origin_point = self.new_tr_origin
+
+        self.find_and_update_item(
+            self.scene,
+            self.old_xyxy,
+            self.old_angle,
+            self.new_xyxy,
+            self.new_angle,
+            self.new_tr_origin,
+            self.block_uid,
+        )
+        self.invalidate_page_render_pipeline(self.main, self.file_path)
+        self.scene.update()
 
     def undo(self):
-        for blk in self.blk_list:
-            if (np.array_equal(blk.xyxy, self.new_xyxy) and
-                blk.angle == self.new_angle ):
-                
-                blk.xyxy[:] = self.old_xyxy
-                blk.angle = self.old_angle
-                blk.tr_origin_point = self.old_tr_origin
+        blk, blk_list = self._resolve_target_block(self.new_xyxy)
+        if blk is None:
+            return
 
-                self.find_and_update_item(self.scene, self.new_xyxy, self.new_angle, 
-                                        self.old_xyxy, self.old_angle, self.old_tr_origin)
-                self.scene.update()
+        blk.xyxy[:] = self.old_xyxy
+        blk.angle = self.old_angle
+        blk.tr_origin_point = self.old_tr_origin
+
+        self.find_and_update_item(
+            self.scene,
+            self.new_xyxy,
+            self.new_angle,
+            self.old_xyxy,
+            self.old_angle,
+            self.old_tr_origin,
+            self.block_uid,
+        )
+        self.invalidate_page_render_pipeline(self.main, self.file_path)
+        self.scene.update()
 
     @staticmethod
-    def find_and_update_item(scene, old_xyxy, old_angle, new_xyxy, new_angle, new_tr_origin):
+    def find_and_update_item(scene, old_xyxy, old_angle, new_xyxy, new_angle, new_tr_origin, block_uid: str = ""):
         for item in scene.items():
             # Check if item position and properties match
             if (isinstance(item, (MoveableRectItem, TextBlockItem)) and
+                (not block_uid or getattr(item, "block_uid", "") == block_uid) and
                 int(item.pos().x()) == int(old_xyxy[0]) and 
                 int(item.pos().y()) == int(old_xyxy[1]) and
                 int(item.rotation()) == int(old_angle)):
@@ -103,8 +155,13 @@ class ResizeBlocksCommand(QUndoCommand):
         super().__init__()
         self.main = main_page
         self.blk_list = blk_list
-        self.blocks = list(blk_list)
-        self.old_xyxy = [blk.xyxy.copy() for blk in self.blocks]
+        self.file_path = (
+            main_page.image_files[main_page.curr_img_idx]
+            if 0 <= main_page.curr_img_idx < len(main_page.image_files)
+            else None
+        )
+        self.block_uids = [getattr(blk, "block_uid", "") for blk in blk_list]
+        self.old_xyxy = [blk.xyxy.copy() for blk in blk_list]
         self.new_xyxy = [
             [
                 old[0] - diff,
@@ -115,38 +172,67 @@ class ResizeBlocksCommand(QUndoCommand):
             for old in self.old_xyxy
         ]
 
+    def _resolve_current_blocks(self):
+        current_blocks = self.resolve_blk_list(self.main, self.file_path, self.blk_list)
+        self.main.blk_list = current_blocks
+        return current_blocks
+
     def _refresh_rectangles(self):
+        current_blocks = self._resolve_current_blocks()
         viewer = self.main.image_viewer
         if self.main.webtoon_mode:
             viewer.clear_rectangles_in_visible_area()
         else:
             viewer.clear_rectangles(page_switch=True)
 
-        if not viewer.hasPhoto() or not self.main.blk_list:
+        if not viewer.hasPhoto() or not current_blocks:
+            RectCommandBase.invalidate_page_render_pipeline(self.main, self.file_path)
             return
 
-        for blk in self.main.blk_list:
+        for blk in current_blocks:
             x1, y1, x2, y2 = blk.xyxy
             rect = QRectF(0, 0, x2 - x1, y2 - y1)
             transform_origin = QPointF(*blk.tr_origin_point) if blk.tr_origin_point else None
-            rect_item = viewer.add_rectangle(rect, QPointF(x1, y1), blk.angle, transform_origin)
+            rect_item = viewer.add_rectangle(
+                rect,
+                QPointF(x1, y1),
+                blk.angle,
+                transform_origin,
+                getattr(blk, "block_uid", ""),
+            )
             self.main.connect_rect_item_signals(rect_item)
 
         if self.main.webtoon_mode:
-            first_block = get_first_visible_block(self.main.blk_list, viewer)
+            first_block = get_first_visible_block(current_blocks, viewer)
             if first_block is None:
-                first_block = self.main.blk_list[0]
+                first_block = current_blocks[0]
         else:
-            first_block = self.main.blk_list[0]
+            first_block = current_blocks[0]
 
         rect = self.main.rect_item_ctrl.find_corresponding_rect(first_block, 0.5)
         viewer.select_rectangle(rect)
         self.main.set_tool('box')
+        RectCommandBase.invalidate_page_render_pipeline(self.main, self.file_path)
 
     def _apply(self, coords):
-        for blk, xyxy in zip(self.blocks, coords):
-            if blk in self.blk_list:
+        current_blocks = self._resolve_current_blocks()
+        blk_by_uid = {
+            getattr(blk, "block_uid", ""): blk
+            for blk in current_blocks
+            if getattr(blk, "block_uid", "")
+        }
+
+        for idx, xyxy in enumerate(coords):
+            blk = None
+            if idx < len(self.block_uids):
+                uid = self.block_uids[idx]
+                if uid:
+                    blk = blk_by_uid.get(uid)
+            if blk is None and idx < len(current_blocks):
+                blk = current_blocks[idx]
+            if blk is not None:
                 blk.xyxy[:] = xyxy
+
         self._refresh_rectangles()
 
     def redo(self):
@@ -161,6 +247,18 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
         self.viewer = viewer
         self.scene = viewer._scene
         self.properties_list = []
+
+    def _invalidate_viewer_pipeline(self):
+        main = self.viewer.window()
+        if main is None or not hasattr(main, "invalidate_page_render_pipeline"):
+            return
+        file_path = None
+        if hasattr(main, "image_files"):
+            idx = getattr(main, "curr_img_idx", -1)
+            if 0 <= idx < len(main.image_files):
+                file_path = main.image_files[idx]
+        if file_path:
+            main.invalidate_page_render_pipeline(file_path)
         
     def undo(self):
         for properties in self.properties_list:
@@ -169,6 +267,7 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
             item for item in self.viewer.rectangles
             if isinstance(item, MoveableRectItem) and item in self.scene.items()
         ]
+        self._invalidate_viewer_pipeline()
         self.scene.update()
         
     def redo(self):
@@ -179,6 +278,7 @@ class ClearRectsCommand(QUndoCommand, RectCommandBase):
                 self.scene.removeItem(item)
                 self.viewer.selected_rect = None
         self.viewer.rectangles.clear()
+        self._invalidate_viewer_pipeline()
         self.scene.update()
     
 class DeleteBoxesCommand(QUndoCommand, RectCommandBase):
@@ -187,49 +287,68 @@ class DeleteBoxesCommand(QUndoCommand, RectCommandBase):
         self.ct = main_page
         self.viewer = main_page.image_viewer
         self.scene = self.viewer._scene
+        self.file_path = (
+            main_page.image_files[main_page.curr_img_idx]
+            if 0 <= main_page.curr_img_idx < len(main_page.image_files)
+            else None
+        )
         self.rect_properties = self.save_rect_properties(rect_item) if rect_item else None
         self.txt_item_prp = self.save_txt_item_properties(text_item) if text_item else None
         self.blk_properties = self.save_blk_properties(blk)
         self.blk_list = blk_list
 
     def redo(self):
+        blk_list = self.resolve_blk_list(self.ct, self.file_path, self.blk_list)
+        self.ct.blk_list = blk_list
         matching_rect = self.find_matching_rect(self.scene, self.rect_properties) if self.rect_properties else None
         matching_txt_item = self.find_matching_txt_item(self.scene, self.txt_item_prp) if self.txt_item_prp else None
-        matching_blk = self.find_matching_blk(self.blk_list, self.blk_properties)
+        matching_blk = self.find_matching_blk(blk_list, self.blk_properties)
 
         if matching_rect:
             self.scene.removeItem(matching_rect)
-            self.viewer.rectangles.remove(matching_rect)
+            if matching_rect in self.viewer.rectangles:
+                self.viewer.rectangles.remove(matching_rect)
             self.viewer.selected_rect = None
             self.scene.update()
 
         if matching_blk:
-            self.blk_list.remove(matching_blk)
+            blk_list.remove(matching_blk)
             self.ct.curr_tblock = None
 
         if matching_txt_item:
             self.scene.removeItem(matching_txt_item)
-            self.viewer.text_items.remove(matching_txt_item)
+            if matching_txt_item in self.viewer.text_items:
+                self.viewer.text_items.remove(matching_txt_item)
             self.ct.curr_tblock_item = None
             self.scene.update()
+        self.invalidate_page_render_pipeline(self.ct, self.file_path)
 
     def undo(self):
+        blk_list = self.resolve_blk_list(self.ct, self.file_path, self.blk_list)
+        self.ct.blk_list = blk_list
         if self.rect_properties and not self.find_matching_rect(self.scene, self.rect_properties):
             self.create_rect_item(self.rect_properties, self.viewer)
             self.scene.update()
 
-        if not self.find_matching_blk(self.blk_list, self.blk_properties):
+        if not self.find_matching_blk(blk_list, self.blk_properties):
             blk = self.create_new_blk(self.blk_properties)
-            self.blk_list.append(blk)
+            blk_list.append(blk)
 
         if self.txt_item_prp and not self.find_matching_txt_item(self.scene, self.txt_item_prp):
             text_item = self.create_new_txt_item(self.txt_item_prp, self.viewer)
+        self.invalidate_page_render_pipeline(self.ct, self.file_path)
 
 class AddTextItemCommand(QUndoCommand, RectCommandBase):
     def __init__(self, main_page, text_item):
         super().__init__()
+        self.ct = main_page
         self.viewer = main_page.image_viewer
         self.scene = self.viewer._scene
+        self.file_path = (
+            main_page.image_files[main_page.curr_img_idx]
+            if 0 <= main_page.curr_img_idx < len(main_page.image_files)
+            else None
+        )
         self.txt_item_prp = self.save_txt_item_properties(text_item)
 
     def redo(self):
@@ -242,6 +361,6 @@ class AddTextItemCommand(QUndoCommand, RectCommandBase):
             self.scene.removeItem(matching_txt_item)
             self.viewer.text_items.remove(matching_txt_item)
             self.scene.update()
+        self.invalidate_page_render_pipeline(self.ct, self.file_path)
 
- 
 
