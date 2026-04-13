@@ -11,6 +11,15 @@ from PIL import Image
 from app.path_materialization import ensure_path_materialized
 from modules.utils.textblock import sort_blk_list
 from modules.detection.utils.orientation import infer_orientation, infer_reading_order
+from ..stage_state import (
+    activate_target_lang,
+    ensure_pipeline_state,
+    finalize_render_stage,
+    is_stage_available,
+    mark_clean_ready,
+    mark_ocr_ready,
+    set_page_stage_validity,
+)
 from ..virtual_page import VirtualPage
 
 if TYPE_CHECKING:
@@ -327,7 +336,13 @@ class FlowMixin:
             page_state["blk_list"] = []
             page_state["skip_render"] = True
             page_state["viewer_state"]["text_items_state"] = []
+            page_state["ui_stage"] = ""
             self.final_patches_for_save[image_path] = []
+            ensure_pipeline_state(
+                page_state,
+                target_lang=page_state.get("target_lang", self.main_page.t_combo.currentText()),
+                has_runtime_patches=False,
+            )["current_stage"] = ""
             self.main_page.render_state_ready.emit(image_path)
             self._save_final_rendered_page(selected_index, image_path, timestamp)
             self._emit_progress(selected_index, total_images, 10, False)
@@ -354,6 +369,40 @@ class FlowMixin:
         )
 
         self.final_patches_for_save[image_path] = patches
+        target_lang = page_state.get("target_lang", self.main_page.t_combo.currentText())
+        has_runtime_patches = bool(
+            patches
+            or page_state.get("inpaint_cache")
+            or self.main_page.image_patches.get(image_path)
+        )
+        ps, target_lang = activate_target_lang(
+            page_state,
+            target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        set_page_stage_validity(
+            page_state,
+            "detect",
+            bool(prepared_blocks),
+            target_lang=target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        set_page_stage_validity(
+            page_state,
+            "segment",
+            bool(any(getattr(blk, "inpaint_bboxes", None) is not None for blk in prepared_blocks or [])),
+            target_lang=target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        mark_ocr_ready(page_state, has_runtime_patches=has_runtime_patches)
+        if has_runtime_patches:
+            mark_clean_ready(page_state, has_runtime_patches=has_runtime_patches)
+        ps, _ = finalize_render_stage(
+            page_state,
+            target_lang,
+            has_runtime_patches=has_runtime_patches,
+            ui_stage="render",
+        )
         if patches:
             self.main_page.patches_processed.emit(patches, image_path)
         self.main_page.render_state_ready.emit(image_path)
@@ -440,11 +489,16 @@ class FlowMixin:
                     "width": int(width),
                     "height": int(height),
                 }
-                completed_stages = set(
-                    page_state.get("pipeline_state", {}).get("completed_stages", [])
-                )
                 page_info["reuse_cached_inpaint"] = (
-                    "inpaint" in completed_stages
+                    is_stage_available(
+                        page_state,
+                        "clean",
+                        target_lang=page_state.get("target_lang", self.main_page.t_combo.currentText()),
+                        has_runtime_patches=bool(
+                            page_state.get("inpaint_cache")
+                            or self.main_page.image_patches.get(image_path)
+                        ),
+                    )
                     and bool(
                         page_state.get("inpaint_cache")
                         or self.main_page.image_patches.get(image_path)

@@ -286,7 +286,7 @@ class CacheManager:
     def _cache_ocr_results(self, cache_key, blk_list, processed_blk_list=None):
         """Cache OCR results for all blocks"""
         try:
-            block_results = {}
+            block_results = dict(self.ocr_cache.get(cache_key, {}) or {})
             # If we have separate processed blocks (with OCR results), use them for text
             # but use original blocks for consistent IDs
             if processed_blk_list is not None:
@@ -352,7 +352,7 @@ class CacheManager:
     def _cache_translation_results(self, cache_key, blk_list, processed_blk_list=None):
         """Cache translation results for all blocks"""
         try:
-            block_results = {}
+            block_results = dict(self.translation_cache.get(cache_key, {}) or {})
             # If we have separate processed blocks (with translation results), use them for translation
             # but use original blocks for consistent IDs
             if processed_blk_list is not None:

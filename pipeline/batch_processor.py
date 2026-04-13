@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import gc
 import hashlib
 import json
@@ -45,6 +46,17 @@ from .block_detection import BlockDetectionHandler
 from .cache_manager import CacheManager
 from .inpainting import InpaintingHandler
 from .ocr_handler import OCRHandler
+from .render_state import build_render_template_map, get_target_snapshot, set_target_snapshot
+from .stage_state import (
+    activate_target_lang,
+    ensure_pipeline_state,
+    finalize_render_stage,
+    is_stage_available,
+    mark_clean_ready,
+    mark_ocr_ready,
+    set_current_stage,
+    set_page_stage_validity,
+)
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -190,17 +202,14 @@ class BatchProcessor:
 
     def _get_pipeline_state(self, image_path: str) -> dict:
         """Get the pipeline_state dict for an image, ensuring it exists."""
-        state = self.main_page.image_states.get(image_path, {})
-        ps = state.get("pipeline_state")
-        if ps is None:
-            ps = {
-                "completed_stages": [],
-                "target_lang": "",
-                "inpaint_hash": "",
-                "translator_key": "",
-                "extra_context_hash": "",
-            }
-            state["pipeline_state"] = ps
+        state = self.main_page.image_states.setdefault(image_path, {})
+        ps, _ = activate_target_lang(
+            state,
+            self.main_page.t_combo.currentText(),
+            has_runtime_patches=bool(
+                state.get("inpaint_cache") or self.main_page.image_patches.get(image_path)
+            ),
+        )
         return ps
 
     def _has_stages_completed(self, stages: set, pipeline_state: dict) -> bool:
@@ -211,9 +220,17 @@ class BatchProcessor:
     def _page_is_fully_done(self, page: PreparedBatchPage, translator_key: str, extra_context: str) -> bool:
         """Check if a page has been fully processed with the same settings and needs zero re-running."""
         ps = self._get_pipeline_state(page.image_path)
-        all_stages = {"detection", "ocr", "inpaint", "translate", "render"}
-        if not self._has_stages_completed(all_stages, ps):
-            logger.debug(f"_page_is_fully_done: missing stages, completed={ps.get('completed_stages')} for {page.image_path}")
+        state = self.main_page.image_states.get(page.image_path, {})
+        has_runtime_patches = bool(
+            state.get("inpaint_cache") or self.main_page.image_patches.get(page.image_path)
+        )
+        if not (
+            is_stage_available(state, "detect", target_lang=page.target_lang, has_runtime_patches=has_runtime_patches)
+            and is_stage_available(state, "ocr", target_lang=page.target_lang, has_runtime_patches=has_runtime_patches)
+            and is_stage_available(state, "translate", target_lang=page.target_lang, has_runtime_patches=has_runtime_patches)
+            and is_stage_available(state, "render", target_lang=page.target_lang, has_runtime_patches=has_runtime_patches)
+        ):
+            logger.debug(f"_page_is_fully_done: stage validity incomplete for {page.image_path}")
             return False
         if ps.get("target_lang") != page.target_lang:
             logger.debug(f"_page_is_fully_done: target mismatch ps_trg={ps.get('target_lang')} page_trg={page.target_lang} for {page.image_path}")
@@ -246,7 +263,11 @@ class BatchProcessor:
             logger.debug(f"_page_is_fully_done: translation cache incomplete for {page.image_path}")
             return False
 
-        viewer_state = (state.get("target_render_states", {}) or {}).get(page.target_lang)
+        viewer_state = get_target_snapshot(
+            state,
+            page.target_lang,
+            fallback_to_viewer_state=False,
+        )
         if not viewer_state:
             logger.debug(f"_page_is_fully_done: missing target render snapshot for {page.image_path}")
             return False
@@ -276,8 +297,15 @@ class BatchProcessor:
     def _page_can_skip_detection(self, page: PreparedBatchPage) -> bool:
         """Check if a page already has detected blocks and can skip text-block detection.
         This is true when detection stage was completed and blk_list is available."""
-        ps = self._get_pipeline_state(page.image_path)
-        return self._has_stages_completed({"detection"}, ps)
+        state = self.main_page.image_states.get(page.image_path, {})
+        return bool(state.get("blk_list")) and is_stage_available(
+            state,
+            "detect",
+            target_lang=page.target_lang,
+            has_runtime_patches=bool(
+                state.get("inpaint_cache") or self.main_page.image_patches.get(page.image_path)
+            ),
+        )
 
     def _page_can_skip_inpainting(self, page: PreparedBatchPage) -> bool:
         """Check if a page already has a reusable inpaint result.
@@ -287,8 +315,15 @@ class BatchProcessor:
         target-language reruns should reuse that cached cleanup instead of
         recomputing a new mask/inpaint pass.
         """
-        ps = self._get_pipeline_state(page.image_path)
-        if not self._has_stages_completed({"inpaint"}, ps):
+        state = self.main_page.image_states.get(page.image_path, {})
+        if not is_stage_available(
+            state,
+            "clean",
+            target_lang=page.target_lang,
+            has_runtime_patches=bool(
+                state.get("inpaint_cache") or self.main_page.image_patches.get(page.image_path)
+            ),
+        ):
             return False
         return bool(self._get_cached_inpaint_patches(page.image_path))
 
@@ -366,14 +401,26 @@ class BatchProcessor:
     def _page_can_skip_ocr(self, page: PreparedBatchPage) -> bool:
         """Check if a page already has OCR results and can skip OCR stage.
         This is true when OCR stage was completed and OCR settings unchanged."""
+        state = self.main_page.image_states.get(page.image_path, {})
         ps = self._get_pipeline_state(page.image_path)
-        if not self._has_stages_completed({"ocr"}, ps):
+        if not is_stage_available(
+            state,
+            "ocr",
+            target_lang=page.target_lang,
+            has_runtime_patches=bool(
+                state.get("inpaint_cache") or self.main_page.image_patches.get(page.image_path)
+            ),
+        ):
             return False
 
         # Check if OCR cache key matches (this validates model/device/settings)
         expected_ocr_cache_key = self._get_ocr_cache_key_for_page(page)
         cached_ocr_cache_key = ps.get("ocr_cache_key", "")
         return expected_ocr_cache_key == cached_ocr_cache_key
+
+    def _build_render_template_map(self, image_path: str, target_lang: str) -> dict[tuple[str, tuple[int, int, int, int], float], dict]:
+        state = self.main_page.image_states.get(image_path, {})
+        return build_render_template_map(state, target_lang)
 
     def _load_page_state_into_blk_list(self, page: PreparedBatchPage):
         """Load the saved blk_list from image_states into the page object, skipping
@@ -781,7 +828,30 @@ class BatchProcessor:
             extra_context,
         )
         usage = getattr(translator.engine, "last_usage", None)
-        return translated_blk_list, usage
+        return translated_blk_list, blocks_to_translate, usage
+
+    def _merge_translated_blocks(
+        self,
+        page: PreparedBatchPage,
+        original_blocks: list,
+        translated_blocks: list,
+    ) -> None:
+        if not original_blocks:
+            if translated_blocks is not None:
+                page.blk_list = translated_blocks
+            return
+
+        if original_blocks is page.blk_list:
+            if translated_blocks is not None:
+                page.blk_list = translated_blocks
+            return
+
+        for original_blk, translated_blk in zip(original_blocks, translated_blocks or []):
+            if translated_blk is original_blk:
+                continue
+            for attr in ("translation", "text", "source_lang"):
+                if hasattr(translated_blk, attr):
+                    setattr(original_blk, attr, getattr(translated_blk, attr))
 
     def _translate_prepared_pages(
         self,
@@ -806,8 +876,12 @@ class BatchProcessor:
                 page = future_to_page[future]
 
                 try:
-                    translated_blk_list, usage = future.result()
-                    page.blk_list = translated_blk_list
+                    translated_blk_list, translated_source_blocks, usage = future.result()
+                    self._merge_translated_blocks(
+                        page,
+                        translated_source_blocks,
+                        translated_blk_list,
+                    )
                     self.emit_progress(page.index, total_images, 7, 10, False)
 
                     if usage:
@@ -825,6 +899,8 @@ class BatchProcessor:
                         translation_blocks,
                         translated_blk_list,
                     )
+                    if hasattr(page, "_translation_missing_blocks"):
+                        delattr(page, "_translation_missing_blocks")
                 except InsufficientCreditsException:
                     raise
                 except Exception as exc:
@@ -950,6 +1026,7 @@ class BatchProcessor:
         direction = render_settings.direction
         file_on_display = self._current_displayed_file()
 
+        template_map = self._build_render_template_map(page.image_path, page.target_lang)
         text_items_state = []
         for blk in page.blk_list:
             x1, y1, block_width, block_height = blk.xywh
@@ -957,20 +1034,53 @@ class BatchProcessor:
             if not translation or len(translation) == 1:
                 continue
 
+            block_uid = str(getattr(blk, "block_uid", "") or "")
+            template = template_map.get((block_uid, (), 0.0), {}) if block_uid else {}
+            if not template:
+                template = template_map.get(
+                    (
+                        "",
+                        (
+                            int(blk.xyxy[0]),
+                            int(blk.xyxy[1]),
+                            int(blk.xyxy[2]),
+                            int(blk.xyxy[3]),
+                        ),
+                        float(getattr(blk, "angle", 0.0) or 0.0),
+                    ),
+                    {},
+                )
+            font_family = template.get("font_family", font)
+            line_spacing_for_block = float(template.get("line_spacing", line_spacing))
+            outline_width_for_block = float(template.get("outline_width", outline_width))
+            bold_for_block = bool(template.get("bold", bold))
+            italic_for_block = bool(template.get("italic", italic))
+            underline_for_block = bool(template.get("underline", underline))
+            alignment_for_block = template.get("alignment", alignment)
+            direction_for_block = template.get("direction", direction)
+            outline_enabled = bool(template.get("outline", outline))
+            template_outline_color = template.get("outline_color", outline_color)
+            if template_outline_color is not None and not isinstance(template_outline_color, QColor):
+                template_outline_color = QColor(template_outline_color)
+            outline_color_for_block = template_outline_color if outline_enabled else None
+            template_font_color = template.get("text_color")
+            if template_font_color is not None and not isinstance(template_font_color, QColor):
+                template_font_color = QColor(template_font_color)
+
             vertical = is_vertical_block(blk, page.trg_lng_cd)
-            block_init_font_size = resolve_init_font_size(blk, max_font_size, min_font_size)
+            block_init_font_size = int(round(template.get("font_size", resolve_init_font_size(blk, max_font_size, min_font_size))))
             translation, font_size = pyside_word_wrap(
                 translation,
-                font,
+                font_family,
                 block_width,
                 block_height,
-                line_spacing,
-                outline_width,
-                bold,
-                italic,
-                underline,
-                alignment,
-                direction,
+                line_spacing_for_block,
+                outline_width_for_block,
+                bold_for_block,
+                italic_for_block,
+                underline_for_block,
+                alignment_for_block,
+                direction_for_block,
                 block_init_font_size,
                 min_font_size,
                 vertical,
@@ -982,38 +1092,40 @@ class BatchProcessor:
             if is_no_space_lang(page.trg_lng_cd):
                 translation = translation.replace(" ", "")
 
-            font_color = get_smart_text_color(blk.font_color, setting_font_color)
+            font_color = get_smart_text_color(blk.font_color, template_font_color or setting_font_color)
             text_props = TextItemProperties(
                 text=translation,
-                font_family=font,
+                source_text=blk.translation or blk.text or translation,
+                font_family=font_family,
                 font_size=font_size,
                 text_color=font_color,
-                alignment=alignment,
-                line_spacing=line_spacing,
-                outline_color=outline_color,
-                outline_width=outline_width,
-                bold=bold,
-                italic=italic,
-                underline=underline,
+                alignment=alignment_for_block,
+                line_spacing=line_spacing_for_block,
+                outline_color=outline_color_for_block,
+                outline_width=outline_width_for_block,
+                outline=outline_enabled,
+                bold=bold_for_block,
+                italic=italic_for_block,
+                underline=underline_for_block,
                 position=(x1, y1),
                 rotation=blk.angle,
                 scale=1.0,
                 transform_origin=blk.tr_origin_point,
                 width=block_width,
                 height=block_height,
-                direction=direction,
+                direction=direction_for_block,
                 vertical=vertical,
                 block_uid=getattr(blk, "block_uid", ""),
                 selection_outlines=[
                     OutlineInfo(
                         0,
                         len(translation),
-                        outline_color,
-                        outline_width,
+                        outline_color_for_block,
+                        outline_width_for_block,
                         OutlineType.Full_Document,
                     )
                 ]
-                if outline
+                if outline_enabled and outline_color_for_block is not None
                 else [],
             )
             text_items_state.append(text_props.to_dict())
@@ -1023,14 +1135,10 @@ class BatchProcessor:
         viewer_state.update(
             {
                 "text_items_state": text_items_state,
-                "push_to_stack": True,
+                "push_to_stack": False,
             }
         )
-        target_render_states = state.setdefault("target_render_states", {})
-        target_render_states[page.target_lang] = {
-            **viewer_state,
-            "text_items_state": list(text_items_state),
-        }
+        set_target_snapshot(state, page.target_lang, viewer_state)
 
     def _finalize_prepared_page(
         self,
@@ -1055,23 +1163,49 @@ class BatchProcessor:
 
         state = self.main_page.image_states[page.image_path]
         state.update({"blk_list": page.blk_list, "target_lang": page.target_lang})
-        self.main_page.render_state_ready.emit(page.image_path)
 
         if page.image_path == self._current_displayed_file():
             self.main_page.blk_list = page.blk_list
 
-        # Record pipeline_state to enable stage-skipping on future runs
-        ps = state.setdefault("pipeline_state", {
-            "completed_stages": [],
-            "target_lang": "",
-            "inpaint_hash": "",
-            "translator_key": "",
-            "extra_context_hash": "",
-        })
-        ps["completed_stages"] = list({"detection", "ocr", "inpaint", "translate", "render"})
-        ps["target_lang"] = page.target_lang
+        has_runtime_patches = bool(
+            state.get("inpaint_cache") or self.main_page.image_patches.get(page.image_path)
+        )
+        ps, _ = activate_target_lang(
+            state,
+            page.target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        set_page_stage_validity(
+            state,
+            "detect",
+            bool(page.blk_list),
+            target_lang=page.target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        set_page_stage_validity(
+            state,
+            "segment",
+            bool(
+                state.get("brush_strokes")
+                or any(getattr(blk, "inpaint_bboxes", None) is not None for blk in page.blk_list or [])
+            ),
+            target_lang=page.target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        mark_ocr_ready(state, has_runtime_patches=has_runtime_patches)
+        if self._get_cached_inpaint_patches(page.image_path):
+            state["inpaint_cache"] = copy.deepcopy(self._get_cached_inpaint_patches(page.image_path))
+            mark_clean_ready(state, has_runtime_patches=has_runtime_patches)
+        ps, _ = finalize_render_stage(
+            state,
+            page.target_lang,
+            has_runtime_patches=has_runtime_patches,
+            ui_stage="render",
+        )
+        ps["ocr_cache_key"] = page.ocr_cache_key or ps.get("ocr_cache_key", "")
         ps["translator_key"] = translator_key
         ps["extra_context_hash"] = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
+        self.main_page.render_state_ready.emit(page.image_path)
 
         self.emit_progress(page.index, total_images, 10, 10, False)
         return True

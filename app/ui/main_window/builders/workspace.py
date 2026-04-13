@@ -14,7 +14,6 @@ from ...dayu_widgets.line_edit import MLineEdit
 from ...dayu_widgets.loading import MLoading
 from ...dayu_widgets.progress_bar import MProgressBar
 from ...dayu_widgets.push_button import MPushButton
-from ...dayu_widgets.radio_button import MRadioButton
 from ...dayu_widgets.slider import MSlider
 from ...dayu_widgets.text_edit import MTextEdit
 from ...dayu_widgets.tool_button import MToolButton
@@ -36,10 +35,7 @@ class WorkspaceMixin:
         self.undo_tool_group.set_button_list(undo_tools)
 
         button_config_list = [
-            {"text": self.tr("Detect"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Recognize"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Translate"), "dayu_type": MPushButton.DefaultType, "enabled": False},
-            {"text": self.tr("Segment"), "dayu_type": MPushButton.DefaultType, "enabled": False},
+            {"text": self.tr("Text"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Clean"), "dayu_type": MPushButton.DefaultType, "enabled": False},
             {"text": self.tr("Render"), "dayu_type": MPushButton.DefaultType, "enabled": False},
         ]
@@ -57,13 +53,6 @@ class WorkspaceMixin:
 
         self.loading = MLoading().small()
         self.loading.setVisible(False)
-
-        self.manual_radio = MRadioButton(self.tr("Manual"))
-        self.manual_radio.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
-
-        self.automatic_radio = MRadioButton(self.tr("Automatic"))
-        self.automatic_radio.setChecked(True)
-        self.automatic_radio.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
 
         self.webtoon_toggle = MToolButton()
         self.webtoon_toggle.set_dayu_svg("webtoon-toggle.svg")
@@ -101,8 +90,6 @@ class WorkspaceMixin:
         header_layout.addStretch()
         header_layout.addWidget(self.page_position_label)
         header_layout.addWidget(self.webtoon_toggle)
-        header_layout.addWidget(self.manual_radio)
-        header_layout.addWidget(self.automatic_radio)
         header_layout.addWidget(self.preview_button)
         header_layout.addWidget(self.translate_button)
         header_layout.addWidget(self.cancel_button)

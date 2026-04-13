@@ -176,8 +176,12 @@ class LazyWebtoonManager:
         state = self.viewer.webtoon_view_state
         if not state:
             return
-        
-        self.viewer.setTransform(QTransform(*state['transform']))
+
+        transform_data = state.get('transform')
+        if not (isinstance(transform_data, (list, tuple)) and len(transform_data) == 9):
+            return
+
+        self.viewer.setTransform(QTransform(*transform_data))
 
     # PROXY PROPERTIES to access data from the correct owner
 

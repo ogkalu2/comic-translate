@@ -13,14 +13,15 @@ from PySide6 import QtCore, QtWidgets, QtGui
 from app.ui.dayu_widgets.clickable_card import ClickMeta
 from app.ui.dayu_widgets.message import MMessage
 from app.ui.messages import Messages
-from app.ui.commands.image import SetImageCommand, ToggleSkipImagesCommand
+from app.ui.commands.image import SetImageCommand
 from app.ui.commands.inpaint import PatchInsertCommand
 from app.ui.commands.inpaint import PatchCommandBase
-from app.ui.commands.box import AddTextItemCommand
 from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
 from app.path_materialization import ensure_path_materialized
 from app.projects.project_state_v2 import remap_lazy_blob_paths
+from pipeline.render_state import get_target_render_states, get_target_snapshot, set_target_snapshot
+from pipeline.stage_state import activate_target_lang, ensure_pipeline_state, finalize_render_stage, resolve_target_lang
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -50,6 +51,36 @@ class ImageStateController:
         self.page_list_loader = ListViewImageLoader(
             self.main.page_list,
             avatar_size=(35, 50)
+        )
+
+    def _reconcile_render_snapshot_state(self, file_path: str, target_lang: str | None = None) -> None:
+        state = self.main.image_states.get(file_path)
+        if not state:
+            return
+
+        active_target = resolve_target_lang(
+            state,
+            preferred_target=target_lang or self.main.t_combo.currentText(),
+            pipeline_state=state.get("pipeline_state"),
+        )
+        if not active_target:
+            return
+
+        snapshot = get_target_snapshot(state, active_target)
+        viewer_state = state.get("viewer_state") or {}
+        if not snapshot and state.get("target_lang") == active_target and viewer_state.get("text_items_state"):
+            snapshot = set_target_snapshot(state, active_target, viewer_state)
+
+        text_items_state = (snapshot or {}).get("text_items_state") or []
+        if not text_items_state:
+            return
+
+        has_runtime_patches = bool(state.get("inpaint_cache") or self.main.image_patches.get(file_path))
+        finalize_render_stage(
+            state,
+            active_target,
+            has_runtime_patches=has_runtime_patches,
+            ui_stage="render",
         )
 
     def _is_content_flagged_error(self, error: str) -> bool:
@@ -311,100 +342,49 @@ class ImageStateController:
         return True
 
     def mark_text_stack_restore_pending(self):
-        self._pending_text_stack_restore = {
-            file_path
-            for file_path, state in self.main.image_states.items()
-            if (state.get("viewer_state", {}) or {}).get("text_items_state")
-        }
+        self._pending_text_stack_restore = set()
 
     def _restore_text_items_to_stack_if_needed(self, file_path: str, viewer) -> None:
-        if file_path not in self._pending_text_stack_restore:
-            return
-
-        stack = self.main.undo_stacks.get(file_path)
-        if stack is None:
-            self._pending_text_stack_restore.discard(file_path)
-            return
-
-        viewer_state = self.main.image_states.get(file_path, {}).get("viewer_state", {})
-        if not viewer_state or not viewer_state.get("text_items_state") or not viewer.text_items:
-            self._pending_text_stack_restore.discard(file_path)
-            return
-
-        was_project_clean = not self.main.has_unsaved_changes()
-        stack.beginMacro('text_items_restored')
-        for text_item in viewer.text_items:
-            command = AddTextItemCommand(self.main, text_item)
-            stack.push(command)
-        stack.endMacro()
-        if was_project_clean:
-            self.main.set_project_clean()
         self._pending_text_stack_restore.discard(file_path)
 
     def apply_undo_redo_to_selected(self, redo: bool) -> None:
-        ordered_paths = self._ordered_selected_page_paths()
-        if not ordered_paths:
+        current_path = self._current_file_path()
+        if not current_path:
             return
 
-        current_path = self._current_file_path()
         try:
             self.main.text_ctrl._commit_pending_text_command()
         except Exception:
             pass
 
-        if current_path:
-            self.save_current_image_state()
+        self.save_current_image_state()
+
+        stack = self.main.undo_stacks.get(current_path)
+        if stack is None:
+            return
 
         operation = "redo" if redo else "undo"
         can_apply = "canRedo" if redo else "canUndo"
-        processed_any = False
+        if not getattr(stack, can_apply)():
+            return
 
         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         try:
-            for file_path in ordered_paths:
-                stack = self.main.undo_stacks.get(file_path)
-                if stack is None:
-                    continue
-                needs_text_restore = (not redo) and (file_path in self._pending_text_stack_restore)
-                if needs_text_restore:
-                    if not self._show_page_for_undo_redo(
-                        file_path,
-                        refresh_original_preview=False,
-                    ):
-                        continue
-                    self.main.undo_group.setActiveStack(stack)
-                if not getattr(stack, can_apply)():
-                    continue
-                if not needs_text_restore:
-                    if not self._show_page_for_undo_redo(
-                        file_path,
-                        refresh_original_preview=False,
-                    ):
-                        continue
-
-                self.main.undo_group.setActiveStack(stack)
-                getattr(stack, operation)()
-                self.save_current_image_state()
-                processed_any = True
+            if not self._show_page_for_undo_redo(
+                current_path,
+                refresh_original_preview=False,
+            ):
+                return
+            self.main.undo_group.setActiveStack(stack)
+            getattr(stack, operation)()
+            self.save_current_image_state()
         finally:
-            restore_path = current_path if current_path in self.main.image_files else None
-            if restore_path is None and ordered_paths:
-                for file_path in ordered_paths:
-                    if file_path in self.main.image_files:
-                        restore_path = file_path
-                        break
-
-            if restore_path:
-                self._show_page_for_undo_redo(restore_path, refresh_original_preview=True)
-                restore_stack = self.main.undo_stacks.get(restore_path)
-                if restore_stack is not None:
-                    self.main.undo_group.setActiveStack(restore_stack)
-
+            self._show_page_for_undo_redo(current_path, refresh_original_preview=True)
+            self.main.undo_group.setActiveStack(stack)
             QtWidgets.QApplication.restoreOverrideCursor()
 
-        if processed_any:
-            self.main.refresh_fullscreen_preview()
-            self.main.update_page_position_label()
+        self.main.stage_nav_ctrl.restore_current_page_view()
+        self.main.update_page_position_label()
 
     @staticmethod
     def _remap_dict_keys(data: dict, path_mapping: dict[str, str]) -> dict:
@@ -886,7 +866,7 @@ class ImageStateController:
                 
                 # Load minimal page state without interfering with the webtoon view
                 if file_path in self.main.image_states:
-                    self.main.image_states[file_path].setdefault('target_render_states', {})
+                    get_target_render_states(self.main.image_states[file_path])
                     
                 # Clear text edits
                 self.main.text_ctrl.clear_text_edits()
@@ -1241,12 +1221,8 @@ class ImageStateController:
             return
 
         command = ToggleSkipImagesCommand(self.main, file_paths, skip_status)
-        stack = self.main.undo_group.activeStack()
-        if stack:
-            stack.push(command)
-        else:
-            command.redo()
-            self.main.mark_project_dirty()
+        command.redo()
+        self.main.mark_project_dirty()
 
     def display_image_from_loaded(
         self,
@@ -1285,13 +1261,8 @@ class ImageStateController:
     def set_image(self, rgb_img: np.ndarray, push: bool = True):
         if self.main.curr_img_idx >= 0:
             file_path = self.main.image_files[self.main.curr_img_idx]
-            
-            # Push the command to the appropriate stack
-            command = SetImageCommand(self.main, file_path, rgb_img)
-            if push:
-                self.main.undo_group.activeStack().push(command)
-            else:
-                command.redo()
+            SetImageCommand(self.main, file_path, rgb_img, False)
+            self.main.image_data[file_path] = rgb_img
 
     def load_patch_state(self, file_path: str):
         # for every patch in the persistent store:
@@ -1351,35 +1322,55 @@ class ImageStateController:
         # For regular mode only
         existing = self.main.image_states.get(file, {})
         skip_status = existing.get('skip', False)
-        pipeline_state = existing.get('pipeline_state', {
-            'completed_stages': [],
-            'target_lang': '',
-            'inpaint_hash': '',
-            'translator_key': '',
-            'extra_context_hash': '',
-        })
         current_target = self.main.t_combo.currentText()
-        viewer_state = self.main.image_viewer.save_state()
+        active_target = current_target or resolve_target_lang(
+            existing,
+            pipeline_state=existing.get("pipeline_state"),
+        )
+        pipeline_state, active_target = activate_target_lang(
+            existing,
+            active_target,
+            has_runtime_patches=bool(existing.get('inpaint_cache') or self.main.image_patches.get(file)),
+        )
+        current_scene_state = self.main.image_viewer.save_state() if self.main.image_viewer.hasPhoto() else {}
+        viewer_state = copy.deepcopy(existing.get('viewer_state', {}) or {})
+        for key in ('transform', 'center', 'scene_rect'):
+            if current_scene_state.get(key) is not None:
+                viewer_state[key] = current_scene_state.get(key)
         target_render_states = copy.deepcopy(existing.get('target_render_states', {}) or {})
         inpaint_cache = copy.deepcopy(existing.get('inpaint_cache', []) or [])
         if not inpaint_cache and self.main.image_patches.get(file):
             inpaint_cache = copy.deepcopy(self.main.image_patches.get(file, []))
-        pipeline_completed = set(pipeline_state.get("completed_stages", []) or [])
-        can_store_target_snapshot = bool(current_target) and (
-            pipeline_state.get("target_lang") == current_target
-        ) and ("render" in pipeline_completed)
-        if can_store_target_snapshot:
-            target_render_states[current_target] = copy.deepcopy(viewer_state)
-        self.main.image_states[file] = {
+        blk_list = self.main.blk_list.copy() if (
+            0 <= self.main.curr_img_idx < len(self.main.image_files)
+            and self.main.image_files[self.main.curr_img_idx] == file
+        ) else copy.deepcopy(existing.get('blk_list', []) or [])
+
+        viewer_state['rectangles'] = self.main.stage_nav_ctrl._serialize_rectangles_from_blocks(blk_list)
+        state_payload = {
             'viewer_state': viewer_state,
             'target_render_states': target_render_states,
-            'target_lang': current_target,
+            'target_lang': active_target,
+            'ui_stage': existing.get('ui_stage', ''),
             'brush_strokes': self.main.image_viewer.save_brush_strokes(),
             'inpaint_cache': inpaint_cache,
-            'blk_list': self.main.blk_list.copy(),  # Store a copy of the list, not a reference
+            'blk_list': blk_list,
             'skip': skip_status,
             'pipeline_state': pipeline_state,
         }
+
+        current_stage = pipeline_state.get("current_stage", "")
+        if current_stage == "render" and current_scene_state.get('text_items_state') is not None:
+            viewer_state['text_items_state'] = copy.deepcopy(current_scene_state.get('text_items_state', []) or [])
+            if active_target:
+                set_target_snapshot(state_payload, active_target, viewer_state)
+        elif active_target and active_target in state_payload['target_render_states']:
+            for key in ('transform', 'center', 'scene_rect'):
+                if current_scene_state.get(key) is not None:
+                    state_payload['target_render_states'][active_target][key] = current_scene_state.get(key)
+        self.main.image_states[file] = state_payload
+        if current_stage == "render":
+            self._reconcile_render_snapshot_state(file, active_target)
 
     def save_current_image_state(self):
         if self.main.curr_img_idx >= 0:
@@ -1423,25 +1414,11 @@ class ImageStateController:
                 # As soon as an image is saved once, it will have a populated viewer_state.
                 if viewer_state:
 
-                    push_to_stack = viewer_state.get('push_to_stack', False)
-                    restore_to_stack = file_path in self._pending_text_stack_restore
-
                     self.main.blk_list = state['blk_list'].copy()  # Load a copy of the list, not a reference
                     viewer.load_state(viewer_state)
                     state['viewer_state'] = viewer_state
                     viewer.load_brush_strokes(state['brush_strokes'])
-
-                    # add_text_item/add_rectangle used by load_state already emit the
-                    # viewer's connect_* signals, so no extra signal wiring is needed here.
-                    if push_to_stack:
-                        self.main.undo_stacks[file_path].beginMacro('text_items_rendered')
-                        for text_item in viewer.text_items:
-                            command = AddTextItemCommand(self.main, text_item)
-                            self.main.undo_stacks[file_path].push(command)
-                        self.main.undo_stacks[file_path].endMacro()
-                        viewer_state['push_to_stack'] = False
-                    elif restore_to_stack:
-                        self._restore_text_items_to_stack_if_needed(file_path, viewer)
+                    viewer_state['push_to_stack'] = False
 
                     self.load_patch_state(file_path)
                 else:
@@ -1513,6 +1490,7 @@ class ImageStateController:
                 pass
 
             self.main.central_stack.layout().activate()
+            self.main.stage_nav_ctrl.restore_current_page_view()
             
             # Fit in view only if it's the first time displaying this image and not in webtoon mode
             if first_time_display and not self.main.webtoon_mode:
@@ -1536,76 +1514,19 @@ class ImageStateController:
         if current_batch_file == file_on_display:
             self.set_image(image)
         else:
-            command = SetImageCommand(self.main, image_path, image, False)
-            self.main.undo_stacks[current_batch_file].push(command)
+            SetImageCommand(self.main, image_path, image, False)
             self.main.image_data[image_path] = image
 
     def on_render_state_ready(self, file_path: str):
-        """Refresh the currently visible page when batch render state is finalized.
-
-        This closes a race where page selection occurs mid-batch: inpaint patches
-        may appear first, while text items become available slightly later in
-        image_states. We reload the current page state once the render payload is ready.
-        """
-        if self.main.webtoon_mode:
-            return
+        self._reconcile_render_snapshot_state(file_path)
         if self.main.curr_img_idx < 0 or self.main.curr_img_idx >= len(self.main.image_files):
+            self.main.stage_nav_ctrl.refresh_stage_buttons(file_path)
             return
         current_file = self.main.image_files[self.main.curr_img_idx]
-        if current_file != file_path:
-            return
-
-        viewer = self.main.image_viewer
-        viewer.setUpdatesEnabled(False)
-        try:
-            # Rehydrate cached inpaint patches before refreshing text items.
-            # Undo/redo and manual segmentation edits can clear the live scene while
-            # leaving the persistent patch cache intact. The render refresh must
-            # restore those cached patches so the page does not fall back to the
-            # original image underneath newly rendered text.
-            self.load_patch_state(file_path)
-
-            state = self.main.image_states.get(file_path, {})
-            viewer_state = state.get('target_render_states', {}).get(self.main.t_combo.currentText()) or state.get('viewer_state', {})
-            if not viewer_state or not viewer_state.get('text_items_state'):
-                return
-
-            # Cancel pending async nav loads so stale callbacks can't overwrite this refresh.
-            self._nav_request_id += 1
-
-            # Only refresh text items; do not call display_image/load_state because that
-            # reapplies saved transform and causes visible zoom/pan jumps.
-
-            viewer.clear_text_items()
-            self.main.curr_tblock_item = None
-            self.main.curr_tblock = None
-            self.main.text_ctrl.clear_text_edits()
-
-            # Reload blk_list so that clicking a text item can find the
-            # corresponding TextBlock (with OCR text) for s_text_edit.
-            stored_blk_list = self.main.image_states.get(file_path, {}).get('blk_list', [])
-            self.main.blk_list = stored_blk_list.copy() if stored_blk_list else []
-
-            viewer.set_bulk_text_restore(True)
-            try:
-                for data in viewer_state.get('text_items_state', []):
-                    viewer.add_text_item(data)
-            finally:
-                viewer.set_bulk_text_restore(False)
-
-            if viewer_state.get('push_to_stack', False):
-                stack = self.main.undo_stacks.get(file_path)
-                if stack:
-                    stack.beginMacro('text_items_rendered')
-                    for text_item in viewer.text_items:
-                        command = AddTextItemCommand(self.main, text_item)
-                        stack.push(command)
-                    stack.endMacro()
-                viewer_state['push_to_stack'] = False
-        finally:
-            viewer.setUpdatesEnabled(True)
-            viewer.viewport().update()
-            self.main.refresh_fullscreen_preview()
+        if current_file == file_path:
+            self.main.stage_nav_ctrl.restore_current_page_view()
+        else:
+            self.main.stage_nav_ctrl.refresh_stage_buttons(file_path)
 
     def on_image_skipped(self, image_path: str, skip_reason: str, error: str):
         summarized_error = self._summarize_skip_error(error)
@@ -1677,7 +1598,8 @@ class ImageStateController:
                 nav_stable and
                 file_path == file_on_display and
                 self.main.central_stack.currentWidget() == self.main.viewer_page and
-                self.main.image_viewer.hasPhoto()
+                self.main.image_viewer.hasPhoto() and
+                self.main.stage_nav_ctrl.get_ui_stage(file_path) in {"clean", "render"}
             )
 
         # Create the command for the specific page
@@ -1687,6 +1609,7 @@ class ImageStateController:
         state = self.main.image_states.get(file_path)
         if state is not None:
             state["inpaint_cache"] = copy.deepcopy(self.main.image_patches.get(file_path, []))
+            self.main.stage_nav_ctrl.mark_clean_ready(file_path)
 
     def apply_inpaint_patches(self, patches):
         command = PatchInsertCommand(self.main, patches, self.main.image_files[self.main.curr_img_idx])

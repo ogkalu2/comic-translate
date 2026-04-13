@@ -1,5 +1,4 @@
 import logging
-import copy
 import os
 from typing import Dict, List
 
@@ -15,6 +14,7 @@ from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.textblock import TextBlock
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
+from ..render_state import build_render_template_map_from_snapshot, get_target_snapshot, set_target_snapshot
 from ..virtual_page import PageStatus, VirtualPage
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ class RenderMixin:
         page_state = self.main_page.image_states[image_path]
         page_state.update({"blk_list": final_blocks, "target_lang": target_lang})
         if "viewer_state" in page_state:
-            page_state["viewer_state"]["push_to_stack"] = True
+            page_state["viewer_state"]["push_to_stack"] = False
 
     def _emit_and_store_virtual_page_results(
         self, vpage: VirtualPage, blk_list_virtual: List[TextBlock]
@@ -111,7 +111,7 @@ class RenderMixin:
 
         render_settings = self.main_page.render_settings()
         font = render_settings.font_family
-        font_color = QColor(render_settings.color)
+        base_font_color = QColor(render_settings.color)
         max_font_size = render_settings.max_font_size
         min_font_size = render_settings.min_font_size
         line_spacing = float(render_settings.line_spacing)
@@ -127,6 +127,8 @@ class RenderMixin:
         target_lang = self.main_page.image_states[image_path]["target_lang"]
         target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
         trg_lng_cd = get_language_code(target_lang_en)
+        target_snapshot = get_target_snapshot(page_state, target_lang) or viewer_state
+        template_map = build_render_template_map_from_snapshot(target_snapshot)
 
         page_y_position_in_scene = 0
         if webtoon_manager and vpage.physical_page_index < len(webtoon_manager.image_positions):
@@ -150,19 +152,44 @@ class RenderMixin:
             ):
                 continue
 
+            block_uid = str(getattr(blk_virtual, "block_uid", "") or "")
+            template = template_map.get((block_uid, (), 0.0), {}) if block_uid else {}
+            if not template:
+                template = template_map.get(
+                    ("", tuple(map(int, physical_coords)), float(getattr(blk_virtual, "angle", 0.0) or 0.0)),
+                    {},
+                )
+
+            font_for_block = template.get("font_family", font)
+            line_spacing_for_block = float(template.get("line_spacing", line_spacing))
+            outline_width_for_block = float(template.get("outline_width", outline_width))
+            bold_for_block = bool(template.get("bold", bold))
+            italic_for_block = bool(template.get("italic", italic))
+            underline_for_block = bool(template.get("underline", underline))
+            alignment_for_block = template.get("alignment", alignment)
+            direction_for_block = template.get("direction", direction)
+            outline_enabled = bool(template.get("outline", outline))
+            template_outline_color = template.get("outline_color", outline_color)
+            if template_outline_color is not None and not isinstance(template_outline_color, QColor):
+                template_outline_color = QColor(template_outline_color)
+            outline_color_for_block = template_outline_color if outline_enabled else None
+            template_font_color = template.get("text_color")
+            if template_font_color is not None and not isinstance(template_font_color, QColor):
+                template_font_color = QColor(template_font_color)
+
             vertical = is_vertical_block(blk_virtual, trg_lng_cd)
             translation, font_size, rendered_width, rendered_height = pyside_word_wrap(
                 translation,
-                font,
+                font_for_block,
                 block_width,
                 block_height,
-                line_spacing,
-                outline_width,
-                bold,
-                italic,
-                underline,
-                alignment,
-                direction,
+                line_spacing_for_block,
+                outline_width_for_block,
+                bold_for_block,
+                italic_for_block,
+                underline_for_block,
+                alignment_for_block,
+                direction_for_block,
                 max_font_size,
                 min_font_size,
                 vertical,
@@ -172,7 +199,10 @@ class RenderMixin:
             if is_no_space_lang(trg_lng_cd):
                 translation = translation.replace(" ", "")
 
-            font_color = get_smart_text_color(blk_virtual.font_color, font_color)
+            resolved_font_color = get_smart_text_color(
+                blk_virtual.font_color,
+                template_font_color or base_font_color,
+            )
 
             render_blk = blk_virtual.deep_copy()
             render_blk.xyxy = list(physical_coords)
@@ -195,16 +225,18 @@ class RenderMixin:
             # Store text item state for final page save regardless of live visibility.
             text_props = TextItemProperties(
                 text=translation,
-                font_family=font,
+                source_text=blk_virtual.translation or blk_virtual.text or translation,
+                font_family=font_for_block,
                 font_size=font_size,
-                text_color=font_color,
-                alignment=alignment,
-                line_spacing=line_spacing,
-                outline_color=outline_color,
-                outline_width=outline_width,
-                bold=bold,
-                italic=italic,
-                underline=underline,
+                text_color=resolved_font_color,
+                alignment=alignment_for_block,
+                line_spacing=line_spacing_for_block,
+                outline_color=outline_color_for_block,
+                outline_width=outline_width_for_block,
+                outline=outline_enabled,
+                bold=bold_for_block,
+                italic=italic_for_block,
+                underline=underline_for_block,
                 position=(x1, y1),
                 rotation=blk_virtual.angle,
                 scale=1.0,
@@ -215,19 +247,19 @@ class RenderMixin:
                 ),
                 width=rendered_width,
                 height=rendered_height,
-                direction=direction,
+                direction=direction_for_block,
                 vertical=vertical,
                 block_uid=getattr(blk_virtual, "block_uid", ""),
                 selection_outlines=[
                     OutlineInfo(
                         0,
                         len(translation),
-                        outline_color,
-                        outline_width,
+                        outline_color_for_block,
+                        outline_width_for_block,
                         OutlineType.Full_Document,
                     )
                 ]
-                if outline
+                if outline_enabled and outline_color_for_block is not None
                 else [],
             )
             text_items_state.append(text_props.to_dict())
@@ -265,8 +297,7 @@ class RenderMixin:
                         continue
                     self._spanning_claims_by_page[tgt_idx].append(clipped)
 
-        target_render_states = page_state.setdefault("target_render_states", {})
-        target_render_states[target_lang] = copy.deepcopy(viewer_state)
+        set_target_snapshot(page_state, target_lang, viewer_state)
 
     def _finalize_and_emit_for_virtual_page(self, vpage: VirtualPage):
         """

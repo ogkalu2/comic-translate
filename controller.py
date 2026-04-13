@@ -16,12 +16,12 @@ from app.ui.messages import Messages
 from app.ui.dayu_widgets.message import MMessage
 
 from app.ui.canvas.text_item import TextBlockItem
-from app.ui.commands.box import DeleteBoxesCommand
 
 from modules.utils.textblock import TextBlock
 from modules.utils.file_handler import FileHandler
 from modules.utils.pipeline_config import validate_settings
 from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
+from pipeline.stage_state import activate_target_lang
 from pipeline.main_pipeline import ComicTranslatePipeline
 
 from app.controllers.image import ImageStateController
@@ -33,6 +33,7 @@ from app.controllers.search_replace import SearchReplaceController
 from app.controllers.task_runner import TaskRunnerController
 from app.controllers.batch_report import BatchReportController
 from app.controllers.manual_workflow import ManualWorkflowController
+from app.controllers.stage_navigation import StageNavigationController
 from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
 
 
@@ -122,6 +123,7 @@ class ComicTranslate(ComicTranslateUI):
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
         self.manual_workflow_ctrl = ManualWorkflowController(self)
+        self.stage_nav_ctrl = StageNavigationController(self)
         try:
             if self._memlogger is not None:
                 self._memlogger.emit("after_controllers_init")
@@ -181,9 +183,6 @@ class ComicTranslate(ComicTranslateUI):
         self.save_as_project_button.clicked.connect(self.project_ctrl.thread_save_as_project)
         self.drag_browser.sig_files_changed.connect(self._guarded_thread_load_images)
        
-        self.manual_radio.clicked.connect(self.manual_mode_selected)
-        self.automatic_radio.clicked.connect(self.batch_mode_selected)
-        
         # Webtoon mode toggle
         self.webtoon_toggle.clicked.connect(self.webtoon_ctrl.toggle_webtoon_mode)
 
@@ -391,8 +390,17 @@ class ComicTranslate(ComicTranslateUI):
         self.close()
 
     def push_command(self, command):
-        if self.undo_group.activeStack():
+        if command is None:
+            return
+        module_name = getattr(command.__class__, "__module__", "")
+        if module_name in {"app.ui.commands.brush", "app.ui.commands.inpaint"} and self.undo_group.activeStack():
             self.undo_group.activeStack().push(command)
+            return
+        try:
+            command.redo()
+        except Exception:
+            return
+        self.mark_project_dirty()
 
     def undo_selected_pages(self):
         self.image_ctrl.apply_undo_redo_to_selected(redo=False)
@@ -402,33 +410,52 @@ class ComicTranslate(ComicTranslateUI):
 
     def delete_selected_box(self):
         if self.curr_tblock:
-            # Create and push the delete command
-            command = DeleteBoxesCommand(
-                self,
-                self.image_viewer.selected_rect,
-                self.curr_tblock_item,
-                self.curr_tblock,
-                self.blk_list,
-            )
-            self.undo_group.activeStack().push(command)
+            selected_rect = self.image_viewer.selected_rect
+            current_text_item = self.curr_tblock_item
+            current_block = self.curr_tblock
+
+            if selected_rect is not None:
+                try:
+                    self.image_viewer._scene.removeItem(selected_rect)
+                except Exception:
+                    pass
+                if selected_rect in self.image_viewer.rectangles:
+                    self.image_viewer.rectangles.remove(selected_rect)
+                self.image_viewer.selected_rect = None
+
+            if current_text_item is not None:
+                try:
+                    self.image_viewer._scene.removeItem(current_text_item)
+                except Exception:
+                    pass
+                if current_text_item in self.image_viewer.text_items:
+                    self.image_viewer.text_items.remove(current_text_item)
+                self.curr_tblock_item = None
+
+            if current_block in self.blk_list:
+                self.blk_list.remove(current_block)
+            self.curr_tblock = None
+            self.text_ctrl.clear_text_edits()
+            if 0 <= self.curr_img_idx < len(self.image_files):
+                self.stage_nav_ctrl.invalidate_for_box_edit(self.image_files[self.curr_img_idx])
+            self.mark_project_dirty()
 
     def batch_mode_selected(self):
-        self.disable_hbutton_group()
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
-        self.select_all_pages_button.setEnabled(False)
+        self.select_all_pages_button.setEnabled(True)
+        self.stage_nav_ctrl.refresh_stage_buttons()
 
     def manual_mode_selected(self):
-        self.enable_hbutton_group()
-        self.translate_button.setEnabled(False)
-        self.cancel_button.setEnabled(False)
         self.select_all_pages_button.setEnabled(True)
+        self.translate_button.setEnabled(True)
+        self.cancel_button.setEnabled(True)
+        self.stage_nav_ctrl.refresh_stage_buttons()
 
     def on_manual_finished(self):
         self.loading.setVisible(False)
         self.enable_hbutton_group()
-        if self.manual_radio.isChecked():
-            self.select_all_pages_button.setEnabled(True)
+        self.select_all_pages_button.setEnabled(True)
 
     def run_threaded(self, callback: Callable, result_callback: Callable=None,
                     error_callback: Callable=None, finished_callback: Callable=None,
@@ -538,12 +565,28 @@ class ComicTranslate(ComicTranslateUI):
     def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
         self.batch_report_ctrl.register_batch_skip(image_path, skip_reason, error)
 
+    def _sync_paths_to_active_target(self, image_paths: list[str]) -> None:
+        active_target = self.t_combo.currentText()
+        if not active_target:
+            return
+        for image_path in image_paths:
+            state = self.image_states.setdefault(image_path, {})
+            activate_target_lang(
+                state,
+                active_target,
+                has_runtime_patches=bool(
+                    state.get("inpaint_cache") or self.image_patches.get(image_path)
+                ),
+            )
+
     def start_batch_process(self):
         try:
             if self._memlogger is not None:
                 self._memlogger.emit("batch_start_all")
         except Exception:
             pass
+        self.image_ctrl.save_current_image_state()
+        self._sync_paths_to_active_target(self.image_files)
         for image_path in self.image_files:
             target_lang = self.image_states[image_path]['target_lang']
             if not validate_settings(self, target_lang):
@@ -587,6 +630,8 @@ class ComicTranslate(ComicTranslateUI):
         if not selected_paths:
             return
 
+        self.image_ctrl.save_current_image_state()
+        self._sync_paths_to_active_target(selected_paths)
         # validate each
         for path in selected_paths:
             tgt = self.image_states[path]['target_lang']
@@ -598,9 +643,6 @@ class ComicTranslate(ComicTranslateUI):
         self.selected_batch = selected_paths
 
         # disable UI & run
-        if self.manual_radio.isChecked():
-            self.automatic_radio.setChecked(True)
-            self.batch_mode_selected()
         self._batch_active = True
         self._batch_cancel_requested = False
         self.translate_button.setEnabled(False)
@@ -642,6 +684,10 @@ class ComicTranslate(ComicTranslateUI):
             self.project_ctrl.flush_batch_project_autosave()
         except Exception:
             pass
+        try:
+            self.stage_nav_ctrl.restore_current_page_view()
+        except Exception:
+            self.stage_nav_ctrl.refresh_stage_buttons()
         self.progress_bar.setVisible(False)
         self.translate_button.setEnabled(True)
         self.cancel_button.setEnabled(True)
@@ -668,10 +714,8 @@ class ComicTranslate(ComicTranslateUI):
         self.select_all_pages_button.setEnabled(False)
 
     def enable_hbutton_group(self):
-        for button in self.hbutton_group.get_button_group().buttons():
-            button.setEnabled(True)
-        if self.manual_radio.isChecked():
-            self.select_all_pages_button.setEnabled(True)
+        self.select_all_pages_button.setEnabled(True)
+        self.stage_nav_ctrl.refresh_stage_buttons()
 
     def select_all_pages(self):
         self.page_list.selectAll()
@@ -796,12 +840,8 @@ class ComicTranslate(ComicTranslateUI):
 
     def _connect_horizontal_buttons(self):
         buttons = self.hbutton_group.get_button_group().buttons()
-        buttons[0].clicked.connect(self._on_block_detect_clicked)
-        buttons[1].clicked.connect(self._on_ocr_clicked)
-        buttons[2].clicked.connect(self._on_translate_image_clicked)
-        buttons[3].clicked.connect(self._on_load_segmentation_points_clicked)
-        buttons[4].clicked.connect(self._on_inpaint_and_set_clicked)
-        buttons[5].clicked.connect(self._on_render_text_clicked)
+        for index, button in enumerate(buttons):
+            button.clicked.connect(partial(self.stage_nav_ctrl.handle_stage_button, index))
 
     def _on_block_detect_clicked(self, *_args):
         self.block_detect()
@@ -836,9 +876,7 @@ class ComicTranslate(ComicTranslateUI):
     def invalidate_page_render_pipeline(self, file_path: str | None):
         if not file_path:
             return
-        workflow = getattr(self, "manual_workflow_ctrl", None)
-        if workflow is not None:
-            workflow._invalidate_page_render_pipeline(file_path)
+        self.stage_nav_ctrl.invalidate_for_box_edit(file_path)
 
     def _get_visible_text_items(self):
         return self.manual_workflow_ctrl._get_visible_text_items()

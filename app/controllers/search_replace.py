@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import os
 import re
 from dataclasses import dataclass
@@ -9,8 +10,6 @@ from PySide6 import QtCore, QtGui
 from PySide6.QtGui import QTextCursor
 
 from modules.utils.common_utils import is_close
-from app.ui.commands.search_replace import ReplaceBlocksCommand, ReplaceChange
-
 if TYPE_CHECKING:
     from controller import ComicTranslate
 
@@ -1032,6 +1031,27 @@ class SearchReplaceController(QtCore.QObject):
         except Exception:
             pass
 
+        target_lang = ""
+        if state:
+            target_lang = state.get("target_lang", "") or self.main.t_combo.currentText()
+            if opts.in_target:
+                target_render_states = state.setdefault("target_render_states", {})
+                if target_lang and state.get("viewer_state"):
+                    target_render_states[target_lang] = copy.deepcopy(state.get("viewer_state", {}) or {})
+
+        if opts.in_target:
+            try:
+                if key.file_path == self.main.image_files[self.main.curr_img_idx]:
+                    self.main.text_ctrl._sync_current_render_snapshot(key.file_path)
+            except Exception:
+                pass
+            self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(
+                key.file_path,
+                target_lang or self.main.t_combo.currentText(),
+            )
+        else:
+            self.main.stage_nav_ctrl.invalidate_for_source_text_edit(key.file_path)
+
         try:
             self.main.mark_project_dirty()
         except Exception:
@@ -1113,27 +1133,7 @@ class SearchReplaceController(QtCore.QObject):
             if not changed or new_text == old_text:
                 return
 
-        stack = self.main.undo_group.activeStack()
-        if stack:
-            cmd = ReplaceBlocksCommand(
-                self,
-                in_target=opts.in_target,
-                changes=[
-                    ReplaceChange(
-                        file_path=m.key.file_path,
-                        xyxy=m.key.xyxy,
-                        angle=m.key.angle,
-                        old_text=old_text,
-                        new_text=new_text,
-                        old_html=old_html,
-                        new_html=new_html,
-                    )
-                ],
-                text=QtCore.QCoreApplication.translate("SearchReplaceController", "Replace"),
-            )
-            stack.push(cmd)
-        else:
-            self._apply_block_text_with_html(opts, m.key, new_text, html_override=new_html)
+        self._apply_block_text_with_html(opts, m.key, new_text, html_override=new_html)
         panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "Replaced 1 occurrence(s)"))
         self.search()
 
@@ -1147,8 +1147,6 @@ class SearchReplaceController(QtCore.QObject):
             return
 
         total_replacements = 0
-        changes: list[ReplaceChange] = []
-
         for file_path, _blk_list, _idx, blk in self._iter_blocks(opts) or []:
             key = BlockKey(
                 file_path=file_path,
@@ -1193,31 +1191,7 @@ class SearchReplaceController(QtCore.QObject):
                     continue
 
             total_replacements += count
-            changes.append(
-                ReplaceChange(
-                    file_path=key.file_path,
-                    xyxy=key.xyxy,
-                    angle=key.angle,
-                    old_text=old_text,
-                    new_text=new_text,
-                    old_html=old_html,
-                    new_html=new_html,
-                )
-            )
-
-        if changes:
-            stack = self.main.undo_group.activeStack()
-            if stack:
-                cmd = ReplaceBlocksCommand(
-                    self,
-                    in_target=opts.in_target,
-                    changes=changes,
-                    text=QtCore.QCoreApplication.translate("SearchReplaceController", "Replace All"),
-                )
-                stack.push(cmd)
-            else:
-                for ch in changes:
-                    self._apply_block_text(opts, ch.key, ch.new_text)
+            self._apply_block_text_with_html(opts, key, new_text, html_override=new_html)
 
         if total_replacements:
             panel.set_status(QtCore.QCoreApplication.translate("SearchReplaceController", "Replaced {0} occurrence(s)").format(total_replacements))

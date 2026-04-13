@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING
 
 from PySide6 import QtCore
 from PySide6.QtGui import QColor, QTextCursor
+from shiboken6 import isValid as shiboken_is_valid
 
-from app.ui.commands.textformat import TextFormatCommand
-from app.ui.commands.box import AddTextItemCommand, ResizeBlocksCommand
-from app.ui.commands.text_edit import TextEditCommand
+from app.ui.commands.box import ResizeBlocksCommand
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.messages import Messages
+from pipeline.render_state import ensure_target_snapshot, get_target_render_states, set_target_snapshot
 
 from modules.utils.textblock import TextBlock
 from modules.rendering.render import (
@@ -64,8 +64,32 @@ class TextController:
         self._is_updating_from_edit = False
         self._bulk_font_restore_snapshot = None
         self._manual_render_macro_open = False
+        self._last_target_lang = ""
+
+    @staticmethod
+    def _is_live_text_item(text_item: TextBlockItem | None) -> bool:
+        if text_item is None:
+            return False
+        try:
+            return bool(shiboken_is_valid(text_item))
+        except Exception:
+            return False
+
+    def _forget_text_item(self, text_item: TextBlockItem | None) -> None:
+        if text_item is None:
+            return
+        pending = self._pending_text_command
+        if pending and pending.get("item") is text_item:
+            self._pending_text_command = None
+            self._text_change_timer.stop()
+        self._last_item_text.pop(text_item, None)
+        self._last_item_html.pop(text_item, None)
+        if self.main.curr_tblock_item is text_item:
+            self.main.curr_tblock_item = None
 
     def connect_text_item_signals(self, text_item: TextBlockItem, force_reconnect: bool = False):
+        if not self._is_live_text_item(text_item):
+            return
         if getattr(text_item, "_ct_signals_connected", False) and not force_reconnect:
             return
         is_bulk_restore = bool(getattr(self.main.image_viewer, "_bulk_text_restore", False))
@@ -103,6 +127,12 @@ class TextController:
         text_item.text_changed.connect(text_item._ct_text_changed_slot)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
         text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
+        if not hasattr(text_item, "_ct_destroyed_slot"):
+            text_item._ct_destroyed_slot = lambda *_args, ti=text_item: self._forget_text_item(ti)
+        try:
+            text_item.destroyed.connect(text_item._ct_destroyed_slot)
+        except (AttributeError, TypeError, RuntimeError):
+            pass
         self._last_item_text[text_item] = text_item.toPlainText()
         if not is_bulk_restore:
             self._last_item_html[text_item] = text_item.document().toHtml()
@@ -113,6 +143,53 @@ class TextController:
         self.main.curr_tblock_item = None
         self.main.s_text_edit.clear()
         self.main.t_text_edit.clear()
+
+    def _current_file_path(self) -> str:
+        if 0 <= self.main.curr_img_idx < len(self.main.image_files):
+            return self.main.image_files[self.main.curr_img_idx]
+        return ""
+
+    def _current_target_lang(self) -> str:
+        return self.main.t_combo.currentText()
+
+    def _mirror_target_snapshot_to_viewer_state(self, state: dict, target_lang: str) -> dict:
+        target_snapshot = get_target_render_states(state).get(target_lang)
+        if not target_snapshot:
+            target_snapshot = ensure_target_snapshot(
+                state,
+                target_lang,
+                source_target=state.get("target_lang") or self._last_target_lang or "",
+                fallback_snapshot=state.get("viewer_state") or {},
+            )
+        if target_snapshot:
+            state["viewer_state"] = copy.deepcopy(target_snapshot)
+        else:
+            state.setdefault("viewer_state", {})
+        return state["viewer_state"]
+
+    def _sync_current_render_snapshot(self, file_path: str | None = None) -> None:
+        file_path = file_path or self._current_file_path()
+        if not file_path:
+            return
+        state = self.main.image_states.get(file_path)
+        if state is None:
+            return
+
+        viewer_state = copy.deepcopy(state.get("viewer_state", {}) or {})
+        if self.main.image_viewer.hasPhoto():
+            current_scene_state = self.main.image_viewer.save_state()
+            for key in ("transform", "center", "scene_rect"):
+                if current_scene_state.get(key) is not None:
+                    viewer_state[key] = current_scene_state.get(key)
+            if self.main.image_viewer.text_items:
+                viewer_state["text_items_state"] = copy.deepcopy(
+                    current_scene_state.get("text_items_state", []) or []
+                )
+
+        state["viewer_state"] = viewer_state
+        target_lang = state.get("target_lang") or self._current_target_lang()
+        if target_lang and viewer_state.get("text_items_state") is not None:
+            set_target_snapshot(state, target_lang, viewer_state)
 
     def _finalize_manual_render(self, current_file: str | None) -> None:
         batch_report_ctrl = getattr(self.main, "batch_report_ctrl", None)
@@ -175,6 +252,46 @@ class TextController:
         except Exception:
             pass
 
+    def _find_scene_text_item_for_block(self, blk: TextBlock) -> TextBlockItem | None:
+        if blk is None or not getattr(self.main, "image_viewer", None):
+            return None
+
+        block_uid = str(getattr(blk, "block_uid", "") or "")
+        if block_uid:
+            for item in self.main.image_viewer.text_items:
+                if not self._is_live_text_item(item):
+                    continue
+                if str(getattr(item, "block_uid", "") or "") == block_uid:
+                    return item
+
+        blk_x1 = int(getattr(blk, "xyxy", [0, 0, 0, 0])[0])
+        blk_y1 = int(getattr(blk, "xyxy", [0, 0, 0, 0])[1])
+        blk_rotation = float(getattr(blk, "angle", 0.0) or 0.0)
+        for item in self.main.image_viewer.text_items:
+            if not self._is_live_text_item(item):
+                continue
+            if (
+                is_close(item.pos().x(), blk_x1, 5)
+                and is_close(item.pos().y(), blk_y1, 5)
+                and is_close(item.rotation(), blk_rotation, 1)
+            ):
+                return item
+        return None
+
+    def _remove_scene_text_item(self, text_item: TextBlockItem | None) -> None:
+        if not self._is_live_text_item(text_item):
+            self._forget_text_item(text_item)
+            return
+        scene = text_item.scene()
+        if scene is not None:
+            try:
+                scene.removeItem(text_item)
+            except RuntimeError:
+                pass
+        if text_item in self.main.image_viewer.text_items:
+            self.main.image_viewer.text_items.remove(text_item)
+        self._forget_text_item(text_item)
+
     def on_blk_rendered(self, text: str, font_size: int, blk: TextBlock, image_path: str):
         if not self.main.webtoon_mode:
             if self.main.curr_img_idx < 0 or self.main.curr_img_idx >= len(self.main.image_files):
@@ -233,14 +350,21 @@ class TextController:
             height=blk.xywh[3],
             block_uid=getattr(blk, "block_uid", ""),
         )
-        
+
+        existing_item = self._find_scene_text_item_for_block(blk)
+        if existing_item is not None:
+            self._remove_scene_text_item(existing_item)
+
         text_item = self.main.image_viewer.add_text_item(properties)
         text_item.set_plain_text(text, preserve_source_text=True, update_width=False)
-
-        command = AddTextItemCommand(self.main, text_item)
-        self.main.push_command(command)
+        current_file = self._current_file_path()
+        if current_file and image_path and os.path.normcase(current_file) == os.path.normcase(image_path):
+            self._sync_current_render_snapshot(current_file)
 
     def on_text_item_selected(self, text_item: TextBlockItem):
+        if not self._is_live_text_item(text_item):
+            self._forget_text_item(text_item)
+            return
         self._commit_pending_text_command()
         self.main.curr_tblock_item = text_item
         self._last_item_text[text_item] = text_item.toPlainText()
@@ -276,16 +400,22 @@ class TextController:
 
     def update_text_block(self):
         if self.main.curr_tblock:
+            current_file = self._current_file_path()
+            old_text = self.main.curr_tblock.text
             self.main.curr_tblock.text = self.main.s_text_edit.toPlainText()
             self.main.curr_tblock.translation = self.main.t_text_edit.toPlainText()
             if self.main.curr_tblock_item:
                 self.main.curr_tblock_item.set_source_text(self.main.t_text_edit.toPlainText())
             self._sync_block_caches(self.main.curr_tblock)
-            self.main.mark_project_dirty()
+            if current_file and old_text != self.main.curr_tblock.text:
+                self.main.stage_nav_ctrl.invalidate_for_source_text_edit(current_file)
+                self.main.mark_project_dirty()
 
     def update_text_block_from_edit(self):
         self._is_updating_from_edit = True
         try:
+            current_file = self._current_file_path()
+            current_target = self._current_target_lang()
             new_text = self.main.t_text_edit.toPlainText()
             old_translation = None
             old_item_text = None
@@ -309,6 +439,10 @@ class TextController:
             ):
                 return
             self._sync_block_caches(self.main.curr_tblock)
+            if current_file:
+                self._sync_current_render_snapshot(current_file)
+                self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(current_file, current_target)
+            self.main.mark_project_dirty()
         finally:
             self._is_updating_from_edit = False
 
@@ -376,12 +510,12 @@ class TextController:
 
     def save_src_trg(self):
         target_lang = self.main.t_combo.currentText()
+        previous_target = self._last_target_lang
+        if not previous_target and self.main.curr_img_idx >= 0:
+            current_file = self.main.image_files[self.main.curr_img_idx]
+            previous_target = self.main.image_states.get(current_file, {}).get("target_lang", "")
 
         self.main.image_ctrl.save_current_image_state()
-        if self.main.curr_img_idx >= 0:
-            current_file = self.main.image_files[self.main.curr_img_idx]
-            self.main.image_states[current_file]['target_lang'] = target_lang
-            self.main.image_states[current_file].setdefault('target_render_states', {})
 
         target_en = self.main.lang_mapping.get(target_lang, None)
         t_direction = get_layout_direction(target_en)
@@ -392,24 +526,45 @@ class TextController:
         for image_path in self.main.image_files:
             state = self.main.image_states.get(image_path)
             if state is not None:
+                old_target = state.get("target_lang") or previous_target
+                viewer_state = copy.deepcopy(state.get("viewer_state", {}) or {})
+                target_render_states = get_target_render_states(state)
+                if old_target and viewer_state and old_target not in target_render_states:
+                    set_target_snapshot(state, old_target, viewer_state)
+
+                had_target_snapshot = target_lang in target_render_states
+                if not had_target_snapshot:
+                    ensure_target_snapshot(
+                        state,
+                        target_lang,
+                        source_target=old_target or "",
+                        fallback_snapshot=viewer_state,
+                    )
+                if target_lang in target_render_states:
+                    state["viewer_state"] = copy.deepcopy(target_render_states[target_lang])
+                else:
+                    state["viewer_state"] = viewer_state
                 state['target_lang'] = target_lang
-                viewer_state = state.get('viewer_state')
-                if viewer_state:
-                    target_render_states = state.setdefault('target_render_states', {})
-                    target_render_states[target_lang] = copy.deepcopy(viewer_state)
+                if not had_target_snapshot:
+                    ps = state.setdefault("pipeline_state", {})
+                    target_validity = ps.setdefault("target_validity", {})
+                    target_validity[target_lang] = {"translate": False, "render": False}
 
         if self.main.curr_img_idx >= 0:
+            self.main.stage_nav_ctrl.restore_current_page_view()
             self.main.mark_project_dirty()
+        self._last_target_lang = target_lang
 
     def set_src_trg_all(self):
         target_lang = self.main.t_combo.currentText()
         for image_path in self.main.image_files:
             state = self.main.image_states[image_path]
-            state['target_lang'] = target_lang
-            viewer_state = state.get('viewer_state')
-            if viewer_state:
-                target_render_states = state.setdefault('target_render_states', {})
-                target_render_states[target_lang] = copy.deepcopy(viewer_state)
+            target_render_states = get_target_render_states(state)
+            if target_lang not in target_render_states and state.get("viewer_state"):
+                set_target_snapshot(state, target_lang, state["viewer_state"])
+            state["target_lang"] = target_lang
+            if target_lang in target_render_states:
+                state["viewer_state"] = copy.deepcopy(target_render_states[target_lang])
         if self.main.image_files:
             self.main.mark_project_dirty()
 
@@ -417,15 +572,14 @@ class TextController:
         if len(self.main.blk_list) == 0:
             return
         command = ResizeBlocksCommand(self.main, self.main.blk_list, diff)
-        stack = self.main.undo_group.activeStack()
-        if stack:
-            stack.push(command)
-        else:
-            command.redo()
-            self.main.mark_project_dirty()
+        command.redo()
+        current_file = self._current_file_path()
+        if current_file:
+            self.main.stage_nav_ctrl.invalidate_for_box_edit(current_file)
+        self.main.mark_project_dirty()
 
     def _find_text_block_for_item(self, text_item: TextBlockItem) -> TextBlock | None:
-        if not text_item:
+        if not self._is_live_text_item(text_item):
             return None
 
         x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
@@ -444,13 +598,20 @@ class TextController:
     def _schedule_text_change_command(self, text_item: TextBlockItem, new_text: str, blk: TextBlock | None):
         if self._suspend_text_command:
             return
+        if not self._is_live_text_item(text_item):
+            self._forget_text_item(text_item)
+            return
 
         pending = self._pending_text_command
         if pending and pending['item'] is not text_item:
             self._commit_pending_text_command()
             pending = None
 
-        new_html = text_item.document().toHtml()
+        try:
+            new_html = text_item.document().toHtml()
+        except RuntimeError:
+            self._forget_text_item(text_item)
+            return
         if pending is None:
             old_text = self._last_item_text.get(text_item, new_text)
             old_html = self._last_item_html.get(text_item, new_html)
@@ -465,12 +626,16 @@ class TextController:
                 'old_html': old_html,
                 'new_html': new_html,
                 'blk': blk,
+                'file_path': self._current_file_path(),
+                'target_lang': self._current_target_lang(),
             }
             self._pending_text_command = pending
         else:
             pending['new_text'] = new_text
             pending['new_html'] = new_html
             pending['blk'] = blk
+            pending['file_path'] = pending.get('file_path') or self._current_file_path()
+            pending['target_lang'] = pending.get('target_lang') or self._current_target_lang()
 
         self._last_item_text[text_item] = new_text
         self._last_item_html[text_item] = new_html
@@ -486,38 +651,52 @@ class TextController:
         if pending['old_text'] == pending['new_text']:
             return
 
-        command = TextEditCommand(
-            self.main,
-            pending['item'],
-            pending['old_text'],
-            pending['new_text'],
-            old_html=pending.get('old_html'),
-            new_html=pending.get('new_html'),
-            blk=pending['blk']
-        )
-        stack = self.main.undo_group.activeStack()
-        if stack:
-            stack.push(command)
-        else:
-            command.redo()
+        pending_file = pending.get('file_path') or self._current_file_path()
+        pending_target = pending.get('target_lang') or self._current_target_lang()
+        pending_item = pending.get('item')
+        pending_blk = pending.get('blk')
+        if not self._is_live_text_item(pending_item):
+            self._forget_text_item(pending_item)
+            if pending_file and pending_file in self.main.image_states:
+                self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(
+                    pending_file,
+                    pending_target,
+                )
             self.main.mark_project_dirty()
+            return
+
+        self.apply_text_from_command(
+            pending_item,
+            pending['new_text'],
+            html=pending.get('new_html'),
+            blk=pending_blk,
+            file_path=pending_file,
+        )
+        if pending_file and pending_file in self.main.image_states:
+            self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(
+                pending_file,
+                pending_target,
+            )
+        self.main.mark_project_dirty()
 
     def apply_text_from_command(self, text_item: TextBlockItem, text: str,
-                                html: str | None = None, blk: TextBlock | None = None):
+                                html: str | None = None, blk: TextBlock | None = None,
+                                file_path: str | None = None):
         self._suspend_text_command = True
         try:
-            if text_item and text_item in self.main.image_viewer._scene.items():
+            item_is_live = self._is_live_text_item(text_item)
+            if item_is_live and text_item in self.main.image_viewer._scene.items():
                 if html is not None:
                     if text_item.document().toHtml() != html:
                         text_item.document().setHtml(html)
                 elif text_item.toPlainText() != text:
                     text_item.set_plain_text(text)
-            if blk is None:
+            if blk is None and item_is_live:
                 blk = self._find_text_block_for_item(text_item)
             if blk:
                 blk.translation = text
                 self._sync_block_caches(blk)
-            if self.main.curr_tblock_item == text_item:
+            if item_is_live and self.main.curr_tblock_item == text_item:
                 self.main.curr_tblock = blk
                 # Only update if the text is actually different to avoid cursor reset
                 if self.main.t_text_edit.toPlainText() != text:
@@ -526,44 +705,50 @@ class TextController:
                     self.main.t_text_edit.blockSignals(False)
         finally:
             self._suspend_text_command = False
-        if text_item:
+        if self._is_live_text_item(text_item):
             text_item.set_source_text(text)
             self._last_item_text[text_item] = text
             self._last_item_html[text_item] = text_item.document().toHtml()
+        else:
+            self._forget_text_item(text_item)
+        current_file = file_path or self._current_file_path()
+        if current_file and blk in self.main.blk_list:
+            self._sync_current_render_snapshot(current_file)
+
+    def _finalize_format_edit(self):
+        current_file = self._current_file_path()
+        if current_file:
+            self._sync_current_render_snapshot(current_file)
+            self.main.stage_nav_ctrl.invalidate_for_format_edit(
+                current_file,
+                self._current_target_lang(),
+            )
+        self.main.mark_project_dirty()
 
     # Formatting actions
     def on_font_dropdown_change(self, font_family: str):
         if self.main.curr_tblock_item and font_family:
-            old_item = copy.copy(self.main.curr_tblock_item)
             font_size = int(self.main.font_size_dropdown.currentText())
             self.main.curr_tblock_item.set_font(font_family, font_size)
             if not self.main.curr_tblock_item.textCursor().hasSelection():
                 self._reflow_current_text_item(max_font_size=font_size)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def on_font_size_change(self, font_size: str):
         if self.main.curr_tblock_item and font_size:
-            old_item = copy.copy(self.main.curr_tblock_item)
             font_size = float(font_size)
             self.main.curr_tblock_item.set_font_size(font_size)
             if not self.main.curr_tblock_item.textCursor().hasSelection():
                 self._reflow_current_text_item(max_font_size=int(round(font_size)))
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def on_line_spacing_change(self, line_spacing: str):
         if self.main.curr_tblock_item and line_spacing:
-            old_item = copy.copy(self.main.curr_tblock_item)
             spacing = float(line_spacing)
             self.main.curr_tblock_item.set_line_spacing(spacing)
             if not self.main.curr_tblock_item.textCursor().hasSelection():
                 self._reflow_current_text_item(max_font_size=int(round(self.main.curr_tblock_item.font_size)))
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def on_font_color_change(self):
         font_color = self.main.get_color()
@@ -573,62 +758,41 @@ class TextController:
             )
             self.main.block_font_color_button.setProperty('selected_color', font_color.name())
             if self.main.curr_tblock_item:
-                old_item = copy.copy(self.main.curr_tblock_item)
                 self.main.curr_tblock_item.set_color(font_color)
-
-                command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-                self.main.push_command(command)
+                self._finalize_format_edit()
 
     def left_align(self):
         if self.main.curr_tblock_item:
-            old_item = copy.copy(self.main.curr_tblock_item)
             self.main.curr_tblock_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignLeft)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def center_align(self):
         if self.main.curr_tblock_item:
-            old_item = copy.copy(self.main.curr_tblock_item)
             self.main.curr_tblock_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def right_align(self):
         if self.main.curr_tblock_item:
-            old_item = copy.copy(self.main.curr_tblock_item)
             self.main.curr_tblock_item.set_alignment(QtCore.Qt.AlignmentFlag.AlignRight)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def bold(self):
         if self.main.curr_tblock_item:
-            old_item = copy.copy(self.main.curr_tblock_item)
             state = self.main.bold_button.isChecked()
             self.main.curr_tblock_item.set_bold(state)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def italic(self):
         if self.main.curr_tblock_item:
-            old_item = copy.copy(self.main.curr_tblock_item)
             state = self.main.italic_button.isChecked()
             self.main.curr_tblock_item.set_italic(state)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def underline(self):
         if self.main.curr_tblock_item:
-            old_item = copy.copy(self.main.curr_tblock_item)
             state = self.main.underline_button.isChecked()
             self.main.curr_tblock_item.set_underline(state)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def _get_image_state_for_path(self, file_path: str):
         state = self.main.image_states.get(file_path)
@@ -643,6 +807,7 @@ class TextController:
     def _apply_bulk_text_update(self, per_page_fn=None, per_scene_fn=None, action_name: str = "bulk text update"):
         updated_any = False
         updated_pages = 0
+        updated_files: list[str] = []
         for file_path in self.main.image_files:
             state = self._get_image_state_for_path(file_path)
             if state is None:
@@ -652,6 +817,7 @@ class TextController:
                     if per_page_fn(file_path, state):
                         updated_any = True
                         updated_pages += 1
+                        updated_files.append(file_path)
                 except Exception:
                     continue
 
@@ -665,14 +831,18 @@ class TextController:
         self._refresh_current_text_controls()
 
         if updated_any:
+            current_target = self._current_target_lang()
+            for file_path in updated_files:
+                state = self.main.image_states.get(file_path)
+                if state is not None and state.get("target_lang") == current_target:
+                    set_target_snapshot(state, current_target, state.get("viewer_state", {}) or {})
+                self.main.stage_nav_ctrl.invalidate_for_format_edit(file_path, current_target)
+            current_file = self._current_file_path()
+            if current_file:
+                self._sync_current_render_snapshot(current_file)
             self.main.mark_project_dirty()
             logger.info("%s applied to %d page(s).", action_name, updated_pages)
             self._show_bulk_update_message(action_name, updated_pages)
-
-    def _current_file_path(self) -> str:
-        if 0 <= self.main.curr_img_idx < len(self.main.image_files):
-            return self.main.image_files[self.main.curr_img_idx]
-        return ""
 
     def _capture_bulk_font_snapshot(self):
         snapshot = {}
@@ -1287,37 +1457,29 @@ class TextController:
             outline_width = float(self.main.outline_width_dropdown.currentText())
 
             if self.main.curr_tblock_item and self.main.outline_checkbox.isChecked():
-                old_item = copy.copy(self.main.curr_tblock_item)
                 self.main.curr_tblock_item.set_outline(outline_color, outline_width)
-
-                command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-                self.main.push_command(command)
+                self._finalize_format_edit()
 
     def on_outline_width_change(self, outline_width):
         if self.main.curr_tblock_item and self.main.outline_checkbox.isChecked():
-            old_item = copy.copy(self.main.curr_tblock_item)
             outline_width = float(self.main.outline_width_dropdown.currentText())
             color_str = self.main.outline_font_color_button.property('selected_color')
             color = QColor(color_str)
             self.main.curr_tblock_item.set_outline(color, outline_width)
-
-            command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-            self.main.push_command(command)
+            self._finalize_format_edit()
 
     def toggle_outline_settings(self, state):
         enabled = True if state == 2 else False
         if self.main.curr_tblock_item:
             if not enabled:
                 self.main.curr_tblock_item.set_outline(None, None)
+                self._finalize_format_edit()
             else:
-                old_item = copy.copy(self.main.curr_tblock_item)
                 outline_width = float(self.main.outline_width_dropdown.currentText())
                 color_str = self.main.outline_font_color_button.property('selected_color')
                 color = QColor(color_str)
                 self.main.curr_tblock_item.set_outline(color, outline_width)
-
-                command = TextFormatCommand(self.main.image_viewer, old_item, self.main.curr_tblock_item)
-                self.main.push_command(command)
+                self._finalize_format_edit()
 
     # Widget helpers
     def block_text_item_widgets(self, widgets):

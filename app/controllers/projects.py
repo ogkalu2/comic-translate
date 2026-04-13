@@ -881,8 +881,6 @@ class ProjectController:
         settings.beginGroup("main_page")
         settings.setValue("target_language", self.main.lang_mapping[self.main.t_combo.currentText()])
 
-        settings.setValue("mode", "manual" if self.main.manual_radio.isChecked() else "automatic")
-
         # Save brush and eraser sizes
         settings.setValue("brush_size", self.main.image_viewer.brush_size)
         settings.setValue("eraser_size", self.main.image_viewer.eraser_size)
@@ -902,14 +900,7 @@ class ProjectController:
         target_lang = settings.value("target_language", "English")
 
         self.main.t_combo.setCurrentText(self.main.reverse_lang_mapping.get(target_lang, self.main.tr("English")))
-
-        mode = settings.value("mode", "manual")
-        if mode == "manual":
-            self.main.manual_radio.setChecked(True)
-            self.main.manual_mode_selected()
-        else:
-            self.main.automatic_radio.setChecked(True)
-            self.main.batch_mode_selected()
+        self.main.batch_mode_selected()
 
         # Load brush and eraser sizes
         brush_size = int(settings.value("brush_size", 10))  # Default value is 10

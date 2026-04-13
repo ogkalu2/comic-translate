@@ -149,6 +149,7 @@ class InpaintingHandler:
                 if text_bbox is None:
                     continue
                 bboxes = get_inpaint_bboxes(text_bbox, image)
+                blk.inpaint_bboxes = bboxes
 
             if bboxes is None or len(bboxes) == 0:
                 continue
@@ -351,9 +352,19 @@ class InpaintingHandler:
             # Apply patches to each page
             for file_path, patches in patches_by_page.items():
                 self.main_page.image_ctrl.on_inpaint_patches_processed(patches, file_path)
+                state = self.main_page.image_states.get(file_path)
+                if state is not None:
+                    state['brush_strokes'] = []
         else:
             # Regular mode - original behavior
+            current_file = None
+            if 0 <= self.main_page.curr_img_idx < len(self.main_page.image_files):
+                current_file = self.main_page.image_files[self.main_page.curr_img_idx]
             self.main_page.apply_inpaint_patches(patch_list)
+            if current_file:
+                state = self.main_page.image_states.get(current_file)
+                if state is not None:
+                    state['brush_strokes'] = []
         
         self.main_page.image_viewer.clear_brush_strokes() 
         self.main_page.undo_group.activeStack().endMacro()  

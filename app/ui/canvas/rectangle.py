@@ -5,7 +5,6 @@ from PySide6.QtCore import Signal, QObject, QRectF, Qt, QPointF
 from PySide6.QtGui import QColor, QBrush, QCursor
 from PySide6 import QtCore
 from dataclasses import dataclass
-from ..dayu_widgets.menu import MMenu
 
 @dataclass
 class RectState:
@@ -64,24 +63,7 @@ class MoveableRectItem(QGraphicsRectItem):
         super().focusOutEvent(event)
 
     def contextMenuEvent(self, event):
-        # Get the global position for the context menu
-        scene_pos = event.scenePos()  # Position in the scene
-        views = self.scene().views()  # Get all views associated with the scene
-
-        if views:
-            view = views[0]
-            global_pos = view.mapToGlobal(view.mapFromScene(scene_pos))
-
-            menu = MMenu(parent=view)
-            ocr = menu.addAction(view.tr('OCR'))
-            translate = menu.addAction(view.tr('Translate'))
-
-            ocr.triggered.connect(self.signals.ocr_block.emit)
-            translate.triggered.connect(self.signals.translate_block.emit)
-
-            menu.exec_(global_pos)
-
-            super().contextMenuEvent(event)
+        event.accept()
     
     def move_item(self, local_pos: QtCore.QPointF, last_local_pos: QtCore.QPointF):
         delta = self.mapToParent(local_pos) - self.mapToParent(last_local_pos)

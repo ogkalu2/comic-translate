@@ -628,13 +628,58 @@ class ImageViewer(QGraphicsView):
         }
 
     def load_state(self, state: Dict):
-        self.setTransform(QtGui.QTransform(*state['transform']))
-        self.centerOn(QPointF(*state['center']))
-        self.setSceneRect(QRectF(*state['scene_rect']))
+        state = state or {}
+
+        transform_data = state.get('transform')
+        if isinstance(transform_data, (list, tuple)) and len(transform_data) == 9:
+            transform = QtGui.QTransform(*transform_data)
+        else:
+            transform = QtGui.QTransform()
+
+        fallback_scene_rect = self.photo.boundingRect()
+        if (
+            fallback_scene_rect.isNull()
+            or not fallback_scene_rect.isValid()
+            or fallback_scene_rect.width() <= 0
+            or fallback_scene_rect.height() <= 0
+        ):
+            fallback_scene_rect = self._scene.itemsBoundingRect()
+        if (
+            fallback_scene_rect.isNull()
+            or not fallback_scene_rect.isValid()
+            or fallback_scene_rect.width() <= 0
+            or fallback_scene_rect.height() <= 0
+        ):
+            fallback_scene_rect = self.sceneRect()
+
+        scene_rect_data = state.get('scene_rect')
+        if isinstance(scene_rect_data, (list, tuple)) and len(scene_rect_data) == 4:
+            scene_rect = QRectF(*scene_rect_data)
+            if (
+                scene_rect.isNull()
+                or not scene_rect.isValid()
+                or scene_rect.width() <= 0
+                or scene_rect.height() <= 0
+            ):
+                scene_rect = fallback_scene_rect
+        else:
+            scene_rect = fallback_scene_rect
+
+        center_data = state.get('center')
+        if isinstance(center_data, (list, tuple)) and len(center_data) == 2:
+            center = QPointF(*center_data)
+        elif scene_rect.isValid():
+            center = scene_rect.center()
+        else:
+            center = QPointF()
+
+        self.setTransform(transform)
+        self.setSceneRect(scene_rect if scene_rect.isValid() else QRectF())
+        self.centerOn(center)
 
         self.set_bulk_text_restore(True)
         try:
-            for data in state['rectangles']:
+            for data in state.get('rectangles', []):
                 x, y, w, h = data['rect']
                 origin = QPointF(*data.get('transform_origin', (0,0))) if 'transform_origin' in data else None
                 self.add_rectangle(

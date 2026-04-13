@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QRectF, QPointF
 
 from app.ui.canvas.rectangle import MoveableRectItem
-from app.ui.commands.box import AddRectangleCommand, BoxesChangeCommand
-
 from modules.detection.utils.geometry import do_rectangles_overlap
 from modules.utils.textblock import TextBlock
 
@@ -26,7 +24,7 @@ class RectItemController:
     def _invalidate_current_page_pipeline(self) -> None:
         file_path = self._current_file_path()
         if file_path:
-            self.main.invalidate_page_render_pipeline(file_path)
+            self.main.stage_nav_ctrl.invalidate_for_box_edit(file_path)
 
     def connect_rect_item_signals(self, rect_item: MoveableRectItem, force_reconnect: bool = False):
         if getattr(rect_item, "_ct_signals_connected", False) and not force_reconnect:
@@ -37,25 +35,8 @@ class RectItemController:
                 rect_item.signals.change_undo.disconnect(self.rect_change_undo)
             except (TypeError, RuntimeError):
                 pass
-            if hasattr(rect_item, "_ct_ocr_slot"):
-                try:
-                    rect_item.signals.ocr_block.disconnect(rect_item._ct_ocr_slot)
-                except (TypeError, RuntimeError):
-                    pass
-            if hasattr(rect_item, "_ct_translate_slot"):
-                try:
-                    rect_item.signals.translate_block.disconnect(rect_item._ct_translate_slot)
-                except (TypeError, RuntimeError):
-                    pass
-
-        if not hasattr(rect_item, "_ct_ocr_slot"):
-            rect_item._ct_ocr_slot = lambda: self.main.ocr(True)
-        if not hasattr(rect_item, "_ct_translate_slot"):
-            rect_item._ct_translate_slot = lambda: self.main.translate_image(True)
 
         rect_item.signals.change_undo.connect(self.rect_change_undo)
-        rect_item.signals.ocr_block.connect(rect_item._ct_ocr_slot)
-        rect_item.signals.translate_block.connect(rect_item._ct_translate_slot)
         rect_item._ct_signals_connected = True
 
     def handle_rectangle_selection(self, rect: QRectF):
@@ -82,16 +63,10 @@ class RectItemController:
 
         new_blk = TextBlock(text_bbox=np.array(new_rect_coords))
         rect_item.block_uid = new_blk.block_uid
-        self.main.blk_list.append(new_blk)
-        command = AddRectangleCommand(
-            self.main,
-            rect_item,
-            new_blk,
-            self.main.blk_list,
-            self.main.image_files[self.main.curr_img_idx] if 0 <= self.main.curr_img_idx < len(self.main.image_files) else None,
-        )
-        self.main.undo_group.activeStack().push(command)
+        if new_blk not in self.main.blk_list:
+            self.main.blk_list.append(new_blk)
         self._invalidate_current_page_pipeline()
+        self.main.mark_project_dirty()
 
     def handle_rectangle_deletion(self, rect: QRectF):
         rect_coords = rect.getCoords()
@@ -99,6 +74,7 @@ class RectItemController:
         if current_text_block in self.main.blk_list:
             self.main.blk_list.remove(current_text_block)
         self._invalidate_current_page_pipeline()
+        self.main.mark_project_dirty()
 
     def handle_rectangle_change(
             self, 
@@ -137,10 +113,9 @@ class RectItemController:
                 blk.tr_origin_point = (new_tr_origin.x(), new_tr_origin.y()) if new_tr_origin else ()
                 break
         self._invalidate_current_page_pipeline()
+        self.main.mark_project_dirty()
 
     def rect_change_undo(self, old_state, new_state):
-        command = BoxesChangeCommand(self.main, old_state, new_state, self.main.blk_list)
-        self.main.undo_group.activeStack().push(command)
         self.handle_rectangle_change(
             old_state.rect, 
             new_state.rect,
@@ -148,6 +123,7 @@ class RectItemController:
             new_state.transform_origin,
             getattr(new_state, "block_uid", "") or getattr(old_state, "block_uid", ""),
         )
+        self.main.mark_project_dirty()
 
 
     def find_corresponding_text_block(self, rect: tuple[float], iou_threshold: int = 0.5):
