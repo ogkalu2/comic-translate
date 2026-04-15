@@ -33,6 +33,7 @@ from app.controllers.shortcuts import ShortcutController
 from app.controllers.task_runner import TaskRunnerController
 from app.controllers.batch_report import BatchReportController
 from app.controllers.manual_workflow import ManualWorkflowController
+from app.controllers.presets import PresetController
 from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
 
 
@@ -121,6 +122,7 @@ class ComicTranslate(ComicTranslateUI):
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
         self.manual_workflow_ctrl = ManualWorkflowController(self)
+        self.preset_ctrl = PresetController(self)
         try:
             if self._memlogger is not None:
                 self._memlogger.emit("after_controllers_init")
@@ -242,6 +244,11 @@ class ComicTranslate(ComicTranslateUI):
         self.outline_font_color_button.clicked.connect(self.text_ctrl.on_outline_color_change)
         self.outline_width_dropdown.currentTextChanged.connect(self.text_ctrl.on_outline_width_change)
         self.outline_checkbox.stateChanged.connect(self.text_ctrl.toggle_outline_settings)
+
+        # Tool Presets
+        self.preset_panel.preset_applied.connect(self.preset_ctrl.apply_preset)
+        self.preset_panel.capture_requested.connect(self.preset_ctrl.on_capture_requested)
+        self.preset_panel.fonts_imported.connect(self.preset_ctrl.on_fonts_imported)
 
         # Page List
         self.page_list.currentItemChanged.connect(self.image_ctrl.on_page_list_current_item_changed)

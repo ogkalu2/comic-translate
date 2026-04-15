@@ -17,6 +17,7 @@ from app.ui.dayu_widgets.slider import MSlider
 from app.ui.dayu_widgets.text_edit import MTextEdit
 from app.ui.dayu_widgets.tool_button import MToolButton
 from app.ui.search_replace_panel import SearchReplacePanel
+from app.ui.preset_panel import PresetPanel
 from app.ui.main_window.constants import supported_source_languages, supported_target_languages
 
 
@@ -98,11 +99,37 @@ class WorkspaceMixin:
         left_layout = QtWidgets.QVBoxLayout()
         left_layout.addWidget(MDivider())
 
+        # Tab widget for Pages / Tool Presets
+        self.left_tab_widget = QtWidgets.QTabWidget()
+        self.left_tab_widget.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
+        self.left_tab_widget.setStyleSheet(
+            "QTabWidget::pane { border: none; }"
+            "QTabBar::tab { padding: 5px 12px; font-size: 11px; }"
+            "QTabBar::tab:selected { font-weight: bold; }"
+        )
+
+        # Tab 0: Pages
         self.image_card_layout = QtWidgets.QVBoxLayout()
         self.image_card_layout.addStretch(1)
-
         self.page_list.setLayout(self.image_card_layout)
-        left_layout.addWidget(self.page_list)
+
+        page_tab = QtWidgets.QWidget()
+        page_tab_layout = QtWidgets.QVBoxLayout(page_tab)
+        page_tab_layout.setContentsMargins(0, 0, 0, 0)
+        page_tab_layout.addWidget(self.page_list)
+
+        # Tab 1: Tool Presets
+        self.preset_panel = PresetPanel(self)
+
+        preset_tab = QtWidgets.QWidget()
+        preset_tab_layout = QtWidgets.QVBoxLayout(preset_tab)
+        preset_tab_layout.setContentsMargins(0, 0, 0, 0)
+        preset_tab_layout.addWidget(self.preset_panel)
+
+        self.left_tab_widget.addTab(page_tab, self.tr("Pages"))
+        self.left_tab_widget.addTab(preset_tab, self.tr("Tool Presets"))
+
+        left_layout.addWidget(self.left_tab_widget)
         left_layout.addWidget(self.search_panel)
         left_widget = QtWidgets.QWidget()
         left_widget.setLayout(left_layout)

@@ -66,6 +66,9 @@ class ChunkMixin:
     def _ensure_inpainter(self: WebtoonBatchProcessor):
         settings_page = self.main_page.settings_page
         inpainter_key = settings_page.get_tool_selection("inpainter")
+        # Fall back to AOT if the saved selection is empty or no longer available
+        if not inpainter_key or inpainter_key not in inpaint_map:
+            inpainter_key = "AOT"
         if (
             self.inpainting.inpainter_cache is None
             or self.inpainting.cached_inpainter_key != inpainter_key

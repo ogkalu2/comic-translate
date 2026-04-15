@@ -58,6 +58,7 @@ class ModelID(Enum):
     AOT_ONNX = "aot-onnx"
     AOT_TORCH = "aot-torch"
     LAMA_JIT = "anime-manga-big-lama"
+    LAMA_LARGE_CKPT = "lama-large-512px"
     MIGAN_PIPELINE_ONNX = "migan-pipeline-v2"
     MIGAN_ONNX = "migan-onnx"
     MIGAN_JIT = "migan-traced"
@@ -91,6 +92,18 @@ class ModelID(Enum):
     # Font Detection
     FONT_DETECTOR_ONNX = "font-detector-onnx"
     FONT_DETECTOR_TORCH = "font-detector-torch"
+
+    # YOLOv8 Comic Detector
+    YOLOV8_COMIC_ONNX = "yolov8-comic-onnx"
+
+    # Manga OCR 2025
+    MANGA_OCR_2025 = "manga-ocr-base-2025"
+    MANGA_OCR_2025_ONNX = "manga-ocr-2025-onnx"
+
+    # CUHK MangaInpainting (SIGGRAPH 2021)
+    MANGA_INPAINTING_SEMANTIC = "manga-inpainting-semantic"
+    MANGA_INPAINTING_GENERATOR = "manga-inpainting-generator"
+    MANGA_INPAINTING_SCREENVAE_ENC = "manga-inpainting-screenvae-enc"
 
 
 @dataclass(frozen=True)
@@ -426,6 +439,15 @@ def _register_defaults():
         save_dir=os.path.join(models_base_dir, 'inpainting')
     ))
 
+    # Inpainting: LaMa Large 512px (dreMaz/AnimeMangaInpainting fine-tuned Big LaMa)
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.LAMA_LARGE_CKPT,
+        url='https://huggingface.co/dreMaz/AnimeMangaInpainting/resolve/main/',
+        files=['lama_large_512px.ckpt'],
+        sha256=[None],  # No official checksum published
+        save_dir=os.path.join(models_base_dir, 'inpainting')
+    ))
+
     # Inpainting: MIGAN traced JIT (TorchScript)
     ModelDownloader.register(ModelSpec(
         id=ModelID.MIGAN_JIT,
@@ -629,6 +651,74 @@ def _register_defaults():
         sha256=['9053615071c31978a3988143c9a3bdec8da53e269a8f84b5908d6f15747a1a81'],
         save_dir=os.path.join(models_base_dir, 'detection', 'font'),
         save_as={'name%3D4x-epoch%3D84-step%3D1649340.ckpt': 'font-detector.ckpt'}
+    ))
+
+    # YOLOv8 Comic Speech Bubble Detector (ONNX)
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.YOLOV8_COMIC_ONNX,
+        url='https://huggingface.co/ogkalu/comic-speech-bubble-detector-yolov8m/resolve/main/',
+        files=['comic-speech-bubble-detector.pt'],
+        sha256=[None],
+        save_dir=os.path.join(models_base_dir, 'detection'),
+        save_as={'comic-speech-bubble-detector.pt': 'yolov8-comic.pt'}
+    ))
+
+    # Manga OCR 2025 (PyTorch / Safetensors)
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_OCR_2025,
+        url='https://huggingface.co/jzhang533/manga-ocr-base-2025/resolve/main/',
+        files=[
+            'model.safetensors', 'config.json', 'preprocessor_config.json',
+            'special_tokens_map.json', 'tokenizer_config.json', 'vocab.txt',
+            'generation_config.json'
+        ],
+        sha256=[None, None, None, None, None, None, None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-base-2025')
+    ))
+
+    # Manga OCR 2025 (ONNX)
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_OCR_2025_ONNX,
+        url='https://huggingface.co/l0wgear/manga-ocr-2025-onnx/resolve/main/',
+        files=[
+            'encoder_model.onnx', 'decoder_model.onnx', 'vocab.txt',
+            'config.json', 'preprocessor_config.json', 'tokenizer.json',
+            'tokenizer_config.json', 'special_tokens_map.json',
+            'generation_config.json'
+        ],
+        sha256=[None, None, None, None, None, None, None, None, None],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-2025-onnx')
+    ))
+
+    # -------------------------------------------------------------------------
+    # CUHK MangaInpainting (SIGGRAPH 2021)
+    # Downloads handled internally via gdown (Google Drive); specs registered
+    # here for is_downloaded() checks and path resolution.
+    # -------------------------------------------------------------------------
+    _manga_inp_dir = os.path.join(models_base_dir, 'inpainting', 'manga-inpainting')
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_INPAINTING_SEMANTIC,
+        url='',  # Downloaded via gdown from Google Drive
+        files=['SemanticInpaintingModel_gen.pth'],
+        sha256=[None],
+        save_dir=_manga_inp_dir,
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_INPAINTING_GENERATOR,
+        url='',  # Downloaded via gdown from Google Drive
+        files=['MangaInpaintingModel_gen.pth'],
+        sha256=[None],
+        save_dir=_manga_inp_dir,
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_INPAINTING_SCREENVAE_ENC,
+        url='',  # Downloaded via gdown from Google Drive
+        files=['latest_net_enc.pth'],
+        sha256=[None],
+        save_dir=_manga_inp_dir,
     ))
 
 _register_defaults()

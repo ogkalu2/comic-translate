@@ -157,6 +157,7 @@ class OCRFactory:
             'Google Cloud Vision': cls._create_google_ocr,
             'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
             'Gemini-2.0-Flash': lambda s: cls._create_gemini_ocr(s, ocr_model),
+            'Manga OCR 2025': lambda s: cls._create_manga_ocr_2025(s, effective_backend),
         }
         
         # Language-specific factory functions (for Default model)
@@ -254,4 +255,19 @@ class OCRFactory:
     def _create_gemini_ocr(settings, model) -> OCREngine:
         engine = GeminiOCR()
         engine.initialize(settings, model)
+        return engine
+
+    @staticmethod
+    def _create_manga_ocr_2025(settings, backend: str = 'onnx') -> OCREngine:
+        device = resolve_device(settings.is_gpu_enabled(), backend)
+
+        if backend.lower() == 'torch' and torch_available():
+            from .manga_ocr_2025.engine import MangaOCR2025Engine
+            engine = MangaOCR2025Engine()
+            engine.initialize(device=device)
+        else:
+            from .manga_ocr_2025.onnx_engine import MangaOCR2025EngineONNX
+            engine = MangaOCR2025EngineONNX()
+            engine.initialize(device=device)
+
         return engine

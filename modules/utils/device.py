@@ -134,12 +134,43 @@ def tensors_to_device(data: Any, device: str) -> Any:
         return type(data)(seq) if isinstance(data, tuple) else seq
     return data
 
+def _is_tensorrt_usable() -> bool:
+    """Check if TensorRT native libraries are actually loadable.
+
+    ONNX Runtime may report TensorrtExecutionProvider as "available" even
+    when the required nvinfer DLLs are not installed, which causes noisy
+    error messages on every session creation. This function probes for the
+    actual library to prevent that.
+    """
+    import ctypes
+    import sys
+
+    if sys.platform == 'win32':
+        # Try loading the TensorRT inference library on Windows
+        for dll_name in ('nvinfer_10.dll', 'nvinfer.dll'):
+            try:
+                ctypes.WinDLL(dll_name)
+                return True
+            except OSError:
+                continue
+        return False
+    else:
+        # On Linux, try loading the shared object
+        for so_name in ('libnvinfer.so.10', 'libnvinfer.so'):
+            try:
+                ctypes.CDLL(so_name)
+                return True
+            except OSError:
+                continue
+        return False
+
 def get_providers(device: Optional[str] = None) -> list[Any]:
     """Return a providers list for ONNXRuntime (optionally with provider options).
 
     Rules:
     - If device is the string 'cpu' (case-insensitive) -> return ['CPUExecutionProvider']
     - Otherwise return available providers with options for certain GPU providers
+    - Providers whose native libraries are missing are silently skipped
     - If no providers are available, fall back to ['CPUExecutionProvider']
     """
     try:
@@ -153,7 +184,13 @@ def get_providers(device: Optional[str] = None) -> list[Any]:
     if not available:
         return ['CPUExecutionProvider']
 
-    
+    # Filter out TensorRT if its native libraries are not actually installed.
+    # ort.get_available_providers() may list TensorRT even when nvinfer DLLs
+    # are missing, causing noisy error messages on every session creation.
+    if 'TensorrtExecutionProvider' in available:
+        if not _is_tensorrt_usable():
+            available = [p for p in available if p != 'TensorrtExecutionProvider']
+
     # Use user data directory for cache
     base_models_dir = os.path.join(get_user_data_dir(), "models")
     

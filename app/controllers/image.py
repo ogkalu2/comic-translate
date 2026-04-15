@@ -1001,12 +1001,35 @@ class ImageStateController:
                 PatchCommandBase.create_patch_item(prop, self.main.image_viewer)
 
     def save_current_image(self, file_path: str):
+        import logging
+        from modules.utils.resize_output import apply_output_resize, apply_width_limit_resize
+
+        _logger = logging.getLogger(__name__)
+
         if self.main.webtoon_mode:
             # In webtoon mode, get the visible area image which combines all visible pages
             final_rgb, _ = self.main.image_viewer.get_visible_area_image(paint_all=True)
         else:
             # In regular mode, get the current single image
             final_rgb = self.main.image_viewer.get_image_array(paint_all=True)
+
+        if final_rgb is not None:
+            _logger.info(
+                "save_current_image: rendered image size before resize: %s",
+                final_rgb.shape,
+            )
+
+        # Apply HD Strategy Resize post-processing (if configured)
+        final_rgb = apply_output_resize(final_rgb, self.main.settings_page)
+
+        # Apply Output Width Limit (if configured in Export settings)
+        final_rgb = apply_width_limit_resize(final_rgb, self.main.settings_page)
+
+        if final_rgb is not None:
+            _logger.info(
+                "save_current_image: final image size after all resize: %s -> %s",
+                final_rgb.shape, file_path,
+            )
 
         imk.write_image(file_path, final_rgb)
 
