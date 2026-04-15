@@ -1,5 +1,6 @@
 from .base import DetectionEngine
 from .rtdetr_v2_onnx import RTDetrV2ONNXDetection
+from .yolov8_onnx import YOLOv8ONNXDetection
 from ..utils.device import resolve_device, torch_available
 
 
@@ -40,6 +41,7 @@ class DetectionEngineFactory:
         # Map model names to factory methods
         engine_factories = {
             'RT-DETR-v2': cls._create_rtdetr_v2,
+            'YOLOv8': cls._create_yolov8,
         }
         
         # Get the appropriate factory method, defaulting to RT-DETR-v2
@@ -71,4 +73,11 @@ class DetectionEngineFactory:
             engine.initialize(device=device)
         
         return engine
-    
+
+    @staticmethod
+    def _create_yolov8(settings, backend: str = 'onnx'):
+        """Create and initialize YOLOv8 comic detection engine (ONNX only)."""
+        device = resolve_device(settings.is_gpu_enabled(), 'onnx')
+        engine = YOLOv8ONNXDetection(settings)
+        engine.initialize(device=device)
+        return engine

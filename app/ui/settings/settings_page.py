@@ -149,6 +149,8 @@ class SettingsPage(QtWidgets.QWidget):
             'export_raw_text': self.ui.raw_text_checkbox.isChecked(),
             'export_translated_text': self.ui.translated_text_checkbox.isChecked(),
             'export_inpainted_image': self.ui.inpainted_image_checkbox.isChecked(),
+            'limit_output_width': self.ui.limit_width_checkbox.isChecked(),
+            'output_width_limit': int(self.ui.output_width_spinbox.value()),
             'project_autosave_enabled': autosave_enabled,
             'project_autosave_interval_min': int(self.ui.project_autosave_interval_spinbox.value()),
             'project_autosave_folder': autosave_folder,
@@ -177,12 +179,13 @@ class SettingsPage(QtWidgets.QWidget):
     def get_hd_strategy_settings(self):
         strategy = self.ui.inpaint_strategy_combo.currentText()
         settings = {
-            'strategy': strategy
+            'strategy': strategy,
+            # Always include resize_limit so downstream consumers
+            # (e.g. apply_output_resize) never fall back to 0.
+            'resize_limit': self.ui.resize_spinbox.value(),
         }
 
-        if strategy == self.ui.tr("Resize"):
-            settings['resize_limit'] = self.ui.resize_spinbox.value()
-        elif strategy == self.ui.tr("Crop"):
+        if strategy == self.ui.tr("Crop"):
             settings['crop_margin'] = self.ui.crop_margin_spinbox.value()
             settings['crop_trigger_size'] = self.ui.crop_trigger_spinbox.value()
 
@@ -392,6 +395,8 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.raw_text_checkbox.setChecked(settings.value('export_raw_text', False, type=bool))
         self.ui.translated_text_checkbox.setChecked(settings.value('export_translated_text', False, type=bool))
         self.ui.inpainted_image_checkbox.setChecked(settings.value('export_inpainted_image', False, type=bool))
+        self.ui.limit_width_checkbox.setChecked(settings.value('limit_output_width', False, type=bool))
+        self.ui.output_width_spinbox.setValue(settings.value('output_width_limit', 960, type=int))
         autosave_enabled = settings.value('project_autosave_enabled', False, type=bool)
         owner = self.parent()
         title_bar = getattr(owner, "title_bar", None)

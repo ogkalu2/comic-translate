@@ -22,26 +22,28 @@ logger = logging.getLogger(__name__)
 
 class MIGAN(TorchAutocastMixin, InpaintModel):
     name = "migan"
+    preferred_backend = "torch"  # ONNX download URL is not available
     min_size = 512
     pad_mod = 512
     pad_to_square = True
     is_erase_model = True
-    use_pipeline_for_onnx = False
+    use_pipeline_for_onnx = True
 
     def init_model(self, device, **kwargs):
-        self.backend = kwargs.get("backend")
-        if self.backend == "onnx":
-            model_id = ModelID.MIGAN_PIPELINE_ONNX if self.use_pipeline_for_onnx else ModelID.MIGAN_ONNX
-            ModelDownloader.get(model_id)
-            onnx_path = ModelDownloader.primary_path(model_id)
-            providers = get_providers(device)
-            self.session = make_session(onnx_path, providers=providers)
-        else:
+        # MI-GAN requires PyTorch — no working ONNX model is available
+        try:
             import torch
-            ModelDownloader.get(ModelID.MIGAN_JIT)
-            local_path = ModelDownloader.primary_path(ModelID.MIGAN_JIT)
-            self.model = load_jit_model(local_path, device)
-            self.setup_torch_autocast(torch, device)
+        except ImportError:
+            raise RuntimeError(
+                "MI-GAN requires PyTorch. Please install it with:\n"
+                "  pip install torch\n"
+                "Or select a different inpainter (LaMa or AOT)."
+            )
+        self.backend = "torch"
+        ModelDownloader.get(ModelID.MIGAN_JIT)
+        local_path = ModelDownloader.primary_path(ModelID.MIGAN_JIT)
+        self.model = load_jit_model(local_path, device)
+        self.setup_torch_autocast(torch, device)
 
     @staticmethod
     def is_downloaded() -> bool:
@@ -53,8 +55,15 @@ class MIGAN(TorchAutocastMixin, InpaintModel):
         masks: [H, W]
         return: BGR IMAGE
         """
-        import torch  # noqa
-        with torch.no_grad():
+        backend = getattr(self, 'backend', 'torch')
+        if backend != 'onnx':
+            import torch  # noqa
+            ctx = torch.no_grad()
+        else:
+            from contextlib import nullcontext
+            ctx = nullcontext()
+
+        with ctx:
             if image.shape[0] == 512 and image.shape[1] == 512:
                 return self._pad_forward(image, mask, config)
 

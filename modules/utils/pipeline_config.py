@@ -3,8 +3,10 @@ from __future__ import annotations
 from PySide6.QtCore import QCoreApplication
 from typing import TYPE_CHECKING
 from modules.inpainting.lama import LaMa
+from modules.inpainting.lama_large import LamaLarge
 from modules.inpainting.mi_gan import MIGAN
 from modules.inpainting.aot import AOT
+from modules.inpainting.manga_inpainting import MangaInpainting
 from modules.inpainting.schema import Config
 from app.ui.messages import Messages
 from app.ui.settings.settings_page import SettingsPage
@@ -14,14 +16,21 @@ if TYPE_CHECKING:
 
 inpaint_map = {
     "LaMa": LaMa,
+    "LaMa Large": LamaLarge,
     "MI-GAN": MIGAN,
     "AOT": AOT,
+    "Manga Inpainting": MangaInpainting,
 }
 
 
+
 def get_inpainter_backend(inpainter_key: str) -> str:
+    from modules.utils.device import torch_available
     inpainter_cls = inpaint_map[inpainter_key]
-    return getattr(inpainter_cls, "preferred_backend", "onnx")
+    preferred = getattr(inpainter_cls, "preferred_backend", "onnx")
+    if preferred == "torch" and not torch_available():
+        return "onnx"
+    return preferred
 
 def get_config(settings_page: SettingsPage):
     strategy_settings = settings_page.get_hd_strategy_settings()

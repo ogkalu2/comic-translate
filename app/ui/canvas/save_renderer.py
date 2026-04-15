@@ -229,8 +229,12 @@ class ImageSaveRenderer:
 
         return arr
 
-    def save_image(self, output_path: str):
+    def save_image(self, output_path: str, settings_page=None):
         final_rgb = self.render_to_image()
+        if settings_page is not None:
+            from modules.utils.resize_output import apply_output_resize, apply_width_limit_resize
+            final_rgb = apply_output_resize(final_rgb, settings_page)
+            final_rgb = apply_width_limit_resize(final_rgb, settings_page)
         imk.write_image(output_path, final_rgb)
 
     def apply_patches(self, patches: list[dict]):

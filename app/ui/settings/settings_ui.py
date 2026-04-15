@@ -1,4 +1,4 @@
-﻿import os
+import os
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 
@@ -53,12 +53,13 @@ class SettingsPageUI(QtWidgets.QWidget):
 
         self.credential_widgets = {}
 
-        self.inpainters = ['LaMa', 'AOT']
-        self.detectors = ['RT-DETR-v2']
+        self.inpainters = ['LaMa', 'LaMa Large', 'AOT', 'MI-GAN', 'Manga Inpainting']
+        self.detectors = ['RT-DETR-v2', 'YOLOv8']
         self.ocr_engines = [
             self.tr("Default"), 
             self.tr('Microsoft OCR'), 
             self.tr('Gemini-2.0-Flash'), 
+            self.tr('Manga OCR 2025'),
         ]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
@@ -126,13 +127,18 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Default"): "Default",
             self.tr("Microsoft OCR"): "Microsoft OCR",
             self.tr("Google Cloud Vision"): "Google Cloud Vision",
+            self.tr("Manga OCR 2025"): "Manga OCR 2025",
 
             # Inpainter mappings
             "LaMa": "LaMa",
+            "LaMa Large": "LaMa Large",
             "AOT": "AOT",
+            "MI-GAN": "MI-GAN",
+            "Manga Inpainting": "Manga Inpainting",
 
             # Detector mappings
             "RT-DETR-v2": "RT-DETR-v2",
+            "YOLOv8": "YOLOv8",
 
             # HD Strategy mappings
             self.tr("Resize"): "Resize",
@@ -230,6 +236,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.raw_text_checkbox = self.export_page.raw_text_checkbox
         self.translated_text_checkbox = self.export_page.translated_text_checkbox
         self.inpainted_image_checkbox = self.export_page.inpainted_image_checkbox
+        self.limit_width_checkbox = self.export_page.limit_width_checkbox
+        self.output_width_spinbox = self.export_page.output_width_spinbox
         self.project_autosave_interval_spinbox = self.project_page.project_autosave_interval_spinbox
         self.project_autosave_folder_input = self.project_page.project_autosave_folder_input
 

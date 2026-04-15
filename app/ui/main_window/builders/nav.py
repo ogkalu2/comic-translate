@@ -204,11 +204,15 @@ class NavRailMixin:
         return nav_rail_layout
 
     def _set_search_sidebar_visible(self, visible: bool):
-        if not hasattr(self, "search_panel") or not hasattr(self, "page_list"):
+        if not hasattr(self, "search_panel"):
             return
+        tab_widget = getattr(self, "left_tab_widget", None)
         try:
             self.search_panel.setVisible(bool(visible))
-            self.page_list.setVisible(not bool(visible))
+            if tab_widget is not None:
+                tab_widget.setVisible(not bool(visible))
+            elif hasattr(self, "page_list"):
+                self.page_list.setVisible(not bool(visible))
         except Exception:
             return
 

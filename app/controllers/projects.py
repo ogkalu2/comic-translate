@@ -920,7 +920,7 @@ class ProjectController:
                         renderer.add_state_to_image(viewer_state)
 
                     sv_pth = os.path.join(group_dir, self._build_export_page_name(page_number, file_path))
-                    renderer.save_image(sv_pth)
+                    renderer.save_image(sv_pth, settings_page=self.main.settings_page)
 
                 os.makedirs(os.path.dirname(group["output_path"]) or ".", exist_ok=True)
                 make(group_dir, group["output_path"])

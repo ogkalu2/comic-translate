@@ -52,7 +52,34 @@ class InpaintModel:
         """
         ...
 
+    def _pad_forward_raw(self, image, mask, config: Config):
+        """Run the padded forward pass and return the raw inpainted result
+        WITHOUT compositing it with the original image.
+
+        This is used by the RESIZE strategy so that compositing can happen
+        exactly once at the original (full) resolution.
+        """
+        origin_height, origin_width = image.shape[:2]
+        pad_image = pad_img_to_modulo(
+            image, mod=self.pad_mod, square=self.pad_to_square, min_size=self.min_size
+        )
+        pad_mask = pad_img_to_modulo(
+            mask, mod=self.pad_mod, square=self.pad_to_square, min_size=self.min_size
+        )
+
+        logger.info(f"final forward pad size: {pad_image.shape}")
+
+        result = self.forward(pad_image, pad_mask, config)
+        result = result[0:origin_height, 0:origin_width, :]
+
+        result, image, mask = self.forward_post_process(result, image, mask, config)
+
+        return np.clip(result, 0, 255).astype(np.uint8)
+
     def _pad_forward(self, image, mask, config: Config):
+        """Run the padded forward pass and composite the result with the
+        original image using the mask as blend weights.
+        """
         origin_height, origin_width = image.shape[:2]
         pad_image = pad_img_to_modulo(
             image, mod=self.pad_mod, square=self.pad_to_square, min_size=self.min_size
@@ -121,20 +148,29 @@ class InpaintModel:
                     logger.info(
                         f"Run resize strategy, origin size: {image.shape} forward size: {downsize_image.shape}"
                     )
-                    inpaint_result = self._pad_forward(
+                    # Get the raw inpainted result at downsampled resolution
+                    # WITHOUT compositing at low-res, so we can composite
+                    # exactly once at full resolution.
+                    inpaint_result = self._pad_forward_raw(
                         downsize_image, downsize_mask, config
                     )
 
-                    # only paste masked area result
+                    # Upscale the raw inpainted result to the original size
                     inpaint_result = imk.resize(
                         inpaint_result,
                         (origin_size[1], origin_size[0]),
                         mode=Image.Resampling.BICUBIC,
                     )
-                    original_pixel_indices = mask < 127
-                    inpaint_result[original_pixel_indices] = image[
-                        original_pixel_indices
-                    ]
+
+                    # Composite at full resolution: use the original mask to
+                    # blend upscaled inpainted pixels with original pixels.
+                    # This preserves full quality for non-masked areas.
+                    mask_blend = mask[:, :, np.newaxis].astype(np.float32) / 255.0
+                    inpaint_result = (
+                        inpaint_result.astype(np.float32) * mask_blend
+                        + image.astype(np.float32) * (1.0 - mask_blend)
+                    )
+                    inpaint_result = np.clip(inpaint_result, 0, 255).astype(np.uint8)
 
             if inpaint_result is None:
                 inpaint_result = self._pad_forward(image, mask, config)
