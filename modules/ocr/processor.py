@@ -1,4 +1,3 @@
-import re
 import numpy as np
 from typing import Any
 
@@ -38,40 +37,12 @@ class OCRProcessor:
         self.ocr_key = self._get_ocr_key(self.settings.get_tool_selection('ocr'))
 
     @staticmethod
-    def _limit_repeated_letters(text: str, max_repeat: int = 2) -> str:
-        if not text:
-            return ""
-
-        limited_chars: list[str] = []
-        last_char = ""
-        repeat_count = 0
-
-        for char in text:
-            if char == last_char and char.isalpha():
-                repeat_count += 1
-            else:
-                last_char = char
-                repeat_count = 1
-
-            if not char.isalpha() or repeat_count <= max_repeat:
-                limited_chars.append(char)
-
-        return "".join(limited_chars)
-
-    @staticmethod
     def sanitize_ocr_text(text: str) -> str:
-        if not text:
+        if text is None:
             return ""
-        quote_chars = "\"'`‘’‚‛“”„‟«»‹›〝〞＂＇`´"
-        cleaned = text.translate(str.maketrans("", "", quote_chars))
-        cleaned = cleaned.replace("…", "")
-        cleaned = re.sub(r"\.{2,}", "", cleaned)
-        cleaned = " ".join(cleaned.split())
-        cleaned = cleaned.strip()
-        cleaned = OCRProcessor._limit_repeated_letters(cleaned, max_repeat=2)
-        if cleaned.isupper():
-            cleaned = cleaned.lower()
-        return cleaned
+        cleaned = str(text).replace("\r\n", "\n").replace("\r", "\n")
+        cleaned = cleaned.replace("\x00", "")
+        return cleaned.strip()
 
     @classmethod
     def sanitize_block_texts(cls, blk_list: list[TextBlock]) -> list[TextBlock]:

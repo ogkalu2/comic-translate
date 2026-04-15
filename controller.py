@@ -19,11 +19,10 @@ from app.ui.canvas.text_item import TextBlockItem
 
 from modules.utils.textblock import TextBlock
 from modules.utils.file_handler import FileHandler
-from modules.utils.pipeline_config import validate_settings
 from modules.utils.download import mandatory_models, set_download_callback, ensure_mandatory_models
-from pipeline.stage_state import activate_target_lang
 from pipeline.main_pipeline import ComicTranslatePipeline
 
+from app.controllers.batch_ui_mixin import BatchUiMixin
 from app.controllers.image import ImageStateController
 from app.controllers.rect_item import RectItemController
 from app.controllers.projects import ProjectController
@@ -32,8 +31,8 @@ from app.controllers.webtoons import WebtoonController
 from app.controllers.search_replace import SearchReplaceController
 from app.controllers.task_runner import TaskRunnerController
 from app.controllers.batch_report import BatchReportController
-from app.controllers.manual_workflow import ManualWorkflowController
 from app.controllers.stage_navigation import StageNavigationController
+from app.controllers.workflow_support import get_visible_text_items_for_main
 from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
 
 
@@ -43,7 +42,7 @@ ensure_mandatory_models()
 # Toggle memory logging.
 ENABLE_MEMLOGGER = False
 
-class ComicTranslate(ComicTranslateUI):
+class ComicTranslate(BatchUiMixin, ComicTranslateUI):
     image_processed = QtCore.Signal(int, object, str)
     patches_processed = QtCore.Signal(list, str)
     progress_update = QtCore.Signal(int, int, int, int, bool)
@@ -122,7 +121,6 @@ class ComicTranslate(ComicTranslateUI):
         self.search_ctrl = SearchReplaceController(self)
         self.task_runner_ctrl = TaskRunnerController(self)
         self.batch_report_ctrl = BatchReportController(self)
-        self.manual_workflow_ctrl = ManualWorkflowController(self)
         self.stage_nav_ctrl = StageNavigationController(self)
         try:
             if self._memlogger is not None:
@@ -550,164 +548,6 @@ class ComicTranslate(ComicTranslateUI):
         self.loading.setVisible(False)
         self.enable_hbutton_group()
 
-    def _start_batch_report(self, batch_paths: list[str]):
-        self.batch_report_ctrl.start_batch_report(batch_paths)
-
-    def _finalize_batch_report(self, was_cancelled: bool):
-        return self.batch_report_ctrl.finalize_batch_report(was_cancelled)
-
-    def show_latest_batch_report(self):
-        self.batch_report_ctrl.show_latest_batch_report()
-
-    def select_pages_with_errors(self):
-        self.batch_report_ctrl.select_pages_with_errors()
-
-    def register_batch_skip(self, image_path: str, skip_reason: str, error: str):
-        self.batch_report_ctrl.register_batch_skip(image_path, skip_reason, error)
-
-    def _sync_paths_to_active_target(self, image_paths: list[str]) -> None:
-        active_target = self.t_combo.currentText()
-        if not active_target:
-            return
-        for image_path in image_paths:
-            state = self.image_states.setdefault(image_path, {})
-            activate_target_lang(
-                state,
-                active_target,
-                has_runtime_patches=bool(
-                    state.get("inpaint_cache") or self.image_patches.get(image_path)
-                ),
-            )
-
-    def start_batch_process(self):
-        try:
-            if self._memlogger is not None:
-                self._memlogger.emit("batch_start_all")
-        except Exception:
-            pass
-        self.image_ctrl.save_current_image_state()
-        self._sync_paths_to_active_target(self.image_files)
-        for image_path in self.image_files:
-            target_lang = self.image_states[image_path]['target_lang']
-            if not validate_settings(self, target_lang):
-                return
-
-        self.image_ctrl.clear_page_skip_errors_for_paths(self.image_files)
-        self._start_batch_report(self.image_files)
-        self._batch_active = True
-        self._batch_cancel_requested = False
-        self.translate_button.setEnabled(False)
-        self.cancel_button.setEnabled(True)
-        self.save_as_project_button.setEnabled(False)
-        self.webtoon_toggle.setEnabled(False)
-        self.error_pages_button.setEnabled(False)
-        self.progress_bar.setVisible(True)
-        
-        # Choose batch processor based on webtoon mode
-        if self.webtoon_mode:
-            self.run_threaded(self.pipeline.webtoon_batch_process, None, self.default_error_handler, self.on_batch_process_finished)
-        else:
-            self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
-
-    def batch_translate_selected(self, selected_file_names: list[str]):
-        try:
-            if self._memlogger is not None:
-                self._memlogger.emit("batch_start_selected")
-        except Exception:
-            pass
-        selected_paths: list[str] = []
-        seen: set[str] = set()
-        for ref in selected_file_names:
-            path = ref if ref in self.image_files else None
-            if path is None:
-                path = next(
-                    (candidate for candidate in self.image_files if os.path.basename(candidate) == ref),
-                    None,
-                )
-            if path and path not in seen:
-                selected_paths.append(path)
-                seen.add(path)
-        if not selected_paths:
-            return
-
-        self.image_ctrl.save_current_image_state()
-        self._sync_paths_to_active_target(selected_paths)
-        # validate each
-        for path in selected_paths:
-            tgt = self.image_states[path]['target_lang']
-            if not validate_settings(self, tgt):
-                return
-            
-        self.image_ctrl.clear_page_skip_errors_for_paths(selected_paths)
-        self._start_batch_report(selected_paths)
-        self.selected_batch = selected_paths
-
-        # disable UI & run
-        self._batch_active = True
-        self._batch_cancel_requested = False
-        self.translate_button.setEnabled(False)
-        self.cancel_button.setEnabled(True)
-        self.save_as_project_button.setEnabled(False)
-        self.webtoon_toggle.setEnabled(False)
-        self.error_pages_button.setEnabled(False)
-        self.progress_bar.setVisible(True)
-        
-        # Choose batch processor based on webtoon mode
-        if self.webtoon_mode:
-            # pass our subset into webtoon_batch_process
-            self.run_threaded(
-                partial(self.pipeline.webtoon_batch_process, selected_paths),
-                None,
-                self.default_error_handler,
-                self.on_batch_process_finished
-            )
-        else:
-            # pass our subset into batch_process
-            self.run_threaded(
-                partial(self.pipeline.batch_process, selected_paths),
-                None,
-                self.default_error_handler,
-                self.on_batch_process_finished
-            )
-
-    def on_batch_process_finished(self):
-        try:
-            if self._memlogger is not None:
-                self._memlogger.emit("batch_finished")
-        except Exception:
-            pass
-        was_cancelled = self._batch_cancel_requested
-        report = self._finalize_batch_report(was_cancelled)
-        self._batch_active = False
-        self._batch_cancel_requested = False
-        try:
-            self.project_ctrl.flush_batch_project_autosave()
-        except Exception:
-            pass
-        try:
-            self.stage_nav_ctrl.restore_current_page_view()
-        except Exception:
-            self.stage_nav_ctrl.refresh_stage_buttons()
-        self.progress_bar.setVisible(False)
-        self.translate_button.setEnabled(True)
-        self.cancel_button.setEnabled(True)
-        self.save_as_project_button.setEnabled(True)
-        self.webtoon_toggle.setEnabled(True)
-        self.selected_batch = []
-        if report and report["skipped_count"] > 0:
-            self.error_pages_button.setEnabled(True)
-        elif not was_cancelled:
-            Messages.show_translation_complete(self)
-
-        # Drop cached models/sessions after batch to keep RAM bounded.
-        try:
-            if self.pipeline is not None:
-                self.pipeline.release_model_caches()
-            if self._memlogger is not None:
-                self._memlogger.emit("model_caches_released")
-        except Exception:
-            pass
-
     def disable_hbutton_group(self):
         for button in self.hbutton_group.get_button_group().buttons():
             button.setEnabled(False)
@@ -861,17 +701,25 @@ class ComicTranslate(ComicTranslateUI):
     def _on_render_text_clicked(self, *_args):
         self.text_ctrl.render_text()
 
+    def _translate_current_selection_compat(self):
+        selected_paths = self.get_selected_page_paths()
+        if selected_paths:
+            self.batch_translate_selected(selected_paths)
+            return
+        if 0 <= self.curr_img_idx < len(self.image_files):
+            self.batch_translate_selected([self.image_files[self.curr_img_idx]])
+
     def block_detect(self, load_rects: bool = True):
-        self.manual_workflow_ctrl.block_detect(load_rects)
+        self._translate_current_selection_compat()
 
     def finish_ocr_translate(self, single_block=False):
-        self.manual_workflow_ctrl.finish_ocr_translate(single_block)
+        self._translate_current_selection_compat()
 
     def ocr(self, single_block=False):
-        self.manual_workflow_ctrl.ocr(single_block)
+        self._translate_current_selection_compat()
 
     def translate_image(self, single_block=False):
-        self.manual_workflow_ctrl.translate_image(single_block)
+        self._translate_current_selection_compat()
 
     def invalidate_page_render_pipeline(self, file_path: str | None):
         if not file_path:
@@ -879,22 +727,31 @@ class ComicTranslate(ComicTranslateUI):
         self.stage_nav_ctrl.invalidate_for_box_edit(file_path)
 
     def _get_visible_text_items(self):
-        return self.manual_workflow_ctrl._get_visible_text_items()
+        return get_visible_text_items_for_main(self)
 
     def update_translated_text_items(self, single_blk: bool):
-        self.manual_workflow_ctrl.update_translated_text_items(single_blk)
+        current_file = self.image_files[self.curr_img_idx] if 0 <= self.curr_img_idx < len(self.image_files) else None
+        if current_file:
+            self.text_ctrl._sync_current_render_snapshot(current_file)
+            self.stage_nav_ctrl.refresh_stage_buttons(current_file)
 
     def inpaint_and_set(self):
-        self.manual_workflow_ctrl.inpaint_and_set()
+        file_path = self.image_files[self.curr_img_idx] if 0 <= self.curr_img_idx < len(self.image_files) else None
+        if not file_path:
+            return
+        if self.stage_nav_ctrl.get_ui_stage(file_path) == "clean" and self.image_viewer.has_drawn_elements():
+            self.stage_nav_ctrl._run_clean_for_current_view(file_path)
+            return
+        self.stage_nav_ctrl.navigate_to_stage("clean")
 
     def blk_detect_segment(self, result): 
-        self.manual_workflow_ctrl.blk_detect_segment(result)
+        self.load_segmentation_points()
 
     def load_segmentation_points(self):
-        self.manual_workflow_ctrl.load_segmentation_points()
+        self.stage_nav_ctrl.navigate_to_stage("clean")
                 
     def _on_segmentation_bboxes_ready(self, results):
-        self.manual_workflow_ctrl._on_segmentation_bboxes_ready(results)
+        self.stage_nav_ctrl.refresh_stage_buttons()
 
     def update_progress(self, index: int, total_images: int, step: int, total_steps: int, change_name: bool):
         if self._batch_cancel_requested:

@@ -122,4 +122,10 @@ class LLMTranslation(TranslationEngine):
         Returns:
             Formatted system prompt
         """
-        return f"""Translate to {target_lang} as natural speech of a native {target_lang} speaker. Perfect agreement of morphological features, natural speech patterns, emotionally expressive, vivid language. Output only translation."""
+        return (
+            f"Translate to {target_lang} as natural speech of a native {target_lang} speaker. "
+            f"Use idiomatic, fluent, context-appropriate phrasing. "
+            f"Keep grammar fully correct, including agreement, inflection, tense, aspect, number, register, and word order where applicable. "
+            f"Avoid literal calques, broken morphology, awkward phrasing, and invented pseudo-words. "
+            f"If the source is fragmentary, elliptical, or emotional, produce an equally natural fragment in the target language."
+        )

@@ -4,9 +4,15 @@ import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
-from .chunk import ChunkMixin
+from .chunk_mapping_mixin import ChunkMappingMixin
+from .chunk_processing_mixin import ChunkProcessingMixin
+from .finalize import FinalizeMixin
 from .flow import FlowMixin
-from .render import RenderMixin
+from .planning_layout_mixin import PlanningLayoutMixin
+from .planning_pair_mixin import PlanningPairMixin
+from .render_emit_mixin import RenderEmitMixin
+from .render_export_mixin import RenderExportMixin
+from .render_page_prepare_mixin import RenderPagePrepareMixin
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -18,7 +24,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class WebtoonBatchProcessor(FlowMixin, ChunkMixin, RenderMixin):
+class WebtoonBatchProcessor(
+    PlanningLayoutMixin,
+    PlanningPairMixin,
+    FinalizeMixin,
+    FlowMixin,
+    ChunkProcessingMixin,
+    ChunkMappingMixin,
+    RenderPagePrepareMixin,
+    RenderEmitMixin,
+    RenderExportMixin,
+):
     """
     Handles seam-aware webtoon batch processing with virtual-page streaming.
 

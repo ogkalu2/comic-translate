@@ -5,7 +5,6 @@ from PySide6 import QtCore
 from modules.detection.processor import TextBlockDetector
 from modules.detection.utils.orientation import infer_orientation, infer_reading_order
 from modules.utils.textblock import TextBlock, sort_blk_list
-from modules.rendering.render import get_best_render_area
 from pipeline.webtoon_utils import get_first_visible_block
 
 
@@ -84,10 +83,6 @@ class BlockDetectionHandler:
                     return [], load_rects, None
                 
                 blk_list = self.block_detector_cache.detect(image)
-
-                # Optimize render area immediately after detection (on local visible coordinates)
-                if blk_list:
-                    get_best_render_area(blk_list, image)
                 
                 # Convert coordinates from visible area to scene coordinates
                 for blk in blk_list:
@@ -135,8 +130,6 @@ class BlockDetectionHandler:
                 current_page = None
                 image = self.main_page.image_viewer.get_image_array()
                 blk_list = self.block_detector_cache.detect(image)
-                if blk_list:
-                    get_best_render_area(blk_list, image)
                 return blk_list, load_rects, current_page
 
     def on_blk_detect_complete(self, result): 

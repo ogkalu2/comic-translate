@@ -519,6 +519,10 @@ class ImageViewer(QGraphicsView):
                 properties.height,
                 max_font_size=max_font_size,
             )
+            # Keep the exact wrapped text produced by the render pass while
+            # preserving the fitted font size chosen above.
+            item.set_plain_text(properties.text, preserve_source_text=True, update_width=False)
+            item.set_layout_box_size(properties.width, properties.height)
         item.set_color(properties.text_color)
             
         # Set selection outlines

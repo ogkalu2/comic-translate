@@ -62,11 +62,12 @@ class GPTTranslation(BaseLLMTranslation):
         payload = {
             "model": self.model,
             "messages": messages,
-            "temperature": 0.0,
-            "top_p": 1.0,
+            "temperature": float(self.temperature),
+            "top_p": float(self.top_p),
             "max_tokens": int(self.max_tokens),
             "presence_penalty" : 0.0,
-            "repetition_penalty" : 1.0,
+            "frequency_penalty": 0.0,
+            "repetition_penalty" : 1.05,
             "response_format": {"type": "json_object"},
         }
 

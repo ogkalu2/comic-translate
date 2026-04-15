@@ -3,6 +3,7 @@ import base64
 import json
 import logging
 import re
+from collections import Counter
 import jieba
 import janome.tokenizer
 import numpy as np
@@ -25,6 +26,8 @@ MODEL_MAP = {
 
 HTML_TEXT_SPLIT_RE = re.compile(r"(<[^>]+>|&[A-Za-z0-9#]+;)")
 logger = logging.getLogger(__name__)
+RUNAWAY_REPEAT_RE = re.compile(r"(.)\1{11,}", re.DOTALL)
+INTERJECTION_REPEAT_RE = re.compile(r"(.)\1{2,}", re.DOTALL)
 
 
 def _json_decode_error_preview(content: str, exc: json.JSONDecodeError, radius: int = 160) -> str:
@@ -183,11 +186,10 @@ def is_there_text(blk_list: list[TextBlock]) -> bool:
 
 
 def sanitize_translation_source_text(text: str) -> str:
-    if not text:
+    if text is None:
         return ""
-    quote_chars = "\"'`‘’‚‛“”„‟«»‹›〝〞＂＇´"
-    cleaned = text.translate(str.maketrans("", "", quote_chars))
-    cleaned = " ".join(cleaned.split())
+    cleaned = str(text).replace("\r\n", "\n").replace("\r", "\n")
+    cleaned = cleaned.replace("\x00", "")
     return cleaned.strip()
 
 
@@ -210,6 +212,57 @@ def sanitize_translation_result_text(text: str) -> str:
     if not text:
         return ""
     return normalize_translation_result_text(text, upper_case=False)
+
+
+def has_runaway_single_char_repetition(text: str) -> bool:
+    if not text:
+        return False
+
+    compact = re.sub(r"\s+", "", str(text))
+    if len(compact) < 16:
+        return False
+
+    if RUNAWAY_REPEAT_RE.search(compact):
+        return True
+
+    counts = Counter(compact)
+    if not counts:
+        return False
+
+    _char, count = counts.most_common(1)[0]
+    return count >= 14 and (count / len(compact)) >= 0.75
+
+
+def is_high_risk_sound_effect_text(text: str) -> bool:
+    if not text:
+        return False
+
+    compact = re.sub(r"\s+", "", str(text))
+    if len(compact) < 4:
+        return False
+
+    if has_runaway_single_char_repetition(compact):
+        return True
+
+    alpha_chars = [ch for ch in compact if ch.isalpha()]
+    if not alpha_chars:
+        return False
+
+    has_emphasis = any(ch in compact for ch in "!?！？…")
+    unique_alpha = len(set(alpha_chars))
+
+    if len(alpha_chars) <= 24 and has_emphasis and INTERJECTION_REPEAT_RE.search(compact):
+        return True
+
+    if (
+        len(alpha_chars) <= 18
+        and has_emphasis
+        and compact.upper() == compact
+        and unique_alpha <= 3
+    ):
+        return True
+
+    return False
 
 
 def normalize_translation_result_text(text: str, upper_case: bool = True) -> str:
