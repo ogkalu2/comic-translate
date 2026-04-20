@@ -8,7 +8,7 @@ from PySide6.QtGui import QColor
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import TextBlockItem
 from app.ui.messages import Messages
-from pipeline.render_state import set_target_snapshot
+from pipeline.render_state import set_target_snapshot, update_render_style_overrides
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +56,11 @@ class TextBulkSupportMixin:
                 state = self.main.image_states.get(file_path)
                 if state is not None and state.get("target_lang") == current_target:
                     set_target_snapshot(state, current_target, state.get("viewer_state", {}) or {})
+                    update_render_style_overrides(state, state.get("viewer_state", {}) or {})
                 self.main.stage_nav_ctrl.invalidate_for_format_edit(file_path, current_target)
             current_file = self._current_file_path()
             if current_file:
-                self._sync_current_render_snapshot(current_file)
+                self._sync_current_render_snapshot(current_file, update_style_overrides=True)
             self.main.mark_project_dirty()
             logger.info("%s applied to %d page(s).", action_name, updated_pages)
             self._show_bulk_update_message(action_name, updated_pages)

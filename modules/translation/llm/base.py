@@ -74,7 +74,7 @@ class BaseLLMTranslation(LLMTranslation):
             max_tokens_cap = 1024
 
         estimated = 24 + (total_chars * 2) + (len(blk_list) * 8)
-        return max(20000, min(max_tokens_cap, estimated))
+        return max(1024, min(max_tokens_cap, estimated))
 
     def _ensure_no_runaway_repetition(self, blk_list: list[TextBlock]) -> None:
         for index, blk in enumerate(blk_list):

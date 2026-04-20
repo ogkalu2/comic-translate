@@ -15,6 +15,25 @@ class _FakeSettingsPage:
         raise KeyError(tool_type)
 
 
+class _FakeRemoteSettingsPage(_FakeSettingsPage):
+    def get_tool_selection(self, tool_type):
+        if tool_type == "translator":
+            return "GPT-4.1"
+        raise KeyError(tool_type)
+
+
+class _FakeCustomLocalSettingsPage(_FakeSettingsPage):
+    ui = SimpleNamespace(tr=lambda value: value)
+
+    def get_tool_selection(self, tool_type):
+        if tool_type == "translator":
+            return "Custom"
+        raise KeyError(tool_type)
+
+    def get_credentials(self, _service):
+        return {"api_url": "http://127.0.0.1:1234/v1"}
+
+
 class _FakeTranslator:
     def __init__(self, _main_page, _source_lang, _target_lang):
         self.engine = SimpleNamespace(last_usage={"prompt_tokens": 1, "completion_tokens": 2, "total_tokens": 3})
@@ -26,9 +45,15 @@ class _FakeTranslator:
         return blk_list
 
 
+class _FakeCacheManager:
+    def _get_translation_cache_key(self, *_args, **_kwargs):
+        return "translation-cache-key"
+
+
 class _FakeBatchExecution(BatchExecutionMixin):
     def __init__(self):
         self.main_page = SimpleNamespace(settings_page=_FakeSettingsPage())
+        self.cache_manager = _FakeCacheManager()
 
 
 def test_batch_translation_falls_back_to_smaller_chunks(monkeypatch):
@@ -58,8 +83,24 @@ def test_batch_translation_falls_back_to_smaller_chunks(monkeypatch):
     assert scene_memory == ""
 
 
-def test_lm_studio_translation_batches_without_page_to_page_context():
+def test_lm_studio_translation_is_serial_without_page_to_page_context():
     worker = _FakeBatchExecution()
+    prepared_pages = [SimpleNamespace(image_path=f"page_{idx}.png") for idx in range(4)]
+
+    assert worker._get_translation_max_workers(prepared_pages) == 1
+
+
+def test_custom_lm_studio_url_translation_is_serial_without_page_to_page_context():
+    worker = _FakeBatchExecution()
+    worker.main_page.settings_page = _FakeCustomLocalSettingsPage()
+    prepared_pages = [SimpleNamespace(image_path=f"page_{idx}.png") for idx in range(4)]
+
+    assert worker._get_translation_max_workers(prepared_pages) == 1
+
+
+def test_remote_translation_batches_without_page_to_page_context():
+    worker = _FakeBatchExecution()
+    worker.main_page.settings_page = _FakeRemoteSettingsPage()
     prepared_pages = [SimpleNamespace(image_path=f"page_{idx}.png") for idx in range(4)]
 
     assert worker._get_translation_max_workers(prepared_pages) == 4

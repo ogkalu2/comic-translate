@@ -16,6 +16,7 @@ from .render_area import get_best_render_area
 from modules.utils.textblock import TextBlock
 from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
 from modules.utils.language_utils import get_language_code
+from pipeline.render_state import build_render_template_map, get_render_template_for_block
 
 @dataclass
 class TextRenderingSettings:
@@ -334,16 +335,31 @@ def manual_wrap(
     min_font_size: int = 10
 ):
     
-    target_lang = main_page.lang_mapping.get(main_page.t_combo.currentText(), None)
+    target_lang_name = main_page.t_combo.currentText()
+    target_lang = main_page.lang_mapping.get(target_lang_name, None)
     trg_lng_cd = get_language_code(target_lang)
+    state = main_page.image_states.get(image_path, {}) if image_path else {}
+    template_map = build_render_template_map(state, target_lang_name)
     rendered_blocks: List[tuple[str, int, TextBlock, str]] = []
 
     for blk in blk_list:
-        x1, y1, width, height = blk.xywh
+        _, _, width, height = blk.xywh
 
         translation = blk.translation
         if not translation or len(translation) == 1:
             continue
+
+        template = get_render_template_for_block(template_map, blk)
+        width = float(template.get("width", width) or width)
+        height = float(template.get("height", height) or height)
+        font_family_for_block = template.get("font_family", font_family)
+        line_spacing_for_block = float(template.get("line_spacing", line_spacing))
+        outline_width_for_block = float(template.get("outline_width", outline_width))
+        bold_for_block = bool(template.get("bold", bold))
+        italic_for_block = bool(template.get("italic", italic))
+        underline_for_block = bool(template.get("underline", underline))
+        alignment_for_block = template.get("alignment", alignment)
+        direction_for_block = template.get("direction", direction)
 
         vertical = is_vertical_block(blk, trg_lng_cd)
         block_min_font_size = blk.min_font_size if blk.min_font_size > 0 else min_font_size
@@ -353,19 +369,20 @@ def manual_wrap(
             block_min_font_size,
             target="qt",
         )
+        block_init_font_size = int(round(template.get("font_size", block_init_font_size)))
 
         translation, font_size = pyside_word_wrap(
             translation, 
-            font_family, 
+            font_family_for_block,
             width, 
             height,
-            line_spacing, 
-            outline_width, 
-            bold, 
-            italic, 
-            underline,
-            alignment, 
-            direction, 
+            line_spacing_for_block,
+            outline_width_for_block,
+            bold_for_block,
+            italic_for_block,
+            underline_for_block,
+            alignment_for_block,
+            direction_for_block,
             block_init_font_size, 
             block_min_font_size,
             vertical

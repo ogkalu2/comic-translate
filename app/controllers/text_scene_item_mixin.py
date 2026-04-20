@@ -13,6 +13,7 @@ from modules.rendering.policy import is_vertical_block
 from modules.utils.common_utils import is_close
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
+from pipeline.render_state import build_render_template_map, get_render_template_for_block
 
 if TYPE_CHECKING:
     from modules.utils.textblock import TextBlock
@@ -137,42 +138,82 @@ class TextSceneItemMixin:
             print("No main image to add to.")
             return
 
-        target_lang = self.main.lang_mapping.get(self.main.t_combo.currentText(), None)
+        target_lang_name = self.main.t_combo.currentText()
+        target_lang = self.main.lang_mapping.get(target_lang_name, None)
         trg_lng_cd = get_language_code(target_lang)
         if is_no_space_lang(trg_lng_cd):
             text = text.replace(" ", "")
 
         render_settings = self.render_settings()
-        text_color = get_smart_text_color(blk.font_color, QColor(render_settings.color))
-        alignment = self.main.button_to_alignment[render_settings.alignment_id]
-        outline_color = QColor(render_settings.outline_color) if self.main.outline_checkbox.isChecked() else None
+        state = self.main.image_states.get(image_path, {})
+        template_map = build_render_template_map(state, target_lang_name)
+        template = get_render_template_for_block(template_map, blk)
+
+        def _qcolor(value):
+            if value is None or isinstance(value, QColor):
+                return value
+            return QColor(value)
+
+        x1, y1, block_width, block_height = blk.xywh
+        position = template.get("position") or (x1, y1)
+        block_width = float(template.get("width", block_width) or block_width)
+        block_height = float(template.get("height", block_height) or block_height)
+        rotation = template.get("rotation", blk.angle)
+        scale = template.get("scale", 1.0)
+        transform_origin = template.get("transform_origin", blk.tr_origin_point if blk.tr_origin_point else (0, 0))
+        font_family = template.get("font_family", render_settings.font_family)
+        line_spacing = float(template.get("line_spacing", render_settings.line_spacing))
+        outline_enabled = bool(template.get("outline", self.main.outline_checkbox.isChecked()))
+        outline_width = float(template.get("outline_width", render_settings.outline_width))
+        outline_color = _qcolor(template.get("outline_color", render_settings.outline_color)) if outline_enabled else None
+        second_outline = bool(template.get("second_outline", render_settings.second_outline))
+        second_outline_color = _qcolor(template.get("second_outline_color", render_settings.second_outline_color)) if second_outline else None
+        second_outline_width = float(template.get("second_outline_width", render_settings.second_outline_width))
+        text_gradient = bool(template.get("text_gradient", render_settings.text_gradient))
+        text_gradient_start_color = _qcolor(template.get("text_gradient_start_color", render_settings.text_gradient_start_color)) if text_gradient else None
+        text_gradient_end_color = _qcolor(template.get("text_gradient_end_color", render_settings.text_gradient_end_color)) if text_gradient else None
+        text_color = get_smart_text_color(
+            blk.font_color,
+            _qcolor(template.get("text_color")) or QColor(render_settings.color),
+        )
+        alignment = template.get(
+            "alignment",
+            self.main.button_to_alignment[render_settings.alignment_id],
+        )
+        direction = template.get("direction", render_settings.direction)
+        bold = bool(template.get("bold", render_settings.bold))
+        italic = bool(template.get("italic", render_settings.italic))
+        underline = bool(template.get("underline", render_settings.underline))
         vertical = is_vertical_block(blk, trg_lng_cd)
 
         properties = TextItemProperties(
             text=text,
             source_text=blk.translation or blk.text or text,
-            font_family=render_settings.font_family,
+            font_family=font_family,
             font_size=font_size,
             text_color=text_color,
             alignment=alignment,
-            line_spacing=float(render_settings.line_spacing),
+            line_spacing=line_spacing,
             outline_color=outline_color,
-            outline_width=float(render_settings.outline_width),
-            second_outline=render_settings.second_outline,
-            second_outline_color=QColor(render_settings.second_outline_color) if render_settings.second_outline else None,
-            second_outline_width=float(render_settings.second_outline_width),
-            text_gradient=render_settings.text_gradient,
-            text_gradient_start_color=QColor(render_settings.text_gradient_start_color) if render_settings.text_gradient else None,
-            text_gradient_end_color=QColor(render_settings.text_gradient_end_color) if render_settings.text_gradient else None,
-            bold=render_settings.bold,
-            italic=render_settings.italic,
-            underline=render_settings.underline,
-            direction=render_settings.direction,
-            position=(blk.xyxy[0], blk.xyxy[1]),
-            rotation=blk.angle,
+            outline_width=outline_width,
+            outline=outline_enabled,
+            second_outline=second_outline,
+            second_outline_color=second_outline_color,
+            second_outline_width=second_outline_width,
+            text_gradient=text_gradient,
+            text_gradient_start_color=text_gradient_start_color,
+            text_gradient_end_color=text_gradient_end_color,
+            bold=bold,
+            italic=italic,
+            underline=underline,
+            direction=direction,
+            position=position,
+            rotation=rotation,
+            scale=scale,
+            transform_origin=transform_origin,
             vertical=vertical,
-            width=blk.xywh[2],
-            height=blk.xywh[3],
+            width=block_width,
+            height=block_height,
             block_uid=getattr(blk, "block_uid", ""),
         )
 
@@ -184,7 +225,7 @@ class TextSceneItemMixin:
         text_item.set_plain_text(text, preserve_source_text=True, update_width=False)
         current_file = self._current_file_path()
         if current_file and image_path and os.path.normcase(current_file) == os.path.normcase(image_path):
-            self._sync_current_render_snapshot(current_file)
+            self._sync_current_render_snapshot(current_file, update_style_overrides=False)
 
     def on_text_item_selected(self, text_item: TextBlockItem):
         if not self._is_live_text_item(text_item):

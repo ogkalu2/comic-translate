@@ -50,9 +50,9 @@ class InteractionManager:
         if not item:
             return QRectF()
         if hasattr(item, "get_text_box_rect"):
-            rect = item.boundingRect()
+            rect = item.get_text_box_rect()
             if rect.isEmpty():
-                return item.get_text_box_rect()
+                return item.boundingRect()
             return rect
         return item.boundingRect()
 
@@ -71,10 +71,7 @@ class InteractionManager:
         if not item: return False
         local = item.mapFromScene(scene_pos)
         r = self.get_item_bounds(item)
-        dx = max(r.left() - local.x(), 0, local.x() - r.right())
-        dy = max(r.top() - local.y(), 0, local.y() - r.bottom())
-        dist = math.hypot(dx, dy)
-        return self.resize_margin_min < dist < self.resize_margin_max
+        return self.get_handle_at_position(local, r) is not None
 
     def rotate_cursor(self, cursor, steps):
         cursor_map = {

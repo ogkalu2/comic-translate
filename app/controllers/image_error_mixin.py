@@ -12,7 +12,7 @@ from pipeline.page_state import (
     has_runtime_patches as page_has_runtime_patches,
     resolve_page_target_lang,
 )
-from pipeline.render_state import get_target_snapshot, set_target_snapshot
+from pipeline.render_state import get_target_snapshot, set_target_snapshot, update_render_style_overrides
 from pipeline.stage_state import finalize_render_stage
 
 
@@ -38,6 +38,7 @@ class ImageErrorMixin:
         )
         if not snapshot and state.get("target_lang") == active_target and viewer_state.get("text_items_state"):
             snapshot = set_target_snapshot(state, active_target, viewer_state)
+            update_render_style_overrides(state, viewer_state)
 
         text_items_state = (snapshot or {}).get("text_items_state") or []
         if not text_items_state:

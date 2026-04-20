@@ -17,7 +17,11 @@ from pipeline.page_state import (
     has_runtime_patches as page_has_runtime_patches,
     resolve_page_target_lang,
 )
-from pipeline.render_state import set_target_snapshot
+from pipeline.render_state import (
+    RENDER_STYLE_OVERRIDES_KEY,
+    set_target_snapshot,
+    update_render_style_overrides,
+)
 from pipeline.stage_state import activate_target_lang
 
 logger = logging.getLogger(__name__)
@@ -80,10 +84,10 @@ class ImagePersistenceMixin:
 
         imk.write_image(file_path, final_rgb)
 
-    def save_image_state(self, file: str):
+    def save_image_state(self, file: str, target_lang: str | None = None):
         existing = self.main.image_states.get(file, {})
         skip_status = existing.get("skip", False)
-        current_target = self.main.t_combo.currentText()
+        current_target = target_lang if target_lang is not None else self.main.t_combo.currentText()
         active_target = current_target or resolve_page_target_lang(
             existing,
             pipeline_state=existing.get("pipeline_state"),
@@ -122,6 +126,7 @@ class ImagePersistenceMixin:
             "blk_list": blk_list,
             "skip": skip_status,
             "pipeline_state": pipeline_state,
+            RENDER_STYLE_OVERRIDES_KEY: copy.deepcopy(existing.get(RENDER_STYLE_OVERRIDES_KEY, {}) or {}),
         }
 
         current_stage = pipeline_state.get("current_stage", "")
@@ -129,6 +134,7 @@ class ImagePersistenceMixin:
             viewer_state["text_items_state"] = copy.deepcopy(current_scene_state.get("text_items_state", []) or [])
             if active_target:
                 set_target_snapshot(state_payload, active_target, viewer_state)
+                update_render_style_overrides(state_payload, viewer_state)
         elif active_target and active_target in state_payload["target_render_states"]:
             for key in ("transform", "center", "scene_rect"):
                 if current_scene_state.get(key) is not None:
@@ -137,10 +143,10 @@ class ImagePersistenceMixin:
         if current_stage == "render":
             self._reconcile_render_snapshot_state(file, active_target)
 
-    def save_current_image_state(self):
+    def save_current_image_state(self, target_lang: str | None = None):
         if self.main.curr_img_idx >= 0:
             current_file = self.main.image_files[self.main.curr_img_idx]
-            self.save_image_state(current_file)
+            self.save_image_state(current_file, target_lang=target_lang)
 
     def load_image_state(self, file_path: str):
         rgb_image = self.main.image_data[file_path]

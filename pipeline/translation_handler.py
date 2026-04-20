@@ -173,24 +173,22 @@ class TranslationHandler:
                     logger.debug(f"Using cached translation results for all {len(self.main_page.blk_list)} blocks")
                     self._store_current_page_translation_context(target_lang)
                 else:
-                    # Need to run translation only for blocks that are not already cached.
                     translator.translate(
-                        missing_blocks,
+                        self.main_page.blk_list,
                         image,
                         prompt_context,
                     )
                     self.cache_manager._cache_translation_results(
                         translation_cache_key,
-                        missing_blocks,
+                        self.main_page.blk_list,
                     )
-                    scene_memory = ""
-                    if (
-                        len(missing_blocks) == len(self.main_page.blk_list)
-                        and all(candidate is original for candidate, original in zip(missing_blocks, self.main_page.blk_list))
-                    ):
-                        scene_memory = getattr(getattr(translator, "engine", None), "last_scene_memory", "")
+                    scene_memory = getattr(getattr(translator, "engine", None), "last_scene_memory", "")
                     self._store_current_page_translation_context(target_lang, scene_memory)
-                    logger.debug("Translation completed and cached for %d missing blocks", len(missing_blocks))
+                    logger.debug(
+                        "Translation cache incomplete for %d blocks; retranslated full page with %d blocks",
+                        len(missing_blocks),
+                        len(self.main_page.blk_list),
+                    )
                 
                 set_upper_case(self.main_page.blk_list, upper_case)
 

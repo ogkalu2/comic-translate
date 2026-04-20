@@ -18,7 +18,11 @@ from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import is_no_space_lang
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
 from pipeline.page_state import has_runtime_patches as page_has_runtime_patches
-from pipeline.render_state import set_target_snapshot
+from pipeline.render_state import (
+    get_render_template_for_block,
+    set_target_snapshot,
+    update_render_style_overrides,
+)
 from pipeline.stage_state import (
     activate_target_lang,
     finalize_render_stage,
@@ -154,22 +158,13 @@ class BatchRenderMixin:
             if not translation or len(translation) == 1:
                 continue
 
-            block_uid = str(getattr(blk, "block_uid", "") or "")
-            template = template_map.get((block_uid, (), 0.0), {}) if block_uid else {}
-            if not template:
-                template = template_map.get(
-                    (
-                        "",
-                        (
-                            int(blk.xyxy[0]),
-                            int(blk.xyxy[1]),
-                            int(blk.xyxy[2]),
-                            int(blk.xyxy[3]),
-                        ),
-                        float(getattr(blk, "angle", 0.0) or 0.0),
-                    ),
-                    {},
-                )
+            template = get_render_template_for_block(template_map, blk)
+            position = template.get("position") or (x1, y1)
+            block_width = float(template.get("width", block_width) or block_width)
+            block_height = float(template.get("height", block_height) or block_height)
+            rotation = template.get("rotation", blk.angle)
+            scale = template.get("scale", 1.0)
+            transform_origin = template.get("transform_origin", blk.tr_origin_point)
             font_family = template.get("font_family", font)
             line_spacing_for_block = float(template.get("line_spacing", line_spacing))
             outline_width_for_block = float(template.get("outline_width", outline_width))
@@ -248,10 +243,10 @@ class BatchRenderMixin:
                 bold=bold_for_block,
                 italic=italic_for_block,
                 underline=underline_for_block,
-                position=(x1, y1),
-                rotation=blk.angle,
-                scale=1.0,
-                transform_origin=blk.tr_origin_point,
+                position=position,
+                rotation=rotation,
+                scale=scale,
+                transform_origin=transform_origin,
                 width=block_width,
                 height=block_height,
                 direction=direction_for_block,
@@ -280,6 +275,7 @@ class BatchRenderMixin:
             }
         )
         set_target_snapshot(state, page.target_lang, viewer_state)
+        update_render_style_overrides(state, viewer_state, overwrite=False)
 
     def _finalize_prepared_page(
         self,

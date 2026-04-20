@@ -104,8 +104,22 @@ class GPTTranslation(BaseLLMTranslation):
             "repetition_penalty" : 1.05,
             "response_format": self._build_response_format(),
         }
+        self._apply_no_thinking_options(payload)
 
         return self._make_api_request(payload)
+
+    def _apply_no_thinking_options(self, payload: dict) -> None:
+        if self._is_lm_studio_backend():
+            payload["reasoning"] = {"effort": "none"}
+            return
+
+        payload["chat_template_kwargs"] = {"enable_thinking": False}
+
+    def _without_no_thinking_options(self, payload: dict) -> dict:
+        fallback_payload = dict(payload)
+        fallback_payload.pop("chat_template_kwargs", None)
+        fallback_payload.pop("reasoning", None)
+        return fallback_payload
 
     def _build_response_format(self) -> dict:
         if self._is_lm_studio_backend():
@@ -169,6 +183,33 @@ class GPTTranslation(BaseLLMTranslation):
             return content
 
         except requests.exceptions.RequestException as e:
+            if (
+                getattr(e, "response", None) is not None
+                and e.response.status_code in (400, 422)
+                and (
+                    "chat_template_kwargs" in payload
+                    or "reasoning" in payload
+                )
+            ):
+                fallback_payload = self._without_no_thinking_options(payload)
+                try:
+                    response = post_json_with_wsl_fallback(
+                        f"{self.api_base_url}/chat/completions",
+                        payload=fallback_payload,
+                        headers={"Content-Type": "application/json"},
+                        timeout=self.timeout,
+                    )
+                    response.raise_for_status()
+                    response_data = response.json()
+                    usage = response_data.get("usage")
+                    if usage:
+                        self.last_usage = usage
+                    choice = response_data["choices"][0]
+                    message = choice.get("message", {}) or {}
+                    return self._extract_message_text(message)
+                except requests.exceptions.RequestException:
+                    pass
+
             error_msg = f"API request failed: {str(e)}"
             if hasattr(e, 'response') and e.response is not None:
                 try:

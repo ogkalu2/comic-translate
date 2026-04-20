@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-
 from modules.rendering.render import (
     TextRenderingSettings,
     manual_wrap,
@@ -9,6 +7,8 @@ from modules.rendering.render import (
 from modules.utils.language_utils import get_language_code, get_layout_direction
 from modules.utils.pipeline_config import font_selected
 from modules.utils.translator_utils import format_translations
+from pipeline.page_state import has_runtime_patches as page_has_runtime_patches
+from pipeline.stage_state import finalize_render_stage
 
 
 class TextRenderLiveMixin:
@@ -24,26 +24,7 @@ class TextRenderLiveMixin:
             if item not in self.main.image_viewer._scene.items():
                 self.main.image_viewer._scene.addItem(item)
 
-        existing_text_item_uids = {
-            str(getattr(item, "block_uid", "") or "")
-            for item in self.main.image_viewer.text_items
-            if getattr(item, "block_uid", "")
-        }
-        existing_text_item_keys = {
-            (int(item.pos().x()), int(item.pos().y()), float(item.rotation()))
-            for item in self.main.image_viewer.text_items
-            if not getattr(item, "block_uid", "")
-        }
-
-        new_blocks = []
-        for blk in self.main.blk_list:
-            blk_uid = str(getattr(blk, "block_uid", "") or "")
-            blk_key = (int(blk.xyxy[0]), int(blk.xyxy[1]), float(blk.angle))
-            if blk_uid and blk_uid in existing_text_item_uids:
-                continue
-            if not blk_uid and blk_key in existing_text_item_keys:
-                continue
-            new_blocks.append(blk)
+        render_blocks = list(self.main.blk_list)
 
         self.main.image_viewer.clear_rectangles()
         self.main.curr_tblock = None
@@ -110,7 +91,7 @@ class TextRenderLiveMixin:
             on_manual_render_error,
             None,
             self.main,
-            new_blocks,
+            render_blocks,
             image_path,
             font_family,
             line_spacing,
@@ -124,18 +105,25 @@ class TextRenderLiveMixin:
             min_font_size,
         )
 
-    def on_render_complete(self, rendered_image: np.ndarray):
+    def on_render_complete(self, rendered_blocks: list):
         current_file = None
         if 0 <= self.main.curr_img_idx < len(self.main.image_files):
             current_file = self.main.image_files[self.main.curr_img_idx]
+            for text, font_size, blk, image_path in rendered_blocks or []:
+                self.main.blk_rendered.emit(text, font_size, blk, image_path)
+
             state = self.main.image_states.get(current_file)
             if state is not None:
-                state["target_lang"] = self.main.t_combo.currentText()
-                pipeline_state = state.setdefault("pipeline_state", {})
-                completed_stages = set(pipeline_state.get("completed_stages", []) or [])
-                completed_stages.add("render")
-                pipeline_state["completed_stages"] = list(completed_stages)
-                pipeline_state["target_lang"] = self.main.t_combo.currentText()
+                finalize_render_stage(
+                    state,
+                    self.main.t_combo.currentText(),
+                    has_runtime_patches=page_has_runtime_patches(
+                        state,
+                        self.main.image_patches,
+                        current_file,
+                    ),
+                    ui_stage="render",
+                )
         self._finalize_manual_render(current_file)
 
     def render_settings(self) -> TextRenderingSettings:

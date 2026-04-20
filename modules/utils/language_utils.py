@@ -30,8 +30,31 @@ language_codes = {
     "Mongolian": "mn",
 }
 
-def get_layout_direction(language: str) -> Qt.LayoutDirection:
-    return Qt.LayoutDirection.RightToLeft if language == 'Arabic' else Qt.LayoutDirection.LeftToRight
+RTL_LANGUAGE_CODES = {
+    "ar",  # Arabic
+    "fa",  # Persian/Farsi
+    "he",  # Hebrew
+    "iw",  # Legacy Hebrew code
+    "ur",  # Urdu
+    "ps",  # Pashto
+    "sd",  # Sindhi
+    "ug",  # Uyghur
+    "yi",  # Yiddish
+}
+
+
+def is_rtl_language_code(lang_code: str | None) -> bool:
+    if not lang_code:
+        return False
+    return lang_code.split("-", 1)[0].lower() in RTL_LANGUAGE_CODES
+
+
+def get_layout_direction(language: str | None) -> Qt.LayoutDirection:
+    return (
+        Qt.LayoutDirection.RightToLeft
+        if is_rtl_language_code(get_language_code(language) or language)
+        else Qt.LayoutDirection.LeftToRight
+    )
 
 def get_language_code(lng: str):
     lng_cd = language_codes.get(lng, None)

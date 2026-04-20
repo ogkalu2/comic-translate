@@ -38,6 +38,39 @@ class BatchExecutionMixin:
     def _translation_context_requires_ordering(self) -> bool:
         return translation_context_requires_ordering(self._get_llm_settings())
 
+    def _get_selected_translator_key(self) -> str:
+        settings_page = getattr(self.main_page, "settings_page", None)
+        if settings_page is None:
+            return ""
+        try:
+            selected = settings_page.get_tool_selection("translator")
+        except Exception:
+            return ""
+
+        ui = getattr(settings_page, "ui", None)
+        mappings = getattr(ui, "mappings", None)
+        if isinstance(mappings, dict):
+            selected = mappings.get(selected, selected)
+
+        return selected or ""
+
+    def _translator_requires_serial_batch(self) -> bool:
+        translator_key = self._get_selected_translator_key()
+        if translator_key == "LM Studio":
+            return True
+
+        if translator_key == "Custom":
+            try:
+                credentials = self.main_page.settings_page.get_credentials(
+                    self.main_page.settings_page.ui.tr("Custom")
+                )
+            except Exception:
+                credentials = {}
+            api_url = (credentials.get("api_url", "") or "").lower()
+            return "127.0.0.1:1234" in api_url or "localhost:1234" in api_url
+
+        return False
+
     def _ensure_page_translation_context(self, page: PreparedBatchPage) -> tuple[str, str]:
         prompt_context = getattr(page, "translation_prompt_context", None)
         context_signature = getattr(page, "translation_context_signature", None)
@@ -56,7 +89,7 @@ class BatchExecutionMixin:
 
     def _get_translation_max_workers(self, prepared_pages: list[PreparedBatchPage]) -> int:
         requested = min(32, len(prepared_pages))
-        if self._translation_context_requires_ordering():
+        if self._translation_context_requires_ordering() or self._translator_requires_serial_batch():
             return 1
 
         return requested
@@ -714,7 +747,11 @@ class BatchExecutionMixin:
                 self._store_page_translation_context(page)
                 continue
 
-            page._translation_missing_blocks = missing_blocks
+            logger.debug(
+                "Translation cache incomplete for %s (%d missing blocks); retranslate full page in order",
+                page.image_path,
+                len(missing_blocks),
+            )
             try:
                 translated_blk_list, translated_source_blocks, usage, scene_memory = self._translate_one_page_worker(page)
                 self._handle_successful_page_translation(

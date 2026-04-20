@@ -11,6 +11,12 @@ from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.pipeline_config import font_selected
 from modules.utils.translator_utils import format_translations
+from pipeline.render_state import (
+    build_render_template_map,
+    get_render_template_for_block,
+    set_target_snapshot,
+    update_render_style_overrides,
+)
 
 
 class TextRenderBatchMixin:
@@ -66,49 +72,99 @@ class TextRenderBatchMixin:
 
             viewer_state = state.setdefault("viewer_state", {})
             existing_text_items = list(viewer_state.get("text_items_state", []))
-            existing_uids = {
-                str(item.get("block_uid", ""))
-                for item in existing_text_items
-                if isinstance(item, dict) and item.get("block_uid")
+            block_uids = {
+                str(getattr(blk, "block_uid", "") or "")
+                for blk in blk_list
+                if getattr(blk, "block_uid", "")
             }
-            existing_legacy_keys = {
+            block_legacy_keys = {
                 (
-                    int(item.get("position", (0, 0))[0]),
-                    int(item.get("position", (0, 0))[1]),
-                    float(item.get("rotation", 0)),
+                    int(getattr(blk, "xyxy", [0, 0, 0, 0])[0]),
+                    int(getattr(blk, "xyxy", [0, 0, 0, 0])[1]),
+                    float(getattr(blk, "angle", 0.0) or 0.0),
                 )
-                for item in existing_text_items
-                if isinstance(item, dict) and not item.get("block_uid")
+                for blk in blk_list
+                if not getattr(blk, "block_uid", "")
             }
+            preserved_text_items = []
+            for item in existing_text_items:
+                if not isinstance(item, dict):
+                    continue
+                item_uid = str(item.get("block_uid", "") or "")
+                if item_uid and item_uid in block_uids:
+                    continue
+                if not item_uid:
+                    position = item.get("position", (0, 0))
+                    legacy_key = (
+                        int(position[0]),
+                        int(position[1]),
+                        float(item.get("rotation", 0.0) or 0.0),
+                    )
+                    if legacy_key in block_legacy_keys:
+                        continue
+                preserved_text_items.append(item)
 
+            template_map = build_render_template_map(state, target_lang)
             new_text_items_state = []
             for blk in blk_list:
-                blk_uid = str(getattr(blk, "block_uid", "") or "")
-                blk_key = (int(blk.xyxy[0]), int(blk.xyxy[1]), float(blk.angle))
-                if blk_uid and blk_uid in existing_uids:
-                    continue
-                if not blk_uid and blk_key in existing_legacy_keys:
-                    continue
-
                 x1, y1, block_width, block_height = blk.xywh
                 translation = blk.translation or blk.text
                 if not translation or len(translation) == 1:
                     continue
 
+                template = get_render_template_for_block(template_map, blk)
+                position = template.get("position") or (x1, y1)
+                block_width = float(template.get("width", block_width) or block_width)
+                block_height = float(template.get("height", block_height) or block_height)
+                rotation = template.get("rotation", blk.angle)
+                scale = template.get("scale", 1.0)
+                transform_origin = template.get("transform_origin", blk.tr_origin_point if blk.tr_origin_point else (0, 0))
+                font_family_for_block = template.get("font_family", font_family)
+                line_spacing_for_block = float(template.get("line_spacing", line_spacing))
+                outline_width_for_block = float(template.get("outline_width", outline_width))
+                outline_enabled = bool(template.get("outline", render_settings.outline))
+                template_outline_color = template.get("outline_color", outline_color)
+                if template_outline_color is not None and not isinstance(template_outline_color, QColor):
+                    template_outline_color = QColor(template_outline_color)
+                outline_color_for_block = template_outline_color if outline_enabled else None
+                second_outline_for_block = bool(template.get("second_outline", render_settings.second_outline))
+                second_outline_width_for_block = float(template.get("second_outline_width", render_settings.second_outline_width))
+                template_second_outline_color = template.get("second_outline_color", second_outline_color)
+                if template_second_outline_color is not None and not isinstance(template_second_outline_color, QColor):
+                    template_second_outline_color = QColor(template_second_outline_color)
+                second_outline_color_for_block = template_second_outline_color if second_outline_for_block else None
+                text_gradient_for_block = bool(template.get("text_gradient", render_settings.text_gradient))
+                template_gradient_start = template.get("text_gradient_start_color", gradient_start_color)
+                template_gradient_end = template.get("text_gradient_end_color", gradient_end_color)
+                if template_gradient_start is not None and not isinstance(template_gradient_start, QColor):
+                    template_gradient_start = QColor(template_gradient_start)
+                if template_gradient_end is not None and not isinstance(template_gradient_end, QColor):
+                    template_gradient_end = QColor(template_gradient_end)
+                bold_for_block = bool(template.get("bold", bold))
+                italic_for_block = bool(template.get("italic", italic))
+                underline_for_block = bool(template.get("underline", underline))
+                alignment_for_block = template.get("alignment", alignment)
+                direction_for_block = template.get("direction", direction)
+                template_font_color = template.get("text_color")
+                if template_font_color is not None and not isinstance(template_font_color, QColor):
+                    template_font_color = QColor(template_font_color)
+
                 vertical = is_vertical_block(blk, trg_lng_cd)
-                block_init_font_size = resolve_init_font_size(blk, max_font_size, min_font_size)
+                block_init_font_size = int(
+                    round(template.get("font_size", resolve_init_font_size(blk, max_font_size, min_font_size)))
+                )
                 wrapped, font_size = pyside_word_wrap(
                     translation,
-                    font_family,
+                    font_family_for_block,
                     block_width,
                     block_height,
-                    line_spacing,
-                    outline_width,
-                    bold,
-                    italic,
-                    underline,
-                    alignment,
-                    direction,
+                    line_spacing_for_block,
+                    outline_width_for_block,
+                    bold_for_block,
+                    italic_for_block,
+                    underline_for_block,
+                    alignment_for_block,
+                    direction_for_block,
                     block_init_font_size,
                     min_font_size,
                     vertical,
@@ -116,31 +172,32 @@ class TextRenderBatchMixin:
                 if is_no_space_lang(trg_lng_cd):
                     wrapped = wrapped.replace(" ", "")
 
-                font_color = get_smart_text_color(blk.font_color, setting_font_color)
+                font_color = get_smart_text_color(blk.font_color, template_font_color or setting_font_color)
                 text_props = TextItemProperties(
                     text=wrapped,
                     source_text=translation,
-                    font_family=font_family,
+                    font_family=font_family_for_block,
                     font_size=font_size,
                     text_color=font_color,
-                    alignment=alignment,
-                    line_spacing=line_spacing,
-                    outline_color=outline_color,
-                    outline_width=outline_width,
-                    second_outline=render_settings.second_outline,
-                    second_outline_color=second_outline_color,
-                    second_outline_width=float(render_settings.second_outline_width),
-                    text_gradient=render_settings.text_gradient,
-                    text_gradient_start_color=gradient_start_color,
-                    text_gradient_end_color=gradient_end_color,
-                    bold=bold,
-                    italic=italic,
-                    underline=underline,
-                    direction=direction,
-                    position=(x1, y1),
-                    rotation=blk.angle,
-                    scale=1.0,
-                    transform_origin=blk.tr_origin_point if blk.tr_origin_point else (0, 0),
+                    alignment=alignment_for_block,
+                    line_spacing=line_spacing_for_block,
+                    outline_color=outline_color_for_block,
+                    outline_width=outline_width_for_block,
+                    outline=outline_enabled,
+                    second_outline=second_outline_for_block,
+                    second_outline_color=second_outline_color_for_block,
+                    second_outline_width=second_outline_width_for_block,
+                    text_gradient=text_gradient_for_block,
+                    text_gradient_start_color=template_gradient_start if text_gradient_for_block else None,
+                    text_gradient_end_color=template_gradient_end if text_gradient_for_block else None,
+                    bold=bold_for_block,
+                    italic=italic_for_block,
+                    underline=underline_for_block,
+                    direction=direction_for_block,
+                    position=position,
+                    rotation=rotation,
+                    scale=scale,
+                    transform_origin=transform_origin,
                     width=block_width,
                     height=block_height,
                     vertical=vertical,
@@ -149,10 +206,12 @@ class TextRenderBatchMixin:
                 new_text_items_state.append(text_props.to_dict())
 
             if new_text_items_state:
-                viewer_state["text_items_state"] = existing_text_items + new_text_items_state
+                viewer_state["text_items_state"] = preserved_text_items + new_text_items_state
                 viewer_state["push_to_stack"] = True
                 state["blk_list"] = blk_list
                 state["target_lang"] = target_lang
+                set_target_snapshot(state, target_lang, viewer_state)
+                update_render_style_overrides(state, viewer_state, overwrite=False)
                 pipeline_state = state.setdefault("pipeline_state", {})
                 completed_stages = set(pipeline_state.get("completed_stages", []) or [])
                 completed_stages.add("render")

@@ -123,6 +123,16 @@ class RectItemController:
             new_state.transform_origin,
             getattr(new_state, "block_uid", "") or getattr(old_state, "block_uid", ""),
         )
+        try:
+            if getattr(self.main, "curr_tblock_item", None) is not None:
+                current_file = self.main.text_ctrl._current_file_path()
+                if current_file:
+                    self.main.text_ctrl._sync_current_render_snapshot(
+                        current_file,
+                        update_style_overrides=True,
+                    )
+        except Exception:
+            pass
         self.main.mark_project_dirty()
 
 

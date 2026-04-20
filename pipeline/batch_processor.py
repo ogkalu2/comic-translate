@@ -303,8 +303,11 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
                     self._release_page_buffers(page)
                     translated_pages.append(page)
                     continue
-
-                page._translation_missing_blocks = missing_blocks
+                logger.debug(
+                    "Translation cache incomplete for %s (%d missing blocks); retranslate full page",
+                    page.image_path,
+                    len(missing_blocks),
+                )
 
             translation_queue.append(page)
             if len(translation_queue) >= page_batch_size:

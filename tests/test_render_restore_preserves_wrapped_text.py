@@ -4,9 +4,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import numpy as np
 from PySide6 import QtCore, QtWidgets
-from PySide6.QtGui import QColor, QImage, QPainter
+from PySide6.QtGui import QColor, QImage, QPainter, QTextCursor
 
 from app.ui.canvas.image_viewer import ImageViewer
+from app.ui.canvas.interaction_manager import InteractionManager
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import TextBlockItem
@@ -36,6 +37,13 @@ def _make_props():
         height=40,
         direction=QtCore.Qt.LayoutDirection.LeftToRight,
     )
+
+
+def _first_char_pixel_size(item):
+    cursor = QTextCursor(item.document())
+    cursor.setPosition(0)
+    cursor.setPosition(1, QTextCursor.MoveMode.KeepAnchor)
+    return cursor.charFormat().font().pixelSize()
 
 
 class _FakeFont:
@@ -101,6 +109,216 @@ def test_text_block_item_bounding_rect_includes_descender_overflow():
     paint_rect = item.boundingRect()
 
     assert paint_rect.bottom() > logical_rect.bottom()
+
+
+def test_text_block_item_bounding_rect_includes_tall_logical_frame():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="short",
+        source_text="short",
+        font_family="Arial",
+        font_size=12,
+        outline_color=None,
+    )
+    item.set_font("Arial", 12)
+    item.set_layout_box_size(120, 80)
+
+    logical_rect = item.get_text_box_rect()
+    paint_rect = item.boundingRect()
+
+    assert paint_rect.right() >= logical_rect.right()
+    assert paint_rect.bottom() >= logical_rect.bottom()
+
+
+def test_text_block_item_resize_uses_logical_box_not_paint_overflow():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="g",
+        source_text="g",
+        font_family="Arial",
+        font_size=40,
+        outline_color=QColor("#ffffff"),
+        outline_width=8,
+    )
+    item.set_layout_box_size(40, 40)
+    item.init_resize(QtCore.QPointF(0, 0))
+
+    assert item.resize_start_rect == item.get_text_box_rect()
+    assert item.resize_start_rect.width() == 40
+    assert item.resize_start_rect.height() == 40
+
+
+def test_text_block_item_resize_hover_matches_logical_bottom_border():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="g",
+        source_text="g",
+        font_family="Arial",
+        font_size=40,
+        outline_color=QColor("#ffffff"),
+        outline_width=8,
+    )
+    item.set_layout_box_size(40, 40)
+    manager = InteractionManager(None)
+
+    assert manager.get_resize_handle(item, QtCore.QPointF(20, 49)) == "bottom"
+    assert manager._in_resize_area(item, QtCore.QPointF(20, 49)) is True
+    assert manager.get_resize_handle(item, QtCore.QPointF(20, 59)) is None
+    assert manager._in_resize_area(item, QtCore.QPointF(20, 59)) is False
+
+
+def test_text_block_item_resize_from_top_left_normalizes_frame_and_reflows():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="This is a long text that must wrap and shrink",
+        source_text="This is a long text that must wrap and shrink",
+        font_family="Arial",
+        font_size=40,
+        outline_color=QColor("#ffffff"),
+        outline_width=2,
+    )
+    item.set_layout_box_size(100, 40)
+    item.resize_handle = "top_left"
+    item.init_resize(QtCore.QPointF(0, 0))
+
+    item.resize_item(QtCore.QPointF(20, 10))
+
+    assert item.pos() == QtCore.QPointF(20, 10)
+    assert item.get_text_box_size() == (80.0, 30.0)
+    assert item.resize_start_rect == item.get_text_box_rect()
+    assert item.document().size().width() <= 80.5
+    assert item.document().size().height() <= 30.5
+
+
+def test_text_block_item_resize_width_keeps_frame_height_and_shrinks_font():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="This is a long text that must wrap and shrink",
+        source_text="This is a long text that must wrap and shrink",
+        font_family="Arial",
+        font_size=40,
+        outline_color=QColor("#ffffff"),
+        outline_width=2,
+    )
+    item.set_layout_box_size(100, 40)
+    item.resize_handle = "right"
+    item.init_resize(QtCore.QPointF(100, 20))
+
+    item.resize_item(QtCore.QPointF(60, 20))
+
+    assert item.pos() == QtCore.QPointF(0, 0)
+    assert item.get_text_box_size() == (60.0, 40.0)
+    assert item.font_size < 40
+    assert _first_char_pixel_size(item) == int(round(item.font_size))
+    assert item.document().size().height() <= 40.5
+    assert item.boundingRect().bottom() >= item.get_text_box_rect().bottom()
+
+
+def test_text_block_item_resize_width_can_grow_fitted_font():
+    _ensure_app()
+
+    text = "This is a long text that must wrap and shrink"
+    item = TextBlockItem(
+        text=text,
+        source_text=text,
+        font_family="Arial",
+        font_size=10,
+        outline_color=QColor("#ffffff"),
+        outline_width=2,
+    )
+    item.set_layout_box_size(60, 40)
+    item.reflow_from_source_text(60, 40, max_font_size=10)
+    initial_font_size = item.font_size
+    item.resize_handle = "right"
+    item.init_resize(QtCore.QPointF(60, 20))
+
+    item.resize_item(QtCore.QPointF(160, 20))
+
+    assert item.get_text_box_size() == (160.0, 40.0)
+    assert item.font_size > initial_font_size
+    assert _first_char_pixel_size(item) == int(round(item.font_size))
+    assert item.document().size().height() <= 40.5
+
+
+def test_image_viewer_add_text_item_applies_fitted_font_size_to_document():
+    _ensure_app()
+
+    viewer = ImageViewer(None)
+    text = "This is a long text that must wrap and shrink"
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text=text,
+            source_text=text,
+            font_family="Arial",
+            font_size=40,
+            text_color=QColor("#000000"),
+            outline_color=QColor("#ffffff"),
+            outline_width=2,
+            width=60,
+            height=40,
+        )
+    )
+
+    assert item.font_size < 40
+    assert _first_char_pixel_size(item) == int(round(item.font_size))
+    assert item.document().size().height() <= 40.5
+
+
+def test_text_block_item_set_font_size_uses_pixels():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="BOOM",
+        source_text="BOOM",
+        font_family="Arial",
+        font_size=20,
+        outline_color=None,
+    )
+
+    item.set_font_size(9)
+
+    assert item.font_size == 9
+    assert _first_char_pixel_size(item) == 9
+
+
+def test_text_block_item_plain_text_preserves_layout_width():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="short",
+        source_text="short",
+        font_family="Arial",
+        font_size=20,
+        outline_color=None,
+    )
+    item.set_layout_box_size(80, 40)
+
+    item.set_plain_text(
+        "This is a much longer string",
+        preserve_source_text=True,
+        update_width=False,
+    )
+
+    assert item.textWidth() == 80
+    assert item.get_text_box_size() == (80.0, 40.0)
+
+
+def test_text_block_item_paint_suppresses_default_selection_frame():
+    _ensure_app()
+
+    item = TextBlockItem(text="BOOM", outline_color=None)
+    option = QtWidgets.QStyleOptionGraphicsItem()
+    option.state |= QtWidgets.QStyle.StateFlag.State_Selected
+
+    paint_option = item._paint_option_without_item_selection(option)
+
+    assert option.state & QtWidgets.QStyle.StateFlag.State_Selected
+    assert not (paint_option.state & QtWidgets.QStyle.StateFlag.State_Selected)
 
 
 def test_text_item_properties_preserve_gradient_and_second_outline():

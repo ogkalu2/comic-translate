@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
-     QApplication, QWidget, QStyleOptionGraphicsItem
+     QApplication, QWidget, QStyleOptionGraphicsItem, QStyle
 from PySide6.QtGui import QFont, QCursor, QColor, QFontMetricsF, QBrush, QLinearGradient, QPen, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QPainter
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF, QSizeF
@@ -203,7 +203,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.update()
 
     def setCenterTransform(self):
-        center = self.boundingRect().center()
+        center = self.get_text_box_rect().center()
         self.setTransformOriginPoint(center)
 
     def on_document_enlarged(self):
@@ -233,16 +233,25 @@ class TextBlockItem(QGraphicsTextItem):
         if not preserve_source_text:
             self.source_text = text
         self.setPlainText(text)
-        self.apply_all_attributes()
+        self.apply_all_attributes(update_width=update_width)
 
     def set_source_text(self, text: str):
         self.source_text = text or ""
 
     def set_layout_box_size(self, width: float | None = None, height: float | None = None):
+        new_width = self._layout_box_width
+        new_height = self._layout_box_height
         if width is not None and width > 0:
-            self._layout_box_width = float(width)
+            new_width = float(width)
         if height is not None and height > 0:
-            self._layout_box_height = float(height)
+            new_height = float(height)
+
+        changed = self._layout_box_width != new_width or self._layout_box_height != new_height
+        if changed:
+            self.prepareGeometryChange()
+
+        self._layout_box_width = new_width
+        self._layout_box_height = new_height
 
         if self.vertical:
             if self.layout:
@@ -252,6 +261,9 @@ class TextBlockItem(QGraphicsTextItem):
         elif self._layout_box_width is not None and self._layout_box_width > 0:
             self.setTextWidth(self._layout_box_width)
 
+        if changed:
+            self.setCenterTransform()
+
     def get_text_box_size(self):
         if self._layout_box_width is not None and self._layout_box_width > 0:
             width = self._layout_box_width
@@ -260,14 +272,14 @@ class TextBlockItem(QGraphicsTextItem):
         if width is None or width <= 0:
             width = self.document().size().width()
         if width is None or width <= 0:
-            width = self.boundingRect().width()
+            width = super().boundingRect().width()
 
         if self._layout_box_height is not None and self._layout_box_height > 0:
             height = self._layout_box_height
         else:
             height = self.document().size().height()
         if height is None or height <= 0:
-            height = self.boundingRect().height()
+            height = super().boundingRect().height()
 
         return float(width), float(height)
 
@@ -287,7 +299,7 @@ class TextBlockItem(QGraphicsTextItem):
         return max(1.0, descent, outline, second_outline)
 
     def boundingRect(self):
-        rect = super().boundingRect()
+        rect = super().boundingRect().united(self.get_text_box_rect())
         margin = self._paint_overflow_margin()
         return rect.adjusted(-margin, -margin, margin, margin)
 
@@ -334,6 +346,47 @@ class TextBlockItem(QGraphicsTextItem):
             char_format.setFont(font)
             cursor.mergeCharFormat(char_format)
         cursor.endEditBlock()
+
+    def _effective_font_family(self, font_family: str | None = None) -> str:
+        if isinstance(font_family, str) and font_family.strip():
+            return font_family.strip()
+        if isinstance(self.font_family, str) and self.font_family.strip():
+            return self.font_family.strip()
+        return QApplication.font().family()
+
+    def _apply_document_font(
+        self,
+        font_family: str | None = None,
+        font_size: float | None = None,
+    ):
+        text = self.toPlainText()
+        effective_family = self._effective_font_family(font_family)
+        effective_size = max(
+            1,
+            int(round(font_size if font_size is not None else self.font_size)),
+        )
+
+        font = self.document().defaultFont()
+        font.setFamily(effective_family)
+        font.setPixelSize(effective_size)
+        font.setBold(self.bold)
+        font.setItalic(self.italic)
+        font.setUnderline(self.underline)
+        self.document().setDefaultFont(font)
+
+        if not text:
+            return
+
+        cursor = QTextCursor(self.document())
+        cursor.beginEditBlock()
+        cursor.select(QTextCursor.SelectionType.Document)
+        char_format = QTextCharFormat()
+        char_format.setFont(font)
+        cursor.mergeCharFormat(char_format)
+        cursor.clearSelection()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.endEditBlock()
+        self.setTextCursor(cursor)
 
     def _capture_character_formats(self) -> list[QTextCharFormat]:
         text = self.toPlainText()
@@ -441,11 +494,7 @@ class TextBlockItem(QGraphicsTextItem):
             self._suspend_text_changed = False
 
         self.font_size = new_font_size
-        default_font = self.document().defaultFont()
-        effective_family = self.font_family.strip() if isinstance(self.font_family, str) and self.font_family.strip() else QApplication.font().family()
-        default_font.setFamily(effective_family)
-        default_font.setPixelSize(max(1, int(round(new_font_size))))
-        self.document().setDefaultFont(default_font)
+        self._apply_document_font(font_size=new_font_size)
 
         self.set_layout_box_size(width, height)
         self.set_line_spacing(self.line_spacing)
@@ -470,7 +519,7 @@ class TextBlockItem(QGraphicsTextItem):
         font_size = max(1, font_size)
 
         # Fallback to application default font family if none provided
-        effective_family = font_family.strip() if isinstance(font_family, str) and font_family.strip() else QApplication.font().family()
+        effective_family = self._effective_font_family(font_family)
 
         if not has_selection:
             self.font_family = effective_family
@@ -484,19 +533,22 @@ class TextBlockItem(QGraphicsTextItem):
                 font_size,
             )
         else:
-            self._apply_font_change_to_range(0, len(self.toPlainText()), effective_family, font_size)
-
-        default_font = self.document().defaultFont()
-        default_font.setFamily(effective_family)
-        default_font.setPixelSize(font_size)
-        self.document().setDefaultFont(default_font)
+            self._apply_document_font(effective_family, font_size)
         self.update()
 
     def set_font_size(self, font_size):
         font_size = max(1, font_size)
-        if not self.textCursor().hasSelection():
+        cursor = self.textCursor()
+        if cursor.hasSelection():
+            self._apply_font_change_to_range(
+                cursor.selectionStart(),
+                cursor.selectionEnd(),
+                font_size=font_size,
+            )
+        else:
             self.font_size = font_size
-        self.update_text_format('size', font_size)
+            self._apply_document_font(font_size=font_size)
+        self.update()
 
     def update_text_width(self):
         width = self.document().size().width()
@@ -535,18 +587,22 @@ class TextBlockItem(QGraphicsTextItem):
         format_operations = {
             'color': lambda cf, v: cf.setForeground(v),
             'font': lambda cf, v: cf.setFont(v),
-            'size': lambda cf, v: cf.setFontPointSize(v),
             'bold': lambda cf, v: cf.setFontWeight(QFont.Bold if v else QFont.Normal),
             'italic': lambda cf, v: cf.setFontItalic(v),
             'underline': lambda cf, v: cf.setFontUnderline(v),
         }
 
-        if attribute not in format_operations:
+        if attribute == 'size':
+            font = self.document().defaultFont()
+            font.setPixelSize(max(1, int(round(value))))
+            char_format = QTextCharFormat()
+            char_format.setFont(font)
+        elif attribute in format_operations:
+            char_format = QTextCharFormat()
+            format_operations[attribute](char_format, value)
+        else:
             print(f"Unsupported attribute: {attribute}")
             return
-
-        char_format = QTextCharFormat()
-        format_operations[attribute](char_format, value)
 
         if not has_selection:
             cursor.select(QTextCursor.SelectionType.Document)    
@@ -561,7 +617,7 @@ class TextBlockItem(QGraphicsTextItem):
             self.document().setDefaultFont(value)
         elif attribute == 'size':
             font = self.document().defaultFont()
-            font.setPointSize(value)
+            font.setPixelSize(max(1, int(round(value))))
             self.document().setDefaultFont(font)
         
         # Clear the selection by moving the cursor to the end of the document
@@ -770,12 +826,22 @@ class TextBlockItem(QGraphicsTextItem):
         painter.drawRect(self.get_text_box_rect())
         painter.restore()
 
+    def _paint_option_without_item_selection(
+        self,
+        option: QStyleOptionGraphicsItem,
+    ) -> QStyleOptionGraphicsItem:
+        clean_option = QStyleOptionGraphicsItem(option)
+        clean_option.state &= ~QStyle.StateFlag.State_Selected
+        return clean_option
+
     def paint(   
         self, 
         painter: QPainter, 
         option: QStyleOptionGraphicsItem, 
         widget: QWidget = None
     ):
+        paint_option = self._paint_option_without_item_selection(option)
+
         # Then handle any selection outlines
         if self.selection_outlines:
             doc = self.document().clone()
@@ -833,7 +899,7 @@ class TextBlockItem(QGraphicsTextItem):
         if self.text_gradient:
             self._draw_gradient_text(painter)
         else:
-            super().paint(painter, option, widget)
+            super().paint(painter, paint_option, widget)
 
         self._draw_selection_bounds(painter)
 
@@ -852,7 +918,7 @@ class TextBlockItem(QGraphicsTextItem):
             self.underline = state
         self.update_text_format('underline', state)
 
-    def apply_all_attributes(self):
+    def apply_all_attributes(self, update_width: bool = True):
         self.set_font(self.font_family, self.font_size)
         self.set_color(self.text_color)
         self.set_outline(self.outline_color, self.outline_width)
@@ -860,7 +926,10 @@ class TextBlockItem(QGraphicsTextItem):
         self.set_italic(self.italic)
         self.set_underline(self.underline)
         self.set_line_spacing(self.line_spacing)
-        self.update_text_width()
+        if update_width and not self._layout_box_width:
+            self.update_text_width()
+        elif self._layout_box_width:
+            self.setTextWidth(self._layout_box_width)
         self.set_alignment(self.alignment)
 
     def mouseDoubleClickEvent(self, event):
@@ -1053,14 +1122,14 @@ class TextBlockItem(QGraphicsTextItem):
     def init_resize(self, scene_pos: QPointF):
         self.resizing = True
         self.resize_start = scene_pos
-        current_rect = self.boundingRect()
+        current_rect = self.get_text_box_rect()
         if current_rect.isEmpty():
-            current_rect = self.get_text_box_rect()
+            current_rect = self.boundingRect()
         self.resize_start_rect = QRectF(current_rect)
 
     def init_rotation(self, scene_pos):
         self.rotating = True
-        center = self.boundingRect().center()
+        center = self.get_text_box_rect().center()
         self.center_scene_pos = self.mapToScene(center)
         self.last_rotation_angle = math.degrees(math.atan2(
             scene_pos.y() - self.center_scene_pos.y(),
@@ -1072,7 +1141,7 @@ class TextBlockItem(QGraphicsTextItem):
         new_pos = self.pos() + delta
         
         # Calculate the bounding rect of the rotated rectangle in scene coordinates
-        scene_rect = self.mapToScene(self.boundingRect())
+        scene_rect = self.mapToScene(self.get_text_box_rect())
         bounding_rect = scene_rect.boundingRect()
         
         # Get constraint bounds
@@ -1097,7 +1166,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.setPos(new_pos)
 
     def rotate_item(self, scene_pos):
-        self.setTransformOriginPoint(self.boundingRect().center())
+        self.setTransformOriginPoint(self.get_text_box_rect().center())
         current_angle = math.degrees(math.atan2(
             scene_pos.y() - self.center_scene_pos.y(),
             scene_pos.x() - self.center_scene_pos.x()
@@ -1117,7 +1186,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.last_rotation_angle = current_angle
 
     def resize_item(self, scene_pos: QPointF):
-        if not self.resize_start:
+        if self.resize_start is None:
             return
 
         # Calculate delta from start position in scene coordinates
@@ -1178,7 +1247,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.setPos(new_pos)
         self.set_layout_box_size(new_rect.width(), new_rect.height())
         self.reflow_from_source_text(new_rect.width(), new_rect.height())
-        self.resize_start_rect = QRectF(new_rect)
+        self.resize_start_rect = QRectF(self.get_text_box_rect())
 
         self.resize_start = scene_pos
 
