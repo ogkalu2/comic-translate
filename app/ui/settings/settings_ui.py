@@ -69,6 +69,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         ]
         
         self.supported_translators = [
+            self.tr("LM Studio"),
+            self.tr("Local vLLM"),
             self.tr("Gemini-3.0-Flash"),
             self.tr("GPT-4.1"),
             self.tr("GPT-4.1-mini"),
@@ -111,6 +113,8 @@ class SettingsPageUI(QtWidgets.QWidget):
 
             # Translator mappings
             self.tr("Custom"): "Custom",
+            self.tr("LM Studio"): "LM Studio",
+            self.tr("Local vLLM"): "Local vLLM",
             self.tr("Deepseek-v3"): "Deepseek-v3",
             self.tr("GPT-4.1"): "GPT-4.1",
             self.tr("GPT-4.1-mini"): "GPT-4.1-mini",
@@ -204,6 +208,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         # Tools
         self.translator_combo = self.tools_page.translator_combo
         self.ocr_combo = self.tools_page.ocr_combo
+        self.hunyuanocr_backend_combo = self.tools_page.hunyuanocr_backend_combo
         self.detector_combo = self.tools_page.detector_combo
         self.inpainter_combo = self.tools_page.inpainter_combo
         self.inpaint_strategy_combo = self.tools_page.inpaint_strategy_combo
@@ -219,6 +224,10 @@ class SettingsPageUI(QtWidgets.QWidget):
         # LLMs
         self.image_checkbox = self.llms_page.image_checkbox
         self.extra_context = self.llms_page.extra_context
+        self.previous_page_context_checkbox = self.llms_page.previous_page_context_checkbox
+        self.scene_memory_checkbox = self.llms_page.scene_memory_checkbox
+        self.interpret_then_translate_checkbox = self.llms_page.interpret_then_translate_checkbox
+        self.previous_page_lines_spinbox = self.llms_page.previous_page_lines_spinbox
 
         # Text rendering
         self.min_font_spinbox = self.text_rendering_page.min_font_spinbox

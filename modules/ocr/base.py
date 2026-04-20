@@ -54,18 +54,6 @@ class OCREngine(ABC):
         )
 
     @staticmethod
-    def set_source_language(blk_list: list[TextBlock], lang_code: str) -> None:
-        """
-        Set source language code for all text blocks.
-        
-        Args:
-            blk_list: List of TextBlock objects
-            lang_code: Language code to set for source language
-        """
-        # Source language is no longer persisted on blocks.
-        return
-
-    @staticmethod
     def encode_image(image: np.ndarray, ext: str = '.jpg') -> str:
         """
         Encode an image as base64 string.

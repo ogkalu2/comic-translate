@@ -107,6 +107,7 @@ class SettingsPage(QtWidgets.QWidget):
         tool_combos = {
             'translator': self.ui.translator_combo,
             'ocr': self.ui.ocr_combo,
+            'hunyuanocr_backend': self.ui.hunyuanocr_backend_combo,
             'inpainter': self.ui.inpainter_combo,
             'detector': self.ui.detector_combo
         }
@@ -118,9 +119,17 @@ class SettingsPage(QtWidgets.QWidget):
         return self.ui.use_gpu_checkbox.isChecked()
 
     def get_llm_settings(self):
+        use_page_image_context = self.ui.image_checkbox.isChecked()
+        previous_page_lines = max(1, int(self.ui.previous_page_lines_spinbox.value()))
         return {
             'extra_context': self.ui.extra_context.toPlainText(),
-            'image_input_enabled': self.ui.image_checkbox.isChecked(),
+            'image_input_enabled': use_page_image_context,
+            'use_page_image_context': use_page_image_context,
+            'use_previous_page_context': self.ui.previous_page_context_checkbox.isChecked(),
+            'use_scene_memory': self.ui.scene_memory_checkbox.isChecked(),
+            'interpret_then_translate': self.ui.interpret_then_translate_checkbox.isChecked(),
+            'previous_page_lines': previous_page_lines,
+            'context_tail_turns': previous_page_lines,
         }
 
     def get_batch_settings(self):
@@ -202,6 +211,7 @@ class SettingsPage(QtWidgets.QWidget):
             'tools': {
                 'translator': self.get_tool_selection('translator'),
                 'ocr': self.get_tool_selection('ocr'),
+                'hunyuanocr_backend': self.get_tool_selection('hunyuanocr_backend'),
                 'detector': self.get_tool_selection('detector'),
                 'inpainter': self.get_tool_selection('inpainter'),
                 'use_gpu': self.is_gpu_enabled(),
@@ -332,6 +342,16 @@ class SettingsPage(QtWidgets.QWidget):
         else:
             self.ui.ocr_combo.setCurrentIndex(-1)
 
+        hunyuanocr_backend = settings.value('hunyuanocr_backend', 'Local vLLM')
+        translated_hunyuanocr_backend = self.ui.reverse_mappings.get(
+            hunyuanocr_backend,
+            hunyuanocr_backend,
+        )
+        if self.ui.hunyuanocr_backend_combo.findText(translated_hunyuanocr_backend) != -1:
+            self.ui.hunyuanocr_backend_combo.setCurrentText(translated_hunyuanocr_backend)
+        else:
+            self.ui.hunyuanocr_backend_combo.setCurrentIndex(0)
+
         inpainter = settings.value('inpainter', 'AOT')
         translated_inpainter = self.ui.reverse_mappings.get(inpainter, inpainter)
         if self.ui.inpainter_combo.findText(translated_inpainter) != -1:
@@ -381,6 +401,25 @@ class SettingsPage(QtWidgets.QWidget):
         settings.beginGroup('llm')
         self.ui.extra_context.setPlainText(settings.value('extra_context', ''))
         self.ui.image_checkbox.setChecked(settings.value('image_input_enabled', False, type=bool))
+        self.ui.previous_page_context_checkbox.setChecked(
+            settings.value('use_previous_page_context', False, type=bool)
+        )
+        self.ui.scene_memory_checkbox.setChecked(
+            settings.value('use_scene_memory', False, type=bool)
+        )
+        self.ui.interpret_then_translate_checkbox.setChecked(
+            settings.value('interpret_then_translate', False, type=bool)
+        )
+        self.ui.previous_page_lines_spinbox.setValue(
+            max(
+                1,
+                settings.value(
+                    'previous_page_lines',
+                    settings.value('context_tail_turns', 6, type=int),
+                    type=int,
+                ),
+            )
+        )
         settings.endGroup()
 
         # Load export settings

@@ -29,6 +29,14 @@ class ToolsPage(QtWidgets.QWidget):
 
         ocr_widget, self.ocr_combo = create_title_and_combo(self.tr("Text Recognition"), self.ocr_engines, h4=True)
         set_combo_box_width(self.ocr_combo, self.ocr_engines)
+        self.hunyuanocr_backends = [self.tr("Local vLLM"), self.tr("LM Studio")]
+        self.hunyuanocr_backend_widget, self.hunyuanocr_backend_combo = create_title_and_combo(
+            self.tr("HunyuanOCR Backend"),
+            self.hunyuanocr_backends,
+            h4=False,
+        )
+        set_combo_box_width(self.hunyuanocr_backend_combo, self.hunyuanocr_backends)
+        self.hunyuanocr_backend_combo.setCurrentText(self.tr("Local vLLM"))
 
         detector_widget, self.detector_combo = create_title_and_combo(self.tr("Text Detector"), self.detectors, h4=True)
         set_combo_box_width(self.detector_combo, self.detectors)
@@ -99,6 +107,7 @@ class ToolsPage(QtWidgets.QWidget):
         self.resize_widget.show()
         self.crop_widget.hide()
         self.inpaint_strategy_combo.currentIndexChanged.connect(self._update_hd_strategy_widgets)
+        self.ocr_combo.currentIndexChanged.connect(self._update_hunyuanocr_backend_widget)
 
 
         self.use_gpu_checkbox = MCheckBox(self.tr("Use GPU"))
@@ -111,6 +120,7 @@ class ToolsPage(QtWidgets.QWidget):
         layout.addWidget(detector_widget)
         layout.addSpacing(10)
         layout.addWidget(ocr_widget)
+        layout.addWidget(self.hunyuanocr_backend_widget)
         layout.addSpacing(10)
         layout.addWidget(inpainting_label)
         layout.addWidget(inpainter_widget)
@@ -121,6 +131,7 @@ class ToolsPage(QtWidgets.QWidget):
         layout.addStretch(1)
 
         self._update_hd_strategy_widgets(self.inpaint_strategy_combo.currentIndex())
+        self._update_hunyuanocr_backend_widget(self.ocr_combo.currentIndex())
 
     def _update_hd_strategy_widgets(self, index: int):
         strategy = self.inpaint_strategy_combo.itemText(index)
@@ -130,3 +141,9 @@ class ToolsPage(QtWidgets.QWidget):
             self.hd_strategy_widgets.setFixedHeight(0)
         else:
             self.hd_strategy_widgets.setFixedHeight(self.hd_strategy_widgets.sizeHint().height())
+
+    def _update_hunyuanocr_backend_widget(self, index: int):
+        ocr_tool = self.ocr_combo.itemText(index)
+        self.hunyuanocr_backend_widget.setVisible(
+            ocr_tool == self.tr("Tencent/HunyuanOCR")
+        )

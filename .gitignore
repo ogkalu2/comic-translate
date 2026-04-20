@@ -18,6 +18,5 @@ venv/
 pyproject.toml
 uv.lock
 
-# Test files
-test_*.py
+# Test/demo artifacts
 demo_*.py

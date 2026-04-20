@@ -10,7 +10,7 @@ class CacheManager:
     """Manages OCR and translation caching for the pipeline."""
 
     def __init__(self):
-        self.ocr_cache = {}  # OCR results cache: {(image_hash, model_key, device): {block_id: text}}
+        self.ocr_cache = {}  # OCR results cache: {(image_hash, model_key, source_lang, device): {block_id: text}}
         self.translation_cache = {}  # Translation results cache: {(image_hash, translator_key, target_lang, extra_context): {block_id: {source_text: str, translation: str}}}
         self.inpaint_cache = {}  # Inpainting results cache: {(image_hash, inpainter_key): inpainted_image}
 
@@ -151,9 +151,12 @@ class CacheManager:
             cache_key = tuple(cache_key)
         if not isinstance(cache_key, tuple):
             return cache_key
+        if len(cache_key) == 3:
+            image_hash, ocr_model, device = cache_key
+            return (image_hash, ocr_model, "", device)
         if len(cache_key) == 4:
-            image_hash, ocr_model, _source_lang, device = cache_key
-            return (image_hash, ocr_model, device)
+            image_hash, ocr_model, source_lang, device = cache_key
+            return (image_hash, ocr_model, source_lang or "", device)
         return cache_key
 
     def _normalize_translation_cache_key(self, cache_key):
@@ -171,9 +174,7 @@ class CacheManager:
         image_hash = self._generate_image_hash(image)
         if device is None:
             device = "unknown"
-        # `source_lang` is kept in the signature for backward compatibility,
-        # but it no longer participates in the cache identity.
-        return (image_hash, ocr_model, device)
+        return (image_hash, ocr_model, source_lang or "", device)
 
     def _get_block_id(self, block):
         """Generate a unique identifier for a text block."""

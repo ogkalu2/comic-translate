@@ -19,11 +19,48 @@ from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.pipeline_config import get_config
 from modules.utils.textblock import sort_blk_list
 from modules.utils.translator_utils import sanitize_translation_source_blocks
+from pipeline.translation_context import (
+    build_translation_prompt_context,
+    store_page_translation_context,
+    translation_context_requires_ordering,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class BatchExecutionMixin:
+    def _get_llm_settings(self) -> dict:
+        try:
+            return dict(self.main_page.settings_page.get_llm_settings() or {})
+        except Exception:
+            return {}
+
+    def _translation_context_requires_ordering(self) -> bool:
+        return translation_context_requires_ordering(self._get_llm_settings())
+
+    def _ensure_page_translation_context(self, page: PreparedBatchPage) -> tuple[str, str]:
+        prompt_context = getattr(page, "translation_prompt_context", None)
+        context_signature = getattr(page, "translation_context_signature", None)
+        if prompt_context is not None and context_signature:
+            return prompt_context, context_signature
+
+        prompt_context, context_signature = build_translation_prompt_context(
+            self.main_page,
+            page.image_path,
+            page.target_lang,
+            llm_settings=self._get_llm_settings(),
+        )
+        page.translation_prompt_context = prompt_context
+        page.translation_context_signature = context_signature
+        return prompt_context, context_signature
+
+    def _get_translation_max_workers(self, prepared_pages: list[PreparedBatchPage]) -> int:
+        requested = min(32, len(prepared_pages))
+        if self._translation_context_requires_ordering():
+            return 1
+
+        return requested
+
     @staticmethod
     def _is_recoverable_translation_error(exc: Exception) -> bool:
         if isinstance(exc, (json.JSONDecodeError, ValueError)):
@@ -76,7 +113,8 @@ class BatchExecutionMixin:
                 extra_context,
             )
             usage = getattr(translator.engine, "last_usage", None)
-            return translated_blk_list, usage
+            scene_memory = getattr(translator.engine, "last_scene_memory", None)
+            return translated_blk_list, usage, False, scene_memory
         except InsufficientCreditsException:
             raise
         except Exception as exc:
@@ -94,13 +132,13 @@ class BatchExecutionMixin:
             for block_chunk in (blocks_to_translate[:midpoint], blocks_to_translate[midpoint:]):
                 if not block_chunk:
                     continue
-                _translated_chunk, chunk_usage = self._translate_blocks_resiliently(
+                _translated_chunk, chunk_usage, _used_chunk_fallback, _scene_memory = self._translate_blocks_resiliently(
                     page,
                     block_chunk,
                     extra_context,
                 )
                 usage_items.append(chunk_usage)
-            return blocks_to_translate, self._merge_usage_stats(usage_items)
+            return blocks_to_translate, self._merge_usage_stats(usage_items), True, None
 
     def _load_page_state_into_blk_list(self, page: PreparedBatchPage):
         ensure_path_materialized(page.image_path)
@@ -131,8 +169,13 @@ class BatchExecutionMixin:
     def _get_ocr_cache_key_for_page(self, page: PreparedBatchPage):
         settings_page = self.main_page.settings_page
         ocr_model = settings_page.get_tool_selection("ocr")
+        ocr_language_hint = (
+            self.main_page.get_ocr_language_hint()
+            if hasattr(self.main_page, "get_ocr_language_hint")
+            else ""
+        )
         device = resolve_device(settings_page.is_gpu_enabled())
-        return self.cache_manager._get_ocr_cache_key(page.image, "", ocr_model, device)
+        return self.cache_manager._get_ocr_cache_key(page.image, ocr_language_hint, ocr_model, device)
 
     def _handle_ocr_failure(self, page: PreparedBatchPage, exc: Exception):
         lowered_error = str(exc).lower()
@@ -181,7 +224,12 @@ class BatchExecutionMixin:
         )
 
     def _run_page_ocr_fallback(self, page: PreparedBatchPage) -> bool:
-        self.ocr_handler.ocr.initialize(self.main_page, "")
+        ocr_language_hint = (
+            self.main_page.get_ocr_language_hint()
+            if hasattr(self.main_page, "get_ocr_language_hint")
+            else ""
+        )
+        self.ocr_handler.ocr.initialize(self.main_page, ocr_language_hint)
         try:
             self.ocr_handler.ocr.process(page.image, page.blk_list)
             self._cache_ocr_results_for_page(page.ocr_cache_key, page)
@@ -199,13 +247,18 @@ class BatchExecutionMixin:
         batch_size: int,
     ) -> list[PreparedBatchPage]:
         completed_pages: list[PreparedBatchPage] = []
+        ocr_language_hint = (
+            self.main_page.get_ocr_language_hint()
+            if hasattr(self.main_page, "get_ocr_language_hint")
+            else ""
+        )
         page_blocks_to_process = [
             getattr(page, "_ocr_missing_blocks", page.blk_list)
             for page in pages
         ]
         try:
             processed_blk_lists = self.ocr_handler.ocr.process_page_block_batches(
-                [(page.image, missing_blocks, "") for page, missing_blocks in zip(pages, page_blocks_to_process)],
+                [(page.image, missing_blocks, ocr_language_hint) for page, missing_blocks in zip(pages, page_blocks_to_process)],
                 batch_size=batch_size,
                 main_page=self.main_page,
             )
@@ -485,16 +538,98 @@ class BatchExecutionMixin:
         return finalized_pages
 
     def _translate_one_page_worker(self, page: PreparedBatchPage):
-        settings_page = self.main_page.settings_page
-        extra_context = settings_page.get_llm_settings()["extra_context"]
+        prompt_context, _context_signature = self._ensure_page_translation_context(page)
+        if getattr(page, "translation_cache_key", None) is None:
+            self._build_page_translation_cache_key(page)
         blocks_to_translate = getattr(page, "_translation_missing_blocks", page.blk_list)
         sanitize_translation_source_blocks(page.blk_list)
-        translated_blk_list, usage = self._translate_blocks_resiliently(
+        translated_blk_list, usage, used_chunk_fallback, scene_memory = self._translate_blocks_resiliently(
             page,
             blocks_to_translate,
-            extra_context,
+            prompt_context,
         )
-        return translated_blk_list, blocks_to_translate, usage
+        if not self._covers_full_page_blocks(page, blocks_to_translate) or used_chunk_fallback:
+            scene_memory = ""
+        return translated_blk_list, blocks_to_translate, usage, scene_memory
+
+    def _covers_full_page_blocks(self, page: PreparedBatchPage, blocks_to_translate: list) -> bool:
+        page_blocks = list(page.blk_list or [])
+        candidate_blocks = list(blocks_to_translate or [])
+        return (
+            len(page_blocks) == len(candidate_blocks)
+            and all(candidate is original for candidate, original in zip(candidate_blocks, page_blocks))
+        )
+
+    def _build_page_translation_cache_key(self, page: PreparedBatchPage):
+        _prompt_context, context_signature = self._ensure_page_translation_context(page)
+        translator_key = self.main_page.settings_page.get_tool_selection("translator")
+        page.translation_cache_key = self.cache_manager._get_translation_cache_key(
+            page.image,
+            "",
+            page.target_lang,
+            translator_key,
+            context_signature,
+        )
+        return page.translation_cache_key
+
+    def _store_page_translation_context(self, page: PreparedBatchPage, scene_memory: str = "") -> None:
+        store_page_translation_context(
+            self.main_page.image_states,
+            page.image_path,
+            page.target_lang,
+            page.blk_list,
+            scene_memory=scene_memory or "",
+            llm_settings=self._get_llm_settings(),
+        )
+
+    def _handle_successful_page_translation(
+        self,
+        page: PreparedBatchPage,
+        translated_blk_list: list,
+        translated_source_blocks: list,
+        usage: dict | None,
+        scene_memory: str,
+        total_images: int,
+    ) -> None:
+        self._merge_translated_blocks(
+            page,
+            translated_source_blocks,
+            translated_blk_list,
+        )
+        self.emit_progress(page.index, total_images, 7, 10, False)
+
+        if usage:
+            logger.debug(
+                "TOKENS | prompt=%s completion=%s total=%s | image=%s",
+                usage.get("prompt_tokens"),
+                usage.get("completion_tokens"),
+                usage.get("total_tokens"),
+                page.image_path,
+            )
+
+        translation_blocks = getattr(page, "_translation_missing_blocks", page.blk_list)
+        self.cache_manager._cache_translation_results(
+            page.translation_cache_key,
+            translation_blocks,
+            translated_blk_list,
+        )
+        if hasattr(page, "_translation_missing_blocks"):
+            delattr(page, "_translation_missing_blocks")
+        self._store_page_translation_context(page, scene_memory)
+
+    def _handle_failed_page_translation(self, page: PreparedBatchPage, exc: Exception) -> None:
+        err_msg = str(exc)
+        logger.exception("Translation failed for %s: %s", page.image_path, err_msg)
+        self.skip_save(
+            page.directory,
+            page.timestamp,
+            page.base_name,
+            page.extension,
+            page.archive_bname,
+            page.image,
+        )
+        self.main_page.image_skipped.emit(page.image_path, "Translator", err_msg)
+        page.translation_failed = True
 
     def _merge_translated_blocks(
         self,
@@ -515,7 +650,7 @@ class BatchExecutionMixin:
         for original_blk, translated_blk in zip(original_blocks, translated_blocks or []):
             if translated_blk is original_blk:
                 continue
-            for attr in ("translation", "text", "source_lang"):
+            for attr in ("translation", "text"):
                 if hasattr(translated_blk, attr):
                     setattr(original_blk, attr, getattr(translated_blk, attr))
 
@@ -528,7 +663,7 @@ class BatchExecutionMixin:
             return
 
         future_to_page = {}
-        max_workers = min(32, len(prepared_pages))
+        max_workers = self._get_translation_max_workers(prepared_pages)
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             for page in prepared_pages:
@@ -542,46 +677,58 @@ class BatchExecutionMixin:
                 page = future_to_page[future]
 
                 try:
-                    translated_blk_list, translated_source_blocks, usage = future.result()
-                    self._merge_translated_blocks(
+                    translated_blk_list, translated_source_blocks, usage, scene_memory = future.result()
+                    self._handle_successful_page_translation(
                         page,
+                        translated_blk_list,
                         translated_source_blocks,
-                        translated_blk_list,
+                        usage,
+                        scene_memory,
+                        total_images,
                     )
-                    self.emit_progress(page.index, total_images, 7, 10, False)
-
-                    if usage:
-                        logger.debug(
-                            "TOKENS | prompt=%s completion=%s total=%s | image=%s",
-                            usage.get("prompt_tokens"),
-                            usage.get("completion_tokens"),
-                            usage.get("total_tokens"),
-                            page.image_path,
-                        )
-
-                    translation_blocks = getattr(page, "_translation_missing_blocks", page.blk_list)
-                    self.cache_manager._cache_translation_results(
-                        page.translation_cache_key,
-                        translation_blocks,
-                        translated_blk_list,
-                    )
-                    if hasattr(page, "_translation_missing_blocks"):
-                        delattr(page, "_translation_missing_blocks")
                 except InsufficientCreditsException:
                     raise
                 except Exception as exc:
-                    err_msg = str(exc)
-                    logger.exception("Translation failed for %s: %s", page.image_path, err_msg)
-                    self.skip_save(
-                        page.directory,
-                        page.timestamp,
-                        page.base_name,
-                        page.extension,
-                        page.archive_bname,
-                        page.image,
-                    )
-                    self.main_page.image_skipped.emit(page.image_path, "Translator", err_msg)
-                    page.translation_failed = True
+                    self._handle_failed_page_translation(page, exc)
+
+    def _translate_pages_in_order(
+        self,
+        prepared_pages: list[PreparedBatchPage],
+        total_images: int,
+    ) -> None:
+        for page in sorted(prepared_pages, key=lambda item: item.index):
+            if self._is_cancelled():
+                return
+
+            self._build_page_translation_cache_key(page)
+            self.cache_manager._apply_cached_translations_to_blocks(
+                page.translation_cache_key,
+                page.blk_list,
+            )
+            missing_blocks = self.cache_manager._get_missing_translation_blocks(
+                page.translation_cache_key,
+                page.blk_list,
+            )
+            if not missing_blocks:
+                self.emit_progress(page.index, total_images, 7, 10, False)
+                self._store_page_translation_context(page)
+                continue
+
+            page._translation_missing_blocks = missing_blocks
+            try:
+                translated_blk_list, translated_source_blocks, usage, scene_memory = self._translate_one_page_worker(page)
+                self._handle_successful_page_translation(
+                    page,
+                    translated_blk_list,
+                    translated_source_blocks,
+                    usage,
+                    scene_memory,
+                    total_images,
+                )
+            except InsufficientCreditsException:
+                raise
+            except Exception as exc:
+                self._handle_failed_page_translation(page, exc)
 
     def _release_page_buffers(self, page: PreparedBatchPage, release_blk_list: bool = False):
         page.image = None
@@ -600,7 +747,10 @@ class BatchExecutionMixin:
         if not translation_queue:
             return []
 
-        self._translate_prepared_pages(translation_queue, total_images)
+        if self._translation_context_requires_ordering():
+            self._translate_pages_in_order(translation_queue, total_images)
+        else:
+            self._translate_prepared_pages(translation_queue, total_images)
         completed_pages: list[PreparedBatchPage] = []
         for page in sorted(translation_queue, key=lambda item: item.index):
             self._release_page_buffers(page)

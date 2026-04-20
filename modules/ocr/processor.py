@@ -32,6 +32,10 @@ class OCRProcessor:
         """
         self.main_page = main_page
         self.settings = main_page.settings_page
+        if not source_lang and self.main_page is not None:
+            get_hint = getattr(self.main_page, "get_ocr_language_hint", None)
+            if callable(get_hint):
+                source_lang = get_hint() or ""
         self.source_lang = source_lang or ""
         self.source_lang_english = self._get_english_lang(source_lang) if source_lang else ""
         self.ocr_key = self._get_ocr_key(self.settings.get_tool_selection('ocr'))
@@ -60,6 +64,26 @@ class OCRProcessor:
     def _get_english_lang(self, translated_lang: str) -> str:
         return self.main_page.lang_mapping.get(translated_lang, translated_lang)
 
+    def _get_hunyuan_backend_key(self) -> str:
+        default_backend = "Local vLLM"
+        get_tool_selection = getattr(self.settings, "get_tool_selection", None)
+        if not callable(get_tool_selection):
+            return default_backend
+
+        try:
+            selected = get_tool_selection("hunyuanocr_backend")
+        except Exception:
+            return default_backend
+
+        tr = getattr(getattr(self.settings, "ui", None), "tr", lambda value: value)
+        mapping = {
+            tr("LM Studio"): "LM Studio",
+            tr("Local vLLM"): "Local vLLM",
+            "LM Studio": "LM Studio",
+            "Local vLLM": "Local vLLM",
+        }
+        return mapping.get(selected, selected or default_backend)
+
     def process(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         """
         Process image with appropriate OCR engine.
@@ -71,8 +95,6 @@ class OCRProcessor:
         Returns:
             Updated list of TextBlock objects with recognized text
         """
-
-        self._set_source_language(blk_list)
         engine = self.get_engine()
         return self.sanitize_block_texts(engine.process_image(img, blk_list))
 
@@ -123,9 +145,6 @@ class OCRProcessor:
             self.initialize(self.main_page, source_lang)
             engine = self.get_engine()
 
-            for _, _, blk_list in group_items:
-                self._set_source_language(blk_list)
-
             if engine.supports_block_crop_batching():
                 crop_records: list[tuple[int, int, np.ndarray]] = []
                 for page_index, image, blk_list in group_items:
@@ -157,10 +176,6 @@ class OCRProcessor:
                     )
 
         return [result if result is not None else [] for result in results]
-            
-    def _set_source_language(self, blk_list: list[TextBlock]) -> None:
-        # Source language is intentionally not persisted on blocks anymore.
-        return
 
     def _get_ocr_key(self, localized_ocr: str) -> str:
         translator_map = {
@@ -171,4 +186,7 @@ class OCRProcessor:
             self.settings.ui.tr('Tencent/HunyuanOCR'): 'Tencent/HunyuanOCR',
             self.settings.ui.tr('Default'): 'Default',
         }
-        return translator_map.get(localized_ocr, localized_ocr)
+        normalized_ocr = translator_map.get(localized_ocr, localized_ocr)
+        if normalized_ocr == 'Tencent/HunyuanOCR':
+            return f"{normalized_ocr} [{self._get_hunyuan_backend_key()}]"
+        return normalized_ocr

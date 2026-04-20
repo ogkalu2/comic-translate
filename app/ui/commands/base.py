@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import numpy as np
 from typing import TypedDict, TYPE_CHECKING
 from PySide6.QtGui import QColor, QBrush, QPen, QPainterPath, Qt
@@ -162,9 +161,7 @@ class RectCommandBase:
     
     @staticmethod
     def save_blk_properties(blk):
-        prp = copy.deepcopy(blk.__dict__)
-        prp.pop('source_lang', None)
-        return prp
+        return blk.to_dict()
 
     @staticmethod
     def resolve_blk_list(main_page, file_path: str | None, fallback=None):
@@ -204,7 +201,7 @@ class RectCommandBase:
             if prop_uid and getattr(blk, "block_uid", None) == prop_uid:
                 return blk
             # Get current block's properties
-            current_props = blk.__dict__.copy()
+            current_props = blk.to_dict()
             
             # Check if all properties match
             match = True
@@ -240,9 +237,7 @@ class RectCommandBase:
     
     @staticmethod
     def create_new_blk(properties):
-        blk = TextBlock()  
-        blk.__dict__.update(properties)  
-        return blk  
+        return TextBlock.from_dict(properties)
     
     @staticmethod
     def save_txt_item_properties(item):

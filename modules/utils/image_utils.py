@@ -53,9 +53,16 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
         # Skip blocks with no text and no translation
         if not blk.text and not blk.translation:
             continue
-        
-        bboxes = get_inpaint_bboxes(blk.xyxy, img)
-        blk.inpaint_bboxes = bboxes
+
+        bboxes = getattr(blk, "inpaint_bboxes", None)
+        if bboxes is None or len(bboxes) == 0:
+            if getattr(blk, "xyxy", None) is None:
+                continue
+            bboxes = get_inpaint_bboxes(blk.xyxy, img)
+            blk.inpaint_bboxes = bboxes
+        else:
+            bboxes = np.asarray(bboxes, dtype=np.int32)
+            blk.inpaint_bboxes = bboxes
         if bboxes is None or len(bboxes) == 0:
             continue
 

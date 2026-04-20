@@ -132,6 +132,59 @@ class TextFormatMixin:
                 self.main.curr_tblock_item.set_outline(color, outline_width)
                 self._finalize_format_edit()
 
+    def _set_color_button(self, button, color: QColor):
+        button.setStyleSheet(f"background-color: {color.name()}; border: none; border-radius: 5px;")
+        button.setProperty("selected_color", color.name())
+
+    def on_text_gradient_start_color_change(self):
+        color = self.main.get_color()
+        if color and color.isValid():
+            self._set_color_button(self.main.text_gradient_start_button, color)
+            if self.main.curr_tblock_item and self.main.text_gradient_checkbox.isChecked():
+                end_color = QColor(self.main.text_gradient_end_button.property("selected_color"))
+                self.main.curr_tblock_item.set_text_gradient(True, color, end_color)
+                self._finalize_format_edit()
+
+    def on_text_gradient_end_color_change(self):
+        color = self.main.get_color()
+        if color and color.isValid():
+            self._set_color_button(self.main.text_gradient_end_button, color)
+            if self.main.curr_tblock_item and self.main.text_gradient_checkbox.isChecked():
+                start_color = QColor(self.main.text_gradient_start_button.property("selected_color"))
+                self.main.curr_tblock_item.set_text_gradient(True, start_color, color)
+                self._finalize_format_edit()
+
+    def toggle_text_gradient(self, state):
+        enabled = state == 2
+        if self.main.curr_tblock_item:
+            start_color = QColor(self.main.text_gradient_start_button.property("selected_color"))
+            end_color = QColor(self.main.text_gradient_end_button.property("selected_color"))
+            self.main.curr_tblock_item.set_text_gradient(enabled, start_color, end_color)
+            self._finalize_format_edit()
+
+    def on_second_outline_color_change(self):
+        color = self.main.get_color()
+        if color and color.isValid():
+            self._set_color_button(self.main.second_outline_color_button, color)
+            if self.main.curr_tblock_item and self.main.second_outline_checkbox.isChecked():
+                outline_width = float(self.main.second_outline_width_dropdown.currentText())
+                self.main.curr_tblock_item.set_second_outline(True, color, outline_width)
+                self._finalize_format_edit()
+
+    def on_second_outline_width_change(self, outline_width):
+        if self.main.curr_tblock_item and self.main.second_outline_checkbox.isChecked():
+            color = QColor(self.main.second_outline_color_button.property("selected_color"))
+            self.main.curr_tblock_item.set_second_outline(True, color, float(outline_width))
+            self._finalize_format_edit()
+
+    def toggle_second_outline_settings(self, state):
+        enabled = state == 2
+        if self.main.curr_tblock_item:
+            color = QColor(self.main.second_outline_color_button.property("selected_color"))
+            outline_width = float(self.main.second_outline_width_dropdown.currentText())
+            self.main.curr_tblock_item.set_second_outline(enabled, color, outline_width)
+            self._finalize_format_edit()
+
     def block_text_item_widgets(self, widgets):
         for widget in widgets:
             widget.blockSignals(True)
@@ -182,6 +235,15 @@ class TextFormatMixin:
 
             self.main.outline_width_dropdown.setCurrentText(str(text_item.outline_width))
             self.main.outline_checkbox.setChecked(text_item.outline)
+            self.main.text_gradient_checkbox.setChecked(text_item.text_gradient)
+            gradient_start = text_item.text_gradient_start_color or text_item.text_color
+            gradient_end = text_item.text_gradient_end_color or text_item.text_color
+            self._set_color_button(self.main.text_gradient_start_button, QColor(gradient_start))
+            self._set_color_button(self.main.text_gradient_end_button, QColor(gradient_end))
+            self.main.second_outline_checkbox.setChecked(text_item.second_outline)
+            second_outline_color = text_item.second_outline_color or QColor("#000000")
+            self._set_color_button(self.main.second_outline_color_button, QColor(second_outline_color))
+            self.main.second_outline_width_dropdown.setCurrentText(str(text_item.second_outline_width or 1.0))
 
             self.main.bold_button.setChecked(text_item.bold)
             self.main.italic_button.setChecked(text_item.italic)

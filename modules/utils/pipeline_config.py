@@ -66,12 +66,13 @@ def validate_translator(main: ComicTranslate, target_lang: str):
         return False
 
     # Credential checks
+    if translator_tool in {"LM Studio", "Local vLLM"}:
+        return True
+
     if "Custom" in translator_tool:
-        # Custom requires api_key, api_url, and model to be configured LOCALLY
         service = tr('Custom')
         creds = credentials.get(service, {})
-        # Check if all required fields are present and non-empty
-        if not all([creds.get('api_key'), creds.get('api_url'), creds.get('model')]):
+        if not all([creds.get('api_url'), creds.get('model')]):
             Messages.show_custom_not_configured_error(main)
             return False
         return True

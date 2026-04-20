@@ -7,6 +7,7 @@ from PySide6 import QtCore
 
 from app.ui.commands.box import ResizeBlocksCommand
 from pipeline.render_state import ensure_target_snapshot, get_target_render_states, set_target_snapshot
+from pipeline.translation_context import build_translation_prompt_context
 
 from modules.utils.device import resolve_device
 from modules.utils.language_utils import get_layout_direction
@@ -116,8 +117,13 @@ class TextStateMixin:
         if sync_ocr:
             try:
                 ocr_model = settings_page.get_tool_selection("ocr")
+                ocr_language_hint = (
+                    self.main.get_ocr_language_hint()
+                    if hasattr(self.main, "get_ocr_language_hint")
+                    else ""
+                )
                 device = resolve_device(settings_page.is_gpu_enabled())
-                ocr_key = cache_manager._get_ocr_cache_key(image, "", ocr_model, device)
+                ocr_key = cache_manager._get_ocr_cache_key(image, ocr_language_hint, ocr_model, device)
                 cache_manager.update_ocr_cache_for_block(ocr_key, blk)
             except Exception:
                 pass
@@ -125,14 +131,19 @@ class TextStateMixin:
         if sync_translation:
             try:
                 translator_key = settings_page.get_tool_selection("translator")
-                extra_context = settings_page.get_llm_settings().get("extra_context", "")
                 target_lang = self.main.t_combo.currentText()
+                _prompt_context, cache_signature = build_translation_prompt_context(
+                    self.main,
+                    self._current_file_path(),
+                    target_lang,
+                    llm_settings=settings_page.get_llm_settings(),
+                )
                 translation_key = cache_manager._get_translation_cache_key(
                     image,
                     "",
                     target_lang,
                     translator_key,
-                    extra_context,
+                    cache_signature,
                 )
                 cache_manager.update_translation_cache_for_block(translation_key, blk)
             except Exception:

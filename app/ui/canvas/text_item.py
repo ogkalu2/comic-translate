@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QGraphicsTextItem, QGraphicsItem, \
      QApplication, QWidget, QStyleOptionGraphicsItem
-from PySide6.QtGui import QFont, QCursor, QColor, \
+from PySide6.QtGui import QFont, QCursor, QColor, QFontMetricsF, QBrush, QLinearGradient, QPen, \
      QTextCharFormat, QTextBlockFormat, QTextCursor, QPainter
 from PySide6.QtCore import Qt, QRectF, Signal, QPointF, QSizeF
 import math, copy
@@ -69,6 +69,12 @@ class TextBlockItem(QGraphicsTextItem):
              line_spacing = 1.2, 
              outline_color = QColor(255, 255, 255), 
              outline_width = 1,
+             second_outline=False,
+             second_outline_color=None,
+             second_outline_width=0,
+             text_gradient=False,
+             text_gradient_start_color=None,
+             text_gradient_end_color=None,
              bold=False, 
              italic=False, 
              underline=False,
@@ -82,6 +88,12 @@ class TextBlockItem(QGraphicsTextItem):
         self.outline = True if outline_color else False
         self.outline_color = outline_color
         self.outline_width = outline_width
+        self.second_outline = bool(second_outline)
+        self.second_outline_color = second_outline_color
+        self.second_outline_width = second_outline_width
+        self.text_gradient = bool(text_gradient)
+        self.text_gradient_start_color = text_gradient_start_color
+        self.text_gradient_end_color = text_gradient_end_color
         self.bold = bold
         self.italic = italic
         self.underline = underline
@@ -262,6 +274,22 @@ class TextBlockItem(QGraphicsTextItem):
     def get_text_box_rect(self):
         width, height = self.get_text_box_size()
         return QRectF(0, 0, width, height)
+
+    def _paint_overflow_margin(self) -> float:
+        font = self.document().defaultFont()
+        descent = QFontMetricsF(font).descent()
+        outline = float(self.outline_width) if self.outline and self.outline_width else 0.0
+        second_outline = (
+            float(self.second_outline_width)
+            if self.second_outline and self.second_outline_width
+            else 0.0
+        )
+        return max(1.0, descent, outline, second_outline)
+
+    def boundingRect(self):
+        rect = super().boundingRect()
+        margin = self._paint_overflow_margin()
+        return rect.adjusted(-margin, -margin, margin, margin)
 
     def get_source_text(self) -> str:
         source = self.source_text or self.toPlainText()
@@ -576,6 +604,14 @@ class TextBlockItem(QGraphicsTextItem):
             self.text_color = color
         self.update_text_format('color', color)
 
+    def set_text_gradient(self, enabled, start_color=None, end_color=None):
+        self.text_gradient = bool(enabled)
+        if start_color is not None:
+            self.text_gradient_start_color = start_color
+        if end_color is not None:
+            self.text_gradient_end_color = end_color
+        self.update()
+
     def update_outlines(self):
         """Update the selection outlines when text changes"""
         if self.outline:
@@ -657,13 +693,89 @@ class TextBlockItem(QGraphicsTextItem):
         
         self.update()
 
+    def set_second_outline(self, enabled, outline_color=None, outline_width=0):
+        self.second_outline = bool(enabled and outline_color and outline_width)
+        self.second_outline_color = outline_color if self.second_outline else None
+        self.second_outline_width = outline_width if self.second_outline else 0
+        self.update()
+
+    def _draw_doc_outline(self, painter: QPainter, doc, color, width):
+        if color is None or not width:
+            return
+
+        painter.save()
+        cursor = QTextCursor(doc)
+        cursor.select(QTextCursor.SelectionType.Document)
+        fmt = cursor.charFormat()
+        fmt.setForeground(QColor(0, 0, 0, 0))
+        cursor.mergeCharFormat(fmt)
+
+        cursor.setPosition(0)
+        cursor.setPosition(max(0, doc.characterCount() - 1), QTextCursor.KeepAnchor)
+        fmt = cursor.charFormat()
+        fmt.setForeground(QColor(color))
+        cursor.mergeCharFormat(fmt)
+
+        offsets = [
+            (dx, dy)
+            for dx in (-width, 0, width)
+            for dy in (-width, 0, width)
+            if dx != 0 or dy != 0
+        ]
+        for dx, dy in offsets:
+            painter.save()
+            painter.translate(dx, dy)
+            doc.drawContents(painter)
+            painter.restore()
+
+        painter.restore()
+
+    def _gradient_brush(self) -> QBrush:
+        rect = self.get_text_box_rect()
+        gradient = QLinearGradient(rect.left(), rect.top(), rect.left(), rect.bottom())
+        start_color = self.text_gradient_start_color or self.text_color
+        end_color = self.text_gradient_end_color or self.text_color
+        gradient.setColorAt(0.0, QColor(start_color))
+        gradient.setColorAt(1.0, QColor(end_color))
+        return QBrush(gradient)
+
+    def _draw_gradient_text(self, painter: QPainter):
+        doc = self.document().clone()
+        if self.vertical and self.layout:
+            vertical_layout = VerticalTextDocumentLayout(
+                document=doc,
+                line_spacing=self.layout.line_spacing,
+            )
+            doc.setDocumentLayout(vertical_layout)
+            vertical_layout.set_max_size(self.layout.max_width, self.layout.max_height)
+
+        cursor = QTextCursor(doc)
+        cursor.select(QTextCursor.SelectionType.Document)
+        fmt = cursor.charFormat()
+        fmt.setForeground(self._gradient_brush())
+        cursor.mergeCharFormat(fmt)
+        doc.drawContents(painter)
+
+    def _draw_selection_bounds(self, painter: QPainter):
+        if not (self.selected or self.isSelected()):
+            return
+
+        painter.save()
+        pen = QPen(QColor(20, 120, 255, 220))
+        pen.setStyle(Qt.PenStyle.DashLine)
+        pen.setWidthF(1.0)
+        pen.setCosmetic(True)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRect(self.get_text_box_rect())
+        painter.restore()
+
     def paint(   
         self, 
         painter: QPainter, 
         option: QStyleOptionGraphicsItem, 
         widget: QWidget = None
     ):
-
         # Then handle any selection outlines
         if self.selection_outlines:
             doc = self.document().clone()
@@ -709,8 +821,21 @@ class TextBlockItem(QGraphicsTextItem):
 
             painter.restore()
 
+        if self.second_outline:
+            self._draw_doc_outline(
+                painter,
+                self.document().clone(),
+                self.second_outline_color,
+                self.second_outline_width,
+            )
+
         # Draw the normal text on top
-        super().paint(painter, option, widget)
+        if self.text_gradient:
+            self._draw_gradient_text(painter)
+        else:
+            super().paint(painter, option, widget)
+
+        self._draw_selection_bounds(painter)
 
     def set_bold(self, state):
         if not self.textCursor().hasSelection():
@@ -1162,6 +1287,12 @@ class TextBlockItem(QGraphicsTextItem):
             line_spacing=self.line_spacing,
             outline_color=self.outline_color,
             outline_width=self.outline_width,
+            second_outline=self.second_outline,
+            second_outline_color=self.second_outline_color,
+            second_outline_width=self.second_outline_width,
+            text_gradient=self.text_gradient,
+            text_gradient_start_color=self.text_gradient_start_color,
+            text_gradient_end_color=self.text_gradient_end_color,
             bold=self.bold,
             italic=self.italic,
             underline=self.underline,

@@ -17,6 +17,12 @@ class TextItemProperties:
     outline_color: Optional[QColor] = None
     outline_width: float = 1
     outline: bool = False
+    second_outline: bool = False
+    second_outline_color: Optional[QColor] = None
+    second_outline_width: float = 0
+    text_gradient: bool = False
+    text_gradient_start_color: Optional[QColor] = None
+    text_gradient_end_color: Optional[QColor] = None
     bold: bool = False
     italic: bool = False
     underline: bool = False
@@ -70,6 +76,12 @@ class TextItemProperties:
             props.outline = bool(data.get('outline', False))
         else:
             props.outline = _has_full_document_outline(data.get('selection_outlines', []))
+        props.second_outline = bool(data.get('second_outline', False))
+        props.second_outline_color = _qcolor_from_value(data.get('second_outline_color'))
+        props.second_outline_width = data.get('second_outline_width', 0)
+        props.text_gradient = bool(data.get('text_gradient', False))
+        props.text_gradient_start_color = _qcolor_from_value(data.get('text_gradient_start_color'))
+        props.text_gradient_end_color = _qcolor_from_value(data.get('text_gradient_end_color'))
         
         # Alignment
         if 'alignment' in data:
@@ -126,6 +138,12 @@ class TextItemProperties:
         props.outline_color = item.outline_color
         props.outline_width = item.outline_width
         props.outline = bool(getattr(item, 'outline', False))
+        props.second_outline = bool(getattr(item, 'second_outline', False))
+        props.second_outline_color = getattr(item, 'second_outline_color', None)
+        props.second_outline_width = getattr(item, 'second_outline_width', 0)
+        props.text_gradient = bool(getattr(item, 'text_gradient', False))
+        props.text_gradient_start_color = getattr(item, 'text_gradient_start_color', None)
+        props.text_gradient_end_color = getattr(item, 'text_gradient_end_color', None)
         props.bold = item.bold
         props.italic = item.italic
         props.underline = item.underline
@@ -176,6 +194,12 @@ class TextItemProperties:
             'outline_color': self.outline_color,
             'outline_width': self.outline_width,
             'outline': self.outline,
+            'second_outline': self.second_outline,
+            'second_outline_color': self.second_outline_color,
+            'second_outline_width': self.second_outline_width,
+            'text_gradient': self.text_gradient,
+            'text_gradient_start_color': self.text_gradient_start_color,
+            'text_gradient_end_color': self.text_gradient_end_color,
             'bold': self.bold,
             'italic': self.italic,
             'underline': self.underline,
@@ -190,6 +214,14 @@ class TextItemProperties:
             'block_uid': self.block_uid,
             'selection_outlines': self.selection_outlines,
         }
+
+
+def _qcolor_from_value(value):
+    if isinstance(value, QColor):
+        return value
+    if value:
+        return QColor(value)
+    return None
 
 
 def _has_full_document_outline(selection_outlines: list) -> bool:

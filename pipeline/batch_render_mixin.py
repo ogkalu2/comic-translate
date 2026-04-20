@@ -11,7 +11,9 @@ from PySide6.QtGui import QColor
 
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
-from modules.rendering.render import is_vertical_block, pyside_word_wrap, resolve_init_font_size
+from modules.rendering.font_sizing import resolve_init_font_size
+from modules.rendering.policy import is_vertical_block
+from modules.rendering.render import pyside_word_wrap
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import is_no_space_lang
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
@@ -130,6 +132,12 @@ class BatchRenderMixin:
         line_spacing = float(render_settings.line_spacing)
         outline_width = float(render_settings.outline_width)
         outline_color = QColor(render_settings.outline_color) if outline else None
+        second_outline = render_settings.second_outline
+        second_outline_width = float(render_settings.second_outline_width)
+        second_outline_color = QColor(render_settings.second_outline_color) if second_outline else None
+        text_gradient = render_settings.text_gradient
+        gradient_start_color = QColor(render_settings.text_gradient_start_color) if text_gradient else None
+        gradient_end_color = QColor(render_settings.text_gradient_end_color) if text_gradient else None
         bold = render_settings.bold
         italic = render_settings.italic
         underline = render_settings.underline
@@ -165,6 +173,19 @@ class BatchRenderMixin:
             font_family = template.get("font_family", font)
             line_spacing_for_block = float(template.get("line_spacing", line_spacing))
             outline_width_for_block = float(template.get("outline_width", outline_width))
+            second_outline_for_block = bool(template.get("second_outline", second_outline))
+            second_outline_width_for_block = float(template.get("second_outline_width", second_outline_width))
+            template_second_outline_color = template.get("second_outline_color", second_outline_color)
+            if template_second_outline_color is not None and not isinstance(template_second_outline_color, QColor):
+                template_second_outline_color = QColor(template_second_outline_color)
+            second_outline_color_for_block = template_second_outline_color if second_outline_for_block else None
+            text_gradient_for_block = bool(template.get("text_gradient", text_gradient))
+            template_gradient_start = template.get("text_gradient_start_color", gradient_start_color)
+            template_gradient_end = template.get("text_gradient_end_color", gradient_end_color)
+            if template_gradient_start is not None and not isinstance(template_gradient_start, QColor):
+                template_gradient_start = QColor(template_gradient_start)
+            if template_gradient_end is not None and not isinstance(template_gradient_end, QColor):
+                template_gradient_end = QColor(template_gradient_end)
             bold_for_block = bool(template.get("bold", bold))
             italic_for_block = bool(template.get("italic", italic))
             underline_for_block = bool(template.get("underline", underline))
@@ -218,6 +239,12 @@ class BatchRenderMixin:
                 outline_color=outline_color_for_block,
                 outline_width=outline_width_for_block,
                 outline=outline_enabled,
+                second_outline=second_outline_for_block,
+                second_outline_color=second_outline_color_for_block,
+                second_outline_width=second_outline_width_for_block,
+                text_gradient=text_gradient_for_block,
+                text_gradient_start_color=template_gradient_start if text_gradient_for_block else None,
+                text_gradient_end_color=template_gradient_end if text_gradient_for_block else None,
                 bold=bold_for_block,
                 italic=italic_for_block,
                 underline=underline_for_block,
@@ -320,7 +347,8 @@ class BatchRenderMixin:
         )
         ps["ocr_cache_key"] = page.ocr_cache_key or ps.get("ocr_cache_key", "")
         ps["translator_key"] = translator_key
-        ps["extra_context_hash"] = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
+        context_signature = getattr(page, "translation_context_signature", "") or extra_context
+        ps["extra_context_hash"] = hashlib.md5(context_signature.encode()).hexdigest() if context_signature else "no_context"
         self.main_page.render_state_ready.emit(page.image_path)
 
         self.emit_progress(page.index, total_images, 10, 10, False)

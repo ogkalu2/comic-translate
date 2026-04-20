@@ -32,7 +32,9 @@ class TranslationFactory:
         "Claude": ClaudeTranslation,
         "Gemini": GeminiTranslation,
         "Deepseek": DeepseekTranslation,
-        "Custom": CustomTranslation
+        "Custom": CustomTranslation,
+        "LM Studio": CustomTranslation,
+        "Local vLLM": CustomTranslation,
     }
     
     DEFAULT_LLM_ENGINE = GPTTranslation
@@ -78,7 +80,7 @@ class TranslationFactory:
         """Get the appropriate engine class based on translator key."""
 
         access_token = get_token("access_token")
-        if access_token and translator_key not in ['Custom']:
+        if access_token and translator_key not in ['Custom', 'LM Studio', 'Local vLLM']:
             return UserTranslator
 
         # First check if it's a traditional translation engine (exact match)

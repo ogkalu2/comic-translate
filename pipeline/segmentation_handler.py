@@ -1,6 +1,6 @@
 import logging
 from modules.detection.utils.content import get_inpaint_bboxes
-from modules.rendering.render import get_best_render_area
+from modules.rendering.render_area import get_best_render_area
 from .webtoon_utils import (
     filter_and_convert_visible_blocks, 
     restore_original_block_coordinates,
@@ -60,20 +60,23 @@ class SegmentationHandler:
         # Convert bbox coordinates back to webtoon scene coordinates and update original blocks
         webtoon_manager = self.main_page.image_viewer.webtoon_manager
         for blk, bboxes in results:
-            if not hasattr(blk, '_original_xyxy'):
+            context = visible_blocks.context_for(blk) if hasattr(visible_blocks, "context_for") else None
+            if context is None:
                 continue
             
             if bboxes is not None:
-                mapping = blk._mapping
-                page_idx = blk._page_index
-                converted_bboxes = convert_bboxes_to_webtoon_coordinates(bboxes, mapping, page_idx, webtoon_manager)
+                converted_bboxes = convert_bboxes_to_webtoon_coordinates(
+                    bboxes,
+                    context.mapping,
+                    context.page_index,
+                    webtoon_manager,
+                )
                 blk.inpaint_bboxes = converted_bboxes
             else:
                 blk.inpaint_bboxes = None
 
         # Restore original block coordinates and clean up
-        processed_blocks = [blk for blk, _ in results]
-        restore_original_block_coordinates(processed_blocks)
+        restore_original_block_coordinates(visible_blocks)
         
         # Return results with converted bboxes from the blocks
         final_results = []

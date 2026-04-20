@@ -9,7 +9,7 @@ from shiboken6 import isValid as shiboken_is_valid
 
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import TextBlockItem
-from modules.rendering.render import is_vertical_block
+from modules.rendering.policy import is_vertical_block
 from modules.utils.common_utils import is_close
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
@@ -158,6 +158,12 @@ class TextSceneItemMixin:
             line_spacing=float(render_settings.line_spacing),
             outline_color=outline_color,
             outline_width=float(render_settings.outline_width),
+            second_outline=render_settings.second_outline,
+            second_outline_color=QColor(render_settings.second_outline_color) if render_settings.second_outline else None,
+            second_outline_width=float(render_settings.second_outline_width),
+            text_gradient=render_settings.text_gradient,
+            text_gradient_start_color=QColor(render_settings.text_gradient_start_color) if render_settings.text_gradient else None,
+            text_gradient_end_color=QColor(render_settings.text_gradient_end_color) if render_settings.text_gradient else None,
             bold=render_settings.bold,
             italic=render_settings.italic,
             underline=render_settings.underline,

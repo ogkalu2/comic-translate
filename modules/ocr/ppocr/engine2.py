@@ -16,13 +16,23 @@ from modules.ocr.crop_utils import extract_block_crops
 from modules.utils.local_vllm import post_json_with_wsl_fallback
 from modules.utils.textblock import TextBlock
 
+HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_API_BASE_URL = "http://127.0.0.1:8001/v1"
+HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_MODEL = "hunyuanocr"
+HUNYUAN_OCR_LM_STUDIO_DEFAULT_API_BASE_URL = "http://127.0.0.1:1234/v1"
+HUNYUAN_OCR_LM_STUDIO_DEFAULT_MODEL = "ggml-org/hunyuanocr"
+
 
 class VLLMOcrClient:
     MAX_PREPARED_LONG_SIDE = 512
     MAX_PREPARED_AREA = 256 * 256
     MIN_PREPARED_SIDE = 64
 
-    def __init__(self, url: str = "http://127.0.0.1:8001/v1", model: str = "hunyuanocr", timeout: int = 300):
+    def __init__(
+        self,
+        url: str = HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_API_BASE_URL,
+        model: str = HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_MODEL,
+        timeout: int = 300,
+    ):
         self.url = url.rstrip("/")
         self.model = model
         self.timeout = timeout
@@ -106,7 +116,7 @@ class VLLMOcrClient:
                     "role": "user",
                     "content": [
                         {"type": "image_url", "image_url": {"url": data_url}},
-                        {"type": "text", "text": "提取图中的文字"},
+                        {"type": "text", "text": "• 提取图中的文字。"},
                     ],
                 },
             ],
@@ -153,8 +163,8 @@ class HunyuanOCREngine(OCREngine):
 
     def initialize(
         self,
-        url: str = "http://127.0.0.1:8001/v1",
-        model: str = "hunyuanocr",
+        url: str = HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_API_BASE_URL,
+        model: str = HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_MODEL,
         timeout: int = 300,
         expansion_percentage: int = 5,
         recognition_batch_size: int = 32,

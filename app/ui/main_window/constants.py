@@ -32,3 +32,9 @@ supported_target_languages = [
     "Romanian",
     "Mongolian",
 ]
+
+supported_ocr_language_hints = [
+    "Japanese",
+    "Korean",
+    "Other Languages",
+]

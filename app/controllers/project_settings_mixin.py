@@ -13,6 +13,7 @@ class ProjectSettingsMixin:
 
         settings.beginGroup("main_page")
         settings.setValue("target_language", self.main.lang_mapping[self.main.t_combo.currentText()])
+        settings.setValue("ocr_language_hint", self.main.get_ocr_language_hint())
         settings.setValue("brush_size", self.main.image_viewer.brush_size)
         settings.setValue("eraser_size", self.main.image_viewer.eraser_size)
         settings.endGroup()
@@ -28,6 +29,10 @@ class ProjectSettingsMixin:
 
         target_lang = settings.value("target_language", "English")
         self.main.t_combo.setCurrentText(self.main.reverse_lang_mapping.get(target_lang, self.main.tr("English")))
+        ocr_language_hint = settings.value("ocr_language_hint", "Other Languages")
+        self.main.ocr_language_combo.setCurrentText(
+            self.main.reverse_ocr_language_hint_mapping.get(ocr_language_hint, self.main.tr("Other Languages"))
+        )
         self.main.batch_mode_selected()
 
         brush_size = int(settings.value("brush_size", 10))
@@ -71,6 +76,26 @@ class ProjectSettingsMixin:
             f"background-color: {outline_color}; border: none; border-radius: 5px;"
         )
         self.main.outline_font_color_button.setProperty("selected_color", outline_color)
+
+        self.main.second_outline_checkbox.setChecked(settings.value("second_outline", False, type=bool))
+        second_outline_color = settings.value("second_outline_color", "#000000")
+        self.main.second_outline_color_button.setStyleSheet(
+            f"background-color: {second_outline_color}; border: none; border-radius: 5px;"
+        )
+        self.main.second_outline_color_button.setProperty("selected_color", second_outline_color)
+        self.main.second_outline_width_dropdown.setCurrentText(settings.value("second_outline_width", "1.0"))
+
+        self.main.text_gradient_checkbox.setChecked(settings.value("text_gradient", False, type=bool))
+        gradient_start = settings.value("text_gradient_start_color", color)
+        gradient_end = settings.value("text_gradient_end_color", "#ffffff")
+        self.main.text_gradient_start_button.setStyleSheet(
+            f"background-color: {gradient_start}; border: none; border-radius: 5px;"
+        )
+        self.main.text_gradient_start_button.setProperty("selected_color", gradient_start)
+        self.main.text_gradient_end_button.setStyleSheet(
+            f"background-color: {gradient_end}; border: none; border-radius: 5px;"
+        )
+        self.main.text_gradient_end_button.setProperty("selected_color", gradient_end)
 
         self.main.bold_button.setChecked(settings.value("bold", False, type=bool))
         self.main.italic_button.setChecked(settings.value("italic", False, type=bool))

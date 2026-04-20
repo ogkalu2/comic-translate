@@ -5,6 +5,10 @@ from typing import TYPE_CHECKING
 from modules.translation.processor import Translator
 from modules.utils.translator_utils import set_upper_case, sanitize_translation_source_blocks
 from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_original_block_coordinates
+from pipeline.translation_context import (
+    build_translation_prompt_context,
+    store_page_translation_context,
+)
 from .cache_manager import CacheManager
 
 if TYPE_CHECKING:
@@ -54,12 +58,35 @@ class TranslationHandler:
                 )
         return self.main_page.image_viewer.get_image_array()
 
+    def _build_translation_context(self, target_lang: str) -> tuple[str, str, str]:
+        file_path = self._get_current_file_path()
+        prompt_context, cache_signature = build_translation_prompt_context(
+            self.main_page,
+            file_path,
+            target_lang,
+            llm_settings=self.main_page.settings_page.get_llm_settings(),
+        )
+        return prompt_context, cache_signature, file_path or ""
+
+    def _store_current_page_translation_context(self, target_lang: str, scene_memory: str = "") -> None:
+        file_path = self._get_current_file_path()
+        if not file_path:
+            return
+        store_page_translation_context(
+            self.main_page.image_states,
+            file_path,
+            target_lang,
+            self.main_page.blk_list,
+            scene_memory=scene_memory or "",
+            llm_settings=self.main_page.settings_page.get_llm_settings(),
+        )
+
     def translate_image(self, single_block=False):
         target_lang = self.main_page.t_combo.currentText()
         if self.main_page.image_viewer.hasPhoto() and self.main_page.blk_list:
             settings_page = self.main_page.settings_page
             image = self._get_translation_image()
-            extra_context = settings_page.get_llm_settings()['extra_context']
+            prompt_context, cache_signature, _file_path = self._build_translation_context(target_lang)
             translator_key = settings_page.get_tool_selection('translator')
 
             upper_case = settings_page.ui.uppercase_checkbox.isChecked()
@@ -69,7 +96,7 @@ class TranslationHandler:
             
             # Get translation cache key
             translation_cache_key = self.cache_manager._get_translation_cache_key(
-                image, "", target_lang, translator_key, extra_context
+                image, "", target_lang, translator_key, cache_signature
             )
             
             if single_block:
@@ -99,11 +126,13 @@ class TranslationHandler:
                     translator.translate(
                         single_block_list,
                         image,
-                        extra_context,
+                        prompt_context,
                     )
                     
                     # Update the cache with this new result using the cache manager's method
                     self.cache_manager.update_translation_cache_for_block(translation_cache_key, blk)
+                    if all((getattr(item, 'translation', '') or '').strip() for item in self.main_page.blk_list):
+                        self._store_current_page_translation_context(target_lang)
                     
                     logger.debug(f"Processed single block and updated cache: '{blk.translation}'")
                     set_upper_case([blk], upper_case)
@@ -122,12 +151,14 @@ class TranslationHandler:
                         translator.translate(
                             all_blocks_copy,
                             image,
-                            extra_context,
+                            prompt_context,
                         )
                         # Cache using the original blocks to maintain consistent IDs
                         self.cache_manager._cache_translation_results(translation_cache_key, self.main_page.blk_list, all_blocks_copy)
                         cached_translation = self.cache_manager._get_cached_translation_for_block(translation_cache_key, blk)
                         blk.translation = cached_translation
+                        scene_memory = getattr(getattr(translator, "engine", None), "last_scene_memory", "")
+                        self._store_current_page_translation_context(target_lang, scene_memory)
                         logger.debug(f"Cached translation results and extracted translation for block: {cached_translation}")
                     
                     set_upper_case([blk], upper_case)
@@ -140,17 +171,25 @@ class TranslationHandler:
                 )
                 if not missing_blocks:
                     logger.debug(f"Using cached translation results for all {len(self.main_page.blk_list)} blocks")
+                    self._store_current_page_translation_context(target_lang)
                 else:
                     # Need to run translation only for blocks that are not already cached.
                     translator.translate(
                         missing_blocks,
                         image,
-                        extra_context,
+                        prompt_context,
                     )
                     self.cache_manager._cache_translation_results(
                         translation_cache_key,
                         missing_blocks,
                     )
+                    scene_memory = ""
+                    if (
+                        len(missing_blocks) == len(self.main_page.blk_list)
+                        and all(candidate is original for candidate, original in zip(missing_blocks, self.main_page.blk_list))
+                    ):
+                        scene_memory = getattr(getattr(translator, "engine", None), "last_scene_memory", "")
+                    self._store_current_page_translation_context(target_lang, scene_memory)
                     logger.debug("Translation completed and cached for %d missing blocks", len(missing_blocks))
                 
                 set_upper_case(self.main_page.blk_list, upper_case)
@@ -181,14 +220,14 @@ class TranslationHandler:
         
         # Perform translation on the visible image with filtered blocks
         settings_page = self.main_page.settings_page
-        extra_context = settings_page.get_llm_settings()['extra_context']
+        prompt_context, _cache_signature, _file_path = self._build_translation_context(target_lang)
         upper_case = settings_page.ui.uppercase_checkbox.isChecked()
         
         translator = Translator(self.main_page, "", target_lang)
         translator.translate(
             visible_blocks,
             visible_image,
-            extra_context,
+            prompt_context,
         )
         
         # Translation is set, now restore original coordinates

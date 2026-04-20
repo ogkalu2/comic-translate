@@ -34,6 +34,9 @@ class BaseLLMTranslation(LLMTranslation):
         self.top_p = None
         self.max_tokens = None
         self.timeout = 30  
+        self.use_scene_memory = False
+        self.interpret_then_translate = False
+        self.last_scene_memory = ""
     
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
         """
@@ -48,10 +51,16 @@ class BaseLLMTranslation(LLMTranslation):
         llm_settings = settings.get_llm_settings()
         self.source_lang = source_lang
         self.target_lang = target_lang
-        self.img_as_llm_input = llm_settings.get('image_input_enabled', True)
+        self.img_as_llm_input = llm_settings.get(
+            'use_page_image_context',
+            llm_settings.get('image_input_enabled', True),
+        )
         self.temperature = float(llm_settings.get("temperature", 0.1))
         self.top_p = float(llm_settings.get("top_p", 0.95))
-        self.max_tokens = int(llm_settings.get("max_tokens", 512))
+        self.max_tokens = int(llm_settings.get("max_tokens", 1024))
+        self.use_scene_memory = bool(llm_settings.get("use_scene_memory", False))
+        self.interpret_then_translate = bool(llm_settings.get("interpret_then_translate", False))
+        self.last_scene_memory = ""
 
     def _estimate_request_max_tokens(self, blk_list: list[TextBlock]) -> int:
         try:
@@ -62,10 +71,10 @@ class BaseLLMTranslation(LLMTranslation):
         try:
             max_tokens_cap = int(self.max_tokens)
         except (TypeError, ValueError):
-            max_tokens_cap = 512
+            max_tokens_cap = 1024
 
         estimated = 24 + (total_chars * 2) + (len(blk_list) * 8)
-        return max(64, min(max_tokens_cap, estimated))
+        return max(20000, min(max_tokens_cap, estimated))
 
     def _ensure_no_runaway_repetition(self, blk_list: list[TextBlock]) -> None:
         for index, blk in enumerate(blk_list):
@@ -105,17 +114,27 @@ class BaseLLMTranslation(LLMTranslation):
 
     def build_translation_prompts(self, blk_list: list[TextBlock], extra_context: str) -> tuple[str, str]:
         lines = get_text_lines_compact(blk_list)
-        lines_json = dumps_compact_json(lines)
+        indexed_lines = [
+            {"idx": index, "text": line}
+            for index, line in enumerate(lines, start=1)
+        ]
+        lines_json = dumps_compact_json(indexed_lines)
+        line_count = len(lines)
         natural_language_prompt = self.get_system_prompt(self.source_lang, self.target_lang)
 
         system_prompt = (
             f"{natural_language_prompt} "
-            f"Translate the dialogue using the full page context. "
+            f"Translate ONLY the current input dialogue items using the surrounding context. "
             f"Return ONLY JSON with this structure: {{\"r\":[<strings>]}}. "
-            f"Rules: - keep the same number of strings "
+            f"Rules: - the current input has exactly {line_count} numbered dialogue items "
+            f"- r must contain exactly {line_count} strings, no more and no fewer "
+            f"- r[0] must translate idx 1, r[1] must translate idx 2, and so on "
+            f"- never translate previous-page dialogue, scene memory, examples, or context sections as output items "
+            f"- never merge, split, add, or omit current input items "
             f"- preserve order "
             f"- each output string corresponds to the same input index "
             f"- use surrounding lines as context for translation "
+            f"- if a page image is available, use it only to resolve visual references, omitted subjects or objects, scene action, and speaker intent "
             f"- output must be valid JSON "
             f"- no additional text "
             f"- translate by communicative intent, not dictionary-first word matching "
@@ -126,6 +145,7 @@ class BaseLLMTranslation(LLMTranslation):
             f"- use standard real words of the target language; do not invent pseudo-words or distorted transliterations unless the source is intentionally nonsense "
             f"- for screams, groans, stutters, and elongated sounds, translate to a natural target-language equivalent instead of mechanically copying source letter counts "
             f"- if gender or other morphology is not explicit, choose the most natural context-compatible phrasing, preferably neutral or impersonal wording, rather than a literal guess "
+            f"- if context does not fully resolve an ambiguity, prefer wording that preserves the ambiguity instead of inventing unsupported details "
             f"- before answering, silently normalize each line so it reads like something a native speaker would naturally say in the target language "
             f"- never let one character dominate the output"
         )
@@ -136,6 +156,183 @@ class BaseLLMTranslation(LLMTranslation):
             user_prompt = lines_json
 
         return user_prompt, system_prompt
+
+    def _build_translation_repair_prompt(self, system_prompt: str, expected_count: int) -> str:
+        return (
+            system_prompt
+            + f" CRITICAL FORMAT FIX: return JSON only, with r containing exactly {expected_count} strings. "
+            + "Translate only the numbered current input items. "
+            + "Do not include previous-page dialogue, scene memory, or context as r entries. "
+            + "Do not split one input item into multiple r entries."
+        )
+
+    def _try_apply_single_block_split_translation(self, blk_list: list[TextBlock], content: str) -> bool:
+        if len(blk_list) != 1:
+            return False
+        try:
+            payload = json.loads(content)
+        except json.JSONDecodeError:
+            return False
+
+        arr = None
+        if isinstance(payload, list):
+            arr = payload
+        elif isinstance(payload, dict):
+            arr = payload.get("r")
+            if arr is None and len(payload) == 1:
+                arr = next(iter(payload.values()))
+
+        if not isinstance(arr, list) or len(arr) <= 1 or not all(isinstance(item, str) for item in arr):
+            return False
+
+        blk_list[0].translation = sanitize_translation_result_text(" ".join(item.strip() for item in arr if item.strip()))
+        logger.warning(
+            "LLM returned %d translations for one block after retry; joined them into the single requested block",
+            len(arr),
+        )
+        return True
+
+    def build_context_interpretation_prompts(
+        self,
+        blk_list: list[TextBlock],
+        extra_context: str,
+    ) -> tuple[str, str]:
+        lines = get_text_lines_compact(blk_list)
+        indexed_lines = [
+            {"idx": index, "text": line}
+            for index, line in enumerate(lines, start=1)
+        ]
+        lines_json = dumps_compact_json(indexed_lines)
+        line_count = len(lines)
+        system_prompt = (
+            f"Interpret the current comic page context before translation from {self.source_lang} to {self.target_lang}. "
+            f"Return ONLY JSON with this structure: {{\"i\":[<strings>],\"m\":\"<string>\"}}. "
+            f"Rules: - the input has exactly {line_count} numbered dialogue items "
+            f"- i must contain exactly {line_count} strings, no more and no fewer "
+            f"- i[0] must describe idx 1, i[1] must describe idx 2, and so on "
+            f"- never merge two input items into one note "
+            f"- never omit a note; use \"ambiguous from available context\" when there is not enough context "
+            f"- each i item must be a short neutral-English meaning note for the matching input item "
+            f"- use previous-page context and any page image only to resolve meaning, referents, sarcasm, ellipsis, and speaker intent "
+            f"- if a detail is ambiguous, say so briefly instead of collapsing it into one unsupported interpretation "
+            f"- do not invent facts that are not supported by text or image context "
+            f"- m must be a compact scene memory for the next page covering speakers, key referents, emotional tone, and what is happening "
+            f"- keep m under 240 characters "
+            f"- output valid JSON only"
+        )
+        if extra_context and extra_context.strip():
+            user_prompt = f"{extra_context.strip()}\n{lines_json}"
+        else:
+            user_prompt = lines_json
+        return user_prompt, system_prompt
+
+    def _parse_interpretation_content(
+        self,
+        content: str,
+        expected_count: int,
+        *,
+        allow_repair: bool = False,
+    ) -> tuple[list[str], str]:
+        payload = json.loads(content)
+        interpretations = payload.get("i") or []
+        if not isinstance(interpretations, list) or not all(isinstance(item, str) for item in interpretations):
+            raise ValueError("Invalid interpretation result format")
+
+        if len(interpretations) != expected_count:
+            if not allow_repair:
+                raise ValueError(
+                    f"Invalid interpretation result length: expected {expected_count}, got {len(interpretations)}"
+                )
+            logger.warning(
+                "Internal interpretation returned %d notes for %d lines after retry; normalizing length",
+                len(interpretations),
+                expected_count,
+            )
+
+        normalized = [item.strip() for item in interpretations[:expected_count]]
+        if allow_repair and len(normalized) < expected_count:
+            normalized.extend(["ambiguous from available context"] * (expected_count - len(normalized)))
+
+        scene_memory = payload.get("m") or ""
+        if not isinstance(scene_memory, str):
+            scene_memory = ""
+        return normalized, scene_memory.strip()[:240]
+
+    def _build_interpretation_repair_prompt(self, system_prompt: str, expected_count: int) -> str:
+        return (
+            system_prompt
+            + f" CRITICAL FORMAT FIX: return JSON only, with i containing exactly {expected_count} strings. "
+            + "Do not combine, split, add, or omit entries. "
+            + "If a line is unclear, write \"ambiguous from available context\" for that exact slot."
+        )
+
+    def _analyze_page_context(
+        self,
+        blk_list: list[TextBlock],
+        image: np.ndarray,
+        extra_context: str,
+    ) -> tuple[list[str], str]:
+        user_prompt, system_prompt = self.build_context_interpretation_prompts(
+            blk_list,
+            extra_context,
+        )
+        expected_count = len(blk_list)
+        try:
+            first_content = self._perform_translation(user_prompt, system_prompt, image)
+            try:
+                return self._parse_interpretation_content(first_content, expected_count)
+            except (json.JSONDecodeError, ValueError) as exc:
+                logger.warning(
+                    "Internal interpretation returned invalid context on first attempt; retrying once: %s",
+                    exc,
+                )
+                repair_prompt = self._build_interpretation_repair_prompt(system_prompt, expected_count)
+                second_content = self._perform_translation(user_prompt, repair_prompt, image)
+                return self._parse_interpretation_content(
+                    second_content,
+                    expected_count,
+                    allow_repair=True,
+                )
+        except Exception as exc:
+            logger.warning(
+                "Failed to build internal interpretation context; continuing with direct translation: %s",
+                exc,
+            )
+            return [], ""
+
+    def _append_interpretation_context(
+        self,
+        extra_context: str,
+        blk_list: list[TextBlock],
+        interpretation_map: dict[int, str],
+    ) -> str:
+        if not interpretation_map:
+            return extra_context
+
+        notes = []
+        for index, blk in enumerate(blk_list, start=1):
+            note = (interpretation_map.get(id(blk), "") or "").strip()
+            if note:
+                notes.append(f"{index}. {note}")
+
+        if not notes:
+            return extra_context
+
+        interpretation_block = "Current page meaning notes:\n" + "\n".join(notes)
+        if extra_context and extra_context.strip():
+            return f"{extra_context.strip()}\n\n{interpretation_block}"
+        return interpretation_block
+
+    def _build_fallback_scene_memory(self, blk_list: list[TextBlock]) -> str:
+        parts: list[str] = []
+        for blk in blk_list:
+            text = (getattr(blk, "translation", "") or "").strip() or (getattr(blk, "text", "") or "").strip()
+            compact = " ".join(text.split())
+            if compact:
+                parts.append(compact)
+            if len(parts) >= 3:
+                break
+        return " | ".join(parts)[:240]
 
     def build_interjection_prompts(self, blk_list: list[TextBlock], extra_context: str) -> tuple[str, str]:
         lines = get_text_lines_compact(blk_list)
@@ -200,11 +397,17 @@ class BaseLLMTranslation(LLMTranslation):
         estimated_max_tokens = self._estimate_request_max_tokens(blk_list)
         self.max_tokens = min(estimated_max_tokens, 64) if interjection_mode else estimated_max_tokens
         if interjection_mode:
-            self.temperature = 0.0
+            self.temperature = 0.6
             top_p_value = float(self.top_p) if self.top_p is not None else 1.0
-            self.top_p = min(top_p_value, 0.85)
+            self.top_p = min(top_p_value, 0.95)
         try:
-            for attempt_index, prompt in enumerate((system_prompt, retry_prompt), start=1):
+            for attempt_index, prompt in enumerate(
+                (
+                    system_prompt,
+                    self._build_translation_repair_prompt(retry_prompt, len(blk_list)),
+                ),
+                start=1,
+            ):
                 content = self._perform_translation(user_prompt, prompt, image)
                 usage_snapshot = self._snapshot_usage()
                 try:
@@ -226,6 +429,10 @@ class BaseLLMTranslation(LLMTranslation):
             self.max_tokens = original_max_tokens
             self.temperature = original_temperature
             self.top_p = original_top_p
+
+        if last_exc is not None and self._try_apply_single_block_split_translation(blk_list, content):
+            self._ensure_no_runaway_repetition(blk_list)
+            return self._snapshot_usage()
 
         if interjection_mode and len(blk_list) == 1 and self._is_high_risk_interjection_block(blk_list[0]):
             blk = blk_list[0]
@@ -250,7 +457,22 @@ class BaseLLMTranslation(LLMTranslation):
 
     def translate(self, blk_list: list[TextBlock], image: np.ndarray, extra_context: str) -> list[TextBlock]:
         usage_items: list[dict | None] = []
+        self.last_scene_memory = ""
         risky_blocks = [blk for blk in blk_list if self._is_high_risk_interjection_block(blk)]
+        interpreted_scene_memory = ""
+        interpretation_map: dict[int, str] = {}
+
+        if self.interpret_then_translate:
+            interpretations, interpreted_scene_memory = self._analyze_page_context(
+                blk_list,
+                image,
+                extra_context,
+            )
+            interpretation_map = {
+                id(blk): interpretation
+                for blk, interpretation in zip(blk_list, interpretations)
+                if interpretation
+            }
 
         if risky_blocks and len(blk_list) > 1:
             normal_blocks = [blk for blk in blk_list if blk not in risky_blocks]
@@ -259,7 +481,11 @@ class BaseLLMTranslation(LLMTranslation):
                     self._translate_group(
                         normal_blocks,
                         image,
-                        extra_context,
+                        self._append_interpretation_context(
+                            extra_context,
+                            normal_blocks,
+                            interpretation_map,
+                        ),
                         interjection_mode=False,
                     )
                 )
@@ -268,20 +494,32 @@ class BaseLLMTranslation(LLMTranslation):
                     self._translate_group(
                         [blk],
                         image,
-                        extra_context,
+                        self._append_interpretation_context(
+                            extra_context,
+                            [blk],
+                            interpretation_map,
+                        ),
                         interjection_mode=True,
                     )
                 )
             self.last_usage = self._merge_usage_snapshots(usage_items)
+            if self.use_scene_memory:
+                self.last_scene_memory = interpreted_scene_memory or self._build_fallback_scene_memory(blk_list)
             return blk_list
 
         usage = self._translate_group(
             blk_list,
             image,
-            extra_context,
+            self._append_interpretation_context(
+                extra_context,
+                blk_list,
+                interpretation_map,
+            ),
             interjection_mode=(len(blk_list) == 1 and bool(risky_blocks)),
         )
         self.last_usage = usage
+        if self.use_scene_memory:
+            self.last_scene_memory = interpreted_scene_memory or self._build_fallback_scene_memory(blk_list)
         return blk_list
 
     

@@ -18,7 +18,7 @@ from ...dayu_widgets.slider import MSlider
 from ...dayu_widgets.text_edit import MTextEdit
 from ...dayu_widgets.tool_button import MToolButton
 from ...search_replace_panel import SearchReplacePanel
-from ..constants import supported_target_languages, user_font_path
+from ..constants import supported_ocr_language_hints, supported_target_languages, user_font_path
 
 
 class WorkspaceMixin:
@@ -186,6 +186,11 @@ class WorkspaceMixin:
         input_layout = QtWidgets.QHBoxLayout()
 
         source_text_layout = QtWidgets.QVBoxLayout()
+        self.ocr_language_combo = MComboBox().medium()
+        self.ocr_language_combo.addItems([self.tr(lang) for lang in supported_ocr_language_hints])
+        self.ocr_language_combo.setCurrentText(self.tr("Other Languages"))
+        self.ocr_language_combo.setToolTip(self.tr("OCR Language"))
+        source_text_layout.addWidget(self.ocr_language_combo)
         self.s_text_edit = MTextEdit()
         self.s_text_edit.setFixedHeight(120)
         source_text_layout.addWidget(self.s_text_edit)
@@ -317,12 +322,48 @@ class WorkspaceMixin:
         outline_settings_layout.addWidget(self.outline_width_dropdown)
         outline_settings_layout.addStretch()
 
+        effects_settings_layout = QtWidgets.QHBoxLayout()
+
+        self.text_gradient_checkbox = MCheckBox(self.tr("Gradient"))
+        self.text_gradient_start_button = QtWidgets.QPushButton()
+        self.text_gradient_start_button.setToolTip(self.tr("Text Gradient Top Color"))
+        self.text_gradient_start_button.setFixedSize(30, 30)
+        self.text_gradient_start_button.setStyleSheet(f"background-color: {dflt_clr}; border: none; border-radius: 5px;")
+        self.text_gradient_start_button.setProperty("selected_color", dflt_clr)
+        self.text_gradient_end_button = QtWidgets.QPushButton()
+        self.text_gradient_end_button.setToolTip(self.tr("Text Gradient Bottom Color"))
+        self.text_gradient_end_button.setFixedSize(30, 30)
+        self.text_gradient_end_button.setStyleSheet("background-color: #ffffff; border: none; border-radius: 5px;")
+        self.text_gradient_end_button.setProperty("selected_color", "#ffffff")
+
+        self.second_outline_checkbox = MCheckBox(self.tr("2nd Outline"))
+        self.second_outline_color_button = QtWidgets.QPushButton()
+        self.second_outline_color_button.setToolTip(self.tr("Second Outline Color"))
+        self.second_outline_color_button.setFixedSize(30, 30)
+        self.second_outline_color_button.setStyleSheet("background-color: black; border: none; border-radius: 5px;")
+        self.second_outline_color_button.setProperty("selected_color", "#000000")
+        self.second_outline_width_dropdown = MComboBox().small()
+        self.second_outline_width_dropdown.setFixedWidth(60)
+        self.second_outline_width_dropdown.setToolTip(self.tr("Second Outline Width"))
+        self.second_outline_width_dropdown.addItems(["1.0", "1.5", "2.0", "2.5", "3.0"])
+        self.second_outline_width_dropdown.set_editable(True)
+
+        effects_settings_layout.addWidget(self.text_gradient_checkbox)
+        effects_settings_layout.addWidget(self.text_gradient_start_button)
+        effects_settings_layout.addWidget(self.text_gradient_end_button)
+        effects_settings_layout.addSpacing(8)
+        effects_settings_layout.addWidget(self.second_outline_checkbox)
+        effects_settings_layout.addWidget(self.second_outline_color_button)
+        effects_settings_layout.addWidget(self.second_outline_width_dropdown)
+        effects_settings_layout.addStretch()
+
         rendering_divider_top = MDivider()
         rendering_divider_bottom = MDivider()
         text_render_layout.addWidget(rendering_divider_top)
         text_render_layout.addLayout(font_settings_layout)
         text_render_layout.addLayout(main_text_settings_layout)
         text_render_layout.addLayout(outline_settings_layout)
+        text_render_layout.addLayout(effects_settings_layout)
         text_render_layout.addWidget(rendering_divider_bottom)
 
         tools_widget = QtWidgets.QWidget()

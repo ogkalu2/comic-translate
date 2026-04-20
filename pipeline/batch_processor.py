@@ -136,10 +136,11 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
 
         settings_page = self.main_page.settings_page
         export_settings = settings_page.get_export_settings()
-        page_batch_size = max(1, self._get_batch_settings()["batch_size"])
-        detection_batch_size = 1
+        page_batch_size = max(64, self._get_batch_settings()["batch_size"])
+        detection_batch_size = 64
         extra_context = settings_page.get_llm_settings()["extra_context"]
         translator_key = settings_page.get_tool_selection("translator")
+        ordered_context = self._translation_context_requires_ordering()
 
         try:
             if self.main_page.file_handler.should_pre_materialize(image_list):
@@ -247,13 +248,7 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
                 return
             self.emit_progress(page.index, total_images, 0, 10, True)
             self._load_page_state_into_blk_list(page)
-            tc_key = self.cache_manager._get_translation_cache_key(
-                page.image,
-                "",
-                page.target_lang,
-                translator_key,
-                extra_context,
-            )
+            tc_key = self._build_page_translation_cache_key(page)
             page.translation_cache_key = tc_key
             self.cache_manager._apply_cached_translations_to_blocks(tc_key, page.blk_list)
             page.inpaint_input_img = self._restore_cached_inpaint_image(page)
@@ -292,28 +287,25 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
                 page.inpaint_input_img = self._restore_cached_inpaint_image(page)
 
             sanitize_translation_source_blocks(page.blk_list)
-            page.translation_cache_key = self.cache_manager._get_translation_cache_key(
-                page.image,
-                "",
-                page.target_lang,
-                translator_key,
-                extra_context,
-            )
-            self.cache_manager._apply_cached_translations_to_blocks(
-                page.translation_cache_key,
-                page.blk_list,
-            )
-            missing_blocks = self.cache_manager._get_missing_translation_blocks(
-                page.translation_cache_key,
-                page.blk_list,
-            )
-            if not missing_blocks:
-                self.emit_progress(page.index, total_images, 7, 10, False)
-                self._release_page_buffers(page)
-                translated_pages.append(page)
-                continue
 
-            page._translation_missing_blocks = missing_blocks
+            if not ordered_context:
+                page.translation_cache_key = self._build_page_translation_cache_key(page)
+                self.cache_manager._apply_cached_translations_to_blocks(
+                    page.translation_cache_key,
+                    page.blk_list,
+                )
+                missing_blocks = self.cache_manager._get_missing_translation_blocks(
+                    page.translation_cache_key,
+                    page.blk_list,
+                )
+                if not missing_blocks:
+                    self.emit_progress(page.index, total_images, 7, 10, False)
+                    self._release_page_buffers(page)
+                    translated_pages.append(page)
+                    continue
+
+                page._translation_missing_blocks = missing_blocks
+
             translation_queue.append(page)
             if len(translation_queue) >= page_batch_size:
                 translated_pages.extend(self._translate_queue(translation_queue, total_images))

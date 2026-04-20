@@ -8,7 +8,13 @@ from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
 from .ppocr import PPOCRv5Engine
-from .ppocr.engine2 import HunyuanOCREngine
+from .ppocr.engine2 import (
+    HunyuanOCREngine,
+    HUNYUAN_OCR_LM_STUDIO_DEFAULT_API_BASE_URL,
+    HUNYUAN_OCR_LM_STUDIO_DEFAULT_MODEL,
+    HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_API_BASE_URL,
+    HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_MODEL,
+)
 from .manga_ocr.onnx_engine import MangaOCREngineONNX
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
@@ -45,6 +51,8 @@ class OCRFactory:
         Returns:
             Appropriate OCR engine instance
         """
+        normalized_ocr_model = cls._normalize_ocr_model_key(ocr_model)
+
         # build cache key
         cache_key = cls._create_cache_key(
             ocr_model, 
@@ -60,16 +68,16 @@ class OCRFactory:
         # 2) For account holders using a remote  model
         token = get_token("access_token")
         if token and (
-            ocr_model in UserOCR.LLM_OCR_KEYS
-            or ocr_model in UserOCR.FULL_PAGE_OCR_KEYS
+            normalized_ocr_model in UserOCR.LLM_OCR_KEYS
+            or normalized_ocr_model in UserOCR.FULL_PAGE_OCR_KEYS
         ):
             engine = UserOCR()
-            engine.initialize(settings, source_lang_english, ocr_model)
+            engine.initialize(settings, source_lang_english, normalized_ocr_model)
             cls._engines[cache_key] = engine
             return engine
 
         # 3) otherwise fall back to the local factories
-        engine = cls._create_new_engine(settings, source_lang_english, ocr_model, backend)
+        engine = cls._create_new_engine(settings, source_lang_english, normalized_ocr_model, backend)
         cls._engines[cache_key] = engine
         return engine
     
@@ -93,7 +101,9 @@ class OCRFactory:
         - If no dynamic values are found, falls back to a simple key
           based on ocr and source language.
         """
-        base = f"{ocr_key}_{backend}"
+        normalized_ocr_key = cls._normalize_ocr_model_key(ocr_key)
+        normalized_source_lang = str(source_lang or "Other Languages")
+        base = f"{ocr_key}_{normalized_source_lang}_{backend}"
 
         # Gather any dynamic bits we care about:
         extras = {}
@@ -108,6 +118,8 @@ class OCRFactory:
             extras["device"] = device
         if batch_settings:
             extras["ocr_batch_size"] = batch_settings.get("ocr_batch_size")
+        if normalized_ocr_key == "Tencent/HunyuanOCR":
+            extras["runtime"] = cls._get_hunyuan_backend(settings)
 
         # The LLM OCR engines currently don't use the settings in the LLMs tab
         # so exclude this for now
@@ -142,6 +154,7 @@ class OCRFactory:
         backend: str = 'onnx'
     ) -> OCREngine:
         """Create a new OCR engine instance based on model and language."""
+        normalized_ocr_model = cls._normalize_ocr_model_key(ocr_model)
         
         # Model-specific factory functions
         general = {
@@ -156,6 +169,7 @@ class OCRFactory:
         language_factories = {
             'Japanese': lambda s: cls._create_manga_ocr(s, backend),
             'Korean': lambda s: cls._create_pororo_ocr(s, backend),
+            'Other Languages': lambda s: cls._create_ppocr(s, 'latin', backend),
             'Chinese': lambda s: cls._create_ppocr(s, 'ch', backend),
             'Russian': lambda s: cls._create_ppocr(s, 'ru', backend),
             'French': lambda s: cls._create_ppocr(s, 'latin', backend),
@@ -167,18 +181,45 @@ class OCRFactory:
         }
         
         # Check if we have a specific model factory
-        if ocr_model in general:
-            return general[ocr_model](settings)
+        if normalized_ocr_model in general:
+            return general[normalized_ocr_model](settings)
         
         # For Default, prefer language-specific engines when we have a hint,
         # otherwise fall back to a generic multilingual-recognition model.
-        if ocr_model == 'Default' and source_lang_english in language_factories:
+        if normalized_ocr_model == 'Default' and source_lang_english in language_factories:
             return language_factories[source_lang_english](settings)
 
-        if ocr_model == 'Default':
+        if normalized_ocr_model == 'Default':
             return cls._create_ppocr(settings, 'latin', backend)
 
         return cls._create_ppocr(settings, 'latin', backend)
+
+    @staticmethod
+    def _normalize_ocr_model_key(ocr_model: str) -> str:
+        if isinstance(ocr_model, str) and ocr_model.startswith("Tencent/HunyuanOCR"):
+            return "Tencent/HunyuanOCR"
+        return ocr_model
+
+    @staticmethod
+    def _get_hunyuan_backend(settings) -> str:
+        default_backend = "Local vLLM"
+        get_tool_selection = getattr(settings, "get_tool_selection", None)
+        if not callable(get_tool_selection):
+            return default_backend
+
+        try:
+            selected = get_tool_selection("hunyuanocr_backend")
+        except Exception:
+            return default_backend
+
+        tr = getattr(getattr(settings, "ui", None), "tr", lambda value: value)
+        mapping = {
+            tr("LM Studio"): "LM Studio",
+            tr("Local vLLM"): "Local vLLM",
+            "LM Studio": "LM Studio",
+            "Local vLLM": "Local vLLM",
+        }
+        return mapping.get(selected, selected or default_backend)
     
     @staticmethod
     def _create_microsoft_ocr(settings) -> OCREngine:
@@ -260,8 +301,18 @@ class OCRFactory:
 
     @staticmethod
     def _create_hunyuan_ocr(settings) -> OCREngine:
+        runtime = OCRFactory._get_hunyuan_backend(settings)
+        if runtime == "LM Studio":
+            url = HUNYUAN_OCR_LM_STUDIO_DEFAULT_API_BASE_URL
+            model = HUNYUAN_OCR_LM_STUDIO_DEFAULT_MODEL
+        else:
+            url = HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_API_BASE_URL
+            model = HUNYUAN_OCR_LOCAL_VLLM_DEFAULT_MODEL
+
         engine = HunyuanOCREngine()
         engine.initialize(
+            url=url,
+            model=model,
             recognition_batch_size=settings.get_batch_settings().get("ocr_batch_size", 8)
         )
         return engine

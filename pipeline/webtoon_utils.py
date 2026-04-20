@@ -1,10 +1,33 @@
 import logging
+from dataclasses import dataclass
 from typing import Optional
-import logging
 
 from modules.utils.textblock import TextBlock
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class VisibleBlockContext:
+    block: TextBlock
+    original_xyxy: object
+    original_bubble_xyxy: object
+    mapping: dict
+    page_index: int
+
+
+class VisibleBlockSelection(list):
+    def __init__(self, entries: list[VisibleBlockContext] | None = None):
+        entries = entries or []
+        self._entries = entries
+        self._by_block_id = {id(entry.block): entry for entry in entries}
+        super().__init__(entry.block for entry in entries)
+
+    def context_for(self, block: TextBlock) -> VisibleBlockContext | None:
+        return self._by_block_id.get(id(block))
+
+    def contexts(self) -> list[VisibleBlockContext]:
+        return list(self._entries)
 
 
 def find_block_page_index(blk: TextBlock, webtoon_manager) -> Optional[int]:
@@ -134,15 +157,15 @@ def convert_block_to_visible_coordinates(blk: TextBlock, mapping: dict, page_idx
         blk.bubble_xyxy[3] = int(bubble_y2_combined)
 
 
-def filter_and_convert_visible_blocks(main_page, pipeline, mappings: list[dict], single_block: bool = False) -> list[TextBlock]:
+def filter_and_convert_visible_blocks(main_page, pipeline, mappings: list[dict], single_block: bool = False) -> VisibleBlockSelection:
     """Filter blocks to visible area and convert their coordinates to visible image space."""
-    visible_blocks = []
+    visible_entries: list[VisibleBlockContext] = []
     
     # Get the blocks to process
     if single_block:
         selected_block = pipeline.get_selected_block()
         if not selected_block:
-            return []
+            return VisibleBlockSelection()
         blocks_to_check = [selected_block]
     else:
         blocks_to_check = main_page.blk_list
@@ -173,41 +196,38 @@ def filter_and_convert_visible_blocks(main_page, pipeline, mappings: list[dict],
             for mapping in page_mappings[blk_page_idx]:
                 if is_block_in_visible_portion(blk, mapping, blk_page_idx, webtoon_manager):
                     # Store original coordinates and mapping info for later restoration
-                    blk._original_xyxy = blk.xyxy.copy()
-                    blk._original_bubble_xyxy = blk.bubble_xyxy.copy() if blk.bubble_xyxy is not None else None
-                    blk._mapping = mapping
-                    blk._page_index = blk_page_idx
+                    visible_entries.append(
+                        VisibleBlockContext(
+                            block=blk,
+                            original_xyxy=blk.xyxy.copy(),
+                            original_bubble_xyxy=blk.bubble_xyxy.copy() if blk.bubble_xyxy is not None else None,
+                            mapping=mapping,
+                            page_index=blk_page_idx,
+                        )
+                    )
                     
                     # Convert coordinates to visible image space
                     convert_block_to_visible_coordinates(blk, mapping, blk_page_idx, webtoon_manager)
                     
                     # Add the original block to the list
-                    visible_blocks.append(blk)
                     found_visible_portion = True
                     break
             
             if found_visible_portion:
                 break
     
-    return visible_blocks
+    return VisibleBlockSelection(visible_entries)
 
 
-def restore_original_block_coordinates(processed_blocks: list[TextBlock]):
+def restore_original_block_coordinates(processed_blocks: VisibleBlockSelection):
     """Restore original scene coordinates to blocks and clean up temporary attributes."""
-    for blk in processed_blocks:
-        if not hasattr(blk, '_original_xyxy'):
-            continue
-        
-        # Restore original coordinates
-        blk.xyxy[:] = blk._original_xyxy
-        if blk._original_bubble_xyxy is not None:
-            blk.bubble_xyxy[:] = blk._original_bubble_xyxy
-        
-        # Clean up temporary attributes
-        delattr(blk, '_original_xyxy')
-        delattr(blk, '_original_bubble_xyxy')
-        delattr(blk, '_mapping')
-        delattr(blk, '_page_index')
+    for context in processed_blocks.contexts():
+        blk = context.block
+        blk.xyxy[:] = context.original_xyxy
+        if context.original_bubble_xyxy is not None and blk.bubble_xyxy is not None:
+            blk.bubble_xyxy[:] = context.original_bubble_xyxy
+        elif context.original_bubble_xyxy is None:
+            blk.bubble_xyxy = None
 
 
 def is_text_item_in_visible_portion(text_item, mapping: dict, page_idx: int, webtoon_manager) -> bool:

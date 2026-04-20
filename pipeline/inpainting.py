@@ -221,13 +221,13 @@ class InpaintingHandler:
                     text="segment",
                     translation="segment",
                 )
-                seg_blk.inpaint_bboxes = get_inpaint_bboxes(text_bbox_list, image)
+                seg_blk.inpaint_bboxes = (
+                    np.array(segment_bboxes, dtype=np.int32)
+                    if segment_bboxes
+                    else None
+                )
                 if seg_blk.inpaint_bboxes is None or len(seg_blk.inpaint_bboxes) == 0:
-                    seg_blk.inpaint_bboxes = (
-                        np.array(segment_bboxes, dtype=np.int32)
-                        if segment_bboxes
-                        else None
-                    )
+                    seg_blk.inpaint_bboxes = get_inpaint_bboxes(text_bbox_list, image)
                 if seg_blk.inpaint_bboxes is not None and len(seg_blk.inpaint_bboxes) > 0:
                     segment_blocks.append(seg_blk)
                     has_any = True

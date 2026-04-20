@@ -35,11 +35,17 @@ class OCRHandler:
     def OCR_image(self, single_block: bool = False):
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
             image = self._get_ocr_image()
-            ocr_model = self.main_page.settings_page.get_tool_selection('ocr')
-            device = resolve_device(
-                self.main_page.settings_page.is_gpu_enabled()
+            settings_page = self.main_page.settings_page
+            ocr_model = settings_page.get_tool_selection('ocr')
+            ocr_language_hint = (
+                self.main_page.get_ocr_language_hint()
+                if hasattr(self.main_page, "get_ocr_language_hint")
+                else ""
             )
-            cache_key = self.cache_manager._get_ocr_cache_key(image, "", ocr_model, device)
+            device = resolve_device(
+                settings_page.is_gpu_enabled()
+            )
+            cache_key = self.cache_manager._get_ocr_cache_key(image, ocr_language_hint, ocr_model, device)
             
             if single_block:
                 blk = self.pipeline.get_selected_block()
@@ -61,7 +67,7 @@ class OCRHandler:
                     else:
                         logger.debug("Block not found in cache, processing single block...")
                         # Process just this single block
-                        self.ocr.initialize(self.main_page, "")
+                        self.ocr.initialize(self.main_page, ocr_language_hint)
                         single_block_list = [blk]
                         self.ocr.process(image, single_block_list)
                         
@@ -72,7 +78,7 @@ class OCRHandler:
                 else:
                     # Run OCR on all blocks and cache the results
                     logger.debug("No cached OCR results found, running OCR on entire page...")
-                    self.ocr.initialize(self.main_page, "")
+                    self.ocr.initialize(self.main_page, ocr_language_hint)
                     # Create a mapping between original blocks and their copies
                     original_to_copy = {}
                     all_blocks_copy = []
@@ -100,7 +106,7 @@ class OCRHandler:
                     logger.debug(f"Using cached OCR results for all {len(self.main_page.blk_list)} blocks")
                 else:
                     # Need to run OCR only for the blocks not already cached.
-                    self.ocr.initialize(self.main_page, "")
+                    self.ocr.initialize(self.main_page, ocr_language_hint)
                     if missing_blocks:  
                         self.ocr.process(image, missing_blocks)
                         self.cache_manager._cache_ocr_results(cache_key, missing_blocks)
@@ -128,7 +134,12 @@ class OCRHandler:
             return
         
         # Perform OCR on the visible image with filtered blocks
-        self.ocr.initialize(self.main_page, "")
+        ocr_language_hint = (
+            self.main_page.get_ocr_language_hint()
+            if hasattr(self.main_page, "get_ocr_language_hint")
+            else ""
+        )
+        self.ocr.initialize(self.main_page, ocr_language_hint)
         self.ocr.process(visible_image, visible_blocks)
         
         # The OCR text is already set on the blocks, just restore coordinates

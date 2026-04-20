@@ -24,6 +24,44 @@ class GPTTranslation(BaseLLMTranslation):
 
         # vLLM text-only in your setup; keep this False to avoid multimodal payload bloat.
         self.supports_images: bool = False
+    
+    def _is_lm_studio_backend(self) -> bool:
+        base_url = (self.api_base_url or "").lower()
+        return "127.0.0.1:1234" in base_url or "localhost:1234" in base_url
+
+    def _supports_image_input(self) -> bool:
+        return self._is_lm_studio_backend()
+
+    def _build_messages(
+        self,
+        user_prompt: str,
+        system_prompt: str,
+        image: np.ndarray | None,
+    ) -> list[dict]:
+        messages: list[dict] = [
+            {"role": "system", "content": system_prompt},
+        ]
+
+        if self.img_as_llm_input and image is not None and self._supports_image_input():
+            encoded_image, media_type = self.encode_image(image)
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": user_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{media_type};base64,{encoded_image}",
+                            },
+                        },
+                    ],
+                }
+            )
+        else:
+            messages.append({"role": "user", "content": user_prompt})
+
+        return messages
 
     def initialize(
         self,
@@ -53,11 +91,7 @@ class GPTTranslation(BaseLLMTranslation):
         Returns the assistant message content (JSON string).
         """
 
-        # Minimal messages: plain strings (no multimodal wrappers).
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        messages = self._build_messages(user_prompt, system_prompt, image)
 
         payload = {
             "model": self.model,
@@ -68,10 +102,40 @@ class GPTTranslation(BaseLLMTranslation):
             "presence_penalty" : 0.0,
             "frequency_penalty": 0.0,
             "repetition_penalty" : 1.05,
-            "response_format": {"type": "json_object"},
+            "response_format": self._build_response_format(),
         }
 
         return self._make_api_request(payload)
+
+    def _build_response_format(self) -> dict:
+        if self._is_lm_studio_backend():
+            # LM Studio accepts `text` and `json_schema`, but in practice
+            # `text` is more stable here than forcing schema decoding.
+            return {"type": "text"}
+        return {"type": "json_object"}
+
+    def _extract_message_text(self, message: dict) -> str:
+        content = message.get("content")
+        reasoning_content = message.get("reasoning_content")
+
+        candidates = [content, reasoning_content]
+
+        for candidate in candidates:
+            if isinstance(candidate, str) and candidate.strip():
+                return candidate.strip()
+
+            if isinstance(candidate, list):
+                parts = []
+                for item in candidate:
+                    if isinstance(item, dict) and item.get("type") == "text":
+                        text = item.get("text")
+                        if isinstance(text, str) and text.strip():
+                            parts.append(text)
+                joined = "\n".join(parts).strip()
+                if joined:
+                    return joined
+
+        raise RuntimeError("Model returned no usable text in content or reasoning_content")
 
     def _make_api_request(self, payload):
         try:
@@ -97,11 +161,11 @@ class GPTTranslation(BaseLLMTranslation):
                     usage.get("total_tokens"),
                 )
 
-            content = response_data["choices"][0]["message"]["content"]
-
+            choice = response_data["choices"][0]
+            message = choice.get("message", {}) or {}
+            content = self._extract_message_text(message)
             logger = logging.getLogger(__name__)
             logger.debug("LLM RESPONSE | %s", content)
-
             return content
 
         except requests.exceptions.RequestException as e:

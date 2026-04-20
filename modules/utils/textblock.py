@@ -1,47 +1,58 @@
-from typing import List, Tuple
-import numpy as np
-import copy
+from __future__ import annotations
+
 import uuid
-from PIL import Image, ImageDraw
-from collections import defaultdict, deque
-from ..detection.utils.text_lines import group_items_into_lines
-from modules.detection.utils.orientation import infer_text_direction
-from modules.detection.utils.geometry import does_rectangle_fit, is_mostly_contained
-from modules.utils.language_utils import is_no_space_text
+
+import numpy as np
+
+from .textblock_state import (
+    TextBlockContentState,
+    TextBlockGeometryState,
+    TextBlockMetadataState,
+    TextBlockRenderState,
+    clone_state_value,
+)
+
 
 class TextBlock(object):
     """
-    Object that stores a block of text. Optionally stores the list of lines
+    Object that stores a block of text. Optionally stores the list of lines.
+
+    The instance still exposes the historical flat attributes because the
+    project serializes/deserializes `TextBlock` objects through `__dict__`.
+    The snapshot helpers below separate geometry/content/render concerns
+    without forcing a broad migration of existing call sites.
     """
-    def __init__(self, 
-                 text_bbox: np.ndarray = None,
-                 bubble_bbox: np.ndarray = None,
-                 text_class: str = "",
-                 inpaint_bboxes = None,
-                 lines: List = None,
-                 text_segm_points: np.ndarray = None, 
-                 angle = 0,
-                 text: str = "",
-                 texts: List[str] = None,
-                 translation: str = "",
-                 line_spacing = 1,
-                 alignment: str = '',
-                 target_lang: str = "",
-                 min_font_size: int = 0,
-                 max_font_size: int = 0,
-                 font_size_px: float = 0.0,
-                 font_color: tuple = (),
-                 direction: str = "",
-                 block_uid: str = "",
-                 **kwargs) -> None:
-        
+
+    def __init__(
+        self,
+        text_bbox: np.ndarray = None,
+        bubble_bbox: np.ndarray = None,
+        text_class: str = "",
+        inpaint_bboxes=None,
+        lines: list = None,
+        text_segm_points: np.ndarray = None,
+        angle=0,
+        text: str = "",
+        texts: list[str] = None,
+        translation: str = "",
+        line_spacing=1,
+        alignment: str = '',
+        target_lang: str = "",
+        min_font_size: int = 0,
+        max_font_size: int = 0,
+        font_size_px: float = 0.0,
+        font_color: tuple = (),
+        direction: str = "",
+        block_uid: str = "",
+        **kwargs,
+    ) -> None:
         self.xyxy = text_bbox
         self.segm_pts = text_segm_points
         self.bubble_xyxy = bubble_bbox
         self.text_class = text_class
         self.angle = angle
         self.tr_origin_point = ()
- 
+
         self.lines = lines
         if isinstance(inpaint_bboxes, np.ndarray):
             self.inpaint_bboxes = inpaint_bboxes
@@ -53,7 +64,7 @@ class TextBlock(object):
 
         self.line_spacing = line_spacing
         self.alignment = alignment
-        
+
         self.target_lang = target_lang
         self.block_uid = block_uid or uuid.uuid4().hex
 
@@ -63,323 +74,219 @@ class TextBlock(object):
         self.font_color = font_color
         self.direction = direction
 
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    _NON_PERSISTENT_KEYS = {
+        "source_lang",
+        "_mapping",
+        "_page_index",
+        "_original_xyxy",
+        "_original_bubble_xyxy",
+    }
+
+    _SERIALIZED_KEYS = {
+        "xyxy",
+        "segm_pts",
+        "bubble_xyxy",
+        "text_class",
+        "angle",
+        "tr_origin_point",
+        "lines",
+        "inpaint_bboxes",
+        "texts",
+        "text",
+        "translation",
+        "line_spacing",
+        "alignment",
+        "target_lang",
+        "block_uid",
+        "min_font_size",
+        "max_font_size",
+        "font_size_px",
+        "font_color",
+        "direction",
+        "max_chars",
+    }
+
     @property
     def xywh(self):
         x1, y1, x2, y2 = self.xyxy
-        return np.array([x1, y1, x2-x1, y2-y1]).astype(np.int32)
+        return np.array([x1, y1, x2 - x1, y2 - y1]).astype(np.int32)
 
     @property
     def center(self) -> np.ndarray:
         xyxy = np.array(self.xyxy)
         return (xyxy[:2] + xyxy[2:]) / 2
-    
+
+    def geometry_state(self) -> TextBlockGeometryState:
+        return TextBlockGeometryState(
+            xyxy=clone_state_value(self.xyxy),
+            bubble_xyxy=clone_state_value(self.bubble_xyxy),
+            inpaint_bboxes=clone_state_value(self.inpaint_bboxes),
+            segm_pts=clone_state_value(self.segm_pts),
+            lines=clone_state_value(self.lines),
+            angle=self.angle,
+            tr_origin_point=clone_state_value(self.tr_origin_point),
+        )
+
+    def apply_geometry_state(self, state: TextBlockGeometryState) -> None:
+        self.xyxy = clone_state_value(state.xyxy)
+        self.bubble_xyxy = clone_state_value(state.bubble_xyxy)
+        self.inpaint_bboxes = clone_state_value(state.inpaint_bboxes)
+        self.segm_pts = clone_state_value(state.segm_pts)
+        self.lines = clone_state_value(state.lines)
+        self.angle = state.angle
+        self.tr_origin_point = clone_state_value(state.tr_origin_point)
+
+    def content_state(self) -> TextBlockContentState:
+        return TextBlockContentState(
+            text=self.text,
+            texts=clone_state_value(self.texts) or [],
+            translation=self.translation,
+            target_lang=self.target_lang,
+        )
+
+    def apply_content_state(self, state: TextBlockContentState) -> None:
+        self.text = state.text
+        self.texts = clone_state_value(state.texts) or []
+        self.translation = state.translation
+        self.target_lang = state.target_lang
+
+    def render_state(self) -> TextBlockRenderState:
+        return TextBlockRenderState(
+            line_spacing=self.line_spacing,
+            alignment=self.alignment,
+            min_font_size=self.min_font_size,
+            max_font_size=self.max_font_size,
+            font_size_px=self.font_size_px,
+            font_color=clone_state_value(self.font_color),
+            direction=self.direction,
+            max_chars=getattr(self, "max_chars", None),
+        )
+
+    def apply_render_state(self, state: TextBlockRenderState) -> None:
+        self.line_spacing = state.line_spacing
+        self.alignment = state.alignment
+        self.min_font_size = state.min_font_size
+        self.max_font_size = state.max_font_size
+        self.font_size_px = state.font_size_px
+        self.font_color = clone_state_value(state.font_color)
+        self.direction = state.direction
+        if state.max_chars is None:
+            self.__dict__.pop("max_chars", None)
+        else:
+            self.max_chars = state.max_chars
+
+    def metadata_state(self) -> TextBlockMetadataState:
+        return TextBlockMetadataState(
+            text_class=self.text_class,
+            block_uid=self.block_uid,
+        )
+
+    def apply_metadata_state(self, state: TextBlockMetadataState) -> None:
+        self.text_class = state.text_class
+        self.block_uid = state.block_uid
+
+    def to_dict(self, include_extras: bool = True, include_private: bool = False) -> dict:
+        data = {
+            "xyxy": clone_state_value(self.xyxy),
+            "segm_pts": clone_state_value(self.segm_pts),
+            "bubble_xyxy": clone_state_value(self.bubble_xyxy),
+            "text_class": self.text_class,
+            "angle": self.angle,
+            "tr_origin_point": clone_state_value(self.tr_origin_point),
+            "lines": clone_state_value(self.lines),
+            "inpaint_bboxes": clone_state_value(self.inpaint_bboxes),
+            "texts": clone_state_value(self.texts),
+            "text": self.text,
+            "translation": self.translation,
+            "line_spacing": self.line_spacing,
+            "alignment": self.alignment,
+            "target_lang": self.target_lang,
+            "block_uid": self.block_uid,
+            "min_font_size": self.min_font_size,
+            "max_font_size": self.max_font_size,
+            "font_size_px": self.font_size_px,
+            "font_color": clone_state_value(self.font_color),
+            "direction": self.direction,
+        }
+        max_chars = getattr(self, "max_chars", None)
+        if max_chars is not None:
+            data["max_chars"] = max_chars
+
+        if not include_extras:
+            return data
+
+        for key, value in self.__dict__.items():
+            if key in data or key in self._NON_PERSISTENT_KEYS:
+                continue
+            if key.startswith("_") and not include_private:
+                continue
+            data[key] = clone_state_value(value)
+
+        return data
+
+    @classmethod
+    def from_dict(cls, payload: dict | None):
+        data = dict(payload or {})
+        for key in cls._NON_PERSISTENT_KEYS:
+            data.pop(key, None)
+
+        block = cls(
+            text_bbox=data.pop("xyxy", None),
+            bubble_bbox=data.pop("bubble_xyxy", None),
+            text_class=data.pop("text_class", ""),
+            inpaint_bboxes=data.pop("inpaint_bboxes", None),
+            lines=data.pop("lines", None),
+            text_segm_points=data.pop("segm_pts", None),
+            angle=data.pop("angle", 0),
+            text=data.pop("text", ""),
+            texts=data.pop("texts", None),
+            translation=data.pop("translation", ""),
+            line_spacing=data.pop("line_spacing", 1),
+            alignment=data.pop("alignment", ""),
+            target_lang=data.pop("target_lang", ""),
+            min_font_size=data.pop("min_font_size", 0),
+            max_font_size=data.pop("max_font_size", 0),
+            font_size_px=data.pop("font_size_px", 0.0),
+            font_color=data.pop("font_color", ()),
+            direction=data.pop("direction", ""),
+            block_uid=data.pop("block_uid", ""),
+        )
+
+        tr_origin_point = data.pop("tr_origin_point", ())
+        block.tr_origin_point = clone_state_value(tr_origin_point)
+
+        if "max_chars" in data:
+            block.max_chars = data.pop("max_chars")
+
+        for key, value in data.items():
+            block.__dict__[key] = clone_state_value(value)
+
+        return block
+
     def deep_copy(self):
         """
         Create a deep copy of this TextBlock instance.
-        
+
         Returns:
             TextBlock: A new TextBlock instance with copied data
         """
-        # Create a new TextBlock with copied numpy arrays and other data
         new_block = TextBlock()
-        
-        # Copy numpy arrays properly
-        new_block.xyxy = self.xyxy.copy() if isinstance(self.xyxy, np.ndarray) else self.xyxy
-        new_block.segm_pts = self.segm_pts.copy() if isinstance(self.segm_pts, np.ndarray) else self.segm_pts
-        new_block.bubble_xyxy = self.bubble_xyxy.copy() if isinstance(self.bubble_xyxy, np.ndarray) else self.bubble_xyxy
-        new_block.inpaint_bboxes = self.inpaint_bboxes.copy() if isinstance(self.inpaint_bboxes, np.ndarray) else self.inpaint_bboxes
-        
-        # Copy simple attributes
-        new_block.text_class = self.text_class
-        new_block.angle = self.angle
-        new_block.tr_origin_point = copy.deepcopy(self.tr_origin_point)
-        new_block.lines = copy.deepcopy(self.lines)
-        new_block.texts = copy.deepcopy(self.texts)
-        new_block.text = self.text
-        new_block.translation = self.translation
-        new_block.line_spacing = self.line_spacing
-        new_block.alignment = self.alignment
-        new_block.target_lang = self.target_lang
-        new_block.block_uid = self.block_uid
-        new_block.min_font_size = self.min_font_size
-        new_block.max_font_size = self.max_font_size
-        new_block.font_size_px = self.font_size_px
-        new_block.font_color = self.font_color
-        
+        new_block.apply_geometry_state(self.geometry_state())
+        new_block.apply_content_state(self.content_state())
+        new_block.apply_render_state(self.render_state())
+        new_block.apply_metadata_state(self.metadata_state())
+
+        for key, value in self.__dict__.items():
+            if key in self._SERIALIZED_KEYS:
+                continue
+            new_block.__dict__[key] = clone_state_value(value)
+
         return new_block
 
-def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:
-    # Sort blk_list from right to left, top to bottom
-    sorted_blk_list = []
-    for blk in sorted(blk_list, key=lambda blk: blk.center[1]):
-        for i, sorted_blk in enumerate(sorted_blk_list):
-            if blk.center[1] > sorted_blk.xyxy[3]:
-                continue
-            if blk.center[1] < sorted_blk.xyxy[1]:
-                sorted_blk_list.insert(i + 1, blk)
-                break
 
-            # y center of blk inside sorted_blk so sort by x instead
-            if right_to_left and blk.center[0] > sorted_blk.center[0]:
-                sorted_blk_list.insert(i, blk)
-                break
-            if not right_to_left and blk.center[0] < sorted_blk.center[0]:
-                sorted_blk_list.insert(i, blk)
-                break
-        else:
-            sorted_blk_list.append(blk)
-    return sorted_blk_list
-
-def sort_textblock_rectangles(
-    coords_text_list: List[Tuple[Tuple[int, int, int, int], str]],
-    direction: str = 'ver_rtl',
-    band_ratio: float = 0.5,
-) -> List[Tuple[Tuple[int, int, int, int], str]]:
-    """
-    Sort a list of (bbox, text) tuples into reading order using the
-    shared grouping code in `group_items_into_lines`.
-
-    This function now delegates line/column grouping to the detection
-    utility which uses an adaptive band based on median box size and a
-    `band_ratio` multiplier (instead of a fixed pixel threshold).
-
-    Args:
-        coords_text_list: list of (bbox, text) where bbox is (x1,y1,x2,y2)
-        direction: reading direction (same semantics as group_items_into_lines)
-        band_ratio: multiplier for the adaptive band used to group items
-
-    Returns:
-        flattened list of (bbox, text) in reading order
-    """
-    if not coords_text_list:
-        return []
-
-    # Build list of bbox items and a mapping to preserve original texts
-    bboxes = []
-    mapping = defaultdict(deque)  # bbox_tuple -> deque of texts (preserve duplicates)
-    for bbox, text in coords_text_list:
-        bbox_t = tuple(int(v) for v in bbox)
-        bboxes.append(bbox_t)
-        mapping[bbox_t].append(text)
-
-    # Use the canonical grouping implementation
-    lines = group_items_into_lines(bboxes, direction=direction, band_ratio=band_ratio)
-
-    # Flatten using the mapping to reattach texts in the original multiplicity/order
-    out = []
-    for line in lines:
-        for bbox in line:
-            bbox_t = tuple(int(v) for v in bbox)
-            if mapping[bbox_t]:
-                text = mapping[bbox_t].popleft()
-            else:
-                text = ''
-            out.append((bbox_t, text))
-
-    return out
-
-def visualize_textblocks(canvas, blk_list: List[TextBlock]):
-    """Visualize text blocks using PIL."""
-    # Convert numpy array to PIL Image
-    if isinstance(canvas, np.ndarray):
-        if canvas.dtype != np.uint8:
-            canvas = canvas.astype(np.uint8)
-        if len(canvas.shape) == 3:
-            pil_image = Image.fromarray(canvas)
-        else:
-            pil_image = Image.fromarray(canvas, mode='L').convert('RGB')
-    else:
-        pil_image = canvas
-    
-    draw = ImageDraw.Draw(pil_image)
-    lw = max(round(sum(canvas.shape) / 2 * 0.003), 2)  # line width
-    
-    for i, blk in enumerate(blk_list):
-        bx1, by1, bx2, by2 = blk.xyxy
-        # Draw rectangle
-        draw.rectangle([bx1, by1, bx2, by2], outline=(127, 255, 127), width=lw)
-        
-        # Draw line numbers and polygons (simplified)
-        for j, line in enumerate(blk.lines):
-            if len(line) > 0:
-                draw.text(line[0], str(j), fill=(255, 127, 0))
-                # Draw polygon outline (simplified as lines between points)
-                if len(line) > 1:
-                    for k in range(len(line)):
-                        start_point = tuple(line[k])
-                        end_point = tuple(line[(k + 1) % len(line)])
-                        draw.line([start_point, end_point], fill=(0, 127, 255), width=2)
-        
-        # Draw block index
-        draw.text((bx1, by1 + lw), str(i), fill=(255, 127, 127))
-    
-    # Convert back to numpy array
-    return np.array(pil_image)
-
-def visualize_speech_bubbles(canvas, blk_list: List[TextBlock]):
-    """Visualize speech bubbles using PIL."""
-    # Convert numpy array to PIL Image
-    if isinstance(canvas, np.ndarray):
-        if canvas.dtype != np.uint8:
-            canvas = canvas.astype(np.uint8)
-        if len(canvas.shape) == 3:
-            pil_image = Image.fromarray(canvas)
-        else:
-            pil_image = Image.fromarray(canvas, mode='L').convert('RGB')
-    else:
-        pil_image = canvas
-    
-    draw = ImageDraw.Draw(pil_image)
-    lw = max(round(sum(canvas.shape) / 2 * 0.003), 2)  # line width
-
-    # Define a color for each class
-    class_colors = {
-        'text_free': (255, 0, 0),   # Red color for text_free
-        'text_bubble': (0, 255, 0),   # Green color for text_bubble
-    }
-
-    for blk in blk_list:
-        if blk.bubble_xyxy is not None:
-            bx1, by1, bx2, by2 = blk.bubble_xyxy
-
-            # Select the color for the current class
-            color = class_colors.get(blk.text_class, (127, 255, 127))  # Default color if class not found
-
-            # Draw the bounding box with the selected color
-            draw.rectangle([bx1, by1, bx2, by2], outline=color, width=lw)
-
-    # Convert back to numpy array
-    return np.array(pil_image)
-
-def adjust_text_line_coordinates(coords, width_expansion_percentage: int, height_expansion_percentage: int, img: np.ndarray):
-    top_left_x, top_left_y, bottom_right_x, bottom_right_y = coords
-    im_h, im_w, _ = img.shape
-    
-    # Calculate width, height, and respective expansion offsets
-    width = bottom_right_x - top_left_x
-    height = bottom_right_y - top_left_y
-    width_expansion_offset = int(((width * width_expansion_percentage) / 100) / 2)
-    height_expansion_offset = int(((height * height_expansion_percentage) / 100) / 2)
-
-    # Define the rectangle origin points (bottom left, top right) with expansion/contraction
-    new_x1 = max(top_left_x - width_expansion_offset, 0)
-    new_y1 = max(top_left_y - height_expansion_offset, 0)
-    new_x2 = min(bottom_right_x + width_expansion_offset, im_w)
-    new_y2 = min(bottom_right_y + height_expansion_offset, im_h)
-
-    return new_x1, new_y1, new_x2, new_y2
-
-def adjust_blks_size(blk_list: List[TextBlock], img: np.ndarray, w_expan: int = 0, h_expan: int = 0):
-    for blk in blk_list:
-        coords = blk.xyxy
-        expanded_coords = adjust_text_line_coordinates(coords, w_expan, h_expan, img)
-        blk.xyxy[:] = expanded_coords
-
-def lists_to_blk_list(blk_list: list[TextBlock], texts_bboxes: list, texts_string: list):
-    import re
-    import numpy as np
-
-    # (bbox, text) pairs; normalize types
-    group = []
-    for b, t in zip(texts_bboxes, texts_string):
-        if b is None:
-            continue
-        bbox = tuple(int(v) for v in b)
-        # text может прилететь не строкой (tuple/list) из кастомных движков
-        if isinstance(t, (tuple, list)):
-            t = " ".join(str(x) for x in t if x is not None)
-        else:
-            t = "" if t is None else str(t)
-        group.append((bbox, t))
-
-    def _area(b):
-        x1, y1, x2, y2 = b
-        return max(0, x2 - x1) * max(0, y2 - y1)
-
-    def _center(b):
-        x1, y1, x2, y2 = b
-        return ((x1 + x2) * 0.5, (y1 + y2) * 0.5)
-
-    def _iou(a, b):
-        ax1, ay1, ax2, ay2 = a
-        bx1, by1, bx2, by2 = b
-        ix1, iy1 = max(ax1, bx1), max(ay1, by1)
-        ix2, iy2 = min(ax2, bx2), min(ay2, by2)
-        iw, ih = max(0, ix2 - ix1), max(0, iy2 - iy1)
-        inter = iw * ih
-        if inter <= 0:
-            return 0.0
-        ua = _area(a) + _area(b) - inter
-        return float(inter) / float(ua) if ua > 0 else 0.0
-
-    # Фильтр “мусора” от VLM на пустых/не-текстовых кропах
-    # Оставляем строки, где есть латиница/цифры, или нормальная пунктуация в составе латинского текста.
-    _re_has_latin = re.compile(r"[A-Za-z0-9]")
-    _re_cjk = re.compile(r"[\u4e00-\u9fff]")
-
-    def _clean_text(s: str) -> str:
-        s = (s or "").strip()
-        if not s:
-            return ""
-        # выкинуть частые “caption” ответы VLM
-        low = s.lower()
-        if low.startswith("the image is") or low.startswith("this image is") or low.startswith("image is"):
-            return ""
-        # если содержит CJK и при этом нет латиницы/цифр — считаем мусором
-        if _re_cjk.search(s) and not _re_has_latin.search(s):
-            return ""
-        # если вообще нет латиницы/цифр — обычно тоже мусор для английских баблов
-        if not _re_has_latin.search(s):
-            return ""
-        # нормализация пробелов
-        s = re.sub(r"\s+", " ", s).strip()
-        return s
-
-    # предварительно почистить тексты
-    group = [(b, _clean_text(t)) for (b, t) in group]
-    # убрать пустые после чистки
-    group = [(b, t) for (b, t) in group if t]
-
-    for blk in blk_list:
-        blk_entries = []
-
-        # 1) строгая привязка: bbox строки внутри bbox блока (или почти внутри)
-        for line_bbox, text in group:
-            if does_rectangle_fit(blk.xyxy, line_bbox):
-                blk_entries.append((line_bbox, text))
-            elif is_mostly_contained(blk.xyxy, line_bbox, 0.5):
-                blk_entries.append((line_bbox, text))
-            else:
-                # 2) мягкая привязка: IoU > 0, чтобы не терять из-за паддинга/масштаба
-                if _iou(tuple(int(v) for v in blk.xyxy), line_bbox) > 0.05:
-                    blk_entries.append((line_bbox, text))
-
-        # 3) fallback: если ничего не попало, привязать ближайший по центру (одна строка → один блок)
-        if not blk_entries and group:
-            bx, by = _center(tuple(int(v) for v in blk.xyxy))
-            best = None
-            best_d2 = None
-            for line_bbox, text in group:
-                cx, cy = _center(line_bbox)
-                d2 = (cx - bx) ** 2 + (cy - by) ** 2
-                if best_d2 is None or d2 < best_d2:
-                    best_d2 = d2
-                    best = (line_bbox, text)
-            if best is not None:
-                blk_entries = [best]
-
-        # Сортировка в порядок чтения + склейка
-        direction = infer_text_direction([bbox for bbox, _ in blk_entries]) if blk_entries else ('ver_rtl' if getattr(blk, "direction", "") == 'vertical' else 'hor_ltr')
-        sorted_entries = sort_textblock_rectangles(blk_entries, direction)
-
-        combined_text = ' '.join(text for _, text in sorted_entries).strip()
-        if is_no_space_text(combined_text):
-            blk.text = ''.join(text for _, text in sorted_entries).strip()
-        else:
-            blk.text = combined_text
-
-        # держим совместимость с blk.texts
-        blk.texts = [text for _, text in sorted_entries if text]
-
-    return blk_list
-
+from .textblock_content import lists_to_blk_list, sort_textblock_rectangles
+from .textblock_geometry import adjust_blks_size, adjust_text_line_coordinates, sort_blk_list
+from .textblock_visualization import visualize_speech_bubbles, visualize_textblocks

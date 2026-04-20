@@ -16,6 +16,10 @@ from pipeline.page_state import (
 )
 from pipeline.render_state import build_render_template_map, get_target_snapshot
 from pipeline.stage_state import activate_target_lang, is_stage_available
+from pipeline.translation_context import (
+    build_translation_prompt_context,
+    translation_context_requires_ordering,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +143,10 @@ class BatchStateMixin:
         return stages.issubset(completed)
 
     def _page_is_fully_done(self, page, translator_key: str, extra_context: str) -> bool:
+        llm_settings = self._get_llm_settings()
+        if translation_context_requires_ordering(llm_settings):
+            return False
+
         page_ctx = self._page_context(page.image_path, preferred_target=page.target_lang)
         state = page_ctx.state
         ps = self._get_pipeline_state(page.image_path)
@@ -157,7 +165,13 @@ class BatchStateMixin:
         if ps.get("translator_key") != translator_key:
             logger.debug("_page_is_fully_done: translator mismatch ps=%s now=%s for %s", ps.get("translator_key"), translator_key, page.image_path)
             return False
-        current_ctx_hash = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
+        _prompt_context, context_signature = build_translation_prompt_context(
+            self.main_page,
+            page.image_path,
+            page.target_lang,
+            llm_settings=llm_settings,
+        )
+        current_ctx_hash = hashlib.md5(context_signature.encode()).hexdigest() if context_signature else "no_context"
         if ps.get("extra_context_hash") != current_ctx_hash:
             logger.debug("_page_is_fully_done: context hash mismatch for %s", page.image_path)
             return False
@@ -175,7 +189,7 @@ class BatchStateMixin:
             "",
             page.target_lang,
             translator_key,
-            extra_context,
+            context_signature,
         )
         if not self.cache_manager._can_serve_all_blocks_from_translation_cache(translation_cache_key, blk_list):
             logger.debug("_page_is_fully_done: translation cache incomplete for %s", page.image_path)

@@ -38,6 +38,12 @@ class TextController(
             self.main.outline_font_color_button,
             self.main.outline_width_dropdown,
             self.main.outline_checkbox,
+            self.main.text_gradient_checkbox,
+            self.main.text_gradient_start_button,
+            self.main.text_gradient_end_button,
+            self.main.second_outline_checkbox,
+            self.main.second_outline_color_button,
+            self.main.second_outline_width_dropdown,
         ]
         self._text_change_timer = QtCore.QTimer(self.main)
         self._text_change_timer.setSingleShot(True)

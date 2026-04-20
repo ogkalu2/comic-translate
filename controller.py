@@ -247,6 +247,12 @@ class ComicTranslate(BatchUiMixin, ComicTranslateUI):
         self.outline_font_color_button.clicked.connect(self.text_ctrl.on_outline_color_change)
         self.outline_width_dropdown.currentTextChanged.connect(self.text_ctrl.on_outline_width_change)
         self.outline_checkbox.stateChanged.connect(self.text_ctrl.toggle_outline_settings)
+        self.text_gradient_checkbox.stateChanged.connect(self.text_ctrl.toggle_text_gradient)
+        self.text_gradient_start_button.clicked.connect(self.text_ctrl.on_text_gradient_start_color_change)
+        self.text_gradient_end_button.clicked.connect(self.text_ctrl.on_text_gradient_end_color_change)
+        self.second_outline_checkbox.stateChanged.connect(self.text_ctrl.toggle_second_outline_settings)
+        self.second_outline_color_button.clicked.connect(self.text_ctrl.on_second_outline_color_change)
+        self.second_outline_width_dropdown.currentTextChanged.connect(self.text_ctrl.on_second_outline_width_change)
 
         # Page List
         self.page_list.currentItemChanged.connect(self.image_ctrl.on_card_selected)

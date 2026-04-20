@@ -53,10 +53,9 @@ class ProjectEncoder:
 
     @staticmethod
     def encode_textblock(obj):
-        data = {k: v for k, v in obj.__dict__.items() if k != "source_lang"}
         return {
             'type': 'textblock',
-            'data': data
+            'data': obj.to_dict()
         }
 
     @staticmethod
@@ -162,11 +161,8 @@ class ProjectDecoder:
         
     @staticmethod
     def decode_textblock(obj):
-        text_block = TextBlock()
         data = dict(obj['data'])
-        data.pop("source_lang", None)
-        text_block.__dict__.update(data)
-        return text_block
+        return TextBlock.from_dict(data)
 
     @staticmethod
     def decode_qcolor(obj):

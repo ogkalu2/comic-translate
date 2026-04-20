@@ -88,6 +88,14 @@ class ComicTranslateUI(
             self.tr("Mongolian"): "Mongolian",
         }
         self.reverse_lang_mapping = {v: k for k, v in self.lang_mapping.items()}
+        self.ocr_language_hint_mapping = {
+            self.tr("Japanese"): "Japanese",
+            self.tr("Korean"): "Korean",
+            self.tr("Other Languages"): "Other Languages",
+        }
+        self.reverse_ocr_language_hint_mapping = {
+            v: k for k, v in self.ocr_language_hint_mapping.items()
+        }
 
         self.button_to_alignment = {
             0: QtCore.Qt.AlignmentFlag.AlignLeft,
@@ -108,6 +116,10 @@ class ComicTranslateUI(
         self._settings_resize_settle_timer.setSingleShot(True)
         self._settings_resize_settle_timer.setInterval(120)
         self._settings_resize_settle_timer.timeout.connect(self._finish_settings_resize_preview)
+
+    def get_ocr_language_hint(self) -> str:
+        current_text = self.ocr_language_combo.currentText()
+        return self.ocr_language_hint_mapping.get(current_text, current_text)
 
     def _init_ui(self):
         outer_widget = QtWidgets.QWidget(self)

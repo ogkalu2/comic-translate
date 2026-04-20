@@ -1,4 +1,3 @@
-from PIL.DdsImagePlugin import item
 import numpy as np
 from typing import Tuple, List
 
@@ -8,15 +7,15 @@ from PySide6.QtGui import QFont, QTextDocument,\
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
-from .hyphen_textwrap import wrap as hyphen_wrap
-from modules.utils.textblock import TextBlock
-from modules.utils.textblock import adjust_blks_size
-from modules.detection.utils.geometry import shrink_bbox
-from modules.detection.utils.orientation import infer_orientation
-from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
-from modules.utils.language_utils import get_language_code, is_no_space_text
-
 from dataclasses import dataclass
+
+from .hyphen_textwrap import wrap as hyphen_wrap
+from .font_sizing import resolve_init_font_size
+from .policy import is_vertical_block, is_vertical_language_code
+from .render_area import get_best_render_area
+from modules.utils.textblock import TextBlock
+from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
+from modules.utils.language_utils import get_language_code
 
 @dataclass
 class TextRenderingSettings:
@@ -34,6 +33,12 @@ class TextRenderingSettings:
     underline: bool
     line_spacing: str
     direction: Qt.LayoutDirection
+    second_outline: bool = False
+    second_outline_color: str = "#000000"
+    second_outline_width: str = "0.0"
+    text_gradient: bool = False
+    text_gradient_start_color: str = "#000000"
+    text_gradient_end_color: str = "#000000"
 
 def array_to_pil(rgb_image: np.ndarray):
     # Image is already in RGB format, just convert to PIL
@@ -44,46 +49,6 @@ def pil_to_array(pil_image: Image):
     # Convert the PIL image to a numpy array (already in RGB)
     numpy_image = np.array(pil_image)
     return numpy_image
-
-def is_vertical_language_code(lang_code: str | None) -> bool:
-    """Return True if the language code should use vertical layout.
-
-    Currently treats Japanese and simplified/traditional Chinese as
-    vertical-capable languages.
-    """
-    if not lang_code:
-        return False
-    code = lang_code.lower()
-    return code in {"zh-cn", "zh-tw", "ja"}
-
-def is_vertical_block(blk, lang_code: str | None) -> bool:
-    """Return True if this block should be rendered vertically.
-
-    A block is considered vertical when its direction flag is "vertical"
-    and the target language code is one of the vertical-capable ones.
-    """
-    return getattr(blk, "direction", "") == "vertical" and is_vertical_language_code(lang_code)
-
-
-def resolve_init_font_size(blk: TextBlock | None, default_max_font_size: int, min_font_size: int) -> int:
-    """Pick a per-block initial font size for wrapping.
-
-    We prefer the detector-estimated font size when available, but still
-    clamp it to the user-configured min/max range so older projects and noisy
-    detections remain stable.
-    """
-    candidate = default_max_font_size
-    if blk is not None:
-        candidate = getattr(blk, "font_size_px", 0) or getattr(blk, "max_font_size", 0) or candidate
-
-    try:
-        candidate = int(round(float(candidate)))
-    except (TypeError, ValueError):
-        candidate = int(round(float(default_max_font_size or min_font_size or 1)))
-
-    lower_bound = max(1, int(round(min_font_size or 1)))
-    upper_bound = max(lower_bound, int(round(default_max_font_size or lower_bound)))
-    return max(lower_bound, min(candidate, upper_bound))
 
 
 def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
@@ -156,7 +121,12 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
             continue
 
         block_min_font_size = blk.min_font_size if blk.min_font_size > 0 else min_font_size
-        block_init_font_size = resolve_init_font_size(blk, init_font_size, block_min_font_size)
+        block_init_font_size = resolve_init_font_size(
+            blk,
+            init_font_size,
+            block_min_font_size,
+            target="pil",
+        )
         block_colour = blk.font_color if blk.font_color else colour
 
         translation, font_size = pil_word_wrap(image, tbbox_top_left, font_pth, translation, width, height,
@@ -172,33 +142,6 @@ def draw_text(image: np.ndarray, blk_list: List[TextBlock], font_pth: str, colou
         
     image = pil_to_array(image)  # Already in RGB format
     return image
-
-def get_best_render_area(blk_list: List[TextBlock], img, inpainted_img=None):
-    # Using Speech Bubble detection to find best Text Render Area
-    
-    # if inpainted_img is None or inpainted_img.size == 0:
-    #     return blk_list
-    
-    for blk in blk_list:
-        if blk.text_class == 'text_bubble' and blk.bubble_xyxy is not None:
-            if infer_orientation([blk.xyxy]) == 'vertical' or getattr(blk, "direction", "") == "vertical":
-                text_draw_bounds = shrink_bbox(blk.bubble_xyxy, shrink_percent=0.3)
-                bdx1, bdy1, bdx2, bdy2 = text_draw_bounds
-                blk.xyxy[:] = [bdx1, bdy1, bdx2, bdy2]
-
-    combined_text = " ".join(
-        part
-        for blk in blk_list
-        for part in (
-            (getattr(blk, "translation", "") or ""),
-            (getattr(blk, "text", "") or ""),
-        )
-        if part
-    )
-    if blk_list and not is_no_space_text(combined_text):
-        adjust_blks_size(blk_list, img, -5, -5)
-
-    return blk_list
 
 
 def pyside_word_wrap(
@@ -404,7 +347,12 @@ def manual_wrap(
 
         vertical = is_vertical_block(blk, trg_lng_cd)
         block_min_font_size = blk.min_font_size if blk.min_font_size > 0 else min_font_size
-        block_init_font_size = resolve_init_font_size(blk, init_font_size, block_min_font_size)
+        block_init_font_size = resolve_init_font_size(
+            blk,
+            init_font_size,
+            block_min_font_size,
+            target="qt",
+        )
 
         translation, font_size = pyside_word_wrap(
             translation, 
@@ -425,69 +373,3 @@ def manual_wrap(
         rendered_blocks.append((translation, font_size, blk, image_path))
 
     return rendered_blocks
-
-
-def _pixels_to_qfont_points(size_px: float) -> float:
-    """Convert image pixel sizing to QFont point sizing."""
-    dpi = 96.0
-    try:
-        screen = QApplication.primaryScreen()
-        if screen is not None:
-            dpi = float(screen.logicalDotsPerInch() or dpi)
-    except Exception:
-        pass
-    return float(size_px) * 72.0 / max(dpi, 1.0)
-
-
-def resolve_init_font_size(
-    blk: TextBlock | None,
-    default_max_font_size: int,
-    min_font_size: int,
-    target: str = "qt",
-) -> int:
-    """Pick a per-block initial font size for wrapping.
-    
-    We prefer the detector-estimated font size when available, but still
-    clamp it to the user-configured min/max range so older projects and noisy
-    detections remain stable.
-
-    `target` controls the units of the returned size:
-    - `"qt"` returns a QFont point size for Qt text items.
-    - `"pil"` returns a pixel size for PIL rendering.
-    """
-    geometric_cap = 0
-    candidate = 0
-    candidate_is_px = False
-    
-    if blk is not None:
-        candidate = getattr(blk, "font_size_px", 0) or getattr(blk, "max_font_size", 0) or 0
-        font_size_px = getattr(blk, "font_size_px", 0) or 0
-        max_font_size_px = getattr(blk, "max_font_size", 0) or 0
-        
-        if font_size_px > 0:
-            candidate = font_size_px
-            candidate_is_px = True
-        elif max_font_size_px > 0:
-            candidate = max_font_size_px
-            candidate_is_px = True
-        try:
-            geometric_cap = blk.max_chars and max(1.0, 200.0 / (blk.max_chars + 1))
-            if geometric_cap > 0:
-                candidate = min(candidate, geometric_cap)
-                candidate_is_px = True
-        except Exception:
-            pass
-        
-        if candidate <= 0:
-            candidate = geometric_cap
-            candidate_is_px = geometric_cap > 0
-    
-    if candidate <= 0:
-        candidate = default_max_font_size
-        candidate_is_px = False
-
-    if str(target).lower() != "pil" and candidate_is_px:
-        candidate = _pixels_to_qfont_points(candidate)
-
-    return int(round(max(min_font_size, candidate)))
-        

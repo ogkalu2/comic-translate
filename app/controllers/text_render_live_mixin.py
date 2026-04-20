@@ -157,4 +157,10 @@ class TextRenderLiveMixin:
             underline=self.main.underline_button.isChecked(),
             line_spacing=self.main.line_spacing_dropdown.currentText(),
             direction=direction,
+            second_outline=self.main.second_outline_checkbox.isChecked(),
+            second_outline_color=self.main.second_outline_color_button.property("selected_color"),
+            second_outline_width=self.main.second_outline_width_dropdown.currentText(),
+            text_gradient=self.main.text_gradient_checkbox.isChecked(),
+            text_gradient_start_color=self.main.text_gradient_start_button.property("selected_color"),
+            text_gradient_end_color=self.main.text_gradient_end_button.property("selected_color"),
         )

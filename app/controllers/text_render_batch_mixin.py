@@ -4,7 +4,9 @@ from PySide6.QtGui import QColor
 
 from app.controllers.workflow_support import prepare_multi_page_context, reload_current_webtoon_page
 from app.ui.canvas.text.text_item_properties import TextItemProperties
-from modules.rendering.render import is_vertical_block, pyside_word_wrap, resolve_init_font_size
+from modules.rendering.font_sizing import resolve_init_font_size
+from modules.rendering.policy import is_vertical_block
+from modules.rendering.render import pyside_word_wrap
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.pipeline_config import font_selected
@@ -45,6 +47,9 @@ class TextRenderBatchMixin:
         min_font_size = self.main.settings_page.get_min_font_size()
         setting_font_color = QColor(render_settings.color)
         outline_color = QColor(render_settings.outline_color) if render_settings.outline else None
+        second_outline_color = QColor(render_settings.second_outline_color) if render_settings.second_outline else None
+        gradient_start_color = QColor(render_settings.text_gradient_start_color) if render_settings.text_gradient else None
+        gradient_end_color = QColor(render_settings.text_gradient_end_color) if render_settings.text_gradient else None
 
         updated_paths: set[str] = set()
         target_lang_fallback = self.main.t_combo.currentText()
@@ -122,6 +127,12 @@ class TextRenderBatchMixin:
                     line_spacing=line_spacing,
                     outline_color=outline_color,
                     outline_width=outline_width,
+                    second_outline=render_settings.second_outline,
+                    second_outline_color=second_outline_color,
+                    second_outline_width=float(render_settings.second_outline_width),
+                    text_gradient=render_settings.text_gradient,
+                    text_gradient_start_color=gradient_start_color,
+                    text_gradient_end_color=gradient_end_color,
                     bold=bold,
                     italic=italic,
                     underline=underline,
