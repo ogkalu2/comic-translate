@@ -92,6 +92,45 @@ def test_save_renderer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
     assert text_items[0].font_size == 11
 
 
+def test_pyside_word_wrap_accepts_serialized_alignment_and_direction_ints():
+    _ensure_app()
+
+    wrapped, font_size = render.pyside_word_wrap(
+        "Hello world",
+        "Arial",
+        120,
+        60,
+        1.2,
+        0,
+        False,
+        False,
+        False,
+        int(QtCore.Qt.AlignmentFlag.AlignCenter),
+        QtCore.Qt.LayoutDirection.LeftToRight.value,
+        24,
+        8,
+    )
+
+    assert wrapped
+    assert font_size >= 8
+
+
+def test_text_block_item_accepts_serialized_alignment_and_direction_ints():
+    _ensure_app()
+
+    item = TextBlockItem(
+        text="Hello",
+        alignment=int(QtCore.Qt.AlignmentFlag.AlignRight),
+        direction=QtCore.Qt.LayoutDirection.RightToLeft.value,
+    )
+
+    item.set_alignment(int(QtCore.Qt.AlignmentFlag.AlignCenter))
+    item.set_direction(QtCore.Qt.LayoutDirection.LeftToRight.value)
+
+    assert item.alignment == QtCore.Qt.AlignmentFlag.AlignCenter
+    assert item.direction == QtCore.Qt.LayoutDirection.LeftToRight
+
+
 def test_text_block_item_bounding_rect_includes_descender_overflow():
     _ensure_app()
 

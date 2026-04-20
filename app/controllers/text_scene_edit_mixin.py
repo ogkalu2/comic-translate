@@ -40,7 +40,9 @@ class TextSceneEditMixin:
             if self.main.curr_tblock_item:
                 self.main.curr_tblock_item.set_source_text(new_text)
 
+            item_updated = False
             if self.main.curr_tblock_item and self.main.curr_tblock_item in self.main.image_viewer._scene.items():
+                item_updated = True
                 old_item_text = self.main.curr_tblock_item.toPlainText()
                 cursor_position = self.main.t_text_edit.textCursor().position()
                 self._apply_text_item_text_delta(self.main.curr_tblock_item, new_text)
@@ -53,7 +55,10 @@ class TextSceneEditMixin:
             self._sync_block_caches(self.main.curr_tblock)
             if current_file:
                 self._sync_current_render_snapshot(current_file)
-                self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(current_file, current_target)
+                if item_updated:
+                    self.main.stage_nav_ctrl.invalidate_for_format_edit(current_file, current_target)
+                else:
+                    self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(current_file, current_target)
             self.main.mark_project_dirty()
         finally:
             self._is_updating_from_edit = False
@@ -210,7 +215,8 @@ class TextSceneEditMixin:
             file_path=pending_file,
         )
         if pending_file and pending_file in self.main.image_states:
-            self.main.stage_nav_ctrl.invalidate_for_translated_text_edit(pending_file, pending_target)
+            self._sync_current_render_snapshot(pending_file)
+            self.main.stage_nav_ctrl.invalidate_for_format_edit(pending_file, pending_target)
         self.main.mark_project_dirty()
 
     def apply_text_from_command(

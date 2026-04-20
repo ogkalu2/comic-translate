@@ -38,6 +38,26 @@ def default_pipeline_state() -> dict:
     }
 
 
+def _block_has_text(blk, attr: str) -> bool:
+    value = blk.get(attr, "") if isinstance(blk, dict) else getattr(blk, attr, "")
+    if isinstance(value, str) and value.strip():
+        return True
+    if attr == "text":
+        texts = blk.get("texts") if isinstance(blk, dict) else getattr(blk, "texts", None)
+        if isinstance(texts, (list, tuple)):
+            return any(isinstance(text, str) and text.strip() for text in texts)
+    return False
+
+
+def _snapshot_has_text_items(snapshot: dict | None) -> bool:
+    if not isinstance(snapshot, dict):
+        return False
+    return any(
+        isinstance(item, dict) and (item.get("text") or item.get("source_text") or item.get("block_uid"))
+        for item in snapshot.get("text_items_state", []) or []
+    )
+
+
 def _coerce_page_validity(value) -> dict[str, bool]:
     data = _default_page_validity()
     if isinstance(value, dict):
@@ -101,7 +121,7 @@ def ensure_pipeline_state(
     if not page_validity_explicit:
         if blk_list or "detection" in completed:
             ps["page_validity"]["detect"] = True
-        if "ocr" in completed:
+        if "ocr" in completed or any(_block_has_text(blk, "text") for blk in blk_list):
             ps["page_validity"]["ocr"] = True
         if "inpaint" in completed or inpaint_cache or has_runtime_patches:
             ps["page_validity"]["clean"] = True
@@ -112,7 +132,10 @@ def ensure_pipeline_state(
     if active_target:
         target_state = ps["target_validity"].setdefault(active_target, _default_target_validity())
         if active_target not in explicit_target_validity_keys:
-            if "translate" in completed and ps.get("target_lang") in ("", active_target):
+            if (
+                ("translate" in completed or any(_block_has_text(blk, "translation") for blk in blk_list))
+                and ps.get("target_lang") in ("", active_target)
+            ):
                 target_state["translate"] = True
 
             target_render_states = state.get("target_render_states") or {}
@@ -121,7 +144,11 @@ def ensure_pipeline_state(
                 viewer_state = state.get("viewer_state") or {}
                 if viewer_state.get("text_items_state"):
                     target_snapshot = viewer_state
-            if target_snapshot is not None and "render" in completed and ps.get("target_lang") in ("", active_target):
+            if (
+                target_snapshot is not None
+                and ("render" in completed or _snapshot_has_text_items(target_snapshot))
+                and ps.get("target_lang") in ("", active_target)
+            ):
                 target_state["render"] = True
 
     current_stage = ps.get("current_stage") or ""

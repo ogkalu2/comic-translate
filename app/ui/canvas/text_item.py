@@ -11,6 +11,24 @@ from modules.rendering.render import pyside_word_wrap
 from .text.vertical_layout import VerticalTextDocumentLayout
 
 
+def _coerce_alignment_flag(value):
+    if isinstance(value, Qt.AlignmentFlag):
+        return value
+    try:
+        return Qt.AlignmentFlag(int(value))
+    except (TypeError, ValueError):
+        return Qt.AlignmentFlag.AlignCenter
+
+
+def _coerce_layout_direction(value):
+    if isinstance(value, Qt.LayoutDirection):
+        return value
+    try:
+        return Qt.LayoutDirection(int(value))
+    except (TypeError, ValueError):
+        return Qt.LayoutDirection.LeftToRight
+
+
 @dataclass
 class TextBlockState:
     rect: tuple  
@@ -99,9 +117,9 @@ class TextBlockItem(QGraphicsTextItem):
         self.underline = underline
         self.font_family = font_family
         self.font_size = font_size
-        self.alignment = alignment
+        self.alignment = _coerce_alignment_flag(alignment)
         self.line_spacing = line_spacing
-        self.direction = direction
+        self.direction = _coerce_layout_direction(direction)
 
         self.layout = None
         self.vertical = False
@@ -216,6 +234,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.document().setDefaultTextOption(text_option)
 
     def set_direction(self, direction):
+        direction = _coerce_layout_direction(direction)
         if self.direction != direction:
             self.direction = direction
             self._apply_text_direction()
@@ -555,11 +574,13 @@ class TextBlockItem(QGraphicsTextItem):
         self.setTextWidth(width)
 
     def set_alignment(self, alignment):
+        alignment = _coerce_alignment_flag(alignment)
         if not self.textCursor().hasSelection():
             self.alignment = alignment
         self.update_alignment(alignment)
 
     def update_alignment(self, alignment):
+        alignment = _coerce_alignment_flag(alignment)
         cursor = self.textCursor()
         has_selection = cursor.hasSelection()
         block_format = cursor.blockFormat()

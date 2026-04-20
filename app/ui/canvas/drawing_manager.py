@@ -394,7 +394,7 @@ class DrawingManager:
         self.viewer._scene.update()
 
     def make_segmentation_stroke_data(self, bboxes):
-        if not bboxes:
+        if bboxes is None or len(bboxes) == 0:
             return None
 
         # 1) Compute tight ROI so mask stays small

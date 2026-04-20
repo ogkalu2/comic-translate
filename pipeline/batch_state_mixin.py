@@ -159,10 +159,10 @@ class BatchStateMixin:
         ):
             logger.debug("_page_is_fully_done: stage validity incomplete for %s", page.image_path)
             return False
-        if ps.get("target_lang") != page.target_lang:
+        if ps.get("target_lang") and ps.get("target_lang") != page.target_lang:
             logger.debug("_page_is_fully_done: target mismatch ps_trg=%s page_trg=%s for %s", ps.get("target_lang"), page.target_lang, page.image_path)
             return False
-        if ps.get("translator_key") != translator_key:
+        if ps.get("translator_key") and ps.get("translator_key") != translator_key:
             logger.debug("_page_is_fully_done: translator mismatch ps=%s now=%s for %s", ps.get("translator_key"), translator_key, page.image_path)
             return False
         _prompt_context, context_signature = build_translation_prompt_context(
@@ -172,7 +172,7 @@ class BatchStateMixin:
             llm_settings=llm_settings,
         )
         current_ctx_hash = hashlib.md5(context_signature.encode()).hexdigest() if context_signature else "no_context"
-        if ps.get("extra_context_hash") != current_ctx_hash:
+        if ps.get("extra_context_hash") and ps.get("extra_context_hash") != current_ctx_hash:
             logger.debug("_page_is_fully_done: context hash mismatch for %s", page.image_path)
             return False
         blk_list = state.get("blk_list")

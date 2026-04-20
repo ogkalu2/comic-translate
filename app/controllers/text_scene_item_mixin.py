@@ -70,6 +70,10 @@ class TextSceneItemMixin:
                 text_item.change_undo.disconnect(self.main.rect_item_ctrl.rect_change_undo)
             except (TypeError, RuntimeError):
                 pass
+            try:
+                text_item.change_undo.disconnect(self.on_text_item_geometry_changed)
+            except (TypeError, RuntimeError):
+                pass
 
         if not hasattr(text_item, "_ct_text_changed_slot"):
             text_item._ct_text_changed_slot = lambda text, ti=text_item: self.update_text_block_from_item(ti, text)
@@ -78,7 +82,11 @@ class TextSceneItemMixin:
         text_item.item_deselected.connect(self.on_text_item_deselected)
         text_item.text_changed.connect(text_item._ct_text_changed_slot)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
-        text_item.change_undo.connect(self.main.rect_item_ctrl.rect_change_undo)
+        try:
+            text_item.change_undo.disconnect(self.main.rect_item_ctrl.rect_change_undo)
+        except (TypeError, RuntimeError):
+            pass
+        text_item.change_undo.connect(self.on_text_item_geometry_changed)
         if not hasattr(text_item, "_ct_destroyed_slot"):
             text_item._ct_destroyed_slot = lambda *_args, ti=text_item: self._forget_text_item(ti)
         try:
@@ -89,6 +97,14 @@ class TextSceneItemMixin:
         if not is_bulk_restore:
             self._last_item_html[text_item] = text_item.document().toHtml()
         text_item._ct_signals_connected = True
+
+    def on_text_item_geometry_changed(self, _old_state, _new_state):
+        current_file = self._current_file_path()
+        if not current_file:
+            return
+        self._sync_current_render_snapshot(current_file, update_style_overrides=True)
+        self.main.stage_nav_ctrl.invalidate_for_format_edit(current_file, self._current_target_lang())
+        self.main.mark_project_dirty()
 
     def _find_scene_text_item_for_block(self, blk: "TextBlock") -> TextBlockItem | None:
         if blk is None or not getattr(self.main, "image_viewer", None):

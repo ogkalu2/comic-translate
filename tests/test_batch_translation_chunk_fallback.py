@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import numpy as np
 
 from pipeline.batch_execution_mixin import BatchExecutionMixin
+from pipeline.batch_state_mixin import BatchStateMixin
 
 
 class _FakeSettingsPage:
@@ -54,6 +55,37 @@ class _FakeBatchExecution(BatchExecutionMixin):
     def __init__(self):
         self.main_page = SimpleNamespace(settings_page=_FakeSettingsPage())
         self.cache_manager = _FakeCacheManager()
+
+
+class _FakeDoneSettingsPage(_FakeRemoteSettingsPage):
+    def is_gpu_enabled(self):
+        return False
+
+
+class _FakeDoneCacheManager:
+    def _can_serve_all_blocks_from_ocr_cache(self, *_args, **_kwargs):
+        return True
+
+    def _can_serve_all_blocks_from_translation_cache(self, *_args, **_kwargs):
+        return True
+
+    def _get_translation_cache_key(self, *_args, **_kwargs):
+        return "translation-cache-key"
+
+
+class _FakeBatchProcessor(BatchExecutionMixin, BatchStateMixin):
+    def __init__(self, state):
+        self.main_page = SimpleNamespace(
+            settings_page=_FakeDoneSettingsPage(),
+            image_states={"page.png": state},
+            image_patches={},
+            image_files=["page.png"],
+            t_combo=SimpleNamespace(currentText=lambda: "English"),
+        )
+        self.cache_manager = _FakeDoneCacheManager()
+
+    def _get_ocr_cache_key_for_page(self, _page):
+        return "ocr-cache-key"
 
 
 def test_batch_translation_falls_back_to_smaller_chunks(monkeypatch):
@@ -139,3 +171,33 @@ def test_merge_translated_blocks_does_not_restore_obsolete_source_lang():
     assert page_blocks[0].text == "one sanitized"
     assert page_blocks[0].translation == "tr:one"
     assert page_blocks[0].source_lang == "ja"
+
+
+def test_fully_done_accepts_legacy_stage_state_with_cache_and_render_snapshot():
+    block = SimpleNamespace(text="source", translation="target", block_uid="title")
+    state = {
+        "target_lang": "English",
+        "blk_list": [block],
+        "pipeline_state": {
+            "target_lang": "English",
+            "completed_stages": ["detection"],
+        },
+        "target_render_states": {
+            "English": {
+                "text_items_state": [
+                    {
+                        "block_uid": "title",
+                        "text": "target",
+                    }
+                ]
+            }
+        },
+    }
+    worker = _FakeBatchProcessor(state)
+    page = SimpleNamespace(
+        image_path="page.png",
+        target_lang="English",
+        image=np.zeros((2, 2, 3), dtype=np.uint8),
+    )
+
+    assert worker._page_is_fully_done(page, "GPT-4.1", "") is True

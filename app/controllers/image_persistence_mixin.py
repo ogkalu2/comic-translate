@@ -130,8 +130,10 @@ class ImagePersistenceMixin:
         }
 
         current_stage = pipeline_state.get("current_stage", "")
-        if current_stage == "render" and current_scene_state.get("text_items_state") is not None:
-            viewer_state["text_items_state"] = copy.deepcopy(current_scene_state.get("text_items_state", []) or [])
+        current_text_items = current_scene_state.get("text_items_state")
+        has_current_text_items = isinstance(current_text_items, list) and bool(current_text_items)
+        if (current_stage == "render" or has_current_text_items) and current_text_items is not None:
+            viewer_state["text_items_state"] = copy.deepcopy(current_text_items or [])
             if active_target:
                 set_target_snapshot(state_payload, active_target, viewer_state)
                 update_render_style_overrides(state_payload, viewer_state)
