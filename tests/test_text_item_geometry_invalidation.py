@@ -1,6 +1,10 @@
 from types import SimpleNamespace
 
+from PySide6.QtCore import QPointF
+
+from app.controllers.rect_item import RectItemController
 from app.controllers.text_scene_item_mixin import TextSceneItemMixin
+from app.ui.canvas.text_item import TextBlockState
 
 
 class _Controller(TextSceneItemMixin):
@@ -37,3 +41,23 @@ def test_text_item_geometry_change_keeps_render_stage():
     assert ctrl.synced == ("page.png", True)
     assert ctrl.main.stage_nav_ctrl.calls == [("format", "page.png", "English")]
     assert ctrl.dirty is True
+
+
+def test_legacy_rect_change_handler_delegates_text_geometry_to_text_controller():
+    calls = []
+
+    class TextCtrl:
+        def on_text_item_geometry_changed(self, old_state, new_state):
+            calls.append(("text-geometry", old_state, new_state))
+
+    main = SimpleNamespace(
+        text_ctrl=TextCtrl(),
+        mark_project_dirty=lambda: calls.append(("dirty",)),
+    )
+    ctrl = RectItemController(main)
+    old_state = TextBlockState((0, 0, 10, 10), 0, QPointF(0, 0))
+    new_state = TextBlockState((5, 5, 15, 15), 0, QPointF(0, 0))
+
+    ctrl.rect_change_undo(old_state, new_state)
+
+    assert calls == [("text-geometry", old_state, new_state)]

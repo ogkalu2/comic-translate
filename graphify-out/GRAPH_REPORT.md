@@ -1,12 +1,12 @@
 # Graph Report - .  (2026-04-21)
 
 ## Corpus Check
-- 343 files · ~509,114 words
+- 344 files · ~509,401 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5270 nodes · 14947 edges · 82 communities detected
-- Extraction: 48% EXTRACTED · 52% INFERRED · 0% AMBIGUOUS · INFERRED: 7712 edges (avg confidence: 0.68)
+- 5287 nodes · 14999 edges · 82 communities detected
+- Extraction: 48% EXTRACTED · 52% INFERRED · 0% AMBIGUOUS · INFERRED: 7760 edges (avg confidence: 0.68)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -94,12 +94,12 @@
 - [[_COMMUNITY_Community 81|Community 81]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `get()` - 369 edges
-2. `TextBlock` - 243 edges
+1. `get()` - 373 edges
+2. `TextBlock` - 245 edges
 3. `MToolButton` - 185 edges
 4. `TextBlockItem` - 179 edges
 5. `MLabel` - 145 edges
-6. `ComicTranslate` - 132 edges
+6. `ComicTranslate` - 134 edges
 7. `ImageViewer` - 118 edges
 8. `MPushButton` - 105 edges
 9. `SettingsPage` - 85 edges
@@ -110,102 +110,102 @@
   comic.py → controller.py
 - `ComicTranslate` --uses--> `Switch to memory-efficient lazy loading webtoon mode.`  [INFERRED]
   controller.py → app\controllers\webtoons.py
-- `ComicTranslate` --uses--> `Connect events for lazy loading triggers.`  [INFERRED]
-  controller.py → app\controllers\webtoons.py
-- `ComicTranslate` --uses--> `Called when the lazy manager has completed initialization.`  [INFERRED]
-  controller.py → app\controllers\webtoons.py
-- `MoveableRectItem` --uses--> `Load rectangles for a specific page.`  [INFERRED]
-  app\ui\canvas\rectangle.py → app\ui\canvas\webtoons\scene_items\rectangle_manager.py
+- `OutlineType` --uses--> `Dataclass for TextBlockItem properties to reduce duplication in construction`  [INFERRED]
+  app\ui\canvas\text_item.py → app\ui\canvas\text\text_item_properties.py
+- `OutlineType` --uses--> `Convert TextItemProperties to dictionary`  [INFERRED]
+  app\ui\canvas\text_item.py → app\ui\canvas\text\text_item_properties.py
+- `Update the selection outlines when text changes` --uses--> `VerticalTextDocumentLayout`  [INFERRED]
+  app\ui\canvas\text_item.py → app\ui\canvas\text\vertical_layout.py
 
 ## Communities
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (354): AboutPage, AccountPage, Show the logged out state., Show the logged in state., MAlert, Get MAlert feedback type.         :return: str, Get MAlert feedback message.         :return: six.string_types, Set MAlert to InfoType (+346 more)
+Nodes (300): AboutPage, AccountPage, Show the logged out state., Show the logged in state., MAlert, Get MAlert feedback type.         :return: str, Get MAlert feedback message.         :return: six.string_types, Set MAlert to InfoType (+292 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.01
-Nodes (243): create_new_blk(), create_new_txt_item(), create_rect_item(), find_matching_blk(), find_matching_item(), find_matching_rect(), find_matching_txt_item(), invalidate_page_render_pipeline() (+235 more)
+Nodes (249): create_new_blk(), create_new_txt_item(), create_path_item(), create_rect_item(), find_matching_blk(), find_matching_item(), find_matching_rect(), find_matching_txt_item() (+241 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.01
-Nodes (152): Encode CV2/numpy image directly to base64 string using cv2.imencode., BatchReportController, BatchUiMixin, BatchReportStateMixin, BatchReportViewMixin, BatchUiMixin, Load brush strokes for a specific page., Update or add a single block's translation result to the cache. (+144 more)
+Nodes (118): BatchReportController, BatchUiMixin, BatchReportStateMixin, BatchReportViewMixin, BatchUiMixin, Load brush strokes for a specific page., ComicTranslateUI, ComicTranslate (+110 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.01
-Nodes (186): ABC, AOT, Input image and output image have same size         image: [H, W, C] RGB, resize_keep_aspect(), DiffusionInpaintModel, forward(), init_model(), InpaintModel (+178 more)
+Nodes (161): extract_archive(), _get_cached_pdf(), is_image_file(), list_archive_image_entries(), make(), make_cb7(), make_cbz(), make_pdf() (+153 more)
 
 ### Community 4 - "Community 4"
 Cohesion: 0.01
-Nodes (179): AuthClient, Starts the new authentication flow., Handles the tokens and user info received from the backend via the local server., Handles errors emitted by the AuthServerThread., Called when the AuthServerThread finishes execution., Safely attempts to clear server thread reference., Clean up threads before application exit., Cancels the currently active authentication flow. (+171 more)
+Nodes (192): ABC, AOT, Input image and output image have same size         image: [H, W, C] RGB, resize_keep_aspect(), DiffusionInpaintModel, forward(), init_model(), InpaintModel (+184 more)
 
 ### Community 5 - "Community 5"
-Cohesion: 0.02
-Nodes (145): create_patch_item(), BatchExecutionMixin, _is_recoverable_translation_error(), _merge_usage_stats(), BatchProcessor, PreparedBatchPage, BatchStateMixin, BatchExecutionMixin (+137 more)
+Cohesion: 0.01
+Nodes (170): BaseLLMTranslation, detect(), initialize(), _merge_usage_snapshots(), _perform_translation(), Base class for LLM-based translation engines with shared functionality., Get standardized language code from language name.                  Args:, Base class for traditional translation engines (non-LLM). (+162 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.02
-Nodes (106): create_path_item(), PathCommandBase, save_path_properties(), BrushStrokeCommand, ClearBrushStrokesCommand, EraseUndoCommand, Restore the scene to match the target state by comparing with current state., SegmentBoxesCommand (+98 more)
+Nodes (164): AuthClient, Starts the new authentication flow., Handles the tokens and user info received from the backend via the local server., Handles errors emitted by the AuthServerThread., Called when the AuthServerThread finishes execution., Safely attempts to clear server thread reference., Clean up threads before application exit., Cancels the currently active authentication flow. (+156 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.02
-Nodes (163): DetectionEngine, LLMTranslation, Translate text blocks using LLM.                  Args:             blk_list: Li, Abstract base class for all detection engines.     Each model implementation sh, Initialize the translation engine with necessary parameters.                  Ar, Perform translation using specific LLM.                  Args:             user_, Initialize the OCR engine with necessary parameters.                  Args:, Detect text blocks in an image.                  Args:             image: Inpu (+155 more)
+Cohesion: 0.01
+Nodes (154): get_perspective_transform(), Calculates the 3x3 perspective transform matrix using a vectorized     NumPy im, Performs a perspective warp using PIL/Pillow.          Args:         image (n, warp_perspective(), init_weights(), Vgg16BN, build_vocab(), parse_options() (+146 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.02
-Nodes (132): BaseLLMTranslation, detect(), initialize(), _merge_usage_snapshots(), _perform_translation(), Abstract base class for all translation engines.     Defines common interface an, Base class for LLM-based translation engines with shared functionality., Get standardized language code from language name.                  Args: (+124 more)
+Nodes (174): _as_mask(), bounding_rect(), contour_area(), draw_contours(), find_contours(), mean(), Image analysis operations for the imkit module., findContours-style border tracing that matches OpenCV ordering (Suzuki-style sta (+166 more)
 
 ### Community 9 - "Community 9"
 Cohesion: 0.02
-Nodes (142): extract_archive(), _get_cached_pdf(), is_image_file(), list_archive_image_entries(), make(), make_cb7(), make_cbz(), make_pdf() (+134 more)
+Nodes (89): CoordinateConverter, Coordinate Converter for Webtoon Manager  Handles coordinate transformations b, Handles coordinate transformations for webtoon mode., Initializes the converter with references to the data owners.         This clas, Convert a scene-coordinate brush path to page-local coordinates., FullscreenResultPreview, LazyImageLoader, Queue a page for loading. (+81 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.01
-Nodes (177): _as_mask(), bounding_rect(), contour_area(), draw_contours(), find_contours(), get_perspective_transform(), mean(), Image analysis operations for the imkit module. (+169 more)
+Cohesion: 0.03
+Nodes (77): Update or add a single block's translation result to the cache., DedupeMixin, _patch_area(), _patch_bbox_to_xyxy(), Merge results from all chunks that processed this virtual page., Final deduplication of blocks at the physical page level., Suppress clipped duplicates on page boundaries when a neighboring page already, _rect_area_xyxy() (+69 more)
 
 ### Community 11 - "Community 11"
-Cohesion: 0.03
-Nodes (37): MFlowLayout, FlowLayout, the code is come from PySide/examples/layouts/flowlayout.py     I c, EdgeResizer, _edges_at(), Return a Qt.Edges flag for whichever window edges *gpos* is within *margin* pixe, Event filter that provides edge resize cursors and startSystemResize for framele, PageListView, Handle selection changes and emit signal with selected indices. (+29 more)
+Cohesion: 0.02
+Nodes (51): huge(), large(), medium(), Set the avatar size.         :param value: integer         :return: None, Set avatar image.         :param value: QPixmap or None.         :return: None, small(), tiny(), _slot_context_menu() (+43 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.04
-Nodes (54): CharacterStyle, FontKey, FontMetricsCache, get_rule(), GlyphPlacement, PlacementRule, High accuracy method using QPainterPath for text outline., Determines glyph placement rules for vertical text. (+46 more)
+Cohesion: 0.02
+Nodes (113): DetectionEngine, Abstract base class for all detection engines.     Each model implementation sh, Export cache contents in a project-serializable form., DetectionEngine, Create and initialize RT-DETR-v2 detection engine., Factory for creating appropriate detection engines based on settings., calculate_iou(), calculate_polygon_angle() (+105 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.04
-Nodes (56): get_available_langs(), get_available_models(), get_default_model(), PororoBiencoderBase, PororoFactoryBase, PororoGenerationBase, PororoSimpleBase, PororoTaskBase (+48 more)
+Nodes (76): BatchProcessor, PreparedBatchPage, BatchRenderMixin, BlockDetectionHandler, Handles text block detection and coordinate loading., _serialize_rectangles_from_blocks(), CacheManager, Manages OCR and translation caching for the pipeline. (+68 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.03
-Nodes (41): MDateEdit, MDateTimeEdit, MDoubleSpinBox, MTimeEdit, Set the MDoubleSpinBox size.         :param value: integer         :return: No, Set MDoubleSpinBox to huge size, Set MDoubleSpinBox to large size, Set MDoubleSpinBox to  medium (+33 more)
+Cohesion: 0.02
+Nodes (45): MFlowLayout, FlowLayout, the code is come from PySide/examples/layouts/flowlayout.py     I c, EdgeResizer, _edges_at(), Return a Qt.Edges flag for whichever window edges *gpos* is within *margin* pixe, Event filter that provides edge resize cursors and startSystemResize for framele, PageListView, Handle selection changes and emit signal with selected indices. (+37 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.03
-Nodes (42): count(), dot(), MBadge, Set current style to show a number          :param num: int         :return:, Get current showed text         :return: six.string_types, Set current style to show a text.         :param text: six.string_types, Badge normally appears in proximity to notifications or user avatars with eye-ca, Get current overflow number         :return: int (+34 more)
+Nodes (60): get_available_langs(), get_available_models(), get_default_model(), load(), PororoBiencoderBase, PororoFactoryBase, PororoGenerationBase, PororoSimpleBase (+52 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.04
-Nodes (44): encode_image(), _decode_ipc_messages(), _encode_ipc_message(), _extract_project_file(), FileOpenEventFilter, get_system_language(), LoadingWorker, main() (+36 more)
+Cohesion: 0.03
+Nodes (41): MDateEdit, MDateTimeEdit, MDoubleSpinBox, MTimeEdit, Set the MDoubleSpinBox size.         :param value: integer         :return: No, Set MDoubleSpinBox to huge size, Set MDoubleSpinBox to large size, Set MDoubleSpinBox to  medium (+33 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.05
 Nodes (23): MComboBoxSearchMixin, MFontComboBox, Set the avatar size.         :param value: integer         :return: None, Override setView to flag _has_custom_view variable., Override default showPopup. When set custom menu, show the menu instead., Set MComboBox to huge size, Set MComboBox to large size, Set MComboBox to  medium (+15 more)
 
 ### Community 18 - "Community 18"
-Cohesion: 0.07
-Nodes (27): is_close(), Restart the application.     Works for both running as script and compiled exec, restart_application(), SearchReplaceApplyMixin, _apply_preserve_case(), _apply_replacements_to_html(), _apply_text_delta_to_document(), BlockKey (+19 more)
+Cohesion: 0.05
+Nodes (38): ChunkImageMixin, ChunkMappingMixin, ChunkProcessingMixin, ChunkImageMixin, ChunkMappingMixin, ChunkPipelinePhaseMixin, ChunkProcessingMixin, Enum (+30 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.05
-Nodes (29): init_weights(), Vgg16BN, CRAFT, DoubleConv, This code is adapted from https://github.com/clovaai/CRAFT-pytorch/blob/master/c, BasicBlock, BidirectionalLSTM, GridGenerator (+21 more)
+Cohesion: 0.04
+Nodes (38): _encode_ipc_message(), _extract_project_file(), FileOpenEventFilter, get_system_language(), LoadingWorker, main(), OpenRequestRouter, Do the heavy loading in background thread. (+30 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.05
-Nodes (27): BasicBlock, FeatureExtractor of FAN     (http://openaccess.thecvf.com/content_ICCV_2017/pap, 3x3 convolution with padding, :param n_input_channels (int): The number of input channels of the feature extra, FeatureExtractor of CRNN (https://arxiv.org/pdf/1507.05717.pdf), ResNet, ResNetFeatureExtractor, VGGFeatureExtractor (+19 more)
+Cohesion: 0.08
+Nodes (27): is_close(), Restart the application.     Works for both running as script and compiled exec, restart_application(), SearchReplaceApplyMixin, _apply_preserve_case(), _apply_replacements_to_html(), _apply_text_delta_to_document(), BlockKey (+19 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.08
-Nodes (8): _fmt_date(), _NewCard, _PillButton, Rebuild rows from [{path, mtime}, …] list (newest modified first)., Emit via sig so controller can clear state & show home., _RecentRow, StartupHomeScreen, _valid_urls()
+Cohesion: 0.09
+Nodes (7): _fmt_date(), _NewCard, _PillButton, Emit via sig so controller can clear state & show home., _RecentRow, StartupHomeScreen, _valid_urls()
 
 ### Community 22 - "Community 22"
 Cohesion: 0.07
@@ -216,12 +216,12 @@ Cohesion: 0.1
 Nodes (17): dedent(), indent(), _munge_whitespace(text : string) -> string          Munge whitespace in text:, _split(text : string) -> [string]          Split the text to wrap into indivis, _fix_sentence_endings(chunks : [string])          Correct for sentence endings, _handle_long_word(chunks : [string],                             cur_line : [st, Object for wrapping/filling text.  The public interface consists of     the wra, _wrap_chunks(chunks : [string]) -> [string]          Wrap a sequence of text c (+9 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.11
-Nodes (3): MPopup, MTabBar, MTabWidget
+Cohesion: 0.09
+Nodes (15): count(), dot(), MBadge, Set current style to show a number          :param num: int         :return:, Get current showed text         :return: six.string_types, Set current style to show a text.         :param text: six.string_types, Badge normally appears in proximity to notifications or user avatars with eye-ca, Get current overflow number         :return: int (+7 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.31
-Nodes (2): MCarousel, MGuidPrivate
+Cohesion: 0.16
+Nodes (3): BatchReportStateMixin, BatchReportViewMixin, Set a custom widget to show on the circle's inner center          and replace t
 
 ### Community 26 - "Community 26"
 Cohesion: 0.25
@@ -448,7 +448,7 @@ Cohesion: 1.0
 Nodes (1): Heuristic for scripts that are typically written without spaces.
 
 ## Knowledge Gaps
-- **608 isolated node(s):** `Checks for updates on GitHub and handles downloading/running installers.`, `Starts the check in a background thread.`, `Starts the download in a background thread.`, `Executes the installer based on the platform.`, `Stops any active worker thread (best-effort).` (+603 more)
+- **616 isolated node(s):** `Checks for updates on GitHub and handles downloading/running installers.`, `Starts the check in a background thread.`, `Starts the download in a background thread.`, `Executes the installer based on the platform.`, `Stops any active worker thread (best-effort).` (+611 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **Thin community `Community 29`** (2 nodes): `main()`, `main.py`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -560,16 +560,16 @@ Nodes (1): Heuristic for scripts that are typically written without spaces.
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `get()` connect `Community 9` to `Community 0`, `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 10`, `Community 11`, `Community 12`, `Community 13`, `Community 15`, `Community 16`, `Community 18`, `Community 21`?**
-  _High betweenness centrality (0.229) - this node is a cross-community bridge._
-- **Why does `TextBlock` connect `Community 7` to `Community 1`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 8`, `Community 10`, `Community 12`?**
-  _High betweenness centrality (0.109) - this node is a cross-community bridge._
-- **Why does `ComicTranslate` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 9`, `Community 16`, `Community 18`?**
-  _High betweenness centrality (0.064) - this node is a cross-community bridge._
-- **Are the 361 inferred relationships involving `get()` (e.g. with `get_system_language()` and `load_translation()`) actually correct?**
-  _`get()` has 361 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 229 inferred relationships involving `TextBlock` (e.g. with `ComicTranslate` and `Wrap thread_load_images with unsaved-project confirmation and clear state.`) actually correct?**
-  _`TextBlock` has 229 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `get()` connect `Community 3` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 6`, `Community 7`, `Community 8`, `Community 9`, `Community 10`, `Community 12`, `Community 13`, `Community 14`, `Community 15`, `Community 19`, `Community 20`, `Community 21`, `Community 25`?**
+  _High betweenness centrality (0.243) - this node is a cross-community bridge._
+- **Why does `TextBlock` connect `Community 4` to `Community 1`, `Community 2`, `Community 3`, `Community 5`, `Community 6`, `Community 8`, `Community 10`, `Community 12`, `Community 13`, `Community 18`?**
+  _High betweenness centrality (0.110) - this node is a cross-community bridge._
+- **Why does `MToolButton` connect `Community 0` to `Community 1`, `Community 2`, `Community 11`?**
+  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Are the 365 inferred relationships involving `get()` (e.g. with `get_system_language()` and `load_translation()`) actually correct?**
+  _`get()` has 365 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 231 inferred relationships involving `TextBlock` (e.g. with `ComicTranslate` and `Wrap thread_load_images with unsaved-project confirmation and clear state.`) actually correct?**
+  _`TextBlock` has 231 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 166 inferred relationships involving `MToolButton` (e.g. with `SearchReplacePanel` and `VS Code-inspired search/replace sidebar for MTPE.      Public attributes used`) actually correct?**
   _`MToolButton` has 166 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 113 inferred relationships involving `TextBlockItem` (e.g. with `ComicTranslate` and `Wrap thread_load_images with unsaved-project confirmation and clear state.`) actually correct?**

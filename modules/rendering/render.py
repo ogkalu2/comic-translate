@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from .hyphen_textwrap import wrap as hyphen_wrap
 from .font_sizing import resolve_init_font_size
 from .policy import is_vertical_block, is_vertical_language_code
+from .qt_compat import coerce_alignment_flag, coerce_layout_direction
 from .render_area import get_best_render_area
 from modules.utils.textblock import TextBlock
 from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
@@ -40,24 +41,6 @@ class TextRenderingSettings:
     text_gradient: bool = False
     text_gradient_start_color: str = "#000000"
     text_gradient_end_color: str = "#000000"
-
-
-def _coerce_alignment_flag(value) -> Qt.AlignmentFlag:
-    if isinstance(value, Qt.AlignmentFlag):
-        return value
-    try:
-        return Qt.AlignmentFlag(int(value))
-    except (TypeError, ValueError):
-        return Qt.AlignmentFlag.AlignCenter
-
-
-def _coerce_layout_direction(value) -> Qt.LayoutDirection:
-    if isinstance(value, Qt.LayoutDirection):
-        return value
-    try:
-        return Qt.LayoutDirection(int(value))
-    except (TypeError, ValueError):
-        return Qt.LayoutDirection.LeftToRight
 
 
 def array_to_pil(rgb_image: np.ndarray):
@@ -185,8 +168,8 @@ def pyside_word_wrap(
     """Break long text to multiple lines, and find the largest point size
         so that all wrapped text fits within the box."""
 
-    alignment = _coerce_alignment_flag(alignment)
-    direction = _coerce_layout_direction(direction)
+    alignment = coerce_alignment_flag(alignment)
+    direction = coerce_layout_direction(direction)
 
     def prepare_font(font_size):
         effective_family = font_input.strip() if isinstance(font_input, str) and font_input.strip() else QApplication.font().family()

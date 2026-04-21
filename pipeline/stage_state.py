@@ -522,19 +522,6 @@ def invalidate_after_translated_text_edit(
     return ps["current_stage"]
 
 
-def invalidate_after_format_edit(
-    state: dict,
-    target_lang: str,
-    *,
-    has_runtime_patches: bool = False,
-) -> str:
-    return invalidate_after_translated_text_edit(
-        state,
-        target_lang,
-        has_runtime_patches=has_runtime_patches,
-    )
-
-
 def invalidate_after_segmentation_edit(
     state: dict,
     *,

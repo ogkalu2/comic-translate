@@ -1,3 +1,4 @@
+import os
 from types import SimpleNamespace
 
 import numpy as np
@@ -5,7 +6,10 @@ import numpy as np
 from modules.utils import image_utils as image_utils_module
 from modules.utils.textblock import TextBlock
 from pipeline import inpainting as inpainting_module
+from pipeline.batch_state_mixin import BatchStateMixin
 from pipeline.inpainting import InpaintingHandler
+from pipeline.page_state import get_runtime_patches, sync_inpaint_cache_from_image_patches
+from pipeline.stage_state import mark_clean_ready
 
 
 def test_generate_mask_reuses_precomputed_inpaint_bboxes(monkeypatch):
@@ -58,3 +62,55 @@ def test_generate_mask_from_saved_strokes_prefers_saved_segment_bboxes(monkeypat
 
     assert captured["inpaint_bboxes"] == [[12, 13, 18, 19]]
     assert np.count_nonzero(mask) > 0
+
+
+def test_runtime_patches_prefer_materialized_image_patches():
+    state = {
+        "inpaint_cache": [
+            {"bbox": [0, 0, 1, 1], "png_path": "old-temp.png", "hash": "old"}
+        ]
+    }
+    image_patches = {
+        "page.png": [
+            {"bbox": [0, 0, 1, 1], "png_path": "materialized.png", "hash": "new"}
+        ]
+    }
+
+    assert (
+        get_runtime_patches(state, image_patches, "page.png")[0]["png_path"]
+        == "materialized.png"
+    )
+
+    sync_inpaint_cache_from_image_patches({"page.png": state}, image_patches)
+
+    assert state["inpaint_cache"][0]["png_path"] == "materialized.png"
+
+
+def test_missing_cached_inpaint_patch_forces_recompute():
+    page_path = "page.png"
+    state = {
+        "target_lang": "English",
+        "inpaint_cache": [
+            {
+                "bbox": [1, 1, 2, 2],
+                "png_path": os.path.abspath("__missing_inpaint_patch__.png"),
+                "hash": "missing",
+            }
+        ],
+    }
+    mark_clean_ready(state, has_runtime_patches=True)
+
+    processor = BatchStateMixin.__new__(BatchStateMixin)
+    processor.main_page = SimpleNamespace(
+        image_states={page_path: state},
+        image_patches={},
+        in_memory_patches={},
+    )
+    page = SimpleNamespace(
+        image_path=page_path,
+        target_lang="English",
+        image=np.zeros((8, 8, 3), dtype=np.uint8),
+    )
+
+    assert processor._page_can_skip_inpainting(page) is False
+    assert processor._restore_cached_inpaint_image(page) is None

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import QRectF, QPointF
 
 from app.ui.canvas.rectangle import MoveableRectItem
+from app.ui.canvas.text_item import TextBlockState
 from modules.detection.utils.geometry import do_rectangles_overlap
 from modules.utils.textblock import TextBlock
 
@@ -116,21 +117,12 @@ class RectItemController:
         self.main.mark_project_dirty()
 
     def rect_change_undo(self, old_state, new_state):
-        if old_state.__class__.__name__ == "TextBlockState" or new_state.__class__.__name__ == "TextBlockState":
-            try:
-                current_file = self.main.text_ctrl._current_file_path()
-                if current_file:
-                    self.main.text_ctrl._sync_current_render_snapshot(
-                        current_file,
-                        update_style_overrides=True,
-                    )
-                    self.main.stage_nav_ctrl.invalidate_for_format_edit(
-                        current_file,
-                        self.main.text_ctrl._current_target_lang(),
-                    )
-            except Exception:
-                pass
-            self.main.mark_project_dirty()
+        if isinstance(old_state, TextBlockState) or isinstance(new_state, TextBlockState):
+            handler = getattr(getattr(self.main, "text_ctrl", None), "on_text_item_geometry_changed", None)
+            if callable(handler):
+                handler(old_state, new_state)
+            else:
+                self.main.mark_project_dirty()
             return
 
         self.handle_rectangle_change(

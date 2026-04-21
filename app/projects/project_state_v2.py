@@ -12,6 +12,7 @@ import msgpack
 
 from .parsers import ProjectDecoder, ProjectEncoder, ensure_string_keys
 from modules.utils.file_handler import ensure_prepared_path_materialized
+from pipeline.page_state import sync_inpaint_cache_from_image_patches
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -634,11 +635,10 @@ def _materialize_from_manifest_and_pages(
     comic_translate.image_patches = {
         original_to_temp.get(page, page): plist for page, plist in reconstructed.items()
     }
-    for page_path, state_val in comic_translate.image_states.items():
-        if not state_val.get("inpaint_cache") and comic_translate.image_patches.get(page_path):
-            state_val["inpaint_cache"] = [
-                dict(patch) for patch in comic_translate.image_patches.get(page_path, [])
-            ]
+    sync_inpaint_cache_from_image_patches(
+        comic_translate.image_states,
+        comic_translate.image_patches,
+    )
 
     return manifest.get("llm_extra_context", "")
 

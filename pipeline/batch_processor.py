@@ -251,15 +251,24 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
             tc_key = self._build_page_translation_cache_key(page)
             page.translation_cache_key = tc_key
             self.cache_manager._apply_cached_translations_to_blocks(tc_key, page.blk_list)
-            page.inpaint_input_img = self._restore_cached_inpaint_image(page)
-            page.skip_full_pipeline = True
-            page.skip_inpaint = True
+            restored_inpaint = self._restore_cached_inpaint_image(page)
+            if restored_inpaint is None:
+                page.skip_full_pipeline = False
+                page.skip_inpaint = False
+                logger.info(
+                    "Cached inpaint layer unavailable; recomputing before render: %s",
+                    page.image_path,
+                )
+            else:
+                page.inpaint_input_img = restored_inpaint
+                page.skip_full_pipeline = True
+                page.skip_inpaint = True
+                self.emit_progress(page.index, total_images, 10, 10, False)
+                logger.info(
+                    "Fully done page rendered without reprocessing: %s",
+                    page.image_path,
+                )
             translated_pages.append(page)
-            self.emit_progress(page.index, total_images, 10, 10, False)
-            logger.info(
-                "Fully done page rendered without reprocessing: %s",
-                page.image_path,
-            )
 
         for page in skip_detection_pages:
             if self._is_cancelled():
@@ -284,7 +293,15 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
             page.skip_inpaint = self._page_can_skip_inpainting(page)
             if page.skip_inpaint:
                 logger.info("Reusing cached inpaint layer for %s", page.image_path)
-                page.inpaint_input_img = self._restore_cached_inpaint_image(page)
+                restored_inpaint = self._restore_cached_inpaint_image(page)
+                if restored_inpaint is None:
+                    page.skip_inpaint = False
+                    logger.info(
+                        "Cached inpaint layer unavailable; recomputing: %s",
+                        page.image_path,
+                    )
+                else:
+                    page.inpaint_input_img = restored_inpaint
 
             sanitize_translation_source_blocks(page.blk_list)
 

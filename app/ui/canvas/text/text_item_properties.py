@@ -3,6 +3,7 @@ from typing import Optional, List, Any
 from PySide6.QtGui import QColor
 from PySide6.QtCore import Qt
 from app.ui.canvas.text_item import OutlineType
+from modules.rendering.qt_compat import coerce_alignment_flag, coerce_layout_direction
 
 @dataclass
 class TextItemProperties:
@@ -85,22 +86,10 @@ class TextItemProperties:
         
         # Alignment
         if 'alignment' in data:
-            if isinstance(data['alignment'], int):
-                props.alignment = Qt.AlignmentFlag(data['alignment'])
-            else:
-                props.alignment = data['alignment']
+            props.alignment = coerce_alignment_flag(data['alignment'])
                 
-        # Direction – stored as Qt.LayoutDirection enum but may arrive as a plain
-        # integer after JSON round-trips (RightToLeft=1, LeftToRight=0).
         if 'direction' in data:
-            dir_val = data['direction']
-            if isinstance(dir_val, int):
-                try:
-                    props.direction = Qt.LayoutDirection(dir_val)
-                except (ValueError, KeyError):
-                    props.direction = Qt.LayoutDirection.LeftToRight
-            else:
-                props.direction = dir_val
+            props.direction = coerce_layout_direction(data['direction'])
             
         # Position and transformation
         props.position = data.get('position', (0, 0))

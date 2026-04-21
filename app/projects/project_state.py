@@ -17,6 +17,7 @@ from .project_state_v2 import (
     load_state_from_proj_file_v2,
     save_state_to_proj_file_v2,
 )
+from pipeline.page_state import sync_inpaint_cache_from_image_patches
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -266,11 +267,10 @@ def load_state_from_proj_file(comic_translate: ComicTranslate, file_name: str):
             original_to_temp.get(page, page): plist
             for page, plist in reconstructed.items()
         }
-        for page_path, state_val in comic_translate.image_states.items():
-            if not state_val.get("inpaint_cache") and comic_translate.image_patches.get(page_path):
-                state_val["inpaint_cache"] = [
-                    dict(patch) for patch in comic_translate.image_patches.get(page_path, [])
-                ]
+        sync_inpaint_cache_from_image_patches(
+            comic_translate.image_states,
+            comic_translate.image_patches,
+        )
 
     # restore LLM extra context
     saved_ctx = state.get('llm_extra_context', '')

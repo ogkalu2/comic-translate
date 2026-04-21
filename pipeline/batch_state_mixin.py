@@ -195,6 +195,11 @@ class BatchStateMixin:
             logger.debug("_page_is_fully_done: translation cache incomplete for %s", page.image_path)
             return False
 
+        cached_patches = self._get_cached_inpaint_patches(page.image_path)
+        if cached_patches and not self._cached_inpaint_patches_available(page, cached_patches):
+            logger.debug("_page_is_fully_done: cached inpaint patches unavailable for %s", page.image_path)
+            return False
+
         viewer_state = get_target_snapshot(
             state,
             page.target_lang,
@@ -248,7 +253,8 @@ class BatchStateMixin:
             has_runtime_patches=page_ctx.has_runtime_patches,
         ):
             return False
-        return bool(self._get_cached_inpaint_patches(page.image_path))
+        cached_patches = self._get_cached_inpaint_patches(page.image_path)
+        return self._cached_inpaint_patches_available(page, cached_patches)
 
     def _get_cached_inpaint_patches(self, image_path: str) -> list[dict]:
         state = self.main_page.image_states.get(image_path, {})
@@ -261,6 +267,108 @@ class BatchStateMixin:
                 dict(patch) for patch in cached_patches
             ]
         return cached_patches
+
+    def _cached_patch_source_available(
+        self,
+        page,
+        saved_patch: dict,
+        mem_by_hash: dict,
+    ) -> bool:
+        patch_hash = saved_patch.get("hash")
+        if patch_hash and mem_by_hash.get(patch_hash, {}).get("image") is not None:
+            return True
+
+        png_path = saved_patch.get("png_path")
+        if not png_path:
+            return False
+
+        try:
+            ensure_path_materialized(png_path)
+        except Exception:
+            logger.debug(
+                "Failed to materialize cached inpaint patch for %s: %s",
+                page.image_path,
+                png_path,
+                exc_info=True,
+            )
+            return False
+        return os.path.isfile(png_path)
+
+    def _cached_inpaint_patches_available(self, page, cached_patches: list[dict] | None = None) -> bool:
+        if page.image is None:
+            return False
+
+        cached_patches = (
+            cached_patches
+            if cached_patches is not None
+            else self._get_cached_inpaint_patches(page.image_path)
+        )
+        if not cached_patches:
+            return False
+
+        mem_by_hash = {
+            patch.get("hash"): patch
+            for patch in self.main_page.in_memory_patches.get(page.image_path, [])
+            if patch.get("hash")
+        }
+
+        required_patch_found = False
+        for saved_patch in cached_patches:
+            bbox = saved_patch.get("bbox") or []
+            if len(bbox) != 4:
+                continue
+
+            try:
+                x, y, w, h = (int(round(float(v))) for v in bbox)
+            except (TypeError, ValueError):
+                continue
+
+            if w <= 0 or h <= 0:
+                continue
+            if x >= page.image.shape[1] or y >= page.image.shape[0]:
+                continue
+
+            required_patch_found = True
+            if not self._cached_patch_source_available(page, saved_patch, mem_by_hash):
+                return False
+
+        return required_patch_found
+
+    def _read_cached_patch_image(
+        self,
+        page,
+        saved_patch: dict,
+        mem_by_hash: dict,
+    ):
+        patch_hash = saved_patch.get("hash")
+        if patch_hash and patch_hash in mem_by_hash:
+            patch_image = mem_by_hash[patch_hash].get("image")
+            if patch_image is not None:
+                return patch_image
+
+        png_path = saved_patch.get("png_path")
+        if not png_path:
+            logger.warning("Cached inpaint patch without png_path for %s", page.image_path)
+            return None
+
+        try:
+            ensure_path_materialized(png_path)
+            if not os.path.isfile(png_path):
+                logger.warning(
+                    "Cached inpaint patch file is missing for %s: %s",
+                    page.image_path,
+                    png_path,
+                )
+                return None
+            return imk.read_image(png_path)
+        except Exception:
+            logger.warning(
+                "Failed to read cached inpaint patch for %s: %s",
+                page.image_path,
+                png_path,
+                exc_info=True,
+            )
+            return None
 
     def _restore_cached_inpaint_image(self, page):
         if page.image is None:
@@ -288,19 +396,9 @@ class BatchStateMixin:
             if x >= restored.shape[1] or y >= restored.shape[0]:
                 continue
 
-            patch_image = None
-            patch_hash = saved_patch.get("hash")
-            if patch_hash and patch_hash in mem_by_hash:
-                patch_image = mem_by_hash[patch_hash].get("image")
-
+            patch_image = self._read_cached_patch_image(page, saved_patch, mem_by_hash)
             if patch_image is None:
-                png_path = saved_patch.get("png_path")
-                if png_path:
-                    ensure_path_materialized(png_path)
-                    patch_image = imk.read_image(png_path)
-
-            if patch_image is None:
-                continue
+                return None
 
             patch_h, patch_w = patch_image.shape[:2]
             copy_w = min(w, patch_w, restored.shape[1] - x)

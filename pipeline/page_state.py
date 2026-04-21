@@ -27,12 +27,14 @@ def get_runtime_patches(
     image_patches: dict | None,
     file_path: str,
 ) -> list[dict]:
+    if isinstance(image_patches, dict) and file_path:
+        patches = image_patches.get(file_path, []) or []
+        if patches:
+            return patches
     if isinstance(state, dict):
         inpaint_cache = state.get("inpaint_cache") or []
         if inpaint_cache:
             return inpaint_cache
-    if isinstance(image_patches, dict) and file_path:
-        return image_patches.get(file_path, []) or []
     return []
 
 
@@ -42,6 +44,22 @@ def has_runtime_patches(
     file_path: str,
 ) -> bool:
     return bool(get_runtime_patches(state, image_patches, file_path))
+
+
+def sync_inpaint_cache_from_image_patches(
+    image_states: dict | None,
+    image_patches: dict | None,
+) -> None:
+    """Keep serialized page state aligned with materialized patch paths."""
+    if not isinstance(image_states, dict) or not isinstance(image_patches, dict):
+        return
+
+    for file_path, state in image_states.items():
+        if not isinstance(state, dict):
+            continue
+        patches = image_patches.get(file_path) or []
+        if patches:
+            state["inpaint_cache"] = [dict(patch) for patch in patches]
 
 
 def resolve_page_target_lang(
