@@ -90,7 +90,7 @@ class BatchExecutionMixin:
     def _get_translation_max_workers(self, prepared_pages: list[PreparedBatchPage]) -> int:
         requested = min(32, len(prepared_pages))
         if self._translation_context_requires_ordering() or self._translator_requires_serial_batch():
-            return 16
+            return 1
 
         return requested
 
@@ -165,11 +165,16 @@ class BatchExecutionMixin:
             for block_chunk in (blocks_to_translate[:midpoint], blocks_to_translate[midpoint:]):
                 if not block_chunk:
                     continue
-                _translated_chunk, chunk_usage, _used_chunk_fallback, _scene_memory = self._translate_blocks_resiliently(
+                translated_chunk, chunk_usage, _used_chunk_fallback, _scene_memory = self._translate_blocks_resiliently(
                     page,
                     block_chunk,
                     extra_context,
                 )
+                for original_block, translated_block in zip(block_chunk, translated_chunk or []):
+                    if translated_block is original_block:
+                        continue
+                    if hasattr(translated_block, "translation"):
+                        original_block.translation = getattr(translated_block, "translation", "")
                 usage_items.append(chunk_usage)
             return blocks_to_translate, self._merge_usage_stats(usage_items), True, None
 

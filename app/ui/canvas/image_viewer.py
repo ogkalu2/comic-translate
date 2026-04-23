@@ -519,11 +519,10 @@ class ImageViewer(QGraphicsView):
             and properties.height > 0
             and not item.is_html(properties.text)
         ):
-            max_font_size = int(round(properties.font_size)) if properties.font_size else None
             item.reflow_from_source_text(
                 properties.width,
                 properties.height,
-                max_font_size=max_font_size,
+                max_font_size=None,
             )
             # Keep the exact wrapped text produced by the render pass while
             # preserving the fitted font size chosen above.
@@ -533,6 +532,7 @@ class ImageViewer(QGraphicsView):
             
         # Set selection outlines
         item.selection_outlines = properties.selection_outlines.copy()
+        item.update_outlines()
         
         # Update the item
         item.update()

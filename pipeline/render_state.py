@@ -5,7 +5,6 @@ from copy import deepcopy
 RENDER_STYLE_KEYS = {
     "block_uid",
     "font_family",
-    "font_size",
     "text_color",
     "alignment",
     "line_spacing",
@@ -27,7 +26,6 @@ RENDER_STYLE_KEYS = {
     "transform_origin",
     "width",
     "height",
-    "selection_outlines",
 }
 
 RENDER_STYLE_OVERRIDES_KEY = "render_style_overrides"
@@ -103,9 +101,55 @@ def ensure_target_snapshot(
         source_snapshot = state.get("viewer_state") or {}
 
     if source_snapshot:
-        target_render_states[target_lang] = deepcopy(source_snapshot)
+        target_render_states[target_lang] = _clone_snapshot_for_new_target(source_snapshot)
         return target_render_states[target_lang]
     return {}
+
+
+def _outline_type_value(outline) -> str:
+    outline_type = outline.get("type") if isinstance(outline, dict) else getattr(outline, "type", None)
+    if outline_type is None:
+        return ""
+    value = getattr(outline_type, "value", outline_type)
+    return str(value or "").lower()
+
+
+def _outline_attr(outline, name: str):
+    if isinstance(outline, dict):
+        return outline.get(name)
+    return getattr(outline, name, None)
+
+
+def _clone_text_item_for_new_target(item: dict) -> dict:
+    cloned = deepcopy(item)
+    selection_outlines = cloned.pop("selection_outlines", None) or []
+    if cloned.get("outline"):
+        return cloned
+
+    for outline in selection_outlines:
+        if _outline_type_value(outline) != "full_document":
+            continue
+        cloned["outline"] = True
+        if cloned.get("outline_color") is None:
+            cloned["outline_color"] = deepcopy(_outline_attr(outline, "color"))
+        if not cloned.get("outline_width"):
+            outline_width = _outline_attr(outline, "width")
+            if outline_width is not None:
+                cloned["outline_width"] = deepcopy(outline_width)
+        break
+
+    return cloned
+
+
+def _clone_snapshot_for_new_target(snapshot: dict | None) -> dict:
+    cloned = deepcopy(snapshot or {})
+    items = cloned.get("text_items_state")
+    if isinstance(items, list):
+        cloned["text_items_state"] = [
+            _clone_text_item_for_new_target(item) if isinstance(item, dict) else item
+            for item in items
+        ]
+    return cloned
 
 
 def _item_identity(item: dict) -> tuple[str, tuple[int, int, int, int], float]:

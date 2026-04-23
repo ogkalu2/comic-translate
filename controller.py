@@ -192,6 +192,7 @@ class ComicTranslate(BatchUiMixin, ComicTranslateUI):
 
         # Connect other buttons and widgets
         self.translate_button.clicked.connect(self.start_batch_process)
+        self.multi_translate_button.clicked.connect(self.start_multi_translate_process)
         self.cancel_button.clicked.connect(self.cancel_current_task)
         self.batch_report_button.clicked.connect(self.show_latest_batch_report)
         self.error_pages_button.clicked.connect(self.select_pages_with_errors)

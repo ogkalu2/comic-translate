@@ -4,11 +4,11 @@ from PySide6.QtGui import QColor
 
 from app.controllers.workflow_support import prepare_multi_page_context, reload_current_webtoon_page
 from app.ui.canvas.text.text_item_properties import TextItemProperties
-from modules.rendering.font_sizing import resolve_init_font_size
+from modules.rendering.font_sizing import resolve_autofit_init_font_size
 from modules.rendering.policy import is_vertical_block
 from modules.rendering.render import pyside_word_wrap
 from modules.utils.image_utils import get_smart_text_color
-from modules.utils.language_utils import get_language_code, is_no_space_lang
+from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
 from modules.utils.pipeline_config import font_selected
 from modules.utils.translator_utils import format_translations
 from pipeline.page_state import has_runtime_patches as page_has_runtime_patches
@@ -55,7 +55,6 @@ class TextRenderBatchMixin:
         underline = self.main.underline_button.isChecked()
         align_id = self.main.alignment_tool_group.get_dayu_checked()
         alignment = self.main.button_to_alignment[align_id]
-        direction = render_settings.direction
         max_font_size = self.main.settings_page.get_max_font_size()
         min_font_size = self.main.settings_page.get_min_font_size()
         setting_font_color = QColor(render_settings.color)
@@ -75,6 +74,7 @@ class TextRenderBatchMixin:
             target_lang = state.get("target_lang", target_lang_fallback)
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
+            direction = get_layout_direction(target_lang_en)
             format_translations(blk_list, trg_lng_cd, upper_case=upper)
 
             viewer_state = state.setdefault("viewer_state", {})
@@ -157,8 +157,12 @@ class TextRenderBatchMixin:
                     template_font_color = QColor(template_font_color)
 
                 vertical = is_vertical_block(blk, trg_lng_cd)
-                block_init_font_size = int(
-                    round(template.get("font_size", resolve_init_font_size(blk, max_font_size, min_font_size)))
+                block_init_font_size = resolve_autofit_init_font_size(
+                    blk,
+                    max_font_size,
+                    min_font_size,
+                    template=template,
+                    target="qt",
                 )
                 wrapped, font_size = pyside_word_wrap(
                     translation,

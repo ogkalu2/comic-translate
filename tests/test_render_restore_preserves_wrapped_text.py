@@ -10,7 +10,7 @@ from app.ui.canvas.image_viewer import ImageViewer
 from app.ui.canvas.interaction_manager import InteractionManager
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.ui.canvas.text.text_item_properties import TextItemProperties
-from app.ui.canvas.text_item import TextBlockItem
+from app.ui.canvas.text_item import OutlineInfo, OutlineType, TextBlockItem
 from modules.rendering import font_sizing
 from modules.rendering import render
 from modules.utils.textblock import TextBlock
@@ -58,8 +58,10 @@ class _FakeDraw:
 
 def test_image_viewer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
     _ensure_app()
+    captured = {}
 
     def fake_reflow(self, width=None, height=None, max_font_size=None):
+        captured["max_font_size"] = max_font_size
         self.font_size = 11
         self.setPlainText("REFLOWED")
         return "REFLOWED", 11
@@ -71,12 +73,15 @@ def test_image_viewer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
 
     assert item.toPlainText() == "ONE\nTWO"
     assert item.font_size == 11
+    assert captured["max_font_size"] is None
 
 
 def test_save_renderer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
     _ensure_app()
+    captured = {}
 
     def fake_reflow(self, width=None, height=None, max_font_size=None):
+        captured["max_font_size"] = max_font_size
         self.font_size = 11
         self.setPlainText("REFLOWED")
         return "REFLOWED", 11
@@ -90,6 +95,7 @@ def test_save_renderer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
     assert len(text_items) == 1
     assert text_items[0].toPlainText() == "ONE\nTWO"
     assert text_items[0].font_size == 11
+    assert captured["max_font_size"] is None
 
 
 def test_pyside_word_wrap_accepts_serialized_alignment_and_direction_ints():
@@ -306,6 +312,87 @@ def test_image_viewer_add_text_item_applies_fitted_font_size_to_document():
     assert item.font_size < 40
     assert _first_char_pixel_size(item) == int(round(item.font_size))
     assert item.document().size().height() <= 40.5
+
+
+def test_image_viewer_add_text_item_can_grow_from_saved_fitted_font_size():
+    _ensure_app()
+
+    viewer = ImageViewer(None)
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text="Short",
+            source_text="Short",
+            font_family="Arial",
+            font_size=8,
+            text_color=QColor("#000000"),
+            outline_color=None,
+            width=200,
+            height=80,
+        )
+    )
+
+    assert item.font_size > 8
+    assert _first_char_pixel_size(item) == int(round(item.font_size))
+
+
+def test_image_viewer_restore_refreshes_full_document_outline_range():
+    _ensure_app()
+
+    viewer = ImageViewer(None)
+    text = "LONGER TEXT"
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text=text,
+            source_text=text,
+            font_family="Arial",
+            font_size=20,
+            text_color=QColor("#000000"),
+            outline=True,
+            outline_color=QColor("#ffffff"),
+            outline_width=2,
+            width=160,
+            height=50,
+            selection_outlines=[
+                OutlineInfo(0, 3, QColor("#ffffff"), 2, OutlineType.Full_Document),
+            ],
+        )
+    )
+
+    full_document = [outline for outline in item.selection_outlines if outline.type == OutlineType.Full_Document]
+
+    assert len(full_document) == 1
+    assert full_document[0].end == max(0, item.document().characterCount() - 1)
+
+
+def test_save_renderer_restore_refreshes_full_document_outline_range():
+    _ensure_app()
+
+    props = TextItemProperties(
+        text="LONGER TEXT",
+        source_text="LONGER TEXT",
+        font_family="Arial",
+        font_size=20,
+        text_color=QColor("#000000"),
+        outline=True,
+        outline_color=QColor("#ffffff"),
+        outline_width=2,
+        width=160,
+        height=50,
+        selection_outlines=[
+            OutlineInfo(0, 3, QColor("#ffffff"), 2, OutlineType.Full_Document),
+        ],
+    )
+    renderer = ImageSaveRenderer(np.zeros((32, 32, 3), dtype=np.uint8))
+    renderer.add_state_to_image({"text_items_state": [props.to_dict()]})
+
+    text_items = [item for item in renderer.scene.items() if isinstance(item, TextBlockItem)]
+    full_document = [
+        outline for outline in text_items[0].selection_outlines if outline.type == OutlineType.Full_Document
+    ]
+
+    assert len(text_items) == 1
+    assert len(full_document) == 1
+    assert full_document[0].end == max(0, text_items[0].document().characterCount() - 1)
 
 
 def test_text_block_item_set_font_size_uses_pixels():

@@ -255,7 +255,7 @@ def test_gpt_translation_sends_image_to_lm_studio(monkeypatch):
     assert captured["messages"][1]["content"][1]["image_url"]["url"].startswith("data:image/")
 
 
-def test_gpt_translation_keeps_local_vllm_text_only_even_if_image_enabled(monkeypatch):
+def test_gpt_translation_sends_image_to_local_vllm_when_image_enabled(monkeypatch):
     engine = GPTTranslation()
     engine.initialize(_FakeImageSettings(), "Japanese", "English", "Custom")
     engine.api_base_url = "http://127.0.0.1:8000/v1"
@@ -273,7 +273,30 @@ def test_gpt_translation_keeps_local_vllm_text_only_even_if_image_enabled(monkey
 
     assert content == '{"r":["ok"]}'
     assert captured["response_format"] == {"type": "json_object"}
-    assert isinstance(captured["messages"][1]["content"], str)
+    assert isinstance(captured["messages"][1]["content"], list)
+    assert captured["messages"][1]["content"][1]["type"] == "image_url"
+
+
+def test_gpt_translation_retries_text_only_when_image_payload_is_rejected(monkeypatch):
+    engine = GPTTranslation()
+    engine.initialize(_FakeImageSettings(), "Japanese", "English", "Custom")
+    engine.api_base_url = "http://127.0.0.1:8000/v1"
+    engine.model = "text-only-model"
+    calls = []
+
+    def fake_make_api_request(payload):
+        calls.append(payload)
+        if isinstance(payload["messages"][1]["content"], list):
+            raise RuntimeError("400 invalid request: image content is unsupported")
+        return '{"r":["ok"]}'
+
+    monkeypatch.setattr(engine, "_make_api_request", fake_make_api_request)
+
+    content = engine._perform_translation("prompt", "system", np.zeros((2, 2, 3), dtype=np.uint8))
+
+    assert content == '{"r":["ok"]}'
+    assert isinstance(calls[0]["messages"][1]["content"], list)
+    assert isinstance(calls[1]["messages"][1]["content"], str)
 
 
 class _InterpretLLM(BaseLLMTranslation):

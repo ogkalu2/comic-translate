@@ -18,6 +18,18 @@ class Messages:
         )
 
     @staticmethod
+    def show_multi_translate_unavailable(parent):
+        MMessage.warning(
+            text=QCoreApplication.translate(
+                "Messages",
+                "No additional target languages are available for Multi Translate."
+            ),
+            parent=parent,
+            duration=None,
+            closable=True
+        )
+
+    @staticmethod
     def select_font_error(parent):
         MMessage.error(
             text=QCoreApplication.translate(

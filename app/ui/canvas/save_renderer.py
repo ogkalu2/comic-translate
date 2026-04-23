@@ -80,17 +80,17 @@ class ImageSaveRenderer:
                 and text_props.height > 0
                 and not text_item.is_html(text_props.text)
             ):
-                max_font_size = int(round(text_props.font_size)) if text_props.font_size else None
                 text_item.reflow_from_source_text(
                     text_props.width,
                     text_props.height,
-                    max_font_size=max_font_size,
+                    max_font_size=None,
                 )
                 # Keep the exact wrapped text produced by the render pass while
                 # preserving the fitted font size chosen above.
                 text_item.set_plain_text(text_props.text, preserve_source_text=True, update_width=False)
                 text_item.set_layout_box_size(text_props.width, text_props.height)
             text_item.selection_outlines = text_props.selection_outlines
+            text_item.update_outlines()
             text_item.update()
 
             self.scene.addItem(text_item)

@@ -66,14 +66,12 @@ class TextSceneItemMixin:
                 text_item.text_highlighted.disconnect(self.set_values_from_highlight)
             except (TypeError, RuntimeError):
                 pass
-            try:
-                text_item.change_undo.disconnect(self.main.rect_item_ctrl.rect_change_undo)
-            except (TypeError, RuntimeError):
-                pass
-            try:
-                text_item.change_undo.disconnect(self.on_text_item_geometry_changed)
-            except (TypeError, RuntimeError):
-                pass
+            if getattr(text_item, "_ct_geometry_connected", False):
+                try:
+                    text_item.change_undo.disconnect(self.on_text_item_geometry_changed)
+                except (TypeError, RuntimeError):
+                    pass
+                text_item._ct_geometry_connected = False
 
         if not hasattr(text_item, "_ct_text_changed_slot"):
             text_item._ct_text_changed_slot = lambda text, ti=text_item: self.update_text_block_from_item(ti, text)
@@ -82,11 +80,13 @@ class TextSceneItemMixin:
         text_item.item_deselected.connect(self.on_text_item_deselected)
         text_item.text_changed.connect(text_item._ct_text_changed_slot)
         text_item.text_highlighted.connect(self.set_values_from_highlight)
-        try:
-            text_item.change_undo.disconnect(self.main.rect_item_ctrl.rect_change_undo)
-        except (TypeError, RuntimeError):
-            pass
+        if getattr(text_item, "_ct_geometry_connected", False):
+            try:
+                text_item.change_undo.disconnect(self.on_text_item_geometry_changed)
+            except (TypeError, RuntimeError):
+                pass
         text_item.change_undo.connect(self.on_text_item_geometry_changed)
+        text_item._ct_geometry_connected = True
         if not hasattr(text_item, "_ct_destroyed_slot"):
             text_item._ct_destroyed_slot = lambda *_args, ti=text_item: self._forget_text_item(ti)
         try:

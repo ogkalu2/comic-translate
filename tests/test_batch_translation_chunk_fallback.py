@@ -4,6 +4,7 @@ import numpy as np
 
 from pipeline.batch_execution_mixin import BatchExecutionMixin
 from pipeline.batch_state_mixin import BatchStateMixin
+from modules.utils.textblock import TextBlock
 
 
 class _FakeSettingsPage:
@@ -113,6 +114,31 @@ def test_batch_translation_falls_back_to_smaller_chunks(monkeypatch):
     assert [blk.translation for blk in blocks] == ["tr:one", "tr:two"]
     assert usage == {"prompt_tokens": 2, "completion_tokens": 4, "total_tokens": 6}
     assert scene_memory == ""
+
+
+def test_batch_translation_ignores_saved_translation_source_attrs(monkeypatch):
+    import pipeline.batch_execution_mixin as batch_execution_module
+
+    monkeypatch.setattr(batch_execution_module, "Translator", _FakeTranslator)
+
+    worker = _FakeBatchExecution()
+    worker.translation_source_lang = "Russian"
+    block = TextBlock(text_bbox=np.array([0, 0, 10, 10]), text="original", translation="старый")
+    worker.translation_source_texts_by_path = {"page.png": {block.block_uid: "привет"}}
+    page = SimpleNamespace(
+        target_lang="English",
+        image=np.zeros((2, 2, 3), dtype=np.uint8),
+        blk_list=[block],
+        image_path="page.png",
+    )
+
+    translated_blk_list, translated_source_blocks, _usage, _scene_memory = worker._translate_one_page_worker(page)
+
+    assert translated_source_blocks == [block]
+    assert block.text == "original"
+    assert translated_blk_list[0] is block
+    assert translated_blk_list[0].text == "original"
+    assert translated_blk_list[0].translation == "tr:original"
 
 
 def test_lm_studio_translation_is_serial_without_page_to_page_context():

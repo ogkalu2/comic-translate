@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication
 from dataclasses import dataclass
 
 from .hyphen_textwrap import wrap as hyphen_wrap
-from .font_sizing import resolve_init_font_size
+from .font_sizing import resolve_autofit_init_font_size, resolve_init_font_size
 from .policy import is_vertical_block, is_vertical_language_code
 from .qt_compat import coerce_alignment_flag, coerce_layout_direction
 from .render_area import get_best_render_area
@@ -367,13 +367,13 @@ def manual_wrap(
 
         vertical = is_vertical_block(blk, trg_lng_cd)
         block_min_font_size = blk.min_font_size if blk.min_font_size > 0 else min_font_size
-        block_init_font_size = resolve_init_font_size(
+        block_init_font_size = resolve_autofit_init_font_size(
             blk,
             init_font_size,
             block_min_font_size,
+            template=template,
             target="qt",
         )
-        block_init_font_size = int(round(template.get("font_size", block_init_font_size)))
 
         translation, font_size = pyside_word_wrap(
             translation, 

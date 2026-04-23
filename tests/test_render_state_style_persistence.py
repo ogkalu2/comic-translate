@@ -5,6 +5,7 @@ import numpy as np
 from app.controllers.text_state_mixin import TextStateMixin
 from pipeline.render_state import (
     build_render_template_map,
+    ensure_target_snapshot,
     get_render_template_for_block,
     get_target_snapshot,
     set_target_snapshot,
@@ -57,6 +58,56 @@ def test_style_override_applies_to_matching_block_without_overwriting_text():
     assert template["text_color"] == "#ff00ff"
     assert template["text_gradient"] is True
     assert template["second_outline"] is True
+
+
+def test_style_override_does_not_reuse_fitted_font_size_across_languages():
+    state = {"target_render_states": {}}
+    english = _snapshot("HELLO", "#111111", gradient=False)
+    arabic = _snapshot("مرحبا", "#222222", gradient=False)
+    english["text_items_state"][0]["font_size"] = 10
+    arabic["text_items_state"][0]["font_size"] = 28
+    set_target_snapshot(state, "English", english)
+    set_target_snapshot(state, "Arabic", arabic)
+    update_render_style_overrides(state, english)
+
+    template = build_render_template_map(state, "Arabic")[("cover-title", (), 0.0)]
+
+    assert template["font_size"] == 28
+
+
+def test_style_override_does_not_reuse_selection_outline_ranges_across_languages():
+    state = {"target_render_states": {}}
+    english = _snapshot("HELLO", "#111111", gradient=False)
+    arabic = _snapshot("مرحبا بالعالم", "#222222", gradient=False)
+    english["text_items_state"][0]["selection_outlines"] = [
+        {"start": 0, "end": 5, "color": "#ffffff", "width": 1.5, "type": "full_document"}
+    ]
+    arabic["text_items_state"][0]["selection_outlines"] = [
+        {"start": 0, "end": 13, "color": "#ffffff", "width": 1.5, "type": "full_document"}
+    ]
+    set_target_snapshot(state, "English", english)
+    set_target_snapshot(state, "Arabic", arabic)
+    update_render_style_overrides(state, english)
+
+    template = build_render_template_map(state, "Arabic")[("cover-title", (), 0.0)]
+
+    assert template["selection_outlines"] == arabic["text_items_state"][0]["selection_outlines"]
+
+
+def test_new_target_snapshot_drops_stale_selection_outline_ranges():
+    viewer_state = _snapshot("HELLO", "#111111", gradient=False)
+    viewer_state["text_items_state"][0]["selection_outlines"] = [
+        {"start": 0, "end": 5, "color": "#ffffff", "width": 1.5, "type": "full_document"}
+    ]
+    state = {"viewer_state": viewer_state, "target_render_states": {}}
+
+    cloned = ensure_target_snapshot(state, "Arabic", fallback_snapshot=viewer_state)
+    item = cloned["text_items_state"][0]
+
+    assert "selection_outlines" not in item
+    assert item["outline"] is True
+    assert item["outline_color"] == "#ffffff"
+    assert item["outline_width"] == 1.5
 
 
 def test_style_override_is_individual_per_block():

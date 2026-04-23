@@ -22,27 +22,28 @@ class GPTTranslation(BaseLLMTranslation):
         # vLLM OpenAI-compatible base URL
         self.api_base_url: str = "http://localhost:8000/v1"
 
-        # vLLM text-only in your setup; keep this False to avoid multimodal payload bloat.
-        self.supports_images: bool = False
+        self.supports_images: bool = True
     
     def _is_lm_studio_backend(self) -> bool:
         base_url = (self.api_base_url or "").lower()
         return "127.0.0.1:1234" in base_url or "localhost:1234" in base_url
 
     def _supports_image_input(self) -> bool:
-        return self._is_lm_studio_backend()
+        return True
 
     def _build_messages(
         self,
         user_prompt: str,
         system_prompt: str,
         image: np.ndarray | None,
+        *,
+        include_image: bool = True,
     ) -> list[dict]:
         messages: list[dict] = [
             {"role": "system", "content": system_prompt},
         ]
 
-        if self.img_as_llm_input and image is not None and self._supports_image_input():
+        if include_image and self.img_as_llm_input and image is not None and self._supports_image_input():
             encoded_image, media_type = self.encode_image(image)
             messages.append(
                 {
@@ -62,6 +63,34 @@ class GPTTranslation(BaseLLMTranslation):
             messages.append({"role": "user", "content": user_prompt})
 
         return messages
+
+    @staticmethod
+    def _messages_include_image(messages: list[dict]) -> bool:
+        for message in messages or []:
+            content = message.get("content")
+            if not isinstance(content, list):
+                continue
+            if any(isinstance(item, dict) and item.get("type") == "image_url" for item in content):
+                return True
+        return False
+
+    @staticmethod
+    def _is_probable_image_payload_error(exc: Exception) -> bool:
+        text = str(exc).lower()
+        return any(
+            marker in text
+            for marker in (
+                "image",
+                "vision",
+                "multimodal",
+                "content part",
+                "unsupported content",
+                "invalid chat format",
+                "invalid request",
+                "400",
+                "422",
+            )
+        )
 
     def initialize(
         self,
@@ -106,7 +135,19 @@ class GPTTranslation(BaseLLMTranslation):
         }
         self._apply_no_thinking_options(payload)
 
-        return self._make_api_request(payload)
+        try:
+            return self._make_api_request(payload)
+        except RuntimeError as exc:
+            if self._messages_include_image(messages) and self._is_probable_image_payload_error(exc):
+                fallback_payload = dict(payload)
+                fallback_payload["messages"] = self._build_messages(
+                    user_prompt,
+                    system_prompt,
+                    image,
+                    include_image=False,
+                )
+                return self._make_api_request(fallback_payload)
+            raise
 
     def _apply_no_thinking_options(self, payload: dict) -> None:
         if self._is_lm_studio_backend():

@@ -60,3 +60,27 @@ def resolve_init_font_size(
         candidate = _pixels_to_qfont_points(candidate)
 
     return int(round(max(min_font_size, candidate)))
+
+
+def resolve_autofit_init_font_size(
+    blk,
+    default_max_font_size: int,
+    min_font_size: int,
+    *,
+    template: dict | None = None,
+    target: str = "qt",
+) -> int:
+    """Pick a high enough starting size for strict fit-to-box wrapping."""
+    candidates = [
+        float(default_max_font_size),
+        float(resolve_init_font_size(blk, default_max_font_size, min_font_size, target=target)),
+    ]
+    if isinstance(template, dict):
+        try:
+            template_size = float(template.get("font_size") or 0)
+        except (TypeError, ValueError):
+            template_size = 0
+        if template_size > 0:
+            candidates.append(template_size)
+
+    return int(round(max(float(min_font_size), *candidates)))

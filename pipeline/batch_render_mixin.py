@@ -11,11 +11,11 @@ from PySide6.QtGui import QColor
 
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import OutlineInfo, OutlineType
-from modules.rendering.font_sizing import resolve_init_font_size
+from modules.rendering.font_sizing import resolve_autofit_init_font_size
 from modules.rendering.policy import is_vertical_block
 from modules.rendering.render import pyside_word_wrap
 from modules.utils.image_utils import get_smart_text_color
-from modules.utils.language_utils import is_no_space_lang
+from modules.utils.language_utils import get_layout_direction, is_no_space_lang
 from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
 from pipeline.page_state import has_runtime_patches as page_has_runtime_patches
 from pipeline.render_state import (
@@ -147,7 +147,8 @@ class BatchRenderMixin:
         underline = render_settings.underline
         alignment_id = render_settings.alignment_id
         alignment = self.main_page.button_to_alignment[alignment_id]
-        direction = render_settings.direction
+        target_lang_en = self.main_page.lang_mapping.get(page.target_lang, page.target_lang)
+        direction = get_layout_direction(target_lang_en)
         file_on_display = self._current_displayed_file()
 
         template_map = self._build_render_template_map(page.image_path, page.target_lang)
@@ -196,8 +197,12 @@ class BatchRenderMixin:
                 template_font_color = QColor(template_font_color)
 
             vertical = is_vertical_block(blk, page.trg_lng_cd)
-            block_init_font_size = int(
-                round(template.get("font_size", resolve_init_font_size(blk, max_font_size, min_font_size)))
+            block_init_font_size = resolve_autofit_init_font_size(
+                blk,
+                max_font_size,
+                min_font_size,
+                template=template,
+                target="qt",
             )
             translation, font_size = pyside_word_wrap(
                 translation,

@@ -232,7 +232,12 @@ class TextStateMixin:
             state = self.main.image_states[image_path]
             target_render_states = get_target_render_states(state)
             if target_lang not in target_render_states and state.get("viewer_state"):
-                set_target_snapshot(state, target_lang, state["viewer_state"])
+                ensure_target_snapshot(
+                    state,
+                    target_lang,
+                    source_target=state.get("target_lang") or "",
+                    fallback_snapshot=state["viewer_state"],
+                )
                 update_render_style_overrides(state, state["viewer_state"])
             state["target_lang"] = target_lang
             if target_lang in target_render_states:
