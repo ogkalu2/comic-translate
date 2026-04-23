@@ -705,7 +705,7 @@ class ComicTranslate(BatchUiMixin, ComicTranslateUI):
         self.inpaint_and_set()
 
     def _on_render_text_clicked(self, *_args):
-        self.text_ctrl.render_text()
+        self.text_ctrl.render_all_pages()
 
     def _translate_current_selection_compat(self):
         selected_paths = self.get_selected_page_paths()
@@ -745,16 +745,18 @@ class ComicTranslate(BatchUiMixin, ComicTranslateUI):
         file_path = self.image_files[self.curr_img_idx] if 0 <= self.curr_img_idx < len(self.image_files) else None
         if not file_path:
             return
-        if self.stage_nav_ctrl.get_ui_stage(file_path) == "clean" and self.image_viewer.has_drawn_elements():
-            self.stage_nav_ctrl._run_clean_for_current_view(file_path)
+        if self.stage_nav_ctrl.get_ui_stage(file_path) == "clean" and (
+            self.image_viewer.has_drawn_elements() or self.stage_nav_ctrl._paths_with_clean_input()
+        ):
+            self.stage_nav_ctrl._run_clean_for_all_pages()
             return
-        self.stage_nav_ctrl.navigate_to_stage("clean")
+        self.stage_nav_ctrl.navigate_all_to_stage("clean")
 
     def blk_detect_segment(self, result): 
         self.load_segmentation_points()
 
     def load_segmentation_points(self):
-        self.stage_nav_ctrl.navigate_to_stage("clean")
+        self.stage_nav_ctrl.navigate_all_to_stage("clean")
                 
     def _on_segmentation_bboxes_ready(self, results):
         self.stage_nav_ctrl.refresh_stage_buttons()

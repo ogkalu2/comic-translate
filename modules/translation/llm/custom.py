@@ -2,7 +2,7 @@ from typing import Any
 from .gpt import GPTTranslation
 
 LOCAL_VLLM_DEFAULT_API_BASE_URL = "http://127.0.0.1:8000/v1"
-LOCAL_VLLM_DEFAULT_MODEL = "AxionML/Qwen3.5-35B-A3B-NVFP4"
+LOCAL_VLLM_DEFAULT_MODEL = "palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4"
 LM_STUDIO_DEFAULT_API_BASE_URL = "http://127.0.0.1:1234/v1"
 LM_STUDIO_DEFAULT_MODEL = "qwen/qwen3.6-35b-a3b"
 

@@ -11,16 +11,23 @@ from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.pipeline_config import font_selected
 from modules.utils.translator_utils import format_translations
+from pipeline.page_state import has_runtime_patches as page_has_runtime_patches
 from pipeline.render_state import (
     build_render_template_map,
     get_render_template_for_block,
     set_target_snapshot,
     update_render_style_overrides,
 )
+from pipeline.stage_state import finalize_render_stage
 
 
 class TextRenderBatchMixin:
+    def render_all_pages(self) -> None:
+        self._render_selected_pages(list(self.main.image_files))
+
     def _render_selected_pages(self, selected_paths: list[str]) -> None:
+        if not selected_paths:
+            return
         self.main.set_tool(None)
         if not font_selected(self.main):
             return
@@ -212,6 +219,16 @@ class TextRenderBatchMixin:
                 state["target_lang"] = target_lang
                 set_target_snapshot(state, target_lang, viewer_state)
                 update_render_style_overrides(state, viewer_state, overwrite=False)
+                finalize_render_stage(
+                    state,
+                    target_lang,
+                    has_runtime_patches=page_has_runtime_patches(
+                        state,
+                        self.main.image_patches,
+                        file_path,
+                    ),
+                    ui_stage="render",
+                )
                 pipeline_state = state.setdefault("pipeline_state", {})
                 completed_stages = set(pipeline_state.get("completed_stages", []) or [])
                 completed_stages.add("render")

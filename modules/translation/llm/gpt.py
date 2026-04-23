@@ -101,7 +101,7 @@ class GPTTranslation(BaseLLMTranslation):
             "max_tokens": int(self.max_tokens),
             "presence_penalty" : 0.0,
             "frequency_penalty": 0.0,
-            "repetition_penalty" : 1.05,
+            "repetition_penalty": float(self.repetition_penalty),
             "response_format": self._build_response_format(),
         }
         self._apply_no_thinking_options(payload)

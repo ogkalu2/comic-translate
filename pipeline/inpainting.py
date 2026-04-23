@@ -2,16 +2,20 @@ import numpy as np
 import logging
 import imkit as imk
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
+from app.path_materialization import ensure_path_materialized
 from modules.detection.utils.content import get_inpaint_bboxes
 from modules.utils.image_utils import generate_mask
 from modules.utils.textblock import TextBlock
 from modules.utils.device import resolve_device
 from modules.utils.pipeline_config import inpaint_map, get_config
+from pipeline.page_state import get_runtime_patches
 
 logger = logging.getLogger(__name__)
+
+AUTO_SEGMENT_MASK_PADDING = 4
 
 
 class InpaintingHandler:
@@ -182,7 +186,29 @@ class InpaintingHandler:
             if mask is not None and np.count_nonzero(mask) > 0:
                 return mask
 
-        return generate_mask(image, blk_list)
+        return self._generate_auto_segment_mask(image, blk_list)
+
+    def _generate_auto_segment_mask(self, image: np.ndarray, blk_list: list[TextBlock]) -> np.ndarray:
+        return generate_mask(
+            image,
+            blk_list,
+            default_padding=AUTO_SEGMENT_MASK_PADDING,
+            force_default_padding=True,
+        )
+
+    def _build_mask_from_page_state(self, image: np.ndarray, state: dict) -> np.ndarray | None:
+        strokes = state.get("brush_strokes") or []
+        if strokes:
+            mask = self._generate_mask_from_saved_strokes(strokes, image)
+            if mask is not None and np.count_nonzero(mask) > 0:
+                return mask
+
+        blk_list = state.get("blk_list") or []
+        if blk_list:
+            mask = self._generate_auto_segment_mask(image, blk_list)
+            if mask is not None and np.count_nonzero(mask) > 0:
+                return mask
+        return None
 
     def _generate_mask_from_saved_strokes(self, strokes: list[dict], image: np.ndarray):
         if image is None or not strokes:
@@ -235,6 +261,8 @@ class InpaintingHandler:
 
             if segment_bboxes:
                 seg_blk = TextBlock()
+                seg_blk.text = "segment"
+                seg_blk.translation = "segment"
                 seg_blk.inpaint_bboxes = np.array(segment_bboxes, dtype=np.int32)
                 segment_blocks.append(seg_blk)
                 has_any = True
@@ -299,7 +327,11 @@ class InpaintingHandler:
 
             return refined
 
-        segment_mask = generate_mask(image, segment_blocks) if segment_blocks else np.zeros((height, width), dtype=np.uint8)
+        segment_mask = (
+            self._generate_auto_segment_mask(image, segment_blocks)
+            if segment_blocks
+            else np.zeros((height, width), dtype=np.uint8)
+        )
         human_mask = _refine_mask(human_mask, base_padding=5, close_ksize=9, dilate_iters=2)
         gen_mask = _refine_mask(gen_mask, base_padding=8, close_ksize=15, dilate_iters=3)
         mask = np.where((segment_mask > 0) | (human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
@@ -325,6 +357,107 @@ class InpaintingHandler:
         inpainted = self.inpainter_cache(image, mask, config)
         inpainted = imk.convert_scale_abs(inpainted)
         return self._get_regular_patches(mask, inpainted)
+
+    def _add_webtoon_patch_positions(self, file_path: str, patches: list[dict]) -> None:
+        if not getattr(self.main_page, "webtoon_mode", False):
+            return
+        try:
+            page_index = self.main_page.image_files.index(file_path)
+        except ValueError:
+            return
+
+        viewer = getattr(self.main_page, "image_viewer", None)
+        manager = getattr(viewer, "webtoon_manager", None) if viewer is not None else None
+        converter = getattr(manager, "coordinate_converter", None) if manager is not None else None
+        if converter is None:
+            return
+
+        for patch in patches:
+            bbox = patch.get("bbox") or []
+            if len(bbox) != 4:
+                continue
+            scene_pos = converter.page_local_to_scene_position(QPointF(bbox[0], bbox[1]), page_index)
+            patch["page_index"] = page_index
+            patch["scene_pos"] = [scene_pos.x(), scene_pos.y()]
+
+    def _read_runtime_patch_image(self, file_path: str, saved_patch: dict):
+        patch_hash = saved_patch.get("hash")
+        if patch_hash:
+            for patch in getattr(self.main_page, "in_memory_patches", {}).get(file_path, []) or []:
+                if patch.get("hash") == patch_hash and patch.get("image") is not None:
+                    return patch["image"]
+
+        png_path = saved_patch.get("png_path")
+        if not png_path:
+            return None
+        ensure_path_materialized(png_path)
+        return imk.read_image(png_path)
+
+    def _image_with_runtime_patches(self, file_path: str, image: np.ndarray, state: dict) -> np.ndarray:
+        cached_patches = get_runtime_patches(
+            state,
+            getattr(self.main_page, "image_patches", {}),
+            file_path,
+        )
+        if not cached_patches:
+            return image
+
+        restored = image.copy()
+        for saved_patch in cached_patches:
+            bbox = saved_patch.get("bbox") or []
+            if len(bbox) != 4:
+                continue
+            x, y, w, h = (int(round(float(value))) for value in bbox)
+            if w <= 0 or h <= 0 or x >= restored.shape[1] or y >= restored.shape[0]:
+                continue
+
+            patch_image = self._read_runtime_patch_image(file_path, saved_patch)
+            if patch_image is None:
+                continue
+
+            patch_h, patch_w = patch_image.shape[:2]
+            copy_w = min(w, patch_w, restored.shape[1] - x)
+            copy_h = min(h, patch_h, restored.shape[0] - y)
+            if copy_w <= 0 or copy_h <= 0:
+                continue
+            restored[y : y + copy_h, x : x + copy_w] = patch_image[:copy_h, :copy_w]
+
+        return restored
+
+    def inpaint_pages_from_states(self, file_paths: list[str]) -> list[tuple[str, list[dict]]]:
+        if not file_paths:
+            return []
+
+        self._ensure_inpainter()
+        config = get_config(self.main_page.settings_page)
+        results: list[tuple[str, list[dict]]] = []
+
+        for file_path in file_paths:
+            worker = getattr(self.main_page, "current_worker", None)
+            if getattr(worker, "is_cancelled", False):
+                break
+
+            state = self.main_page.image_states.get(file_path) or {}
+            image = self.main_page.image_ctrl.load_original_image(file_path)
+            if image is None:
+                image = self.main_page.image_ctrl.load_image(file_path)
+            if image is None:
+                continue
+
+            mask = self._build_mask_from_page_state(image, state)
+            if mask is None:
+                continue
+
+            image = self._image_with_runtime_patches(file_path, image, state)
+            inpainted = self.inpainter_cache(image, mask, config)
+            inpainted = imk.convert_scale_abs(inpainted)
+            patches = self._get_regular_patches(mask, inpainted)
+            if not patches:
+                continue
+            self._add_webtoon_patch_positions(file_path, patches)
+            results.append((file_path, patches))
+
+        return results
 
     def inpaint_complete(self, patch_list):
         # Handle webtoon mode vs regular mode

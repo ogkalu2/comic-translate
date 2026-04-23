@@ -37,7 +37,7 @@ class BaseLLMTranslation(LLMTranslation):
         self.use_scene_memory = False
         self.interpret_then_translate = False
         self.last_scene_memory = ""
-    
+        
     def initialize(self, settings: Any, source_lang: str, target_lang: str, **kwargs) -> None:
         """
         Initialize the LLM translation engine.
@@ -55,13 +55,13 @@ class BaseLLMTranslation(LLMTranslation):
             'use_page_image_context',
             llm_settings.get('image_input_enabled', True),
         )
-        self.temperature = float(llm_settings.get("temperature", 0.1))
-        self.top_p = float(llm_settings.get("top_p", 0.95))
-        self.max_tokens = int(llm_settings.get("max_tokens", 1024))
+        self.temperature = float(llm_settings.get("temperature", 0))
+        self.top_p = float(llm_settings.get("top_p", 1))
+        self.max_tokens = int(llm_settings.get("max_tokens", 384))
         self.use_scene_memory = bool(llm_settings.get("use_scene_memory", False))
         self.interpret_then_translate = bool(llm_settings.get("interpret_then_translate", False))
         self.last_scene_memory = ""
-
+        self.repetition_penalty = float(llm_settings.get("repetition_penalty", 1.05))
     def _estimate_request_max_tokens(self, blk_list: list[TextBlock]) -> int:
         try:
             total_chars = sum(len(getattr(blk, "text", "") or "") for blk in blk_list)
@@ -74,7 +74,7 @@ class BaseLLMTranslation(LLMTranslation):
             max_tokens_cap = 1024
 
         estimated = 24 + (total_chars * 2) + (len(blk_list) * 8)
-        return max(1024, min(max_tokens_cap, estimated))
+        return max(96, min(max_tokens_cap, estimated))
 
     def _ensure_no_runaway_repetition(self, blk_list: list[TextBlock]) -> None:
         for index, blk in enumerate(blk_list):
@@ -397,9 +397,12 @@ class BaseLLMTranslation(LLMTranslation):
         estimated_max_tokens = self._estimate_request_max_tokens(blk_list)
         self.max_tokens = min(estimated_max_tokens, 64) if interjection_mode else estimated_max_tokens
         if interjection_mode:
-            self.temperature = 0.6
-            top_p_value = float(self.top_p) if self.top_p is not None else 1.0
-            self.top_p = min(top_p_value, 0.95)
+            if interjection_mode:
+                self.temperature = 0.3
+                self.top_p = 0.9
+                repetition_penalty = 1.1
+            else:
+                repetition_penalty = 1.05
         try:
             for attempt_index, prompt in enumerate(
                 (

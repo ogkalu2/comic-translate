@@ -90,7 +90,7 @@ class BatchExecutionMixin:
     def _get_translation_max_workers(self, prepared_pages: list[PreparedBatchPage]) -> int:
         requested = min(32, len(prepared_pages))
         if self._translation_context_requires_ordering() or self._translator_requires_serial_batch():
-            return 1
+            return 16
 
         return requested
 

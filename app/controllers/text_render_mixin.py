@@ -14,5 +14,5 @@ class TextRenderMixin(
             self._render_selected_pages(selected_paths)
             return
 
-        if self.main.image_viewer.hasPhoto() and self.main.blk_list:
-            self._render_current_page()
+        if self.main.image_viewer.hasPhoto():
+            self.render_all_pages()

@@ -63,7 +63,7 @@ class BatchStateMixin:
         try:
             return self.main_page.settings_page.get_batch_settings()
         except Exception:
-            return {"batch_size": 32, "ocr_batch_size": 8}
+            return {"batch_size": 32, "ocr_batch_size": 12}
 
     def _resolve_output_location(self, image_path: str) -> tuple[str, str]:
         directory = os.path.dirname(image_path)

@@ -40,7 +40,13 @@ def get_smart_text_color(detected_rgb: tuple, setting_color: QColor) -> QColor:
 
     return setting_color
 
-def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
+def generate_mask(
+    img: np.ndarray,
+    blk_list: list[TextBlock],
+    default_padding: int = 5,
+    *,
+    force_default_padding: bool = False,
+) -> np.ndarray:
     """
     Generate a mask by fitting a merged shape around each block's inpaint bboxes,
     then dilating that shape according to padding logic.
@@ -113,7 +119,7 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
         # 8) Determine dilation kernel size
         kernel_size = default_padding
         text_probe = getattr(blk, 'translation', '') or getattr(blk, 'text', '')
-        if text_probe and not is_no_space_text(text_probe):
+        if not force_default_padding and text_probe and not is_no_space_text(text_probe):
             kernel_size = 3
         # Adjust for text bubbles: only consider contours wholly inside the bubble
         if getattr(blk, 'text_class', None) == 'text_bubble' and getattr(blk, 'bubble_xyxy', None) is not None:
