@@ -238,7 +238,6 @@ class TextSceneItemMixin:
             self._remove_scene_text_item(existing_item)
 
         text_item = self.main.image_viewer.add_text_item(properties)
-        text_item.set_plain_text(text, preserve_source_text=True, update_width=False)
         current_file = self._current_file_path()
         if current_file and image_path and os.path.normcase(current_file) == os.path.normcase(image_path):
             self._sync_current_render_snapshot(current_file, update_style_overrides=False)

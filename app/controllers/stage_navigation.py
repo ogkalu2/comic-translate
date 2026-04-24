@@ -48,6 +48,18 @@ class StageNavigationController(StageViewApplyMixin, StageViewStateMixin):
             for file_path in self._all_page_paths()
         )
 
+    def _current_page_has_render_for_active_target(self) -> bool:
+        file_path = self._current_file_path()
+        if not file_path or file_path not in self.main.image_states:
+            return False
+        page_ctx = self._get_page_context(file_path)
+        return is_stage_available(
+            page_ctx.state,
+            "render",
+            target_lang=page_ctx.target_lang,
+            has_runtime_patches=page_ctx.has_runtime_patches,
+        )
+
     def _page_has_clean_input(self, file_path: str) -> bool:
         state = self.main.image_states.get(file_path) or {}
         if state.get("brush_strokes"):
@@ -224,6 +236,9 @@ class StageNavigationController(StageViewApplyMixin, StageViewStateMixin):
             self.navigate_all_to_stage(ui_stage)
             return
         if ui_stage == "render" and self._any_page_has_blocks():
+            if self._current_page_has_render_for_active_target():
+                self.navigate_all_to_stage(ui_stage)
+                return
             self.main.text_ctrl.render_all_pages()
             return
         self.navigate_all_to_stage(ui_stage)

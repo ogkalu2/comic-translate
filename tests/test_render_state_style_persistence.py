@@ -1,7 +1,13 @@
+import os
 from types import SimpleNamespace
 
-import numpy as np
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import numpy as np
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication
+
+from app.controllers.text_render_batch_mixin import TextRenderBatchMixin
 from app.controllers.text_state_mixin import TextStateMixin
 from pipeline.render_state import (
     build_render_template_map,
@@ -11,6 +17,13 @@ from pipeline.render_state import (
     set_target_snapshot,
     update_render_style_overrides,
 )
+
+
+def _ensure_app():
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    return app
 
 
 def _item(block_uid, text, color, gradient=False, x=10):
@@ -165,6 +178,16 @@ def test_target_snapshot_can_return_raw_language_state_without_overrides():
     assert item["text_gradient"] is False
 
 
+def test_target_snapshot_does_not_fallback_to_viewer_state_for_other_language():
+    state = {
+        "target_lang": "English",
+        "viewer_state": _snapshot("HELLO", "#111111", gradient=False),
+        "target_render_states": {},
+    }
+
+    assert get_target_snapshot(state, "Arabic") == {}
+
+
 def test_auto_render_does_not_overwrite_existing_block_style_override():
     state = {"target_render_states": {}}
     update_render_style_overrides(
@@ -286,3 +309,74 @@ def test_language_switch_saves_current_scene_under_previous_target():
     assert main.image_ctrl.saved_target == "English"
     assert state["target_lang"] == "Arabic"
     assert state["target_render_states"]["English"]["text_items_state"][0]["text_color"] == "#ff00ff"
+
+
+def test_manual_render_all_uses_current_combo_target():
+    _ensure_app()
+
+    class Block:
+        xyxy = np.array([0, 0, 120, 60])
+        translation = "مرحبا"
+        text = "source"
+        angle = 0
+        tr_origin_point = (0, 0)
+        font_color = ()
+        direction = ""
+        min_font_size = 0
+        max_font_size = 0
+        font_size_px = 0
+        block_uid = "title"
+
+        @property
+        def xywh(self):
+            x1, y1, x2, y2 = self.xyxy
+            return np.array([x1, y1, x2 - x1, y2 - y1])
+
+    class Ctrl(TextRenderBatchMixin):
+        def render_settings(self):
+            return SimpleNamespace(
+                upper_case=False,
+                color="#000000",
+                outline=False,
+                outline_color="#ffffff",
+                second_outline=False,
+                second_outline_color="#000000",
+                second_outline_width="0",
+                text_gradient=False,
+                text_gradient_start_color="#000000",
+                text_gradient_end_color="#000000",
+            )
+
+    state = {
+        "target_lang": "English",
+        "blk_list": [Block()],
+        "viewer_state": {},
+        "target_render_states": {},
+    }
+    main = SimpleNamespace(
+        image_states={"page-1.png": state},
+        image_patches={},
+        t_combo=SimpleNamespace(currentText=lambda: "Arabic"),
+        lang_mapping={"English": "English", "Arabic": "Arabic"},
+        line_spacing_dropdown=SimpleNamespace(currentText=lambda: "1.2"),
+        font_dropdown=SimpleNamespace(currentText=lambda: "Arial"),
+        outline_width_dropdown=SimpleNamespace(currentText=lambda: "0"),
+        bold_button=SimpleNamespace(isChecked=lambda: False),
+        italic_button=SimpleNamespace(isChecked=lambda: False),
+        underline_button=SimpleNamespace(isChecked=lambda: False),
+        alignment_tool_group=SimpleNamespace(get_dayu_checked=lambda: 0),
+        button_to_alignment={0: Qt.AlignmentFlag.AlignCenter},
+        settings_page=SimpleNamespace(
+            get_max_font_size=lambda: 24,
+            get_min_font_size=lambda: 8,
+        ),
+    )
+    ctrl = Ctrl()
+    ctrl.main = main
+
+    updated = ctrl._render_selected_pages_worker(["page-1.png"])
+
+    assert updated == {"page-1.png"}
+    assert state["target_lang"] == "Arabic"
+    assert "Arabic" in state["target_render_states"]
+    assert "English" not in state["target_render_states"]

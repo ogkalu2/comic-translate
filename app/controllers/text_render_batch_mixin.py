@@ -71,7 +71,7 @@ class TextRenderBatchMixin:
             if not blk_list:
                 continue
 
-            target_lang = state.get("target_lang", target_lang_fallback)
+            target_lang = target_lang_fallback
             target_lang_en = self.main.lang_mapping.get(target_lang, None)
             trg_lng_cd = get_language_code(target_lang_en)
             direction = get_layout_direction(target_lang_en)

@@ -384,7 +384,6 @@ class BlockLayoutNode:
 
         y_offset = doc_margin
         lines_in_current_column = []
-        is_first_block_in_doc = self.qt_block == self.context.document.firstBlock()
 
         while char_idx_in_block <= blk_text_len:
             line = tl.createLine()
@@ -399,11 +398,13 @@ class BlockLayoutNode:
             out_of_vspace = char_bottom - max(line_node.letter_spacing_offset, 0) > available_height
 
             if out_of_vspace:
-                if char_idx_in_block == 0 and is_first_block_in_doc:
-                    self.min_required_height = doc_margin + line_node.calculated_height
-
-                actual_height_needed = char_bottom + doc_margin
-                self.min_required_height = max(self.min_required_height, actual_height_needed)
+                empty_column_bottom = doc_margin + line_node.calculated_height
+                line_too_tall_for_empty_column = (
+                    empty_column_bottom - max(line_node.letter_spacing_offset, 0) > available_height
+                )
+                if line_too_tall_for_empty_column:
+                    actual_height_needed = empty_column_bottom + doc_margin
+                    self.min_required_height = max(self.min_required_height, actual_height_needed)
 
                 x_offset = self._finalize_column(lines_in_current_column, x_offset, available_height, is_first_line_in_doc)
                 lines_in_current_column = [line_node]
@@ -664,11 +665,6 @@ class VerticalTextDocumentLayout(QAbstractTextDocumentLayout):
             state.nodes.append(node)
 
             min_doc_height = max(min_doc_height, block_min_height)
-            actual_height_needed = node.height() + doc_margin
-            min_doc_height = max(min_doc_height, actual_height_needed)
-
-            if node.height() > current_available_height - doc_margin:
-                min_doc_height = max(min_doc_height, node.height() + doc_margin * 2)
 
         state.content_left_x = x_offset
         state.content_height = max((node.height() for node in state.nodes), default=doc_margin) - doc_margin

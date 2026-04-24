@@ -517,16 +517,18 @@ class ImageViewer(QGraphicsView):
             and properties.height is not None
             and properties.width > 0
             and properties.height > 0
-            and not item.is_html(properties.text)
         ):
-            item.reflow_from_source_text(
+            if not item.is_html(properties.text):
+                item.reflow_from_source_text(
+                    properties.width,
+                    properties.height,
+                    max_font_size=None,
+                )
+            item.shrink_current_text_to_rect(
                 properties.width,
                 properties.height,
-                max_font_size=None,
+                max_font_size=item.font_size,
             )
-            # Keep the exact wrapped text produced by the render pass while
-            # preserving the fitted font size chosen above.
-            item.set_plain_text(properties.text, preserve_source_text=True, update_width=False)
             item.set_layout_box_size(properties.width, properties.height)
         item.set_color(properties.text_color)
             

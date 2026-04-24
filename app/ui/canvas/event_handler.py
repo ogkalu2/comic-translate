@@ -424,6 +424,9 @@ class EventHandler:
             if self.dragged_item:
                 self.dragged_item = None
 
+            if isinstance(sel_item, TextBlockItem):
+                sel_item.finish_resize()
+
             if isinstance(sel_item, TextBlockItem) and sel_item.old_state:
                 new_state = TextBlockState.from_item(sel_item)
                 if new_state != sel_item.old_state:

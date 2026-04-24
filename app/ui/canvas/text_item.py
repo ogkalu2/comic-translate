@@ -116,6 +116,7 @@ class TextBlockItem(QGraphicsTextItem):
         self.resize_handle = None
         self.resize_start = None
         self.resize_start_rect = None
+        self._pending_resize_reflow = False
         self.editing_mode = False
         self.last_selection = None 
         self._drag_selecting = False
@@ -300,6 +301,103 @@ class TextBlockItem(QGraphicsTextItem):
         )
         return max(1.0, descent, outline, second_outline)
 
+    def _fit_padding(self) -> float:
+        outline = float(self.outline_width) if self.outline and self.outline_width else 0.0
+        second_outline = (
+            float(self.second_outline_width)
+            if self.second_outline and self.second_outline_width
+            else 0.0
+        )
+        return max(0.0, outline, second_outline)
+
+    def _current_text_render_size(self, include_outline: bool = True) -> tuple[float, float]:
+        if self.vertical and self.layout:
+            self.layout.update_layout()
+            state = getattr(self.layout, "_layout_state", None)
+            if state is not None:
+                margin = self.document().documentMargin()
+                layout_size = self.layout.documentSize()
+                box_width, box_height = self.get_text_box_size()
+                width = state.content_width + margin * 2
+                height = max(
+                    state.content_height + margin * 2,
+                    state.min_required_height,
+                )
+                if layout_size.width() > box_width + 0.5:
+                    width = max(width, layout_size.width())
+                if layout_size.height() > box_height + 0.5:
+                    height = max(height, layout_size.height())
+            else:
+                size = self.document().size()
+                width, height = size.width(), size.height()
+        else:
+            size = self.document().size()
+            width = min(size.width(), self.document().idealWidth())
+            height = size.height()
+
+        if include_outline:
+            padding = self._fit_padding()
+            width += padding * 2
+            height += padding * 2
+        return float(width), float(height)
+
+    def current_text_fits_rect(self, width: float, height: float, tolerance: float = 0.5) -> bool:
+        rendered_width, rendered_height = self._current_text_render_size()
+        return rendered_width <= float(width) + tolerance and rendered_height <= float(height) + tolerance
+
+    def shrink_current_text_to_rect(
+        self,
+        width: float,
+        height: float,
+        max_font_size: int | None = None,
+        min_font_size: int = 1,
+    ) -> int:
+        if not self.toPlainText():
+            return max(1, int(round(self.font_size)))
+
+        width = max(1.0, float(width))
+        height = max(1.0, float(height))
+        self.set_layout_box_size(width, height)
+
+        upper = max_font_size if max_font_size is not None else self.font_size
+        upper = max(1, int(round(upper)))
+        lower = max(1, int(round(min_font_size)))
+        if lower > upper:
+            lower = upper
+
+        best = lower
+        if self.vertical:
+            for font_size in range(upper, lower - 1, -1):
+                self.font_size = font_size
+                self._apply_document_font(font_size=font_size)
+                self.set_line_spacing(self.line_spacing)
+                self.set_alignment(self.alignment)
+
+                if self.current_text_fits_rect(width, height):
+                    best = font_size
+                    break
+        else:
+            lo, hi = lower, upper
+            while lo <= hi:
+                mid = (lo + hi) // 2
+                self.font_size = mid
+                self._apply_document_font(font_size=mid)
+                self.set_line_spacing(self.line_spacing)
+                self.set_alignment(self.alignment)
+
+                if self.current_text_fits_rect(width, height):
+                    best = mid
+                    lo = mid + 1
+                else:
+                    hi = mid - 1
+
+        self.font_size = best
+        self._apply_document_font(font_size=best)
+        self.set_line_spacing(self.line_spacing)
+        self.set_alignment(self.alignment)
+        self.set_layout_box_size(width, height)
+        return best
+
     def boundingRect(self):
         rect = super().boundingRect().united(self.get_text_box_rect())
         margin = self._paint_overflow_margin()
@@ -441,14 +539,25 @@ class TextBlockItem(QGraphicsTextItem):
             return self.toPlainText(), max(1, int(round(self.font_size)))
 
         if max_font_size is None:
-            max_font_size = min(
-                2048,
-                max(
+            if self.vertical:
+                current_size = max(1, int(round(self.font_size)))
+                max_font_size = min(
                     256,
-                    int(round(self.font_size)) * 2,
-                    int(round(max(width, height))) * 2,
-                ),
-            )
+                    max(
+                        current_size,
+                        current_size * 2,
+                        min(96, int(round(max(width, height)))),
+                    ),
+                )
+            else:
+                max_font_size = min(
+                    2048,
+                    max(
+                        256,
+                        int(round(self.font_size)) * 2,
+                        int(round(max(width, height))) * 2,
+                    ),
+                )
         else:
             max_font_size = max(1, int(round(max_font_size)))
         outline_width = float(self.outline_width) if self.outline else 0.0
@@ -650,6 +759,8 @@ class TextBlockItem(QGraphicsTextItem):
 
     def set_line_spacing(self, spacing):
         self.line_spacing = spacing
+        if self.vertical and self.layout:
+            self.layout.set_line_spacing(spacing)
         doc = self.document()
         cursor = QTextCursor(doc)
         cursor.select(QTextCursor.SelectionType.Document)
@@ -930,10 +1041,11 @@ class TextBlockItem(QGraphicsTextItem):
         self.set_italic(self.italic)
         self.set_underline(self.underline)
         self.set_line_spacing(self.line_spacing)
-        if update_width and not self._layout_box_width:
-            self.update_text_width()
-        elif self._layout_box_width:
-            self.setTextWidth(self._layout_box_width)
+        if not self.vertical:
+            if update_width and not self._layout_box_width:
+                self.update_text_width()
+            elif self._layout_box_width:
+                self.setTextWidth(self._layout_box_width)
         self.set_alignment(self.alignment)
 
     def mouseDoubleClickEvent(self, event):
@@ -1250,10 +1362,20 @@ class TextBlockItem(QGraphicsTextItem):
 
         self.setPos(new_pos)
         self.set_layout_box_size(new_rect.width(), new_rect.height())
-        self.reflow_from_source_text(new_rect.width(), new_rect.height())
+        if self.vertical:
+            self._pending_resize_reflow = True
+        else:
+            self.reflow_from_source_text(new_rect.width(), new_rect.height())
         self.resize_start_rect = QRectF(self.get_text_box_rect())
 
         self.resize_start = scene_pos
+
+    def finish_resize(self):
+        if not self._pending_resize_reflow:
+            return
+        self._pending_resize_reflow = False
+        width, height = self.get_text_box_size()
+        self.reflow_from_source_text(width, height)
 
     def on_selection_changed(self):
         cursor = self.textCursor()

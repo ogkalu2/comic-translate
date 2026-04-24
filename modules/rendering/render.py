@@ -207,7 +207,23 @@ def pyside_word_wrap(
             )
 
             doc.setDocumentLayout(layout)
-            layout.update_layout()
+            layout.set_max_size(max(1, int(roi_width)), max(1, int(roi_height)))
+            state = getattr(layout, "_layout_state", None)
+            doc_margin = doc.documentMargin()
+            if state is not None:
+                layout_size = layout.documentSize()
+                width = state.content_width + doc_margin * 2
+                height = max(
+                    state.content_height + doc_margin * 2,
+                    state.min_required_height,
+                )
+                if layout_size.width() > roi_width + 0.5:
+                    width = max(width, layout_size.width())
+                if layout_size.height() > roi_height + 0.5:
+                    height = max(height, layout_size.height())
+            else:
+                size = doc.size()
+                width, height = size.width(), size.height()
         else:
             # Apply line spacing
             cursor = QTextCursor(doc)
@@ -218,9 +234,9 @@ def pyside_word_wrap(
             block_format.setAlignment(alignment)
             cursor.mergeBlockFormat(block_format)
         
-        # Get the size of the document
-        size = doc.size()
-        width, height = size.width(), size.height()
+            # Get the size of the document
+            size = doc.size()
+            width, height = size.width(), size.height()
         
         # Add outline width to the size
         if include_outline and outline_width > 0:
@@ -230,6 +246,14 @@ def pyside_word_wrap(
         return width, height
 
     def wrap_and_size(font_size):
+        if vertical:
+            wrapped = "".join(
+                part.strip()
+                for part in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+            )
+            w, h = eval_metrics(wrapped, font_size, vertical)
+            return wrapped, w, h
+
         words = text.split()
         lines = []
         # build lines greedily
@@ -255,16 +279,26 @@ def pyside_word_wrap(
     best_text, best_size = text, init_font_size
     found_fit = False
 
-    lo, hi = min_font_size, init_font_size
-    while lo <= hi:
-        mid = (lo + hi) // 2
-        wrapped, w, h = wrap_and_size(mid)
-        if w <= roi_width and h <= roi_height:
-            found_fit = True
-            best_text, best_size = wrapped, mid
-            lo = mid + 1
-        else:
-            hi = mid - 1
+    if vertical:
+        # Vertical text can reflow into columns, so height is not monotonic
+        # across font sizes. A binary search can skip valid larger sizes.
+        for font_size in range(init_font_size, min_font_size - 1, -1):
+            wrapped, w, h = wrap_and_size(font_size)
+            if w <= roi_width and h <= roi_height:
+                found_fit = True
+                best_text, best_size = wrapped, font_size
+                break
+    else:
+        lo, hi = min_font_size, init_font_size
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            wrapped, w, h = wrap_and_size(mid)
+            if w <= roi_width and h <= roi_height:
+                found_fit = True
+                best_text, best_size = wrapped, mid
+                lo = mid + 1
+            else:
+                hi = mid - 1
 
     # if nothing ever fit, force a wrap at the minimum size
     if not found_fit:

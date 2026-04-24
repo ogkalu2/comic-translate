@@ -54,6 +54,11 @@ def get_target_render_states(state: dict | None) -> dict[str, dict]:
     return target_render_states
 
 
+def _viewer_state_matches_target(state: dict, target_lang: str) -> bool:
+    viewer_target = state.get("target_lang") or (state.get("pipeline_state") or {}).get("target_lang") or ""
+    return not viewer_target or viewer_target == target_lang
+
+
 def get_target_snapshot(
     state: dict | None,
     target_lang: str,
@@ -72,7 +77,11 @@ def get_target_snapshot(
         return snapshot
 
     viewer_state = state.get("viewer_state") or {}
-    if fallback_to_viewer_state and viewer_state.get("text_items_state"):
+    if (
+        fallback_to_viewer_state
+        and viewer_state.get("text_items_state")
+        and _viewer_state_matches_target(state, target_lang)
+    ):
         if apply_style_overrides:
             return apply_render_style_overrides_to_snapshot(state, viewer_state)
         return viewer_state

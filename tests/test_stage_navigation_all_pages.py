@@ -78,6 +78,41 @@ def test_render_button_renders_all_pages_when_blocks_exist():
     assert calls == ["render-all"]
 
 
+def test_render_button_shows_existing_snapshot_for_current_target():
+    main = _main_for_stage_tests()
+    main.image_states["page-1.png"] = {
+        "target_lang": "English",
+        "blk_list": [object()],
+        "target_render_states": {
+            "English": {
+                "text_items_state": [
+                    {
+                        "block_uid": "title",
+                        "text": "Hello",
+                    }
+                ]
+            }
+        },
+        "pipeline_state": {
+            "target_lang": "English",
+            "target_validity": {
+                "English": {
+                    "translate": True,
+                    "render": True,
+                }
+            },
+        },
+    }
+    calls = []
+    main.text_ctrl = SimpleNamespace(render_all_pages=lambda: calls.append("render-all"))
+    controller = StageNavigationController(main)
+    controller.navigate_all_to_stage = lambda ui_stage: calls.append(("navigate", ui_stage))
+
+    controller.handle_stage_button(2)
+
+    assert calls == [("navigate", "render")]
+
+
 def test_all_pages_clean_result_applies_patches_and_clears_saved_strokes():
     main = _main_for_stage_tests()
     main.image_states["page-1.png"]["brush_strokes"] = [{"path": object()}]

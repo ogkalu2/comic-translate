@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor, QImage, QPainter, QTextCursor
 from app.ui.canvas.image_viewer import ImageViewer
 from app.ui.canvas.interaction_manager import InteractionManager
 from app.ui.canvas.save_renderer import ImageSaveRenderer
+from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
 from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.text_item import OutlineInfo, OutlineType, TextBlockItem
 from modules.rendering import font_sizing
@@ -56,7 +57,7 @@ class _FakeDraw:
         return None
 
 
-def test_image_viewer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
+def test_image_viewer_restore_uses_reflowed_text(monkeypatch):
     _ensure_app()
     captured = {}
 
@@ -71,12 +72,12 @@ def test_image_viewer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
     viewer = ImageViewer(None)
     item = viewer.add_text_item(_make_props())
 
-    assert item.toPlainText() == "ONE\nTWO"
+    assert item.toPlainText() == "REFLOWED"
     assert item.font_size == 11
     assert captured["max_font_size"] is None
 
 
-def test_save_renderer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
+def test_save_renderer_restore_uses_reflowed_text(monkeypatch):
     _ensure_app()
     captured = {}
 
@@ -93,7 +94,7 @@ def test_save_renderer_restore_keeps_wrapped_text_after_reflow(monkeypatch):
 
     text_items = [item for item in renderer.scene.items() if isinstance(item, TextBlockItem)]
     assert len(text_items) == 1
-    assert text_items[0].toPlainText() == "ONE\nTWO"
+    assert text_items[0].toPlainText() == "REFLOWED"
     assert text_items[0].font_size == 11
     assert captured["max_font_size"] is None
 
@@ -290,6 +291,39 @@ def test_text_block_item_resize_width_can_grow_fitted_font():
     assert item.document().size().height() <= 40.5
 
 
+def test_vertical_text_resize_defers_reflow_until_finish(monkeypatch):
+    _ensure_app()
+
+    calls = []
+
+    def fake_reflow(self, width=None, height=None, max_font_size=None):
+        calls.append((width, height, max_font_size))
+        return self.toPlainText(), self.font_size
+
+    item = TextBlockItem(
+        text="おい、配達だぜ！",
+        source_text="おい、配達だぜ！",
+        font_family="Arial",
+        font_size=15,
+        outline_color=QColor("#ffffff"),
+        outline_width=2,
+    )
+    item.set_vertical(True)
+    item.set_layout_box_size(100, 160)
+    item.resize_handle = "right"
+    item.init_resize(QtCore.QPointF(100, 80))
+    monkeypatch.setattr(TextBlockItem, "reflow_from_source_text", fake_reflow)
+
+    item.resize_item(QtCore.QPointF(130, 80))
+
+    assert calls == []
+    assert item.get_text_box_size() == (130.0, 160.0)
+
+    item.finish_resize()
+
+    assert calls == [(130.0, 160.0, None)]
+
+
 def test_image_viewer_add_text_item_applies_fitted_font_size_to_document():
     _ensure_app()
 
@@ -310,8 +344,138 @@ def test_image_viewer_add_text_item_applies_fitted_font_size_to_document():
     )
 
     assert item.font_size < 40
+    assert item.font_size > 1
     assert _first_char_pixel_size(item) == int(round(item.font_size))
     assert item.document().size().height() <= 40.5
+
+
+def test_image_viewer_add_text_item_keeps_outlined_render_fit_above_minimum():
+    _ensure_app()
+
+    text = "This is a long text that must wrap and shrink"
+    wrapped, font_size = render.pyside_word_wrap(
+        text,
+        "Arial",
+        100,
+        50,
+        1.2,
+        2,
+        False,
+        False,
+        False,
+        QtCore.Qt.AlignmentFlag.AlignCenter,
+        QtCore.Qt.LayoutDirection.LeftToRight,
+        40,
+        1,
+    )
+
+    viewer = ImageViewer(None)
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text=wrapped,
+            source_text=text,
+            font_family="Arial",
+            font_size=font_size,
+            text_color=QColor("#000000"),
+            outline_color=QColor("#ffffff"),
+            outline_width=2,
+            width=100,
+            height=50,
+        )
+    )
+
+    assert font_size > 1
+    assert item.font_size == font_size
+    assert _first_char_pixel_size(item) == font_size
+
+
+def test_image_viewer_add_text_item_keeps_vertical_cjk_fit():
+    _ensure_app()
+
+    text = "おい、20分以内の配達…それがウチのモットーだぜ！お金持ちの客か？"
+    wrapped, font_size = render.pyside_word_wrap(
+        text,
+        "Arial",
+        100,
+        160,
+        1.2,
+        2,
+        False,
+        False,
+        False,
+        QtCore.Qt.AlignmentFlag.AlignCenter,
+        QtCore.Qt.LayoutDirection.LeftToRight,
+        40,
+        1,
+        True,
+    )
+
+    viewer = ImageViewer(None)
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text=wrapped,
+            source_text=text,
+            font_family="Arial",
+            font_size=font_size,
+            text_color=QColor("#000000"),
+            outline_color=QColor("#ffffff"),
+            outline_width=2,
+            width=100,
+            height=160,
+            vertical=True,
+        )
+    )
+
+    assert font_size > 3
+    assert isinstance(item.document().documentLayout(), VerticalTextDocumentLayout)
+    assert item.font_size == font_size
+    assert item.current_text_fits_rect(100, 160)
+
+
+def test_image_viewer_add_text_item_reflows_vertical_cjk_initial_lines():
+    _ensure_app()
+
+    text = "おい、20分以内の\n配達…それがウチ\nのモットーだぜ！お\n金持ちの客か？"
+    viewer = ImageViewer(None)
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text=text,
+            source_text=text,
+            font_family="Arial",
+            font_size=15,
+            text_color=QColor("#000000"),
+            outline_color=QColor("#ffffff"),
+            outline_width=2,
+            width=100,
+            height=160,
+            vertical=True,
+        )
+    )
+
+    assert isinstance(item.document().documentLayout(), VerticalTextDocumentLayout)
+    assert "\n" not in item.toPlainText()
+    assert item.current_text_fits_rect(100, 160)
+
+
+def test_image_viewer_add_text_item_reflows_source_text_before_height_shrink():
+    _ensure_app()
+
+    viewer = ImageViewer(None)
+    item = viewer.add_text_item(
+        TextItemProperties(
+            text="ONE\nTWO\nTHREE",
+            source_text="ONE TWO THREE",
+            font_family="Arial",
+            font_size=40,
+            text_color=QColor("#000000"),
+            outline_color=None,
+            width=90,
+            height=42,
+        )
+    )
+
+    assert item.toPlainText() == "ONE TWO\nTHREE"
+    assert item.current_text_fits_rect(90, 42)
 
 
 def test_image_viewer_add_text_item_can_grow_from_saved_fitted_font_size():
