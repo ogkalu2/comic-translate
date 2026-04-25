@@ -1,6 +1,8 @@
 from types import SimpleNamespace
+import json
 
 import numpy as np
+import pytest
 
 from modules.ocr.processor import OCRProcessor
 from modules.translation.llm.base import BaseLLMTranslation
@@ -16,6 +18,7 @@ from modules.utils.translator_utils import (
     has_runaway_single_char_repetition,
     is_high_risk_sound_effect_text,
     sanitize_translation_source_text,
+    set_translations_from_result_array,
 )
 
 
@@ -37,6 +40,28 @@ def test_sanitize_ocr_text_preserves_quotes_ellipsis_and_repeats():
 
 def test_sanitize_translation_source_text_preserves_quotes_and_repeats():
     assert sanitize_translation_source_text('  "ааа..."  ') == '"ааа..."'
+
+
+def test_set_translations_recovers_unescaped_quotes_inside_strings():
+    blocks = [
+        SimpleNamespace(translation=""),
+        SimpleNamespace(translation=""),
+    ]
+    content = '{"r":["Он сказал "нет" вчера","Готово"]}'
+
+    set_translations_from_result_array(blocks, content)
+
+    assert [block.translation for block in blocks] == ['Он сказал "нет" вчера', "Готово"]
+
+
+def test_set_translations_rejects_truncated_json_like_array():
+    blocks = [
+        SimpleNamespace(translation=""),
+        SimpleNamespace(translation=""),
+    ]
+
+    with pytest.raises(json.JSONDecodeError):
+        set_translations_from_result_array(blocks, '{"r":["one","two')
 
 
 def test_llm_prompt_no_longer_forbids_repeat_characters():
@@ -169,6 +194,42 @@ def test_gpt_translation_uses_configured_sampling_params(monkeypatch):
     assert captured["top_p"] == 0.95
     assert captured["frequency_penalty"] == 0.0
     assert captured["repetition_penalty"] == 1.05
+
+
+def test_llm_default_output_budget_is_large_enough_for_dialogue_pages():
+    class _SettingsWithoutMaxTokens(_FakeSettings):
+        def get_llm_settings(self):
+            settings = dict(super().get_llm_settings())
+            settings.pop("max_tokens", None)
+            return settings
+
+    engine = GPTTranslation()
+    engine.initialize(_SettingsWithoutMaxTokens(), "Japanese", "English", "GPT-4.1")
+
+    assert engine.max_tokens == 4096
+
+
+def test_llm_output_budget_scales_for_many_short_dialogue_items():
+    class _SettingsWithoutMaxTokens(_FakeSettings):
+        def get_llm_settings(self):
+            settings = dict(super().get_llm_settings())
+            settings.pop("max_tokens", None)
+            return settings
+
+    engine = GPTTranslation()
+    engine.initialize(_SettingsWithoutMaxTokens(), "Japanese", "Russian", "GPT-4.1")
+    blocks = [SimpleNamespace(text="短い台詞", translation="") for _ in range(14)]
+
+    assert engine._estimate_request_max_tokens(blocks) >= 3000
+
+
+def test_llm_output_budget_does_not_truncate_many_items_with_low_saved_setting():
+    engine = GPTTranslation()
+    engine.initialize(_FakeSettings(), "Japanese", "Russian", "GPT-4.1")
+    blocks = [SimpleNamespace(text="短い台詞", translation="") for _ in range(14)]
+
+    assert engine.max_tokens == 512
+    assert engine._estimate_request_max_tokens(blocks) >= 3000
 
 
 def test_custom_translation_defaults_to_lm_studio_endpoint_and_model():

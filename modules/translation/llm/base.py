@@ -19,6 +19,9 @@ from ...utils.translator_utils import (
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MAX_OUTPUT_TOKENS = 512
+REPAIR_MAX_OUTPUT_TOKENS = 1024
+
 
 class BaseLLMTranslation(LLMTranslation):
     """Base class for LLM-based translation engines with shared functionality."""
@@ -57,7 +60,7 @@ class BaseLLMTranslation(LLMTranslation):
         )
         self.temperature = float(llm_settings.get("temperature", 0))
         self.top_p = float(llm_settings.get("top_p", 1))
-        self.max_tokens = int(llm_settings.get("max_tokens", 640))
+        self.max_tokens = int(llm_settings.get("max_tokens", DEFAULT_MAX_OUTPUT_TOKENS))
         self.use_scene_memory = bool(llm_settings.get("use_scene_memory", False))
         self.interpret_then_translate = bool(llm_settings.get("interpret_then_translate", False))
         self.last_scene_memory = ""
@@ -67,14 +70,36 @@ class BaseLLMTranslation(LLMTranslation):
             total_chars = sum(len(getattr(blk, "text", "") or "") for blk in blk_list)
         except Exception:
             total_chars = 0
+        line_count = len(blk_list or [])
 
         try:
-            max_tokens_cap = int(self.max_tokens)
+            configured_max_tokens = int(self.max_tokens)
         except (TypeError, ValueError):
-            max_tokens_cap = 1024
+            configured_max_tokens = DEFAULT_MAX_OUTPUT_TOKENS
 
-        estimated = 24 + (total_chars * 2) + (len(blk_list) * 8)
-        return max(96, min(max_tokens_cap, estimated))
+        # Russian and other inflected target languages can be much longer than
+        # compact OCR source text. Budget by both source size and line count so
+        # multi-bubble pages do not get truncated before the closing JSON.
+        # Treat low saved values as legacy defaults, not as a hard cap that can
+        # make the structured response impossible to finish.
+        max_tokens_cap = max(configured_max_tokens, DEFAULT_MAX_OUTPUT_TOKENS)
+        estimated = 512 + (total_chars * 4) + (line_count * 96)
+        minimum_for_lines = 512 + (line_count * 192)
+        return max(512, min(max_tokens_cap, max(estimated, minimum_for_lines)))
+
+    def _expand_max_tokens_for_structured_retry(
+        self,
+        current_max_tokens: int,
+        estimated_max_tokens: int,
+    ) -> int:
+        return min(
+            REPAIR_MAX_OUTPUT_TOKENS,
+            max(
+                int(current_max_tokens) * 2,
+                int(estimated_max_tokens) + 512,
+                1024,
+            ),
+        )
 
     def _ensure_no_runaway_repetition(self, blk_list: list[TextBlock]) -> None:
         for index, blk in enumerate(blk_list):
@@ -124,32 +149,15 @@ class BaseLLMTranslation(LLMTranslation):
 
         system_prompt = (
             f"{natural_language_prompt} "
-            f"Translate ONLY the current input dialogue items using the surrounding context. "
-            f"Return ONLY JSON with this structure: {{\"r\":[<strings>]}}. "
-            f"Rules: - the current input has exactly {line_count} numbered dialogue items "
-            f"- r must contain exactly {line_count} strings, no more and no fewer "
-            f"- r[0] must translate idx 1, r[1] must translate idx 2, and so on "
-            f"- never translate previous-page dialogue, scene memory, examples, or context sections as output items "
-            f"- never merge, split, add, or omit current input items "
-            f"- preserve order "
-            f"- each output string corresponds to the same input index "
-            f"- use surrounding lines as context for translation "
-            f"- if a page image is available, use it only to resolve visual references, omitted subjects or objects, scene action, and speaker intent "
-            f"- actively use the page image to disambiguate polysemous words and relationship cues; for example, translate date as a romantic meeting when the scene and dialogue imply dating, not as a calendar date "
-            f"- when visual context and literal dictionary meaning conflict, prefer the scene-supported communicative meaning "
-            f"- output must be valid JSON "
-            f"- no additional text "
-            f"- translate by communicative intent, not dictionary-first word matching "
-            f"- short discourse markers, commands, attention signals, concessions, and fillers must be rendered by their function in context, not by literal lexical meaning "
-            f"- preserve tone, emotion, and punctuation where natural in the target language "
-            f"- ensure correct agreement and inflection where applicable, including gender, number, case, person, tense, and register "
-            f"- do not mirror source syntax when it sounds unnatural in the target language "
-            f"- use standard real words of the target language; do not invent pseudo-words or distorted transliterations unless the source is intentionally nonsense "
-            f"- for screams, groans, stutters, and elongated sounds, translate to a natural target-language equivalent instead of mechanically copying source letter counts "
-            f"- if gender or other morphology is not explicit, choose the most natural context-compatible phrasing, preferably neutral or impersonal wording, rather than a literal guess "
-            f"- if context does not fully resolve an ambiguity, prefer wording that preserves the ambiguity instead of inventing unsupported details "
-            f"- before answering, silently normalize each line so it reads like something a native speaker would naturally say in the target language "
-            f"- never let one character dominate the output"
+            f"Translate ONLY the numbered CURRENT_INPUT items from {self.source_lang} to {self.target_lang}. "
+            f"Return exactly one complete minified JSON object: {{\"r\":[...]}}. "
+            f"Hard format contract: r has exactly {line_count} strings; r[0] maps to idx 1, r[1] to idx 2; preserve order; "
+            f"do not merge, split, add, omit, or translate context/scene-memory/example text as output. "
+            f"JSON contract: output JSON only; no markdown; escape raw double quotes inside strings; no literal newlines inside strings; always close every string, ], and }}. "
+            f"Quality contract: use context and image only to resolve meaning, speakers, references, ellipsis, tone, sarcasm, and visual ambiguity; "
+            f"preserve tone, emotion, and punctuation where natural; translate by communicative intent; "
+            f"ensure correct agreement and inflection; prefer neutral or impersonal wording when gender/morphology is unclear; "
+            f"do not invent pseudo-words or unsupported details; make each line natural native {self.target_lang} speech."
         )
 
         if extra_context and extra_context.strip():
@@ -161,11 +169,12 @@ class BaseLLMTranslation(LLMTranslation):
 
     def _build_translation_repair_prompt(self, system_prompt: str, expected_count: int) -> str:
         return (
-            system_prompt
-            + f" CRITICAL FORMAT FIX: return JSON only, with r containing exactly {expected_count} strings. "
-            + "Translate only the numbered current input items. "
-            + "Do not include previous-page dialogue, scene memory, or context as r entries. "
-            + "Do not split one input item into multiple r entries."
+            f"Translate from {self.source_lang} to {self.target_lang}. "
+            f"Return ONLY one complete valid minified JSON object: {{\"r\":[...]}}. "
+            f"r must contain exactly {expected_count} strings, in input order. "
+            f"No markdown, no prose, no context lines as outputs. "
+            f"Escape double quotes inside strings. No literal newlines inside strings. "
+            f"Finish the response with the closing ]}}."
         )
 
     def _try_apply_single_block_split_translation(self, blk_list: list[TextBlock], content: str) -> bool:
@@ -374,12 +383,7 @@ class BaseLLMTranslation(LLMTranslation):
     ) -> dict | None:
         prompt_builder = self.build_interjection_prompts if interjection_mode else self.build_translation_prompts
         user_prompt, system_prompt = prompt_builder(blk_list, extra_context)
-        retry_prompt = (
-            system_prompt
-            + " If any item is uncertain, return an empty string for that item."
-            + " Never emit malformed JSON, truncated JSON, or filler character repetition."
-            + " Prefer idiomatic native phrasing over literal closeness to source wording."
-        )
+        retry_prompt = self._build_translation_repair_prompt(system_prompt, len(blk_list))
         if interjection_mode:
             retry_prompt += (
                 " Keep the result brief and emotionally natural."
@@ -403,14 +407,14 @@ class BaseLLMTranslation(LLMTranslation):
             if interjection_mode:
                 self.temperature = 0.3
                 self.top_p = 0.9
-                repetition_penalty = 1.1
+                self.repetition_penalty = 1.1
             else:
-                repetition_penalty = 1.05
+                self.repetition_penalty = 1.05
         try:
             for attempt_index, prompt in enumerate(
                 (
                     system_prompt,
-                    self._build_translation_repair_prompt(retry_prompt, len(blk_list)),
+                    retry_prompt,
                 ),
                 start=1,
             ):
@@ -426,9 +430,14 @@ class BaseLLMTranslation(LLMTranslation):
                         blk.translation = original_translation
                     if attempt_index >= 2:
                         break
+                    self.max_tokens = self._expand_max_tokens_for_structured_retry(
+                        self.max_tokens,
+                        estimated_max_tokens,
+                    )
                     logger.warning(
-                        "LLM translation returned invalid structured output on attempt %d; retrying once with stricter JSON instructions: %s",
+                        "LLM translation returned invalid structured output on attempt %d; retrying once with stricter JSON instructions and max_tokens=%s: %s",
                         attempt_index,
+                        self.max_tokens,
                         exc,
                     )
         finally:

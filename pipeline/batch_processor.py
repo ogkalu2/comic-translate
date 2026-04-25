@@ -129,6 +129,10 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
         self._release_non_translation_model_caches()
         self._release_translation_model_caches()
 
+    def _release_inpainting_before_translation(self):
+        self._release_inpainting_model_caches()
+        self._trim_runtime_memory()
+
     def _store_precomputed_text_state(self, page: PreparedBatchPage) -> None:
         state = self.main_page.image_states.setdefault(page.image_path, {})
         state["blk_list"] = page.blk_list
@@ -295,8 +299,11 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
             return updated_paths, []
 
         clean_paths = self._clean_candidate_paths(image_list)
-        page_results = self.inpainting.inpaint_pages_from_states(clean_paths)
-        return updated_paths, page_results
+        try:
+            page_results = self.inpainting.inpaint_pages_from_states(clean_paths)
+            return updated_paths, page_results
+        finally:
+            self._release_inpainting_before_translation()
 
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
@@ -448,7 +455,7 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
         skip_detection_pages = self._run_chunk_ocr(skip_detection_pages, total_images)
 
         self._release_ocr_model_caches()
-        self._trim_runtime_memory()
+        self._release_inpainting_before_translation()
         if self._is_cancelled():
             return
 

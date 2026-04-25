@@ -1,8 +1,8 @@
-import os
+import threading
 from typing import Set
 import imkit as imk
 from PIL import Image
-from PySide6.QtCore import QTimer, QThread, QObject, Signal, QSize, QPoint
+from PySide6.QtCore import QMetaObject, QTimer, QThread, QObject, Signal, QSize, QPoint, Slot, Qt
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QListWidget
 from app.path_materialization import ensure_path_materialized
@@ -11,56 +11,71 @@ from app.path_materialization import ensure_path_materialized
 class ImageLoadWorker(QObject):
     """Worker thread for loading images in the background."""
     
-    image_loaded = Signal(int, str, QPixmap)  # index, file_path, pixmap
+    image_loaded = Signal(int, str, QImage)  # index, file_path, image
     
     def __init__(self):
         super().__init__()
         self.load_queue = []
         self.queued_indices: set[int] = set()
         self.should_stop = False
-        
-        # Timer for processing queue
-        self.process_timer = QTimer()
-        self.process_timer.timeout.connect(self.process_queue)
-        self.process_timer.start(50)  # Process every 50ms
+        self._queue_lock = threading.Lock()
+        self.process_timer: QTimer | None = None
+
+    @Slot()
+    def start(self):
+        if self.process_timer is None:
+            self.process_timer = QTimer(self)
+            self.process_timer.timeout.connect(self.process_queue)
+        self.should_stop = False
+        if not self.process_timer.isActive():
+            self.process_timer.start(50)
         
     def add_to_queue(self, index: int, file_path: str, target_size: QSize):
         """Add an image to the loading queue."""
-        if index in self.queued_indices:
-            return
-        self.load_queue.append((index, file_path, target_size))
-        self.queued_indices.add(index)
+        with self._queue_lock:
+            if index in self.queued_indices:
+                return
+            self.load_queue.append((index, file_path, target_size))
+            self.queued_indices.add(index)
     
     def clear_queue(self):
         """Clear the loading queue."""
-        self.load_queue.clear()
-        self.queued_indices.clear()
-        
+        with self._queue_lock:
+            self.load_queue.clear()
+            self.queued_indices.clear()
+
+    @Slot()
     def stop(self):
         """Stop the worker."""
         self.should_stop = True
-        self.process_timer.stop()
-        
+        if self.process_timer is not None:
+            self.process_timer.stop()
+
+    @Slot()
     def process_queue(self):
         """Process the loading queue."""
-        if not self.load_queue or self.should_stop:
+        if self.should_stop:
             return
-            
-        index, file_path, target_size = self.load_queue.pop(0)
-        self.queued_indices.discard(index)
+
+        with self._queue_lock:
+            if not self.load_queue:
+                return
+
+            index, file_path, target_size = self.load_queue.pop(0)
+            self.queued_indices.discard(index)
         
         # Load and resize image
-        pixmap = self._load_and_resize_image(file_path, target_size)
-        if pixmap and not pixmap.isNull():
-            self.image_loaded.emit(index, file_path, pixmap)
+        image = self._load_and_resize_image(file_path, target_size)
+        if image and not image.isNull():
+            self.image_loaded.emit(index, file_path, image)
                 
-    def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QPixmap:
+    def _load_and_resize_image(self, file_path: str, target_size: QSize) -> QImage:
         """Load and resize an image to the target size."""
         try:
             ensure_path_materialized(file_path)
             image = imk.read_image(file_path)
             if image is None:
-                return QPixmap()
+                return QImage()
             
             # Resize maintaining aspect ratio
             height, width = image.shape[:2]
@@ -80,11 +95,11 @@ class ImageLoadWorker(QObject):
             h, w, ch = resized_image.shape
             bytes_per_line = ch * w
             qt_image = QImage(resized_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            return QPixmap.fromImage(qt_image)
+            return qt_image.copy()
             
         except Exception as e:
             print(f"Error processing image {file_path}: {e}")
-            return QPixmap()
+            return QImage()
 
 
 class ListViewImageLoader:
@@ -106,6 +121,7 @@ class ListViewImageLoader:
         self.worker_thread = QThread()
         self.worker = ImageLoadWorker()
         self.worker.moveToThread(self.worker_thread)
+        self.worker_thread.started.connect(self.worker.start)
         self.worker.image_loaded.connect(self._on_image_loaded)
         self.worker_thread.start()  # Start thread immediately
         
@@ -229,20 +245,21 @@ class ListViewImageLoader:
         """Queue an image for loading."""
         if 0 <= index < len(self.file_paths):
             file_path = self.file_paths[index]
-            if ensure_path_materialized(file_path) or os.path.exists(file_path):
+            if file_path:
                 self.worker.add_to_queue(index, file_path, self.avatar_size)
-                
-                # Start worker thread and process queue if not already running
+
+                # Start worker thread if not already running. Materialization and
+                # image decoding happen inside ImageLoadWorker, not in the UI thread.
                 if not self.worker_thread.isRunning():
                     self.worker_thread.start()
                 
-                # Process the queue
-                QTimer.singleShot(0, self.worker.process_queue)
-                
-    def _on_image_loaded(self, index: int, file_path: str, pixmap: QPixmap):
+    def _on_image_loaded(self, index: int, file_path: str, image: QImage):
         """Handle when an image has been loaded."""
         if 0 <= index < len(self.cards) and 0 <= index < len(self.file_paths):
             if self.file_paths[index] != file_path:
+                return
+            pixmap = QPixmap.fromImage(image)
+            if pixmap.isNull():
                 return
             # Store the loaded pixmap
             self.loaded_images[index] = pixmap
@@ -295,7 +312,7 @@ class ListViewImageLoader:
     def shutdown(self):
         """Shutdown the loader and clean up resources."""
         if self.worker:
-            self.worker.stop()
+            QMetaObject.invokeMethod(self.worker, "stop", Qt.ConnectionType.QueuedConnection)
             
         if self.worker_thread.isRunning():
             self.worker_thread.quit()

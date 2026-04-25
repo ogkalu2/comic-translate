@@ -69,6 +69,7 @@ class ChunkProcessingMixin(ChunkPipelinePhaseMixin, ChunkImageMixin):
             return None
 
         try:
+            self._release_inpainting_before_translation()
             self._run_chunk_translation(chunk_id, blk_list, combined_image, vpage1, vpage2)
         except InsufficientCreditsException:
             raise

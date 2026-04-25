@@ -106,17 +106,20 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
         patches_list = self.ct.image_patches.setdefault(self.file_path, [])
         mem_list = self.ct.in_memory_patches.setdefault(self.file_path, [])
         should_draw = self._is_target_page_visible()
+        patch_hashes = {patch.get("hash") for patch in patches_list}
+        mem_hashes = {patch.get("hash") for patch in mem_list}
 
         for prop in self.properties_list:
             # skip duplicates by composite hash
-            if any(p['hash'] == prop['hash'] for p in patches_list):
+            prop_hash = prop["hash"]
+            if prop_hash in patch_hashes:
                 continue
 
             # add to persistent store
             patch_entry = {
                 'bbox': prop['bbox'],
                 'png_path': prop['png_path'],
-                'hash': prop['hash'],
+                'hash': prop_hash,
                 'group_id': prop['group_id'],
             }
             # Save scene position and page index for webtoon mode
@@ -125,15 +128,17 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
             if 'page_index' in prop:
                 patch_entry['page_index'] = prop['page_index']
             patches_list.append(patch_entry)
+            patch_hashes.add(prop_hash)
 
             # only load into memory if being displayed
-            if should_draw and not any(p['hash'] == prop['hash'] for p in mem_list):
+            if should_draw and prop_hash not in mem_hashes:
                 img_data = imk.read_image(prop['png_path'])
                 mem_list.append({
                     'bbox': prop['bbox'],
                     'image': img_data,
-                    'hash': prop['hash']
+                    'hash': prop_hash
                 })
+                mem_hashes.add(prop_hash)
 
     def _unregister_patches(self):
         patches_list = self.ct.image_patches.get(self.file_path, [])

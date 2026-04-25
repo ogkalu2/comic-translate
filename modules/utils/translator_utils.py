@@ -93,6 +93,101 @@ def _parse_loose_json(content: str):
 
     return None
 
+
+def _decode_json_string_fragment(fragment: str) -> str:
+    try:
+        return json.loads(f'"{fragment}"')
+    except Exception:
+        return (
+            fragment.replace('\\"', '"')
+            .replace("\\n", "\n")
+            .replace("\\r", "\r")
+            .replace("\\t", "\t")
+            .replace("\\\\", "\\")
+        )
+
+
+def _parse_json_like_string_array(
+    content: str,
+    *,
+    key: str = "r",
+    expected_count: int | None = None,
+) -> list[str] | None:
+    """
+    Recover a complete JSON-like string array from common LLM mistakes.
+
+    This is intentionally conservative: it only accepts quoted string items and,
+    when expected_count is provided, only returns a result with exactly that many
+    items. Truncated responses still fail and are retried/chunked by callers.
+    """
+    if content is None:
+        return None
+
+    text = _strip_code_fences(str(content))
+    if not text:
+        return None
+
+    key_pattern = rf'"{re.escape(key)}"\s*:\s*\['
+    key_match = re.search(key_pattern, text)
+    if key_match:
+        segment = text[key_match.end():]
+    else:
+        array_start = text.find("[")
+        if array_start < 0:
+            return None
+        segment = text[array_start + 1:]
+
+    values: list[str] = []
+    pos = 0
+    while pos < len(segment):
+        quote_pos = segment.find('"', pos)
+        if quote_pos < 0:
+            break
+
+        i = quote_pos + 1
+        chars: list[str] = []
+        closed = False
+        while i < len(segment):
+            ch = segment[i]
+            if ch == "\\":
+                if i + 1 < len(segment):
+                    chars.append(ch)
+                    chars.append(segment[i + 1])
+                    i += 2
+                    continue
+                chars.append(ch)
+                i += 1
+                continue
+
+            if ch == '"':
+                j = i + 1
+                while j < len(segment) and segment[j].isspace():
+                    j += 1
+                if j >= len(segment) or segment[j] in ",]}":
+                    values.append(_decode_json_string_fragment("".join(chars)))
+                    pos = j + 1
+                    closed = True
+                    break
+
+                # Treat raw quotes inside a translation as text. This handles
+                # model output such as "Он сказал "нет" вчера", which is invalid
+                # JSON but still has an unambiguous array delimiter later.
+                chars.append(ch)
+                i += 1
+                continue
+
+            chars.append(ch)
+            i += 1
+
+        if not closed:
+            break
+        if expected_count is not None and len(values) > expected_count:
+            return None
+
+    if expected_count is not None and len(values) != expected_count:
+        return None
+    return values or None
+
 def encode_image_array(img_array: np.ndarray):
     img_bytes = imk.encode_image(img_array, ".png")
     return base64.b64encode(img_bytes).decode('utf-8')
@@ -331,8 +426,15 @@ def set_translations_from_result_array(blk_list: list[TextBlock], content: str, 
     except json.JSONDecodeError as exc:
         obj = _parse_loose_json(content)
         if obj is None:
-            log_json_decode_failure("set_translations_from_result_array", content, exc)
-            raise
+            arr = _parse_json_like_string_array(
+                content,
+                key=key,
+                expected_count=len(blk_list),
+            )
+            if arr is None:
+                log_json_decode_failure("set_translations_from_result_array", content, exc)
+                raise
+            obj = {key: arr}
 
     if isinstance(obj, list):
         arr = obj
@@ -344,7 +446,13 @@ def set_translations_from_result_array(blk_list: list[TextBlock], content: str, 
         arr = None
 
     if not isinstance(arr, list) or not all(isinstance(x, str) for x in arr):
-        raise ValueError(f"Invalid result format: expected {{{json.dumps(key)}:[str,...]}}")
+        arr = _parse_json_like_string_array(
+            content,
+            key=key,
+            expected_count=len(blk_list),
+        )
+        if arr is None:
+            raise ValueError(f"Invalid result format: expected {{{json.dumps(key)}:[str,...]}}")
 
     # жёстко держим длину
     if len(arr) != len(blk_list):

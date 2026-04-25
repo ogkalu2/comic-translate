@@ -516,7 +516,7 @@ class BatchExecutionMixin:
 
         settings_page = self.main_page.settings_page
         config = get_config(settings_page)
-        inpaint_batch_size = 1
+        inpaint_batch_size = 16
         prepared_pages: list[PreparedBatchPage] = []
 
         for page in pages:

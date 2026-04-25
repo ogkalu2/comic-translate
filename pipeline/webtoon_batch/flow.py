@@ -181,6 +181,8 @@ class FlowMixin:
                                 if patch_path in page_accum:
                                     page_accum[patch_path]["patches"].append(patch)
 
+                self._release_inpainting_before_translation()
+
                 final_blocks_virtual = regular_blocks + split_owned_blocks
                 orientation = infer_orientation([blk.xyxy for blk in final_blocks_virtual]) if final_blocks_virtual else "horizontal"
                 rtl = infer_reading_order(orientation) == "rtl"

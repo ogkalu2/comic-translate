@@ -80,3 +80,25 @@ def test_prepare_text_stages_marks_detection_and_ocr_ready(monkeypatch):
     assert state["pipeline_state"]["ocr_cache_key"] == "ocr-cache-key"
     assert is_stage_available(state, "detect") is True
     assert is_stage_available(state, "ocr") is True
+
+
+def test_release_inpainting_before_translation_clears_cached_inpainter(monkeypatch):
+    inpainting_handler = SimpleNamespace(
+        inpainter_cache=object(),
+        cached_inpainter_key="LaMa",
+    )
+    worker = BatchProcessor(
+        SimpleNamespace(),
+        cache_manager=SimpleNamespace(),
+        block_detection_handler=SimpleNamespace(),
+        inpainting_handler=inpainting_handler,
+        ocr_handler=SimpleNamespace(),
+    )
+    trimmed = []
+    monkeypatch.setattr(worker, "_trim_runtime_memory", lambda: trimmed.append(True))
+
+    worker._release_inpainting_before_translation()
+
+    assert inpainting_handler.inpainter_cache is None
+    assert inpainting_handler.cached_inpainter_key is None
+    assert trimmed == [True]

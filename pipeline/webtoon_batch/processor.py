@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -68,6 +69,34 @@ class WebtoonBatchProcessor(
         self.edge_threshold = 50
         self.seam_crop_pad_x = 48
         self.seam_crop_pad_y = 48
+
+    def _release_inpainting_model_cache(self) -> None:
+        self.inpainting.inpainter_cache = None
+        self.inpainting.cached_inpainter_key = None
+
+    def _trim_runtime_memory(self) -> None:
+        try:
+            gc.collect()
+        except Exception:
+            logger.debug("Failed to collect Python garbage.", exc_info=True)
+
+        try:
+            import torch
+
+            if hasattr(torch, "cuda") and torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            xpu = getattr(torch, "xpu", None)
+            if xpu is not None and hasattr(xpu, "is_available") and xpu.is_available():
+                empty_cache = getattr(xpu, "empty_cache", None)
+                if callable(empty_cache):
+                    empty_cache()
+        except Exception:
+            logger.debug("Failed to trim accelerator runtime memory.", exc_info=True)
+
+    def _release_inpainting_before_translation(self) -> None:
+        self._release_inpainting_model_cache()
+        self._trim_runtime_memory()
 
     def skip_save(
         self: WebtoonBatchProcessor,
