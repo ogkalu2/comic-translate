@@ -28,6 +28,23 @@ logger = logging.getLogger(__name__)
 
 
 class ImagePersistenceMixin:
+    def _resolve_ui_stage_for_save(self, file_path: str, existing: dict) -> str:
+        if (
+            0 <= self.main.curr_img_idx < len(self.main.image_files)
+            and self.main.image_files[self.main.curr_img_idx] == file_path
+            and self.main.image_viewer.hasPhoto()
+        ):
+            current_tool = getattr(self.main.image_viewer, "current_tool", None)
+            if current_tool in {"brush", "eraser"}:
+                return "clean"
+            if current_tool == "box":
+                return "text"
+
+        try:
+            return self.main.stage_nav_ctrl.get_ui_stage(file_path)
+        except Exception:
+            return existing.get("ui_stage", "")
+
     def set_image(self, rgb_img: np.ndarray, push: bool = True):
         if self.main.curr_img_idx >= 0:
             file_path = self.main.image_files[self.main.curr_img_idx]
@@ -120,7 +137,7 @@ class ImagePersistenceMixin:
             "viewer_state": viewer_state,
             "target_render_states": target_render_states,
             "target_lang": active_target,
-            "ui_stage": existing.get("ui_stage", ""),
+            "ui_stage": self._resolve_ui_stage_for_save(file, existing),
             "brush_strokes": self.main.image_viewer.save_brush_strokes(),
             "inpaint_cache": inpaint_cache,
             "blk_list": blk_list,

@@ -9,7 +9,7 @@ from modules.utils.pipeline_config import validate_settings
 from pipeline.stage_state import activate_target_lang
 
 
-MULTI_TRANSLATE_EXCLUDED_TARGETS = {"Russian"}
+MULTI_TRANSLATE_EXCLUDED_TARGETS = {"English"}
 
 
 class BatchUiMixin:
@@ -64,12 +64,12 @@ class BatchUiMixin:
         self.progress_bar.setVisible(active)
 
     def _multi_translate_targets(self) -> list[str]:
-        current_target = self._canonical_target_lang(self.t_combo.currentText())
+        # current_target = self._canonical_target_lang(self.t_combo.currentText())
         return [
             self._display_target_lang(lang)
             for lang in supported_target_languages
             if lang not in MULTI_TRANSLATE_EXCLUDED_TARGETS
-            and lang != current_target
+            # and lang != current_target
             and self._canonical_target_lang(self._display_target_lang(lang)) == lang
         ]
 

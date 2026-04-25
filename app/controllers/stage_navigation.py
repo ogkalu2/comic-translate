@@ -33,6 +33,20 @@ class StageNavigationController(StageViewApplyMixin, StageViewStateMixin):
     def _all_page_paths(self) -> list[str]:
         return list(getattr(self.main, "image_files", []) or [])
 
+    def _set_all_pages_ui_stage(self, ui_stage: str, *, seed_clean: bool = False) -> None:
+        for file_path in self._all_page_paths():
+            state = self._get_state(file_path)
+            self._set_ui_stage(state, ui_stage)
+            if ui_stage == "clean" and seed_clean:
+                self._seed_clean_strokes_for_page(file_path)
+
+    def _apply_current_stage_or_refresh(self, ui_stage: str) -> None:
+        current_file = self._current_file_path()
+        if current_file:
+            self.apply_stage_view(current_file, ui_stage)
+        else:
+            self.refresh_stage_buttons()
+
     def _save_visible_state_before_global_stage_change(self) -> None:
         if getattr(self.main, "webtoon_mode", False):
             manager = getattr(self.main.image_viewer, "webtoon_manager", None)
@@ -47,6 +61,44 @@ class StageNavigationController(StageViewApplyMixin, StageViewStateMixin):
             bool((self.main.image_states.get(file_path) or {}).get("blk_list"))
             for file_path in self._all_page_paths()
         )
+
+    def _page_has_stage(self, file_path: str, stage: str) -> bool:
+        page_ctx = self._get_page_context(file_path)
+        return is_stage_available(
+            page_ctx.state,
+            stage,
+            target_lang=page_ctx.target_lang,
+            has_runtime_patches=page_ctx.has_runtime_patches,
+        )
+
+    def _all_pages_have_stage(self, stage: str) -> bool:
+        file_paths = self._all_page_paths()
+        return bool(file_paths) and all(self._page_has_stage(file_path, stage) for file_path in file_paths)
+
+    def _page_has_translation_output(self, file_path: str) -> bool:
+        state = self.main.image_states.get(file_path) or {}
+        pipeline_state = state.get("pipeline_state") or {}
+        target_validity = pipeline_state.get("target_validity") or {}
+        if any(
+            bool(target_state.get("translate") or target_state.get("render"))
+            for target_state in target_validity.values()
+            if isinstance(target_state, dict)
+        ):
+            return True
+
+        if any(
+            isinstance(snapshot, dict) and bool(snapshot.get("text_items_state"))
+            for snapshot in (state.get("target_render_states") or {}).values()
+        ):
+            return True
+
+        return any(
+            bool((getattr(blk, "translation", "") or "").strip())
+            for blk in state.get("blk_list") or []
+        )
+
+    def _has_any_translated_pages(self) -> bool:
+        return any(self._page_has_translation_output(file_path) for file_path in self._all_page_paths())
 
     def _current_page_has_render_for_active_target(self) -> bool:
         file_path = self._current_file_path()
@@ -154,18 +206,57 @@ class StageNavigationController(StageViewApplyMixin, StageViewStateMixin):
             return
 
         self._save_visible_state_before_global_stage_change()
-        for file_path in file_paths:
-            state = self._get_state(file_path)
-            self._set_ui_stage(state, ui_stage)
-            if ui_stage == "clean":
-                self._seed_clean_strokes_for_page(file_path)
-
-        current_file = self._current_file_path()
-        if current_file:
-            self.apply_stage_view(current_file, ui_stage)
-        else:
-            self.refresh_stage_buttons()
+        self._set_all_pages_ui_stage(ui_stage, seed_clean=(ui_stage == "clean"))
+        self._apply_current_stage_or_refresh(ui_stage)
         if hasattr(self.main, "mark_project_dirty"):
+            self.main.mark_project_dirty()
+
+    def _run_text_for_all_pages(self) -> None:
+        file_paths = self._all_page_paths()
+        if not file_paths:
+            return
+
+        self._save_visible_state_before_global_stage_change()
+        self.main.text_ctrl.clear_text_edits()
+        self.main.loading.setVisible(True)
+        self.main.disable_hbutton_group()
+        self.main.run_threaded(
+            lambda: self.main.pipeline.prepare_text_stages(file_paths),
+            self._on_all_pages_text_ready,
+            self.main.default_error_handler,
+            self.main.on_manual_finished,
+        )
+
+    def _on_all_pages_text_ready(self, updated_paths: list[str]) -> None:
+        self._set_all_pages_ui_stage("text")
+        self._apply_current_stage_or_refresh("text")
+        if updated_paths and hasattr(self.main, "mark_project_dirty"):
+            self.main.mark_project_dirty()
+
+    def _run_clean_for_all_pages_before_translation(self) -> None:
+        file_paths = self._all_page_paths()
+        if not file_paths:
+            return
+
+        self._save_visible_state_before_global_stage_change()
+        self.main.text_ctrl.clear_text_edits()
+        self.main.loading.setVisible(True)
+        self.main.disable_hbutton_group()
+        self.main.run_threaded(
+            lambda: self.main.pipeline.prepare_clean_stages(file_paths),
+            self._on_all_pages_clean_prepared,
+            self.main.default_error_handler,
+            self.main.on_manual_finished,
+        )
+
+    def _on_all_pages_clean_prepared(
+        self,
+        result: tuple[list[str], list[tuple[str, list[dict]]]] | None,
+    ) -> None:
+        updated_paths, page_results = result or ([], [])
+        self._set_all_pages_ui_stage("clean")
+        self._on_all_pages_clean_ready(page_results)
+        if updated_paths and not page_results and hasattr(self.main, "mark_project_dirty"):
             self.main.mark_project_dirty()
 
     def _run_clean_for_current_view(self, file_path: str) -> None:
@@ -226,7 +317,16 @@ class StageNavigationController(StageViewApplyMixin, StageViewStateMixin):
         ui_stage = BUTTON_STAGE_MAP.get(index)
         if not ui_stage:
             return
+        if ui_stage == "text":
+            if not self._has_any_translated_pages() and not self._all_pages_have_stage("ocr"):
+                self._run_text_for_all_pages()
+                return
+            self.navigate_all_to_stage(ui_stage)
+            return
         if ui_stage == "clean":
+            if not self._has_any_translated_pages() and not self._all_pages_have_stage("clean"):
+                self._run_clean_for_all_pages_before_translation()
+                return
             file_path = self._current_file_path()
             if file_path and self.get_ui_stage(file_path) == "clean" and (
                 self.main.image_viewer.has_drawn_elements() or self._paths_with_clean_input()

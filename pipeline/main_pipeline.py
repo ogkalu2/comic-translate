@@ -106,6 +106,14 @@ class ComicTranslatePipeline:
     def batch_process(self, selected_paths=None):
         """Regular batch processing."""
         return self.batch_processor.batch_process(selected_paths)
+
+    def prepare_text_stages(self, selected_paths=None):
+        """Precompute detection and OCR without translating or rendering."""
+        return self.batch_processor.prepare_text_stages(selected_paths)
+
+    def prepare_clean_stages(self, selected_paths=None):
+        """Precompute detection/OCR and run clean-stage inpainting from saved page state."""
+        return self.batch_processor.prepare_clean_stages(selected_paths)
     
     def webtoon_batch_process(self, selected_paths=None):
         """Webtoon batch processing with overlapping sliding windows."""

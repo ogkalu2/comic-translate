@@ -15,6 +15,8 @@ from .block_detection import BlockDetectionHandler
 from .cache_manager import CacheManager
 from .inpainting import InpaintingHandler
 from .ocr_handler import OCRHandler
+from .page_state import has_runtime_patches as page_has_runtime_patches
+from .stage_state import activate_target_lang, mark_ocr_ready
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -126,6 +128,175 @@ class BatchProcessor(BatchExecutionMixin, BatchRenderMixin, BatchStateMixin):
     def _release_all_model_caches(self):
         self._release_non_translation_model_caches()
         self._release_translation_model_caches()
+
+    def _store_precomputed_text_state(self, page: PreparedBatchPage) -> None:
+        state = self.main_page.image_states.setdefault(page.image_path, {})
+        state["blk_list"] = page.blk_list
+        viewer_state = state.setdefault("viewer_state", {})
+        viewer_state["rectangles"] = self.block_detection._serialize_rectangles_from_blocks(page.blk_list)
+
+        if page.image_path == self._current_displayed_file():
+            self.main_page.blk_list = list(page.blk_list or [])
+
+        has_runtime_patches = page_has_runtime_patches(
+            state,
+            self.main_page.image_patches,
+            page.image_path,
+        )
+        ps, _ = activate_target_lang(
+            state,
+            page.target_lang,
+            has_runtime_patches=has_runtime_patches,
+        )
+        mark_ocr_ready(state, has_runtime_patches=has_runtime_patches)
+        if page.ocr_cache_key:
+            ps["ocr_cache_key"] = page.ocr_cache_key
+
+    def prepare_text_stages(self, selected_paths: List[str] = None) -> list[str]:
+        timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")
+        image_list = list(selected_paths if selected_paths is not None else self.main_page.image_files)
+        total_images = len(image_list)
+        if total_images == 0:
+            return []
+
+        page_batch_size = max(64, self._get_batch_settings()["batch_size"])
+        detection_batch_size = 64
+        preferred_target = self.main_page.t_combo.currentText()
+
+        pages: list[PreparedBatchPage] = []
+        for page_index, image_path in enumerate(image_list):
+            state = self.main_page.image_states.setdefault(image_path, {})
+            activate_target_lang(
+                state,
+                preferred_target,
+                has_runtime_patches=page_has_runtime_patches(
+                    state,
+                    self.main_page.image_patches,
+                    image_path,
+                ),
+            )
+            pages.append(self._build_page_context(page_index, image_path, timestamp))
+
+        updated_paths: list[str] = []
+        try:
+            skip_detection_pages: list[PreparedBatchPage] = []
+            fresh_pages: list[PreparedBatchPage] = []
+
+            for page in pages:
+                if self._is_cancelled():
+                    return updated_paths
+
+                loaded_page = self._load_page(page, total_images)
+                if loaded_page is None:
+                    continue
+
+                if self._page_can_skip_detection(loaded_page):
+                    skip_detection_pages.append(loaded_page)
+                else:
+                    fresh_pages.append(loaded_page)
+
+            detected_pages: list[PreparedBatchPage] = []
+            pending_detection_pages: list[PreparedBatchPage] = []
+
+            for page in fresh_pages:
+                if self._is_cancelled():
+                    return updated_paths
+
+                pending_detection_pages.append(page)
+                if len(pending_detection_pages) < detection_batch_size:
+                    continue
+
+                stage_pages = self._run_chunk_detection(pending_detection_pages, total_images)
+                for buffered_page in pending_detection_pages:
+                    self._release_page_buffers(buffered_page)
+                if stage_pages:
+                    detected_pages.extend(stage_pages)
+                pending_detection_pages = []
+
+            if pending_detection_pages:
+                stage_pages = self._run_chunk_detection(pending_detection_pages, total_images)
+                for buffered_page in pending_detection_pages:
+                    self._release_page_buffers(buffered_page)
+                if stage_pages:
+                    detected_pages.extend(stage_pages)
+
+            self._release_detection_model_caches()
+            self._trim_runtime_memory()
+            if self._is_cancelled():
+                return updated_paths
+
+            ocr_ready_pages: list[PreparedBatchPage] = []
+            for _chunk_start, page_chunk in self._iter_chunks(detected_pages, page_batch_size):
+                if self._is_cancelled():
+                    return updated_paths
+
+                for page in page_chunk:
+                    self._reload_page_image(page)
+
+                stage_pages = self._run_chunk_ocr(page_chunk, total_images)
+                for page in page_chunk:
+                    self._release_page_buffers(page)
+                if stage_pages:
+                    ocr_ready_pages.extend(stage_pages)
+
+            for page in skip_detection_pages:
+                if self._is_cancelled():
+                    return updated_paths
+                self._load_page_state_into_blk_list(page)
+
+            ocr_ready_pages.extend(self._run_chunk_ocr(skip_detection_pages, total_images))
+
+            self._release_ocr_model_caches()
+            self._trim_runtime_memory()
+            if self._is_cancelled():
+                return updated_paths
+
+            for page in sorted(ocr_ready_pages, key=lambda item: item.index):
+                self._store_precomputed_text_state(page)
+                updated_paths.append(page.image_path)
+                self._release_page_buffers(page, release_blk_list=True)
+
+            return updated_paths
+        finally:
+            self._release_non_translation_model_caches()
+            self._trim_runtime_memory()
+
+    def _clean_candidate_paths(self, image_list: list[str]) -> list[str]:
+        stroke_paths = [
+            image_path
+            for image_path in image_list
+            if (self.main_page.image_states.get(image_path) or {}).get("brush_strokes")
+        ]
+        block_paths = [
+            image_path
+            for image_path in image_list
+            if image_path not in stroke_paths
+            and (self.main_page.image_states.get(image_path) or {}).get("blk_list")
+            and not page_has_runtime_patches(
+                self.main_page.image_states.get(image_path),
+                self.main_page.image_patches,
+                image_path,
+            )
+        ]
+        if stroke_paths:
+            return stroke_paths + block_paths
+        return block_paths
+
+    def prepare_clean_stages(
+        self,
+        selected_paths: List[str] = None,
+    ) -> tuple[list[str], list[tuple[str, list[dict]]]]:
+        image_list = list(selected_paths if selected_paths is not None else self.main_page.image_files)
+        if not image_list:
+            return [], []
+
+        updated_paths = self.prepare_text_stages(image_list)
+        if self._is_cancelled():
+            return updated_paths, []
+
+        clean_paths = self._clean_candidate_paths(image_list)
+        page_results = self.inpainting.inpaint_pages_from_states(clean_paths)
+        return updated_paths, page_results
 
     def batch_process(self, selected_paths: List[str] = None):
         timestamp = datetime.now().strftime("%b-%d-%Y_%I-%M-%S%p")

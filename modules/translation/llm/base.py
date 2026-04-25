@@ -57,7 +57,7 @@ class BaseLLMTranslation(LLMTranslation):
         )
         self.temperature = float(llm_settings.get("temperature", 0))
         self.top_p = float(llm_settings.get("top_p", 1))
-        self.max_tokens = int(llm_settings.get("max_tokens", 384))
+        self.max_tokens = int(llm_settings.get("max_tokens", 640))
         self.use_scene_memory = bool(llm_settings.get("use_scene_memory", False))
         self.interpret_then_translate = bool(llm_settings.get("interpret_then_translate", False))
         self.last_scene_memory = ""
