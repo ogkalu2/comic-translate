@@ -110,8 +110,8 @@ class TextBlock(object):
         
         return new_block
 
-def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:
-    # Sort blk_list from right to left, top to bottom
+def sort_blk_list(blk_list: List[TextBlock], right_to_left=None) -> List[TextBlock]:
+    # Sort blk_list using detected block direction when available.
     sorted_blk_list = []
     for blk in sorted(blk_list, key=lambda blk: blk.center[1]):
         for i, sorted_blk in enumerate(sorted_blk_list):
@@ -122,10 +122,12 @@ def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlo
                 break
 
             # y center of blk inside sorted_blk so sort by x instead
-            if right_to_left and blk.center[0] > sorted_blk.center[0]:
+            pair_is_vertical = blk.direction == 'vertical' or sorted_blk.direction == 'vertical'
+            pair_right_to_left = bool(right_to_left) if pair_is_vertical else False
+            if pair_right_to_left and blk.center[0] > sorted_blk.center[0]:
                 sorted_blk_list.insert(i, blk)
                 break
-            if not right_to_left and blk.center[0] < sorted_blk.center[0]:
+            if not pair_right_to_left and blk.center[0] < sorted_blk.center[0]:
                 sorted_blk_list.insert(i, blk)
                 break
         else:
