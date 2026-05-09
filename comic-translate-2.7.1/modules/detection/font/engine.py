@@ -1,0 +1,514 @@
+from abc import ABC, abstractmethod
+import os
+import logging
+import numpy as np
+from PIL import Image
+import imkit as imk
+from . import config
+from modules.utils.device import resolve_device, get_providers
+from modules.utils.download import ModelDownloader, ModelID
+from modules.utils.onnx import make_session
+from modules.utils.torch_autocast import TorchAutocastMixin
+
+logger = logging.getLogger(__name__)
+
+
+def get_torch_font_runtime_error() -> str | None:
+    """Return the import error for the Torch font runtime, if any."""
+    try:
+        import torch  # noqa: F401
+        from torchvision import transforms  # noqa: F401
+        from .model import FontDetector  # noqa: F401
+        return None
+    except ImportError as exc:
+        return str(exc)
+
+
+def torch_font_runtime_available() -> bool:
+    """Return whether the Torch font runtime dependencies are importable."""
+    return get_torch_font_runtime_error() is None
+
+
+def extract_foreground_color(image: np.ndarray) -> list[int] | None:
+    """Extract the foreground (text) color from a text bounding box crop.
+
+    Uses spatial analysis: border pixels define the background colour,
+    then Otsu thresholding on the colour-distance-from-background map
+    cleanly separates text from background.  The median colour of
+    the text pixels is returned.
+
+    This avoids the regression-to-the-mean problem that neural
+    regressors suffer from, and correctly handles:
+      - black text on white bubble
+      - white text on dark/coloured bubble
+      - coloured text on any background
+    """
+    if image is None or image.size == 0:
+        return None
+
+    h, w = image.shape[:2]
+    if h < 6 or w < 6:
+        return None
+
+    if len(image.shape) != 3 or image.shape[2] < 3:
+        return None
+
+    img = image[:, :, :3]  # drop alpha if present
+
+    # Analyze the full crop.
+    work = img
+
+    wh, ww = work.shape[:2]
+    if wh < 6 or ww < 6:
+        return None
+
+    # 1. Border sampling: collect a thin ring of pixels around the analysis crop.
+    bw = max(2, min(wh, ww) // 8)
+    if wh <= bw * 2 or ww <= bw * 2:
+        return None
+
+    # Exclude corners from top/bottom strips when possible.
+    top = work[:bw, bw:-bw] if ww > bw * 2 else work[:bw, :]
+    bottom = work[-bw:, bw:-bw] if ww > bw * 2 else work[-bw:, :]
+    left = work[bw:-bw, :bw]
+    right = work[bw:-bw, -bw:]
+
+    border_parts = []
+    for part in (top, bottom, left, right):
+        if part.size > 0:
+            border_parts.append(part.reshape(-1, 3))
+    if not border_parts:
+        return None
+
+    border_pixels = np.concatenate(border_parts, axis=0).astype(np.float64)
+    bg = np.median(border_pixels, axis=0)
+
+    # 2. Per-pixel Euclidean distance from the background colour.
+    flat = work.reshape(-1, 3).astype(np.float64)
+    dist = np.sqrt(np.sum((flat - bg) ** 2, axis=1))
+
+    # 3. Otsu threshold on the distance map to find the natural
+    #    boundary between "background-like" and "text-like" pixels.
+    dist_u8 = np.clip(dist, 0, 255).astype(np.uint8)
+    otsu_thresh, _ = imk.otsu_threshold(dist_u8)
+    # Floor: ignore tiny noise even if Otsu picks a very low split.
+    threshold = max(float(otsu_thresh), 25.0)
+
+    # 4. Extract text pixels and choose a robust foreground estimate.
+    text_mask = dist > threshold
+    n_text = int(np.sum(text_mask))
+    if n_text < 5:
+        return None
+
+    text_pixels = flat[text_mask]
+    text_ratio = n_text / float(flat.shape[0])
+    bg_luma = 0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]
+
+    # Printed comics often have antialiasing + halftone noise. On bright bubbles,
+    # a pure median can drift too light and snap to white; on dark bubbles, it can
+    # drift too dark. Bias toward the appropriate tail by background brightness.
+    if bg_luma >= 170:
+        fg = np.percentile(text_pixels, 20, axis=0)
+    elif bg_luma <= 85:
+        fg = np.percentile(text_pixels, 80, axis=0)
+    else:
+        fg = np.median(text_pixels, axis=0)
+
+    fg = np.round(fg).astype(int).tolist()
+    snapped = snap_extreme_neutrals(fg)
+
+    # Targeted correction for colored text inside bright bubbles surrounded by
+    # very dark borders/background. In this case bg_luma can be dark while the
+    # selected mask is mostly bright fill, and the 80th percentile drifts to the
+    # bubble fill colour (e.g. orange) instead of darker text (e.g. red).
+    if (
+        snapped not in ([0, 0, 0], [255, 255, 255])
+        and bg_luma <= 85
+        and text_ratio >= 0.45
+    ):
+        luma_vals = 0.299 * text_pixels[:, 0] + 0.587 * text_pixels[:, 1] + 0.114 * text_pixels[:, 2]
+        dominant_luma = float(np.median(luma_vals))
+        luma_spread = float(np.percentile(luma_vals, 90) - np.percentile(luma_vals, 10))
+        if dominant_luma >= 140 and luma_spread >= 30:
+            dark_tail = np.percentile(text_pixels, 20, axis=0)
+            snapped = snap_extreme_neutrals(np.round(dark_tail).astype(int).tolist())
+
+    return snapped
+
+
+def snap_extreme_neutrals(rgb: list[int]) -> list[int]:
+    """Snap achromatic colours to pure black or white.
+
+    Comic text is almost never intentionally grey.  If the detected
+    colour is achromatic (low chroma) it is meant to be either black
+    or white, so snap to whichever is closer.  Coloured text (high
+    chroma) is returned unchanged.
+    """
+    r, g, b = int(rgb[0]), int(rgb[1]), int(rgb[2])
+    luma = 0.299 * r + 0.587 * g + 0.114 * b
+    chroma = max(r, g, b) - min(r, g, b)
+
+    # Achromatic -> snap to nearest extreme.
+    if chroma < 40:
+        return [0, 0, 0] if luma < 128 else [255, 255, 255]
+
+    return [r, g, b]
+
+
+def build_backbone(model_name: str, *, regression_use_tanh: bool):
+    try:
+        from .model import ResNet18Regressor, ResNet34Regressor, \
+            ResNet50Regressor, ResNet101Regressor, DeepFontBaseline
+    except ImportError:
+        raise ImportError("Torch is not available")
+        
+    if model_name == "resnet18":
+        return ResNet18Regressor(regression_use_tanh=regression_use_tanh)
+    if model_name == "resnet34":
+        return ResNet34Regressor(regression_use_tanh=regression_use_tanh)
+    if model_name == "resnet50":
+        return ResNet50Regressor(regression_use_tanh=regression_use_tanh)
+    if model_name == "resnet101":
+        return ResNet101Regressor(regression_use_tanh=regression_use_tanh)
+    if model_name == "deepfont":
+        return DeepFontBaseline()
+    raise NotImplementedError(model_name)
+
+class FontEngine(ABC):
+    """Abstract base class for font detection engines."""
+    
+    def __init__(self, settings=None):
+        self.settings = settings
+        self.input_size = 512
+        config.INPUT_SIZE = self.input_size
+        self.regression_use_tanh = False # Default assumption
+
+    @abstractmethod
+    def initialize(self, device=None, **kwargs) -> None:
+        pass
+
+    @abstractmethod
+    def process(self, image: np.ndarray) -> dict:
+        """
+        Process an image crop and return font attributes.
+        Args:
+            image: numpy array (H, W, C) RGB
+        Returns:
+            dict with keys: angle, direction, text_color, etc.
+        """
+        pass
+
+    def process_batch(self, images: list) -> list:
+        """Process a list of image crops in one batched inference call.
+
+        Subclasses should override this for efficiency.  The default
+        implementation falls back to calling process() per image.
+        """
+        return [self.process(img) for img in images]
+
+    def decode_output(self, output_vec: np.ndarray, original_width: int) -> dict:
+        """
+        Decode the non-font attributes from the detector output.
+        output_vec: numpy array of shape (N,)
+        """
+        # Convert to torch tensor for easier processing if needed, or just use numpy
+        # Using numpy for ONNX compatibility
+        
+        needed = config.FONT_COUNT + 12
+        if output_vec.size < needed:
+            return {"available": False}
+
+        # Direction
+        direction_logits = output_vec[config.FONT_COUNT : config.FONT_COUNT + 2]
+        direction = "vertical" if direction_logits[1] > direction_logits[0] else "horizontal"
+        
+        # Softmax for direction probs
+        exp_logits = np.exp(direction_logits - np.max(direction_logits))
+        direction_probs = exp_logits / exp_logits.sum()
+
+        # Regression
+        reg = output_vec[config.FONT_COUNT + 2 : config.FONT_COUNT + 12]
+
+        if self.regression_use_tanh:
+            reg = (reg + 1.0) * 0.5
+
+        reg = np.clip(reg, 0.0, 1.0)
+
+        def _rgb(start: int):
+            return (reg[start : start + 3] * 255.0).round().astype(int).tolist()
+
+        text_color = snap_extreme_neutrals(_rgb(0))
+        font_size_px = float(reg[3] * original_width)
+        stroke_width_px = float(reg[4] * original_width)
+        stroke_color = snap_extreme_neutrals(_rgb(5))
+
+        line_spacing_px = float(reg[8] * original_width)
+        line_height = 1.0 + (line_spacing_px / font_size_px) if font_size_px > 0 else 1.2
+
+        angle_deg = float((reg[9] - 0.5) * 180.0)
+
+        return {
+            "available": True,
+            "direction": direction,
+            "direction_probs": direction_probs.tolist(),
+            "text_color": text_color,
+            "stroke_color": stroke_color,
+            "font_size_px": font_size_px,
+            "stroke_width_px": stroke_width_px,
+            "line_height": line_height,
+            "angle": angle_deg, # Renamed from angle_deg to angle for consistency
+        }
+
+class TorchFontEngine(TorchAutocastMixin, FontEngine):
+    def initialize(self, device=None, **kwargs) -> None:
+        runtime_error = get_torch_font_runtime_error()
+        if runtime_error is not None:
+            logger.warning(
+                "Warning: Torch font runtime unavailable, cannot initialize TorchFontEngine: %s",
+                runtime_error,
+            )
+            self.detector = None
+            return
+        import torch
+        from torchvision import transforms
+        from .model import FontDetector
+
+        self.device = torch.device(device)   
+        self.model_name = "resnet50"
+        ckpt_path = ModelDownloader.get_file_path(ModelID.FONT_DETECTOR_TORCH, 'font-detector.ckpt')
+            
+        if not os.path.exists(ckpt_path):
+            logger.warning(f"Warning: Font detection checkpoint not found at {ckpt_path}")
+            self.detector = None
+            return
+
+        # Build model
+        model = build_backbone(self.model_name, regression_use_tanh=self.regression_use_tanh)
+        
+        self.detector = FontDetector(
+            model=model,
+            lambda_font=1,
+            lambda_direction=1,
+            lambda_regression=1,
+            font_classification_only=False,
+            lr=1,
+            betas=(1, 1),
+            num_warmup_iters=1,
+            num_iters=1e9,
+            num_epochs=1e9,
+        )
+
+        try:
+            ckpt_obj = torch.load(ckpt_path, map_location=self.device, weights_only=False)
+            state = ckpt_obj["state_dict"] if "state_dict" in ckpt_obj else ckpt_obj
+            
+            fixed_state = {}
+            for k, v in state.items():
+                parts = [p for p in k.split(".") if p != "_orig_mod"]
+                fixed_state[".".join(parts)] = v
+            
+            self.detector.load_state_dict(fixed_state, strict=True)
+            self.detector = self.detector.to(self.device)
+            self.detector.eval()
+            self.setup_torch_autocast(torch, self.device)
+            
+            self.transform = transforms.Compose([
+                transforms.Resize((self.input_size, self.input_size)),
+                transforms.ToTensor(),
+            ])
+            
+        except Exception as e:
+            logger.error(f"Error loading font detector: {e}")
+            self.detector = None
+
+    def process(self, image: np.ndarray) -> dict:
+        if self.detector is None:
+            return {"available": False}
+
+        import torch
+
+        try:
+            pil_image = Image.fromarray(image).convert("RGB")
+            original_width = pil_image.width
+            
+            x = self.transform(pil_image).unsqueeze(0).to(self.device)
+            
+            with torch.inference_mode():
+                out = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.detector(x),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
+                out = out[0].float().cpu().numpy()
+                
+            result = self.decode_output(out, original_width)
+
+            # Override model's regressed colour with CV-extracted colour
+            cv_color = extract_foreground_color(image)
+            if cv_color is not None:
+                result["text_color"] = cv_color
+
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in font detection (Torch): {e}")
+            return {"available": False}
+
+    def process_batch(self, images: list) -> list:
+        """Run a single batched forward pass for all crops."""
+        if self.detector is None or not images:
+            return [{"available": False}] * len(images)
+
+        import torch
+
+        try:
+            original_widths = []
+            tensors = []
+            for image in images:
+                pil_image = Image.fromarray(image).convert("RGB")
+                original_widths.append(pil_image.width)
+                tensors.append(self.transform(pil_image))
+
+            batch = torch.stack(tensors).to(self.device)  # (N, 3, H, W)
+
+            with torch.inference_mode():
+                batch_out = self.run_with_torch_autocast(
+                    torch_module=torch,
+                    fn=lambda: self.detector(batch),
+                    logger=logger,
+                    engine_name=self.__class__.__name__,
+                )
+                batch_out = batch_out.float().cpu().numpy()  # (N, output_dim)
+
+            results = []
+            for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):
+                result = self.decode_output(out, orig_w)
+                cv_color = extract_foreground_color(images[i])
+                if cv_color is not None:
+                    result["text_color"] = cv_color
+                results.append(result)
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in batch font detection (Torch): {e}")
+            return [self.process(img) for img in images]
+
+class ONNXFontEngine(FontEngine):
+    def initialize(self, device=None, **kwargs) -> None:
+        model_path = ModelDownloader.get_file_path(ModelID.FONT_DETECTOR_ONNX, 'font-detector.onnx')
+        if not os.path.exists(model_path):
+            logger.warning(f"Warning: Font detection ONNX model not found at {model_path}")
+            self.session = None
+            return
+
+        try:
+            providers = get_providers(device)            
+            self.session = make_session(model_path, providers=providers)
+            self.input_name = self.session.get_inputs()[0].name
+        except Exception as e:
+            logger.error(f"Error loading ONNX font detector: {e}")
+            self.session = None
+
+    def process(self, image: np.ndarray) -> dict:
+        if self.session is None:
+            return {"available": False}
+
+        try:
+            pil_image = Image.fromarray(image).convert("RGB")
+            original_width = pil_image.width
+            
+            # Preprocess
+            img = pil_image.resize((self.input_size, self.input_size), Image.BILINEAR)
+            img_data = np.array(img).astype(np.float32) / 255.0
+            img_data = img_data.transpose(2, 0, 1) # HWC -> CHW
+            img_data = np.expand_dims(img_data, axis=0) # Add batch dim
+            
+            outputs = self.session.run(None, {self.input_name: img_data})
+            out = outputs[0][0] # First batch item
+            
+            result = self.decode_output(out, original_width)
+
+            # Override model's regressed colour with CV-extracted colour
+            cv_color = extract_foreground_color(image)
+            if cv_color is not None:
+                result["text_color"] = cv_color
+
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in font detection (ONNX): {e}")
+            return {"available": False}
+
+    def process_batch(self, images: list) -> list:
+        """Run a single batched ONNX inference pass for all crops."""
+        if self.session is None or not images:
+            return [{"available": False}] * len(images)
+
+        try:
+            original_widths = []
+            batch_data = []
+            for image in images:
+                pil_image = Image.fromarray(image).convert("RGB")
+                original_widths.append(pil_image.width)
+                img = pil_image.resize((self.input_size, self.input_size), Image.BILINEAR)
+                img_data = np.array(img).astype(np.float32) / 255.0
+                img_data = img_data.transpose(2, 0, 1)  # HWC -> CHW
+                batch_data.append(img_data)
+
+            batch_tensor = np.stack(batch_data, axis=0)  # (N, 3, H, W)
+            outputs = self.session.run(None, {self.input_name: batch_tensor})
+            batch_out = outputs[0]  # (N, output_dim)
+
+            results = []
+            for i, (out, orig_w) in enumerate(zip(batch_out, original_widths)):
+                result = self.decode_output(out, orig_w)
+                cv_color = extract_foreground_color(images[i])
+                if cv_color is not None:
+                    result["text_color"] = cv_color
+                results.append(result)
+            return results
+
+        except Exception as e:
+            logger.error(f"Error in batch font detection (ONNX): {e}")
+            return [self.process(img) for img in images]
+
+class FontEngineFactory:
+    _engines = {}
+    _DEFAULT_BACKEND = "onnx"
+
+    @classmethod
+    def create_engine(cls, settings, backend: str | None = None) -> FontEngine:
+        effective_backend = cls._resolve_backend(backend)
+        device = resolve_device(settings.is_gpu_enabled() if settings else True, effective_backend)
+        cache_key = f"{effective_backend}_{device}"
+        
+        if cache_key in cls._engines:
+            return cls._engines[cache_key]
+            
+        if effective_backend == 'onnx':
+            engine = ONNXFontEngine(settings)
+        else:
+            engine = TorchFontEngine(settings)
+            
+        engine.initialize(device=device)
+        cls._engines[cache_key] = engine
+        return engine
+
+    @classmethod
+    def _resolve_backend(cls, backend: str | None = None) -> str:
+        effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
+        if effective_backend == "torch":
+            runtime_error = get_torch_font_runtime_error()
+            if runtime_error is None:
+                return effective_backend
+            if backend is not None:
+                raise RuntimeError(
+                    f"Torch font backend requested but unavailable: {runtime_error}"
+                )
+            logger.warning(
+                "Falling back to ONNX font backend because Torch font runtime is incomplete: %s",
+                runtime_error,
+            )
+            return "onnx"
+        return effective_backend

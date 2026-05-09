@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Settings File
+**/settings.json
+/app/icons
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# uv
+.python-version
+pyproject.toml
+uv.lock
+
+# Test files
+test_*.py
+demo_*.py

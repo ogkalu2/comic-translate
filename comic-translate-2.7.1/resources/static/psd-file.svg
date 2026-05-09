@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+  <path
+    d="M7 2.75h7.586a1.75 1.75 0 0 1 1.237.513l3.914 3.914c.328.328.513.773.513 1.237V19A2.25 2.25 0 0 1 18 21.25H7A2.25 2.25 0 0 1 4.75 19V5A2.25 2.25 0 0 1 7 2.75Z"
+    fill="none"
+    stroke="#555555"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M14.75 2.75V7a1 1 0 0 0 1 1H20"
+    fill="none"
+    stroke="#555555"
+    stroke-width="1.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <text
+    x="12"
+    y="15.4"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="5.6"
+    font-weight="700"
+    letter-spacing=".35"
+    fill="#555555"
+  >PSD</text>
+</svg>
