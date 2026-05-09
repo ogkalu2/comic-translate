@@ -243,10 +243,10 @@ class OCRFactory:
             from .ppocr.torch.engine import PPOCRv5TorchEngine
             device = resolve_device(settings.is_gpu_enabled(), 'torch')
             engine = PPOCRv5TorchEngine()
-            engine.initialize(lang=lang, device=device)
+            engine.initialize(lang=lang, device=device, use_text_lines=True)
         else:
             engine = PPOCRv5Engine()
-            engine.initialize(lang=lang, device=device)
+            engine.initialize(lang=lang, device=device, use_text_lines=True)
         
         return engine
     

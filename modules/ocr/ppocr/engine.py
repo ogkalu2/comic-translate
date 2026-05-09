@@ -32,6 +32,7 @@ class PPOCRv5Engine(OCREngine):
 		# Sessions are created lazily in initialize(); keep startup light.
 		self.det_sess: Optional[Any] = None
 		self.rec_sess: Optional[Any] = None
+		self.use_text_lines = True
 		self.det_model = 'mobile'
 		self.device = 'cpu'
 		self.det_post = DBPostProcessor(
@@ -47,10 +48,12 @@ class PPOCRv5Engine(OCREngine):
 		self, 
 		lang: str = 'ch', 
 		device: str = 'cpu', 
-		det_model: str = 'mobile'
+		det_model: str = 'mobile',
+		use_text_lines: bool = True
 	) -> None:
 		self.det_model = det_model
 		self.device = device
+		self.use_text_lines = use_text_lines
 		rec_id = LANG_TO_REC_MODEL.get(lang, ModelID.PPOCR_V5_REC_LATIN_MOBILE)
 		ModelDownloader.ensure([rec_id])
 
@@ -128,7 +131,7 @@ class PPOCRv5Engine(OCREngine):
 	def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
 		if self.rec_sess is None or self.decoder is None:
 			return blk_list
-		if any(getattr(blk, 'lines', None) for blk in blk_list):
+		if self.use_text_lines and any(getattr(blk, 'lines', None) for blk in blk_list):
 			for blk in blk_list:
 				lines = getattr(blk, 'lines', None) or [blk.xyxy]
 				crops = [_crop_line(img, line) for line in lines]
