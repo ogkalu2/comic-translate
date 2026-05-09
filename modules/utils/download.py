@@ -463,8 +463,8 @@ def _register_defaults():
     # PPOCRv5 Detection/Recognition Models - Torch
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_DET_MOBILE_TORCH,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/torch/PP-OCRv5/det/',
-        files=['ch_PP-OCRv5_det_mobile_infer.pth'],
+        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/torch/PP-OCRv5/det/',
+        files=['ch_PP-OCRv5_det_mobile.pth'],
         sha256=['df848ed5060bac4d0f6e58572aea97d92e909a8a87cf292849237b0e84f6ffdb'],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
     ))
@@ -491,12 +491,12 @@ def _register_defaults():
 
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_MOBILE_TORCH,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/torch/PP-OCRv5/rec/',
-        files=['ch_PP-OCRv5_rec_mobile_infer.pth', 'ppocrv5_dict.txt'],
+        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/torch/PP-OCRv5/rec/',
+        files=['ch_PP-OCRv5_rec_mobile.pth', 'ppocrv5_dict.txt'],
         sha256=['d20ee8dac2ca63e2d1989b02ecc42595c71d61bf8dd8c8ddc5ad2ee68e7b5be2', None],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
         additional_urls={
-            'ppocrv5_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
+            'ppocrv5_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile/ppocrv5_dict.txt'
         }
     ))
 

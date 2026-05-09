@@ -6,6 +6,7 @@ import numpy as np
 from ..base import OCREngine
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import lists_to_blk_list
+from modules.utils.language_utils import is_no_space_lang
 from modules.utils.device import get_providers
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session, make_session_options
@@ -31,6 +32,8 @@ class PPOCRv5Engine(OCREngine):
 		# Sessions are created lazily in initialize(); keep startup light.
 		self.det_sess: Optional[Any] = None
 		self.rec_sess: Optional[Any] = None
+		self.det_model = 'mobile'
+		self.device = 'cpu'
 		self.det_post = DBPostProcessor(
 			thresh=0.3, 
 			box_thresh=0.5, 
@@ -46,13 +49,11 @@ class PPOCRv5Engine(OCREngine):
 		device: str = 'cpu', 
 		det_model: str = 'mobile'
 	) -> None:
-		# Ensure models present
-		det_id = ModelID.PPOCR_V5_DET_MOBILE if det_model == 'mobile' else ModelID.PPOCR_V5_DET_SERVER
+		self.det_model = det_model
+		self.device = device
 		rec_id = LANG_TO_REC_MODEL.get(lang, ModelID.PPOCR_V5_REC_LATIN_MOBILE)
-		ModelDownloader.ensure([det_id, rec_id])
+		ModelDownloader.ensure([rec_id])
 
-		# Load ONNX sessions
-		det_path = ModelDownloader.primary_path(det_id)
 		rec_paths = ModelDownloader.file_path_map(rec_id)
 		rec_model = [p for n, p in rec_paths.items() if n.endswith('.onnx')][0]
 		# dict file name can vary per lang
@@ -61,7 +62,6 @@ class PPOCRv5Engine(OCREngine):
 
 		providers = get_providers(device)
 		sess_opt = make_session_options(log_severity_level=3)
-		self.det_sess = make_session(det_path, sess_options=sess_opt, providers=providers)
 		self.rec_sess = make_session(rec_model, sess_options=sess_opt, providers=providers)
 
 		# Prepare CTC decoder
@@ -77,6 +77,7 @@ class PPOCRv5Engine(OCREngine):
 				raise RuntimeError('Recognition dictionary not found')
 
 	def _det_infer(self, img: np.ndarray) -> Tuple[np.ndarray, List[float]]:
+		self._ensure_det_session()
 		assert self.det_sess is not None
 		inp = det_preprocess(img, limit_side_len=960, limit_type='min')
 		input_name = self.det_sess.get_inputs()[0].name
@@ -84,6 +85,16 @@ class PPOCRv5Engine(OCREngine):
 		pred = self.det_sess.run([output_name], {input_name: inp})[0]
 		boxes, scores = self.det_post(pred, (img.shape[0], img.shape[1]))
 		return boxes, scores
+
+	def _ensure_det_session(self) -> None:
+		if self.det_sess is not None:
+			return
+		det_id = ModelID.PPOCR_V5_DET_MOBILE if self.det_model == 'mobile' else ModelID.PPOCR_V5_DET_SERVER
+		ModelDownloader.ensure([det_id])
+		det_path = ModelDownloader.primary_path(det_id)
+		providers = get_providers(self.device)
+		sess_opt = make_session_options(log_severity_level=3)
+		self.det_sess = make_session(det_path, sess_options=sess_opt, providers=providers)
 
 	def _rec_infer(self, crops: List[np.ndarray]) -> Tuple[List[str], List[float]]:
 		assert self.rec_sess is not None and self.decoder is not None
@@ -115,7 +126,16 @@ class PPOCRv5Engine(OCREngine):
 		return texts, confs
 
 	def process_image(self, img: np.ndarray, blk_list: List[TextBlock]) -> List[TextBlock]:
-		if self.det_sess is None or self.rec_sess is None or self.decoder is None:
+		if self.rec_sess is None or self.decoder is None:
+			return blk_list
+		if any(getattr(blk, 'lines', None) for blk in blk_list):
+			for blk in blk_list:
+				lines = getattr(blk, 'lines', None) or [blk.xyxy]
+				crops = [_crop_line(img, line) for line in lines]
+				texts, _ = self._rec_infer([crop for crop in crops if crop is not None and crop.size > 0])
+				texts = [text.strip() for text in texts if text and text.strip()]
+				blk.texts = texts
+				blk.text = ''.join(texts) if is_no_space_lang(getattr(blk, 'source_lang', '')) else ' '.join(texts)
 			return blk_list
 		boxes, _ = self._det_infer(img)
 		if boxes is None or len(boxes) == 0:
@@ -130,4 +150,24 @@ class PPOCRv5Engine(OCREngine):
 			x1, y1, x2, y2 = int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
 			bboxes.append((x1, y1, x2, y2))
 		return lists_to_blk_list(blk_list, bboxes, texts)
+
+
+def _crop_line(img: np.ndarray, line) -> np.ndarray | None:
+	arr = np.asarray(line)
+	if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
+		return crop_quad(img, arr.astype(np.float32))
+	if arr.size != 4:
+		return None
+	x1, y1, x2, y2 = [int(round(float(v))) for v in arr.reshape(-1)[:4]]
+	x1 = max(0, min(img.shape[1], x1))
+	x2 = max(0, min(img.shape[1], x2))
+	y1 = max(0, min(img.shape[0], y1))
+	y2 = max(0, min(img.shape[0], y2))
+	if x2 <= x1 or y2 <= y1:
+		return None
+	crop = img[y1:y2, x1:x2]
+	h, w = crop.shape[:2]
+	if h > 0 and w > 0 and h / float(w) >= 1.5:
+		crop = np.rot90(crop)
+	return crop
 

@@ -229,10 +229,10 @@ class OCRFactory:
         if backend.lower() == 'torch' and torch_available():
             from .pororo.engine import PororoOCREngine
             engine = PororoOCREngine()
-            engine.initialize(device=device)
+            engine.initialize(device=device, use_text_lines=True)
         else:
             engine = PororoOCREngineONNX()
-            engine.initialize(device=device)
+            engine.initialize(device=device, use_text_lines=True)
         
         return engine
     

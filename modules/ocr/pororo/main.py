@@ -12,6 +12,7 @@ class PororoOcr:
         model: str = 'brainocr', 
         lang: str = "ko", 
         device: str = 'cpu', 
+        use_text_lines: bool = False,
         **kwargs
     ):
         self.model = model
@@ -22,6 +23,7 @@ class PororoOcr:
             lang=lang, 
             model=model, 
             device=device, 
+            use_text_lines=use_text_lines,
             **kwargs
         )
         self.img_path = None

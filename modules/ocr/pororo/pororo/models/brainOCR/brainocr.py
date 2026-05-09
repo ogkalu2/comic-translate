@@ -38,6 +38,7 @@ class Reader(object):
         rec_model_ckpt_fp: str,
         opt_fp: str,
         device: str,
+        load_detector: bool = True,
     ) -> None:
         """
         TODO @karter: modify this such that you download the pretrained checkpoint files
@@ -57,7 +58,7 @@ class Reader(object):
         opt2val["rec_model_ckpt_fp"] = rec_model_ckpt_fp
 
         # Get model objects
-        self.detector = get_detector(det_model_ckpt_fp, opt2val["device"])
+        self.detector = get_detector(det_model_ckpt_fp, opt2val["device"]) if load_detector else None
         self.recognizer, self.converter = get_recognizer(opt2val)
         self.opt2val = opt2val
 
@@ -88,6 +89,8 @@ class Reader(object):
             horizontal_list (list): e.g., [[613, 1496, 51, 190], [136, 1544, 134, 508]]
             free_list (list): e.g., []
         """
+        if self.detector is None:
+            self.detector = get_detector(opt2val["det_model_ckpt_fp"], opt2val["device"])
         text_box = get_textbox(self.detector, img, opt2val)
         horizontal_list, free_list = group_text_box(
             text_box,
