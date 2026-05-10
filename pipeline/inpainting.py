@@ -52,7 +52,7 @@ class InpaintingHandler:
 
         self._ensure_inpainter()
         config = get_config(settings_page)
-        inpaint_input_img = self.inpainter_cache(image, mask, config)
+        inpaint_input_img = self._inpaint_by_patches(image, mask, config)
         inpaint_input_img = imk.convert_scale_abs(inpaint_input_img) 
 
         return inpaint_input_img
@@ -126,13 +126,64 @@ class InpaintingHandler:
             patches.append({'bbox': [x, y, w, h], 'image': patch.copy()})
         return patches
 
+    def _inpaint_by_patches(self, image: np.ndarray, mask: np.ndarray, config):
+        inpainted_image = image.copy()
+        contours, _ = imk.find_contours(mask)
+        
+        if not contours:
+            return inpainted_image
+
+        # 1. Extract bounding boxes
+        boxes = [imk.bounding_rect(c) for c in contours]
+        
+        # 2. Merge overlapping boxes with padding
+        pad = 32
+        merged_boxes = []
+        for x, y, w, h in boxes:
+            x1 = max(0, x - pad)
+            y1 = max(0, y - pad)
+            x2 = min(image.shape[1], x + w + pad)
+            y2 = min(image.shape[0], y + h + pad)
+            
+            merged = False
+            for i, (mx1, my1, mx2, my2) in enumerate(merged_boxes):
+                if not (x2 < mx1 or x1 > mx2 or y2 < my1 or y1 > my2):
+                    merged_boxes[i] = (min(x1, mx1), min(y1, my1), max(x2, mx2), max(y2, my2))
+                    merged = True
+                    break
+            if not merged:
+                merged_boxes.append((x1, y1, x2, y2))
+                
+        # Repeat until no more merges are possible
+        changed = True
+        while changed:
+            changed = False
+            for i in range(len(merged_boxes)):
+                for j in range(len(merged_boxes)-1, i, -1):
+                    mx1, my1, mx2, my2 = merged_boxes[i]
+                    nx1, ny1, nx2, ny2 = merged_boxes[j]
+                    if not (mx2 < nx1 or mx1 > nx2 or my2 < ny1 or my1 > ny2):
+                        merged_boxes[i] = (min(mx1, nx1), min(my1, ny1), max(mx2, nx2), max(y2, ny2))
+                        merged_boxes.pop(j)
+                        changed = True
+
+        # 3. Patch inference
+        for x1, y1, x2, y2 in merged_boxes:
+            img_patch = image[y1:y2, x1:x2]
+            mask_patch = mask[y1:y2, x1:x2]
+            
+            patch_inpainted = self.inpainter_cache(img_patch, mask_patch, config)
+            inpainted_image[y1:y2, x1:x2] = patch_inpainted
+            
+        return inpainted_image
+
     def inpaint_page_from_saved_strokes(self, image: np.ndarray, strokes: list[dict]):
         mask = self._generate_mask_from_saved_strokes(strokes, image)
         if mask is None:
             return []
         self._ensure_inpainter()
         config = get_config(self.main_page.settings_page)
-        inpainted = self.inpainter_cache(image, mask, config)
+        inpainted = self._inpaint_by_patches(image, mask, config)
         inpainted = imk.convert_scale_abs(inpainted)
         return self._get_regular_patches(mask, inpainted)
 
