@@ -198,8 +198,10 @@ class TextBlockItem(QGraphicsTextItem):
 
     def is_html(self, text):
         import re
-        # Simple check for HTML tags
-        return bool(re.search(r'<[^>]+>', text))
+        if not isinstance(text, str):
+            return False
+        # Improved check for HTML tags (case-insensitive, includes common tags)
+        return bool(re.search(r'<(div|span|p|br|html|body|style)[^>]*>', text, re.IGNORECASE))
 
     def set_font(self, font_family, font_size):
         if not self.textCursor().hasSelection():
@@ -270,10 +272,14 @@ class TextBlockItem(QGraphicsTextItem):
         char_format = QTextCharFormat()
         format_operations[attribute](char_format, value)
 
-        if not has_selection:
-            cursor.select(QTextCursor.SelectionType.Document)    
-  
-        cursor.mergeCharFormat(char_format)
+        # Only merge if we have a selection OR if it's not a color change on HTML.
+        # This prevents clobbering inline span colors during project loading/global changes.
+        is_global_html_color = not has_selection and attribute == 'color' and self.is_html(self.toHtml())
+        
+        if not is_global_html_color:
+            if not has_selection:
+                cursor.select(QTextCursor.SelectionType.Document)    
+            cursor.mergeCharFormat(char_format)
 
         # Update the document's default format
         doc_format = self.document().defaultTextOption()
