@@ -28,7 +28,7 @@ class TextBlock(object):
                  target_lang: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
-                 font_color: tuple = (),
+                 font_color: str|tuple = (),
                  direction: str = "",
                  **kwargs) -> None:
         
