@@ -7,7 +7,7 @@ import onnxruntime as ort
 def make_session_options(
     *, 
     log_severity_level: int = 3,
-    low_mem: bool = True
+    low_mem: bool = False,
 ) -> Any:
     """Create ONNXRuntime SessionOptions with optional low-memory toggles."""
 
