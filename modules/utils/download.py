@@ -51,6 +51,7 @@ def calculate_md5_checksum(file_path: str) -> str:
 class ModelID(Enum):
     MANGA_OCR_BASE = "manga-ocr-base"
     MANGA_OCR_BASE_ONNX = "manga-ocr-base-onnx"
+    MANGA_OCR_INT8_ONNX = "manga-ocr-int8-onnx"
     PORORO = "pororo"
     PORORO_ONNX = "pororo-onnx"
     LAMA_ONNX = "lama-manga-dynamic"
@@ -62,6 +63,7 @@ class ModelID(Enum):
     MIGAN_ONNX = "migan-onnx"
     MIGAN_JIT = "migan-traced"
     RTDETR_V2_ONNX = "rtdetr-v2-onnx"
+    RTDETR_INT8_ONNX = "rtdetr-int8-onnx"
     
     # PPOCRv5 Detection Models
     PPOCR_V5_DET_MOBILE = "ppocr-v5-det-mobile"
@@ -349,6 +351,18 @@ def _register_defaults():
     ))
 
     ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_OCR_INT8_ONNX,
+        url='https://huggingface.co/ogkalu/manga-ocr-onnx/resolve/main/',
+        files=['encoder_model_int8.onnx', 'decoder_model_int8.onnx', 'vocab.txt'],
+        sha256=[
+            '0eaf2b867292a44700ce38ef028b90639a2e36fc4c18c2bcdd1de7409488adb3',
+            '3ff0d4c34c4a66613d98ff93e0b17f22a7b09dfbeec195c3e4d6f595af3a6b6c',
+            '5cb5c5586d98a2f331d9f8828e4586479b0611bfba5d8c3b6dadffc84d6a36a3',
+        ],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-base-onnx')
+    ))
+
+    ModelDownloader.register(ModelSpec(
         id=ModelID.PORORO,
         url='https://huggingface.co/ogkalu/pororo/resolve/main/',
         files=['craft.pt', 'brainocr.pt', 'ocr-opt.txt'],
@@ -448,6 +462,14 @@ def _register_defaults():
         url='https://huggingface.co/ogkalu/comic-text-and-bubble-detector/resolve/main/',
         files=['detector.onnx'],
         sha256=['065744e91c0594ad8663aa8b870ce3fb27222942eded5a3cc388ce23421bd195'], 
+        save_dir=os.path.join(models_base_dir, 'detection')
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.RTDETR_INT8_ONNX,
+        url='https://huggingface.co/ogkalu/comic-text-and-bubble-detector/resolve/main/',
+        files=['detector-v4-s_int8.onnx'],
+        sha256=['5fe9e4f576e49d4e7e8b0e029d6d3cdc252abd4694113e1cae120e62c931ea79'], 
         save_dir=os.path.join(models_base_dir, 'detection')
     ))
 

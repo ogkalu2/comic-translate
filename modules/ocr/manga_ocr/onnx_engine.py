@@ -33,7 +33,7 @@ class MangaOCREngineONNX(OCREngine):
         self.expansion_percentage = expansion_percentage
 
         if self.model is None:
-            ModelDownloader.get(ModelID.MANGA_OCR_BASE_ONNX)
+            ModelDownloader.get(ModelID.MANGA_OCR_INT8_ONNX)
             self.model = MangaOCRONNX(device=device)
 
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
@@ -73,9 +73,9 @@ class MangaOCRONNX:
     def __init__(self, device: str = 'cpu'):
         self.device = device
 
-        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "encoder_model.onnx")
-        decoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "decoder_model.onnx")
-        vocab_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "vocab.txt")
+        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_INT8_ONNX, "encoder_model_int8.onnx")
+        decoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_INT8_ONNX, "decoder_model_int8.onnx")
+        vocab_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_INT8_ONNX, "vocab.txt")
 
         providers = get_providers(self.device)
         self.encoder = make_session(encoder_path, providers=providers)

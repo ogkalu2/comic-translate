@@ -36,7 +36,7 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         self.device = device
         self.confidence_threshold = confidence_threshold
 
-        file_path = ModelDownloader.get_file_path(ModelID.RTDETR_V2_ONNX, 'detector.onnx')
+        file_path = ModelDownloader.get_file_path(ModelID.RTDETR_INT8_ONNX, 'detector-v4-s_int8.onnx')
         providers = get_providers(self.device)
         self.session = make_session(file_path, providers=providers)
 
