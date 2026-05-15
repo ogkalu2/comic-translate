@@ -6,7 +6,7 @@ from ..utils.textblock import TextBlock
 from .utils.geometry import does_rectangle_fit, do_rectangles_overlap, \
     merge_overlapping_boxes
 from .font.engine import extract_foreground_color
-from .ppocr_lines import annotate_blocks_with_ppocr_lines
+from .heuristic_lines import annotate_blocks_with_heuristic_lines
 from .backend import resolve_detection_backend
 from modules.utils.device import resolve_device
 from .utils.content import filter_and_fix_bboxes
@@ -133,8 +133,9 @@ class DetectionEngine(ABC):
         try:
             backend = resolve_detection_backend(getattr(self, "backend", None))
             device = resolve_device(self.settings.is_gpu_enabled(), backend) if self.settings else "cpu"
-            annotate_blocks_with_ppocr_lines(image, text_blocks, device=device, backend=backend)
+            _ = backend, device
+            annotate_blocks_with_heuristic_lines(image, text_blocks)
         except Exception as e:
-            print(f"Failed to build PP-OCR text lines: {e}")
+            print(f"Failed to build heuristic text lines: {e}")
 
         return text_blocks
