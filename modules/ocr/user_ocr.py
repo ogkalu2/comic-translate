@@ -24,7 +24,7 @@ class UserOCR(OCREngine):
     Desktop OCR engine that proxies requests to the web API endpoint (/ocr),
     utilizing the user's account credits and server-side OCR engines.
     """
-    LLM_OCR_KEYS = {"Gemini-2.0-Flash"} 
+    LLM_OCR_KEYS = {"Gemini-2.5-Flash-Lite"} 
     FULL_PAGE_OCR_KEYS = {"Microsoft OCR"}
 
     def __init__(self, api_url: str = WEB_API_OCR_URL):
