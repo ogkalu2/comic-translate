@@ -93,9 +93,9 @@ class MangaOCRMobileONNXEngine(OCREngine):
 class MangaOCRMobileONNX:
     def __init__(self):
         ModelDownloader.get(ModelID.MANGA_OCR_MOBILE_ONNX)
-        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "encoder_tf2onnx_patched.onnx")
-        decoder_init_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "decoder_init_manual.onnx")
-        decoder_step_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "decoder_step_manual.onnx")
+        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "encoder.onnx")
+        decoder_init_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "decoder_init.onnx")
+        decoder_step_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "decoder_step.onnx")
         vocab_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_MOBILE_ONNX, "vocab.txt")
 
         self.encoder = _create_session(encoder_path)
