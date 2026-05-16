@@ -595,26 +595,7 @@ class ComicTranslate(ComicTranslateUI):
                 self._memlogger.emit("batch_start_all")
         except Exception:
             pass
-        for image_path in self.image_files:
-            target_lang = self.image_states[image_path]['target_lang']
-            if not validate_settings(self, target_lang):
-                return
-
-        self.image_ctrl.clear_page_skip_errors_for_paths(self.image_files)
-        self._start_batch_report(self.image_files)
-        self._batch_active = True
-        self._batch_cancel_requested = False
-        self.translate_button.setEnabled(False)
-        self.cancel_button.setEnabled(True)
-        self.save_as_project_button.setEnabled(False)
-        self.webtoon_toggle.setEnabled(False)
-        self.progress_bar.setVisible(True)
-        
-        # Choose batch processor based on webtoon mode
-        if self.webtoon_mode:
-            self.run_threaded(self.pipeline.webtoon_batch_process, None, self.default_error_handler, self.on_batch_process_finished)
-        else:
-            self.run_threaded(self.pipeline.batch_process, None, self.default_error_handler, self.on_batch_process_finished)
+        self._run_batch_for_paths(self.image_files)
 
     def batch_translate_selected(self, selected_file_names: list[str]):
         try:
@@ -627,20 +608,45 @@ class ComicTranslate(ComicTranslateUI):
             p for p in self.image_files
             if os.path.basename(p) in selected_file_names
         ]
-        if not selected_paths:
+        self._run_batch_for_paths(selected_paths)
+
+    def retry_skipped_batch_images(self):
+        report = getattr(self.batch_report_ctrl, "_latest_batch_report", None)
+        if not report:
             return
 
-        # validate each
-        for path in selected_paths:
+        skipped_entries = report.get("skipped_entries", [])
+        retry_paths = [
+            entry.get("image_path")
+            for entry in skipped_entries
+            if isinstance(entry.get("image_path"), str)
+            and entry.get("image_path") in self.image_files
+        ]
+        self._run_batch_for_paths(retry_paths)
+
+    def _run_batch_for_paths(self, batch_paths: list[str]):
+        unique_paths: list[str] = []
+        seen: set[str] = set()
+        for path in batch_paths or []:
+            if not isinstance(path, str):
+                continue
+            if path not in self.image_files or path in seen:
+                continue
+            seen.add(path)
+            unique_paths.append(path)
+
+        if not unique_paths:
+            return
+
+        for path in unique_paths:
             tgt = self.image_states[path]['target_lang']
             if not validate_settings(self, tgt):
                 return
-            
-        self.image_ctrl.clear_page_skip_errors_for_paths(selected_paths)
-        self._start_batch_report(selected_paths)
-        self.selected_batch = selected_paths
 
-        # disable UI & run
+        self.image_ctrl.clear_page_skip_errors_for_paths(unique_paths)
+        self._start_batch_report(unique_paths)
+        self.selected_batch = [] if len(unique_paths) == len(self.image_files) else unique_paths
+
         if self.manual_radio.isChecked():
             self.automatic_radio.setChecked(True)
             self.batch_mode_selected()
@@ -651,24 +657,37 @@ class ComicTranslate(ComicTranslateUI):
         self.save_as_project_button.setEnabled(False)
         self.webtoon_toggle.setEnabled(False)
         self.progress_bar.setVisible(True)
-        
-        # Choose batch processor based on webtoon mode
+
         if self.webtoon_mode:
-            # pass our subset into webtoon_batch_process
-            self.run_threaded(
-                lambda: self.pipeline.webtoon_batch_process(selected_paths),
-                None,
-                self.default_error_handler,
-                self.on_batch_process_finished
-            )
+            if len(unique_paths) == len(self.image_files):
+                self.run_threaded(
+                    self.pipeline.webtoon_batch_process,
+                    None,
+                    self.default_error_handler,
+                    self.on_batch_process_finished,
+                )
+            else:
+                self.run_threaded(
+                    lambda: self.pipeline.webtoon_batch_process(unique_paths),
+                    None,
+                    self.default_error_handler,
+                    self.on_batch_process_finished,
+                )
         else:
-            # pass our subset into batch_process
-            self.run_threaded(
-                lambda: self.pipeline.batch_process(selected_paths),
-                None,
-                self.default_error_handler,
-                self.on_batch_process_finished
-            )
+            if len(unique_paths) == len(self.image_files):
+                self.run_threaded(
+                    self.pipeline.batch_process,
+                    None,
+                    self.default_error_handler,
+                    self.on_batch_process_finished,
+                )
+            else:
+                self.run_threaded(
+                    lambda: self.pipeline.batch_process(unique_paths),
+                    None,
+                    self.default_error_handler,
+                    self.on_batch_process_finished,
+                )
 
     def on_batch_process_finished(self):
         try:

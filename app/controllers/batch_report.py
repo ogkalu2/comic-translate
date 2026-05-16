@@ -8,6 +8,7 @@ from PySide6 import QtCore, QtWidgets
 
 from app.ui.dayu_widgets.drawer import MDrawer
 from app.ui.dayu_widgets.message import MMessage
+from app.ui.dayu_widgets.push_button import MPushButton
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -282,6 +283,52 @@ class BatchReportController:
             return
         self._open_image_from_batch_report(image_path)
 
+    def retry_latest_skipped_images(self):
+        report = self._latest_batch_report
+        if report is None:
+            MMessage.info(
+                text=self.main.tr("No batch report is available yet."),
+                parent=self.main,
+                duration=5,
+                closable=True,
+            )
+            return
+
+        retry_paths = [
+            entry.get("image_path")
+            for entry in report.get("skipped_entries", [])
+            if isinstance(entry.get("image_path"), str)
+            and entry.get("image_path") in self.main.image_files
+        ]
+        if not retry_paths:
+            MMessage.info(
+                text=self.main.tr("No skipped images are available to retry."),
+                parent=self.main,
+                duration=5,
+                closable=True,
+            )
+            return
+        if getattr(self.main, "_batch_active", False):
+            MMessage.warning(
+                text=self.main.tr("Wait for the current batch to finish before retrying skipped images."),
+                parent=self.main,
+                duration=5,
+                closable=True,
+            )
+            return
+
+        self.main.retry_skipped_batch_images()
+
+    def _get_retryable_skipped_paths(self, report: dict | None) -> list[str]:
+        if not report:
+            return []
+        return [
+            entry.get("image_path")
+            for entry in report.get("skipped_entries", [])
+            if isinstance(entry.get("image_path"), str)
+            and entry.get("image_path") in self.main.image_files
+        ]
+
     def _build_batch_report_widget(self, report: dict) -> QtWidgets.QWidget:
         container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(container)
@@ -333,6 +380,23 @@ class BatchReportController:
         )
         header_label.setStyleSheet("font-weight: 600;")
         layout.addWidget(header_label)
+
+        retryable_paths = self._get_retryable_skipped_paths(report)
+        retry_button = MPushButton(self.main.tr("Retry Skipped")).small()
+        retry_button.set_dayu_type(MPushButton.DefaultType)
+        retry_button.setEnabled(
+            bool(retryable_paths) and not getattr(self.main, "_batch_active", False)
+        )
+        if getattr(self.main, "_batch_active", False):
+            retry_button.setToolTip(
+                self.main.tr("Wait for the current batch to finish before retrying skipped images.")
+            )
+        elif not retryable_paths:
+            retry_button.setToolTip(
+                self.main.tr("No skipped images are available to retry.")
+            )
+        retry_button.clicked.connect(self.retry_latest_skipped_images)
+        layout.addWidget(retry_button)
 
         skipped_entries = report["skipped_entries"]
         if skipped_entries:
