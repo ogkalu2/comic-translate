@@ -50,7 +50,7 @@ def calculate_md5_checksum(file_path: str) -> str:
 
 class ModelID(Enum):
     MANGA_OCR_BASE = "manga-ocr-base"
-    MANGA_OCR_BASE_ONNX = "manga-ocr-base-onnx"
+    MANGA_OCR_MOBILE_ONNX = "manga-ocr-mobile-onnx"
     MANGA_OCR_INT8_ONNX = "manga-ocr-int8-onnx"
     PORORO = "pororo"
     PORORO_ONNX = "pororo-onnx"
@@ -339,15 +339,16 @@ def _register_defaults():
     ))
 
     ModelDownloader.register(ModelSpec(
-        id=ModelID.MANGA_OCR_BASE_ONNX,
-        url='https://huggingface.co/mayocream/manga-ocr-onnx/resolve/main/',
-        files=['encoder_model.onnx', 'decoder_model.onnx', 'vocab.txt'],
+        id=ModelID.MANGA_OCR_MOBILE_ONNX,
+        url='https://huggingface.co/ogkalu/manga-ocr-mobile/resolve/main/',
+        files=['encoder.onnx', 'decoder_init.onnx', 'decoder_step.onnx', 'vocab.txt'],
         sha256=[
-            '15fa8155fe9bc1a7d25d9bb353debaa4def033d0174e907dbd2dd6d995def85f',
-            'ef7765261e9d1cdc34d89356986c2bbc2a082897f753a89605ae80fdfa61f5e8',
-            '5cb5c5586d98a2f331d9f8828e4586479b0611bfba5d8c3b6dadffc84d6a36a3',
+            'd1fb455a07c1508cc56a4f4e15e2ed74aca9a4d78fd220ecc0ff39625d67e1b3',
+            '612f97e22848620fb36fcac611467689cb4213d91f2d84f6a19042ad57d475f1',
+            'a244b814a3a669190f9eae737960997633597cfa055fa186347e872bee834bc9',
+            '879d9a69df070dbdf143f64bb3daf73d367741980f18a2f6d08a12e68a598a11',
         ],
-        save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-base-onnx')
+        save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-mobile-onnx')
     ))
 
     ModelDownloader.register(ModelSpec(
