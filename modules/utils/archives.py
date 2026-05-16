@@ -10,7 +10,7 @@ import zipfile
 from PIL import Image
 
 SUPPORTED_SAVE_AS_EXTS = {'.pdf', '.cbz', '.cb7', '.zip'}
-_IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.bmp', '.webp')
+_IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.bmp', '.webp', '.avif')
 _PDF_CACHE_LOCK = threading.RLock()
 _PDF_CACHE: dict[str, dict] = {}
 

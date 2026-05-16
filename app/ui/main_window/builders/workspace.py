@@ -118,6 +118,7 @@ class WorkspaceMixin:
                 ".jpeg",
                 ".webp",
                 ".bmp",
+                ".avif",
                 ".zip",
                 ".cbz",
                 ".cbr",

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     pass
 
 IMPORT_EXTS = {
-    ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".psd",
+    ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".avif", ".psd",
     ".pdf", ".epub",
     ".zip", ".rar", ".7z", ".tar",
     ".cbz", ".cbr", ".cb7", ".cbt",
