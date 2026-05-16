@@ -406,31 +406,19 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Then handle any selection outlines
         if self.selection_outlines:
-            doc = self.document().clone()
-            
-            # Preserve vertical layout if in vertical mode
-            if self.vertical and self.layout:
-                vertical_layout = VerticalTextDocumentLayout(
-                    document=doc,
-                    line_spacing=self.layout.line_spacing,
-                )
-                doc.setDocumentLayout(vertical_layout)
-                vertical_layout.set_max_size(self.layout.max_width, self.layout.max_height)
-
             painter.save()
-            
-            # Clear the document first to only show outlined parts
-            cursor = QTextCursor(doc)
-            cursor.select(QTextCursor.SelectionType.Document)
-            fmt = cursor.charFormat()
-            fmt.setForeground(QColor(0, 0, 0, 0))  # Transparent
-            cursor.mergeCharFormat(fmt)
-
-            # Apply outline colors only to selected regions
             for outline_info in self.selection_outlines:
+                doc = self._clone_outline_document()
+
+                cursor = QTextCursor(doc)
+                cursor.select(QTextCursor.SelectionType.Document)
+                fmt = QTextCharFormat()
+                fmt.setForeground(QColor(0, 0, 0, 0))
+                cursor.mergeCharFormat(fmt)
+
                 cursor.setPosition(outline_info.start)
                 cursor.setPosition(outline_info.end, QTextCursor.KeepAnchor)
-                fmt = cursor.charFormat()
+                fmt = QTextCharFormat()
                 fmt.setForeground(outline_info.color)
                 cursor.mergeCharFormat(fmt)
 
@@ -451,6 +439,25 @@ class TextBlockItem(QGraphicsTextItem):
 
         # Draw the normal text on top
         super().paint(painter, option, widget)
+
+    def _clone_outline_document(self):
+        source = self.document()
+        doc = source.clone()
+        doc.setDocumentMargin(source.documentMargin())
+        doc.setDefaultFont(source.defaultFont())
+        doc.setDefaultTextOption(source.defaultTextOption())
+        doc.setPageSize(source.pageSize())
+        doc.setTextWidth(source.textWidth())
+
+        if self.vertical and self.layout:
+            vertical_layout = VerticalTextDocumentLayout(
+                document=doc,
+                line_spacing=self.layout.line_spacing,
+            )
+            doc.setDocumentLayout(vertical_layout)
+            vertical_layout.set_max_size(self.layout.max_width, self.layout.max_height)
+
+        return doc
 
     def set_bold(self, state):
         if not self.textCursor().hasSelection():
