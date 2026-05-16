@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import numpy as np
+import onnxruntime as ort
 from PIL import Image
 import imkit as imk
 from typing import Optional
@@ -9,7 +10,7 @@ from typing import Optional
 from modules.utils.download import ModelDownloader, ModelID
 from modules.ocr.base import OCREngine
 from modules.utils.device import get_providers
-from modules.utils.onnx import make_session, make_session_options
+from modules.utils.onnx import make_session
 from modules.utils.textblock import TextBlock
 from modules.utils.language_utils import is_no_space_lang
 from modules.utils.textblock import adjust_text_line_coordinates
@@ -24,6 +25,18 @@ from .pororo.models.brainOCR.recognition import CTCLabelConverter, adjust_contra
 from .pororo.models.brainOCR.utils import group_text_box
 from .pororo.models.brainOCR.utils import get_image_list
 from .pororo.models.brainOCR.utils import reformat_input, get_paragraph, diff
+
+
+def _make_pororo_session_options():
+    opts = ort.SessionOptions()
+    opts.log_severity_level = 3
+    opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+    opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+    opts.intra_op_num_threads = 4
+    opts.inter_op_num_threads = 1
+    opts.enable_cpu_mem_arena = True
+    opts.enable_mem_pattern = True
+    return opts
 
 
 class PororoOCREngineONNX(OCREngine):
@@ -55,7 +68,7 @@ class PororoOCREngineONNX(OCREngine):
         if device:
             self.opt2val["device"] = device
 
-        sess_opts = make_session_options(log_severity_level=3)
+        sess_opts = _make_pororo_session_options()
         providers = get_providers(self.opt2val.get("device"))
         self.det_path = ModelDownloader.get_file_path(ModelID.PORORO_ONNX, "craft.onnx")
         self.rec_path = ModelDownloader.get_file_path(ModelID.PORORO_ONNX, "brainocr.onnx")
@@ -66,7 +79,7 @@ class PororoOCREngineONNX(OCREngine):
     def _ensure_det_session(self) -> None:
         if self.det_sess is not None:
             return
-        sess_opts = make_session_options(log_severity_level=3)
+        sess_opts = _make_pororo_session_options()
         providers = get_providers(self.opt2val.get("device"))
         self.det_sess = make_session(self.det_path, sess_options=sess_opts, providers=providers)
 

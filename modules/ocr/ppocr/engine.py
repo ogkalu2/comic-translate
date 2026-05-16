@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, List, Tuple, Optional
 import numpy as np
+import onnxruntime as ort
 
 from ..base import OCREngine
 from modules.utils.textblock import TextBlock
@@ -9,7 +10,7 @@ from modules.utils.textblock import lists_to_blk_list
 from modules.utils.language_utils import is_no_space_lang
 from modules.utils.device import get_providers
 from modules.utils.download import ModelDownloader, ModelID
-from modules.utils.onnx import make_session, make_session_options
+from modules.utils.onnx import make_session
 from .preprocessing import det_preprocess, crop_quad, rec_resize_norm
 from .postprocessing import DBPostProcessor, CTCLabelDecoder
 
@@ -22,6 +23,18 @@ LANG_TO_REC_MODEL: dict[str, ModelID] = {
 	'ru': ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
 	'eslav': ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
 }
+
+
+def _make_ppocr_session_options(threads: int = 4):
+	opts = ort.SessionOptions()
+	opts.log_severity_level = 3
+	opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+	opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+	opts.intra_op_num_threads = threads
+	opts.inter_op_num_threads = 1
+	opts.enable_cpu_mem_arena = True
+	opts.enable_mem_pattern = True
+	return opts
 
 
 class PPOCRv5Engine(OCREngine):
@@ -43,6 +56,8 @@ class PPOCRv5Engine(OCREngine):
 		)
 		self.decoder: Optional[CTCLabelDecoder] = None
 		self.rec_img_shape = (3, 48, 320)
+		self.rec_batch_size = 8
+		self.rec_threads = 4
 
 	def initialize(
 		self, 
@@ -54,6 +69,13 @@ class PPOCRv5Engine(OCREngine):
 		self.det_model = det_model
 		self.device = device
 		self.use_text_lines = use_text_lines
+		self.rec_batch_size = 1 if lang == 'latin' else 8
+		if lang == 'latin':
+			self.rec_threads = 3
+		elif lang == 'ko':
+			self.rec_threads = 6
+		else:
+			self.rec_threads = 4
 		rec_id = LANG_TO_REC_MODEL.get(lang, ModelID.PPOCR_V5_REC_LATIN_MOBILE)
 		ModelDownloader.ensure([rec_id])
 
@@ -64,7 +86,7 @@ class PPOCRv5Engine(OCREngine):
 		dict_path = dict_file[0] if dict_file else None
 
 		providers = get_providers(device)
-		sess_opt = make_session_options(log_severity_level=3)
+		sess_opt = _make_ppocr_session_options(self.rec_threads)
 		self.rec_sess = make_session(rec_model, sess_options=sess_opt, providers=providers)
 
 		# Prepare CTC decoder
@@ -96,7 +118,8 @@ class PPOCRv5Engine(OCREngine):
 		ModelDownloader.ensure([det_id])
 		det_path = ModelDownloader.primary_path(det_id)
 		providers = get_providers(self.device)
-		sess_opt = make_session_options(log_severity_level=3)
+		sess_opt = ort.SessionOptions()
+		sess_opt.log_severity_level = 3
 		self.det_sess = make_session(det_path, sess_options=sess_opt, providers=providers)
 
 	def _rec_infer(self, crops: List[np.ndarray]) -> Tuple[List[str], List[float]]:
@@ -108,7 +131,7 @@ class PPOCRv5Engine(OCREngine):
 		order = np.argsort(ratios)
 		texts = [""] * len(crops)
 		confs = [0.0] * len(crops)
-		bs = 8
+		bs = self.rec_batch_size
 		c, H, W = self.rec_img_shape
 		for b in range(0, len(crops), bs):
 			idxs = order[b:b+bs]
