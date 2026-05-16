@@ -209,8 +209,8 @@ class MangaOCRMobileONNX:
 
     def _postprocess(self, text: str) -> str:
         text = "".join(text.split())
-        text = text.replace("Ã¢â‚¬Â¦", "...")
-        text = re.sub("[Ã£Æ’Â».]{2,}", lambda x: (x.end() - x.start()) * ".", text)
+        text = text.replace("ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦", "...")
+        text = re.sub("[ÃƒÂ£Ã†â€™Ã‚Â».]{2,}", lambda x: (x.end() - x.start()) * ".", text)
         text = jaconv.h2z(text, ascii=True, digit=True)
         if self._is_pathological_punctuation_run(text):
             return ""
@@ -223,5 +223,4 @@ class MangaOCRMobileONNX:
             return False
         dot_like_count = sum(1 for char in text if re.fullmatch(r"[.\uFF0E\u30FB\uFF65\u3002,\u2026]", char))
         return dot_like_count / len(text) >= 0.85
-
 

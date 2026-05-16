@@ -8,7 +8,7 @@ from .microsoft_ocr import MicrosoftOCR
 from .google_ocr import GoogleOCR
 from .gpt_ocr import GPTOCR
 from .ppocr import PPOCRv5Engine
-from .manga_ocr_mobile_onnx import MangaOCRMobileONNXEngine
+from .manga_ocr.mobile import MangaOCRMobileONNXEngine
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
 from .user_ocr import UserOCR
