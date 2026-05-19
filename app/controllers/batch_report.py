@@ -382,7 +382,7 @@ class BatchReportController:
         layout.addWidget(header_label)
 
         retryable_paths = self._get_retryable_skipped_paths(report)
-        retry_button = MPushButton(self.main.tr("Retry Skipped")).small()
+        retry_button = MPushButton(self.main.tr("Retry Skipped Images")).small()
         retry_button.set_dayu_type(MPushButton.DefaultType)
         retry_button.setEnabled(
             bool(retryable_paths) and not getattr(self.main, "_batch_active", False)
