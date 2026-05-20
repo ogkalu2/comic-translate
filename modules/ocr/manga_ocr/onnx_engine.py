@@ -42,7 +42,9 @@ class MangaOCREngineONNX(OCREngine):
 
         for idx, blk in enumerate(blk_list):
             # Get box coordinates
-            if blk.bubble_xyxy is not None:
+            if blk.xyxy is not None:
+                x1, y1, x2, y2 = blk.xyxy
+            elif blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             else:
                 x1, y1, x2, y2 = adjust_text_line_coordinates(

@@ -57,7 +57,9 @@ class MangaOCRMobileONNXEngine(OCREngine):
         crop_indices: list[int] = []
 
         for idx, blk in enumerate(blk_list):
-            if blk.bubble_xyxy is not None:
+            if blk.xyxy is not None:
+                x1, y1, x2, y2 = blk.xyxy
+            elif blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             else:
                 x1, y1, x2, y2 = adjust_text_line_coordinates(
@@ -215,7 +217,11 @@ class MangaOCRMobileONNX:
         text = self._strip_pathological_separator_runs(text)
         if not text:
             return ""
-        if self._is_pathological_punctuation_run(text) or self._is_pathological_separator_run(text):
+        if (
+            self._is_pathological_punctuation_run(text)
+            or self._is_pathological_separator_run(text)
+            or self._is_pathological_kana_loop(text)
+        ):
             return ""
         return re.sub(r"([.\uFF0E\u30FB\uFF65])\1{3,}", r"\1\1\1", text)
 
@@ -231,6 +237,15 @@ class MangaOCRMobileONNX:
         if len(text) < 8:
             return False
         return bool(re.fullmatch(r"[\-‐‑‒–—―ーｰ─━~〜～…‥・･.。,、，·•]+", text))
+
+    def _is_pathological_kana_loop(self, text: str) -> bool:
+        if len(text) < 12:
+            return False
+        match = re.search(r"([ぁ-ゖァ-ヺ])\1{7,}", text)
+        if match is None:
+            return False
+        run_length = match.end() - match.start()
+        return run_length >= 16 or (run_length / len(text)) >= 0.5
 
     def _strip_pathological_separator_runs(self, text: str) -> str:
         return re.sub(r"[\-\u2010\u2011\u2012\u2013\u2014\u2015\u30FC\uff70\u2500\u2501~\u301c\uff5e\u2026\u2025\u30FB\uff65.\u3002,\u3001\uff0c\u00b7\u2022]{8,}", "", text)

@@ -11,7 +11,7 @@ def torch_available() -> bool:
     try:
         import torch
         return True
-    except ImportError:
+    except Exception:
         return False
 
 
