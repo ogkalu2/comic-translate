@@ -87,9 +87,10 @@ def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
         if run[0] <= 3 or run[-1] >= h - 4:
             continue
 
-        # Require at least 2 consecutive near-zero rows (sum <= 1) in the gap.
-        # This prevents false splits in multi-column text where inter-line sums
-        # are non-zero due to contributions from adjacent columns.
+        # Require at least 2 consecutive near-zero rows in the gap by default.
+        # Dense handwritten captions can have real row gaps with a few ink
+        # pixels from descenders/overlapping strokes, so allow those only when
+        # the valley is a strong local minimum with text peaks on both sides.
         near_zero_streak = 0
         for y in run:
             if float(y_sum[y]) <= 1:
@@ -98,7 +99,7 @@ def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
                     break
             else:
                 near_zero_streak = 0
-        if near_zero_streak < 2:
+        if near_zero_streak < 2 and not _is_soft_horizontal_valley(y_sum, run, max_peak, w):
             continue
 
         min_y = run[0]
@@ -111,6 +112,24 @@ def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
         splits.append(min_y)
 
     return splits
+
+def _is_soft_horizontal_valley(y_sum: np.ndarray, run: list[int], max_peak: int, width: int) -> bool:
+    if len(run) < 3 or max_peak <= 0:
+        return False
+
+    run_values = np.asarray([float(y_sum[y]) for y in run], dtype=float)
+    min_val = float(run_values.min())
+    soft_thresh = max(8.0, min(0.06 * max_peak, 0.04 * width))
+    if min_val > soft_thresh:
+        return False
+
+    left_peak = float(y_sum[: run[0]].max()) if run[0] > 0 else 0.0
+    right_peak = float(y_sum[run[-1] + 1 :].max()) if run[-1] + 1 < y_sum.size else 0.0
+    side_peak_thresh = max(12.0, 0.18 * max_peak)
+    if left_peak < side_peak_thresh or right_peak < side_peak_thresh:
+        return False
+
+    return min_val <= min(left_peak, right_peak) * 0.35
 
 def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, sy2: int) -> list[list[int]]:
     region = text_mask[sy1:sy2, sx1:sx2]
@@ -135,7 +154,7 @@ def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, 
     min_y = sy1 + int(ys.min())
     max_y = sy1 + int(ys.max())
     line_height = max(1, max_y - min_y + 1)
-    gap_limit = max(10, int(line_height * 1.6))
+    gap_limit = max(10, int(line_height * 2.8))
 
     x_has_ink = region.any(axis=0)
     boxes: list[list[int]] = []
@@ -172,6 +191,100 @@ def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, 
                 boxes.append(box)
 
     return boxes
+
+def _trim_marginal_vertical_noise_from_horizontal_lines(
+    lines: list[list[int]],
+    text_mask: np.ndarray,
+    vertical_lines: list[list[int]],
+) -> list[list[int]]:
+    from .geometry import _is_polygon_line, _line_axis_box
+
+    if len(lines) < 2 or len(vertical_lines) < 2:
+        return lines
+    if any(_is_polygon_line(line) for line in lines):
+        return lines
+
+    vertical_boxes = [_line_axis_box(line) for line in vertical_lines]
+    vertical_pixels = [
+        int(text_mask[max(0, box[1]) : min(text_mask.shape[0], box[3] + 1), max(0, box[0]) : min(text_mask.shape[1], box[2] + 1)].sum())
+        for box in vertical_boxes
+    ]
+    if not vertical_pixels:
+        return lines
+
+    main_index = int(np.argmax(vertical_pixels))
+    main_box = vertical_boxes[main_index]
+    main_pixels = max(1, vertical_pixels[main_index])
+    main_width = max(1, main_box[2] - main_box[0] + 1)
+    main_height = max(1, main_box[3] - main_box[1] + 1)
+
+    components = _component_boxes(text_mask)
+    median_height = float(np.median([component["height"] for component in components])) if components else 12.0
+
+    marginal_columns: list[tuple[str, list[int]]] = []
+    for index, box in enumerate(vertical_boxes):
+        if index == main_index:
+            continue
+        width = max(1, box[2] - box[0] + 1)
+        height = max(1, box[3] - box[1] + 1)
+        gap_left = main_box[0] - box[2] - 1
+        gap_right = box[0] - main_box[2] - 1
+        side = "left" if gap_left >= 0 else "right" if gap_right >= 0 else ""
+        if not side:
+            continue
+        if max(gap_left, gap_right) < max(6.0, median_height * 0.25):
+            continue
+        if width > max(main_width * 0.65, median_height * 4.0):
+            continue
+        if height < max(median_height * 2.5, main_height * 0.35):
+            continue
+        if vertical_pixels[index] > main_pixels * 0.35:
+            continue
+        starts_later = box[1] > main_box[1] + median_height
+        ends_earlier = box[3] < main_box[3] - median_height
+        if not (starts_later or ends_earlier):
+            continue
+        marginal_columns.append((side, box))
+
+    if not marginal_columns:
+        return lines
+
+    trimmed_lines: list[list[int]] = []
+    for line in lines:
+        x1, y1, x2, y2 = _line_axis_box(line)
+        refined = [x1, y1, x2, y2]
+        for side, column in marginal_columns:
+            line_height = max(1, refined[3] - refined[1] + 1)
+            overlap_y = max(0, min(refined[3], column[3]) - max(refined[1], column[1]) + 1)
+            if overlap_y < max(2, int(round(line_height * 0.25))):
+                continue
+
+            if side == "left" and refined[0] <= column[2] and refined[2] >= main_box[0]:
+                candidate = _refine_box_in_range(text_mask, main_box[0], refined[1], refined[2], refined[3])
+                if candidate is not None:
+                    refined = candidate
+            elif side == "right" and refined[2] >= column[0] and refined[0] <= main_box[2]:
+                candidate = _refine_box_in_range(text_mask, refined[0], refined[1], main_box[2], refined[3])
+                if candidate is not None:
+                    refined = candidate
+        trimmed_lines.append(refined)
+
+    return trimmed_lines
+
+def _refine_box_in_range(text_mask: np.ndarray, x1: int, y1: int, x2: int, y2: int) -> list[int] | None:
+    h, w = text_mask.shape[:2]
+    x1 = max(0, min(w - 1, int(x1)))
+    x2 = max(0, min(w - 1, int(x2)))
+    y1 = max(0, min(h - 1, int(y1)))
+    y2 = max(0, min(h - 1, int(y2)))
+    if x2 < x1 or y2 < y1:
+        return None
+
+    region = text_mask[y1 : y2 + 1, x1 : x2 + 1]
+    ys, xs = np.where(region)
+    if xs.size == 0 or ys.size == 0:
+        return None
+    return [x1 + int(xs.min()), y1 + int(ys.min()), x1 + int(xs.max()), y1 + int(ys.max())]
 
 def _split_tall_horizontal_span(region: np.ndarray, offset_x: int, offset_y: int) -> list[list[int]] | None:
     components = _component_boxes(region)

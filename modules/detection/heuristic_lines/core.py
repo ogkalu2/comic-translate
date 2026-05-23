@@ -7,7 +7,7 @@ from .geometry import _clamp_box, _expand_box, _to_box, _offset_line, _pad_line_
 from .mask import _prepare_text_mask
 from .direction import _fallback_direction, _sort_lines
 from .skew import _detect_horizontal_lines_skew_aware
-from .clustering import _detect_lines_from_mask
+from .clustering import _detect_lines_from_mask, _trim_marginal_vertical_noise_from_horizontal_lines
 from .scoring import (
     _score_line_candidate, _is_large_glyph_horizontal, _is_multiline_horizontal_text,
     _is_sparse_horizontal_overfit, _detect_sparse_vertical_component_columns
@@ -106,6 +106,7 @@ def _detect_lines_and_direction_in_crop(
                 mask_was_split = True
             else:
                 lines = horizontal_lines
+        lines = _trim_marginal_vertical_noise_from_horizontal_lines(lines, text_mask, vertical_lines)
     else:
         lines = vertical_lines
 
