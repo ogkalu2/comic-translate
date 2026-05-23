@@ -10,7 +10,8 @@ from .skew import _detect_horizontal_lines_skew_aware
 from .clustering import _detect_lines_from_mask, _trim_marginal_vertical_noise_from_horizontal_lines
 from .scoring import (
     _score_line_candidate, _is_large_glyph_horizontal, _is_multiline_horizontal_text,
-    _is_sparse_horizontal_overfit, _detect_sparse_vertical_component_columns
+    _is_fragmented_rotated_horizontal_text, _is_sparse_horizontal_overfit,
+    _detect_sparse_vertical_component_columns
 )
 
 def annotate_blocks_with_heuristic_lines(
@@ -75,6 +76,8 @@ def _detect_lines_and_direction_in_crop(
     if _is_large_glyph_horizontal(text_mask, horizontal_lines, vertical_lines):
         direction = "horizontal"
     elif _is_multiline_horizontal_text(horizontal_lines, vertical_lines):
+        direction = "horizontal"
+    elif _is_fragmented_rotated_horizontal_text(text_mask, horizontal_lines, vertical_lines):
         direction = "horizontal"
     elif _is_sparse_horizontal_overfit(text_mask, horizontal_lines, vertical_lines, horizontal_score, vertical_score):
         sparse_vertical_lines = _detect_sparse_vertical_component_columns(text_mask)

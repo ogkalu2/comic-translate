@@ -4,7 +4,7 @@ import numpy as np
 import imkit as imk
 
 from .geometry import _line_axis_box, _clamp_box, _is_polygon_line
-from .clustering import _component_boxes, _components_to_box
+from .clustering import _cluster_components_by_y, _component_boxes, _components_to_box
 
 def _score_line_candidate(lines: list[list[int]], direction: str, text_mask: np.ndarray) -> float:
     if not lines:
@@ -158,6 +158,60 @@ def _is_multiline_horizontal_text(horizontal_lines: list[list[int]], vertical_li
     vertical_width = max(1, vertical_box[2] - vertical_box[0] + 1)
     vertical_height = max(1, vertical_box[3] - vertical_box[1] + 1)
     return vertical_height > vertical_width * 1.2
+
+def _is_fragmented_rotated_horizontal_text(
+    text_mask: np.ndarray,
+    horizontal_lines: list[list[int]],
+    vertical_lines: list[list[int]],
+) -> bool:
+    if len(horizontal_lines) < 5 or len(vertical_lines) < 2:
+        return False
+
+    height, width = text_mask.shape[:2]
+    vertical_boxes = [_line_axis_box(line) for line in vertical_lines]
+    broad_verticals = [
+        box for box in vertical_boxes
+        if (box[2] - box[0] + 1) >= width * 0.55 and (box[3] - box[1] + 1) >= height * 0.65
+    ]
+    if len(broad_verticals) != 1:
+        return False
+
+    broad_box = broad_verticals[0]
+    broad_width = max(1, broad_box[2] - broad_box[0] + 1)
+    for box in vertical_boxes:
+        if box == broad_box:
+            continue
+        box_width = max(1, box[2] - box[0] + 1)
+        if box_width > max(14, int(round(broad_width * 0.14))):
+            return False
+
+    horizontal_boxes = [_line_axis_box(line) for line in horizontal_lines]
+    row_like_count = 0
+    for box in horizontal_boxes:
+        line_width = max(1, box[2] - box[0] + 1)
+        line_height = max(1, box[3] - box[1] + 1)
+        if line_width >= line_height * 1.8 and line_width >= width * 0.25:
+            row_like_count += 1
+    if row_like_count < 4:
+        return False
+
+    components = _component_boxes(text_mask)
+    if len(components) < 8:
+        return False
+
+    median_height = float(np.median([component["height"] for component in components]))
+    median_width = float(np.median([component["width"] for component in components]))
+    component_rows = _cluster_components_by_y(components, median_height)
+    substantial_rows = 0
+    for row in component_rows:
+        box = _components_to_box(row)
+        if box is None:
+            continue
+        row_width = max(1, box[2] - box[0] + 1)
+        if len(row) >= 2 and row_width >= max(width * 0.25, median_width * 4.0):
+            substantial_rows += 1
+
+    return substantial_rows >= 4
 
 def _is_sparse_horizontal_overfit(
     text_mask: np.ndarray,

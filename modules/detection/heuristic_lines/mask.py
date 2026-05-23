@@ -46,6 +46,8 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
         median_w = 12.0
         median_h = 12.0
 
+    removed_labels: list[int] = []
+
     # 2. Decide which components to remove
     for label in range(1, num_labels):
         x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
@@ -66,6 +68,7 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
         # We always remove it.
         if touches_left or touches_right:
             cleaned[labels == label] = False
+            removed_labels.append(label)
             continue
 
         # Determine if it is a legitimate text character (and should be KEPT)
@@ -87,10 +90,138 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
 
         if not is_character:
             cleaned[labels == label] = False
+            removed_labels.append(label)
 
     if int(cleaned.sum()) < max(8, original_pixels * 0.25):
         return text_mask
+    return _restore_leading_text_from_edge_components(text_mask, cleaned, labels, removed_labels, median_w, median_h)
+
+def _restore_leading_text_from_edge_components(
+    original_mask: np.ndarray,
+    cleaned_mask: np.ndarray,
+    labels: np.ndarray,
+    removed_labels: list[int],
+    median_w: float,
+    median_h: float,
+) -> np.ndarray:
+    if not removed_labels or not bool(cleaned_mask.any()):
+        return cleaned_mask
+
+    height, width = cleaned_mask.shape[:2]
+    row_spans = _horizontal_ink_spans(cleaned_mask)
+    if not row_spans:
+        return cleaned_mask
+    if len(row_spans) != 1 or height > max(80, int(round(median_h * 5.0))):
+        return cleaned_mask
+
+    restored = cleaned_mask.copy()
+    for sy1, sy2 in row_spans:
+        band_y1 = max(0, sy1 - max(2, int(round(median_h * 0.25))))
+        band_y2 = min(height, sy2 + max(2, int(round(median_h * 0.25))))
+        cleaned_band = cleaned_mask[band_y1:band_y2, :]
+        text_x1 = _band_text_min_x(cleaned_band)
+        if text_x1 is None:
+            continue
+
+        if text_x1 <= max(2, int(round(median_w * 0.5))):
+            continue
+
+        side_mask = np.zeros_like(cleaned_mask)
+        for label in removed_labels:
+            side_mask[band_y1:band_y2, :text_x1] |= (labels[band_y1:band_y2, :text_x1] == label)
+
+        side_mask = _remove_long_edge_strokes(side_mask, band_y1, band_y2)
+        if not bool(side_mask.any()):
+            continue
+
+        candidate = _leading_text_candidate(side_mask, text_x1, median_w, median_h)
+        if candidate is not None:
+            restored |= candidate
+
+    return restored
+
+def _band_text_min_x(band_mask: np.ndarray) -> int | None:
+    num_labels, _, stats, _ = imk.connected_components_with_stats(
+        band_mask.astype(np.uint8),
+        connectivity=8,
+    )
+    min_x: int | None = None
+    for label in range(1, num_labels):
+        x1, _, comp_width, comp_height, area = [int(v) for v in stats[label]]
+        if area < 8 or comp_width < 3 or comp_height < 3:
+            continue
+        min_x = x1 if min_x is None else min(min_x, x1)
+    return min_x
+
+def _horizontal_ink_spans(mask: np.ndarray) -> list[tuple[int, int]]:
+    height, width = mask.shape[:2]
+    y_sum = mask.sum(axis=1)
+    tolerance = max(1, int(width * 0.02))
+    spans: list[tuple[int, int]] = []
+    start = -1
+    for y in range(height):
+        if int(y_sum[y]) > tolerance:
+            if start == -1:
+                start = y
+        elif start != -1:
+            spans.append((start, y))
+            start = -1
+    if start != -1:
+        spans.append((start, height))
+    return spans
+
+def _remove_long_edge_strokes(mask: np.ndarray, band_y1: int, band_y2: int) -> np.ndarray:
+    cleaned = mask.copy()
+    band_height = max(1, band_y2 - band_y1)
+    row_sum = cleaned.sum(axis=1)
+    col_sum = cleaned.sum(axis=0)
+    cleaned[row_sum >= max(20, int(cleaned.shape[1] * 0.30)), :] = False
+    cleaned[:, col_sum >= max(30, int(band_height * 1.25))] = False
     return cleaned
+
+def _leading_text_candidate(
+    side_mask: np.ndarray,
+    text_x1: int,
+    median_w: float,
+    median_h: float,
+) -> np.ndarray | None:
+    num_labels, labels, stats, _ = imk.connected_components_with_stats(
+        side_mask.astype(np.uint8),
+        connectivity=8,
+    )
+    if num_labels <= 1:
+        return None
+
+    kept = np.zeros_like(side_mask)
+    for label in range(1, num_labels):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+        x2 = x1 + comp_width - 1
+        if area < 8:
+            continue
+        if x2 >= text_x1:
+            continue
+        if comp_height < max(3, int(round(median_h * 0.25))):
+            continue
+        if comp_height > max(18, int(round(median_h * 2.2))):
+            continue
+        if comp_width > max(40, int(round(median_w * 5.0))):
+            continue
+        kept[labels == label] = True
+
+    if not bool(kept.any()):
+        return None
+
+    ys, xs = np.where(kept)
+    if xs.size == 0:
+        return None
+    gap_to_text = text_x1 - int(xs.max()) - 1
+    candidate_width = int(xs.max() - xs.min() + 1)
+    if gap_to_text > max(12, int(round(median_w * 2.5))):
+        return None
+    if candidate_width > max(90, int(round(median_w * 7.0))):
+        return None
+
+    return kept
 
 def _remove_non_text_components(text_mask: np.ndarray) -> np.ndarray:
     num_labels, labels, stats, _ = imk.connected_components_with_stats(
