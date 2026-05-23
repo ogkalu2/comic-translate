@@ -52,11 +52,11 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
         x2 = x1 + comp_width - 1
         y2 = y1 + comp_height - 1
 
-        # Check if it touches any edge
-        touches_left = (x1 <= 1)
-        touches_right = (x2 >= width - 2)
-        touches_top = (y1 <= 1)
-        touches_bottom = (y2 >= height - 2)
+        # Check if it touches any edge (allow up to 5 pixels from the border)
+        touches_left = (x1 <= 5)
+        touches_right = (x2 >= width - 6)
+        touches_top = (y1 <= 5)
+        touches_bottom = (y2 >= height - 6)
 
         touches_edge = touches_left or touches_right or touches_top or touches_bottom
         if not touches_edge:

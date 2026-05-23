@@ -6,23 +6,58 @@ from .geometry import _is_polygon_line, _line_axis_box
 from .scoring import _score_line_candidate
 from .clustering import _detect_lines_from_mask
 
+def _filter_noise_lines(lines: list[list[int]], direction: str) -> list[list[int]]:
+    from .geometry import _line_axis_box, _is_polygon_line
+    filtered = []
+    for line in lines:
+        x1, y1, x2, y2 = _line_axis_box(line)
+        w = max(1, x2 - x1 + 1)
+        h = max(1, y2 - y1 + 1)
+
+        if _is_polygon_line(line):
+            points = np.asarray(line, dtype=float)[:4]
+            h_perp = float(np.linalg.norm(points[3] - points[0]))
+            w_perp = float(np.linalg.norm(points[1] - points[0]))
+        else:
+            h_perp = h
+            w_perp = w
+
+        if direction == "horizontal":
+            if h_perp < 5 and w_perp < 36:
+                continue
+            if h_perp < 3:
+                continue
+        else:
+            if w_perp < 5 and h_perp < 36:
+                continue
+            if w_perp < 3:
+                continue
+        filtered.append(line)
+    return filtered
+
 def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]]:
-    base_lines = _detect_lines_from_mask(text_mask, "horizontal")
+    base_lines = _filter_noise_lines(_detect_lines_from_mask(text_mask, "horizontal"), "horizontal")
+    if not base_lines:
+        base_lines = [[0, 0, text_mask.shape[1], text_mask.shape[0]]]
+
     best_lines = base_lines
-    base_score = _score_line_candidate(base_lines, "horizontal", text_mask)
+    base_score = _score_line_candidate(best_lines, "horizontal", text_mask)
     best_score = base_score
 
     for angle in range(-36, 37, 3):
         if angle == 0:
             continue
-        candidate = _detect_horizontal_lines_at_angle(text_mask, angle)
+        candidate = _filter_noise_lines(_detect_horizontal_lines_at_angle(text_mask, angle), "horizontal")
+        if not candidate:
+            continue
+
         if len(candidate) > max(len(base_lines) + 2, int(math.ceil(len(base_lines) * 1.6))):
             continue
         if not _is_line_like_horizontal_quad_set(candidate):
             continue
         score = _score_line_candidate(candidate, "horizontal", text_mask)
         if (
-            len(base_lines) >= 4
+            len(base_lines) >= 2
             and len(candidate) < len(base_lines) - 1
             and score < base_score + 0.35
             and not _has_reasonable_reduced_skew_thickness(base_lines, candidate)

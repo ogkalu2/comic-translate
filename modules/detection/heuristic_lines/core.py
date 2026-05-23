@@ -65,8 +65,9 @@ def _detect_lines_and_direction_in_crop(
         box = [0, 0, width, height]
         return [box], _fallback_direction(box, source_language)
 
+    from .skew import _filter_noise_lines
     horizontal_lines = _detect_horizontal_lines_skew_aware(text_mask)
-    vertical_lines = _detect_lines_from_mask(text_mask, "vertical")
+    vertical_lines = _filter_noise_lines(_detect_lines_from_mask(text_mask, "vertical"), "vertical")
 
     horizontal_score = _score_line_candidate(horizontal_lines, "horizontal", text_mask)
     vertical_score = _score_line_candidate(vertical_lines, "vertical", text_mask)

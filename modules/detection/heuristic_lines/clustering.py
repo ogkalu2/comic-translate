@@ -57,11 +57,76 @@ def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[
         return [[0, 0, width, height]]
     return boxes
 
+def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
+    h, w = region.shape[:2]
+    if h < 36:
+        return []
+
+    y_sum = region.sum(axis=1)
+    max_peak = int(y_sum.max())
+    if max_peak <= 0:
+        return []
+
+    valley_thresh = min(0.12 * max_peak, 0.08 * w)
+    valley_thresh = max(4.0, valley_thresh)
+
+    valley_runs = []
+    current_run = []
+    for y in range(h):
+        if float(y_sum[y]) <= valley_thresh:
+            current_run.append(y)
+        else:
+            if current_run:
+                valley_runs.append(current_run)
+                current_run = []
+    if current_run:
+        valley_runs.append(current_run)
+
+    splits = []
+    for run in valley_runs:
+        if run[0] <= 3 or run[-1] >= h - 4:
+            continue
+
+        # Require at least 2 consecutive near-zero rows (sum <= 1) in the gap.
+        # This prevents false splits in multi-column text where inter-line sums
+        # are non-zero due to contributions from adjacent columns.
+        near_zero_streak = 0
+        for y in run:
+            if float(y_sum[y]) <= 1:
+                near_zero_streak += 1
+                if near_zero_streak >= 2:
+                    break
+            else:
+                near_zero_streak = 0
+        if near_zero_streak < 2:
+            continue
+
+        min_y = run[0]
+        min_val = float(y_sum[min_y])
+        for y in run:
+            val = float(y_sum[y])
+            if val < min_val:
+                min_val = val
+                min_y = y
+        splits.append(min_y)
+
+    return splits
+
 def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, sy2: int) -> list[list[int]]:
     region = text_mask[sy1:sy2, sx1:sx2]
     ys, xs = np.where(region)
     if xs.size == 0 or ys.size == 0:
         return []
+
+    splits = _find_horizontal_valley_splits(region)
+    if splits:
+        sub_boxes = []
+        last_y = 0
+        for split_y in splits:
+            sub_boxes.extend(_split_horizontal_span(text_mask, sx1, sy1 + last_y, sx2, sy1 + split_y))
+            last_y = split_y + 1
+        sub_boxes.extend(_split_horizontal_span(text_mask, sx1, sy1 + last_y, sx2, sy2))
+        return sub_boxes
 
     component_rows = _split_tall_horizontal_span(region, sx1, sy1)
     if component_rows is not None:
@@ -77,6 +142,8 @@ def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, 
     start_x: int | None = None
     last_ink_x: int | None = None
     gap = 0
+    min_width_threshold = max(24, int(region.shape[1] * 0.10))
+
     for local_x, has_ink in enumerate(x_has_ink):
         if has_ink:
             if start_x is None:
@@ -88,17 +155,21 @@ def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, 
         if start_x is not None:
             gap += 1
             if gap > gap_limit and last_ink_x is not None:
-                box = _refine_subspan_box(region, sx1, sy1, start_x, last_ink_x + 1)
-                if box is not None:
-                    boxes.append(box)
+                w = last_ink_x + 1 - start_x
+                if w >= min_width_threshold or len(boxes) == 0:
+                    box = _refine_subspan_box(region, sx1, sy1, start_x, last_ink_x + 1)
+                    if box is not None:
+                        boxes.append(box)
                 start_x = None
                 last_ink_x = None
                 gap = 0
 
     if start_x is not None and last_ink_x is not None:
-        box = _refine_subspan_box(region, sx1, sy1, start_x, last_ink_x + 1)
-        if box is not None:
-            boxes.append(box)
+        w = last_ink_x + 1 - start_x
+        if w >= min_width_threshold or len(boxes) == 0:
+            box = _refine_subspan_box(region, sx1, sy1, start_x, last_ink_x + 1)
+            if box is not None:
+                boxes.append(box)
 
     return boxes
 
