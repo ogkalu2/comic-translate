@@ -241,8 +241,7 @@ def _trim_marginal_vertical_noise_from_horizontal_lines(
         if vertical_pixels[index] > main_pixels * 0.35:
             continue
         starts_later = box[1] > main_box[1] + median_height
-        ends_earlier = box[3] < main_box[3] - median_height
-        if not (starts_later or ends_earlier):
+        if not starts_later:
             continue
         marginal_columns.append((side, box))
 
