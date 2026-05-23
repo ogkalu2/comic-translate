@@ -44,9 +44,43 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
     base_score = _score_line_candidate(best_lines, "horizontal", text_mask)
     best_score = base_score
 
-    for angle in range(-36, 37, 3):
-        if angle == 0:
+    # Pass 1: Coarse search on widely separated angles (refined to include minor and extreme skews)
+    coarse_angles = [-33, -24, -15, -6, 6, 15, 24, 33]
+    best_coarse_angle = 0
+    best_coarse_score = -1_000_000.0
+    best_coarse_lines = []
+
+    for angle in coarse_angles:
+        candidate = _filter_noise_lines(_detect_horizontal_lines_at_angle(text_mask, angle), "horizontal")
+        if not candidate:
             continue
+        if len(candidate) > max(len(base_lines) + 2, int(math.ceil(len(base_lines) * 1.6))):
+            continue
+        if not _is_line_like_horizontal_quad_set(candidate):
+            continue
+        score = _score_line_candidate(candidate, "horizontal", text_mask)
+        if score > best_coarse_score:
+            best_coarse_score = score
+            best_coarse_angle = angle
+            best_coarse_lines = candidate
+
+    # If none of the coarse skewed angles significantly improve or match the 0-degree baseline,
+    # we assume the text is perfectly horizontal (no skew) and skip the fine search entirely!
+    if best_coarse_score < base_score - 0.15 and base_score >= 1.4:
+        return best_lines
+
+    # Pass 2: Fine search in the neighborhood of the best coarse angle (or 0 if no angle won)
+    fine_angles = []
+    if best_coarse_angle != 0:
+        fine_angles.extend([best_coarse_angle - 3, best_coarse_angle, best_coarse_angle + 3])
+        fine_angles.extend([-3, 3])
+    else:
+        fine_angles.extend([-3, 3])
+
+    fine_angles = sorted(list(set(fine_angles)))
+    fine_angles = [a for a in fine_angles if -36 <= a <= 36 and a != 0]
+
+    for angle in fine_angles:
         candidate = _filter_noise_lines(_detect_horizontal_lines_at_angle(text_mask, angle), "horizontal")
         if not candidate:
             continue

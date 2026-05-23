@@ -86,7 +86,14 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
             comp_height <= max(3.5 * median_h, 24.0)
         )
 
-        is_character = (is_small_crop_relative or is_small_median_relative) and not is_too_small_noise
+        # Allow horizontally merged text lines (which touch top/bottom edges)
+        # if their height is characteristic of a standard single line.
+        is_merged_horizontal_line = (
+            comp_height <= max(1.8 * median_h, 12.0) and
+            comp_width <= max(8.0 * median_w, width * 0.85, 80.0)
+        )
+
+        is_character = (is_small_crop_relative or is_small_median_relative or is_merged_horizontal_line) and not is_too_small_noise
 
         if not is_character:
             cleaned[labels == label] = False
