@@ -86,8 +86,67 @@ def _detect_lines_and_direction_in_crop(
     else:
         direction = "vertical" if vertical_score > horizontal_score else "horizontal"
 
-    lines = vertical_lines if direction == "vertical" else horizontal_lines
+    mask_was_split = False
+    if direction == "horizontal":
+        from .geometry import _is_polygon_line
+        horizontal_lines = _detect_horizontal_lines_skew_aware(text_mask)
+        has_slanted_lines = any(_is_polygon_line(line) for line in horizontal_lines)
+        if has_slanted_lines:
+            lines = horizontal_lines
+        else:
+            from .mask import _split_mask_by_tall_vertical_columns
+            sub_masks = _split_mask_by_tall_vertical_columns(text_mask)
+            if len(sub_masks) > 1:
+                lines = []
+                for sub_mask in sub_masks:
+                    sub_lines = _detect_horizontal_lines_skew_aware(sub_mask)
+                    sub_lines = [l for l in sub_lines if l != [0, 0, width, height]]
+                    lines.extend(sub_lines)
+                mask_was_split = True
+            else:
+                lines = horizontal_lines
+    else:
+        lines = vertical_lines
+
     if not lines:
         lines = [[0, 0, width, height]]
     lines = _pad_line_boxes(lines, direction, width, height)
+
+    # Filter out wrong-direction noise columns/rows (e.g. vertical noise columns in a horizontal block)
+    if not mask_was_split:
+        try:
+            import imkit as imk
+            from .geometry import _line_axis_box
+            num_labels, labels, stats, _ = imk.connected_components_with_stats(
+                text_mask.astype(np.uint8),
+                connectivity=8,
+            )
+            valid_widths = []
+            valid_heights = []
+            for label in range(1, num_labels):
+                _, _, comp_width, comp_height, area = [int(v) for v in stats[label]]
+                if area >= 8:
+                    valid_widths.append(comp_width)
+                    valid_heights.append(comp_height)
+            median_w = float(np.median(valid_widths)) if valid_widths else 12.0
+            median_h = float(np.median(valid_heights)) if valid_heights else 12.0
+
+            filtered_lines = []
+            for line in lines:
+                x1, y1, x2, y2 = _line_axis_box(line)
+                line_w = max(1, x2 - x1 + 1)
+                line_h = max(1, y2 - y1 + 1)
+                
+                if direction == "horizontal":
+                    if line_h > line_w and line_h > 2.0 * median_h:
+                        continue
+                else:
+                    if line_w > line_h and line_w > 2.0 * median_w:
+                        continue
+                filtered_lines.append(line)
+            if filtered_lines:
+                lines = filtered_lines
+        except Exception as e:
+            print(f"Failed to filter wrong-direction noise lines: {e}")
+
     return lines, direction

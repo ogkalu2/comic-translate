@@ -112,3 +112,183 @@ def _remove_non_text_components(text_mask: np.ndarray) -> np.ndarray:
     if int(cleaned.sum()) < max(8, original_pixels * 0.20):
         return text_mask
     return cleaned
+
+def _filter_vertical_columns_in_horizontal_block(mask: np.ndarray) -> np.ndarray:
+    h, w = mask.shape[:2]
+    x_sum = mask.sum(axis=0)
+    
+    # Gap threshold: very low ink count
+    tolerance_x = max(1, int(h * 0.02))
+    
+    # Find columns (spans in x)
+    columns = []
+    start_x = -1
+    for x in range(w):
+        if int(x_sum[x]) > tolerance_x:
+            if start_x == -1:
+                start_x = x
+        elif start_x != -1:
+            columns.append((start_x, x))
+            start_x = -1
+    if start_x != -1:
+        columns.append((start_x, w))
+        
+    if len(columns) <= 1:
+        return mask
+        
+    column_pixels = []
+    for cx1, cx2 in columns:
+        col_mask = mask[:, cx1:cx2]
+        column_pixels.append(int(col_mask.sum()))
+        
+    # Find the main column (the one with the maximum pixels)
+    max_idx = int(np.argmax(column_pixels))
+    max_pixels = column_pixels[max_idx]
+    
+    # Check if the main column dominates (e.g. contains >= 70% of the total pixels)
+    total_pixels = sum(column_pixels)
+    if max_pixels >= total_pixels * 0.70:
+        filtered_mask = mask.copy()
+        cx1, cx2 = columns[max_idx]
+        filtered_mask[:, :cx1] = False
+        filtered_mask[:, cx2:] = False
+        return filtered_mask
+        
+    return mask
+
+def _check_alignment(lines_a, lines_b):
+    from .geometry import _line_axis_box
+    aligned_count = 0
+    for la in lines_a:
+        lax1, lay1, lax2, lay2 = _line_axis_box(la)
+        la_h = lay2 - lay1 + 1
+        
+        best_overlap = 0
+        best_lb_h = 1
+        for lb in lines_b:
+            lbx1, lby1, lbx2, lby2 = _line_axis_box(lb)
+            lb_h = lby2 - lby1 + 1
+            
+            y_int1 = max(lay1, lby1)
+            y_int2 = min(lay2, lby2)
+            overlap = max(0, y_int2 - y_int1 + 1)
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_lb_h = lb_h
+                
+        if best_overlap > 0:
+            max_h = max(la_h, best_lb_h)
+            if best_overlap >= 0.50 * max_h:
+                aligned_count += 1
+                
+    return aligned_count
+
+def _split_mask_by_tall_vertical_columns(mask: np.ndarray) -> list[np.ndarray]:
+    h, w = mask.shape[:2]
+    x_sum = mask.sum(axis=0)
+    tolerance_x = max(1, int(h * 0.02))
+    
+    # 1. Find vertical columns
+    raw_columns = []
+    start_x = -1
+    for x in range(w):
+        if int(x_sum[x]) > tolerance_x:
+            if start_x == -1:
+                start_x = x
+        elif start_x != -1:
+            raw_columns.append((start_x, x))
+            start_x = -1
+    if start_x != -1:
+        raw_columns.append((start_x, w))
+        
+    # 2. Filter out extremely minor columns (noise)
+    columns = []
+    min_pixels = max(12, int(mask.sum() * 0.005))
+    for cx1, cx2 in raw_columns:
+        col_mask = mask[:, cx1:cx2]
+        if col_mask.sum() >= min_pixels:
+            columns.append((cx1, cx2))
+            
+    if len(columns) <= 1:
+        return [mask]
+        
+    column_pixels = [int(mask[:, cx1:cx2].sum()) for cx1, cx2 in columns]
+    total_pixels = sum(column_pixels)
+    if total_pixels == 0:
+        return [mask]
+        
+    max_idx = int(np.argmax(column_pixels))
+    max_pixels = column_pixels[max_idx]
+    max_ratio = max_pixels / total_pixels
+    
+    # Check if there is a dominant column containing >= 60% of the pixels
+    if max_ratio < 0.60:
+        return [mask]
+        
+    # 3. Compute median component height
+    num_labels, labels, stats, _ = imk.connected_components_with_stats(
+        mask.astype(np.uint8),
+        connectivity=8,
+    )
+    valid_heights = []
+    for label in range(1, num_labels):
+        _, _, _, comp_height, area = [int(v) for v in stats[label]]
+        if area >= 8:
+            valid_heights.append(comp_height)
+    median_h = float(np.median(valid_heights)) if valid_heights else 12.0
+    
+    # 4. Check if we have at least one tall non-dominant column
+    has_tall_non_dominant = False
+    target_non_dominant_idxs = []
+    for idx, (cx1, cx2) in enumerate(columns):
+        if idx == max_idx:
+            continue
+        col_ratio = column_pixels[idx] / total_pixels
+        if col_ratio >= 0.05:  # must have at least 5% of the ink
+            col_mask = mask[:, cx1:cx2]
+            ys, _ = np.where(col_mask)
+            if ys.size > 0:
+                col_height = int(ys.max() - ys.min() + 1)
+                if col_height >= 2.5 * median_h:
+                    has_tall_non_dominant = True
+                    target_non_dominant_idxs.append(idx)
+                    
+    if not has_tall_non_dominant:
+        return [mask]
+        
+    # 5. Check Y-alignment of lines in non-dominant columns vs dominant column
+    from modules.detection.heuristic_lines.skew import _detect_horizontal_lines_skew_aware
+    dom_cx1, dom_cx2 = columns[max_idx]
+    dom_mask = np.zeros_like(mask)
+    dom_mask[:, dom_cx1:dom_cx2] = mask[:, dom_cx1:dom_cx2]
+    dom_lines = _detect_horizontal_lines_skew_aware(dom_mask)
+    dom_lines = [l for l in dom_lines if l != [0, 0, w, h]]
+    
+    should_split = True
+    for idx in target_non_dominant_idxs:
+        cx1, cx2 = columns[idx]
+        sub_mask = np.zeros_like(mask)
+        sub_mask[:, cx1:cx2] = mask[:, cx1:cx2]
+        sub_lines = _detect_horizontal_lines_skew_aware(sub_mask)
+        sub_lines = [l for l in sub_lines if l != [0, 0, w, h]]
+        
+        if not sub_lines:
+            continue
+            
+        aligned_count = _check_alignment(sub_lines, dom_lines)
+        if aligned_count >= 0.50 * len(sub_lines):
+            should_split = False
+            break
+            
+    if not should_split:
+        return [mask]
+        
+    # 6. Split the mask into sub-masks
+    sub_masks = []
+    for cx1, cx2 in columns:
+        sub_mask = np.zeros_like(mask)
+        sub_mask[:, cx1:cx2] = mask[:, cx1:cx2]
+        sub_masks.append(sub_mask)
+    return sub_masks
+
+
