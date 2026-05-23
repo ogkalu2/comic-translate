@@ -5,6 +5,7 @@ from modules.utils.textblock import TextBlock, adjust_text_line_coordinates
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.language_utils import is_no_space_lang
 from .pororo.models.brainOCR.utils import reformat_input
+from modules.ocr.ppocr.preprocessing import crop_quad
 
 
 class PororoOCREngine(OCREngine):
@@ -104,11 +105,7 @@ def _set_reader_recognition_defaults(opt2val: dict) -> None:
 def _crop_line_grey(img_cv_grey: np.ndarray, line) -> np.ndarray | None:
     arr = np.asarray(line)
     if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
-        pts = arr.astype(np.float32)
-        x1 = int(np.floor(pts[:, 0].min()))
-        y1 = int(np.floor(pts[:, 1].min()))
-        x2 = int(np.ceil(pts[:, 0].max()))
-        y2 = int(np.ceil(pts[:, 1].max()))
+        return crop_quad(img_cv_grey, arr[:4].astype(np.float32))
     elif arr.size == 4:
         x1, y1, x2, y2 = [int(round(float(v))) for v in arr.reshape(-1)[:4]]
     else:

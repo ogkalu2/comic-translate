@@ -206,13 +206,16 @@ def visualize_textblocks(canvas, blk_list: List[TextBlock]):
         # Draw line numbers and polygons (simplified)
         for j, line in enumerate(blk.lines):
             if len(line) > 0:
-                draw.text(line[0], str(j), fill=(255, 127, 0))
-                # Draw polygon outline (simplified as lines between points)
-                if len(line) > 1:
-                    for k in range(len(line)):
-                        start_point = tuple(line[k])
-                        end_point = tuple(line[(k + 1) % len(line)])
-                        draw.line([start_point, end_point], fill=(0, 127, 255), width=2)
+                arr = np.asarray(line)
+                if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
+                    points = [tuple(map(int, point)) for point in arr[:4]]
+                    draw.text(points[0], str(j), fill=(255, 127, 0))
+                    for k in range(len(points)):
+                        draw.line([points[k], points[(k + 1) % len(points)]], fill=(0, 127, 255), width=2)
+                elif arr.size >= 4:
+                    x1, y1, x2, y2 = [int(v) for v in arr.reshape(-1)[:4]]
+                    draw.text((x1, y1), str(j), fill=(255, 127, 0))
+                    draw.rectangle([x1, y1, x2, y2], outline=(0, 127, 255), width=2)
         
         # Draw block index
         draw.text((bx1, by1 + lw), str(i), fill=(255, 127, 127))
