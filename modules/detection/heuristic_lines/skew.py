@@ -63,6 +63,13 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
             and not _has_reasonable_reduced_skew_thickness(base_lines, candidate)
         ):
             continue
+        if (
+            len(base_lines) >= 2
+            and len(candidate) < len(base_lines)
+            and _looks_like_distinct_horizontal_rows(base_lines)
+            and score < base_score + 0.12
+        ):
+            continue
         angle_bonus = min(0.12, abs(angle) * 0.006)
         line_count_penalty = 0.04 * max(0, len(candidate) - len(base_lines))
         adjusted_score = score + angle_bonus - line_count_penalty
@@ -172,3 +179,17 @@ def _has_reasonable_reduced_skew_thickness(base_lines: list[list[int]], candidat
         candidate_heights.append(max(1.0, float(np.linalg.norm(points[3] - points[0]))))
 
     return bool(candidate_heights) and max(candidate_heights) <= median_base_height * 2.6
+
+def _looks_like_distinct_horizontal_rows(lines: list[list[int]]) -> bool:
+    boxes = [_line_axis_box(line) for line in lines]
+    if len(boxes) < 2:
+        return False
+
+    heights = np.array([max(1, box[3] - box[1] + 1) for box in boxes], dtype=float)
+    centers_y = np.array(sorted((box[1] + box[3]) / 2.0 for box in boxes), dtype=float)
+    if centers_y.size < 2:
+        return False
+
+    median_height = float(np.median(heights))
+    median_gap = float(np.median(np.diff(centers_y)))
+    return median_gap >= max(8.0, median_height * 1.20)

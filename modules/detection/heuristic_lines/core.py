@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from modules.utils.textblock import TextBlock
-from .geometry import _clamp_box, _expand_box, _to_box, _offset_line, _pad_line_boxes, _union_box
+from .geometry import _clamp_box, _expand_box, _to_box, _offset_line, _pad_line_boxes, _union_box, _line_axis_box
 from .mask import _prepare_text_mask
 from .direction import _fallback_direction, _sort_lines
 from .skew import _detect_horizontal_lines_skew_aware
@@ -69,6 +69,7 @@ def _detect_lines_and_direction_in_crop(
     from .skew import _filter_noise_lines
     horizontal_lines = _detect_horizontal_lines_skew_aware(text_mask)
     vertical_lines = _filter_noise_lines(_detect_lines_from_mask(text_mask, "vertical"), "vertical")
+    component_vertical_lines = _detect_sparse_vertical_component_columns(text_mask)
 
     horizontal_score = _score_line_candidate(horizontal_lines, "horizontal", text_mask)
     vertical_score = _score_line_candidate(vertical_lines, "vertical", text_mask)
@@ -111,6 +112,8 @@ def _detect_lines_and_direction_in_crop(
                 lines = horizontal_lines
         lines = _trim_marginal_vertical_noise_from_horizontal_lines(lines, text_mask, vertical_lines)
     else:
+        if _should_use_component_vertical_columns(text_mask, vertical_lines, component_vertical_lines):
+            vertical_lines = component_vertical_lines
         lines = vertical_lines
 
     if not lines:
@@ -155,3 +158,30 @@ def _detect_lines_and_direction_in_crop(
             print(f"Failed to filter wrong-direction noise lines: {e}")
 
     return lines, direction
+
+def _should_use_component_vertical_columns(
+    text_mask: np.ndarray,
+    vertical_lines: list[list[int]],
+    component_vertical_lines: list[list[int]],
+) -> bool:
+    if len(vertical_lines) > 2:
+        return False
+    if len(component_vertical_lines) <= len(vertical_lines) or len(component_vertical_lines) > 4:
+        return False
+
+    height, width = text_mask.shape[:2]
+    raw_boxes = [_line_axis_box(line) for line in vertical_lines]
+    component_boxes = [_line_axis_box(line) for line in component_vertical_lines]
+
+    has_merged_raw_column = any((box[2] - box[0] + 1) >= width * 0.45 for box in raw_boxes)
+    if not has_merged_raw_column:
+        return False
+
+    verticalish_components = 0
+    for box in component_boxes:
+        box_width = max(1, box[2] - box[0] + 1)
+        box_height = max(1, box[3] - box[1] + 1)
+        if box_height >= max(height * 0.25, box_width * 1.8):
+            verticalish_components += 1
+
+    return verticalish_components >= max(2, len(component_boxes) - 1)

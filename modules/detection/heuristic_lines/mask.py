@@ -92,9 +92,29 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
             cleaned[labels == label] = False
             removed_labels.append(label)
 
-    if int(cleaned.sum()) < max(8, original_pixels * 0.25):
+    if int(cleaned.sum()) < max(8, original_pixels * 0.25) and not _has_enough_text_after_edge_cleanup(cleaned):
         return text_mask
     return _restore_leading_text_from_edge_components(text_mask, cleaned, labels, removed_labels, median_w, median_h)
+
+def _has_enough_text_after_edge_cleanup(cleaned_mask: np.ndarray) -> bool:
+    remaining_pixels = int(cleaned_mask.sum())
+    if remaining_pixels < 200:
+        return False
+
+    num_labels, _, stats, _ = imk.connected_components_with_stats(
+        cleaned_mask.astype(np.uint8),
+        connectivity=8,
+    )
+    text_like_components = 0
+    for label in range(1, num_labels):
+        _, _, comp_width, comp_height, area = [int(v) for v in stats[label]]
+        if area < 8:
+            continue
+        if comp_width < 2 or comp_height < 2:
+            continue
+        text_like_components += 1
+
+    return text_like_components >= 4
 
 def _restore_leading_text_from_edge_components(
     original_mask: np.ndarray,
@@ -296,6 +316,7 @@ def _check_alignment(lines_a, lines_b):
         
         best_overlap = 0
         best_lb_h = 1
+        best_lb_center_y = None
         for lb in lines_b:
             lbx1, lby1, lbx2, lby2 = _line_axis_box(lb)
             lb_h = lby2 - lby1 + 1
@@ -306,11 +327,29 @@ def _check_alignment(lines_a, lines_b):
             if overlap > best_overlap:
                 best_overlap = overlap
                 best_lb_h = lb_h
+                best_lb_center_y = (lby1 + lby2) / 2.0
                 
         if best_overlap > 0:
             max_h = max(la_h, best_lb_h)
             if best_overlap >= 0.50 * max_h:
                 aligned_count += 1
+                continue
+
+        if best_lb_center_y is None:
+            for lb in lines_b:
+                _, lby1, _, lby2 = _line_axis_box(lb)
+                lb_center_y = (lby1 + lby2) / 2.0
+                center_distance = abs((lay1 + lay2) / 2.0 - lb_center_y)
+                if best_lb_center_y is None or center_distance < abs((lay1 + lay2) / 2.0 - best_lb_center_y):
+                    best_lb_center_y = lb_center_y
+                    best_lb_h = lby2 - lby1 + 1
+        if best_lb_center_y is None:
+            continue
+
+        la_center_y = (lay1 + lay2) / 2.0
+        max_h = max(la_h, best_lb_h)
+        if abs(la_center_y - best_lb_center_y) <= max(4.0, max_h * 0.45):
+            aligned_count += 1
                 
     return aligned_count
 
