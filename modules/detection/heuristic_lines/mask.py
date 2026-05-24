@@ -8,6 +8,12 @@ def _prepare_text_mask(image: np.ndarray) -> np.ndarray | None:
         return None
     return _remove_non_text_components(_remove_edge_components(text_mask))
 
+def _prepare_inverse_text_mask(image: np.ndarray) -> np.ndarray | None:
+    text_mask = _inverse_text_mask(image)
+    if text_mask is None:
+        return None
+    return _remove_non_text_components(_remove_edge_components(text_mask))
+
 def _text_mask(image: np.ndarray) -> np.ndarray | None:
     if image is None or image.size == 0:
         return None
@@ -17,6 +23,16 @@ def _text_mask(image: np.ndarray) -> np.ndarray | None:
     fg_pixels = int(histogram[: int(threshold)].sum())
     bg_is_light = fg_pixels < (gray.size * 0.5)
     return gray <= threshold if bg_is_light else gray >= threshold
+
+def _inverse_text_mask(image: np.ndarray) -> np.ndarray | None:
+    if image is None or image.size == 0:
+        return None
+    gray = imk.to_gray(image)
+    threshold, _ = imk.otsu_threshold(gray)
+    histogram = np.bincount(gray.reshape(-1), minlength=256)
+    fg_pixels = int(histogram[: int(threshold)].sum())
+    bg_is_light = fg_pixels < (gray.size * 0.5)
+    return gray >= threshold if bg_is_light else gray <= threshold
 
 def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
     num_labels, labels, stats, _ = imk.connected_components_with_stats(

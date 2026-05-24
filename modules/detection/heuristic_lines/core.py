@@ -4,7 +4,7 @@ import numpy as np
 
 from modules.utils.textblock import TextBlock
 from .geometry import _clamp_box, _expand_box, _to_box, _offset_line, _pad_line_boxes, _union_box, _line_axis_box
-from .mask import _prepare_text_mask
+from .mask import _prepare_inverse_text_mask, _prepare_text_mask
 from .direction import _fallback_direction, _sort_lines
 from .skew import _detect_horizontal_lines_skew_aware
 from .clustering import _detect_lines_from_mask, _trim_marginal_vertical_noise_from_horizontal_lines
@@ -112,6 +112,7 @@ def _detect_lines_and_direction_in_crop(
                 lines = horizontal_lines
         lines = _trim_marginal_vertical_noise_from_horizontal_lines(lines, text_mask, vertical_lines)
         lines = _collapse_edge_spanning_horizontal_fragments(lines, text_mask, vertical_lines)
+        lines, text_mask = _replace_low_density_line_with_inverse_mask(image, lines, text_mask)
     else:
         if _should_use_component_vertical_columns(text_mask, vertical_lines, component_vertical_lines):
             vertical_lines = component_vertical_lines
@@ -176,7 +177,7 @@ def _collapse_edge_spanning_horizontal_fragments(
 
     boxes = [_line_axis_box(line) for line in lines]
     edge_margin = max(2, int(round(height * 0.04)))
-    min_edge_width = max(12, int(round(width * 0.35)))
+    min_edge_width = max(12, int(round(width * 0.25)))
 
     def is_wide_top_edge(box: list[int]) -> bool:
         return box[1] <= edge_margin and (box[2] - box[0] + 1) >= min_edge_width
@@ -199,6 +200,61 @@ def _collapse_edge_spanning_horizontal_fragments(
         return lines
 
     return [union]
+
+def _replace_low_density_line_with_inverse_mask(
+    image: np.ndarray,
+    lines: list[list[int]],
+    text_mask: np.ndarray,
+) -> tuple[list[list[int]], np.ndarray]:
+    if len(lines) != 1:
+        return lines, text_mask
+
+    height, width = text_mask.shape[:2]
+    box = _line_axis_box(lines[0])
+    line_width = max(1, box[2] - box[0] + 1)
+    line_height = max(1, box[3] - box[1] + 1)
+    if line_width < width * 0.65 or line_height < height * 0.65:
+        return lines, text_mask
+
+    current_density = _line_box_density(text_mask, box)
+    if current_density >= 0.08:
+        return lines, text_mask
+
+    inverse_mask = _prepare_inverse_text_mask(image)
+    if inverse_mask is None or not bool(inverse_mask.any()):
+        return lines, text_mask
+
+    inverse_lines = _detect_horizontal_lines_skew_aware(inverse_mask)
+    from .skew import _filter_noise_lines
+    inverse_vertical_lines = _filter_noise_lines(_detect_lines_from_mask(inverse_mask, "vertical"), "vertical")
+    inverse_lines = _trim_marginal_vertical_noise_from_horizontal_lines(
+        inverse_lines,
+        inverse_mask,
+        inverse_vertical_lines,
+    )
+    if len(inverse_lines) != 1:
+        return lines, text_mask
+
+    inverse_box = _line_axis_box(inverse_lines[0])
+    inverse_height = max(1, inverse_box[3] - inverse_box[1] + 1)
+    inverse_density = _line_box_density(inverse_mask, inverse_box)
+    if inverse_height >= line_height * 0.80:
+        return lines, text_mask
+    if inverse_density < max(0.12, current_density * 2.0):
+        return lines, text_mask
+
+    return inverse_lines, inverse_mask
+
+def _line_box_density(text_mask: np.ndarray, box: list[int]) -> float:
+    height, width = text_mask.shape[:2]
+    x1 = max(0, min(width - 1, int(box[0])))
+    y1 = max(0, min(height - 1, int(box[1])))
+    x2 = max(0, min(width - 1, int(box[2])))
+    y2 = max(0, min(height - 1, int(box[3])))
+    if x2 < x1 or y2 < y1:
+        return 0.0
+    area = max(1, (x2 - x1 + 1) * (y2 - y1 + 1))
+    return float(text_mask[y1 : y2 + 1, x1 : x2 + 1].sum()) / float(area)
 
 def _should_use_component_vertical_columns(
     text_mask: np.ndarray,
