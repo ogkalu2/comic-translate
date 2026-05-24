@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
 from modules.utils.device import resolve_device
 from modules.utils.pipeline_config import inpaint_map, get_config, get_inpainter_backend
+from pipeline.inpainting_boxes import merge_overlapping_padded_boxes
 
 logger = logging.getLogger(__name__)
 
@@ -133,41 +134,11 @@ class InpaintingHandler:
         if not contours:
             return inpainted_image
 
-        # 1. Extract bounding boxes
+        # 1. Extract and merge bounding boxes
         boxes = [imk.bounding_rect(c) for c in contours]
-        
-        # 2. Merge overlapping boxes with padding
-        pad = 32
-        merged_boxes = []
-        for x, y, w, h in boxes:
-            x1 = max(0, x - pad)
-            y1 = max(0, y - pad)
-            x2 = min(image.shape[1], x + w + pad)
-            y2 = min(image.shape[0], y + h + pad)
-            
-            merged = False
-            for i, (mx1, my1, mx2, my2) in enumerate(merged_boxes):
-                if not (x2 < mx1 or x1 > mx2 or y2 < my1 or y1 > my2):
-                    merged_boxes[i] = (min(x1, mx1), min(y1, my1), max(x2, mx2), max(y2, my2))
-                    merged = True
-                    break
-            if not merged:
-                merged_boxes.append((x1, y1, x2, y2))
-                
-        # Repeat until no more merges are possible
-        changed = True
-        while changed:
-            changed = False
-            for i in range(len(merged_boxes)):
-                for j in range(len(merged_boxes)-1, i, -1):
-                    mx1, my1, mx2, my2 = merged_boxes[i]
-                    nx1, ny1, nx2, ny2 = merged_boxes[j]
-                    if not (mx2 < nx1 or mx1 > nx2 or my2 < ny1 or my1 > ny2):
-                        merged_boxes[i] = (min(mx1, nx1), min(my1, ny1), max(mx2, nx2), max(y2, ny2))
-                        merged_boxes.pop(j)
-                        changed = True
+        merged_boxes = merge_overlapping_padded_boxes(boxes, image.shape)
 
-        # 3. Patch inference
+        # 2. Patch inference
         for x1, y1, x2, y2 in merged_boxes:
             img_patch = image[y1:y2, x1:x2]
             mask_patch = mask[y1:y2, x1:x2]
