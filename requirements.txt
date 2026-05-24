@@ -2,7 +2,7 @@ mahotas>=1.4.18
 pillow>=11.3.0
 numpy>=2.2.6
 setuptools
-PySide6>=6.8.0
+pyside6-essentials>=6.8.0
 msgpack>=1.1.0
 requests>=2.31.0
 pdfplumber>=0.11.5
