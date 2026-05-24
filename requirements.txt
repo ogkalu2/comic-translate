@@ -5,10 +5,9 @@ setuptools
 pyside6-essentials>=6.8.0
 msgpack>=1.1.0
 requests>=2.31.0
-pdfplumber>=0.11.5
 py7zr>=0.20.8
 rarfile>=4.1
-img2pdf>=0.5.1
+pypdfium2>=5.8.0
 keyring>=25.7.0
 jaconv>=0.3.4
 wget>=3.2

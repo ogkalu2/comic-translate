@@ -16,7 +16,7 @@ _PDF_CACHE: dict[str, dict] = {}
 
 
 def close_pdf_cache(file_path: str | None = None) -> None:
-    """Close cached pdfplumber objects to free memory.
+    """Close cached PDF objects to free memory.
 
     If *file_path* is given, only that entry is evicted; otherwise the entire
     cache is cleared.
@@ -76,7 +76,7 @@ def _safe_ext(path: str, default: str = ".png") -> str:
 
 
 def _get_cached_pdf(file_path: str):
-    import pdfplumber
+    import pypdfium2 as pdfium
 
     abs_path = os.path.abspath(file_path)
     stat = os.stat(abs_path)
@@ -94,7 +94,7 @@ def _get_cached_pdf(file_path: str):
             except Exception:
                 pass
 
-        pdf = pdfplumber.open(abs_path)
+        pdf = pdfium.PdfDocument(abs_path)
         page_lock = threading.RLock()
         _PDF_CACHE[abs_path] = {
             "pdf": pdf,
@@ -154,7 +154,7 @@ def list_archive_image_entries(file_path: str) -> list[dict]:
     elif file_lower.endswith('.pdf'):
         pdf, page_lock = _get_cached_pdf(file_path)
         with page_lock:
-            total_pages = len(pdf.pages)
+            total_pages = len(pdf)
         for page_idx in range(total_pages):
             entries.append({
                 "kind": "pdf_page",
@@ -235,9 +235,9 @@ def materialize_archive_entries(file_path: str, items: list[tuple[dict, str]]) -
         with page_lock:
             for entry, output_path in items:
                 page_index = int(entry.get("page_index", -1))
-                if page_index < 0 or page_index >= len(pdf.pages):
+                if page_index < 0 or page_index >= len(pdf):
                     continue
-                if _materialize_pdf_page_from_page(pdf.pages[page_index], output_path):
+                if _materialize_pdf_page(pdf, page_index, output_path):
                     completed += 1
         return completed
 
@@ -332,28 +332,40 @@ def materialize_archive_entries(file_path: str, items: list[tuple[dict, str]]) -
     return completed
 
 
-def _materialize_pdf_page(file_path: str, page_index: int, output_path: str) -> bool:
+def _materialize_pdf_page(file_or_pdf, page_index: int, output_path: str) -> bool:
     out_dir = os.path.dirname(output_path)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
-    pdf, page_lock = _get_cached_pdf(file_path)
-    with page_lock:
-        if page_index < 0 or page_index >= len(pdf.pages):
-            return False
-        return _materialize_pdf_page_from_page(pdf.pages[page_index], output_path)
+    if isinstance(file_or_pdf, str):
+        pdf, page_lock = _get_cached_pdf(file_or_pdf)
+        with page_lock:
+            if page_index < 0 or page_index >= len(pdf):
+                return False
+            return _materialize_pdf_page_from_doc(pdf, page_index, output_path)
+
+    pdf = file_or_pdf
+    if page_index < 0 or page_index >= len(pdf):
+        return False
+    return _materialize_pdf_page_from_doc(pdf, page_index, output_path)
 
 
-def _materialize_pdf_page_from_page(page, output_path: str) -> bool:
+def _materialize_pdf_page_from_doc(pdf, page_index: int, output_path: str) -> bool:
+    import pypdfium2 as pdfium
+
     out_dir = os.path.dirname(output_path)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
-    if page.images:
+    page = pdf[page_index]
+    try:
         try:
-            img = page.images[0]
-            if "stream" in img:
-                image_bytes = img["stream"].get_data()
+            image_obj = next(
+                (obj for obj in page.get_objects() if isinstance(obj, pdfium.PdfImage)),
+                None,
+            )
+            if image_obj is not None:
+                image_bytes = image_obj.get_data()
                 try:
                     with Image.open(io.BytesIO(image_bytes)):
                         pass
@@ -365,12 +377,14 @@ def _materialize_pdf_page_from_page(page, output_path: str) -> bool:
         except Exception:
             pass
 
-    try:
-        page_img = page.to_image()
-        page_img.save(output_path)
-        return True
-    except Exception:
-        return False
+        try:
+            page_img = page.render(scale=1).to_pil()
+            page_img.save(output_path)
+            return True
+        except Exception:
+            return False
+    finally:
+        page.close()
 
 def extract_archive(file_path: str, extract_to: str):
     image_paths = []
@@ -412,7 +426,7 @@ def make_cb7(input_dir, output_path="", output_dir="", output_base_name=""):
                     archive.write(file_path, arcname=os.path.relpath(file_path, input_dir))
 
 def make_pdf(input_dir, output_path="", output_dir="", output_base_name=""):
-    import img2pdf
+    import pypdfium2 as pdfium
     
     if not output_path:
         output_path = os.path.join(output_dir, f"{output_base_name}_translated.pdf")
@@ -424,9 +438,34 @@ def make_pdf(input_dir, output_path="", output_dir="", output_base_name=""):
                 image_paths.append(os.path.join(root, file))
     
     sorted_paths = sorted(image_paths, key=lambda p: natural_sort_key(os.path.basename(p)))
-    
-    with open(output_path, "wb") as f:
-        f.write(img2pdf.convert(sorted_paths))
+
+    pdf = pdfium.PdfDocument.new()
+    try:
+        for image_path in sorted_paths:
+            image_obj = pdfium.PdfImage.new(pdf)
+            if image_path.lower().endswith((".jpg", ".jpeg")):
+                image_obj.load_jpeg(image_path)
+            else:
+                with Image.open(image_path) as pil_image:
+                    bitmap = pdfium.PdfBitmap.from_pil(pil_image)
+                try:
+                    image_obj.set_bitmap(bitmap)
+                finally:
+                    bitmap.close()
+
+            width, height = image_obj.get_px_size()
+            image_obj.set_matrix(pdfium.PdfMatrix().scale(width, height))
+            page = pdf.new_page(width, height)
+            try:
+                page.insert_obj(image_obj)
+                page.gen_content()
+            finally:
+                image_obj.close()
+                page.close()
+
+        pdf.save(output_path)
+    finally:
+        pdf.close()
 
 def make(input_dir, output_path="", save_as_ext="", output_dir="", output_base_name=""):
     if not output_path and (not output_dir or not output_base_name):
