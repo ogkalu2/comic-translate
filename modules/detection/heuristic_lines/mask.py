@@ -222,6 +222,8 @@ def _remove_long_edge_strokes(mask: np.ndarray, band_y1: int, band_y2: int) -> n
     col_sum = cleaned.sum(axis=0)
     cleaned[row_sum >= max(20, int(active_width * 0.30)), :] = False
     cleaned[:, col_sum >= max(30, int(band_height * 1.25))] = False
+    if int(cleaned.sum()) < max(8, int(mask.sum() * 0.20)):
+        return mask
     return cleaned
 
 def _leading_text_candidate(
