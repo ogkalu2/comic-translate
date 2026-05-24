@@ -60,7 +60,7 @@ def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[
 def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
     h, w = region.shape[:2]
     if h < 36:
-        return []
+        return _find_compact_horizontal_valley_splits(region)
 
     y_sum = region.sum(axis=1)
     max_peak = int(y_sum.max())
@@ -100,6 +100,50 @@ def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
             else:
                 near_zero_streak = 0
         if near_zero_streak < 2 and not _is_soft_horizontal_valley(y_sum, run, max_peak, w):
+            continue
+
+        min_y = run[0]
+        min_val = float(y_sum[min_y])
+        for y in run:
+            val = float(y_sum[y])
+            if val < min_val:
+                min_val = val
+                min_y = y
+        splits.append(min_y)
+
+    return splits
+
+def _find_compact_horizontal_valley_splits(region: np.ndarray) -> list[int]:
+    h, w = region.shape[:2]
+    if h < 10:
+        return []
+
+    y_sum = region.sum(axis=1)
+    max_peak = int(y_sum.max())
+    if max_peak < max(12, int(round(w * 0.18))):
+        return []
+
+    valley_thresh = max(1.0, min(3.0, 0.10 * max_peak))
+    valley_runs: list[list[int]] = []
+    current_run: list[int] = []
+    for y in range(h):
+        if float(y_sum[y]) <= valley_thresh:
+            current_run.append(y)
+        else:
+            if current_run:
+                valley_runs.append(current_run)
+                current_run = []
+    if current_run:
+        valley_runs.append(current_run)
+
+    splits: list[int] = []
+    for run in valley_runs:
+        if len(run) < 2 or run[0] <= 1 or run[-1] >= h - 2:
+            continue
+
+        left_peak = float(y_sum[: run[0]].max()) if run[0] > 0 else 0.0
+        right_peak = float(y_sum[run[-1] + 1 :].max()) if run[-1] + 1 < y_sum.size else 0.0
+        if min(left_peak, right_peak) < max(10.0, 0.35 * max_peak):
             continue
 
         min_y = run[0]
