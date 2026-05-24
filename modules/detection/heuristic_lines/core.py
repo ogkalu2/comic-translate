@@ -213,10 +213,18 @@ def _replace_low_density_line_with_inverse_mask(
     box = _line_axis_box(lines[0])
     line_width = max(1, box[2] - box[0] + 1)
     line_height = max(1, box[3] - box[1] + 1)
+    current_density = _line_box_density(text_mask, box)
+
+    if line_width >= width * 0.55 and line_height >= height * 0.60 and current_density < 0.08:
+        inverse_mask = _prepare_inverse_text_mask(image)
+        if inverse_mask is not None and bool(inverse_mask.any()):
+            expanded_title_line = _large_inverse_component_title_line(inverse_mask, box)
+            if expanded_title_line is not None:
+                return [expanded_title_line], inverse_mask
+
     if line_width < width * 0.65 or line_height < height * 0.65:
         return lines, text_mask
 
-    current_density = _line_box_density(text_mask, box)
     if current_density >= 0.08:
         return lines, text_mask
 
@@ -244,6 +252,56 @@ def _replace_low_density_line_with_inverse_mask(
         return lines, text_mask
 
     return inverse_lines, inverse_mask
+
+def _large_inverse_component_title_line(inverse_mask: np.ndarray, current_box: list[int]) -> list[int] | None:
+    import imkit as imk
+
+    height, width = inverse_mask.shape[:2]
+    num_labels, _, stats, _ = imk.connected_components_with_stats(
+        inverse_mask.astype(np.uint8),
+        connectivity=8,
+    )
+    if num_labels <= 1:
+        return None
+
+    min_area = max(900, int(round(inverse_mask.size * 0.0018)))
+    min_width = max(35, int(round(width * 0.025)))
+    min_height = max(35, int(round(height * 0.10)))
+    selected: list[list[int]] = []
+    for label in range(1, num_labels):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+        if area < min_area:
+            continue
+        if comp_width < min_width and comp_height < min_height:
+            continue
+
+        x2 = x1 + comp_width - 1
+        y2 = y1 + comp_height - 1
+        density = area / max(1, comp_width * comp_height)
+
+        # Top-edge hatching can survive inverse cleanup in title banners.
+        if y1 <= int(round(height * 0.06)) and comp_height >= int(round(height * 0.28)) and density < 0.36:
+            continue
+        selected.append([x1, y1, x2, y2])
+
+    if len(selected) < 4:
+        return None
+
+    union = _union_box(selected)
+    if union is None:
+        return None
+
+    union_width = max(1, union[2] - union[0] + 1)
+    union_height = max(1, union[3] - union[1] + 1)
+    current_width = max(1, current_box[2] - current_box[0] + 1)
+    if union_width < max(width * 0.55, current_width * 1.15):
+        return None
+    if union_height < height * 0.35:
+        return None
+    if union[1] <= 4 and union[3] >= height - 5:
+        return None
+
+    return union
 
 def _line_box_density(text_mask: np.ndarray, box: list[int]) -> float:
     height, width = text_mask.shape[:2]

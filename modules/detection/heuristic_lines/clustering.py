@@ -308,10 +308,11 @@ def _split_tall_horizontal_span(region: np.ndarray, offset_x: int, offset_y: int
     if sum(1 for row in rows if len(row) >= 3) < 2:
         return None
 
+    row_bands = _component_row_bands(rows, region.shape[0])
     local_boxes: list[list[int]] = []
-    for row in rows:
+    for row, (band_y1, band_y2) in zip(rows, row_bands):
         for group in _split_component_row_by_x(row, region.shape[1], median_height):
-            box = _components_to_box(group)
+            box = _components_to_band_box(group, region, band_y1, band_y2)
             if box is not None:
                 local_boxes.append(box)
 
@@ -320,6 +321,21 @@ def _split_tall_horizontal_span(region: np.ndarray, offset_x: int, offset_y: int
         return None
 
     return [[box[0] + offset_x, box[1] + offset_y, box[2] + offset_x, box[3] + offset_y] for box in local_boxes]
+
+def _component_row_bands(rows: list[list[dict[str, float]]], region_height: int) -> list[tuple[int, int]]:
+    if not rows:
+        return []
+    if len(rows) == 1:
+        return [(0, region_height)]
+
+    centers = [float(np.mean([component["cy"] for component in row])) for row in rows]
+    boundaries = [0]
+    for index in range(len(rows) - 1):
+        boundary = int(round((centers[index] + centers[index + 1]) / 2.0))
+        boundary = max(boundaries[-1] + 1, min(region_height - 1, boundary))
+        boundaries.append(boundary)
+    boundaries.append(region_height)
+    return [(boundaries[index], boundaries[index + 1]) for index in range(len(boundaries) - 1)]
 
 def _component_boxes(region: np.ndarray) -> list[dict[str, float]]:
     num_labels, _, stats, centroids = imk.connected_components_with_stats(
@@ -382,12 +398,38 @@ def _split_component_row_by_x(
     gap_limit = max(12.0, median_height * 0.85)
     for component in row[1:]:
         gap = component["x1"] - current_max_x - 1
-        if gap > gap_limit:
+        if gap > gap_limit and not _is_trailing_punctuation_component(groups[-1], component, gap, median_height):
             groups.append([component])
         else:
             groups[-1].append(component)
         current_max_x = max(current_max_x, component["x2"])
     return groups
+
+def _is_trailing_punctuation_component(
+    previous_group: list[dict[str, float]],
+    component: dict[str, float],
+    gap: float,
+    median_height: float,
+) -> bool:
+    previous_box = _components_to_box(previous_group)
+    if previous_box is None:
+        return False
+
+    previous_width = max(1, previous_box[2] - previous_box[0] + 1)
+    component_width = max(1.0, component["width"])
+    component_height = max(1.0, component["height"])
+    previous_center_y = (previous_box[1] + previous_box[3]) / 2.0
+    component_center_y = (component["y1"] + component["y2"]) / 2.0
+
+    if gap > max(48.0, median_height * 3.0):
+        return False
+    if component_width > max(8.0, median_height * 0.60):
+        return False
+    if component_height > max(14.0, median_height * 0.95):
+        return False
+    if previous_width < max(36.0, median_height * 3.0):
+        return False
+    return abs(previous_center_y - component_center_y) <= max(10.0, median_height * 0.90)
 
 def _is_marginal_component_split(
     left: list[dict[str, float]],
@@ -424,6 +466,29 @@ def _components_to_box(components: list[dict[str, float]]) -> list[int] | None:
         int(math.ceil(max(component["x2"] for component in components))),
         int(math.ceil(max(component["y2"] for component in components))),
     ]
+
+def _components_to_band_box(
+    components: list[dict[str, float]],
+    region: np.ndarray,
+    band_y1: int,
+    band_y2: int,
+) -> list[int] | None:
+    box = _components_to_box(components)
+    if box is None:
+        return None
+
+    x1 = max(0, min(region.shape[1] - 1, box[0]))
+    x2 = max(0, min(region.shape[1] - 1, box[2]))
+    y1 = max(0, min(region.shape[0], band_y1))
+    y2 = max(0, min(region.shape[0], band_y2))
+    if x2 < x1 or y2 <= y1:
+        return box
+
+    subregion = region[y1:y2, x1 : x2 + 1]
+    ys, xs = np.where(subregion)
+    if xs.size == 0 or ys.size == 0:
+        return box
+    return [x1 + int(xs.min()), y1 + int(ys.min()), x1 + int(xs.max()), y1 + int(ys.max())]
 
 def _merge_left_marginal_boxes(boxes: list[list[int]], span_width: int, median_height: float) -> list[list[int]]:
     if len(boxes) <= 2:

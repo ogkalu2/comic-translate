@@ -37,6 +37,7 @@ def _filter_noise_lines(lines: list[list[int]], direction: str) -> list[list[int
 
 def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]]:
     base_lines = _filter_noise_lines(_detect_lines_from_mask(text_mask, "horizontal"), "horizontal")
+    base_lines = _merge_aligned_horizontal_fragments(base_lines)
     if not base_lines:
         base_lines = [[0, 0, text_mask.shape[1], text_mask.shape[0]]]
 
@@ -111,6 +112,71 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
             best_score = adjusted_score
             best_lines = candidate
     return best_lines
+
+def _merge_aligned_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]:
+    if len(lines) <= 1 or any(_is_polygon_line(line) for line in lines):
+        return lines
+
+    boxes = [_line_axis_box(line) for line in lines]
+    heights = np.array([max(1, box[3] - box[1] + 1) for box in boxes], dtype=float)
+    median_height = float(np.median(heights)) if heights.size else 12.0
+    rows: list[list[list[int]]] = []
+
+    for box in sorted(boxes, key=lambda item: ((item[1] + item[3]) / 2.0, item[0])):
+        center_y = (box[1] + box[3]) / 2.0
+        matched_row: list[list[int]] | None = None
+        for row in rows:
+            row_box = _union_axis_boxes(row)
+            if row_box is None:
+                continue
+            row_center_y = (row_box[1] + row_box[3]) / 2.0
+            vertical_overlap = min(row_box[3], box[3]) - max(row_box[1], box[1]) + 1
+            min_height = min(row_box[3] - row_box[1] + 1, box[3] - box[1] + 1)
+            if vertical_overlap >= min_height * 0.45 or abs(center_y - row_center_y) <= max(5.0, median_height * 0.45):
+                matched_row = row
+                break
+        if matched_row is None:
+            rows.append([box])
+        else:
+            matched_row.append(box)
+
+    merged_boxes: list[list[int]] = []
+    gap_limit = max(14.0, median_height * 1.55)
+    for row in rows:
+        row = sorted(row, key=lambda item: item[0])
+        current = row[0].copy()
+        for box in row[1:]:
+            gap = box[0] - current[2] - 1
+            vertical_overlap = min(current[3], box[3]) - max(current[1], box[1]) + 1
+            current_height = current[3] - current[1] + 1
+            box_height = box[3] - box[1] + 1
+            min_height = min(current_height, box_height)
+            height_ratio = max(current_height, box_height) / max(1, min_height)
+            if gap <= gap_limit and vertical_overlap >= min_height * 0.35 and height_ratio <= 1.8:
+                current = [
+                    min(current[0], box[0]),
+                    min(current[1], box[1]),
+                    max(current[2], box[2]),
+                    max(current[3], box[3]),
+                ]
+            else:
+                merged_boxes.append(current)
+                current = box.copy()
+        merged_boxes.append(current)
+
+    if len(merged_boxes) >= len(lines):
+        return lines
+    return sorted(merged_boxes, key=lambda item: (item[1], item[0]))
+
+def _union_axis_boxes(boxes: list[list[int]]) -> list[int] | None:
+    if not boxes:
+        return None
+    return [
+        min(box[0] for box in boxes),
+        min(box[1] for box in boxes),
+        max(box[2] for box in boxes),
+        max(box[3] for box in boxes),
+    ]
 
 def _detect_horizontal_lines_at_angle(text_mask: np.ndarray, angle_degrees: float) -> list[list[int]]:
     height, width = text_mask.shape[:2]

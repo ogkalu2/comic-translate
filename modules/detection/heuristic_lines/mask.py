@@ -154,7 +154,7 @@ def _restore_leading_text_from_edge_components(
     row_spans = _horizontal_ink_spans(cleaned_mask)
     if not row_spans:
         return cleaned_mask
-    if len(row_spans) != 1 or height > max(80, int(round(median_h * 5.0))):
+    if len(row_spans) > 4 or height > max(100, int(round(median_h * 8.0))):
         return cleaned_mask
 
     restored = cleaned_mask.copy()
@@ -216,9 +216,11 @@ def _horizontal_ink_spans(mask: np.ndarray) -> list[tuple[int, int]]:
 def _remove_long_edge_strokes(mask: np.ndarray, band_y1: int, band_y2: int) -> np.ndarray:
     cleaned = mask.copy()
     band_height = max(1, band_y2 - band_y1)
+    ys, xs = np.where(cleaned)
+    active_width = int(xs.max() - xs.min() + 1) if xs.size else cleaned.shape[1]
     row_sum = cleaned.sum(axis=1)
     col_sum = cleaned.sum(axis=0)
-    cleaned[row_sum >= max(20, int(cleaned.shape[1] * 0.30)), :] = False
+    cleaned[row_sum >= max(20, int(active_width * 0.30)), :] = False
     cleaned[:, col_sum >= max(30, int(band_height * 1.25))] = False
     return cleaned
 
@@ -254,6 +256,10 @@ def _leading_text_candidate(
     if not bool(kept.any()):
         return None
 
+    kept = _select_rightmost_leading_text_cluster(kept, text_x1, median_w, median_h)
+    if kept is None:
+        return None
+
     ys, xs = np.where(kept)
     if xs.size == 0:
         return None
@@ -265,6 +271,78 @@ def _leading_text_candidate(
         return None
 
     return kept
+
+def _select_rightmost_leading_text_cluster(
+    mask: np.ndarray,
+    text_x1: int,
+    median_w: float,
+    median_h: float,
+) -> np.ndarray | None:
+    num_labels, labels, stats, _ = imk.connected_components_with_stats(
+        mask.astype(np.uint8),
+        connectivity=8,
+    )
+    if num_labels <= 1:
+        return None
+
+    components: list[dict[str, int]] = []
+    for label in range(1, num_labels):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+        x2 = x1 + comp_width - 1
+        y2 = y1 + comp_height - 1
+        if area < 8 or x2 >= text_x1:
+            continue
+        components.append({
+            "label": label,
+            "x1": x1,
+            "y1": y1,
+            "x2": x2,
+            "y2": y2,
+            "width": comp_width,
+            "height": comp_height,
+            "area": area,
+        })
+
+    if not components:
+        return None
+
+    components.sort(key=lambda item: item["x1"])
+    groups: list[list[dict[str, int]]] = [[components[0]]]
+    max_gap = max(4, int(round(median_w * 0.75)))
+    for component in components[1:]:
+        current_x2 = max(item["x2"] for item in groups[-1])
+        if component["x1"] - current_x2 - 1 <= max_gap:
+            groups[-1].append(component)
+        else:
+            groups.append([component])
+
+    best_group: list[dict[str, int]] | None = None
+    best_x2 = -1
+    for group in groups:
+        group_x1 = min(item["x1"] for item in group)
+        group_x2 = max(item["x2"] for item in group)
+        group_y1 = min(item["y1"] for item in group)
+        group_y2 = max(item["y2"] for item in group)
+        group_width = group_x2 - group_x1 + 1
+        group_height = group_y2 - group_y1 + 1
+        gap_to_text = text_x1 - group_x2 - 1
+        if gap_to_text > max(12, int(round(median_w * 2.5))):
+            continue
+        if group_width < max(10, int(round(median_w * 0.60))):
+            continue
+        if group_height < max(4, int(round(median_h * 0.25))):
+            continue
+        if group_x2 > best_x2:
+            best_x2 = group_x2
+            best_group = group
+
+    if best_group is None:
+        return None
+
+    selected = np.zeros_like(mask)
+    for component in best_group:
+        selected[labels == component["label"]] = True
+    return selected
 
 def _remove_non_text_components(text_mask: np.ndarray) -> np.ndarray:
     num_labels, labels, stats, _ = imk.connected_components_with_stats(
