@@ -428,9 +428,6 @@ class ManualWorkflowController:
             wrapped: str, 
             font_size: int
         ) -> None:
-            
-            if is_no_space_lang(trg_lng_cd):
-                wrapped = wrapped.replace(" ", "")
             text_item.set_plain_text(wrapped)
             text_item.set_font_size(font_size)
 
@@ -479,6 +476,7 @@ class ManualWorkflowController:
                     rs.max_font_size,
                     rs.min_font_size,
                     vertical,
+                    is_no_space_lang(trg_lng_cd),
                 )
 
                 self.main.run_threaded(

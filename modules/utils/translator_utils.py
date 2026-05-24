@@ -1,10 +1,7 @@
 import base64
 import json
 import re
-import jieba
-import janome.tokenizer
 import numpy as np
-from pythainlp.tokenize import word_tokenize
 from .textblock import TextBlock
 import imkit as imk
 
@@ -73,40 +70,17 @@ def set_upper_case(blk_list: list[TextBlock], upper_case: bool):
         else:
             blk.translation = translation
 
-def get_chinese_tokens(text):
-    return list(jieba.cut(text, cut_all=False))
-
-def get_japanese_tokens(text):
-    tokenizer = janome.tokenizer.Tokenizer()
-    return [token.surface for token in tokenizer.tokenize(text)]
-
 def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: bool = True):
     for blk in blk_list:
         translation = blk.translation
-        trg_lng_code_lower = trg_lng_cd.lower()
-        seg_result = []
-
-        if 'zh' in trg_lng_code_lower:
-            seg_result = get_chinese_tokens(translation)
-
-        elif 'ja' in trg_lng_code_lower:
-            seg_result = get_japanese_tokens(translation)
-
-        elif 'th' in trg_lng_code_lower:
-            seg_result = word_tokenize(translation)
-
-        if seg_result:
-            blk.translation = ''.join(word if word in ['.', ','] else f' {word}' for word in seg_result).lstrip()
+        if translation is None:
+            continue
+        if upper_case and not translation.isupper():
+            blk.translation = translation.upper()
+        elif not upper_case and translation.isupper():
+            blk.translation = translation.lower().capitalize()
         else:
-            # apply casing/formatting for this single block when no segmentation is done
-            if translation is None:
-                continue
-            if upper_case and not translation.isupper():
-                blk.translation = translation.upper()
-            elif not upper_case and translation.isupper():
-                blk.translation = translation.lower().capitalize()
-            else:
-                blk.translation = translation
+            blk.translation = translation
 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)

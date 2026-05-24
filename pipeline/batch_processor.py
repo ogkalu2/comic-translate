@@ -388,16 +388,13 @@ class BatchProcessor:
                     max_font_size, 
                     min_font_size,
                     vertical,
+                    is_no_space_lang(trg_lng_cd),
                     return_metrics=True
                 )
                 
                 # Display text if on current page  
                 if image_path == file_on_display:
                     self.main_page.blk_rendered.emit(translation, font_size, blk, image_path)
-
-                # Language-specific formatting for state storage
-                if is_no_space_lang(trg_lng_cd):
-                    translation = translation.replace(' ', '')
 
                 # Smart Color Override
                 font_color = get_smart_text_color(blk.font_color, setting_font_color)

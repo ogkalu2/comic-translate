@@ -12,7 +12,7 @@ from modules.utils.textblock import TextBlock
 from modules.utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
-from modules.utils.language_utils import get_language_code
+from modules.utils.language_utils import get_language_code, is_no_space_lang
 
 from dataclasses import dataclass
 
@@ -112,6 +112,37 @@ def _wrap_text_greedily(text: str, measure_side, max_side: float) -> str:
         lines.append(line)
 
     return "\n".join(lines)
+
+def _wrap_no_space_text_greedily(text: str, measure_side, max_side: float) -> str:
+    """Greedy wrapping for languages that do not rely on spaces between words."""
+
+    paragraphs = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    wrapped_paragraphs: List[str] = []
+
+    for paragraph in paragraphs:
+        chars = [char for char in paragraph if char != " "]
+        if not chars:
+            wrapped_paragraphs.append("")
+            continue
+
+        lines: List[str] = []
+        line = ""
+
+        for char in chars:
+            candidate = f"{line}{char}"
+            if not line or measure_side(candidate) <= max_side:
+                line = candidate
+                continue
+
+            lines.append(line)
+            line = char
+
+        if line:
+            lines.append(line)
+
+        wrapped_paragraphs.append("\n".join(lines))
+
+    return "\n".join(wrapped_paragraphs)
 
 def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
                   roi_width, roi_height, align: str, spacing, init_font_size: int, min_font_size: int = 10):
@@ -240,6 +271,7 @@ def pyside_word_wrap(
     init_font_size: int, 
     min_font_size: int = 10, 
     vertical: bool = False,
+    no_space_language: bool = False,
     return_metrics: bool = False
 ) -> tuple:
     
@@ -307,11 +339,18 @@ def pyside_word_wrap(
             w, h = eval_metrics(candidate, font_size, vertical)
             return h if vertical else w
 
-        wrapped = _wrap_text_greedily(
-            text=text,
-            measure_side=measure_side,
-            max_side=roi_height if vertical else roi_width,
-        )
+        if no_space_language:
+            wrapped = _wrap_no_space_text_greedily(
+                text=text,
+                measure_side=measure_side,
+                max_side=roi_height if vertical else roi_width,
+            )
+        else:
+            wrapped = _wrap_text_greedily(
+                text=text,
+                measure_side=measure_side,
+                max_side=roi_height if vertical else roi_width,
+            )
         # measure wrapped block
         w, h = eval_metrics(wrapped, font_size, vertical)
         return wrapped, w, h
@@ -430,7 +469,8 @@ def manual_wrap(
             direction, 
             init_font_size, 
             min_font_size,
-            vertical
+            vertical,
+            is_no_space_lang(trg_lng_cd)
         )
         
         main_page.blk_rendered.emit(translation, font_size, blk, image_path)
