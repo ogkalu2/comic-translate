@@ -111,6 +111,7 @@ def _detect_lines_and_direction_in_crop(
             else:
                 lines = horizontal_lines
         lines = _trim_marginal_vertical_noise_from_horizontal_lines(lines, text_mask, vertical_lines)
+        lines = _collapse_edge_spanning_horizontal_fragments(lines, text_mask, vertical_lines)
     else:
         if _should_use_component_vertical_columns(text_mask, vertical_lines, component_vertical_lines):
             vertical_lines = component_vertical_lines
@@ -158,6 +159,46 @@ def _detect_lines_and_direction_in_crop(
             print(f"Failed to filter wrong-direction noise lines: {e}")
 
     return lines, direction
+
+def _collapse_edge_spanning_horizontal_fragments(
+    lines: list[list[int]],
+    text_mask: np.ndarray,
+    vertical_lines: list[list[int]],
+) -> list[list[int]]:
+    if len(lines) <= 1:
+        return lines
+    if len(lines) > 4 or len(vertical_lines) < 2:
+        return lines
+
+    height, width = text_mask.shape[:2]
+    if width <= 0 or height <= 0:
+        return lines
+
+    boxes = [_line_axis_box(line) for line in lines]
+    edge_margin = max(2, int(round(height * 0.04)))
+    min_edge_width = max(12, int(round(width * 0.35)))
+
+    def is_wide_top_edge(box: list[int]) -> bool:
+        return box[1] <= edge_margin and (box[2] - box[0] + 1) >= min_edge_width
+
+    def is_wide_bottom_edge(box: list[int]) -> bool:
+        return box[3] >= height - 1 - edge_margin and (box[2] - box[0] + 1) >= min_edge_width
+
+    has_top_edge = any(is_wide_top_edge(box) for box in boxes)
+    has_bottom_edge = any(is_wide_bottom_edge(box) for box in boxes)
+    if not has_top_edge or not has_bottom_edge:
+        return lines
+
+    union = _union_box(lines)
+    if union is None:
+        return lines
+
+    union_width = max(1, union[2] - union[0] + 1)
+    union_height = max(1, union[3] - union[1] + 1)
+    if union_width < width * 0.55 or union_height < height * 0.70:
+        return lines
+
+    return [union]
 
 def _should_use_component_vertical_columns(
     text_mask: np.ndarray,
