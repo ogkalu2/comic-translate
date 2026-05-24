@@ -105,6 +105,42 @@ def _get_cached_pdf(file_path: str):
         return pdf, page_lock
 
 
+def _detect_image_ext(image_bytes: bytes) -> str | None:
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as img:
+            fmt = (img.format or "").upper()
+    except Exception:
+        return None
+
+    return {
+        "JPEG": ".jpg",
+        "PNG": ".png",
+        "WEBP": ".webp",
+        "BMP": ".bmp",
+        "AVIF": ".avif",
+    }.get(fmt)
+
+
+def _get_pdf_page_image_bytes(pdf, page_index: int) -> tuple[bytes | None, str | None]:
+    import pypdfium2 as pdfium
+
+    page = pdf[page_index]
+    try:
+        image_obj = next(
+            (obj for obj in page.get_objects() if isinstance(obj, pdfium.PdfImage)),
+            None,
+        )
+        if image_obj is None:
+            return None, None
+
+        image_bytes = image_obj.get_data()
+        return image_bytes, _detect_image_ext(image_bytes)
+    except Exception:
+        return None, None
+    finally:
+        page.close()
+
+
 def list_archive_image_entries(file_path: str) -> list[dict]:
     file_lower = file_path.lower()
     entries: list[dict] = []
@@ -155,12 +191,13 @@ def list_archive_image_entries(file_path: str) -> list[dict]:
         pdf, page_lock = _get_cached_pdf(file_path)
         with page_lock:
             total_pages = len(pdf)
-        for page_idx in range(total_pages):
-            entries.append({
-                "kind": "pdf_page",
-                "page_index": page_idx,
-                "ext": ".png",
-            })
+            for page_idx in range(total_pages):
+                _, ext = _get_pdf_page_image_bytes(pdf, page_idx)
+                entries.append({
+                    "kind": "pdf_page",
+                    "page_index": page_idx,
+                    "ext": ext or ".png",
+                })
 
     else:
         raise ValueError("Unsupported file format")
@@ -351,32 +388,21 @@ def _materialize_pdf_page(file_or_pdf, page_index: int, output_path: str) -> boo
 
 
 def _materialize_pdf_page_from_doc(pdf, page_index: int, output_path: str) -> bool:
-    import pypdfium2 as pdfium
-
     out_dir = os.path.dirname(output_path)
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
-    page = pdf[page_index]
-    try:
+    image_bytes, image_ext = _get_pdf_page_image_bytes(pdf, page_index)
+    if image_bytes is not None and image_ext is not None:
         try:
-            image_obj = next(
-                (obj for obj in page.get_objects() if isinstance(obj, pdfium.PdfImage)),
-                None,
-            )
-            if image_obj is not None:
-                image_bytes = image_obj.get_data()
-                try:
-                    with Image.open(io.BytesIO(image_bytes)):
-                        pass
-                    with open(output_path, "wb") as image_file:
-                        image_file.write(image_bytes)
-                    return True
-                except Exception:
-                    pass
+            with open(output_path, "wb") as image_file:
+                image_file.write(image_bytes)
+            return True
         except Exception:
             pass
 
+    page = pdf[page_index]
+    try:
         try:
             page_img = page.render(scale=1).to_pil()
             page_img.save(output_path)
