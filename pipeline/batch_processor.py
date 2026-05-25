@@ -223,7 +223,7 @@ class BatchProcessor:
             if self._is_cancelled():
                 return
 
-            inpaint_input_img = self.inpainting._inpaint_by_patches(image, mask, config)
+            inpaint_input_img = self.inpainting.inpaint_image(image, mask, config)
             inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
 
             # Saving cleaned image

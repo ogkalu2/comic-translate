@@ -198,7 +198,7 @@ class ChunkMixin:
         mask = generate_mask(image, mask_blocks)
         if mask is None or not np.any(mask):
             return None, None
-        inpainted = self.inpainting._inpaint_by_patches(image, mask, config)
+        inpainted = self.inpainting.inpaint_image(image, mask, config)
         inpainted = imk.convert_scale_abs(inpainted)
         return mask, inpainted
 
