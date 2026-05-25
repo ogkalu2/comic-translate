@@ -45,11 +45,6 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
     base_score = _score_line_candidate(best_lines, "horizontal", text_mask)
     best_score = base_score
 
-    # Early exit if the unskewed baseline already matches or exceeds a high score threshold
-    # only for multi-line blocks, since single skewed lines can still have high baseline scores due to 100% coverage
-    if len(base_lines) >= 2 and base_score >= 1.85:
-        return best_lines
-
     # Pre-extract coordinates to avoid redundant np.where and shifting allocations in the loop
     height, width = text_mask.shape[:2]
     ys, xs = np.where(text_mask)
