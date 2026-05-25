@@ -81,10 +81,7 @@ class TextBlockManager:
         if blk.bubble_xyxy is not None:
             self._convert_bbox_coordinates(blk.bubble_xyxy, page_idx, to_scene)
         
-        # Convert inpaint_bboxes coordinates if they exist
-        if blk.inpaint_bboxes is not None and len(blk.inpaint_bboxes) > 0:
-            for bbox in blk.inpaint_bboxes:
-                self._convert_bbox_coordinates(bbox, page_idx, to_scene)
+
     
     def _create_clipped_textblock(self, original_blk: TextBlock, clipped_xyxy: tuple, page_idx: int) -> TextBlock:
         """
@@ -115,18 +112,7 @@ class TextBlockManager:
             else:
                 clipped_blk.bubble_xyxy = None
         
-        # Clip inpaint_bboxes if they exist
-        if original_blk.inpaint_bboxes is not None and len(original_blk.inpaint_bboxes) > 0:
-            clipped_inpaint_bboxes = []
-            for bbox in original_blk.inpaint_bboxes:
-                # Create a temporary TextBlock with just this bbox to clip
-                temp_blk = TextBlock()
-                temp_blk.xyxy = bbox
-                clipped_bbox = self.coordinate_converter.clip_textblock_to_page(temp_blk, page_idx)
-                if clipped_bbox and clipped_bbox[2] > clipped_bbox[0] and clipped_bbox[3] > clipped_bbox[1]:
-                    clipped_inpaint_bboxes.append(list(clipped_bbox))
-            
-            clipped_blk.inpaint_bboxes = clipped_inpaint_bboxes if clipped_inpaint_bboxes else None
+
         
         return clipped_blk
     

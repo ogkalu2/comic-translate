@@ -4,8 +4,7 @@ from typing import TYPE_CHECKING, Any, Sequence
 
 from PySide6 import QtCore
 
-from modules.detection.processor import TextBlockDetector
-from modules.detection.utils.content import get_inpaint_bboxes
+from modules.detection.processor import TextBlockDetector
 from modules.ocr.processor import OCRProcessor
 from modules.rendering.render import pyside_word_wrap, is_vertical_block, get_best_render_area
 from modules.translation.processor import Translator
@@ -131,14 +130,13 @@ class ManualWorkflowController:
             )
         return rects
 
-    def _serialize_segmentation_strokes(self, blk_list: list[TextBlock]) -> list[dict]:
+    def _serialize_segmentation_strokes(self, blk_list: list[TextBlock], image=None) -> list[dict]:
         strokes: list[dict] = []
         build_stroke = self.main.image_viewer.drawing_manager.make_segmentation_stroke_data
         for blk in blk_list:
-            bboxes = blk.inpaint_bboxes
-            if bboxes is None or len(bboxes) == 0:
+            if blk.xyxy is None or len(blk.xyxy) < 4:
                 continue
-            stroke = build_stroke(bboxes)
+            stroke = build_stroke(blk.xyxy, image)
             if stroke is not None:
                 strokes.append(stroke)
         return strokes
@@ -588,7 +586,7 @@ class ManualWorkflowController:
             self.main.undo_group.activeStack().beginMacro("inpaint")
             self.main.run_threaded(
                 self.main.pipeline.inpaint,
-                self.main.pipeline.inpaint_complete,
+            self.main.pipeline.inpaint_complete,
                 self.main.default_error_handler,
                 self.main.on_manual_finished,
             )
@@ -605,9 +603,8 @@ class ManualWorkflowController:
         self.main.blk_list = blk_list
         self.main.undo_group.activeStack().beginMacro("draw_segmentation_boxes")
         for blk in self.main.blk_list:
-            bboxes = blk.inpaint_bboxes
-            if bboxes is not None and len(bboxes) > 0:
-                self.main.image_viewer.draw_segmentation_lines(bboxes)
+            if blk.xyxy is not None:
+                self.main.image_viewer.draw_segmentation_lines(blk.xyxy)
         self.main.undo_group.activeStack().endMacro()
 
     def load_segmentation_points(self) -> None:
@@ -626,8 +623,8 @@ class ManualWorkflowController:
                 self.main.undo_group.activeStack().beginMacro("draw_segmentation_boxes")
                 context = self._prepare_multi_page_context(selected_paths)
 
-                def compute_selected_bboxes() -> dict[str, list[TextBlock]]:
-                    results: dict[str, list[TextBlock]] = {}
+                def compute_selected_bboxes() -> dict[str, tuple[list[TextBlock], list[dict]]]:
+                    results = {}
                     for file_path in selected_paths:
                         state = self.main.image_states.get(file_path, {})
                         blk_list = state.get("blk_list", [])
@@ -636,21 +633,20 @@ class ManualWorkflowController:
                         image = self._load_page_image(file_path)
                         if image is None:
                             continue
-                        for blk in blk_list:
-                            blk.inpaint_bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                        results[file_path] = blk_list
+                        strokes = self._serialize_segmentation_strokes(blk_list, image)
+                        results[file_path] = (blk_list, strokes)
                     return results
 
-                def on_selected_bboxes_ready(results: dict[str, list[TextBlock]]) -> None:
+                def on_selected_bboxes_ready(results: dict[str, tuple[list[TextBlock], list[dict]]]) -> None:
                     current_file = context["current_file"]
-                    for file_path, blk_list in (results or {}).items():
+                    for file_path, (blk_list, strokes) in (results or {}).items():
                         state = self.main.image_states.get(file_path)
                         if state is None:
                             continue
                         state["blk_list"] = blk_list
                         viewer_state = state.setdefault("viewer_state", {})
                         viewer_state["rectangles"] = []
-                        state["brush_strokes"] = self._serialize_segmentation_strokes(blk_list)
+                        state["brush_strokes"] = strokes
                         if file_path == current_file:
                             self._set_current_blocks_from_page_state(
                                 blk_list,
@@ -663,9 +659,8 @@ class ManualWorkflowController:
                         and current_file in (results or {})
                     ):
                         for blk in self.main.blk_list:
-                            bboxes = blk.inpaint_bboxes
-                            if bboxes is not None and len(bboxes) > 0:
-                                self.main.image_viewer.draw_segmentation_lines(bboxes)
+                            if blk.xyxy is not None:
+                                self.main.image_viewer.draw_segmentation_lines(blk.xyxy)
 
                     if results:
                         self.main.mark_project_dirty()
@@ -698,16 +693,16 @@ class ManualWorkflowController:
                     )
                 else:
 
-                    def compute_all_bboxes() -> list[tuple[TextBlock, Any]]:
+                    def compute_all_strokes() -> list[tuple[TextBlock, Any]]:
                         image = self.main.image_viewer.get_image_array()
-                        results: list[tuple[TextBlock, Any]] = []
+                        results = []
                         for blk in self.main.blk_list:
-                            bboxes = get_inpaint_bboxes(blk.xyxy, image)
-                            results.append((blk, bboxes))
+                            stroke = self.main.image_viewer.drawing_manager.make_segmentation_stroke_data(blk.xyxy, image)
+                            results.append((blk, stroke))
                         return results
 
                     self.main.run_threaded(
-                        compute_all_bboxes,
+                        compute_all_strokes,
                         self._on_segmentation_bboxes_ready,
                         self.main.default_error_handler,
                         self.main.on_manual_finished,
@@ -723,10 +718,14 @@ class ManualWorkflowController:
 
     def _on_segmentation_bboxes_ready(
         self, 
-        results: Sequence[tuple[TextBlock, Any]]
+        results: Sequence[tuple[TextBlock, Any] | TextBlock]
     ) -> None:
-        for blk, bboxes in results:
-            blk.inpaint_bboxes = bboxes
-            if bboxes is not None and len(bboxes) > 0:
-                self.main.image_viewer.draw_segmentation_lines(bboxes)
+        if self.main.webtoon_mode:
+            for blk in results:
+                if blk.xyxy is not None:
+                    self.main.image_viewer.draw_segmentation_lines(blk.xyxy)
+        else:
+            for blk, stroke in results:
+                if stroke is not None:
+                    self.main.image_viewer.draw_segmentation_lines(blk.xyxy, stroke=stroke)
         self.main.undo_group.activeStack().endMacro()

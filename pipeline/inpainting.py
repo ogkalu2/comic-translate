@@ -53,7 +53,7 @@ class InpaintingHandler:
 
         self._ensure_inpainter()
         config = get_config(settings_page)
-        inpaint_input_img = self._inpaint_by_patches(image, mask, config)
+        inpaint_input_img = self.inpaint_image(image, mask, config)
         inpaint_input_img = imk.convert_scale_abs(inpaint_input_img) 
 
         return inpaint_input_img
@@ -127,6 +127,13 @@ class InpaintingHandler:
             patches.append({'bbox': [x, y, w, h], 'image': patch.copy()})
         return patches
 
+    def _inpaint_full_image(self, image: np.ndarray, mask: np.ndarray, config):
+        if image is None:
+            return None
+        if mask is None or not np.any(mask):
+            return image.copy()
+        return self.inpainter_cache(image, mask, config)
+
     def _inpaint_by_patches(self, image: np.ndarray, mask: np.ndarray, config):
         inpainted_image = image.copy()
         contours, _ = imk.find_contours(mask)
@@ -148,13 +155,69 @@ class InpaintingHandler:
             
         return inpainted_image
 
+    def inpaint_image(self, image: np.ndarray, mask: np.ndarray, config) -> np.ndarray:
+        """
+        Intelligently chooses between full-image and patch-based inpainting
+        based on image size, number of text blocks, and total mask area.
+        """
+        if image is None:
+            return None
+        if mask is None or not np.any(mask):
+            return image.copy()
+
+        contours, _ = imk.find_contours(mask)
+        if not contours:
+            return image.copy()
+
+        boxes = [imk.bounding_rect(c) for c in contours]
+        merged_boxes = merge_overlapping_padded_boxes(boxes, image.shape)
+        num_patches = len(merged_boxes)
+
+        if num_patches == 0:
+            return image.copy()
+
+        # Calculate area ratio of the text patches compared to the full image
+        h_img, w_img = image.shape[:2]
+        area_image = w_img * h_img
+        area_patches = sum((x2 - x1) * (y2 - y1) for x1, y1, x2, y2 in merged_boxes)
+        area_ratio = area_patches / area_image
+
+        # Huge images (>2560px) lean heavily to patches to prevent GPU OOM and long latency
+        is_huge_resolution = max(w_img, h_img) > 2560
+        max_patches_threshold = 12 if is_huge_resolution else 6
+
+        # Hybrid Decision Heuristic
+        if num_patches >= max_patches_threshold:
+            use_patches = False
+        elif area_ratio > 0.35:
+            use_patches = False
+        else:
+            use_patches = True
+
+        # Safety override: Force patches if full-image would likely crash GPU VRAM
+        if is_huge_resolution and area_ratio < 0.70:
+            use_patches = True
+
+        if use_patches:
+            logger.info(
+                "Inpaint hybrid: PATCH-BASED (patches=%d, ratio=%.2f%%, size=%dx%d)",
+                num_patches, area_ratio * 100, w_img, h_img
+            )
+            return self._inpaint_by_patches(image, mask, config)
+        else:
+            logger.info(
+                "Inpaint hybrid: FULL-IMAGE (patches=%d, ratio=%.2f%%, size=%dx%d)",
+                num_patches, area_ratio * 100, w_img, h_img
+            )
+            return self._inpaint_full_image(image, mask, config)
+
     def inpaint_page_from_saved_strokes(self, image: np.ndarray, strokes: list[dict]):
         mask = self._generate_mask_from_saved_strokes(strokes, image)
         if mask is None:
             return []
         self._ensure_inpainter()
         config = get_config(self.main_page.settings_page)
-        inpainted = self._inpaint_by_patches(image, mask, config)
+        inpainted = self.inpaint_image(image, mask, config)
         inpainted = imk.convert_scale_abs(inpainted)
         return self._get_regular_patches(mask, inpainted)
 

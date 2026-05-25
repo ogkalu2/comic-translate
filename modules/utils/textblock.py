@@ -15,7 +15,6 @@ class TextBlock(object):
                  text_bbox: np.ndarray = None,
                  bubble_bbox: np.ndarray = None,
                  text_class: str = "",
-                 inpaint_bboxes = None,
                  lines: List = None,
                  text_segm_points: np.ndarray = None, 
                  angle = 0,
@@ -40,10 +39,6 @@ class TextBlock(object):
         self.tr_origin_point = ()
  
         self.lines = lines
-        if isinstance(inpaint_bboxes, np.ndarray):
-            self.inpaint_bboxes = inpaint_bboxes
-        else:
-            self.inpaint_bboxes = np.array(inpaint_bboxes, dtype=np.int32) if inpaint_bboxes else None
         self.texts = texts if texts is not None else []
         self.text = ' '.join(self.texts) if self.texts else text
         self.translation = translation
@@ -90,7 +85,6 @@ class TextBlock(object):
         new_block.xyxy = self.xyxy.copy() if isinstance(self.xyxy, np.ndarray) else copy.deepcopy(self.xyxy)
         new_block.segm_pts = self.segm_pts.copy() if isinstance(self.segm_pts, np.ndarray) else copy.deepcopy(self.segm_pts)
         new_block.bubble_xyxy = self.bubble_xyxy.copy() if isinstance(self.bubble_xyxy, np.ndarray) else copy.deepcopy(self.bubble_xyxy)
-        new_block.inpaint_bboxes = self.inpaint_bboxes.copy() if isinstance(self.inpaint_bboxes, np.ndarray) else copy.deepcopy(self.inpaint_bboxes)
         
         # Copy simple attributes
         new_block.text_class = self.text_class
