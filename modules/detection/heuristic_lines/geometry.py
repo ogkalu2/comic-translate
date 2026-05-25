@@ -3,6 +3,16 @@ import math
 import numpy as np
 
 def _is_polygon_line(line) -> bool:
+    if isinstance(line, list):
+        if len(line) >= 4 and isinstance(line[0], list):
+            return True
+        return False
+    if isinstance(line, tuple):
+        if len(line) >= 4 and isinstance(line[0], (list, tuple)):
+            return True
+        return False
+    if isinstance(line, np.ndarray):
+        return line.ndim == 2 and line.shape[0] >= 4 and line.shape[1] == 2
     arr = np.asarray(line)
     return arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2
 
