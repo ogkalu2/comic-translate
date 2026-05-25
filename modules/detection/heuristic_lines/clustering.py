@@ -3,6 +3,8 @@ import math
 import numpy as np
 import imkit as imk
 
+from .mask import _mask_bounds, _sum_box_pixels
+
 def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[int]]:
     height, width = text_mask.shape[:2]
     x_sum = text_mask.sum(axis=0)
@@ -38,17 +40,17 @@ def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[
     boxes: list[list[int]] = []
     for sx1, sy1, sx2, sy2 in spans:
         region = text_mask[sy1:sy2, sx1:sx2]
-        ys, xs = np.where(region)
-        if xs.size == 0 or ys.size == 0:
+        bounds = _mask_bounds(region)
+        if bounds is None:
             continue
 
         if direction == "horizontal":
             boxes.extend(_split_horizontal_span(text_mask, sx1, sy1, sx2, sy2))
         else:
-            min_x = sx1 + int(xs.min())
-            max_x = sx1 + int(xs.max())
-            min_y = sy1 + int(ys.min())
-            max_y = sy1 + int(ys.max())
+            min_x = sx1 + bounds[0]
+            max_x = sx1 + bounds[2]
+            min_y = sy1 + bounds[1]
+            max_y = sy1 + bounds[3]
             if (max_x - min_x) < 4 and (max_y - min_y) < 4:
                 continue
             boxes.append([min_x, min_y, max_x, max_y])
@@ -177,8 +179,8 @@ def _is_soft_horizontal_valley(y_sum: np.ndarray, run: list[int], max_peak: int,
 
 def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, sy2: int) -> list[list[int]]:
     region = text_mask[sy1:sy2, sx1:sx2]
-    ys, xs = np.where(region)
-    if xs.size == 0 or ys.size == 0:
+    bounds = _mask_bounds(region)
+    if bounds is None:
         return []
 
     splits = _find_horizontal_valley_splits(region)
@@ -195,8 +197,8 @@ def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, 
     if component_rows is not None:
         return component_rows
 
-    min_y = sy1 + int(ys.min())
-    max_y = sy1 + int(ys.max())
+    min_y = sy1 + bounds[1]
+    max_y = sy1 + bounds[3]
     line_height = max(1, max_y - min_y + 1)
     gap_limit = max(10, int(line_height * 2.8))
 
@@ -240,6 +242,8 @@ def _trim_marginal_vertical_noise_from_horizontal_lines(
     lines: list[list[int]],
     text_mask: np.ndarray,
     vertical_lines: list[list[int]],
+    component_boxes: list[dict[str, float]] | None = None,
+    integral_image: np.ndarray | None = None,
 ) -> list[list[int]]:
     from .geometry import _is_polygon_line, _line_axis_box
 
@@ -249,10 +253,18 @@ def _trim_marginal_vertical_noise_from_horizontal_lines(
         return lines
 
     vertical_boxes = [_line_axis_box(line) for line in vertical_lines]
-    vertical_pixels = [
-        int(text_mask[max(0, box[1]) : min(text_mask.shape[0], box[3] + 1), max(0, box[0]) : min(text_mask.shape[1], box[2] + 1)].sum())
-        for box in vertical_boxes
-    ]
+    if integral_image is None:
+        integral_image = text_mask.astype(np.int32, copy=False).cumsum(axis=0).cumsum(axis=1)
+    vertical_pixels = []
+    for box in vertical_boxes:
+        x1 = max(0, box[0])
+        y1 = max(0, box[1])
+        x2 = min(text_mask.shape[1] - 1, box[2])
+        y2 = min(text_mask.shape[0] - 1, box[3])
+        if x2 < x1 or y2 < y1:
+            vertical_pixels.append(0)
+            continue
+        vertical_pixels.append(_sum_box_pixels(integral_image, x1, y1, x2, y2))
     if not vertical_pixels:
         return lines
 
@@ -262,7 +274,7 @@ def _trim_marginal_vertical_noise_from_horizontal_lines(
     main_width = max(1, main_box[2] - main_box[0] + 1)
     main_height = max(1, main_box[3] - main_box[1] + 1)
 
-    components = _component_boxes(text_mask)
+    components = component_boxes if component_boxes is not None else _component_boxes(text_mask)
     median_height = float(np.median([component["height"] for component in components])) if components else 12.0
 
     marginal_columns: list[tuple[str, list[int]]] = []
@@ -324,10 +336,11 @@ def _refine_box_in_range(text_mask: np.ndarray, x1: int, y1: int, x2: int, y2: i
         return None
 
     region = text_mask[y1 : y2 + 1, x1 : x2 + 1]
-    ys, xs = np.where(region)
-    if xs.size == 0 or ys.size == 0:
+    bounds = _mask_bounds(region)
+    if bounds is None:
         return None
-    return [x1 + int(xs.min()), y1 + int(ys.min()), x1 + int(xs.max()), y1 + int(ys.max())]
+    bx1, by1, bx2, by2 = bounds
+    return [x1 + bx1, y1 + by1, x1 + bx2, y1 + by2]
 
 def _split_tall_horizontal_span(region: np.ndarray, offset_x: int, offset_y: int) -> list[list[int]] | None:
     components = _component_boxes(region)
@@ -335,8 +348,10 @@ def _split_tall_horizontal_span(region: np.ndarray, offset_x: int, offset_y: int
         return None
 
     median_height = float(np.median([component["height"] for component in components]))
-    ys, _ = np.where(region)
-    ink_height = int(ys.max() - ys.min() + 1)
+    bounds = _mask_bounds(region)
+    if bounds is None:
+        return None
+    ink_height = bounds[3] - bounds[1] + 1
     if ink_height < max(36, int(round(median_height * 1.75))):
         return None
     centers_x = np.array([component["cx"] for component in components], dtype=float)
@@ -407,16 +422,24 @@ def _component_boxes(region: np.ndarray) -> list[dict[str, float]]:
 def _cluster_components_by_y(components: list[dict[str, float]], median_height: float) -> list[list[dict[str, float]]]:
     rows: list[list[dict[str, float]]] = []
     row_gap = max(8.0, median_height * 0.75)
+    row_center_sums: list[float] = []
+    row_counts: list[int] = []
     for component in sorted(components, key=lambda item: item["cy"]):
         if not rows:
             rows.append([component])
+            row_center_sums.append(component["cy"])
+            row_counts.append(1)
             continue
 
-        row_center = float(np.mean([item["cy"] for item in rows[-1]]))
+        row_center = row_center_sums[-1] / row_counts[-1]
         if component["cy"] - row_center > row_gap:
             rows.append([component])
+            row_center_sums.append(component["cy"])
+            row_counts.append(1)
         else:
             rows[-1].append(component)
+            row_center_sums[-1] += component["cy"]
+            row_counts[-1] += 1
     return rows
 
 def _split_component_row_by_x(
@@ -439,15 +462,44 @@ def _split_component_row_by_x(
 
     groups: list[list[dict[str, float]]] = [[row[0]]]
     current_max_x = row[0]["x2"]
+    group_boxes: list[list[float]] = [[row[0]["x1"], row[0]["y1"], row[0]["x2"], row[0]["y2"]]]
     gap_limit = max(12.0, median_height * 0.85)
     for component in row[1:]:
         gap = component["x1"] - current_max_x - 1
-        if gap > gap_limit and not _is_trailing_punctuation_component(groups[-1], component, gap, median_height):
+        previous_box = group_boxes[-1]
+        if gap > gap_limit and not _is_trailing_punctuation_component_box(previous_box, component, gap, median_height):
             groups.append([component])
+            group_boxes.append([component["x1"], component["y1"], component["x2"], component["y2"]])
         else:
             groups[-1].append(component)
+            previous_box[0] = min(previous_box[0], component["x1"])
+            previous_box[1] = min(previous_box[1], component["y1"])
+            previous_box[2] = max(previous_box[2], component["x2"])
+            previous_box[3] = max(previous_box[3], component["y2"])
         current_max_x = max(current_max_x, component["x2"])
     return groups
+
+def _is_trailing_punctuation_component_box(
+    previous_box: list[float],
+    component: dict[str, float],
+    gap: float,
+    median_height: float,
+) -> bool:
+    previous_width = max(1.0, previous_box[2] - previous_box[0] + 1)
+    component_width = max(1.0, component["width"])
+    component_height = max(1.0, component["height"])
+    previous_center_y = (previous_box[1] + previous_box[3]) / 2.0
+    component_center_y = (component["y1"] + component["y2"]) / 2.0
+
+    if gap > max(48.0, median_height * 3.0):
+        return False
+    if component_width > max(8.0, median_height * 0.60):
+        return False
+    if component_height > max(14.0, median_height * 0.95):
+        return False
+    if previous_width < max(36.0, median_height * 3.0):
+        return False
+    return abs(previous_center_y - component_center_y) <= max(10.0, median_height * 0.90)
 
 def _is_trailing_punctuation_component(
     previous_group: list[dict[str, float]],
@@ -529,10 +581,11 @@ def _components_to_band_box(
         return box
 
     subregion = region[y1:y2, x1 : x2 + 1]
-    ys, xs = np.where(subregion)
-    if xs.size == 0 or ys.size == 0:
+    bounds = _mask_bounds(subregion)
+    if bounds is None:
         return box
-    return [x1 + int(xs.min()), y1 + int(ys.min()), x1 + int(xs.max()), y1 + int(ys.max())]
+    bx1, by1, bx2, by2 = bounds
+    return [x1 + bx1, y1 + by1, x1 + bx2, y1 + by2]
 
 def _merge_left_marginal_boxes(boxes: list[list[int]], span_width: int, median_height: float) -> list[list[int]]:
     if len(boxes) <= 2:
@@ -580,14 +633,14 @@ def _refine_subspan_box(
     local_x2: int,
 ) -> list[int] | None:
     subregion = region[:, local_x1:local_x2]
-    ys, xs = np.where(subregion)
-    if xs.size == 0 or ys.size == 0:
+    bounds = _mask_bounds(subregion)
+    if bounds is None:
         return None
 
-    min_x = offset_x + local_x1 + int(xs.min())
-    max_x = offset_x + local_x1 + int(xs.max())
-    min_y = offset_y + int(ys.min())
-    max_y = offset_y + int(ys.max())
+    min_x = offset_x + local_x1 + bounds[0]
+    max_x = offset_x + local_x1 + bounds[2]
+    min_y = offset_y + bounds[1]
+    max_y = offset_y + bounds[3]
     if (max_x - min_x) < 4 and (max_y - min_y) < 4:
         return None
     return [min_x, min_y, max_x, max_y]

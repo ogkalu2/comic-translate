@@ -5,12 +5,18 @@ import imkit as imk
 
 from .geometry import _line_axis_box, _clamp_box, _is_polygon_line
 from .clustering import _cluster_components_by_y, _component_boxes, _components_to_box
+from .mask import _MaskStats, _sum_box_pixels
 
-def _score_line_candidate(lines: list[list[int]], direction: str, text_mask: np.ndarray) -> float:
+def _score_line_candidate(
+    lines: list[list[int]],
+    direction: str,
+    text_mask: np.ndarray,
+    mask_stats: _MaskStats | None = None,
+) -> float:
     if not lines:
         return -1_000_000.0
 
-    total_text_pixels = int(text_mask.sum())
+    total_text_pixels = mask_stats.total_pixels if mask_stats is not None else int(text_mask.sum())
     if total_text_pixels <= 0:
         return -1_000_000.0
 
@@ -18,7 +24,7 @@ def _score_line_candidate(lines: list[list[int]], direction: str, text_mask: np.
     total_area = 0.0
     shape_scores: list[float] = []
     for line in lines:
-        line_pixels, line_area, line_width, line_height = _line_coverage_metrics(line, text_mask)
+        line_pixels, line_area, line_width, line_height = _line_coverage_metrics(line, text_mask, mask_stats=mask_stats)
         if line_area <= 0:
             continue
 
@@ -39,7 +45,11 @@ def _score_line_candidate(lines: list[list[int]], direction: str, text_mask: np.
 
     return coverage * 1.4 + density * 0.8 + shape_score * 1.2 - fragmentation_penalty
 
-def _line_coverage_metrics(line, text_mask: np.ndarray) -> tuple[int, float, float, float]:
+def _line_coverage_metrics(
+    line,
+    text_mask: np.ndarray,
+    mask_stats: _MaskStats | None = None,
+) -> tuple[int, float, float, float]:
     if _is_polygon_line(line):
         points = np.asarray(line, dtype=float)[:4]
         edge_x = points[1] - points[0]
@@ -76,12 +86,17 @@ def _line_coverage_metrics(line, text_mask: np.ndarray) -> tuple[int, float, flo
 
     line_width = float(max(1, x2 - x1 + 1))
     line_height = float(max(1, y2 - y1 + 1))
-    return int(text_mask[y1:y2 + 1, x1:x2 + 1].sum()), line_width * line_height, line_width, line_height
+    if mask_stats is not None:
+        pixels = _sum_box_pixels(mask_stats.integral_image, x1, y1, x2, y2)
+    else:
+        pixels = int(text_mask[y1:y2 + 1, x1:x2 + 1].sum())
+    return pixels, line_width * line_height, line_width, line_height
 
 def _is_large_glyph_horizontal(
     text_mask: np.ndarray,
     horizontal_lines: list[list[int]],
     vertical_lines: list[list[int]],
+    mask_stats: _MaskStats | None = None,
 ) -> bool:
     union = _union_box_local(horizontal_lines + vertical_lines)
     if union is None:
@@ -92,16 +107,27 @@ def _is_large_glyph_horizontal(
     if width < height * 0.9 or len(horizontal_lines) > 2 or len(vertical_lines) > 4:
         return False
 
-    num_labels, _, stats, centroids = imk.connected_components_with_stats(
-        text_mask.astype(np.uint8),
-        connectivity=8,
-    )
     components = []
-    for label in range(1, num_labels):
-        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
-        if area < 20:
-            continue
-        components.append((x1, y1, comp_width, comp_height, area, centroids[label]))
+    if mask_stats is not None:
+        for component in mask_stats.component_boxes:
+            components.append((
+                int(component["x1"]),
+                int(component["y1"]),
+                int(component["width"]),
+                int(component["height"]),
+                int(component["area"]),
+                np.asarray([component["cx"], component["cy"]], dtype=float),
+            ))
+    else:
+        num_labels, _, stats, centroids = imk.connected_components_with_stats(
+            text_mask.astype(np.uint8),
+            connectivity=8,
+        )
+        for label in range(1, num_labels):
+            x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+            if area < 20:
+                continue
+            components.append((x1, y1, comp_width, comp_height, area, centroids[label]))
 
     if components:
         max_area = max(component[4] for component in components)
@@ -163,6 +189,7 @@ def _is_fragmented_rotated_horizontal_text(
     text_mask: np.ndarray,
     horizontal_lines: list[list[int]],
     vertical_lines: list[list[int]],
+    component_boxes: list[dict[str, float]] | None = None,
 ) -> bool:
     if len(horizontal_lines) < 5 or len(vertical_lines) < 2:
         return False
@@ -219,24 +246,29 @@ def _is_sparse_horizontal_overfit(
     vertical_lines: list[list[int]],
     horizontal_score: float,
     vertical_score: float,
+    mask_stats: _MaskStats | None = None,
 ) -> bool:
     if len(horizontal_lines) < 5 or len(vertical_lines) < len(horizontal_lines):
         return False
 
-    mask_density = int(text_mask.sum()) / max(1, text_mask.shape[0] * text_mask.shape[1])
+    total_pixels = mask_stats.total_pixels if mask_stats is not None else int(text_mask.sum())
+    mask_density = total_pixels / max(1, text_mask.shape[0] * text_mask.shape[1])
     if mask_density >= 0.06 or vertical_score < horizontal_score - 0.12:
         return False
 
     densities: list[float] = []
     for line in horizontal_lines:
-        pixels, area, _, _ = _line_coverage_metrics(line, text_mask)
+        pixels, area, _, _ = _line_coverage_metrics(line, text_mask, mask_stats=mask_stats)
         if area > 0:
             densities.append(pixels / area)
 
     return bool(densities) and float(np.median(densities)) < 0.09
 
-def _detect_sparse_vertical_component_columns(text_mask: np.ndarray) -> list[list[int]]:
-    components = _component_boxes(text_mask)
+def _detect_sparse_vertical_component_columns(
+    text_mask: np.ndarray,
+    component_boxes: list[dict[str, float]] | None = None,
+) -> list[list[int]]:
+    components = component_boxes if component_boxes is not None else _component_boxes(text_mask)
     if len(components) < 2:
         return []
 

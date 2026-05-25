@@ -1,6 +1,98 @@
 from __future__ import annotations
+from dataclasses import dataclass
 import numpy as np
 import imkit as imk
+
+@dataclass(slots=True)
+class _MaskStats:
+    mask: np.ndarray
+    mask_uint8: np.ndarray
+    total_pixels: int
+    integral_image: np.ndarray
+    num_labels: int
+    labels: np.ndarray
+    stats: np.ndarray
+    centroids: np.ndarray
+    median_w: float
+    median_h: float
+    component_boxes: list[dict[str, float]]
+
+def _compute_integral_image(mask: np.ndarray) -> np.ndarray:
+    return mask.astype(np.int32, copy=False).cumsum(axis=0).cumsum(axis=1)
+
+def _sum_box_pixels(integral_image: np.ndarray, x1: int, y1: int, x2: int, y2: int) -> int:
+    total = int(integral_image[y2, x2])
+    if x1 > 0:
+        total -= int(integral_image[y2, x1 - 1])
+    if y1 > 0:
+        total -= int(integral_image[y1 - 1, x2])
+    if x1 > 0 and y1 > 0:
+        total += int(integral_image[y1 - 1, x1 - 1])
+    return total
+
+def _mask_bounds(mask: np.ndarray) -> tuple[int, int, int, int] | None:
+    if mask.size == 0:
+        return None
+    row_has_ink = mask.any(axis=1)
+    if not bool(row_has_ink.any()):
+        return None
+    col_has_ink = mask.any(axis=0)
+    y1 = int(np.argmax(row_has_ink))
+    y2 = int(row_has_ink.size - np.argmax(row_has_ink[::-1]) - 1)
+    x1 = int(np.argmax(col_has_ink))
+    x2 = int(col_has_ink.size - np.argmax(col_has_ink[::-1]) - 1)
+    return x1, y1, x2, y2
+
+def _component_boxes_from_cc(
+    stats: np.ndarray,
+    centroids: np.ndarray,
+    min_area: int = 20,
+) -> list[dict[str, float]]:
+    components: list[dict[str, float]] = []
+    for label in range(1, stats.shape[0]):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+        if area < min_area:
+            continue
+        components.append({
+            "x1": float(x1),
+            "y1": float(y1),
+            "x2": float(x1 + comp_width - 1),
+            "y2": float(y1 + comp_height - 1),
+            "width": float(comp_width),
+            "height": float(comp_height),
+            "area": float(area),
+            "cx": float(centroids[label][0]),
+            "cy": float(centroids[label][1]),
+        })
+    return components
+
+def _compute_mask_stats(mask: np.ndarray) -> _MaskStats:
+    mask_uint8 = mask.astype(np.uint8)
+    num_labels, labels, stats, centroids = imk.connected_components_with_stats(
+        mask_uint8,
+        connectivity=8,
+    )
+    valid_stats = stats[1:][stats[1:, 4] >= 8] if stats.shape[0] > 1 else np.empty((0, 5), dtype=stats.dtype)
+    if valid_stats.size > 0:
+        median_w = float(np.median(valid_stats[:, 2]))
+        median_h = float(np.median(valid_stats[:, 3]))
+    else:
+        median_w = 12.0
+        median_h = 12.0
+
+    return _MaskStats(
+        mask=mask,
+        mask_uint8=mask_uint8,
+        total_pixels=int(mask.sum()),
+        integral_image=_compute_integral_image(mask),
+        num_labels=num_labels,
+        labels=labels,
+        stats=stats,
+        centroids=centroids,
+        median_w=median_w,
+        median_h=median_h,
+        component_boxes=_component_boxes_from_cc(stats, centroids),
+    )
 
 def _prepare_text_mask(image: np.ndarray) -> np.ndarray | None:
     text_mask = _text_mask(image)
@@ -35,32 +127,18 @@ def _inverse_text_mask(image: np.ndarray) -> np.ndarray | None:
     return gray >= threshold if bg_is_light else gray <= threshold
 
 def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
-    num_labels, labels, stats, _ = imk.connected_components_with_stats(
-        text_mask.astype(np.uint8),
-        connectivity=8,
-    )
+    mask_stats = _compute_mask_stats(text_mask)
+    num_labels = mask_stats.num_labels
+    labels = mask_stats.labels
+    stats = mask_stats.stats
     if num_labels <= 1:
         return text_mask
 
     height, width = text_mask.shape[:2]
     cleaned = text_mask.copy()
     original_pixels = int(text_mask.sum())
-
-    # 1. Compute median width and height of valid components (ignoring very small noise/dots)
-    valid_widths = []
-    valid_heights = []
-    for label in range(1, num_labels):
-        _, _, comp_width, comp_height, area = [int(v) for v in stats[label]]
-        if area >= 8:
-            valid_widths.append(comp_width)
-            valid_heights.append(comp_height)
-
-    if valid_widths:
-        median_w = float(np.median(valid_widths))
-        median_h = float(np.median(valid_heights))
-    else:
-        median_w = 12.0
-        median_h = 12.0
+    median_w = mask_stats.median_w
+    median_h = mask_stats.median_h
 
     removed_labels: list[int] = []
 
@@ -120,17 +198,14 @@ def _remove_edge_components(text_mask: np.ndarray) -> np.ndarray:
     return _restore_leading_text_from_edge_components(text_mask, cleaned, labels, removed_labels, median_w, median_h)
 
 def _has_enough_text_after_edge_cleanup(cleaned_mask: np.ndarray) -> bool:
-    remaining_pixels = int(cleaned_mask.sum())
+    cleaned_stats = _compute_mask_stats(cleaned_mask)
+    remaining_pixels = cleaned_stats.total_pixels
     if remaining_pixels < 200:
         return False
 
-    num_labels, _, stats, _ = imk.connected_components_with_stats(
-        cleaned_mask.astype(np.uint8),
-        connectivity=8,
-    )
     text_like_components = 0
-    for label in range(1, num_labels):
-        _, _, comp_width, comp_height, area = [int(v) for v in stats[label]]
+    for label in range(1, cleaned_stats.num_labels):
+        _, _, comp_width, comp_height, area = [int(v) for v in cleaned_stats.stats[label]]
         if area < 8:
             continue
         if comp_width < 2 or comp_height < 2:
@@ -184,13 +259,10 @@ def _restore_leading_text_from_edge_components(
     return restored
 
 def _band_text_min_x(band_mask: np.ndarray) -> int | None:
-    num_labels, _, stats, _ = imk.connected_components_with_stats(
-        band_mask.astype(np.uint8),
-        connectivity=8,
-    )
+    band_stats = _compute_mask_stats(band_mask)
     min_x: int | None = None
-    for label in range(1, num_labels):
-        x1, _, comp_width, comp_height, area = [int(v) for v in stats[label]]
+    for label in range(1, band_stats.num_labels):
+        x1, _, comp_width, comp_height, area = [int(v) for v in band_stats.stats[label]]
         if area < 8 or comp_width < 3 or comp_height < 3:
             continue
         min_x = x1 if min_x is None else min(min_x, x1)
@@ -216,8 +288,8 @@ def _horizontal_ink_spans(mask: np.ndarray) -> list[tuple[int, int]]:
 def _remove_long_edge_strokes(mask: np.ndarray, band_y1: int, band_y2: int) -> np.ndarray:
     cleaned = mask.copy()
     band_height = max(1, band_y2 - band_y1)
-    ys, xs = np.where(cleaned)
-    active_width = int(xs.max() - xs.min() + 1) if xs.size else cleaned.shape[1]
+    bounds = _mask_bounds(cleaned)
+    active_width = (bounds[2] - bounds[0] + 1) if bounds is not None else cleaned.shape[1]
     row_sum = cleaned.sum(axis=1)
     col_sum = cleaned.sum(axis=0)
     cleaned[row_sum >= max(20, int(active_width * 0.30)), :] = False
@@ -232,16 +304,13 @@ def _leading_text_candidate(
     median_w: float,
     median_h: float,
 ) -> np.ndarray | None:
-    num_labels, labels, stats, _ = imk.connected_components_with_stats(
-        side_mask.astype(np.uint8),
-        connectivity=8,
-    )
-    if num_labels <= 1:
+    side_stats = _compute_mask_stats(side_mask)
+    if side_stats.num_labels <= 1:
         return None
 
     kept = np.zeros_like(side_mask)
-    for label in range(1, num_labels):
-        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+    for label in range(1, side_stats.num_labels):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in side_stats.stats[label]]
         x2 = x1 + comp_width - 1
         if area < 8:
             continue
@@ -253,7 +322,7 @@ def _leading_text_candidate(
             continue
         if comp_width > max(40, int(round(median_w * 5.0))):
             continue
-        kept[labels == label] = True
+        kept[side_stats.labels == label] = True
 
     if not bool(kept.any()):
         return None
@@ -262,11 +331,11 @@ def _leading_text_candidate(
     if kept is None:
         return None
 
-    ys, xs = np.where(kept)
-    if xs.size == 0:
+    bounds = _mask_bounds(kept)
+    if bounds is None:
         return None
-    gap_to_text = text_x1 - int(xs.max()) - 1
-    candidate_width = int(xs.max() - xs.min() + 1)
+    gap_to_text = text_x1 - bounds[2] - 1
+    candidate_width = bounds[2] - bounds[0] + 1
     if gap_to_text > max(12, int(round(median_w * 2.5))):
         return None
     if candidate_width > max(90, int(round(median_w * 7.0))):
@@ -280,16 +349,13 @@ def _select_rightmost_leading_text_cluster(
     median_w: float,
     median_h: float,
 ) -> np.ndarray | None:
-    num_labels, labels, stats, _ = imk.connected_components_with_stats(
-        mask.astype(np.uint8),
-        connectivity=8,
-    )
-    if num_labels <= 1:
+    mask_stats = _compute_mask_stats(mask)
+    if mask_stats.num_labels <= 1:
         return None
 
     components: list[dict[str, int]] = []
-    for label in range(1, num_labels):
-        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+    for label in range(1, mask_stats.num_labels):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in mask_stats.stats[label]]
         x2 = x1 + comp_width - 1
         y2 = y1 + comp_height - 1
         if area < 8 or x2 >= text_x1:
@@ -310,13 +376,16 @@ def _select_rightmost_leading_text_cluster(
 
     components.sort(key=lambda item: item["x1"])
     groups: list[list[dict[str, int]]] = [[components[0]]]
+    group_max_x2s: list[int] = [components[0]["x2"]]
     max_gap = max(4, int(round(median_w * 0.75)))
     for component in components[1:]:
-        current_x2 = max(item["x2"] for item in groups[-1])
+        current_x2 = group_max_x2s[-1]
         if component["x1"] - current_x2 - 1 <= max_gap:
             groups[-1].append(component)
+            group_max_x2s[-1] = max(group_max_x2s[-1], component["x2"])
         else:
             groups.append([component])
+            group_max_x2s.append(component["x2"])
 
     best_group: list[dict[str, int]] | None = None
     best_x2 = -1
@@ -343,25 +412,22 @@ def _select_rightmost_leading_text_cluster(
 
     selected = np.zeros_like(mask)
     for component in best_group:
-        selected[labels == component["label"]] = True
+        selected[mask_stats.labels == component["label"]] = True
     return selected
 
 def _remove_non_text_components(text_mask: np.ndarray) -> np.ndarray:
-    num_labels, labels, stats, _ = imk.connected_components_with_stats(
-        text_mask.astype(np.uint8),
-        connectivity=8,
-    )
-    if num_labels <= 1:
+    mask_stats = _compute_mask_stats(text_mask)
+    if mask_stats.num_labels <= 1:
         return text_mask
 
     height, width = text_mask.shape[:2]
     cleaned = text_mask.copy()
     original_pixels = int(text_mask.sum())
-    for label in range(1, num_labels):
-        x1, y1, comp_width, comp_height, area = [int(v) for v in stats[label]]
+    for label in range(1, mask_stats.num_labels):
+        x1, y1, comp_width, comp_height, area = [int(v) for v in mask_stats.stats[label]]
         component_density = area / max(1, comp_width * comp_height)
         if comp_width >= width * 0.55 and comp_height >= height * 0.35 and component_density < 0.08:
-            cleaned[labels == label] = False
+            cleaned[mask_stats.labels == label] = False
 
     if int(cleaned.sum()) < max(8, original_pixels * 0.20):
         return text_mask
