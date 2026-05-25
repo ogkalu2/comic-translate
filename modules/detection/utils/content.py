@@ -263,6 +263,12 @@ def _mask_from_component_stats(
         & ((y1 + h) <= height - margin)
     )
     keep = (area_mask | small_component_mask) & border_mask
+
+    # Filter out components that are too large (likely background fills in colored narration boxes)
+    if height * width > 150:
+        max_area = int(0.50 * height * width)
+        keep = keep & (area < max_area)
+
     if not np.any(keep):
         return np.zeros(binary_mask.shape[:2], dtype=np.uint8)
 

@@ -72,13 +72,15 @@ def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: i
         close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
         crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
 
-        # 8) Determine dilation kernel size
-        kernel_size = default_padding
+        # 8) Determine dilation kernel size and iterations
         src_lang = getattr(blk, 'source_lang', None)
-        if src_lang and src_lang not in ['ja', 'ko']:
+        if src_lang in ['ja', 'ko']:
+            kernel_size = default_padding
+            dilate_iterations = 3  # High-quality 3x dilation strictly for Japanese/Korean manga SFX and text
+        else:
             kernel_size = 3
-        dilate_iterations = 1
-        
+            dilate_iterations = 1  # Conservative 1x dilation default (avoiding black boxes on Western comics/None)
+
         # Keep mask inside bubble interiors when bubble bounds are available.
         if getattr(blk, 'text_class', None) == 'text_bubble' and getattr(blk, 'bubble_xyxy', None) is not None:
             bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
