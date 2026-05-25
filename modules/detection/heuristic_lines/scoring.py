@@ -66,9 +66,7 @@ def _line_coverage_metrics(
         if xs.size == 0:
             return 0, line_width * line_height, line_width, line_height
 
-        ink_points = np.empty((xs.size, 2), dtype=np.float64)
-        ink_points[:, 0] = xs + x1
-        ink_points[:, 1] = ys + y1
+        ink_points = np.column_stack((xs + x1, ys + y1)).astype(float)
         delta = ink_points - points[0]
         unit_x = edge_x / line_width
         unit_y = edge_y / line_height

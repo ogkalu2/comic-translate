@@ -45,22 +45,6 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
     base_score = _score_line_candidate(best_lines, "horizontal", text_mask)
     best_score = base_score
 
-    # Early exit if the unskewed baseline already matches or exceeds a high score threshold
-    # only for multi-line blocks, since single skewed lines can still have high baseline scores due to 100% coverage
-    if len(base_lines) >= 2 and base_score >= 1.85:
-        return best_lines
-
-    # Pre-extract coordinates to avoid redundant np.where and shifting allocations in the loop
-    height, width = text_mask.shape[:2]
-    ys, xs = np.where(text_mask)
-    if xs.size == 0 or ys.size == 0:
-        return best_lines
-
-    center_x = (width - 1) / 2.0
-    center_y = (height - 1) / 2.0
-    xs_shifted = xs - center_x
-    ys_shifted = ys - center_y
-
     # Pass 1: Coarse search on widely separated angles (refined to include minor and extreme skews)
     coarse_angles = [-33, -24, -15, -6, 6, 15, 24, 33]
     best_coarse_angle = 0
@@ -68,10 +52,7 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
     best_coarse_lines = []
 
     for angle in coarse_angles:
-        candidate = _filter_noise_lines(
-            _detect_horizontal_lines_at_angle(text_mask, angle, xs, ys, xs_shifted, ys_shifted),
-            "horizontal"
-        )
+        candidate = _filter_noise_lines(_detect_horizontal_lines_at_angle(text_mask, angle), "horizontal")
         if not candidate:
             continue
         if len(candidate) > max(len(base_lines) + 2, int(math.ceil(len(base_lines) * 1.6))):
@@ -101,10 +82,7 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
     fine_angles = [a for a in fine_angles if -36 <= a <= 36 and a != 0]
 
     for angle in fine_angles:
-        candidate = _filter_noise_lines(
-            _detect_horizontal_lines_at_angle(text_mask, angle, xs, ys, xs_shifted, ys_shifted),
-            "horizontal"
-        )
+        candidate = _filter_noise_lines(_detect_horizontal_lines_at_angle(text_mask, angle), "horizontal")
         if not candidate:
             continue
 
@@ -200,31 +178,18 @@ def _union_axis_boxes(boxes: list[list[int]]) -> list[int] | None:
         max(box[3] for box in boxes),
     ]
 
-def _detect_horizontal_lines_at_angle(
-    text_mask: np.ndarray,
-    angle_degrees: float,
-    xs: np.ndarray | None = None,
-    ys: np.ndarray | None = None,
-    xs_shifted: np.ndarray | None = None,
-    ys_shifted: np.ndarray | None = None,
-) -> list[list[int]]:
+def _detect_horizontal_lines_at_angle(text_mask: np.ndarray, angle_degrees: float) -> list[list[int]]:
     height, width = text_mask.shape[:2]
-    if xs is None or ys is None:
-        ys, xs = np.where(text_mask)
+    ys, xs = np.where(text_mask)
     if xs.size == 0 or ys.size == 0:
         return [[0, 0, width, height]]
 
     center_x = (width - 1) / 2.0
     center_y = (height - 1) / 2.0
-
-    if xs_shifted is None or ys_shifted is None:
-        xs_shifted = xs - center_x
-        ys_shifted = ys - center_y
-
     angle = math.radians(angle_degrees)
     sin_a = math.sin(angle)
     cos_a = math.cos(angle)
-    projected_y = -sin_a * xs_shifted + cos_a * ys_shifted
+    projected_y = -sin_a * (xs - center_x) + cos_a * (ys - center_y)
 
     min_projection = int(math.floor(float(projected_y.min())))
     max_projection = int(math.ceil(float(projected_y.max())))
@@ -249,9 +214,9 @@ def _detect_horizontal_lines_at_angle(
         selected = (bins >= span_start) & (bins < span_end)
         if not bool(selected.any()):
             continue
-        line_xs_shifted = xs_shifted[selected]
-        line_ys_shifted = ys_shifted[selected]
-        line_projected_x = cos_a * line_xs_shifted + sin_a * line_ys_shifted
+        line_xs = xs[selected]
+        line_ys = ys[selected]
+        line_projected_x = cos_a * (line_xs - center_x) + sin_a * (line_ys - center_y)
         line_projected_y = projected_y[selected]
         min_x = float(line_projected_x.min())
         max_x = float(line_projected_x.max())
