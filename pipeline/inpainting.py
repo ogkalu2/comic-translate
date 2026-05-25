@@ -176,27 +176,32 @@ class InpaintingHandler:
         if num_patches == 0:
             return image.copy()
 
-        # Calculate area ratio of the text patches compared to the full image
+        # Calculate mathematically modeled cost comparison:
+        # 1. Calculate the scaled dimension of the full image (AOT/LaMa models cap at 1024px)
         h_img, w_img = image.shape[:2]
-        area_image = w_img * h_img
-        area_patches = sum((x2 - x1) * (y2 - y1) for x1, y1, x2, y2 in merged_boxes)
-        area_ratio = area_patches / area_image
+        max_size = 1024
+        scale = min(1.0, max_size / max(h_img, w_img))
+        full_w = max(1, int(round(w_img * scale)))
+        full_h = max(1, int(round(h_img * scale)))
+        full_pixels = full_w * full_h
 
-        # Huge images (>2560px) lean heavily to patches to prevent GPU OOM and long latency
-        is_huge_resolution = max(w_img, h_img) > 2560
-        max_patches_threshold = 12 if is_huge_resolution else 6
+        # 2. Calculate the cumulative effective pixels processed by all patches,
+        # accounting for minimum dimensions (128px) and padding modules (8px).
+        total_patch_pixels = 0
+        for x1, y1, x2, y2 in merged_boxes:
+            w = max(0, x2 - x1)
+            h = max(0, y2 - y1)
+            eff_w = max(128, int(np.ceil(w / 8.0) * 8))
+            eff_h = max(128, int(np.ceil(h / 8.0) * 8))
+            total_patch_pixels += eff_w * eff_h
 
-        # Hybrid Decision Heuristic
-        if num_patches >= max_patches_threshold:
-            use_patches = False
-        elif area_ratio > 0.35:
-            use_patches = False
-        else:
-            use_patches = True
+        # 3. Add a cost penalty for session run overhead (approx. 50,000 pixels worth of CPU/GPU time per extra patch)
+        session_overhead_penalty = (num_patches - 1) * 50000
+        estimated_patch_cost = total_patch_pixels + session_overhead_penalty
 
-        # Safety override: Force patches if full-image would likely crash GPU VRAM
-        if is_huge_resolution and area_ratio < 0.70:
-            use_patches = True
+        # Choose full-image if the estimated patch cost exceeds the full-image cost
+        use_patches = estimated_patch_cost < full_pixels
+        area_ratio = (sum((x2 - x1) * (y2 - y1) for x1, y1, x2, y2 in merged_boxes)) / (w_img * h_img)
 
         if use_patches:
             logger.info(
