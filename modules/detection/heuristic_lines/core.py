@@ -200,17 +200,33 @@ def _collapse_edge_spanning_horizontal_fragments(
     # Otherwise, check for vertical separation.
     if ratio >= 0.25:
         sorted_boxes = sorted(boxes, key=lambda b: (b[1] + b[3]) / 2.0)
-        has_vertical_separation = False
-        for i in range(len(sorted_boxes) - 1):
-            b1 = sorted_boxes[i]
-            b2 = sorted_boxes[i+1]
+        
+        # For 3 or more lines, we require ALL adjacent pairs to be vertically separated
+        # to consider the block as having valid vertical separation. If some lines overlap
+        # heavily, they are likely fragments/noise and should be collapsed.
+        if len(sorted_boxes) >= 3:
+            num_separated_pairs = 0
+            for i in range(len(sorted_boxes) - 1):
+                b1 = sorted_boxes[i]
+                b2 = sorted_boxes[i+1]
+                h1 = b1[3] - b1[1] + 1
+                h2 = b2[3] - b2[1] + 1
+                overlap = min(b1[3], b2[3]) - max(b1[1], b2[1]) + 1
+                min_h = min(h1, h2)
+                if min_h > 0 and (overlap / min_h) < 0.40:
+                    num_separated_pairs += 1
+            
+            # If not all adjacent pairs are separated, we do not consider it separated
+            has_vertical_separation = (num_separated_pairs == len(sorted_boxes) - 1)
+        else:
+            # For 2 lines, the single pair must be separated
+            b1 = sorted_boxes[0]
+            b2 = sorted_boxes[1]
             h1 = b1[3] - b1[1] + 1
             h2 = b2[3] - b2[1] + 1
             overlap = min(b1[3], b2[3]) - max(b1[1], b2[1]) + 1
             min_h = min(h1, h2)
-            if min_h > 0 and (overlap / min_h) < 0.40:
-                has_vertical_separation = True
-                break
+            has_vertical_separation = (min_h > 0 and (overlap / min_h) < 0.40)
 
         if has_vertical_separation:
             return lines

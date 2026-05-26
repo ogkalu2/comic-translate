@@ -239,6 +239,12 @@ def _detect_horizontal_lines_at_angle(
     if start != -1:
         spans.append((start, len(counts)))
 
+    # Compute median character/glyph height in the block to filter out fake/sliced-off lines
+    from .mask import _compute_mask_stats
+    mask_stats = _compute_mask_stats(text_mask)
+    median_h = mask_stats.median_h
+    min_split_h = max(5, int(round(median_h * 0.45)))
+
     boxes: list[list[int]] = []
     for span_start, span_end in spans:
         selected = (bins >= span_start) & (bins < span_end)
@@ -254,6 +260,11 @@ def _detect_horizontal_lines_at_angle(
         max_y = float(line_projected_y.max())
         if (max_x - min_x) < 4 and (max_y - min_y) < 4:
             continue
+            
+        # Reject rotated lines that are too thin to be real text rows in projection space
+        if (max_y - min_y + 1) < min_split_h:
+            continue
+            
         boxes.append(_quad_from_rotated_rect(min_x, min_y, max_x, max_y, center_x, center_y, sin_a, cos_a, width, height))
 
     return boxes or [[0, 0, width, height]]
