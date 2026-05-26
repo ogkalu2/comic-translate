@@ -191,6 +191,30 @@ def _collapse_edge_spanning_horizontal_fragments(
     if not has_top_edge or not has_bottom_edge:
         return lines
 
+    # Calculate median line height
+    heights = [box[3] - box[1] + 1 for box in boxes]
+    median_h = float(np.median(heights)) if heights else 0
+    ratio = median_h / height if height > 0 else 0
+
+    # If the lines are thin relative to the crop height, it's likely border noise, so collapse them.
+    # Otherwise, check for vertical separation.
+    if ratio >= 0.25:
+        sorted_boxes = sorted(boxes, key=lambda b: (b[1] + b[3]) / 2.0)
+        has_vertical_separation = False
+        for i in range(len(sorted_boxes) - 1):
+            b1 = sorted_boxes[i]
+            b2 = sorted_boxes[i+1]
+            h1 = b1[3] - b1[1] + 1
+            h2 = b2[3] - b2[1] + 1
+            overlap = min(b1[3], b2[3]) - max(b1[1], b2[1]) + 1
+            min_h = min(h1, h2)
+            if min_h > 0 and (overlap / min_h) < 0.40:
+                has_vertical_separation = True
+                break
+
+        if has_vertical_separation:
+            return lines
+
     union = _union_box(lines)
     if union is None:
         return lines
