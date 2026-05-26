@@ -3,7 +3,7 @@ import math
 import numpy as np
 import imkit as imk
 
-from .mask import _mask_bounds, _sum_box_pixels, _compute_mask_stats
+from .mask import _mask_bounds, _sum_box_pixels
 
 def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[int]]:
     height, width = text_mask.shape[:2]
@@ -12,9 +12,6 @@ def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[
 
     tolerance_x = max(1, int(height * 0.02))
     tolerance_y = max(1, int(width * 0.02))
-
-    mask_stats = _compute_mask_stats(text_mask)
-    median_h = mask_stats.median_h
 
     spans: list[tuple[int, int, int, int]] = []
     if direction == "horizontal":
@@ -48,7 +45,7 @@ def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[
             continue
 
         if direction == "horizontal":
-            boxes.extend(_split_horizontal_span(text_mask, sx1, sy1, sx2, sy2, median_h))
+            boxes.extend(_split_horizontal_span(text_mask, sx1, sy1, sx2, sy2))
         else:
             min_x = sx1 + bounds[0]
             max_x = sx1 + bounds[2]
@@ -62,74 +59,61 @@ def _detect_lines_from_mask(text_mask: np.ndarray, direction: str) -> list[list[
         return [[0, 0, width, height]]
     return boxes
 
-def _find_horizontal_valley_splits(region: np.ndarray, median_h: float = 12.0) -> list[int]:
+def _find_horizontal_valley_splits(region: np.ndarray) -> list[int]:
     h, w = region.shape[:2]
     if h < 36:
-        splits = _find_compact_horizontal_valley_splits(region)
-    else:
-        y_sum = region.sum(axis=1)
-        max_peak = int(y_sum.max())
-        if max_peak <= 0:
-            return []
+        return _find_compact_horizontal_valley_splits(region)
 
-        valley_thresh = min(0.12 * max_peak, 0.08 * w)
-        valley_thresh = max(4.0, valley_thresh)
+    y_sum = region.sum(axis=1)
+    max_peak = int(y_sum.max())
+    if max_peak <= 0:
+        return []
 
-        valley_runs = []
-        current_run = []
-        for y in range(h):
-            if float(y_sum[y]) <= valley_thresh:
-                current_run.append(y)
+    valley_thresh = min(0.12 * max_peak, 0.08 * w)
+    valley_thresh = max(4.0, valley_thresh)
+
+    valley_runs = []
+    current_run = []
+    for y in range(h):
+        if float(y_sum[y]) <= valley_thresh:
+            current_run.append(y)
+        else:
+            if current_run:
+                valley_runs.append(current_run)
+                current_run = []
+    if current_run:
+        valley_runs.append(current_run)
+
+    splits = []
+    for run in valley_runs:
+        if run[0] <= 3 or run[-1] >= h - 4:
+            continue
+
+        # Require at least 2 consecutive near-zero rows in the gap by default.
+        # Dense handwritten captions can have real row gaps with a few ink
+        # pixels from descenders/overlapping strokes, so allow those only when
+        # the valley is a strong local minimum with text peaks on both sides.
+        near_zero_streak = 0
+        for y in run:
+            if float(y_sum[y]) <= 1:
+                near_zero_streak += 1
+                if near_zero_streak >= 2:
+                    break
             else:
-                if current_run:
-                    valley_runs.append(current_run)
-                    current_run = []
-        if current_run:
-            valley_runs.append(current_run)
+                near_zero_streak = 0
+        if near_zero_streak < 2 and not _is_soft_horizontal_valley(y_sum, run, max_peak, w):
+            continue
 
-        splits = []
-        for run in valley_runs:
-            if run[0] <= 3 or run[-1] >= h - 4:
-                continue
+        min_y = run[0]
+        min_val = float(y_sum[min_y])
+        for y in run:
+            val = float(y_sum[y])
+            if val < min_val:
+                min_val = val
+                min_y = y
+        splits.append(min_y)
 
-            # Require at least 2 consecutive near-zero rows in the gap by default.
-            # Dense handwritten captions can have real row gaps with a few ink
-            # pixels from descenders/overlapping strokes, so allow those only when
-            # the valley is a strong local minimum with text peaks on both sides.
-            near_zero_streak = 0
-            for y in run:
-                if float(y_sum[y]) <= 1:
-                    near_zero_streak += 1
-                    if near_zero_streak >= 2:
-                        break
-                else:
-                    near_zero_streak = 0
-            if near_zero_streak < 2 and not _is_soft_horizontal_valley(y_sum, run, max_peak, w):
-                continue
-
-            min_y = run[0]
-            min_val = float(y_sum[min_y])
-            for y in run:
-                val = float(y_sum[y])
-                if val < min_val:
-                    min_val = val
-                    min_y = y
-            splits.append(min_y)
-
-    # Filter out fake splits that produce extremely thin bands (tops/bottoms of characters)
-    min_split_h = max(5, int(round(median_h * 0.45)))
-    valid_splits = []
-    for split_y in splits:
-        bounds_top = _mask_bounds(region[:split_y, :])
-        height_top = bounds_top[3] - bounds_top[1] + 1 if bounds_top is not None else 0
-        
-        bounds_bottom = _mask_bounds(region[split_y:, :])
-        height_bottom = bounds_bottom[3] - bounds_bottom[1] + 1 if bounds_bottom is not None else 0
-        
-        if height_top >= min_split_h and height_bottom >= min_split_h:
-            valid_splits.append(split_y)
-
-    return valid_splits
+    return splits
 
 def _find_compact_horizontal_valley_splits(region: np.ndarray) -> list[int]:
     h, w = region.shape[:2]
@@ -193,20 +177,20 @@ def _is_soft_horizontal_valley(y_sum: np.ndarray, run: list[int], max_peak: int,
 
     return min_val <= min(left_peak, right_peak) * 0.35
 
-def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, sy2: int, median_h: float = 12.0) -> list[list[int]]:
+def _split_horizontal_span(text_mask: np.ndarray, sx1: int, sy1: int, sx2: int, sy2: int) -> list[list[int]]:
     region = text_mask[sy1:sy2, sx1:sx2]
     bounds = _mask_bounds(region)
     if bounds is None:
         return []
 
-    splits = _find_horizontal_valley_splits(region, median_h)
+    splits = _find_horizontal_valley_splits(region)
     if splits:
         sub_boxes = []
         last_y = 0
         for split_y in splits:
-            sub_boxes.extend(_split_horizontal_span(text_mask, sx1, sy1 + last_y, sx2, sy1 + split_y, median_h))
+            sub_boxes.extend(_split_horizontal_span(text_mask, sx1, sy1 + last_y, sx2, sy1 + split_y))
             last_y = split_y + 1
-        sub_boxes.extend(_split_horizontal_span(text_mask, sx1, sy1 + last_y, sx2, sy2, median_h))
+        sub_boxes.extend(_split_horizontal_span(text_mask, sx1, sy1 + last_y, sx2, sy2))
         return sub_boxes
 
     component_rows = _split_tall_horizontal_span(region, sx1, sy1)
@@ -399,7 +383,6 @@ def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]
     heights = np.array([max(1, box[3] - box[1] + 1) for box in boxes], dtype=float)
     median_width = float(np.median(widths)) if widths.size else 24.0
     median_height = float(np.median(heights)) if heights.size else 12.0
-    max_height = float(np.max(heights)) if heights.size else 12.0
 
     consumed: set[int] = set()
     for index, box in enumerate(boxes):
@@ -430,22 +413,10 @@ def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]
             # Fragments belonging to the same horizontal text row should overlap vertically.
             vertical_overlap = min(box[3], target[3]) - max(box[1], target[1]) + 1
             min_h = min(box_height, target_height)
-            
-            # Smart top/bottom fragment merging (for sliced-off letter parts)
+            if min_h <= 0 or (vertical_overlap / min_h) < 0.20:
+                continue
+
             vertical_gap = max(0, max(box[1], target[1]) - min(box[3], target[3]) - 1)
-            horizontal_overlap = min(box[2], target[2]) - max(box[0], target[0]) + 1
-            
-            is_vertical_split_fragment = (
-                vertical_overlap <= 0
-                and box_height <= max_height * 0.45  # Must be small relative to maximum line height
-                and vertical_gap <= max(4.0, median_height * 0.15)
-                and horizontal_overlap >= box_width * 0.70
-            )
-
-            if not is_vertical_split_fragment:
-                if min_h <= 0 or (vertical_overlap / min_h) < 0.20:
-                    continue
-
             if vertical_gap > max(8.0, median_height * 0.45):
                 continue
 

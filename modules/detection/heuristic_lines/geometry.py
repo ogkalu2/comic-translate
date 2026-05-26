@@ -73,10 +73,8 @@ def _pad_polygon_line(line, direction: str, width: int, height: int) -> list[lis
     local_y = (points[3] - points[0]) / edge_height
 
     if direction == "horizontal":
-        # Shift center slightly upwards in the local_y direction to bias padding to the top
-        center = center - local_y * (edge_height * 0.08)
         x_scale = (edge_width + max(2.0, edge_height * 0.20)) / edge_width
-        y_scale = (edge_height + max(7.0, edge_height * 0.45)) / edge_height
+        y_scale = (edge_height + max(6.0, edge_height * 0.40)) / edge_height
     else:
         x_scale = (edge_width + max(2.0, edge_width * 0.24)) / edge_width
         y_scale = (edge_height + max(2.0, edge_width * 0.20)) / edge_height
@@ -103,11 +101,9 @@ def _pad_line_boxes(lines: list[list[int]], direction: str, width: int, height: 
         line_height = max(1, y2 - y1 + 1)
         if direction == "horizontal":
             dx = max(1, int(round(line_height * 0.10)))
-            dy_top = max(5, int(round(line_height * 0.28)))
-            dy_bottom = max(3, int(round(line_height * 0.18)))
-            padded.append(_clamp_box([x1 - dx, y1 - dy_top, x2 + dx, y2 + dy_bottom], width, height))
+            dy = max(3, int(round(line_height * 0.20)))
         else:
             dx = max(1, int(round(line_width * 0.12)))
             dy = max(1, int(round(line_width * 0.10)))
-            padded.append(_clamp_box([x1 - dx, y1 - dy, x2 + dx, y2 + dy], width, height))
+        padded.append(_clamp_box([x1 - dx, y1 - dy, x2 + dx, y2 + dy], width, height))
     return padded
