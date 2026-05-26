@@ -375,8 +375,6 @@ def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]
 
     if len(lines) <= 1:
         return lines
-    if any(_is_polygon_line(line) for line in lines):
-        return lines
 
     boxes = [_line_axis_box(line) for line in lines]
     widths = np.array([max(1, box[2] - box[0] + 1) for box in boxes], dtype=float)
@@ -409,15 +407,17 @@ def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]
             if target_width < box_width * 2.0 and target_height < box_height * 2.0:
                 continue
 
-            # Ensure there is vertical overlap between the fragment and the target line.
-            # Fragments belonging to the same horizontal text row should overlap vertically.
+            # Ensure there is vertical overlap OR a very small vertical gap between the fragment and the target line.
             vertical_overlap = min(box[3], target[3]) - max(box[1], target[1]) + 1
             min_h = min(box_height, target_height)
-            if min_h <= 0 or (vertical_overlap / min_h) < 0.20:
-                continue
 
             vertical_gap = max(0, max(box[1], target[1]) - min(box[3], target[3]) - 1)
-            if vertical_gap > max(8.0, median_height * 0.45):
+            gap_limit = max(8.0, median_height * 0.45)
+
+            has_overlap = min_h > 0 and (vertical_overlap / min_h) >= 0.20
+            has_small_gap = vertical_gap <= gap_limit and box_height < target_height * 0.60
+
+            if not has_overlap and not has_small_gap:
                 continue
 
             horizontal_overlap = min(box[2], target[2]) - max(box[0], target[0]) + 1
@@ -442,9 +442,16 @@ def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]
         ]
         consumed.add(index)
 
-    if not consumed:
-        return lines
-    return [box for index, box in enumerate(boxes) if index not in consumed]
+    res = []
+    for index, line in enumerate(lines):
+        if index in consumed:
+            continue
+        orig_box = _line_axis_box(line)
+        if boxes[index] != orig_box:
+            res.append(boxes[index])
+        else:
+            res.append(line)
+    return res
 
 def _filter_marginal_horizontal_artifacts(
     lines: list[list[int]],
