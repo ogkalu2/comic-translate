@@ -409,13 +409,6 @@ def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]
             if target_width < box_width * 2.0 and target_height < box_height * 2.0:
                 continue
 
-            # Ensure there is vertical overlap between the fragment and the target line.
-            # Fragments belonging to the same horizontal text row should overlap vertically.
-            vertical_overlap = min(box[3], target[3]) - max(box[1], target[1]) + 1
-            min_h = min(box_height, target_height)
-            if min_h <= 0 or (vertical_overlap / min_h) < 0.20:
-                continue
-
             vertical_gap = max(0, max(box[1], target[1]) - min(box[3], target[3]) - 1)
             if vertical_gap > max(8.0, median_height * 0.45):
                 continue
