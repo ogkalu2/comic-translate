@@ -7,7 +7,12 @@ from .geometry import _clamp_box, _expand_box, _to_box, _offset_line, _pad_line_
 from .mask import _compute_mask_stats, _prepare_inverse_text_mask, _prepare_text_mask
 from .direction import _fallback_direction, _sort_lines
 from .skew import _detect_horizontal_lines_skew_aware
-from .clustering import _detect_lines_from_mask, _trim_marginal_vertical_noise_from_horizontal_lines
+from .clustering import (
+    _detect_lines_from_mask,
+    _filter_marginal_horizontal_artifacts,
+    _merge_small_horizontal_fragments,
+    _trim_marginal_vertical_noise_from_horizontal_lines,
+)
 from .scoring import (
     _score_line_candidate, _is_large_glyph_horizontal, _is_multiline_horizontal_text,
     _is_fragmented_rotated_horizontal_text, _is_sparse_horizontal_overfit,
@@ -118,6 +123,8 @@ def _detect_lines_and_direction_in_crop(
         )
         lines = _collapse_edge_spanning_horizontal_fragments(lines, text_mask, vertical_lines)
         lines, text_mask = _replace_low_density_line_with_inverse_mask(image, lines, text_mask)
+        lines = _merge_small_horizontal_fragments(lines)
+        lines = _filter_marginal_horizontal_artifacts(lines, text_mask)
     else:
         if _should_use_component_vertical_columns(text_mask, vertical_lines, component_vertical_lines):
             vertical_lines = component_vertical_lines

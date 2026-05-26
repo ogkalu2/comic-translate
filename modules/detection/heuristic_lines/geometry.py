@@ -74,7 +74,7 @@ def _pad_polygon_line(line, direction: str, width: int, height: int) -> list[lis
 
     if direction == "horizontal":
         x_scale = (edge_width + max(2.0, edge_height * 0.20)) / edge_width
-        y_scale = (edge_height + max(2.0, edge_height * 0.24)) / edge_height
+        y_scale = (edge_height + max(6.0, edge_height * 0.40)) / edge_height
     else:
         x_scale = (edge_width + max(2.0, edge_width * 0.24)) / edge_width
         y_scale = (edge_height + max(2.0, edge_width * 0.20)) / edge_height
@@ -101,7 +101,7 @@ def _pad_line_boxes(lines: list[list[int]], direction: str, width: int, height: 
         line_height = max(1, y2 - y1 + 1)
         if direction == "horizontal":
             dx = max(1, int(round(line_height * 0.10)))
-            dy = max(1, int(round(line_height * 0.12)))
+            dy = max(3, int(round(line_height * 0.20)))
         else:
             dx = max(1, int(round(line_width * 0.12)))
             dy = max(1, int(round(line_width * 0.10)))

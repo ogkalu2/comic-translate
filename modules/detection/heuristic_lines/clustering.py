@@ -313,6 +313,15 @@ def _trim_marginal_vertical_noise_from_horizontal_lines(
             overlap_y = max(0, min(refined[3], column[3]) - max(refined[1], column[1]) + 1)
             if overlap_y < max(2, int(round(line_height * 0.25))):
                 continue
+            if _has_intervening_text_ink(
+                text_mask,
+                integral_image,
+                refined,
+                main_box,
+                column,
+                side,
+            ):
+                continue
 
             if side == "left" and refined[0] <= column[2] and refined[2] >= main_box[0]:
                 candidate = _refine_box_in_range(text_mask, main_box[0], refined[1], refined[2], refined[3])
@@ -325,6 +334,166 @@ def _trim_marginal_vertical_noise_from_horizontal_lines(
         trimmed_lines.append(refined)
 
     return trimmed_lines
+
+def _has_intervening_text_ink(
+    text_mask: np.ndarray,
+    integral_image: np.ndarray,
+    line_box: list[int],
+    main_box: list[int],
+    column: list[int],
+    side: str,
+) -> bool:
+    if side == "left":
+        x1 = column[2] + 1
+        x2 = main_box[0] - 1
+    elif side == "right":
+        x1 = main_box[2] + 1
+        x2 = column[0] - 1
+    else:
+        return False
+
+    height, width = text_mask.shape[:2]
+    y1 = max(0, min(height - 1, int(line_box[1])))
+    y2 = max(0, min(height - 1, int(line_box[3])))
+    x1 = max(0, min(width - 1, int(x1)))
+    x2 = max(0, min(width - 1, int(x2)))
+    if x2 < x1 or y2 < y1:
+        return False
+
+    line_height = max(1, y2 - y1 + 1)
+    bridge_pixels = _sum_box_pixels(integral_image, x1, y1, x2, y2)
+    if bridge_pixels < max(12, int(round(line_height * 0.75))):
+        return False
+
+    bridge = text_mask[y1 : y2 + 1, x1 : x2 + 1]
+    bridge_width = max(1, x2 - x1 + 1)
+    ink_columns = int(bridge.any(axis=0).sum())
+    return ink_columns >= max(3, min(12, int(round(bridge_width * 0.08))))
+
+def _merge_small_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]:
+    from .geometry import _is_polygon_line, _line_axis_box
+
+    if len(lines) <= 1:
+        return lines
+    if any(_is_polygon_line(line) for line in lines):
+        return lines
+
+    boxes = [_line_axis_box(line) for line in lines]
+    widths = np.array([max(1, box[2] - box[0] + 1) for box in boxes], dtype=float)
+    heights = np.array([max(1, box[3] - box[1] + 1) for box in boxes], dtype=float)
+    median_width = float(np.median(widths)) if widths.size else 24.0
+    median_height = float(np.median(heights)) if heights.size else 12.0
+
+    consumed: set[int] = set()
+    for index, box in enumerate(boxes):
+        if index in consumed:
+            continue
+
+        box_width = max(1, box[2] - box[0] + 1)
+        box_height = max(1, box[3] - box[1] + 1)
+        is_small_fragment = (
+            box_height <= max(8.0, median_height * 0.45)
+            and box_width <= max(36.0, median_width * 0.35)
+        )
+        if not is_small_fragment:
+            continue
+
+        center_x = (box[0] + box[2]) / 2.0
+        best_target: int | None = None
+        best_gap: float | None = None
+        for target_index, target in enumerate(boxes):
+            if target_index == index or target_index in consumed:
+                continue
+            target_width = max(1, target[2] - target[0] + 1)
+            target_height = max(1, target[3] - target[1] + 1)
+            if target_width < box_width * 2.0 and target_height < box_height * 2.0:
+                continue
+
+            vertical_gap = max(0, max(box[1], target[1]) - min(box[3], target[3]) - 1)
+            if vertical_gap > max(8.0, median_height * 0.45):
+                continue
+
+            horizontal_overlap = min(box[2], target[2]) - max(box[0], target[0]) + 1
+            center_in_target = target[0] - median_height <= center_x <= target[2] + median_height
+            enough_overlap = horizontal_overlap >= min(box_width * 0.35, 8.0)
+            if not center_in_target and not enough_overlap:
+                continue
+
+            if best_gap is None or vertical_gap < best_gap:
+                best_gap = float(vertical_gap)
+                best_target = target_index
+
+        if best_target is None:
+            continue
+
+        target = boxes[best_target]
+        boxes[best_target] = [
+            min(target[0], box[0]),
+            min(target[1], box[1]),
+            max(target[2], box[2]),
+            max(target[3], box[3]),
+        ]
+        consumed.add(index)
+
+    if not consumed:
+        return lines
+    return [box for index, box in enumerate(boxes) if index not in consumed]
+
+def _filter_marginal_horizontal_artifacts(
+    lines: list[list[int]],
+    text_mask: np.ndarray,
+) -> list[list[int]]:
+    from .geometry import _is_polygon_line, _line_axis_box
+
+    if len(lines) <= 1:
+        return lines
+    if any(_is_polygon_line(line) for line in lines):
+        return lines
+
+    width = text_mask.shape[1]
+    boxes = [_line_axis_box(line) for line in lines]
+    line_widths = np.array([max(1, box[2] - box[0] + 1) for box in boxes], dtype=float)
+    line_heights = np.array([max(1, box[3] - box[1] + 1) for box in boxes], dtype=float)
+    median_width = float(np.median(line_widths)) if line_widths.size else 24.0
+    median_height = float(np.median(line_heights)) if line_heights.size else 12.0
+
+    edge_margin = max(4, int(round(width * 0.03)))
+    max_artifact_width = max(40.0, median_width * 0.18)
+    max_artifact_height = max(12.0, median_height * 0.80)
+    kept: list[list[int]] = []
+    for index, box in enumerate(boxes):
+        line_width = max(1, box[2] - box[0] + 1)
+        line_height = max(1, box[3] - box[1] + 1)
+        touches_edge = box[0] <= edge_margin or box[2] >= width - 1 - edge_margin
+        if not touches_edge or line_width > max_artifact_width or line_height > max_artifact_height:
+            kept.append(box)
+            continue
+
+        overlaps_other_text = False
+        for other_index, other in enumerate(boxes):
+            if other_index == index:
+                continue
+            other_width = max(1, other[2] - other[0] + 1)
+            if other_width <= line_width:
+                continue
+            horizontal_overlap = min(box[2], other[2]) - max(box[0], other[0]) + 1
+            horizontal_gap = max(0, max(box[0], other[0]) - min(box[2], other[2]) - 1)
+            vertical_overlap = min(box[3], other[3]) - max(box[1], other[1]) + 1
+            min_height = min(line_height, max(1, other[3] - other[1] + 1))
+            meaningful_overlap = horizontal_overlap >= max(8.0, line_width * 0.35)
+            same_row_neighbor = (
+                horizontal_overlap <= 0
+                and horizontal_gap <= max(8.0, median_height * 0.35)
+                and vertical_overlap >= max(2.0, min_height * 0.25)
+            )
+            if meaningful_overlap or same_row_neighbor:
+                overlaps_other_text = True
+                break
+
+        if overlaps_other_text:
+            kept.append(box)
+
+    return kept or lines
 
 def _refine_box_in_range(text_mask: np.ndarray, x1: int, y1: int, x2: int, y2: int) -> list[int] | None:
     h, w = text_mask.shape[:2]
