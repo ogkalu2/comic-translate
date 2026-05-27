@@ -153,6 +153,20 @@ class TextController:
         text_item = self.main.image_viewer.add_text_item(properties)
         text_item.set_plain_text(text)
 
+        # Update or append the block in the main controller's blk_list
+        existing_idx = next(
+            (
+                i for i, b in enumerate(self.main.blk_list)
+                if is_close(b.xyxy[0], blk.xyxy[0], 5) and is_close(b.xyxy[1], blk.xyxy[1], 5)
+                and is_close(b.angle, blk.angle, 1)
+            ),
+            None
+        )
+        if existing_idx is not None:
+            self.main.blk_list[existing_idx] = blk
+        else:
+            self.main.blk_list.append(blk)
+
         command = AddTextItemCommand(self.main, text_item)
         self.main.push_command(command)
 
