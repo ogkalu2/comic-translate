@@ -10,7 +10,8 @@ from PIL import Image, UnidentifiedImageError
 
 from app.path_materialization import ensure_path_materialized
 from modules.utils.textblock import sort_blk_list
-from ..virtual_page import VirtualPage
+from modules.detection.heuristic_lines import annotate_blocks_with_heuristic_lines
+from pipeline.virtual_page import VirtualPage
 
 if TYPE_CHECKING:
     from .processor import WebtoonBatchProcessor
@@ -569,6 +570,11 @@ class FlowMixin:
                     next_record=next_record,
                     split_owned_blocks=split_owned_blocks,
                 )
+                if split_owned_blocks:
+                    try:
+                        annotate_blocks_with_heuristic_lines(ocr_image, split_owned_blocks, source_lang)
+                    except Exception as e:
+                        logger.warning("Failed to run unified line detection on seam split: %s", e)
                 ocr_blocks = regular_blocks + split_owned_blocks
                 ocr_affected_paths = [current_record["path"]]
                 if split_owned_blocks and next_record is not None:
