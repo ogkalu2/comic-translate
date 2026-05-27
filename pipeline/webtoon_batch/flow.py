@@ -582,6 +582,16 @@ class FlowMixin:
                     sort_after=False,
                 )
 
+                self._emit_progress(current_record["selected_index"], total_images, 7, False)
+                target_lang = page_state.get("target_lang", self.main_page.t_combo.currentText())
+                self._run_translation_on_blocks(
+                    image=current_record["image"],
+                    blocks=ocr_blocks,
+                    source_lang=source_lang,
+                    target_lang=target_lang,
+                    image_path=current_record["path"],
+                )
+
                 self._emit_progress(current_record["selected_index"], total_images, 4, False)
                 mask, inpainted = self._inpaint_image_with_blocks(
                     current_record["image"], regular_blocks
@@ -616,16 +626,6 @@ class FlowMixin:
                 rtl = source_lang_en == "Japanese"
                 final_blocks_virtual = (
                     sort_blk_list(final_blocks_virtual, rtl) if final_blocks_virtual else []
-                )
-
-                self._emit_progress(current_record["selected_index"], total_images, 7, False)
-                target_lang = page_state.get("target_lang", self.main_page.t_combo.currentText())
-                self._run_translation_on_blocks(
-                    image=current_record["image"],
-                    blocks=final_blocks_virtual,
-                    source_lang=source_lang,
-                    target_lang=target_lang,
-                    image_path=current_record["path"],
                 )
 
                 final_blocks_physical = self._convert_blocks_to_physical(
