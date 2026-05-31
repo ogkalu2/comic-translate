@@ -516,6 +516,10 @@ class SettingsPage(QtWidgets.QWidget):
         msg_box.setDefaultButton(ok_btn)
         msg_box.exec()
 
+    def start_buy_credits_flow(self):
+        """Trigger the existing credits purchase flow."""
+        self.open_pricing_page()
+
     def _ask_yes_no(self, title: str, text: str, default_yes: bool = False) -> bool:
         msg_box = QtWidgets.QMessageBox(self)
         msg_box.setIcon(QtWidgets.QMessageBox.Icon.Question)
