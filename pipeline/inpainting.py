@@ -497,9 +497,16 @@ class InpaintingHandler:
             return working_image
 
         # Calculate mathematically modeled cost comparison:
-        # 1. Calculate the scaled dimension of the full image (AOT/LaMa models cap at 1024px)
+        # 1. Calculate the scaled dimension of the full image based on actual configuration
         h_img, w_img = working_image.shape[:2]
-        max_size = 1024
+        hd_strategy = getattr(config, "hd_strategy", "Resize")
+        if hd_strategy == "Resize":
+            max_size = getattr(config, "hd_strategy_resize_limit", 1024)
+        elif hd_strategy == "Original":
+            max_size = max(h_img, w_img)
+        else:
+            max_size = 1024  # Fallback 
+
         scale = min(1.0, max_size / max(h_img, w_img))
         full_w = max(1, int(round(w_img * scale)))
         full_h = max(1, int(round(h_img * scale)))
