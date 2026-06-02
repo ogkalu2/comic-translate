@@ -29,7 +29,7 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.messages import Messages
 from .cache_manager import CacheManager
 from .block_detection import BlockDetectionHandler
-from .inpainting import InpaintingHandler
+from .inpainting import InpaintingHandler, call_inpaint_image
 from .ocr_handler import OCRHandler
 
 if TYPE_CHECKING:
@@ -306,7 +306,6 @@ class BatchProcessor:
                 return
 
             # Clean Image of text
-            self.inpainting._ensure_inpainter()
             config = get_config(settings_page)
             
             # Filter blocks to only inpaint if both OCR text and Translation are non-empty
@@ -325,7 +324,7 @@ class BatchProcessor:
             if self._is_cancelled():
                 return
 
-            inpaint_input_img = self.inpainting.inpaint_image(image, mask, config)
+            inpaint_input_img = call_inpaint_image(self.inpainting, image, mask, config, blk_list=inpaint_blk_list)
             inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
 
             # Saving cleaned image

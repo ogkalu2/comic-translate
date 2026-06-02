@@ -365,11 +365,13 @@ class DrawingManager:
         self.viewer._scene.update()
 
     def make_segmentation_stroke_data(self, text_bbox, image=None):
-        if text_bbox is None or len(text_bbox) < 4:
+        blk = text_bbox if hasattr(text_bbox, "xyxy") else None
+        bbox = blk.xyxy if blk is not None else text_bbox
+        if bbox is None or len(bbox) < 4:
             return None
 
         # 1) Use text_bbox coordinates directly
-        min_x, min_y, max_x, max_y = [int(v) for v in text_bbox]
+        min_x, min_y, max_x, max_y = [int(v) for v in bbox]
         w, h = max_x - min_x + 1, max_y - min_y + 1
 
         # 2) Get the image
@@ -418,6 +420,22 @@ class DrawingManager:
                 if crop_mask is not None and np.any(crop_mask):
                     close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
                     crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
+
+                    if (
+                        blk is not None
+                        and not self.viewer.webtoon_mode
+                        and getattr(blk, "text_class", None) == "text_bubble"
+                        and getattr(blk, "bubble_xyxy", None) is not None
+                    ):
+                        bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
+                        inset = 5
+                        ix1 = max(0, min(cx2 - cx1, bx1 + inset - cx1))
+                        iy1 = max(0, min(cy2 - cy1, by1 + inset - cy1))
+                        ix2 = max(ix1, min(cx2 - cx1, bx2 - inset - cx1))
+                        iy2 = max(iy1, min(cy2 - cy1, by2 - inset - cy1))
+                        bubble_clip = np.zeros(crop_mask.shape[:2], dtype=np.uint8)
+                        bubble_clip[iy1:iy2, ix1:ix2] = 255
+                        crop_mask = np.bitwise_and(crop_mask, bubble_clip)
                     
                     # Dilate slightly to fully cover the letters and their anti-aliased margins
                     dil_kernel = np.ones((5, 5), np.uint8)
@@ -449,13 +467,13 @@ class DrawingManager:
         if path.isEmpty():
             return None
 
-        return {
+        stroke = {
             'path': path,
             'pen': QColor(255, 0, 0).name(QColor.HexArgb),
             'brush': QColor(255, 0, 0, 128).name(QColor.HexArgb),
             'width': 2,
         }
-
+        return stroke
 
     # def draw_segmentation_lines(self, bboxes, layers: int = 1, scale_factor: float = 1.0):
     #     if not self.viewer.hasPhoto() or not bboxes: return

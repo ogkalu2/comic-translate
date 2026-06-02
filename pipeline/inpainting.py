@@ -1,16 +1,36 @@
 import numpy as np
 import time
 import logging
+import inspect
 import imkit as imk
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
 from modules.utils.device import resolve_device
+from modules.utils.image_utils import build_block_mask_data
 from modules.utils.pipeline_config import inpaint_map, get_config, get_inpainter_backend
+from modules.utils.textblock import adjust_text_line_coordinates
 from pipeline.inpainting_boxes import merge_overlapping_padded_boxes
+from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_original_block_coordinates
 
 logger = logging.getLogger(__name__)
+
+
+def call_inpaint_image(inpainting_handler, image: np.ndarray, mask: np.ndarray, config, blk_list: list | None = None):
+    inpaint_image = inpainting_handler.inpaint_image
+    try:
+        parameters = inspect.signature(inpaint_image).parameters
+        accepts_blk_list = (
+            "blk_list" in parameters
+            or any(param.kind == inspect.Parameter.VAR_KEYWORD for param in parameters.values())
+        )
+    except (TypeError, ValueError):
+        accepts_blk_list = True
+
+    if accepts_blk_list:
+        return inpaint_image(image, mask, config, blk_list=blk_list)
+    return inpaint_image(image, mask, config)
 
 
 class InpaintingHandler:
@@ -41,6 +61,7 @@ class InpaintingHandler:
         mask = image_viewer.get_mask_for_inpainting()
         
         # Handle webtoon mode vs regular mode differently
+        mappings = None
         if self.main_page.webtoon_mode:
             # In webtoon mode, use visible area image for inpainting
             image, mappings = image_viewer.get_visible_area_image()
@@ -51,9 +72,9 @@ class InpaintingHandler:
         if image is None or mask is None:
             return None
 
-        self._ensure_inpainter()
         config = get_config(settings_page)
-        inpaint_input_img = self.inpaint_image(image, mask, config)
+        inpaint_blocks = self._get_manual_fast_fill_blocks(mappings)
+        inpaint_input_img = self.inpaint_image(image, mask, config, blk_list=inpaint_blocks or None)
         inpaint_input_img = imk.convert_scale_abs(inpaint_input_img) 
 
         return inpaint_input_img
@@ -118,13 +139,44 @@ class InpaintingHandler:
             return None
         return mask
 
+    def _get_manual_fast_fill_blocks(self, mappings: list[dict] | None = None) -> list:
+        blocks = getattr(self.main_page, "blk_list", None) or []
+        if not blocks:
+            return []
+        if not getattr(self.main_page, "webtoon_mode", False):
+            return blocks
+        if not mappings:
+            return []
+
+        visible_blocks = []
+        try:
+            visible_blocks = filter_and_convert_visible_blocks(
+                self.main_page,
+                self.main_page.pipeline,
+                mappings,
+                single_block=False,
+            )
+            return [
+                block.deep_copy() if hasattr(block, "deep_copy") else block
+                for block in visible_blocks
+            ]
+        finally:
+            restore_original_block_coordinates(visible_blocks)
+
     def _get_regular_patches(self, mask: np.ndarray, inpainted_image: np.ndarray):
         contours, _ = imk.find_contours(mask)
+        if not contours:
+            return []
+        boxes = [imk.bounding_rect(c) for c in contours]
+        merged_boxes = merge_overlapping_padded_boxes(boxes, inpainted_image.shape, pad=8)
+        if len(merged_boxes) < len(boxes):
+            logger.info("Inpaint hybrid: merged %d mask contours into %d output patches", len(boxes), len(merged_boxes))
         patches = []
-        for c in contours:
-            x, y, w, h = imk.bounding_rect(c)
-            patch = inpainted_image[y:y + h, x:x + w]
-            patches.append({'bbox': [x, y, w, h], 'image': patch.copy()})
+        for x1, y1, x2, y2 in merged_boxes:
+            w = x2 - x1
+            h = y2 - y1
+            patch = inpainted_image[y1:y2, x1:x2]
+            patches.append({'bbox': [x1, y1, w, h], 'image': patch.copy()})
         return patches
 
     def _inpaint_full_image(self, image: np.ndarray, mask: np.ndarray, config):
@@ -155,7 +207,249 @@ class InpaintingHandler:
             
         return inpainted_image
 
-    def inpaint_image(self, image: np.ndarray, mask: np.ndarray, config) -> np.ndarray:
+    def _get_fast_fill_regions(
+        self,
+        block,
+        bounds: tuple[int, int, int, int],
+        crop_mask: np.ndarray,
+        residual_crop: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray] | tuple[None, None]:
+        if getattr(block, "text_class", None) != "text_bubble":
+            return None, None
+        if crop_mask is None or residual_crop is None:
+            return None, None
+
+        masked_region = (crop_mask > 0) & (residual_crop > 0)
+        if not np.any(masked_region):
+            return None, None
+
+        h, w = crop_mask.shape[:2]
+        x1, y1, _, _ = bounds
+        background_region = crop_mask == 0
+
+        text_bounds = getattr(block, "xyxy", None)
+        if text_bounds is not None:
+            tx1, ty1, tx2, ty2 = [int(round(float(v))) for v in text_bounds]
+            lx1 = max(0, min(w, tx1 - x1))
+            ly1 = max(0, min(h, ty1 - y1))
+            lx2 = max(lx1, min(w, tx2 - x1))
+            ly2 = max(ly1, min(h, ty2 - y1))
+            block_region = np.zeros((h, w), dtype=bool)
+            if lx2 > lx1 and ly2 > ly1:
+                block_region[ly1:ly2, lx1:lx2] = True
+                block_background = background_region & block_region
+                if np.count_nonzero(block_background) >= 32:
+                    background_region = block_background
+
+        # Drop a thin halo around the mask so antialiased glyph edges do not vote as background.
+        halo_kernel = np.ones((3, 3), np.uint8)
+        halo = imk.dilate((crop_mask > 0).astype(np.uint8), halo_kernel, iterations=1) > 0
+        safe_background = background_region & ~halo
+        if np.count_nonzero(safe_background) >= 32:
+            background_region = safe_background
+
+        if np.count_nonzero(background_region) < 32:
+            return None, None
+        return masked_region, background_region
+
+    def _estimate_fast_fill_color(
+        self,
+        crop: np.ndarray,
+        masked_region: np.ndarray,
+        background_region: np.ndarray,
+    ) -> np.ndarray | None:
+        if crop.size == 0 or not np.any(masked_region) or not np.any(background_region):
+            return None
+
+        background_pixels = crop[background_region]
+        if background_pixels.shape[0] < 64:
+            return None
+
+        masked_ratio = float(np.count_nonzero(masked_region)) / float(np.count_nonzero(masked_region | background_region))
+        if masked_ratio > 0.90:
+            return None
+
+        pixels = background_pixels.reshape(-1, 3)
+        pixels_u16 = pixels.astype(np.uint16)
+        quantized = pixels_u16 // 16
+        keys = (quantized[:, 0] << 8) | (quantized[:, 1] << 4) | quantized[:, 2]
+        unique_keys, inverse, counts = np.unique(keys, return_inverse=True, return_counts=True)
+        if unique_keys.size == 0:
+            return None
+
+        min_cluster = max(48, int(pixels.shape[0] * 0.015))
+        order = np.argsort(counts)[::-1][:16]
+        candidates = []
+        for key_index in order:
+            count = int(counts[key_index])
+            if count < min_cluster:
+                continue
+            cluster = pixels[inverse == key_index].astype(np.float32)
+            if cluster.size == 0:
+                continue
+            median = np.median(cluster, axis=0)
+            p10 = np.percentile(cluster, 10, axis=0)
+            p90 = np.percentile(cluster, 90, axis=0)
+            spread = p90 - p10
+            candidates.append({
+                "count": count,
+                "coverage": count / float(pixels.shape[0]),
+                "median": median,
+                "brightness": float(np.mean(median)),
+                "spread": float(np.max(spread)),
+            })
+
+        if not candidates:
+            return None
+
+        candidates.sort(key=lambda item: item["count"], reverse=True)
+        largest = candidates[0]
+        bright_candidates = [
+            item for item in candidates
+            if item["brightness"] >= 150.0 and item["count"] >= max(min_cluster, int(largest["count"] * 0.12))
+        ]
+        selected = max(bright_candidates, key=lambda item: item["count"]) if bright_candidates else largest
+
+        if selected["count"] < 96 and selected["coverage"] < 0.03:
+            return None
+        if selected["spread"] > 48.0:
+            return None
+
+        return selected["median"]
+
+    def _apply_fast_bubble_cleanup(
+        self,
+        image: np.ndarray,
+        mask: np.ndarray,
+        blk_list: list | None,
+    ) -> tuple[np.ndarray, np.ndarray, int]:
+        if image is None or mask is None or not np.any(mask) or not blk_list:
+            return image.copy(), mask.copy(), 0
+
+        cleaned_image = image.copy()
+        residual_mask = mask.copy()
+        cleaned_blocks = 0
+
+        for block in blk_list:
+            if getattr(block, "xyxy", None) is None or len(block.xyxy) < 4:
+                continue
+            bounds = adjust_text_line_coordinates(block.xyxy, 10, 10, image)
+            x1, y1, x2, y2 = bounds
+            residual_crop = residual_mask[y1:y2, x1:x2]
+            crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
+            if not self._fast_fill_block(cleaned_image, residual_mask, block, bounds, crop_mask):
+                fallback_mask, fallback_bounds = build_block_mask_data(
+                    image,
+                    block,
+                    require_text_or_translation=False,
+                )
+                if fallback_mask is None or fallback_bounds is None:
+                    continue
+                if not self._fast_fill_block(cleaned_image, residual_mask, block, fallback_bounds, fallback_mask):
+                    continue
+
+            cleaned_blocks += 1
+
+        return cleaned_image, residual_mask, cleaned_blocks
+
+    def _fast_fill_block(
+        self,
+        cleaned_image: np.ndarray,
+        residual_mask: np.ndarray,
+        block,
+        bounds: tuple[int, int, int, int],
+        crop_mask: np.ndarray,
+    ) -> bool:
+        x1, y1, x2, y2 = bounds
+        crop = cleaned_image[y1:y2, x1:x2]
+        residual_crop = residual_mask[y1:y2, x1:x2]
+        masked_region, background_region = self._get_fast_fill_regions(block, bounds, crop_mask, residual_crop)
+        if masked_region is None or background_region is None:
+            return False
+
+        fill_color = self._estimate_fast_fill_color(crop, masked_region, background_region)
+        if fill_color is None:
+            return False
+
+        fill_region = self._get_associated_residual_components(residual_crop, masked_region)
+        soft_mask = imk.gaussian_blur(fill_region.astype(np.uint8) * 255, 1.0).astype(np.float32) / 255.0
+        soft_mask = np.clip(soft_mask, 0.0, 1.0)[..., np.newaxis]
+        crop_f = crop.astype(np.float32)
+        fill_rgb = np.broadcast_to(fill_color, crop.shape).astype(np.float32)
+        blended = crop_f * (1.0 - soft_mask) + fill_rgb * soft_mask
+        cleaned_image[y1:y2, x1:x2] = np.clip(np.round(blended), 0, 255).astype(np.uint8)
+        residual_crop[fill_region] = 0
+        return True
+
+    def _get_associated_residual_components(self, residual_crop: np.ndarray, masked_region: np.ndarray) -> np.ndarray:
+        residual_binary = (residual_crop > 0).astype(np.uint8)
+        if not np.any(residual_binary):
+            return masked_region
+
+        num_labels, labels, _stats, _centroids = imk.connected_components_with_stats(
+            residual_binary,
+            connectivity=8,
+        )
+        if num_labels <= 1:
+            return residual_binary > 0
+
+        near_mask = imk.dilate(
+            masked_region.astype(np.uint8),
+            np.ones((17, 17), np.uint8),
+            iterations=1,
+        ) > 0
+        overlap = near_mask & (labels > 0)
+        overlap_labels = np.unique(labels[overlap])
+        if overlap_labels.size == 0:
+            return masked_region
+
+        return np.isin(labels, overlap_labels)
+
+    def _drop_tiny_residual_components(self, mask: np.ndarray, max_component_area: int = 256) -> tuple[np.ndarray, int]:
+        if mask is None or not np.any(mask):
+            return mask, 0
+
+        binary = (mask > 0).astype(np.uint8)
+        num_labels, labels, stats, _centroids = imk.connected_components_with_stats(
+            binary,
+            connectivity=8,
+        )
+        if num_labels <= 1:
+            return mask, 0
+
+        pruned = mask.copy()
+        dropped_pixels = 0
+        for label in range(1, num_labels):
+            area = int(stats[label, imk.CC_STAT_AREA])
+            if area <= max_component_area:
+                component = labels == label
+                dropped_pixels += int(np.count_nonzero(pruned[component]))
+                pruned[component] = 0
+
+        return pruned, dropped_pixels
+
+    def _residual_component_summary(self, mask: np.ndarray) -> tuple[int, int, tuple[int, int, int, int] | None]:
+        if mask is None or not np.any(mask):
+            return 0, 0, None
+
+        binary = (mask > 0).astype(np.uint8)
+        num_labels, _labels, stats, _centroids = imk.connected_components_with_stats(
+            binary,
+            connectivity=8,
+        )
+        if num_labels <= 1:
+            return 0, 0, None
+
+        areas = stats[1:, imk.CC_STAT_AREA]
+        largest_offset = int(np.argmax(areas))
+        label = largest_offset + 1
+        x = int(stats[label, imk.CC_STAT_LEFT])
+        y = int(stats[label, imk.CC_STAT_TOP])
+        w = int(stats[label, imk.CC_STAT_WIDTH])
+        h = int(stats[label, imk.CC_STAT_HEIGHT])
+        return num_labels - 1, int(stats[label, imk.CC_STAT_AREA]), (x, y, w, h)
+
+    def inpaint_image(self, image: np.ndarray, mask: np.ndarray, config, blk_list: list | None = None) -> np.ndarray:
         """
         Intelligently chooses between full-image and patch-based inpainting
         based on image size, number of text blocks, and total mask area.
@@ -165,20 +459,46 @@ class InpaintingHandler:
         if mask is None or not np.any(mask):
             return image.copy()
 
-        contours, _ = imk.find_contours(mask)
+        working_image, working_mask, cleaned_blocks = self._apply_fast_bubble_cleanup(image, mask, blk_list)
+        if cleaned_blocks:
+            logger.info("Inpaint hybrid: fast-cleaned %d bubble blocks", cleaned_blocks)
+            working_mask, dropped_pixels = self._drop_tiny_residual_components(working_mask)
+            if dropped_pixels:
+                logger.info("Inpaint hybrid: discarded %d tiny residual mask pixels after fast cleanup", dropped_pixels)
+        if working_mask is None or not np.any(working_mask):
+            return working_image
+
+        contours, _ = imk.find_contours(working_mask)
         if not contours:
-            return image.copy()
+            return working_image
+
+        if cleaned_blocks:
+            component_count, largest_area, largest_bbox = self._residual_component_summary(working_mask)
+            logger.info(
+                "Inpaint hybrid: residual mask remains after fast cleanup; running NN inpainting "
+                "(components=%d, largest_area=%d, largest_bbox=%s)",
+                component_count,
+                largest_area,
+                largest_bbox,
+            )
+
+        if getattr(self, "main_page", None) is not None or getattr(self, "inpainter_cache", None) is None:
+            self._ensure_inpainter()
+
+        if getattr(self.inpainter_cache, "force_full_image_inpainting", False):
+            logger.info("Inpaint hybrid: FULL-IMAGE forced by inpainter")
+            return self._inpaint_full_image(working_image, working_mask, config)
 
         boxes = [imk.bounding_rect(c) for c in contours]
-        merged_boxes = merge_overlapping_padded_boxes(boxes, image.shape)
+        merged_boxes = merge_overlapping_padded_boxes(boxes, working_image.shape)
         num_patches = len(merged_boxes)
 
         if num_patches == 0:
-            return image.copy()
+            return working_image
 
         # Calculate mathematically modeled cost comparison:
         # 1. Calculate the scaled dimension of the full image (AOT/LaMa models cap at 1024px)
-        h_img, w_img = image.shape[:2]
+        h_img, w_img = working_image.shape[:2]
         max_size = 1024
         scale = min(1.0, max_size / max(h_img, w_img))
         full_w = max(1, int(round(w_img * scale)))
@@ -208,21 +528,20 @@ class InpaintingHandler:
                 "Inpaint hybrid: PATCH-BASED (patches=%d, ratio=%.2f%%, size=%dx%d)",
                 num_patches, area_ratio * 100, w_img, h_img
             )
-            return self._inpaint_by_patches(image, mask, config)
+            return self._inpaint_by_patches(working_image, working_mask, config)
         else:
             logger.info(
                 "Inpaint hybrid: FULL-IMAGE (patches=%d, ratio=%.2f%%, size=%dx%d)",
                 num_patches, area_ratio * 100, w_img, h_img
             )
-            return self._inpaint_full_image(image, mask, config)
+            return self._inpaint_full_image(working_image, working_mask, config)
 
-    def inpaint_page_from_saved_strokes(self, image: np.ndarray, strokes: list[dict]):
+    def inpaint_page_from_saved_strokes(self, image: np.ndarray, strokes: list[dict], blk_list: list | None = None):
         mask = self._generate_mask_from_saved_strokes(strokes, image)
         if mask is None:
             return []
-        self._ensure_inpainter()
         config = get_config(self.main_page.settings_page)
-        inpainted = self.inpaint_image(image, mask, config)
+        inpainted = self.inpaint_image(image, mask, config, blk_list=blk_list or None)
         inpainted = imk.convert_scale_abs(inpainted)
         return self._get_regular_patches(mask, inpainted)
 
@@ -312,11 +631,16 @@ class InpaintingHandler:
                     })
         else:
             # Regular mode - original behavior
-            for c in contours:
-                x, y, w, h = imk.bounding_rect(c)
-                patch = inpainted_image[y:y+h, x:x+w]
+            boxes = [imk.bounding_rect(c) for c in contours]
+            merged_boxes = merge_overlapping_padded_boxes(boxes, inpainted_image.shape, pad=8)
+            if len(merged_boxes) < len(boxes):
+                logger.info("Inpaint hybrid: merged %d mask contours into %d output patches", len(boxes), len(merged_boxes))
+            for x1, y1, x2, y2 in merged_boxes:
+                w = x2 - x1
+                h = y2 - y1
+                patch = inpainted_image[y1:y2, x1:x2]
                 patches.append({
-                    'bbox': [x, y, w, h],
+                    'bbox': [x1, y1, w, h],
                     'image': patch.copy(),
                 })
                 

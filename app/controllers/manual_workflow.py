@@ -136,7 +136,7 @@ class ManualWorkflowController:
         for blk in blk_list:
             if blk.xyxy is None or len(blk.xyxy) < 4:
                 continue
-            stroke = build_stroke(blk.xyxy, image)
+            stroke = build_stroke(blk, image)
             if stroke is not None:
                 strokes.append(stroke)
         return strokes
@@ -516,6 +516,7 @@ class ManualWorkflowController:
                     strokes = state.get("brush_strokes", [])
                     if not strokes:
                         continue
+                    blk_list = state.get("blk_list", [])
                     image = self._load_page_image(file_path)
                     if image is None:
                         continue
@@ -523,6 +524,7 @@ class ManualWorkflowController:
                     patches = self.main.pipeline.inpainting.inpaint_page_from_saved_strokes(
                         image,
                         strokes,
+                        blk_list=blk_list,
                     )
 
                     if self.main.webtoon_mode and patches:
@@ -602,9 +604,11 @@ class ManualWorkflowController:
             blk_list, load_rects = result
         self.main.blk_list = blk_list
         self.main.undo_group.activeStack().beginMacro("draw_segmentation_boxes")
+        image = self.main.image_viewer.get_image_array()
         for blk in self.main.blk_list:
             if blk.xyxy is not None:
-                self.main.image_viewer.draw_segmentation_lines(blk.xyxy)
+                stroke = self.main.image_viewer.drawing_manager.make_segmentation_stroke_data(blk, image)
+                self.main.image_viewer.draw_segmentation_lines(blk.xyxy, stroke=stroke)
         self.main.undo_group.activeStack().endMacro()
 
     def load_segmentation_points(self) -> None:
@@ -658,9 +662,8 @@ class ManualWorkflowController:
                         and current_file is not None
                         and current_file in (results or {})
                     ):
-                        for blk in self.main.blk_list:
-                            if blk.xyxy is not None:
-                                self.main.image_viewer.draw_segmentation_lines(blk.xyxy)
+                        for stroke in results[current_file][1]:
+                            self.main.image_viewer.draw_segmentation_lines(None, stroke=stroke)
 
                     if results:
                         self.main.mark_project_dirty()
@@ -697,7 +700,7 @@ class ManualWorkflowController:
                         image = self.main.image_viewer.get_image_array()
                         results = []
                         for blk in self.main.blk_list:
-                            stroke = self.main.image_viewer.drawing_manager.make_segmentation_stroke_data(blk.xyxy, image)
+                            stroke = self.main.image_viewer.drawing_manager.make_segmentation_stroke_data(blk, image)
                             results.append((blk, stroke))
                         return results
 
@@ -723,7 +726,8 @@ class ManualWorkflowController:
         if self.main.webtoon_mode:
             for blk in results:
                 if blk.xyxy is not None:
-                    self.main.image_viewer.draw_segmentation_lines(blk.xyxy)
+                    stroke = self.main.image_viewer.drawing_manager.make_segmentation_stroke_data(blk)
+                    self.main.image_viewer.draw_segmentation_lines(blk.xyxy, stroke=stroke)
         else:
             for blk, stroke in results:
                 if stroke is not None:

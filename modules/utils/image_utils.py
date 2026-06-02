@@ -2,6 +2,7 @@ import numpy as np
 import base64
 import imkit as imk
 from PySide6.QtGui import QColor
+from typing import Any
 
 from modules.utils.textblock import TextBlock
 from modules.detection.utils.content import get_inpaint_mask
@@ -45,55 +46,79 @@ def get_smart_text_color(
 
     return setting_color
 
+def build_block_mask_data(
+    img: np.ndarray,
+    blk: TextBlock,
+    default_padding: int = 5,
+    require_text_or_translation: bool = True,
+) -> tuple[np.ndarray | None, tuple[int, int, int, int] | None]:
+    from modules.utils.textblock import adjust_text_line_coordinates
+    from modules.detection.utils.content import detect_content_mask_in_bbox
+
+    if require_text_or_translation and not blk.text and not blk.translation:
+        return None, None
+
+    cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(blk.xyxy, 10, 10, img)
+    crop = img[cy1:cy2, cx1:cx2]
+
+    crop_mask = detect_content_mask_in_bbox(crop)
+    if crop_mask is None or not np.any(crop_mask):
+        return None, None
+
+    close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
+    crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
+
+    kernel_size = default_padding
+    dilate_iterations = 3
+
+    if getattr(blk, "text_class", None) == "text_bubble" and getattr(blk, "bubble_xyxy", None) is not None:
+        bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
+        inset = max(1, kernel_size)
+        ix1 = max(0, min(cx2 - cx1, bx1 + inset - cx1))
+        iy1 = max(0, min(cy2 - cy1, by1 + inset - cy1))
+        ix2 = max(ix1, min(cx2 - cx1, bx2 - inset - cx1))
+        iy2 = max(iy1, min(cy2 - cy1, by2 - inset - cy1))
+
+        bubble_clip = np.zeros(crop_mask.shape[:2], dtype=np.uint8)
+        bubble_clip[iy1:iy2, ix1:ix2] = 255
+        crop_mask = np.bitwise_and(crop_mask, bubble_clip)
+
+    dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    dilated_crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=dilate_iterations)
+    return dilated_crop_mask, (cx1, cy1, cx2, cy2)
+
+
+def collect_block_mask_data(
+    img: np.ndarray,
+    blk_list: list[TextBlock],
+    default_padding: int = 5,
+    require_text_or_translation: bool = True,
+) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    for blk in blk_list:
+        crop_mask, bounds = build_block_mask_data(
+            img,
+            blk,
+            default_padding=default_padding,
+            require_text_or_translation=require_text_or_translation,
+        )
+        if crop_mask is None or bounds is None:
+            continue
+        entries.append({"block": blk, "mask": crop_mask, "bounds": bounds})
+    return entries
+
+
 def generate_mask(img: np.ndarray, blk_list: list[TextBlock], default_padding: int = 5) -> np.ndarray:
     """
     Generate a text-removal mask from filtered connected components and
     only lightly expand it to catch antialiasing around glyph edges.
     """
-    from modules.utils.textblock import adjust_text_line_coordinates
-    from modules.detection.utils.content import detect_content_mask_in_bbox, filter_and_fix_bboxes
-    
     h, w, _ = img.shape
     mask = np.zeros((h, w), dtype=np.uint8)
 
-    for blk in blk_list:
-        # Skip blocks with no text and no translation
-        if not blk.text and not blk.translation:
-            continue
-        
-        # Get the padded coordinates to crop the image
-        cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(blk.xyxy, 10, 10, img)
-        crop = img[cy1:cy2, cx1:cx2]
-        
-        crop_mask = detect_content_mask_in_bbox(crop)
-        if crop_mask is None or not np.any(crop_mask):
-            continue
-        # Bridge tiny fractures without collapsing whole lines into slabs.
-        close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
-        crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
-
-        # 8) Determine dilation kernel size and iterations
-        kernel_size = default_padding
-        dilate_iterations = 3
-
-        # Keep mask inside bubble interiors when bubble bounds are available.
-        if getattr(blk, 'text_class', None) == 'text_bubble' and getattr(blk, 'bubble_xyxy', None) is not None:
-            bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
-            inset = max(1, kernel_size)
-            ix1 = max(0, min(cx2 - cx1, bx1 + inset - cx1))
-            iy1 = max(0, min(cy2 - cy1, by1 + inset - cy1))
-            ix2 = max(ix1, min(cx2 - cx1, bx2 - inset - cx1))
-            iy2 = max(iy1, min(cy2 - cy1, by2 - inset - cy1))
-            
-            bubble_clip = np.zeros(crop_mask.shape[:2], dtype=np.uint8)
-            bubble_clip[iy1:iy2, ix1:ix2] = 255
-            crop_mask = np.bitwise_and(crop_mask, bubble_clip)
-
-        # 9) Dilate the block mask
-        dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
-        dilated_crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=dilate_iterations)
-
-        # 10) Combine with global mask
-        mask[cy1:cy2, cx1:cx2] = np.bitwise_or(mask[cy1:cy2, cx1:cx2], dilated_crop_mask)
+    for entry in collect_block_mask_data(img, blk_list, default_padding=default_padding):
+        cx1, cy1, cx2, cy2 = entry["bounds"]
+        crop_mask = entry["mask"]
+        mask[cy1:cy2, cx1:cx2] = np.bitwise_or(mask[cy1:cy2, cx1:cx2], crop_mask)
 
     return mask
