@@ -237,9 +237,21 @@ class InpaintingHandler:
             block_region = np.zeros((h, w), dtype=bool)
             if lx2 > lx1 and ly2 > ly1:
                 block_region[ly1:ly2, lx1:lx2] = True
-                block_background = background_region & block_region
-                if np.count_nonzero(block_background) >= 32:
-                    background_region = block_background
+                # When the user stroke falls on the text itself, prefer sampling
+                # only from the text block background. When the stroke is elsewhere
+                # in the bubble, keep the full bubble background so those strokes
+                # can still be fast-filled instead of falling through to NN inpaint.
+                masked_in_text = masked_region & block_region
+                masked_pixels = int(np.count_nonzero(masked_region))
+                masked_in_text_pixels = int(np.count_nonzero(masked_in_text))
+                overlap_ratio = (
+                    masked_in_text_pixels / float(masked_pixels)
+                    if masked_pixels > 0 else 0.0
+                )
+                if masked_in_text_pixels >= 8 and overlap_ratio >= 0.6:
+                    block_background = background_region & block_region
+                    if np.count_nonzero(block_background) >= 32:
+                        background_region = block_background
 
         # Drop a thin halo around the mask so antialiased glyph edges do not vote as background.
         halo_kernel = np.ones((3, 3), np.uint8)
@@ -252,22 +264,75 @@ class InpaintingHandler:
             return None, None
         return masked_region, background_region
 
+    def _get_fast_fill_bounds(self, block, image: np.ndarray) -> tuple[int, int, int, int] | None:
+        base_bounds = getattr(block, "xyxy", None)
+        if base_bounds is None or len(base_bounds) < 4:
+            return None
+
+        if getattr(block, "text_class", None) == "text_bubble":
+            bubble_bounds = getattr(block, "bubble_xyxy", None)
+            if bubble_bounds is not None and len(bubble_bounds) >= 4:
+                return adjust_text_line_coordinates(bubble_bounds, 10, 10, image)
+
+        return adjust_text_line_coordinates(base_bounds, 10, 10, image)
+
+    @staticmethod
+    def _same_bounds(
+        lhs: tuple[int, int, int, int] | None,
+        rhs: tuple[int, int, int, int] | None,
+    ) -> bool:
+        if lhs is None or rhs is None:
+            return lhs is rhs
+        return tuple(int(v) for v in lhs) == tuple(int(v) for v in rhs)
+
+    def _format_block_debug_label(self, block) -> str:
+        text_bounds = getattr(block, "xyxy", None)
+        bubble_bounds = getattr(block, "bubble_xyxy", None)
+        return (
+            f"class={getattr(block, 'text_class', None)} "
+            f"text={tuple(int(round(float(v))) for v in text_bounds) if text_bounds is not None else None} "
+            f"bubble={tuple(int(round(float(v))) for v in bubble_bounds) if bubble_bounds is not None else None}"
+        )
+
+    def _summarize_mask_overlap_with_blocks(
+        self,
+        mask: np.ndarray,
+        blk_list: list | None,
+        image: np.ndarray,
+    ) -> list[str]:
+        if mask is None or not np.any(mask) or not blk_list:
+            return []
+
+        summaries: list[str] = []
+        for idx, block in enumerate(blk_list):
+            bounds = self._get_fast_fill_bounds(block, image)
+            if bounds is None:
+                continue
+            x1, y1, x2, y2 = bounds
+            overlap = int(np.count_nonzero(mask[y1:y2, x1:x2]))
+            if overlap <= 0:
+                continue
+            summaries.append(
+                f"block[{idx}] overlap={overlap} bounds={(x1, y1, x2, y2)} {self._format_block_debug_label(block)}"
+            )
+        return summaries
+
     def _estimate_fast_fill_color(
         self,
         crop: np.ndarray,
         masked_region: np.ndarray,
         background_region: np.ndarray,
-    ) -> np.ndarray | None:
+    ) -> tuple[np.ndarray | None, str]:
         if crop.size == 0 or not np.any(masked_region) or not np.any(background_region):
-            return None
+            return None, "empty-crop-or-regions"
 
         background_pixels = crop[background_region]
         if background_pixels.shape[0] < 64:
-            return None
+            return None, f"background-too-small:{background_pixels.shape[0]}"
 
         masked_ratio = float(np.count_nonzero(masked_region)) / float(np.count_nonzero(masked_region | background_region))
         if masked_ratio > 0.90:
-            return None
+            return None, f"masked-ratio-too-high:{masked_ratio:.3f}"
 
         pixels = background_pixels.reshape(-1, 3)
         pixels_u16 = pixels.astype(np.uint16)
@@ -275,7 +340,7 @@ class InpaintingHandler:
         keys = (quantized[:, 0] << 8) | (quantized[:, 1] << 4) | quantized[:, 2]
         unique_keys, inverse, counts = np.unique(keys, return_inverse=True, return_counts=True)
         if unique_keys.size == 0:
-            return None
+            return None, "no-quantized-clusters"
 
         min_cluster = max(48, int(pixels.shape[0] * 0.015))
         order = np.argsort(counts)[::-1][:16]
@@ -300,7 +365,7 @@ class InpaintingHandler:
             })
 
         if not candidates:
-            return None
+            return None, f"no-candidates:min_cluster={min_cluster}"
 
         candidates.sort(key=lambda item: item["count"], reverse=True)
         largest = candidates[0]
@@ -311,11 +376,15 @@ class InpaintingHandler:
         selected = max(bright_candidates, key=lambda item: item["count"]) if bright_candidates else largest
 
         if selected["count"] < 96 and selected["coverage"] < 0.03:
-            return None
+            return None, f"selected-too-small:count={selected['count']},coverage={selected['coverage']:.3f}"
         if selected["spread"] > 48.0:
-            return None
+            return None, f"selected-too-wide:spread={selected['spread']:.3f}"
 
-        return selected["median"]
+        return selected["median"], (
+            "ok:"
+            f"count={selected['count']},coverage={selected['coverage']:.3f},"
+            f"brightness={selected['brightness']:.1f},spread={selected['spread']:.1f}"
+        )
 
     def _apply_fast_bubble_cleanup(
         self,
@@ -330,25 +399,84 @@ class InpaintingHandler:
         residual_mask = mask.copy()
         cleaned_blocks = 0
 
-        for block in blk_list:
+        for idx, block in enumerate(blk_list):
             if getattr(block, "xyxy", None) is None or len(block.xyxy) < 4:
                 continue
-            bounds = adjust_text_line_coordinates(block.xyxy, 10, 10, image)
+            bounds = self._get_fast_fill_bounds(block, image)
+            if bounds is None:
+                continue
             x1, y1, x2, y2 = bounds
             residual_crop = residual_mask[y1:y2, x1:x2]
+            initial_overlap = int(np.count_nonzero(residual_crop))
+            if initial_overlap <= 0:
+                continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
-            if not self._fast_fill_block(cleaned_image, residual_mask, block, bounds, crop_mask):
+            success, reason = self._fast_fill_block(cleaned_image, residual_mask, block, bounds, crop_mask)
+            if not success:
                 fallback_mask, fallback_bounds = build_block_mask_data(
                     image,
                     block,
                     require_text_or_translation=False,
                 )
                 if fallback_mask is None or fallback_bounds is None:
+                    logger.info(
+                        "Inpaint fast-fill: block[%d] failed without fallback mask (%s) overlap=%d reason=%s",
+                        idx,
+                        self._format_block_debug_label(block),
+                        initial_overlap,
+                        reason,
+                    )
                     continue
-                if not self._fast_fill_block(cleaned_image, residual_mask, block, fallback_bounds, fallback_mask):
+                success, fallback_reason = self._fast_fill_block(
+                    cleaned_image,
+                    residual_mask,
+                    block,
+                    fallback_bounds,
+                    fallback_mask,
+                )
+                if not success:
+                    logger.info(
+                        "Inpaint fast-fill: block[%d] failed (%s) overlap=%d primary=%s fallback=%s fallback_bounds=%s",
+                        idx,
+                        self._format_block_debug_label(block),
+                        initial_overlap,
+                        reason,
+                        fallback_reason,
+                        fallback_bounds,
+                    )
                     continue
+                reason = f"fallback:{fallback_reason}"
+
+                # If fallback only covered the text region, retry the wider bubble
+                # bounds against the remaining residual. That catches user brush
+                # strokes on bubble background after the text itself has been cleared.
+                if not self._same_bounds(bounds, fallback_bounds):
+                    retry_crop = residual_mask[y1:y2, x1:x2]
+                    if np.any(retry_crop):
+                        retry_mask = np.where(retry_crop > 0, 255, 0).astype(np.uint8)
+                        retry_success, retry_reason = self._fast_fill_block(
+                            cleaned_image,
+                            residual_mask,
+                            block,
+                            bounds,
+                            retry_mask,
+                        )
+                        if retry_success:
+                            reason = f"{reason}+retry:{retry_reason}"
+                        else:
+                            reason = f"{reason}+retry_failed:{retry_reason}"
 
             cleaned_blocks += 1
+            remaining_overlap = int(np.count_nonzero(residual_mask[y1:y2, x1:x2]))
+            logger.info(
+                "Inpaint fast-fill: block[%d] cleaned overlap=%d remaining=%d bounds=%s %s reason=%s",
+                idx,
+                initial_overlap,
+                remaining_overlap,
+                bounds,
+                self._format_block_debug_label(block),
+                reason,
+            )
 
         return cleaned_image, residual_mask, cleaned_blocks
 
@@ -359,17 +487,17 @@ class InpaintingHandler:
         block,
         bounds: tuple[int, int, int, int],
         crop_mask: np.ndarray,
-    ) -> bool:
+    ) -> tuple[bool, str]:
         x1, y1, x2, y2 = bounds
         crop = cleaned_image[y1:y2, x1:x2]
         residual_crop = residual_mask[y1:y2, x1:x2]
         masked_region, background_region = self._get_fast_fill_regions(block, bounds, crop_mask, residual_crop)
         if masked_region is None or background_region is None:
-            return False
+            return False, "invalid-regions"
 
-        fill_color = self._estimate_fast_fill_color(crop, masked_region, background_region)
+        fill_color, color_reason = self._estimate_fast_fill_color(crop, masked_region, background_region)
         if fill_color is None:
-            return False
+            return False, color_reason
 
         fill_region = self._get_associated_residual_components(residual_crop, masked_region)
         soft_mask = imk.gaussian_blur(fill_region.astype(np.uint8) * 255, 1.0).astype(np.float32) / 255.0
@@ -379,7 +507,7 @@ class InpaintingHandler:
         blended = crop_f * (1.0 - soft_mask) + fill_rgb * soft_mask
         cleaned_image[y1:y2, x1:x2] = np.clip(np.round(blended), 0, 255).astype(np.uint8)
         residual_crop[fill_region] = 0
-        return True
+        return True, color_reason
 
     def _get_associated_residual_components(self, residual_crop: np.ndarray, masked_region: np.ndarray) -> np.ndarray:
         residual_binary = (residual_crop > 0).astype(np.uint8)
@@ -474,12 +602,14 @@ class InpaintingHandler:
 
         if cleaned_blocks:
             component_count, largest_area, largest_bbox = self._residual_component_summary(working_mask)
+            overlap_summary = self._summarize_mask_overlap_with_blocks(working_mask, blk_list, image)
             logger.info(
                 "Inpaint hybrid: residual mask remains after fast cleanup; running NN inpainting "
-                "(components=%d, largest_area=%d, largest_bbox=%s)",
+                "(components=%d, largest_area=%d, largest_bbox=%s, overlaps=%s)",
                 component_count,
                 largest_area,
                 largest_bbox,
+                overlap_summary[:5],
             )
 
         if getattr(self, "main_page", None) is not None or getattr(self, "inpainter_cache", None) is None:
