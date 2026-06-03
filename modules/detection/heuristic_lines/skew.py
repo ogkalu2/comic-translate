@@ -128,7 +128,75 @@ def _detect_horizontal_lines_skew_aware(text_mask: np.ndarray) -> list[list[int]
         if score >= base_score - 0.12 and adjusted_score > best_score + 0.02:
             best_score = adjusted_score
             best_lines = candidate
+    recovered_rows = _recover_multiline_base_rows(base_lines, best_lines, text_mask)
+    if recovered_rows is not None:
+        return recovered_rows
     return best_lines
+
+def _recover_multiline_base_rows(
+    base_lines: list[list[int]],
+    candidate_lines: list[list[int]],
+    text_mask: np.ndarray,
+) -> list[list[int]] | None:
+    if len(candidate_lines) != 1 or len(base_lines) < 3:
+        return None
+    if not _is_polygon_line(candidate_lines[0]):
+        return None
+    if any(_is_polygon_line(line) for line in base_lines):
+        return None
+
+    height, width = text_mask.shape[:2]
+    candidate_box = _line_axis_box(candidate_lines[0])
+    candidate_height = max(1, candidate_box[3] - candidate_box[1] + 1)
+    candidate_width = max(1, candidate_box[2] - candidate_box[0] + 1)
+    if candidate_width < width * 0.65 or candidate_height < height * 0.50:
+        return None
+
+    base_boxes = [_line_axis_box(line) for line in base_lines]
+    base_widths = np.array([max(1, box[2] - box[0] + 1) for box in base_boxes], dtype=float)
+    base_heights = np.array([max(1, box[3] - box[1] + 1) for box in base_boxes], dtype=float)
+    median_width = float(np.median(base_widths)) if base_widths.size else 0.0
+    median_height = float(np.median(base_heights)) if base_heights.size else 0.0
+    if median_height <= 0.0:
+        return None
+
+    rows: list[list[list[int]]] = []
+    row_gap = max(8.0, median_height * 0.90)
+    for box in sorted(base_boxes, key=lambda item: ((item[1] + item[3]) / 2.0, item[0])):
+        center_y = (box[1] + box[3]) / 2.0
+        matched_row: list[list[int]] | None = None
+        for row in rows:
+            row_box = _union_axis_boxes(row)
+            if row_box is None:
+                continue
+            row_center_y = (row_box[1] + row_box[3]) / 2.0
+            row_height = max(1, row_box[3] - row_box[1] + 1)
+            if abs(center_y - row_center_y) <= max(row_gap, row_height * 0.45):
+                matched_row = row
+                break
+        if matched_row is None:
+            rows.append([box])
+        else:
+            matched_row.append(box)
+
+    recovered_rows: list[list[int]] = []
+    for row in rows:
+        row_box = _union_axis_boxes(row)
+        if row_box is None:
+            continue
+        row_width = max(1, row_box[2] - row_box[0] + 1)
+        row_height = max(1, row_box[3] - row_box[1] + 1)
+        if row_width >= max(width * 0.28, row_height * 2.2, median_width * 0.60):
+            recovered_rows.append(row_box)
+
+    if len(recovered_rows) < 3:
+        return None
+    centers_y = np.array(sorted((box[1] + box[3]) / 2.0 for box in recovered_rows), dtype=float)
+    if centers_y.size >= 2 and float(np.median(np.diff(centers_y))) < max(6.0, median_height * 0.45):
+        return None
+    if candidate_height < median_height * 2.4 or candidate_width < median_width * 0.95:
+        return None
+    return recovered_rows
 
 def _merge_aligned_horizontal_fragments(lines: list[list[int]]) -> list[list[int]]:
     if len(lines) <= 1 or any(_is_polygon_line(line) for line in lines):
