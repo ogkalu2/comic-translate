@@ -126,20 +126,22 @@ class PPOCRv5Engine(OCREngine):
 		assert self.rec_sess is not None and self.decoder is not None
 		if not crops:
 			return [], []
-		# batch by padded width heuristic
-		ratios = [c.shape[1] / float(max(1, c.shape[0])) for c in crops]
-		order = np.argsort(ratios)
+		# Batch by exact padded recognition width to reduce wasted padding.
+		target_widths = [_rec_target_width(crop, self.rec_img_shape) for crop in crops]
 		texts = [""] * len(crops)
 		confs = [0.0] * len(crops)
-		bs = self.rec_batch_size
-		c, H, W = self.rec_img_shape
-		for b in range(0, len(crops), bs):
-			idxs = order[b:b+bs]
-			max_ratio = max(ratios[i] for i in idxs) if idxs.size > 0 else (W/float(H))
-			batch = [rec_resize_norm(crops[i], self.rec_img_shape, max_ratio)[None, ...] for i in idxs]
+		buckets: dict[int, list[int]] = {}
+		for crop_index, target_w in enumerate(target_widths):
+			buckets.setdefault(target_w, []).append(crop_index)
+		inp_name = self.rec_sess.get_inputs()[0].name
+		out_name = self.rec_sess.get_outputs()[0].name
+		for target_w, idxs in buckets.items():
+			max_ratio = target_w / float(self.rec_img_shape[1])
+			batch = [
+				rec_resize_norm(crops[crop_index], self.rec_img_shape, max_ratio)[None, ...]
+				for crop_index in idxs
+			]
 			x = np.concatenate(batch, axis=0).astype(np.float32)
-			inp_name = self.rec_sess.get_inputs()[0].name
-			out_name = self.rec_sess.get_outputs()[0].name
 			logits = self.rec_sess.run([out_name], {inp_name: x})[0]  # (N, T, C) or (N, C, T)
 			if logits.ndim == 3 and logits.shape[1] > logits.shape[2]:
 				# If output is (N, C, T), transpose to (N, T, C)
@@ -196,4 +198,11 @@ def _crop_line(img: np.ndarray, line) -> np.ndarray | None:
 	if h > 0 and w > 0 and h / float(w) >= 1.5:
 		crop = np.rot90(crop)
 	return crop
+
+
+def _rec_target_width(img: np.ndarray, img_shape=(3, 48, 320)) -> int:
+	_, H, W = img_shape
+	h, w = img.shape[:2]
+	ratio = w / float(max(1, h))
+	return max(W, int(np.ceil(H * ratio)))
 
