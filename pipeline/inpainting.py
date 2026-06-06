@@ -528,8 +528,7 @@ class InpaintingHandler:
                 seed_bbox=block.xyxy,
             )
             if bubble_mask is not None:
-                import scipy.ndimage as ndimage
-                labeled_fill, num_features = ndimage.label(fill_region)
+                num_labels, labeled_fill = imk.connected_components(fill_region, connectivity=4)
                 overlapping_labels = np.unique(labeled_fill[bubble_mask])
                 keep_labels = overlapping_labels[overlapping_labels > 0]
                 if keep_labels.size > 0:

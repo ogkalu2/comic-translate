@@ -79,8 +79,7 @@ def build_bubble_clip_mask(
                 tolerance = 20
                 bg_mask = np.abs(gray - bg_val) <= tolerance
                 
-                import scipy.ndimage as ndimage
-                labeled, num_features = ndimage.label(bg_mask)
+                num_labels, labeled = imk.connected_components(bg_mask, connectivity=4)
                 
                 # Find all labels that appear in the seed_bbox
                 seed_pixels_mask = bg_mask[seed_y1_rel:seed_y2_rel, seed_x1_rel:seed_x2_rel]
@@ -121,14 +120,14 @@ def build_bubble_clip_mask(
                         
                     if not use_fallback:
                         # Fill holes to include text and ink inside the bubble
-                        bubble_mask = ndimage.binary_fill_holes(bubble_mask)
+                        bubble_mask = imk.close_holes(bubble_mask)
                         
                         # Apply inset by eroding the mask. For the segmented path, we cap the
                         # inset to 2 pixels to keep the mask close to the outline without touching it.
                         seg_inset = min(2, inset)
                         if seg_inset > 0:
-                            struct_elem = ndimage.generate_binary_structure(2, 1)
-                            bubble_mask = ndimage.binary_erosion(bubble_mask, structure=struct_elem, iterations=seg_inset)
+                            struct_elem = imk.get_structuring_element(imk.MORPH_CROSS, (3, 3))
+                            bubble_mask = imk.erode(bubble_mask.astype(np.uint8) * 255, struct_elem, iterations=seg_inset) > 0
                             
                         # Now map back to the coordinate space of bounds
                         final_clip = np.zeros(mask_shape, dtype=bool)
@@ -222,8 +221,7 @@ def clip_mask_components_to_bubble(
             return imk.dilate(mask, dil_kernel, iterations=dilate_iterations)
         return mask
 
-    import scipy.ndimage as ndimage
-    labeled_text, num_features = ndimage.label(mask > 0)
+    num_labels, labeled_text = imk.connected_components(mask > 0, connectivity=4)
     overlapping_labels = np.unique(labeled_text[bubble_clip])
     keep_labels = overlapping_labels[overlapping_labels > 0]
 

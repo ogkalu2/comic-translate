@@ -105,3 +105,15 @@ def get_structuring_element(shape: int, ksize: tuple) -> np.ndarray:
         raise ValueError("Unknown shape flag")
 
     return elem
+
+
+def close_holes(mask: np.ndarray) -> np.ndarray:
+    """Fill holes in a binary mask using Mahotas.
+    
+    Args:
+        mask: Input binary mask
+        
+    Returns:
+        Hole-filled boolean mask
+    """
+    return mh.close_holes(mask > 0)
