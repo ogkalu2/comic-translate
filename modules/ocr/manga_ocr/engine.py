@@ -37,9 +37,14 @@ class MangaOCREngine(OCREngine):
             self.model = MangaOcr(pretrained_model_name_or_path=manga_ocr_path, device=device)
         
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        for blk in blk_list:
+        valid_crops = []
+        valid_indices = []
+        
+        for i, blk in enumerate(blk_list):
             # Get box coordinates
-            if blk.bubble_xyxy is not None:
+            if blk.xyxy is not None:
+                x1, y1, x2, y2 = blk.xyxy
+            elif blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             else:
                 x1, y1, x2, y2 = adjust_text_line_coordinates(
@@ -53,10 +58,16 @@ class MangaOCREngine(OCREngine):
             if x1 < x2 and y1 < y2 and x1 >= 0 and y1 >= 0 and x2 <= img.shape[1] and y2 <= img.shape[0]:
                 # Crop image and run OCR
                 cropped_img = img[y1:y2, x1:x2]
-                blk.text = self.model(cropped_img)
+                valid_crops.append(cropped_img)
+                valid_indices.append(i)
             else:
                 print('Invalid textbbox to target img')
                 blk.text = ""
+                
+        if valid_crops:
+            texts = self.model(valid_crops)
+            for idx, text in zip(valid_indices, texts):
+                blk_list[idx].text = text
                 
         return blk_list
 
@@ -79,20 +90,32 @@ class MangaOcr(TorchAutocastMixin):
     def to(self, device):
         self.model.to(device)
 
-    def __call__(self, img: np.ndarray):
+    def __call__(self, img_or_list):
         import torch
 
-        x = self.processor(img, return_tensors="pt").pixel_values.squeeze()
+        if isinstance(img_or_list, np.ndarray):
+            imgs = [img_or_list]
+        else:
+            imgs = img_or_list
+            
+        if not imgs:
+            return []
+
+        x = self.processor(imgs, return_tensors="pt").pixel_values
         with torch.inference_mode():
-            x = self.run_with_torch_autocast(
+            generated = self.run_with_torch_autocast(
                 torch_module=torch,
-                fn=lambda: self.model.generate(x[None].to(self.model.device))[0].cpu(),
+                fn=lambda: self.model.generate(x.to(self.model.device)).cpu(),
                 logger=logger,
                 engine_name=self.__class__.__name__,
             )
-        x = self.tokenizer.decode(x, skip_special_tokens=True)
-        x = post_process(x)
-        return x
+            
+        decoded = self.tokenizer.batch_decode(generated, skip_special_tokens=True)
+        results = [post_process(text) for text in decoded]
+        
+        if isinstance(img_or_list, np.ndarray):
+            return results[0]
+        return results
 
 def post_process(text):
     text = ''.join(text.split())

@@ -50,10 +50,13 @@ class ShortcutController:
 
     def _activate_shortcut(self, shortcut_id: str) -> None:
         handlers = {
+            "save_project": self._save_project,
+            "save_current_image": self._save_current_image,
             "undo": self._undo,
             "redo": self._redo,
             "delete_selected_box": self._delete_selected_box,
             "restore_text_blocks": self._restore_text_blocks,
+            "toggle_brush_strokes": self._toggle_brush_strokes,
         }
         handler = handlers.get(shortcut_id)
         if handler is not None:
@@ -83,6 +86,16 @@ class ShortcutController:
         if stack is not None and stack.canUndo():
             self.main.undo_group.undo()
 
+    def _save_project(self) -> None:
+        if not self._workspace_is_active():
+            return
+        self.main.project_ctrl.thread_save_project()
+
+    def _save_current_image(self) -> None:
+        if not self._workspace_is_active():
+            return
+        self.main.save_browser.click()
+
     def _redo(self) -> None:
         if not self._workspace_is_active() or self._is_text_input_focused():
             return
@@ -99,3 +112,8 @@ class ShortcutController:
         if not self._workspace_is_active() or self._is_text_input_focused():
             return
         self.main.restore_text_blocks()
+
+    def _toggle_brush_strokes(self) -> None:
+        if not self._workspace_is_active() or self._is_text_input_focused():
+            return
+        self.main.brush_button.click()

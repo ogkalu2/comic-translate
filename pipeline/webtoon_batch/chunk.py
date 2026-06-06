@@ -16,6 +16,7 @@ from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.image_utils import generate_mask
 from modules.utils.pipeline_config import get_config, get_inpainter_backend, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
+from pipeline.inpainting import call_inpaint_image
 
 if TYPE_CHECKING:
     from .processor import WebtoonBatchProcessor
@@ -163,12 +164,18 @@ class ChunkMixin:
     ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         if not blocks:
             return None, None
-        self._ensure_inpainter()
         config = get_config(self.main_page.settings_page)
         mask_blocks: List[TextBlock] = []
         img_h, img_w = image.shape[:2]
         for block in blocks:
             mask_block = block.deep_copy()
+            if (
+                not getattr(mask_block, "text", "")
+                or not mask_block.text.strip()
+                or not getattr(mask_block, "translation", "")
+                or not mask_block.translation.strip()
+            ):
+                continue
             x1, y1, x2, y2 = [float(v) for v in mask_block.xyxy]
             x1_i = int(np.floor(x1))
             y1_i = int(np.floor(y1))
@@ -189,16 +196,13 @@ class ChunkMixin:
                     max(0, min(int(np.ceil(bx2)), img_w)),
                     max(0, min(int(np.ceil(by2)), img_h)),
                 ]
-            if not mask_block.text and not mask_block.translation:
-                # Keep inpainting mask generation independent from OCR success.
-                mask_block.text = " "
             mask_blocks.append(mask_block)
         if not mask_blocks:
             return None, None
         mask = generate_mask(image, mask_blocks)
         if mask is None or not np.any(mask):
             return None, None
-        inpainted = self.inpainting.inpainter_cache(image, mask, config)
+        inpainted = call_inpaint_image(self.inpainting, image, mask, config, blk_list=mask_blocks)
         inpainted = imk.convert_scale_abs(inpainted)
         return mask, inpainted
 

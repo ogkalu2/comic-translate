@@ -35,7 +35,7 @@ class NavRailMixin:
         self.tool_browser.clicked.connect(self.show_tool_menu)
 
         self.image_browser_button = MClickBrowserFileToolButton(multiple=True)
-        self.image_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp"])
+        self.image_browser_button.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp", ".avif"])
 
         self.psd_browser_button = MClickBrowserFileToolButton(multiple=True)
         self.psd_browser_button.set_dayu_filters([".psd"])
@@ -177,6 +177,7 @@ class NavRailMixin:
                 ".jpeg",
                 ".webp",
                 ".bmp",
+                ".avif",
                 ".zip",
                 ".cbz",
                 ".cbr",

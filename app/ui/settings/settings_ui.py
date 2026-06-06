@@ -58,7 +58,7 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.ocr_engines = [
             self.tr("Default"), 
             self.tr('Microsoft OCR'), 
-            self.tr('Gemini-2.0-Flash'), 
+            self.tr('Gemini-2.5-Flash-Lite'), 
         ]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
         self.themes = [self.tr('Dark'), self.tr('Light')]
@@ -69,12 +69,12 @@ class SettingsPageUI(QtWidgets.QWidget):
         ]
         
         self.supported_translators = [
-            self.tr("Gemini-3.0-Flash"),
+            self.tr("Gemini-3.1-Flash-Lite"),
             self.tr("GPT-4.1"),
             self.tr("GPT-4.1-mini"),
             self.tr("Claude-4.6-Sonnet"),
             self.tr("Claude-4.5-Haiku"),
-            self.tr("Deepseek-v3"),
+            self.tr("Deepseek"),
             self.tr("Custom"),
         ]
         
@@ -111,13 +111,13 @@ class SettingsPageUI(QtWidgets.QWidget):
 
             # Translator mappings
             self.tr("Custom"): "Custom",
-            self.tr("Deepseek-v3"): "Deepseek-v3",
+            self.tr("Deepseek"): "Deepseek",
             self.tr("GPT-4.1"): "GPT-4.1",
             self.tr("GPT-4.1-mini"): "GPT-4.1-mini",
             self.tr("DeepL"): "DeepL",
             self.tr("Claude-4.6-Sonnet"): "Claude-4.6-Sonnet",
             self.tr("Claude-4.5-Haiku"): "Claude-4.5-Haiku",
-            self.tr("Gemini-3.0-Flash"): "Gemini-3.0-Flash",
+            self.tr("Gemini-3.1-Flash-Lite"): "Gemini-3.1-Flash-Lite",
             self.tr("Gemini-2.5-Pro"): "Gemini-2.5-Pro",
             self.tr("Yandex"): "Yandex",
             self.tr("Microsoft Translator"): "Microsoft Translator",

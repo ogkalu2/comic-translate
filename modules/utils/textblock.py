@@ -15,7 +15,6 @@ class TextBlock(object):
                  text_bbox: np.ndarray = None,
                  bubble_bbox: np.ndarray = None,
                  text_class: str = "",
-                 inpaint_bboxes = None,
                  lines: List = None,
                  text_segm_points: np.ndarray = None, 
                  angle = 0,
@@ -28,7 +27,7 @@ class TextBlock(object):
                  target_lang: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
-                 font_color: tuple = (),
+                 font_color: str|tuple = (),
                  direction: str = "",
                  **kwargs) -> None:
         
@@ -40,10 +39,6 @@ class TextBlock(object):
         self.tr_origin_point = ()
  
         self.lines = lines
-        if isinstance(inpaint_bboxes, np.ndarray):
-            self.inpaint_bboxes = inpaint_bboxes
-        else:
-            self.inpaint_bboxes = np.array(inpaint_bboxes, dtype=np.int32) if inpaint_bboxes else None
         self.texts = texts if texts is not None else []
         self.text = ' '.join(self.texts) if self.texts else text
         self.translation = translation
@@ -90,7 +85,6 @@ class TextBlock(object):
         new_block.xyxy = self.xyxy.copy() if isinstance(self.xyxy, np.ndarray) else copy.deepcopy(self.xyxy)
         new_block.segm_pts = self.segm_pts.copy() if isinstance(self.segm_pts, np.ndarray) else copy.deepcopy(self.segm_pts)
         new_block.bubble_xyxy = self.bubble_xyxy.copy() if isinstance(self.bubble_xyxy, np.ndarray) else copy.deepcopy(self.bubble_xyxy)
-        new_block.inpaint_bboxes = self.inpaint_bboxes.copy() if isinstance(self.inpaint_bboxes, np.ndarray) else copy.deepcopy(self.inpaint_bboxes)
         
         # Copy simple attributes
         new_block.text_class = self.text_class
@@ -110,8 +104,8 @@ class TextBlock(object):
         
         return new_block
 
-def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlock]:
-    # Sort blk_list from right to left, top to bottom
+def sort_blk_list(blk_list: List[TextBlock], right_to_left=None) -> List[TextBlock]:
+    # Sort blk_list using detected block direction when available.
     sorted_blk_list = []
     for blk in sorted(blk_list, key=lambda blk: blk.center[1]):
         for i, sorted_blk in enumerate(sorted_blk_list):
@@ -122,10 +116,12 @@ def sort_blk_list(blk_list: List[TextBlock], right_to_left=True) -> List[TextBlo
                 break
 
             # y center of blk inside sorted_blk so sort by x instead
-            if right_to_left and blk.center[0] > sorted_blk.center[0]:
+            pair_is_vertical = blk.direction == 'vertical' or sorted_blk.direction == 'vertical'
+            pair_right_to_left = bool(right_to_left) if pair_is_vertical else False
+            if pair_right_to_left and blk.center[0] > sorted_blk.center[0]:
                 sorted_blk_list.insert(i, blk)
                 break
-            if not right_to_left and blk.center[0] < sorted_blk.center[0]:
+            if not pair_right_to_left and blk.center[0] < sorted_blk.center[0]:
                 sorted_blk_list.insert(i, blk)
                 break
         else:
@@ -204,13 +200,16 @@ def visualize_textblocks(canvas, blk_list: List[TextBlock]):
         # Draw line numbers and polygons (simplified)
         for j, line in enumerate(blk.lines):
             if len(line) > 0:
-                draw.text(line[0], str(j), fill=(255, 127, 0))
-                # Draw polygon outline (simplified as lines between points)
-                if len(line) > 1:
-                    for k in range(len(line)):
-                        start_point = tuple(line[k])
-                        end_point = tuple(line[(k + 1) % len(line)])
-                        draw.line([start_point, end_point], fill=(0, 127, 255), width=2)
+                arr = np.asarray(line)
+                if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
+                    points = [tuple(map(int, point)) for point in arr[:4]]
+                    draw.text(points[0], str(j), fill=(255, 127, 0))
+                    for k in range(len(points)):
+                        draw.line([points[k], points[(k + 1) % len(points)]], fill=(0, 127, 255), width=2)
+                elif arr.size >= 4:
+                    x1, y1, x2, y2 = [int(v) for v in arr.reshape(-1)[:4]]
+                    draw.text((x1, y1), str(j), fill=(255, 127, 0))
+                    draw.rectangle([x1, y1, x2, y2], outline=(0, 127, 255), width=2)
         
         # Draw block index
         draw.text((bx1, by1 + lw), str(i), fill=(255, 127, 127))

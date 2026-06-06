@@ -48,10 +48,11 @@ class PororoOcrFactory(PororoFactoryBase):
         }
     """
 
-    def __init__(self, task: str, lang: str, model: Optional[str]):
+    def __init__(self, task: str, lang: str, model: Optional[str], use_text_lines: bool = False):
         super().__init__(task, lang, model)
         self.detect_model = "craft"
         self.ocr_opt = "ocr-opt"
+        self.use_text_lines = use_text_lines
 
     @staticmethod
     def get_available_langs():
@@ -102,8 +103,10 @@ class PororoOcrFactory(PororoFactoryBase):
                 rec_model_ckpt_fp=rec_model_path,
                 opt_fp=opt_fp,
                 device=device,
+                load_detector=not self.use_text_lines,
             )
-            model.detector.to(device)
+            if model.detector is not None:
+                model.detector.to(device)
             model.recognizer.to(device)
             return PororoOCR(model, self.config)
 

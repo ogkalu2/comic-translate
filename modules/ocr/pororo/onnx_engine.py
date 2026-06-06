@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import numpy as np
+import onnxruntime as ort
 from PIL import Image
 import imkit as imk
 from typing import Optional
@@ -9,9 +10,11 @@ from typing import Optional
 from modules.utils.download import ModelDownloader, ModelID
 from modules.ocr.base import OCREngine
 from modules.utils.device import get_providers
-from modules.utils.onnx import make_session, make_session_options
+from modules.utils.onnx import make_session
 from modules.utils.textblock import TextBlock
+from modules.utils.language_utils import is_no_space_lang
 from modules.utils.textblock import adjust_text_line_coordinates
+from modules.ocr.ppocr.preprocessing import crop_quad
 from .pororo.models.brainOCR.brainocr import Reader
 from .pororo.models.brainOCR.detection import (
     resize_aspect_ratio,
@@ -25,6 +28,18 @@ from .pororo.models.brainOCR.utils import get_image_list
 from .pororo.models.brainOCR.utils import reformat_input, get_paragraph, diff
 
 
+def _make_pororo_session_options():
+    opts = ort.SessionOptions()
+    opts.log_severity_level = 3
+    opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+    opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+    opts.intra_op_num_threads = 4
+    opts.inter_op_num_threads = 1
+    opts.enable_cpu_mem_arena = True
+    opts.enable_mem_pattern = True
+    return opts
+
+
 class PororoOCREngineONNX(OCREngine):
     """Runs Pororo OCR fully with ONNXRuntime."""
 
@@ -35,7 +50,13 @@ class PororoOCREngineONNX(OCREngine):
         self.opt2val["vocab_size"] = len(self.opt2val["vocab"])
         self.converter = CTCLabelConverter(self.opt2val["vocab"])  # type: ignore
 
-    def initialize(self, lang: str = 'ko', expansion_percentage: int = 5, device: Optional[str] = None):  # match signature style of torch engine
+    def initialize(
+        self,
+        lang: str = 'ko',
+        expansion_percentage: int = 5,
+        device: Optional[str] = None,
+        use_text_lines: bool = True,
+    ):  # match signature style of torch engine
         """Initialize engine runtime options and create ONNX sessions with device hint.
 
         device: optional device hint (e.g. 'cpu' or 'cuda') that controls ONNX provider selection.
@@ -43,20 +64,29 @@ class PororoOCREngineONNX(OCREngine):
         ModelDownloader.get(ModelID.PORORO_ONNX)
         self.lang = lang
         self.expansion_percentage = expansion_percentage
+        self.use_text_lines = use_text_lines
 
         if device:
             self.opt2val["device"] = device
 
-        sess_opts = make_session_options(log_severity_level=3)
+        sess_opts = _make_pororo_session_options()
         providers = get_providers(self.opt2val.get("device"))
         self.det_path = ModelDownloader.get_file_path(ModelID.PORORO_ONNX, "craft.onnx")
         self.rec_path = ModelDownloader.get_file_path(ModelID.PORORO_ONNX, "brainocr.onnx")
-        self.det_sess = make_session(self.det_path, sess_options=sess_opts, providers=providers)
+        self.det_sess = None if use_text_lines else make_session(self.det_path, sess_options=sess_opts, providers=providers)
         self.rec_sess = make_session(self.rec_path, sess_options=sess_opts, providers=providers)
         return None
 
+    def _ensure_det_session(self) -> None:
+        if self.det_sess is not None:
+            return
+        sess_opts = _make_pororo_session_options()
+        providers = get_providers(self.opt2val.get("device"))
+        self.det_sess = make_session(self.det_path, sess_options=sess_opts, providers=providers)
+
     # Detection
     def _detect(self, image: np.ndarray) -> tuple[list[np.ndarray], list[np.ndarray]]:
+        self._ensure_det_session()
         opt = self.opt2val
         canvas_size = opt.get("canvas_size", 2560)
         mag_ratio = opt.get("mag_ratio", 1.0)
@@ -238,6 +268,25 @@ class PororoOCREngineONNX(OCREngine):
         self.opt2val.setdefault("paragraph", False)
         self.opt2val.setdefault("min_size", 20)
 
+        if getattr(self, 'use_text_lines', False) and any(getattr(blk, 'lines', None) for blk in blk_list):
+            _, img_cv_grey = reformat_input(img)
+            for blk in blk_list:
+                lines = getattr(blk, 'lines', None) or [blk.xyxy]
+                image_list = []
+                for line in lines:
+                    crop = _crop_line_grey(img_cv_grey, line)
+                    if crop is not None and crop.size > 0:
+                        image_list.append((line, crop))
+                if not image_list:
+                    blk.text = ''
+                    blk.texts = []
+                    continue
+                results = self._recognize(image_list)
+                texts = [text.strip() for _, text, _ in results if text and text.strip()]
+                blk.texts = texts
+                blk.text = ''.join(texts) if is_no_space_lang(getattr(blk, 'source_lang', '')) else ' '.join(texts)
+            return blk_list
+
         for blk in blk_list:
             if getattr(blk, 'bubble_xyxy', None) is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
@@ -263,3 +312,25 @@ class PororoOCREngineONNX(OCREngine):
             else:
                 blk.text = ''
         return blk_list
+
+
+def _crop_line_grey(img_cv_grey: np.ndarray, line) -> np.ndarray | None:
+    arr = np.asarray(line)
+    if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
+        return crop_quad(img_cv_grey, arr[:4].astype(np.float32))
+    elif arr.size == 4:
+        x1, y1, x2, y2 = [int(round(float(v))) for v in arr.reshape(-1)[:4]]
+    else:
+        return None
+
+    x1 = max(0, min(img_cv_grey.shape[1], x1))
+    x2 = max(0, min(img_cv_grey.shape[1], x2))
+    y1 = max(0, min(img_cv_grey.shape[0], y1))
+    y2 = max(0, min(img_cv_grey.shape[0], y2))
+    if x2 <= x1 or y2 <= y1:
+        return None
+    crop = img_cv_grey[y1:y2, x1:x2]
+    h, w = crop.shape[:2]
+    if h > 0 and w > 0 and h / float(w) >= 1.5:
+        crop = np.rot90(crop)
+    return crop

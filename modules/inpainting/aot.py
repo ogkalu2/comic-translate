@@ -1,5 +1,6 @@
 import numpy as np
 import imkit as imk
+import onnxruntime as ort
 from PIL import Image
 import logging
 from modules.utils.device import get_providers
@@ -17,6 +18,18 @@ from modules.utils.torch_autocast import TorchAutocastMixin
 logger = logging.getLogger(__name__)
 
 
+def _make_aot_session_options():
+    opts = ort.SessionOptions()
+    opts.log_severity_level = 3
+    opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+    opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+    opts.intra_op_num_threads = 4
+    opts.inter_op_num_threads = 1
+    opts.enable_cpu_mem_arena = True
+    opts.enable_mem_pattern = True
+    return opts
+
+
 class AOT(TorchAutocastMixin, InpaintModel):
     name = "aot"
     pad_mod = 8
@@ -29,7 +42,11 @@ class AOT(TorchAutocastMixin, InpaintModel):
             ModelDownloader.get(ModelID.AOT_ONNX)
             onnx_path = ModelDownloader.primary_path(ModelID.AOT_ONNX)
             providers = get_providers(device)
-            self.session = make_session(onnx_path, providers=providers)
+            self.session = make_session(
+                onnx_path,
+                sess_options=_make_aot_session_options(),
+                providers=providers,
+            )
         else:
             import torch
             ModelDownloader.get(ModelID.AOT_JIT)

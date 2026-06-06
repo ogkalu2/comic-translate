@@ -29,7 +29,7 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.messages import Messages
 from .cache_manager import CacheManager
 from .block_detection import BlockDetectionHandler
-from .inpainting import InpaintingHandler
+from .inpainting import InpaintingHandler, call_inpaint_image
 from .ocr_handler import OCRHandler
 
 if TYPE_CHECKING:
@@ -66,10 +66,9 @@ class BatchProcessor:
             0: 'start-image',
             1: 'text-block-detection',
             2: 'ocr-processing',
-            3: 'pre-inpaint-setup',
-            4: 'generate-mask',
-            5: 'inpainting',
-            7: 'translation',
+            3: 'translation',
+            5: 'pre-inpaint-setup',
+            7: 'inpainting',
             9: 'text-rendering-prepare',
             10: 'save-and-finish',
         }
@@ -206,42 +205,6 @@ class BatchProcessor:
             if self._is_cancelled():
                 return
 
-            # Clean Image of text
-            export_settings = settings_page.get_export_settings()
-
-            # Use the shared inpainter from the handler
-            self.inpainting._ensure_inpainter()
-
-            config = get_config(settings_page)
-            logger.info("pre-inpaint: generating mask (blk_list=%d blocks)", len(blk_list))
-            t0 = time.time()
-            mask = generate_mask(image, blk_list)
-            t1 = time.time()
-            logger.info("pre-inpaint: mask generated in %.2fs (mask shape=%s)", t1 - t0, getattr(mask, 'shape', None))
-
-            self.emit_progress(index, total_images, 4, 10, False)
-            if self._is_cancelled():
-                return
-
-            inpaint_input_img = self.inpainting.inpainter_cache(image, mask, config)
-            inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
-
-            # Saving cleaned image
-            patches = self.inpainting.get_inpainted_patches(mask, inpaint_input_img)
-            self.main_page.patches_processed.emit(patches, image_path)
-
-            # inpaint_input_img is already in RGB format
-
-            if export_settings['export_inpainted_image']:
-                path = os.path.join(directory, f"comic_translate_{timestamp}", "cleaned_images", archive_bname)
-                if not os.path.exists(path):
-                    os.makedirs(path, exist_ok=True)
-                imk.write_image(os.path.join(path, f"{base_name}_cleaned{extension}"), inpaint_input_img)
-
-            self.emit_progress(index, total_images, 5, 10, False)
-            if self._is_cancelled():
-                return
-
             # Get Translations/ Export if selected
             extra_context = settings_page.get_llm_settings()['extra_context']
             translator_key = settings_page.get_tool_selection('translator')
@@ -314,6 +277,8 @@ class BatchProcessor:
                 self.log_skipped_image(directory, timestamp, image_path, reason, full_traceback)
                 continue
 
+            export_settings = settings_page.get_export_settings()
+
             if export_settings['export_raw_text']:
                 path = os.path.join(directory, f"comic_translate_{timestamp}", "raw_texts", archive_bname)
                 if not os.path.exists(path):
@@ -336,7 +301,43 @@ class BatchProcessor:
                 ) as file:
                     file.write(entire_translated_text)
 
+            self.emit_progress(index, total_images, 5, 10, False)
+            if self._is_cancelled():
+                return
+
+            # Clean Image of text
+            config = get_config(settings_page)
+            
+            # Filter blocks to only inpaint if both OCR text and Translation are non-empty
+            inpaint_blk_list = [
+                blk for blk in blk_list
+                if blk.text and blk.text.strip() and blk.translation and blk.translation.strip()
+            ]
+            
+            logger.info("pre-inpaint: generating mask (inpaint_blk_list=%d blocks out of %d)", len(inpaint_blk_list), len(blk_list))
+            t0 = time.time()
+            mask = generate_mask(image, inpaint_blk_list)
+            t1 = time.time()
+            logger.info("pre-inpaint: mask generated in %.2fs (mask shape=%s)", t1 - t0, getattr(mask, 'shape', None))
+
             self.emit_progress(index, total_images, 7, 10, False)
+            if self._is_cancelled():
+                return
+
+            inpaint_input_img = call_inpaint_image(self.inpainting, image, mask, config, blk_list=inpaint_blk_list)
+            inpaint_input_img = imk.convert_scale_abs(inpaint_input_img)
+
+            # Saving cleaned image
+            patches = self.inpainting.get_inpainted_patches(mask, inpaint_input_img)
+            self.main_page.patches_processed.emit(patches, image_path)
+
+            if export_settings['export_inpainted_image']:
+                path = os.path.join(directory, f"comic_translate_{timestamp}", "cleaned_images", archive_bname)
+                if not os.path.exists(path):
+                    os.makedirs(path, exist_ok=True)
+                imk.write_image(os.path.join(path, f"{base_name}_cleaned{extension}"), inpaint_input_img)
+
+            self.emit_progress(index, total_images, 9, 10, False)
             if self._is_cancelled():
                 return
 
@@ -388,16 +389,13 @@ class BatchProcessor:
                     max_font_size, 
                     min_font_size,
                     vertical,
+                    is_no_space_lang(trg_lng_cd),
                     return_metrics=True
                 )
                 
                 # Display text if on current page  
                 if image_path == file_on_display:
                     self.main_page.blk_rendered.emit(translation, font_size, blk, image_path)
-
-                # Language-specific formatting for state storage
-                if is_no_space_lang(trg_lng_cd):
-                    translation = translation.replace(' ', '')
 
                 # Smart Color Override
                 font_color = get_smart_text_color(blk.font_color, setting_font_color)

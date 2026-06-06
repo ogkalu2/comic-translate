@@ -5,7 +5,10 @@ from typing import Optional
 from ..utils.textblock import TextBlock
 from .utils.geometry import does_rectangle_fit, do_rectangles_overlap, \
     merge_overlapping_boxes
-from .font.engine import FontEngineFactory
+from .font.engine import extract_foreground_color
+from .heuristic_lines import annotate_blocks_with_heuristic_lines
+from .backend import resolve_detection_backend
+from modules.utils.device import resolve_device
 from .utils.content import filter_and_fix_bboxes
 
 
@@ -17,6 +20,7 @@ class DetectionEngine(ABC):
     
     def __init__(self, settings=None):
         self.settings = settings
+        self.backend = resolve_detection_backend()
     
     @abstractmethod
     def initialize(self, **kwargs) -> None:
@@ -62,43 +66,30 @@ class DetectionEngine(ABC):
         if len(text_boxes) == 0:
             return text_blocks
 
-        # Batch font inference: collect all valid crops first
+        # Collect text foreground color without running the expensive font model.
         h, w = image.shape[:2]
-        crops = []
-        crop_indices = []  # maps position in crops[] -> index in text_boxes
+        text_colors_per_box: list[tuple] = [()] * len(text_boxes)
         for txt_idx, txt_box in enumerate(text_boxes):
             x1, y1, x2, y2 = map(int, txt_box)
             x1 = max(0, x1); y1 = max(0, y1)
             x2 = min(w, x2); y2 = min(h, y2)
             if x2 > x1 and y2 > y1:
-                crops.append(image[y1:y2, x1:x2])
-                crop_indices.append(txt_idx)
-
-        font_attrs_per_box: list[dict] = [{}] * len(text_boxes)
-        if crops:
-            try:
-                font_engine = FontEngineFactory.create_engine(self.settings)
-                batch_results = font_engine.process_batch(crops)
-                for crop_pos, txt_idx in enumerate(crop_indices):
-                    font_attrs_per_box[txt_idx] = batch_results[crop_pos]
-            except Exception as e:
-                print(f"Failed to batch detect font attributes: {e}")
+                text_color = extract_foreground_color(image[y1:y2, x1:x2])
+                if text_color is not None:
+                    text_colors_per_box[txt_idx] = tuple(text_color)
 
         # Build TextBlock objects using pre-computed font attrs
         for txt_idx, txt_box in enumerate(text_boxes):
-            font_attrs = font_attrs_per_box[txt_idx]
-            direction = font_attrs.get('direction', '')
-            text_color = tuple(font_attrs.get('text_color', ()))
+            text_color = text_colors_per_box[txt_idx]
 
             # If no bubble boxes, all text is free text
             if len(bubble_boxes) == 0:
                 text_blocks.append(
-                    TextBlock(
-                        text_bbox=txt_box,
-                        text_class='text_free',
-                        direction=direction,
-                        font_color=text_color,
-                    )
+                        TextBlock(
+                            text_bbox=txt_box,
+                            text_class='text_free',
+                            font_color=text_color,
+                        )
                 )
                 continue
             
@@ -112,7 +103,6 @@ class DetectionEngine(ABC):
                             text_bbox=txt_box,
                             bubble_bbox=bble_box,
                             text_class='text_bubble',
-                            direction=direction,
                             font_color=text_color,
                         )
                     )
@@ -125,7 +115,6 @@ class DetectionEngine(ABC):
                             text_bbox=txt_box,
                             bubble_bbox=bble_box,
                             text_class='text_bubble',
-                            direction=direction,
                             font_color=text_color,
                         )
                     )
@@ -137,10 +126,16 @@ class DetectionEngine(ABC):
                     TextBlock(
                         text_bbox=txt_box,
                         text_class='text_free',
-                        direction=direction,
                         font_color=text_color,
                     )
                 )
         
+        try:
+            backend = resolve_detection_backend(getattr(self, "backend", None))
+            device = resolve_device(self.settings.is_gpu_enabled(), backend) if self.settings else "cpu"
+            _ = backend, device
+            annotate_blocks_with_heuristic_lines(image, text_blocks)
+        except Exception as e:
+            print(f"Failed to build heuristic text lines: {e}")
+
         return text_blocks
-    

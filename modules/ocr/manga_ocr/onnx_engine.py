@@ -33,13 +33,18 @@ class MangaOCREngineONNX(OCREngine):
         self.expansion_percentage = expansion_percentage
 
         if self.model is None:
-            ModelDownloader.get(ModelID.MANGA_OCR_BASE_ONNX)
+            ModelDownloader.get(ModelID.MANGA_OCR_INT8_ONNX)
             self.model = MangaOCRONNX(device=device)
 
     def process_image(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        for blk in blk_list:
+        crops: list[np.ndarray] = []
+        crop_indices: list[int] = []
+
+        for idx, blk in enumerate(blk_list):
             # Get box coordinates
-            if blk.bubble_xyxy is not None:
+            if blk.xyxy is not None:
+                x1, y1, x2, y2 = blk.xyxy
+            elif blk.bubble_xyxy is not None:
                 x1, y1, x2, y2 = blk.bubble_xyxy
             else:
                 x1, y1, x2, y2 = adjust_text_line_coordinates(
@@ -51,13 +56,23 @@ class MangaOCREngineONNX(OCREngine):
 
             # Validate coordinates
             if x1 < x2 and y1 < y2 and x1 >= 0 and y1 >= 0 and x2 <= img.shape[1] and y2 <= img.shape[0]:
-                cropped_img = img[y1:y2, x1:x2]
-                try:
-                    blk.text = self.model(cropped_img)
-                except Exception:
-                    blk.text = ""
+                crops.append(img[y1:y2, x1:x2])
+                crop_indices.append(idx)
             else:
                 blk.text = ""
+
+        if not crops:
+            return blk_list
+
+        try:
+            texts = self.model.process_batch(crops)
+        except Exception:
+            for idx in crop_indices:
+                blk_list[idx].text = ""
+            return blk_list
+
+        for idx, text in zip(crop_indices, texts):
+            blk_list[idx].text = text
 
         return blk_list
 
@@ -73,9 +88,9 @@ class MangaOCRONNX:
     def __init__(self, device: str = 'cpu'):
         self.device = device
 
-        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "encoder_model.onnx")
-        decoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "decoder_model.onnx")
-        vocab_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_BASE_ONNX, "vocab.txt")
+        encoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_INT8_ONNX, "encoder_model_int8.onnx")
+        decoder_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_INT8_ONNX, "decoder_model_int8.onnx")
+        vocab_path = ModelDownloader.get_file_path(ModelID.MANGA_OCR_INT8_ONNX, "vocab.txt")
 
         providers = get_providers(self.device)
         self.encoder = make_session(encoder_path, providers=providers)
@@ -106,11 +121,14 @@ class MangaOCRONNX:
         return lines
 
     def __call__(self, img: np.ndarray) -> str:
-        img_in = self._preprocess(img)
-        token_ids = self._generate(img_in)
-        text = self._decode(token_ids)
-        text = self._postprocess(text)
-        return text
+        return self.process_batch([img])[0]
+
+    def process_batch(self, imgs: list[np.ndarray]) -> list[str]:
+        if not imgs:
+            return []
+        image_batch = self._preprocess_batch(imgs)
+        token_batches = self._generate_batch(image_batch)
+        return [self._postprocess(self._decode(tokens)) for tokens in token_batches]
 
     def _preprocess(self, img: np.ndarray) -> np.ndarray:
         # Expecting BGR (OpenCV) numpy array from cropping logic used elsewhere.
@@ -139,29 +157,50 @@ class MangaOCRONNX:
 
         return arr
 
+    def _preprocess_batch(self, imgs: list[np.ndarray]) -> np.ndarray:
+        return np.concatenate([self._preprocess(img) for img in imgs], axis=0)
+
     def _generate(self, image: np.ndarray) -> list:
+        return self._generate_batch(image)[0]
+
+    def _generate_batch(self, images: np.ndarray) -> list[list[int]]:
         # Run encoder once
-        encoder_feed = {self.encoder_image_input: image}
+        encoder_feed = {self.encoder_image_input: images}
         encoder_outs = self.encoder.run(None, encoder_feed)
         encoder_hidden = encoder_outs[0]
 
-        token_ids = [2]
+        batch_size = int(images.shape[0])
+        token_ids = [[2] for _ in range(batch_size)]
+        finished = [False] * batch_size
 
         for _ in range(300):
+            current_length = len(token_ids[0])
+            decoder_tokens = np.full((batch_size, current_length), 3, dtype=np.int64)
+            for batch_idx, tokens in enumerate(token_ids):
+                decoder_tokens[batch_idx, :len(tokens)] = tokens
+
             # prepare decoder inputs
             decoder_feed = {
-                self.decoder_token_input: np.array([token_ids], dtype=np.int64),
+                self.decoder_token_input: decoder_tokens,
                 self.decoder_encoder_input: encoder_hidden,
             }
 
             outs = self.decoder.run(None, decoder_feed)
             # assume logits are first output
             logits = outs[0]
-            # pick last timestep logits
-            next_token = int(np.argmax(logits[0, -1, :]))
-            token_ids.append(next_token)
+            all_finished = True
+            for batch_idx in range(batch_size):
+                if finished[batch_idx]:
+                    token_ids[batch_idx].append(3)
+                    continue
+                next_token = int(np.argmax(logits[batch_idx, -1, :]))
+                token_ids[batch_idx].append(next_token)
+                if next_token == 3:
+                    finished[batch_idx] = True
+                else:
+                    all_finished = False
 
-            if next_token == 3:
+            if all_finished:
                 break
 
         return token_ids

@@ -1,13 +1,14 @@
 from .base import DetectionEngine
 from .rtdetr_v2_onnx import RTDetrV2ONNXDetection
 from ..utils.device import resolve_device, torch_available
+from .backend import DEFAULT_DETECTION_BACKEND, resolve_detection_backend
 
 
 class DetectionEngineFactory:
     """Factory for creating appropriate detection engines based on settings."""
     
     _engines = {}  # Cache of created engines
-    _DEFAULT_BACKEND = "onnx"
+    _DEFAULT_BACKEND = DEFAULT_DETECTION_BACKEND
     
     @classmethod
     def create_engine(
@@ -47,15 +48,13 @@ class DetectionEngineFactory:
 
         # Create and cache the engine
         engine = factory_method(settings, effective_backend)
+        engine.backend = effective_backend
         cls._engines[cache_key] = engine
         return engine
 
     @classmethod
     def _resolve_backend(cls, backend: str | None = None) -> str:
-        effective_backend = (backend or cls._DEFAULT_BACKEND).lower()
-        if effective_backend == "torch" and not torch_available():
-            return "onnx"
-        return effective_backend
+        return resolve_detection_backend(backend)
 
     @staticmethod
     def _create_rtdetr_v2(settings, backend: str = 'onnx'):

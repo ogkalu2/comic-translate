@@ -475,8 +475,8 @@ class ImageViewer(QGraphicsView):
     def save_brush_strokes(self) -> List[Dict]:
         return self.drawing_manager.save_brush_strokes()
 
-    def draw_segmentation_lines(self, bboxes):
-        self.drawing_manager.draw_segmentation_lines(bboxes)
+    def draw_segmentation_lines(self, text_bbox, image=None, stroke=None):
+        self.drawing_manager.draw_segmentation_lines(text_bbox, image, stroke)
 
     def has_drawn_elements(self) -> bool:
         return self.drawing_manager.has_drawn_elements()

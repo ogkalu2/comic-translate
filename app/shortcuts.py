@@ -15,6 +15,18 @@ class ShortcutDefinition:
 
 SHORTCUT_DEFINITIONS: tuple[ShortcutDefinition, ...] = (
     ShortcutDefinition(
+        id="save_project",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Save Project"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Save the current project file."),
+        default="Ctrl+S",
+    ),
+    ShortcutDefinition(
+        id="save_current_image",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Save Current Image"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Save the currently loaded image."),
+        default="Ctrl+E",
+    ),
+    ShortcutDefinition(
         id="undo",
         label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Undo"),
         description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Undo the last editing action."),
@@ -37,6 +49,12 @@ SHORTCUT_DEFINITIONS: tuple[ShortcutDefinition, ...] = (
         label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Restore Text Blocks"),
         description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Draw saved text blocks back onto the image for editing."),
         default="Ctrl+Shift+R",
+    ),
+    ShortcutDefinition(
+        id="toggle_brush_strokes",
+        label=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Toggle Brush Strokes"),
+        description=QT_TRANSLATE_NOOP("ShortcutDefinitions", "Toggle brush stroke drawing on or off."),
+        default="Ctrl+D",
     ),
 )
 

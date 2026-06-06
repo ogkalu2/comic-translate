@@ -12,7 +12,7 @@ from modules.utils.textblock import TextBlock
 from modules.utils.textblock import adjust_blks_size
 from modules.detection.utils.geometry import shrink_bbox
 from app.ui.canvas.text.vertical_layout import VerticalTextDocumentLayout
-from modules.utils.language_utils import get_language_code
+from modules.utils.language_utils import get_language_code, is_no_space_lang
 
 from dataclasses import dataclass
 
@@ -61,6 +61,88 @@ def is_vertical_block(blk, lang_code: str | None) -> bool:
     and the target language code is one of the vertical-capable ones.
     """
     return getattr(blk, "direction", "") == "vertical" and is_vertical_language_code(lang_code)
+
+def _split_at_fitting_hyphen(
+    current_line: str,
+    word: str,
+    measure_side,
+    max_side: float,
+) -> Tuple[str, str] | None:
+    """Return the longest hyphen-preserving split that fits, if any."""
+
+    best_split = None
+    for idx, char in enumerate(word):
+        if char != "-" or idx <= 0 or idx >= len(word) - 1:
+            continue
+        prefix = word[: idx + 1]
+        candidate = prefix if not current_line else f"{current_line} {prefix}"
+        if measure_side(candidate) <= max_side:
+            best_split = (prefix, word[idx + 1 :])
+    return best_split
+
+def _wrap_text_greedily(text: str, measure_side, max_side: float) -> str:
+    """Greedy wrapping that only splits inside words at existing hyphens."""
+
+    words = text.split()
+    lines: List[str] = []
+
+    while words:
+        line = ""
+        while words:
+            next_word = words[0]
+            candidate = next_word if not line else f"{line} {next_word}"
+            if measure_side(candidate) <= max_side:
+                line = candidate
+                words.pop(0)
+                continue
+
+            hyphen_split = _split_at_fitting_hyphen(line, next_word, measure_side, max_side)
+            if hyphen_split is not None:
+                prefix, suffix = hyphen_split
+                line = prefix if not line else f"{line} {prefix}"
+                words[0] = suffix
+                break
+
+            if line:
+                break
+
+            line = words.pop(0)
+            break
+
+        lines.append(line)
+
+    return "\n".join(lines)
+
+def _wrap_no_space_text_greedily(text: str, measure_side, max_side: float) -> str:
+    """Greedy wrapping for languages that do not rely on spaces between words."""
+
+    paragraphs = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    wrapped_paragraphs: List[str] = []
+
+    for paragraph in paragraphs:
+        chars = [char for char in paragraph if char != " "]
+        if not chars:
+            wrapped_paragraphs.append("")
+            continue
+
+        lines: List[str] = []
+        line = ""
+
+        for char in chars:
+            candidate = f"{line}{char}"
+            if not line or measure_side(candidate) <= max_side:
+                line = candidate
+                continue
+
+            lines.append(line)
+            line = char
+
+        if line:
+            lines.append(line)
+
+        wrapped_paragraphs.append("\n".join(lines))
+
+    return "\n".join(wrapped_paragraphs)
 
 def pil_word_wrap(image: Image, tbbox_top_left: Tuple, font_pth: str, text: str, 
                   roi_width, roi_height, align: str, spacing, init_font_size: int, min_font_size: int = 10):
@@ -189,6 +271,7 @@ def pyside_word_wrap(
     init_font_size: int, 
     min_font_size: int = 10, 
     vertical: bool = False,
+    no_space_language: bool = False,
     return_metrics: bool = False
 ) -> tuple:
     
@@ -252,23 +335,22 @@ def pyside_word_wrap(
         return width, height
 
     def wrap_and_size(font_size):
-        words = text.split()
-        lines = []
-        # build lines greedily
-        while words:
-            line = words.pop(0)
-            # try extending the current line
-            while words:
-                test = f"{line} {words[0]}"
-                w, h = eval_metrics(test, font_size, vertical)
-                side, side_roi = (h, roi_height) if vertical else (w, roi_width)
-                if side <= side_roi:
-                    line = test
-                    words.pop(0)
-                else:
-                    break
-            lines.append(line)
-        wrapped = "\n".join(lines)
+        def measure_side(candidate: str) -> float:
+            w, h = eval_metrics(candidate, font_size, vertical)
+            return h if vertical else w
+
+        if no_space_language:
+            wrapped = _wrap_no_space_text_greedily(
+                text=text,
+                measure_side=measure_side,
+                max_side=roi_height if vertical else roi_width,
+            )
+        else:
+            wrapped = _wrap_text_greedily(
+                text=text,
+                measure_side=measure_side,
+                max_side=roi_height if vertical else roi_width,
+            )
         # measure wrapped block
         w, h = eval_metrics(wrapped, font_size, vertical)
         return wrapped, w, h
@@ -387,7 +469,8 @@ def manual_wrap(
             direction, 
             init_font_size, 
             min_font_size,
-            vertical
+            vertical,
+            is_no_space_lang(trg_lng_cd)
         )
         
         main_page.blk_rendered.emit(translation, font_size, blk, image_path)

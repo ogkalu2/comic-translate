@@ -16,13 +16,19 @@ class AuthServerThread(QThread):
     tokens_received = Signal(str, str, dict) # access_token, refresh_token, user_info
     error = Signal(str) # General errors
 
-    def __init__(self, port: Optional[int] = None, expected_request_id: Optional[str] = None):
+    def __init__(
+        self,
+        port: Optional[int] = None,
+        expected_request_id: Optional[str] = None,
+        frontend_url: Optional[str] = None,
+    ):
         super().__init__()
         self._port_preference = port # Store initial port choice if provided
         self.port: Optional[int] = None # Port will be determined during run()
         self.server: Optional[socketserver.TCPServer] = None
         self.max_retries = 5
         self.expected_request_id = expected_request_id # Store the ID to verify callback
+        self.frontend_url = (frontend_url or "").rstrip("/")
 
     def stop_server(self):
         """Requests the server to shut down."""
@@ -132,6 +138,8 @@ class AuthServerThread(QThread):
             def do_GET(self):
                 """Handle GET requests - serve the JS bridge page for /callback."""
                 logger.debug(f"Received GET request for {self.path}")
+                frontend_url = self.__class__.parent_thread.frontend_url or "https://comic-translate.com"
+                success_url = json.dumps(f"{frontend_url}/auth/desktop-login-success")
                 
                 if self.path == '/favicon.ico':
                     self.send_response(204) # No content
@@ -167,20 +175,6 @@ class AuthServerThread(QThread):
                         </div>
                         <script>
                             (function() {
-                                // Detect user's language (only listed codes are prefixed routes on comic-translate.com)
-                                function detectLanguage() {
-                                    const PREFIXED_LANGS = ['fr', 'ko', 'zh', 'ja']; // Add new prefixed locales here
-                                    const langs = navigator.languages || [navigator.language || navigator.userLanguage];
-
-                                    for (const lang of langs) {
-                                        if (!lang) continue;
-                                        if (lang.startsWith('en')) return null; // English = no prefix; stop searching
-                                        const match = PREFIXED_LANGS.find(p => lang.startsWith(p));
-                                        if (match !== undefined) return match;
-                                    }
-                                    return null; // Default to English (no prefix)
-                                }
-                                
                                 // 1. Extract parameters from URL fragment (hash)
                                 const hash = window.location.hash.substring(1);
                                 if (!hash) {
@@ -222,13 +216,7 @@ class AuthServerThread(QThread):
                                     document.getElementById('spinner').style.display = 'none';
                                     
                                     if (response.ok) {
-                                        // Success! Redirect to localized success page (only fr, ko, zh have prefixes)
-                                        const userLang = detectLanguage();
-                                        const redirectPath = userLang 
-                                            ? `/${userLang}/auth/desktop-login-success` 
-                                            : '/auth/desktop-login-success';
-                                        
-                                        window.location.href = `https://comic-translate.com${redirectPath}`;
+                                        window.location.href = {success_url};
                                     } else {
                                         document.getElementById('title').innerText = 'Sign In Failed';
                                         document.getElementById('message').innerText = text || 'The application rejected the login attempt.';

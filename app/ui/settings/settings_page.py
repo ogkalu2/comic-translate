@@ -331,7 +331,7 @@ class SettingsPage(QtWidgets.QWidget):
 
         # Load tools settings
         settings.beginGroup('tools')
-        translator = settings.value('translator', 'Gemini-3.0-Flash')
+        translator = settings.value('translator', 'Gemini-3.1-Flash-Lite')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
         if self.ui.translator_combo.findText(translated_translator) != -1:
             self.ui.translator_combo.setCurrentText(translated_translator)
@@ -515,6 +515,10 @@ class SettingsPage(QtWidgets.QWidget):
         ok_btn = msg_box.addButton(self.tr("OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
         msg_box.setDefaultButton(ok_btn)
         msg_box.exec()
+
+    def start_buy_credits_flow(self):
+        """Trigger the existing credits purchase flow."""
+        self.open_pricing_page()
 
     def _ask_yes_no(self, title: str, text: str, default_yes: bool = False) -> bool:
         msg_box = QtWidgets.QMessageBox(self)

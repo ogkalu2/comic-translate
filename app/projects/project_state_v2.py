@@ -623,6 +623,42 @@ def _materialize_from_manifest_and_pages(
     return manifest.get("llm_extra_context", "")
 
 
+def _remap_batch_report_paths_for_loaded_project(
+    batch_report: dict | None,
+    manifest: dict,
+    loaded_image_files: list[str],
+) -> dict | None:
+    if not batch_report:
+        return batch_report
+
+    original_image_files = manifest.get("original_image_files", []) or []
+    if not original_image_files or not loaded_image_files:
+        return batch_report
+
+    path_map = {
+        original_path: loaded_path
+        for original_path, loaded_path in zip(original_image_files, loaded_image_files)
+        if isinstance(original_path, str) and isinstance(loaded_path, str)
+    }
+    if not path_map:
+        return batch_report
+
+    remapped_report = dict(batch_report)
+    remapped_entries = []
+    for entry in batch_report.get("skipped_entries", []) or []:
+        if not isinstance(entry, dict):
+            remapped_entries.append(entry)
+            continue
+        image_path = entry.get("image_path")
+        remapped_entry = dict(entry)
+        if isinstance(image_path, str):
+            remapped_entry["image_path"] = path_map.get(image_path, image_path)
+        remapped_entries.append(remapped_entry)
+
+    remapped_report["skipped_entries"] = remapped_entries
+    return remapped_report
+
+
 def _load_from_legacy_state_blob(
     comic_translate: "ComicTranslate",
     file_name: str,
@@ -676,14 +712,24 @@ def load_state_from_proj_file_v2(comic_translate: "ComicTranslate", file_name: s
             row[0]: msgpack.unpackb(row[1], object_hook=decoder.decode, strict_map_key=True)
             for row in conn.execute("SELECT page_path, row_blob FROM page_state")
         }
-        
+
         # Load batch report if available
         batch_report_row = conn.execute("SELECT report_blob FROM batch_report WHERE id = 1").fetchone()
-        if hasattr(comic_translate, 'batch_report_ctrl'):
-            comic_translate.batch_report_ctrl.restore_latest_batch_report(None)
+        batch_report = None
         if batch_report_row and batch_report_row[0]:
             batch_report = msgpack.unpackb(batch_report_row[0], object_hook=decoder.decode, strict_map_key=True)
+
+        saved_ctx = _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
+
+        if hasattr(comic_translate, 'batch_report_ctrl'):
+            comic_translate.batch_report_ctrl.restore_latest_batch_report(None)
+        if batch_report is not None:
+            batch_report = _remap_batch_report_paths_for_loaded_project(
+                batch_report,
+                manifest,
+                comic_translate.image_files,
+            )
             if hasattr(comic_translate, 'batch_report_ctrl'):
                 comic_translate.batch_report_ctrl.restore_latest_batch_report(batch_report)
-        
-        return _materialize_from_manifest_and_pages(comic_translate, file_name, manifest, page_rows)
+
+        return saved_ctx

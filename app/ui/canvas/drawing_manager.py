@@ -10,6 +10,7 @@ from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, 
                             SegmentBoxesCommand, EraseUndoCommand
 from app.ui.commands.base import PathCommandBase as pcb
 import imkit as imk
+from modules.utils.image_utils import clip_mask_to_bubble, clip_mask_components_to_bubble
 
 
 class DrawingManager:
@@ -346,8 +347,9 @@ class DrawingManager:
         final_mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         return final_mask
     
-    def draw_segmentation_lines(self, bboxes):
-        stroke = self.make_segmentation_stroke_data(bboxes)
+    def draw_segmentation_lines(self, text_bbox, image=None, stroke=None):
+        if stroke is None:
+            stroke = self.make_segmentation_stroke_data(text_bbox, image)
         if stroke is None:
             return
 
@@ -363,62 +365,116 @@ class DrawingManager:
         # Ensure the rectangles are visible
         self.viewer._scene.update()
 
-    def make_segmentation_stroke_data(self, bboxes):
-        if not bboxes:
+    def make_segmentation_stroke_data(self, text_bbox, image=None):
+        blk = text_bbox if hasattr(text_bbox, "xyxy") else None
+        bbox = blk.xyxy if blk is not None else text_bbox
+        if bbox is None or len(bbox) < 4:
             return None
 
-        # 1) Compute tight ROI so mask stays small
-        xs = [x for x1, _, x2, _ in bboxes for x in (x1, x2)]
-        ys = [y for _, y1, _, y2 in bboxes for y in (y1, y2)]
-        min_x, max_x = int(min(xs)), int(max(xs))
-        min_y, max_y = int(min(ys)), int(max(ys))
+        # 1) Use text_bbox coordinates directly
+        min_x, min_y, max_x, max_y = [int(v) for v in bbox]
         w, h = max_x - min_x + 1, max_y - min_y + 1
 
-        # 2) Down-sample factor to cap mask size
-        long_edge = 2048
-        ds = max(1.0, max(w, h) / long_edge)
-        mw, mh = int(w / ds) + 2, int(h / ds) + 2
+        # 2) Get the image
+        visible_scene_top = 0
+        visible_scene_left = 0
+        if image is None:
+            if self.viewer.webtoon_mode:
+                visible_image, mappings = self.viewer.get_visible_area_image()
+                if visible_image is not None and mappings:
+                    image = visible_image
+                    visible_scene_top = mappings[0]['scene_y_start']
+                    visible_scene_left = 0
+                    img_min_x = int(min_x - visible_scene_left)
+                    img_min_y = int(min_y - visible_scene_top)
+                    img_max_x = int(max_x - visible_scene_left)
+                    img_max_y = int(max_y - visible_scene_top)
+                else:
+                    image = None
+            else:
+                image = self.viewer.get_image_array()
+        else:
+            # Image is provided directly (e.g. from background or multi-page worker)
+            if self.viewer.webtoon_mode:
+                img_min_x = min_x
+                img_min_y = min_y
+                img_max_x = max_x
+                img_max_y = max_y
 
-        # 3) Paint the true bboxes
-        mask = np.zeros((mh, mw), np.uint8)
-        for x1, y1, x2, y2 in bboxes:
-            x1i = int((x1 - min_x) / ds)
-            y1i = int((y1 - min_y) / ds)
-            x2i = int((x2 - min_x) / ds)
-            y2i = int((y2 - min_y) / ds)
-            mask = imk.rectangle(mask, (x1i, y1i), (x2i, y2i), 255, -1)
+        crop_mask = None
+        cx1, cy1 = 0, 0
+        if image is not None:
+            try:
+                from modules.detection.utils.content import detect_content_mask_in_bbox
+                from modules.utils.textblock import adjust_text_line_coordinates
+                
+                if self.viewer.webtoon_mode:
+                    crop_bbox = [img_min_x, img_min_y, img_max_x, img_max_y]
+                else:
+                    crop_bbox = [min_x, min_y, max_x, max_y]
+                
+                # Get the padded coordinates to crop the image
+                cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(crop_bbox, 10, 10, image)
+                crop = image[cy1:cy2, cx1:cx2]
+                
+                crop_mask = detect_content_mask_in_bbox(crop)
+                if crop_mask is not None and np.any(crop_mask):
+                    close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
+                    crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
 
-        # 4) Morphological closing to bridge small gaps
-        ksize = 15
-        kernel = imk.get_structuring_element(imk.MORPH_RECT, (ksize, ksize))
-        mask_closed = imk.morphology_ex(mask, imk.MORPH_CLOSE, kernel)
+                    if (
+                        blk is not None
+                        and not self.viewer.webtoon_mode
+                        and getattr(blk, "text_class", None) == "text_bubble"
+                        and getattr(blk, "bubble_xyxy", None) is not None
+                    ):
+                        crop_mask = clip_mask_components_to_bubble(
+                            crop_mask,
+                            (cx1, cy1, cx2, cy2),
+                            blk.bubble_xyxy,
+                            inset=5,
+                            image=image,
+                            seed_bbox=blk.xyxy,
+                            dilate_kernel_size=5,
+                            dilate_iterations=1,
+                        )
+                    else:
+                        dil_kernel = np.ones((5, 5), np.uint8)
+                        crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=1)
+            except Exception as e:
+                print(f"Failed to generate pixel-accurate mask in make_segmentation_stroke_data: {e}")
+                crop_mask = None
 
-        # 5) Build merged contour path
-        contours, _ = imk.find_contours(mask_closed)
-        if not contours:
-            return None
-
-        path = QtGui.QPainterPath()
-        path.setFillRule(Qt.FillRule.WindingFill)
-        for cnt in contours:
-            pts = cnt.squeeze(1)
-            if pts.ndim != 2 or pts.shape[0] < 3:
-                continue
-            x0, y0 = pts[0]
-            path.moveTo(x0 * ds + min_x, y0 * ds + min_y)
-            for x, y in pts[1:]:
-                path.lineTo(x * ds + min_x, y * ds + min_y)
-            path.closeSubpath()
+        if crop_mask is not None and np.any(crop_mask):
+            contours, _ = imk.find_contours(crop_mask)
+            path = QtGui.QPainterPath()
+            path.setFillRule(Qt.FillRule.WindingFill)
+            for cnt in contours:
+                pts = cnt.squeeze(1)
+                if pts.ndim != 2 or pts.shape[0] < 3:
+                    continue
+                x0, y0 = pts[0]
+                offset_x = cx1 + visible_scene_left
+                offset_y = cy1 + visible_scene_top
+                path.moveTo(x0 + offset_x, y0 + offset_y)
+                for x, y in pts[1:]:
+                    path.lineTo(x + offset_x, y + offset_y)
+                path.closeSubpath()
+        else:
+            # Fallback to block bounding box if crop mask generation fails
+            path = QtGui.QPainterPath()
+            path.addRect(min_x, min_y, w, h)
 
         if path.isEmpty():
             return None
 
-        return {
+        stroke = {
             'path': path,
             'pen': QColor(255, 0, 0).name(QColor.HexArgb),
             'brush': QColor(255, 0, 0, 128).name(QColor.HexArgb),
             'width': 2,
         }
+        return stroke
 
     # def draw_segmentation_lines(self, bboxes, layers: int = 1, scale_factor: float = 1.0):
     #     if not self.viewer.hasPhoto() or not bboxes: return

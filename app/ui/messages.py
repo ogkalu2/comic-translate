@@ -84,10 +84,22 @@ class Messages:
         
         if details:
             msg.setDetailedText(details)
-            
-        ok_btn = msg.addButton(QCoreApplication.translate("Messages", "OK"), QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+
+        buy_btn = msg.addButton(
+            QCoreApplication.translate("AccountPage", "Buy Credits"),
+            QtWidgets.QMessageBox.ButtonRole.ActionRole,
+        )
+        ok_btn = msg.addButton(
+            QCoreApplication.translate("Messages", "OK"),
+            QtWidgets.QMessageBox.ButtonRole.AcceptRole,
+        )
         msg.setDefaultButton(ok_btn)
         msg.exec()
+
+        if msg.clickedButton() == buy_btn:
+            settings_page = getattr(parent, "settings_page", None)
+            if settings_page is not None and hasattr(settings_page, "start_buy_credits_flow"):
+                settings_page.start_buy_credits_flow()
 
     @staticmethod
     def show_custom_not_configured_error(parent):

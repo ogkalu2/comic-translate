@@ -50,7 +50,8 @@ def calculate_md5_checksum(file_path: str) -> str:
 
 class ModelID(Enum):
     MANGA_OCR_BASE = "manga-ocr-base"
-    MANGA_OCR_BASE_ONNX = "manga-ocr-base-onnx"
+    MANGA_OCR_MOBILE_ONNX = "manga-ocr-mobile-onnx"
+    MANGA_OCR_INT8_ONNX = "manga-ocr-int8-onnx"
     PORORO = "pororo"
     PORORO_ONNX = "pororo-onnx"
     LAMA_ONNX = "lama-manga-dynamic"
@@ -62,6 +63,7 @@ class ModelID(Enum):
     MIGAN_ONNX = "migan-onnx"
     MIGAN_JIT = "migan-traced"
     RTDETR_V2_ONNX = "rtdetr-v2-onnx"
+    RTDETR_INT8_ONNX = "rtdetr-int8-onnx"
     
     # PPOCRv5 Detection Models
     PPOCR_V5_DET_MOBILE = "ppocr-v5-det-mobile"
@@ -337,12 +339,25 @@ def _register_defaults():
     ))
 
     ModelDownloader.register(ModelSpec(
-        id=ModelID.MANGA_OCR_BASE_ONNX,
-        url='https://huggingface.co/mayocream/manga-ocr-onnx/resolve/main/',
-        files=['encoder_model.onnx', 'decoder_model.onnx', 'vocab.txt'],
+        id=ModelID.MANGA_OCR_MOBILE_ONNX,
+        url='https://huggingface.co/ogkalu/manga-ocr-mobile/resolve/main/',
+        files=['encoder.onnx', 'decoder_init.onnx', 'decoder_step.onnx', 'vocab.txt'],
         sha256=[
-            '15fa8155fe9bc1a7d25d9bb353debaa4def033d0174e907dbd2dd6d995def85f',
-            'ef7765261e9d1cdc34d89356986c2bbc2a082897f753a89605ae80fdfa61f5e8',
+            'd1fb455a07c1508cc56a4f4e15e2ed74aca9a4d78fd220ecc0ff39625d67e1b3',
+            '612f97e22848620fb36fcac611467689cb4213d91f2d84f6a19042ad57d475f1',
+            'a244b814a3a669190f9eae737960997633597cfa055fa186347e872bee834bc9',
+            '879d9a69df070dbdf143f64bb3daf73d367741980f18a2f6d08a12e68a598a11',
+        ],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-mobile-onnx')
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.MANGA_OCR_INT8_ONNX,
+        url='https://huggingface.co/ogkalu/manga-ocr-onnx/resolve/main/',
+        files=['encoder_model_int8.onnx', 'decoder_model_int8.onnx', 'vocab.txt'],
+        sha256=[
+            '0eaf2b867292a44700ce38ef028b90639a2e36fc4c18c2bcdd1de7409488adb3',
+            '3ff0d4c34c4a66613d98ff93e0b17f22a7b09dfbeec195c3e4d6f595af3a6b6c',
             '5cb5c5586d98a2f331d9f8828e4586479b0611bfba5d8c3b6dadffc84d6a36a3',
         ],
         save_dir=os.path.join(models_base_dir, 'ocr', 'manga-ocr-base-onnx')
@@ -451,10 +466,18 @@ def _register_defaults():
         save_dir=os.path.join(models_base_dir, 'detection')
     ))
 
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.RTDETR_INT8_ONNX,
+        url='https://huggingface.co/ogkalu/comic-text-and-bubble-detector/resolve/main/',
+        files=['detector-v4-s_int8.onnx'],
+        sha256=['5fe9e4f576e49d4e7e8b0e029d6d3cdc252abd4694113e1cae120e62c931ea79'], 
+        save_dir=os.path.join(models_base_dir, 'detection')
+    ))
+
     # PPOCRv5 Detection Models
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_DET_MOBILE,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/det/',
+        url='https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/',
         files=['ch_PP-OCRv5_mobile_det.onnx'],
         sha256=['4d97c44a20d30a81aad087d6a396b08f786c4635742afc391f6621f5c6ae78ae'],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
@@ -463,8 +486,8 @@ def _register_defaults():
     # PPOCRv5 Detection/Recognition Models - Torch
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_DET_MOBILE_TORCH,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/torch/PP-OCRv5/det/',
-        files=['ch_PP-OCRv5_det_mobile_infer.pth'],
+        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/torch/PP-OCRv5/det/',
+        files=['ch_PP-OCRv5_det_mobile.pth'],
         sha256=['df848ed5060bac4d0f6e58572aea97d92e909a8a87cf292849237b0e84f6ffdb'],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
     ))
@@ -480,23 +503,20 @@ def _register_defaults():
     # PPOCRv5 Recognition Models - Chinese
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_MOBILE,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
+        url='https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/',
         files=['ch_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_dict.txt'],
-        sha256=['5825fc7ebf84ae7a412be049820b4d86d77620f204a041697b0494669b1742c5', None],
-        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx'),
-        additional_urls={
-            'ppocrv5_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
-        }
+        sha256=['5825fc7ebf84ae7a412be049820b4d86d77620f204a041697b0494669b1742c5', 'd1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b'],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_MOBILE_TORCH,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/master/torch/PP-OCRv5/rec/',
-        files=['ch_PP-OCRv5_rec_mobile_infer.pth', 'ppocrv5_dict.txt'],
+        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/torch/PP-OCRv5/rec/',
+        files=['ch_PP-OCRv5_rec_mobile.pth', 'ppocrv5_dict.txt'],
         sha256=['d20ee8dac2ca63e2d1989b02ecc42595c71d61bf8dd8c8ddc5ad2ee68e7b5be2', None],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-torch'),
         additional_urls={
-            'ppocrv5_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile_infer/ppocrv5_dict.txt'
+            'ppocrv5_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/paddle/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile/ppocrv5_dict.txt'
         }
     ))
 
@@ -514,13 +534,10 @@ def _register_defaults():
     # PPOCRv5 Recognition Models - English  
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_EN_MOBILE,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
+        url='https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/',
         files=['en_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_en_dict.txt'],
-        sha256=['c3461add59bb4323ecba96a492ab75e06dda42467c9e3d0c18db5d1d21924be8', None],
-        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx'),
-        additional_urls={
-            'ppocrv5_en_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/en_PP-OCRv5_rec_mobile_infer/ppocrv5_en_dict.txt'
-        }
+        sha256=['c3461add59bb4323ecba96a492ab75e06dda42467c9e3d0c18db5d1d21924be8', 'e025a66d31f327ba0c232e03f407ae8d105e1e709e7ccb3f408aa778c24e70d6'],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
     ModelDownloader.register(ModelSpec(
@@ -571,37 +588,28 @@ def _register_defaults():
     # PPOCRv5 Recognition Models - Korean
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_KOREAN_MOBILE,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
+        url='https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/',
         files=['korean_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_korean_dict.txt'],
-        sha256=['cd6e2ea50f6943ca7271eb8c56a877a5a90720b7047fe9c41a2e541a25773c9b', None],
-        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx'),
-        additional_urls={
-            'ppocrv5_korean_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/korean_PP-OCRv5_rec_mobile_infer/ppocrv5_korean_dict.txt'
-        }
+        sha256=['cd6e2ea50f6943ca7271eb8c56a877a5a90720b7047fe9c41a2e541a25773c9b', 'a88071c68c01707489baa79ebe0405b7beb5cca229f4fc94cc3ef992328802d7'],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
     # PPOCRv5 Recognition Models - Latin
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_LATIN_MOBILE,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
+        url='https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/',
         files=['latin_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_latin_dict.txt'],
-        sha256=['b20bd37c168a570f583afbc8cd7925603890efbcdc000a59e22c269d160b5f5a', None],
-        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx'),
-        additional_urls={
-            'ppocrv5_latin_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/latin_PP-OCRv5_rec_mobile_infer/ppocrv5_latin_dict.txt'
-        }
+        sha256=['b20bd37c168a570f583afbc8cd7925603890efbcdc000a59e22c269d160b5f5a', '3c0a8a79b612653c25f765271714f71281e4e955962c153e272b7b8c1d2b13ff'],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
     # PPOCRv5 Recognition Models - East Slavic (Russian)
     ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
-        url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/onnx/PP-OCRv5/rec/',
+        url='https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/',
         files=['eslav_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_eslav_dict.txt'],
-        sha256=['08705d6721849b1347d26187f15a5e362c431963a2a62bfff4feac578c489aab', None],
-        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx'),
-        additional_urls={
-            'ppocrv5_eslav_dict.txt': 'https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.4.0/paddle/PP-OCRv5/rec/eslav_PP-OCRv5_rec_mobile_infer/ppocrv5_eslav_dict.txt'
-        }
+        sha256=['08705d6721849b1347d26187f15a5e362c431963a2a62bfff4feac578c489aab', '3e95f1581557162870cacdba5af91a4c6be2890710d395b0c3c7578e7ee5e6eb'],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
     # PPOCRv4 Classifier (for text orientation)

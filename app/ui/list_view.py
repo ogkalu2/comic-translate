@@ -127,7 +127,7 @@ class PageListView(QListWidget):
 
     def ui_elements(self):
         self.insert_browser = MClickBrowserFilePushButton(multiple=True)
-        self.insert_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp",
+        self.insert_browser.set_dayu_filters([".png", ".jpg", ".jpeg", ".webp", ".bmp", ".avif",
                                             ".zip", ".cbz", ".cbr", ".cb7", ".cbt",
                                             ".pdf", ".epub"])
 

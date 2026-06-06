@@ -50,7 +50,7 @@ class GeminiTranslation(BaseLLMTranslation):
         url = f"{self.api_base_url}/{self.model_api_name}:generateContent?key={self.api_key}"
         
         # Setup generation config
-        if self.model_name in ["Gemini-3.0-Flash"]:
+        if self.model_name in ["Gemini-3.1-Flash-Lite"]:
             thinking_level = "minimal"
         else:
             thinking_level = "low"

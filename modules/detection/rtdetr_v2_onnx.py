@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import onnxruntime as ort
 from PIL import Image
 
 from modules.utils.device import get_providers
@@ -8,6 +9,20 @@ from modules.utils.onnx import make_session
 from modules.utils.textblock import TextBlock
 from modules.detection.utils.slicer import ImageSlicer
 from .base import DetectionEngine
+
+
+def _make_rtdetr_session_options():
+    so = ort.SessionOptions()
+    so.log_severity_level = 3
+    # Small CPU RT-DETR runs benefit from explicit sequential execution
+    # and a modest intra-op thread count instead of ORT defaults.
+    so.intra_op_num_threads = 4
+    so.inter_op_num_threads = 1
+    so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+    so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+    so.enable_cpu_mem_arena = True
+    so.enable_mem_pattern = True
+    return so
 
 
 class RTDetrV2ONNXDetection(DetectionEngine):
@@ -36,9 +51,9 @@ class RTDetrV2ONNXDetection(DetectionEngine):
         self.device = device
         self.confidence_threshold = confidence_threshold
 
-        file_path = ModelDownloader.get_file_path(ModelID.RTDETR_V2_ONNX, 'detector.onnx')
+        file_path = ModelDownloader.get_file_path(ModelID.RTDETR_INT8_ONNX, 'detector-v4-s_int8.onnx')
         providers = get_providers(self.device)
-        self.session = make_session(file_path, providers=providers)
+        self.session = make_session(file_path, sess_options=_make_rtdetr_session_options(), providers=providers)
 
     def detect(self, image: np.ndarray) -> list[TextBlock]:
         bubble_boxes, text_boxes = self.image_slicer.process_slices_for_detection(

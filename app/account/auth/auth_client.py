@@ -4,6 +4,7 @@ import urllib.parse
 import requests 
 import threading
 import time
+import jwt
 
 from typing import Optional
 from PySide6.QtCore import QObject, Signal, QThread, QSettings, QCoreApplication
@@ -62,9 +63,6 @@ class AuthClient(QObject):
         # with token validation/refresh or per-operation requests.
         self._bg_request_lock = threading.Lock()
         self._bg_session = requests.Session()
-        self._validated_token: Optional[str] = None
-        self._validated_token_ok_until_monotonic: float = 0.0
-        self._validated_token_ttl_s: float = 30.0
         self._last_refresh_failure_kind: Optional[str] = None
 
     def _is_gui_thread(self) -> bool:
@@ -89,9 +87,6 @@ class AuthClient(QObject):
         else:
             logger.error(f"{title}: {message}")
 
-    def _clear_validation_cache(self) -> None:
-        self._validated_token = None
-        self._validated_token_ok_until_monotonic = 0.0
 
     def _clear_local_session(self) -> None:
         """Force local sign-out (delete tokens + cached user info). Safe to call from any thread."""
@@ -114,7 +109,6 @@ class AuthClient(QObject):
         except Exception as e:
             logger.debug(f"Local session clear: refresh_token delete failed/absent: {e}")
 
-        self._clear_validation_cache()
 
         try:
             # Use a fresh QSettings instance for thread-safety (QSettings is
@@ -144,7 +138,10 @@ class AuthClient(QObject):
 
         # 2. Start local server to receive the token callback from backend
         # Pass the expected request_id to the server thread for verification
-        self.auth_server_thread = AuthServerThread(expected_request_id=self.current_request_id)
+        self.auth_server_thread = AuthServerThread(
+            expected_request_id=self.current_request_id,
+            frontend_url=self.frontend_url,
+        )
         self.auth_server_thread.tokens_received.connect(self._handle_token_callback)
         self.auth_server_thread.error.connect(self._handle_server_error)
         self.auth_server_thread.finished.connect(self._on_server_finished)
@@ -192,7 +189,6 @@ class AuthClient(QObject):
         try:
             # Securely store tokens using helper
             set_token("access_token", access_token)
-            self._clear_validation_cache()
              
             # Always store refresh token if received
             if refresh_token:
@@ -325,7 +321,6 @@ class AuthClient(QObject):
                 return False
 
             set_token("access_token", new_access_token)
-            self._clear_validation_cache()
             if new_refresh_token:
                 logger.info("Refresh token rotated. Storing new refresh token.")
                 set_token("refresh_token", new_refresh_token)
@@ -389,78 +384,38 @@ class AuthClient(QObject):
 
     def validate_token(self) -> bool:
         """
-        Check the validity of the current access token with the backend.
-        Triggers a refresh if the backend response indicates the token is
-        invalid (either definitively expired/bad or near expiry).
+        Check the validity of the current access token locally by decoding the
+        JWT expiry claim — no network call needed for a healthy, non-expired token.
+
+        A refresh is attempted (one network call to /auth/v1/token) only when:
+          - The token is expired or within LEEWAY_SECONDS of expiry.
+          - The token cannot be decoded (malformed).
 
         Returns:
             bool: True if the token is currently valid (and not near expiry)
-                  OR if it was successfully refreshed after being reported invalid/near-expiry.
-                  False if the token was reported invalid/near-expiry AND refresh failed
-                  for non-transient reasons, or if no token exists.
+                  OR if it was successfully refreshed.
+                  False if the token is missing, unrecoverable, or refresh failed
+                  for non-transient reasons.
         """
-        logger.info("Checking access token validity with backend...")
-        access_token: Optional[str] = None
+        # Match the server's leeway so we proactively refresh at the same threshold.
+        LEEWAY_SECONDS = 60
+
         try:
             access_token = get_token("access_token")
             if not access_token:
                 logger.info("No access token found locally. Cannot validate.")
                 return False
 
-            now = time.monotonic()
-            if (
-                self._validated_token == access_token
-                and now < self._validated_token_ok_until_monotonic
-            ):
-                logger.debug("Token validation cache hit (skipping backend validate).")
-                return True
-
-            validate_url = f"{self.api_url}/auth/v1/validate"
-            headers = {"Authorization": f"Bearer {access_token}"}
-
-            logger.debug(f"Sending validation request to {validate_url}")
-            with self._request_lock:
-                response = self._session.get(validate_url, headers=headers, timeout=10.0)
-            response.raise_for_status()
-
-            data = response.json()
-            is_valid = data.get("valid")
-
-            if is_valid is True:
-                # Explicitly True means valid and not near expiry
-                logger.info("Token validation successful (via backend).")
-                self._validated_token = access_token
-                self._validated_token_ok_until_monotonic = time.monotonic() + self._validated_token_ttl_s
-                return True
-            elif is_valid is False:
-                # Explicitly False (could be near expiry or actually invalid)
-                reason = data.get("reason", "unspecified")
-                status_code = response.status_code # Log status for context
-                logger.info(f"Token reported as invalid by backend (status: {status_code}, reason: {reason}). Attempting refresh...")
-                refreshed = self.refresh_token() # Attempt refresh
-                if refreshed:
-                    return True
-                # If refresh failed due to transient connectivity/server issues, keep the
-                # local session so the app stays usable and can retry later.
-                if self._last_refresh_failure_kind in ("network", "server"):
-                    logger.warning(
-                        "Token refresh failed due to %s issue; keeping local session.",
-                        self._last_refresh_failure_kind,
-                    )
-                    return True
-                return False
-            else:
-                # Response JSON is missing the 'valid' field or has an unexpected value
-                logger.error(f"Backend validation response (status: {response.status_code}) missing or has invalid 'valid' field. Assuming invalid.")
-                # Don't attempt refresh if the response format is broken
-                return False
-
-        except requests.exceptions.Timeout:
-            logger.warning("Token validation request timed out. Assuming offline/unreachable. Keeping session.")
-            return True
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 401:
-                logger.info("Token validation returned 401. Attempting refresh...")
+            # Decode without signature verification — we trust the token from our
+            # own keyring; we only need the exp claim to decide if a refresh is needed.
+            try:
+                payload = jwt.decode(
+                    access_token,
+                    options={"verify_signature": False},
+                    algorithms=["ES256", "RS256", "HS256"],
+                )
+            except jwt.DecodeError as e:
+                logger.warning(f"Access token is malformed, cannot decode: {e}. Attempting refresh.")
                 refreshed = self.refresh_token()
                 if refreshed:
                     return True
@@ -471,14 +426,48 @@ class AuthClient(QObject):
                     )
                     return True
                 return False
-            logger.error(f"HTTP error during token validation: {str(e)}. Assuming invalid.")
+
+            exp = payload.get("exp")
+            if exp is None:
+                # Non-standard token with no expiry — treat as valid.
+                logger.debug("Token has no 'exp' claim; treating as valid.")
+                return True
+
+            now = time.time()
+            time_until_expiry = exp - now
+
+            if time_until_expiry > LEEWAY_SECONDS:
+                # Token is healthy — no network call needed.
+                logger.debug(
+                    "Token valid locally (expires in %.0fs).", time_until_expiry
+                )
+                return True
+
+            # Token is expired or near expiry — attempt a refresh.
+            if time_until_expiry <= 0:
+                logger.info("Token is expired (%.0fs ago). Attempting refresh...", -time_until_expiry)
+            else:
+                logger.info(
+                    "Token near expiry (%.0fs remaining, within %ds leeway). Attempting refresh...",
+                    time_until_expiry, LEEWAY_SECONDS,
+                )
+
+            refreshed = self.refresh_token()
+            if refreshed:
+                return True
+            # Transient network/server failures: keep the local session so the app
+            # stays usable and can retry on the next operation.
+            if self._last_refresh_failure_kind in ("network", "server"):
+                logger.warning(
+                    "Token refresh failed due to %s issue; keeping local session.",
+                    self._last_refresh_failure_kind,
+                )
+                return True
             return False
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Network error during token validation: {str(e)}. Assuming offline/unreachable. Keeping session.")
-            return True
-        except Exception as e: # Catch keyring errors etc.
-            logger.error(f"Unexpected error during token validation check setup: {e}", exc_info=True)
-            return False # Fail safe
+
+        except Exception as e:
+            logger.error(f"Unexpected error during token validation: {e}", exc_info=True)
+            return False
 
     def logout(self):
         """Clear stored credentials, user info, and notify backend."""
@@ -506,7 +495,6 @@ class AuthClient(QObject):
         try:
             logger.debug("Deleting local tokens from keyring...")
             delete_token("access_token")
-            self._clear_validation_cache()
         except Exception as e:
             # Log error but continue - local logout is priority
             logger.warning(f"Could not delete access token from keyring (might not exist): {e}")
