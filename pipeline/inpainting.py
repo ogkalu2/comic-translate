@@ -16,6 +16,8 @@ from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_or
 
 logger = logging.getLogger(__name__)
 
+FAST_FILL_BUBBLE_INSET = 7
+
 
 def call_inpaint_image(inpainting_handler, image: np.ndarray, mask: np.ndarray, config, blk_list: list | None = None):
     inpaint_image = inpainting_handler.inpaint_image
@@ -413,7 +415,12 @@ class InpaintingHandler:
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
             if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
-                crop_mask = clip_mask_to_bubble(crop_mask, bounds, block.bubble_xyxy, inset=5)
+                crop_mask = clip_mask_to_bubble(
+                    crop_mask,
+                    bounds,
+                    block.bubble_xyxy,
+                    inset=FAST_FILL_BUBBLE_INSET,
+                )
                 
             initial_overlap = int(np.count_nonzero(crop_mask))
             if initial_overlap <= 0:
@@ -509,7 +516,12 @@ class InpaintingHandler:
         fill_region = self._get_associated_residual_components(residual_crop, masked_region)
         
         if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
-            bubble_mask = build_bubble_clip_mask(fill_region.shape[:2], bounds, block.bubble_xyxy, inset=5)
+            bubble_mask = build_bubble_clip_mask(
+                fill_region.shape[:2],
+                bounds,
+                block.bubble_xyxy,
+                inset=FAST_FILL_BUBBLE_INSET,
+            )
             fill_region = fill_region & bubble_mask
         else:
             bubble_mask = None
