@@ -69,9 +69,11 @@ Note: Some of these also have Official English Translations
 ### Download
 Download and install Comic Translate for Windows and macOS from [here](https://www.comic-translate.com). 
 
->Ignore Smart Screen for Windows (Click More info > Run anyway). For macOS, after trying to open, go to Settings > Privacy and Security > Scroll down and click Open Anyway. 
+>Ignore Smart Screen for Windows (Click More info > Run anyway). 
 
-> Note: GPU acceleration is currently only available when running from source.
+>For macOS, after trying to open, go to Settings > Privacy and Security > Scroll down and click Open Anyway. 
+
+>Note: GPU acceleration is currently only available when running from source.
 
 ### From Source
 Alternatively, if you'd like to run the source code directly.
