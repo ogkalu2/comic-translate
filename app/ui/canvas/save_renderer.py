@@ -60,7 +60,8 @@ class ImageSaveRenderer:
             text_item.setRotation(text_props.rotation)
             text_item.setScale(text_props.scale)
             text_item.set_vertical(bool(text_props.vertical))
-            text_item.selection_outlines = text_props.selection_outlines
+            text_item.set_color(text_props.text_color)
+            text_item.selection_outlines = text_props.selection_outlines.copy()
             text_item.update()
 
             self.scene.addItem(text_item)
@@ -176,6 +177,7 @@ class ImageSaveRenderer:
             if text_props.direction:
                 text_item.set_direction(text_props.direction)
             text_item.set_vertical(bool(text_props.vertical))
+            text_item.set_color(text_props.text_color)
             return float(text_item.boundingRect().height())
         except Exception:
             return None
