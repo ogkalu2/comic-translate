@@ -8,6 +8,7 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -39,6 +40,7 @@ jobs:
           ./builddmg.sh
 
       - name: Upload DMG artifact
+        id: upload-dmg
         uses: actions/upload-artifact@v6
         with:
           name: Comic-Translate-macOS
@@ -83,3 +85,13 @@ jobs:
           # Upload to release using GH CLI
           echo "Uploading dist/${NEW_NAME} to release ${TAG}..."
           gh release upload "$TAG" "dist/${NEW_NAME}" --clobber
+
+      - name: Delete workflow artifact on successful release upload
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.deleteArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: ${{ steps.upload-dmg.outputs.artifact-id }},
+            })
