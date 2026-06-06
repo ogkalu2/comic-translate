@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
 from modules.utils.device import resolve_device
-from modules.utils.image_utils import build_block_mask_data, build_bubble_clip_mask, clip_mask_to_bubble
+from modules.utils.image_utils import build_block_mask_data, build_bubble_clip_mask, clip_mask_to_bubble, clip_mask_components_to_bubble
 from modules.utils.pipeline_config import inpaint_map, get_config, get_inpainter_backend
 from modules.utils.textblock import adjust_text_line_coordinates
 from pipeline.inpainting_boxes import merge_overlapping_padded_boxes
@@ -415,11 +415,13 @@ class InpaintingHandler:
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
             if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
-                crop_mask = clip_mask_to_bubble(
+                crop_mask = clip_mask_components_to_bubble(
                     crop_mask,
                     bounds,
                     block.bubble_xyxy,
                     inset=FAST_FILL_BUBBLE_INSET,
+                    image=image,
+                    seed_bbox=block.xyxy,
                 )
                 
             initial_overlap = int(np.count_nonzero(crop_mask))
@@ -431,6 +433,7 @@ class InpaintingHandler:
                     image,
                     block,
                     require_text_or_translation=False,
+                    clip_to_bubble=True,
                 )
                 if fallback_mask is None or fallback_bounds is None:
                     logger.info(
@@ -521,8 +524,18 @@ class InpaintingHandler:
                 bounds,
                 block.bubble_xyxy,
                 inset=FAST_FILL_BUBBLE_INSET,
+                image=cleaned_image,
+                seed_bbox=block.xyxy,
             )
-            fill_region = fill_region & bubble_mask
+            if bubble_mask is not None:
+                import scipy.ndimage as ndimage
+                labeled_fill, num_features = ndimage.label(fill_region)
+                overlapping_labels = np.unique(labeled_fill[bubble_mask])
+                keep_labels = overlapping_labels[overlapping_labels > 0]
+                if keep_labels.size > 0:
+                    fill_region = np.isin(labeled_fill, keep_labels)
+                else:
+                    fill_region = np.zeros_like(fill_region)
         else:
             bubble_mask = None
 

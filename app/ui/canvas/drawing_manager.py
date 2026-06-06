@@ -10,7 +10,7 @@ from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, 
                             SegmentBoxesCommand, EraseUndoCommand
 from app.ui.commands.base import PathCommandBase as pcb
 import imkit as imk
-from modules.utils.image_utils import clip_mask_to_bubble
+from modules.utils.image_utils import clip_mask_to_bubble, clip_mask_components_to_bubble
 
 
 class DrawingManager:
@@ -428,28 +428,19 @@ class DrawingManager:
                         and getattr(blk, "text_class", None) == "text_bubble"
                         and getattr(blk, "bubble_xyxy", None) is not None
                     ):
-                        crop_mask = clip_mask_to_bubble(
+                        crop_mask = clip_mask_components_to_bubble(
                             crop_mask,
                             (cx1, cy1, cx2, cy2),
                             blk.bubble_xyxy,
                             inset=5,
+                            image=image,
+                            seed_bbox=blk.xyxy,
+                            dilate_kernel_size=5,
+                            dilate_iterations=1,
                         )
-                    
-                    # Dilate slightly to fully cover the letters and their anti-aliased margins
-                    dil_kernel = np.ones((5, 5), np.uint8)
-                    crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=1)
-                    if (
-                        blk is not None
-                        and not self.viewer.webtoon_mode
-                        and getattr(blk, "text_class", None) == "text_bubble"
-                        and getattr(blk, "bubble_xyxy", None) is not None
-                    ):
-                        crop_mask = clip_mask_to_bubble(
-                            crop_mask,
-                            (cx1, cy1, cx2, cy2),
-                            blk.bubble_xyxy,
-                            inset=5,
-                        )
+                    else:
+                        dil_kernel = np.ones((5, 5), np.uint8)
+                        crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=1)
             except Exception as e:
                 print(f"Failed to generate pixel-accurate mask in make_segmentation_stroke_data: {e}")
                 crop_mask = None
