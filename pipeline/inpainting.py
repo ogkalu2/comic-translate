@@ -402,15 +402,37 @@ class InpaintingHandler:
         for idx, block in enumerate(blk_list):
             if getattr(block, "xyxy", None) is None or len(block.xyxy) < 4:
                 continue
+            if getattr(block, "text_class", None) != "text_bubble" or getattr(block, "bubble_xyxy", None) is None:
+                continue
             bounds = self._get_fast_fill_bounds(block, image)
             if bounds is None:
                 continue
             x1, y1, x2, y2 = bounds
             residual_crop = residual_mask[y1:y2, x1:x2]
-            initial_overlap = int(np.count_nonzero(residual_crop))
-            if initial_overlap <= 0:
+            if not np.any(residual_crop):
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
+            if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
+                bx1, by1, bx2, by2 = [int(v) for v in block.bubble_xyxy]
+                inset = 5
+                bx1_rel = bx1 + inset - x1
+                by1_rel = by1 + inset - y1
+                bx2_rel = bx2 - inset - x1
+                by2_rel = by2 - inset - y1
+
+                h_crop, w_crop = crop_mask.shape[:2]
+                cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
+                ellipse_cx = (bx1_rel + bx2_rel) / 2.0
+                ellipse_cy = (by1_rel + by2_rel) / 2.0
+                rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
+                ry = max(1.0, (by2_rel - by1_rel) / 2.0)
+                
+                bubble_clip = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
+                crop_mask = np.where(bubble_clip, crop_mask, 0).astype(np.uint8)
+                
+            initial_overlap = int(np.count_nonzero(crop_mask))
+            if initial_overlap <= 0:
+                continue
             success, reason = self._fast_fill_block(cleaned_image, residual_mask, block, bounds, crop_mask)
             if not success:
                 fallback_mask, fallback_bounds = build_block_mask_data(
@@ -500,8 +522,32 @@ class InpaintingHandler:
             return False, color_reason
 
         fill_region = self._get_associated_residual_components(residual_crop, masked_region)
+        
+        if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
+            bx1, by1, bx2, by2 = [int(v) for v in block.bubble_xyxy]
+            inset = 5
+            bx1_rel = bx1 + inset - x1
+            by1_rel = by1 + inset - y1
+            bx2_rel = bx2 - inset - x1
+            by2_rel = by2 - inset - y1
+
+            h_crop, w_crop = fill_region.shape[:2]
+            cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
+            ellipse_cx = (bx1_rel + bx2_rel) / 2.0
+            ellipse_cy = (by1_rel + by2_rel) / 2.0
+            rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
+            ry = max(1.0, (by2_rel - by1_rel) / 2.0)
+            
+            bubble_mask = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
+            fill_region = fill_region & bubble_mask
+        else:
+            bubble_mask = None
+
         soft_mask = imk.gaussian_blur(fill_region.astype(np.uint8) * 255, 1.0).astype(np.float32) / 255.0
         soft_mask = np.clip(soft_mask, 0.0, 1.0)[..., np.newaxis]
+        
+        if bubble_mask is not None:
+            soft_mask = soft_mask * bubble_mask[..., np.newaxis]
         crop_f = crop.astype(np.float32)
         fill_rgb = np.broadcast_to(fill_color, crop.shape).astype(np.float32)
         blended = crop_f * (1.0 - soft_mask) + fill_rgb * soft_mask

@@ -429,13 +429,20 @@ class DrawingManager:
                     ):
                         bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
                         inset = 5
-                        ix1 = max(0, min(cx2 - cx1, bx1 + inset - cx1))
-                        iy1 = max(0, min(cy2 - cy1, by1 + inset - cy1))
-                        ix2 = max(ix1, min(cx2 - cx1, bx2 - inset - cx1))
-                        iy2 = max(iy1, min(cy2 - cy1, by2 - inset - cy1))
-                        bubble_clip = np.zeros(crop_mask.shape[:2], dtype=np.uint8)
-                        bubble_clip[iy1:iy2, ix1:ix2] = 255
-                        crop_mask = np.bitwise_and(crop_mask, bubble_clip)
+                        bx1_rel = bx1 + inset - cx1
+                        by1_rel = by1 + inset - cy1
+                        bx2_rel = bx2 - inset - cx1
+                        by2_rel = by2 - inset - cy1
+
+                        h_crop, w_crop = crop_mask.shape[:2]
+                        cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
+                        ellipse_cx = (bx1_rel + bx2_rel) / 2.0
+                        ellipse_cy = (by1_rel + by2_rel) / 2.0
+                        rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
+                        ry = max(1.0, (by2_rel - by1_rel) / 2.0)
+                        
+                        bubble_clip = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
+                        crop_mask = np.where(bubble_clip, crop_mask, 0).astype(np.uint8)
                     
                     # Dilate slightly to fully cover the letters and their anti-aliased margins
                     dil_kernel = np.ones((5, 5), np.uint8)
