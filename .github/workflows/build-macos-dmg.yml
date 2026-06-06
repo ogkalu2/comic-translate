@@ -6,6 +6,8 @@ on:
 jobs:
   build-dmg:
     runs-on: macos-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -43,3 +45,41 @@ jobs:
           path: "dist/Comic Translate.dmg"
           if-no-files-found: error
           retention-days: 30
+
+      - name: Upload to Latest/Draft Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Determine release tag
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+            echo "Using trigger tag: $TAG"
+          else
+            echo "Checking for the latest draft release..."
+            TAG=$(gh release list --json isDraft,tagName --jq 'map(select(.isDraft)) | .[0].tagName')
+            if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+              echo "No draft release found. Fetching the latest release..."
+              TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+            else
+              echo "Found draft release tag: $TAG"
+            fi
+            echo "Latest release tag to use: $TAG"
+          fi
+
+          if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
+            echo "Error: Could not determine release tag."
+            exit 1
+          fi
+
+          # Strip leading 'v'
+          VERSION=${TAG#v}
+          echo "Stripped version: $VERSION"
+
+          # Rename the DMG file to ct-<version>-mac.dmg
+          NEW_NAME="ct-${VERSION}-mac.dmg"
+          cp "dist/Comic Translate.dmg" "dist/${NEW_NAME}"
+          echo "Renamed DMG to dist/${NEW_NAME}"
+
+          # Upload to release using GH CLI
+          echo "Uploading dist/${NEW_NAME} to release ${TAG}..."
+          gh release upload "$TAG" "dist/${NEW_NAME}" --clobber
