@@ -61,12 +61,14 @@ GPT-4를 번역기로 사용.
 
 ## 설치
 ### 다운로드
-Windows 및 macOS용 Comic Translate를 [여기](https://www.comic-translate.com)에서 다운로드하고 설치하세요.
-> Windows의 경우 Smart Screen을 무시하세요 (추가 정보 > 실행 클릭). 
+* **데스크톱 앱**: Windows 및 macOS용 Comic Translate를 [여기](https://www.comic-translate.com)에서 다운로드하고 설치하세요.
+  > Windows의 경우 Smart Screen을 무시하세요 (추가 정보 > 실행 클릭). 
 
-> macOS의 경우 열기를 시도한 후, 설정 > 개인정보 보호 및 보안 > 아래로 스크롤하여 '확인 없이 열기'를 클릭하세요.
+  > macOS의 경우 열기를 시도한 후, 설정 > 개인정보 보호 및 보안 > 아래로 스크롤하여 '확인 없이 열기'를 클릭하세요.
 
-> 참고: GPU 가속은 현재 소스 코드에서 실행할 때만 사용할 수 있습니다.
+  > 참고: GPU 가속은 현재 소스 코드에서 실행할 때만 사용할 수 있습니다.
+
+* **브라우저 확장 프로그램**: Chromium 기반 브라우저(Chrome, Edge, Brave 등)용 Comic Translate 브라우저 확장 프로그램을 [Chrome Web Store](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID)에서 설치하여 웹사이트에서 직접 읽어보세요.
 
 ### 소스 코드에서 설치
 또는 소스 코드를 직접 실행하고 싶다면 다음과 같이 하세요.
