@@ -281,23 +281,24 @@ class TextBlockItem(QGraphicsTextItem):
                 cursor.select(QTextCursor.SelectionType.Document)    
             cursor.mergeCharFormat(char_format)
 
-        # Update the document's default format
-        doc_format = self.document().defaultTextOption()
-        if attribute == 'color':
-            self.setDefaultTextColor(value)
-        elif attribute == 'font':
-            self.document().setDefaultFont(value)
-        elif attribute == 'size':
-            font = self.document().defaultFont()
-            font.setPointSize(value)
-            self.document().setDefaultFont(font)
+        # Update the document's default format only if there is no selection
+        if not has_selection:
+            doc_format = self.document().defaultTextOption()
+            if attribute == 'color':
+                self.setDefaultTextColor(value)
+            elif attribute == 'font':
+                self.document().setDefaultFont(value)
+            elif attribute == 'size':
+                font = self.document().defaultFont()
+                font.setPointSize(value)
+                self.document().setDefaultFont(font)
+            self.document().setDefaultTextOption(doc_format)
         
         # Clear the selection by moving the cursor to the end of the document
         cursor.clearSelection()
         cursor.movePosition(QTextCursor.End)
 
         self.setTextCursor(cursor)
-        self.document().setDefaultTextOption(doc_format)
         self.update()
 
     def set_line_spacing(self, spacing):
