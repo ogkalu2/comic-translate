@@ -45,6 +45,7 @@ from .morphology import (
     erode,
     get_structuring_element,
     morphology_ex,
+    close_holes,
 
     MORPH_CROSS,
     MORPH_ELLIPSE,
@@ -116,6 +117,7 @@ __all__ = [
     'erode',
     'get_structuring_element',
     'morphology_ex',
+    'close_holes',
     
     # Analysis operations
     'find_contours',

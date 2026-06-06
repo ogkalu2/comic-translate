@@ -67,13 +67,15 @@ Note: Some of these also have Official English Translations
 
 ## Installation
 ### Download
-Download and install Comic Translate for Windows and macOS from [here](https://www.comic-translate.com). 
+* **Desktop App**: Download and install Comic Translate for Windows and macOS from [here](https://www.comic-translate.com). 
 
->Ignore Smart Screen for Windows (Click More info > Run anyway). 
+  >Ignore Smart Screen for Windows (Click More info > Run anyway). 
 
->For macOS, after trying to open, go to Settings > Privacy and Security > Scroll down and click Open Anyway. 
+  >For macOS, after trying to open, go to Settings > Privacy and Security > Scroll down and click Open Anyway. 
 
->Note: GPU acceleration is currently only available when running from source.
+  >Note: GPU acceleration is currently only available when running from source.
+
+* **Browser Extension**: Install the Comic Translate extension for Chromium-based browsers (Chrome, Edge, Brave, etc.) from the [Chrome Web Store](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID) to read directly on websites.
 
 ### From Source
 Alternatively, if you'd like to run the source code directly.

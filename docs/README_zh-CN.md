@@ -61,12 +61,14 @@
 
 ## 安装
 ### 下载
-从[这里](https://www.comic-translate.com)下载并安装适用于 Windows 和 macOS 的 Comic Translate。
-> 对于 Windows，请忽略 Smart Screen（点击“更多信息” > “仍要运行”）。
+* **桌面应用**: 从[这里](https://www.comic-translate.com)下载并安装适用于 Windows 和 macOS 的 Comic Translate。
+  > 对于 Windows，请忽略 Smart Screen（点击“更多信息” > “仍要运行”）。
 
-> 对于 macOS，在尝试打开后，前往“设置” > “隐私与安全性” > 向下滚动并点击“仍要打开”。
+  > 对于 macOS，在尝试打开后，前往“设置” > “隐私与安全性” > 向下滚动并点击“仍要打开”。
 
-> 注意：GPU 加速目前仅在从源码运行时可用。
+  > 注意：GPU 加速目前仅在从源码运行时可用。
+
+* **浏览器扩展**: 从 [Chrome Web Store](https://chromewebstore.google.com/detail/YOUR_EXTENSION_ID) 安装适用于基于 Chromium 的浏览器（Chrome、Edge、Brave 等）的 Comic Translate 浏览器扩展，以便直接在网页上阅读。
 
 ### 从源码安装
 或者，如果您想直接运行源代码。
