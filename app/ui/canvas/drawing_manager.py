@@ -10,6 +10,7 @@ from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, 
                             SegmentBoxesCommand, EraseUndoCommand
 from app.ui.commands.base import PathCommandBase as pcb
 import imkit as imk
+from modules.utils.image_utils import clip_mask_to_bubble
 
 
 class DrawingManager:
@@ -427,26 +428,28 @@ class DrawingManager:
                         and getattr(blk, "text_class", None) == "text_bubble"
                         and getattr(blk, "bubble_xyxy", None) is not None
                     ):
-                        bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
-                        inset = 5
-                        bx1_rel = bx1 + inset - cx1
-                        by1_rel = by1 + inset - cy1
-                        bx2_rel = bx2 - inset - cx1
-                        by2_rel = by2 - inset - cy1
-
-                        h_crop, w_crop = crop_mask.shape[:2]
-                        cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
-                        ellipse_cx = (bx1_rel + bx2_rel) / 2.0
-                        ellipse_cy = (by1_rel + by2_rel) / 2.0
-                        rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
-                        ry = max(1.0, (by2_rel - by1_rel) / 2.0)
-                        
-                        bubble_clip = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
-                        crop_mask = np.where(bubble_clip, crop_mask, 0).astype(np.uint8)
+                        crop_mask = clip_mask_to_bubble(
+                            crop_mask,
+                            (cx1, cy1, cx2, cy2),
+                            blk.bubble_xyxy,
+                            inset=5,
+                        )
                     
                     # Dilate slightly to fully cover the letters and their anti-aliased margins
                     dil_kernel = np.ones((5, 5), np.uint8)
                     crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=1)
+                    if (
+                        blk is not None
+                        and not self.viewer.webtoon_mode
+                        and getattr(blk, "text_class", None) == "text_bubble"
+                        and getattr(blk, "bubble_xyxy", None) is not None
+                    ):
+                        crop_mask = clip_mask_to_bubble(
+                            crop_mask,
+                            (cx1, cy1, cx2, cy2),
+                            blk.bubble_xyxy,
+                            inset=5,
+                        )
             except Exception as e:
                 print(f"Failed to generate pixel-accurate mask in make_segmentation_stroke_data: {e}")
                 crop_mask = None

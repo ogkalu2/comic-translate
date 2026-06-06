@@ -7,6 +7,45 @@ from typing import Any
 from modules.utils.textblock import TextBlock
 from modules.detection.utils.content import get_inpaint_mask
 
+
+def build_bubble_clip_mask(
+    mask_shape: tuple[int, int],
+    bounds: tuple[int, int, int, int],
+    bubble_xyxy,
+    *,
+    inset: int,
+) -> np.ndarray | None:
+    if bubble_xyxy is None or len(bubble_xyxy) < 4:
+        return None
+
+    x1, y1, _, _ = [int(v) for v in bounds]
+    bx1, by1, bx2, by2 = [int(v) for v in bubble_xyxy[:4]]
+    bx1_rel = bx1 + inset - x1
+    by1_rel = by1 + inset - y1
+    bx2_rel = bx2 - inset - x1
+    by2_rel = by2 - inset - y1
+
+    height, width = mask_shape[:2]
+    cy_grid, cx_grid = np.ogrid[:height, :width]
+    ellipse_cx = (bx1_rel + bx2_rel) / 2.0
+    ellipse_cy = (by1_rel + by2_rel) / 2.0
+    rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
+    ry = max(1.0, (by2_rel - by1_rel) / 2.0)
+    return (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
+
+
+def clip_mask_to_bubble(
+    mask: np.ndarray,
+    bounds: tuple[int, int, int, int],
+    bubble_xyxy,
+    *,
+    inset: int,
+) -> np.ndarray:
+    bubble_clip = build_bubble_clip_mask(mask.shape[:2], bounds, bubble_xyxy, inset=inset)
+    if bubble_clip is None:
+        return mask
+    return np.where(bubble_clip, mask, 0).astype(mask.dtype, copy=False)
+
 def rgba2hex(rgba_list):
     r,g,b,a = [int(num) for num in rgba_list]
     return "#{:02x}{:02x}{:02x}{:02x}".format(r, g, b, a)
@@ -72,25 +111,18 @@ def build_block_mask_data(
     dilate_iterations = 3
 
     if getattr(blk, "text_class", None) == "text_bubble" and getattr(blk, "bubble_xyxy", None) is not None:
-        bx1, by1, bx2, by2 = [int(v) for v in blk.bubble_xyxy]
         inset = max(1, kernel_size)
-        bx1_rel = bx1 + inset - cx1
-        by1_rel = by1 + inset - cy1
-        bx2_rel = bx2 - inset - cx1
-        by2_rel = by2 - inset - cy1
-
-        h_crop, w_crop = crop_mask.shape[:2]
-        cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
-        ellipse_cx = (bx1_rel + bx2_rel) / 2.0
-        ellipse_cy = (by1_rel + by2_rel) / 2.0
-        rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
-        ry = max(1.0, (by2_rel - by1_rel) / 2.0)
-        
-        bubble_clip = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
-        crop_mask = np.where(bubble_clip, crop_mask, 0).astype(np.uint8)
+        crop_mask = clip_mask_to_bubble(crop_mask, (cx1, cy1, cx2, cy2), blk.bubble_xyxy, inset=inset)
 
     dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
     dilated_crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=dilate_iterations)
+    if getattr(blk, "text_class", None) == "text_bubble" and getattr(blk, "bubble_xyxy", None) is not None:
+        dilated_crop_mask = clip_mask_to_bubble(
+            dilated_crop_mask,
+            (cx1, cy1, cx2, cy2),
+            blk.bubble_xyxy,
+            inset=max(1, kernel_size),
+        )
     return dilated_crop_mask, (cx1, cy1, cx2, cy2)
 
 

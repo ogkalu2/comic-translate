@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
 from modules.utils.device import resolve_device
-from modules.utils.image_utils import build_block_mask_data
+from modules.utils.image_utils import build_block_mask_data, build_bubble_clip_mask, clip_mask_to_bubble
 from modules.utils.pipeline_config import inpaint_map, get_config, get_inpainter_backend
 from modules.utils.textblock import adjust_text_line_coordinates
 from pipeline.inpainting_boxes import merge_overlapping_padded_boxes
@@ -413,22 +413,7 @@ class InpaintingHandler:
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
             if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
-                bx1, by1, bx2, by2 = [int(v) for v in block.bubble_xyxy]
-                inset = 5
-                bx1_rel = bx1 + inset - x1
-                by1_rel = by1 + inset - y1
-                bx2_rel = bx2 - inset - x1
-                by2_rel = by2 - inset - y1
-
-                h_crop, w_crop = crop_mask.shape[:2]
-                cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
-                ellipse_cx = (bx1_rel + bx2_rel) / 2.0
-                ellipse_cy = (by1_rel + by2_rel) / 2.0
-                rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
-                ry = max(1.0, (by2_rel - by1_rel) / 2.0)
-                
-                bubble_clip = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
-                crop_mask = np.where(bubble_clip, crop_mask, 0).astype(np.uint8)
+                crop_mask = clip_mask_to_bubble(crop_mask, bounds, block.bubble_xyxy, inset=5)
                 
             initial_overlap = int(np.count_nonzero(crop_mask))
             if initial_overlap <= 0:
@@ -524,21 +509,7 @@ class InpaintingHandler:
         fill_region = self._get_associated_residual_components(residual_crop, masked_region)
         
         if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
-            bx1, by1, bx2, by2 = [int(v) for v in block.bubble_xyxy]
-            inset = 5
-            bx1_rel = bx1 + inset - x1
-            by1_rel = by1 + inset - y1
-            bx2_rel = bx2 - inset - x1
-            by2_rel = by2 - inset - y1
-
-            h_crop, w_crop = fill_region.shape[:2]
-            cy_grid, cx_grid = np.ogrid[:h_crop, :w_crop]
-            ellipse_cx = (bx1_rel + bx2_rel) / 2.0
-            ellipse_cy = (by1_rel + by2_rel) / 2.0
-            rx = max(1.0, (bx2_rel - bx1_rel) / 2.0)
-            ry = max(1.0, (by2_rel - by1_rel) / 2.0)
-            
-            bubble_mask = (((cx_grid - ellipse_cx) / rx) ** 2 + ((cy_grid - ellipse_cy) / ry) ** 2) <= 1.0
+            bubble_mask = build_bubble_clip_mask(fill_region.shape[:2], bounds, block.bubble_xyxy, inset=5)
             fill_region = fill_region & bubble_mask
         else:
             bubble_mask = None
