@@ -87,11 +87,7 @@ jobs:
           gh release upload "$TAG" "dist/${NEW_NAME}" --clobber
 
       - name: Delete workflow artifact on successful release upload
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.actions.deleteArtifact({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              artifact_id: ${{ steps.upload-dmg.outputs.artifact-id }},
-            })
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method DELETE /repos/${{ github.repository }}/actions/artifacts/${{ steps.upload-dmg.outputs.artifact-id }}
