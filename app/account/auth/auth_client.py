@@ -138,7 +138,10 @@ class AuthClient(QObject):
 
         # 2. Start local server to receive the token callback from backend
         # Pass the expected request_id to the server thread for verification
-        self.auth_server_thread = AuthServerThread(expected_request_id=self.current_request_id)
+        self.auth_server_thread = AuthServerThread(
+            expected_request_id=self.current_request_id,
+            frontend_url=self.frontend_url,
+        )
         self.auth_server_thread.tokens_received.connect(self._handle_token_callback)
         self.auth_server_thread.error.connect(self._handle_server_error)
         self.auth_server_thread.finished.connect(self._on_server_finished)
