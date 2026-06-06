@@ -216,7 +216,7 @@ class AuthServerThread(QThread):
                                     document.getElementById('spinner').style.display = 'none';
                                     
                                     if (response.ok) {
-                                        window.location.href = {success_url};
+                                        window.location.href = __SUCCESS_URL__;
                                     } else {
                                         document.getElementById('title').innerText = 'Sign In Failed';
                                         document.getElementById('message').innerText = text || 'The application rejected the login attempt.';
@@ -234,6 +234,7 @@ class AuthServerThread(QThread):
                     </body>
                     </html>
                     """
+                html = html.replace("__SUCCESS_URL__", success_url)
                 self.wfile.write(html.encode("utf-8"))
 
             def log_message(self, format, *args):
