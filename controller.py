@@ -793,9 +793,7 @@ class ComicTranslate(ComicTranslateUI):
             step_progress = (step / total_steps) * (1 / total_archives) * archiving_weight
 
         progress = (task_progress + step_progress) * 100 
-        new_val = int(progress)
-        if new_val > self.progress_bar.value():
-            self.progress_bar.setValue(new_val)
+        self.progress_bar.setValue(int(progress))
 
     def on_download_event(self, status: str, name: str):
         """Show a loading-type MMessage while models/files are being downloaded."""
