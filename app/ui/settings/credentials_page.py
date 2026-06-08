@@ -113,6 +113,27 @@ class CredentialsPage(QtWidgets.QWidget):
                 service_layout.addWidget(model_input)
                 self.credential_widgets[f"{normalized}_model"] = model_input
 
+            elif normalized == "LiteLLM":
+                api_key_input = MLineEdit()
+                api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)
+                api_key_input.setFixedWidth(400)
+                api_key_prefix = MLabel(self.tr("API Key")).border()
+                set_label_width(api_key_prefix)
+                api_key_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                api_key_input.set_prefix_widget(api_key_prefix)
+                service_layout.addWidget(api_key_input)
+                self.credential_widgets[f"{normalized}_api_key"] = api_key_input
+
+                model_input = MLineEdit()
+                model_input.setFixedWidth(400)
+                model_prefix = MLabel(self.tr("Model")).border()
+                set_label_width(model_prefix)
+                model_prefix.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                model_input.set_prefix_widget(model_prefix)
+                model_input.setPlaceholderText("e.g. anthropic/claude-sonnet-4-6")
+                service_layout.addWidget(model_input)
+                self.credential_widgets[f"{normalized}_model"] = model_input
+
             elif normalized == "Yandex":
                 api_key_input = MLineEdit()
                 api_key_input.setEchoMode(QtWidgets.QLineEdit.Password)

@@ -65,7 +65,8 @@ class Translator:
             self.settings.ui.tr("Gemini-2.5-Pro"): "Gemini-2.5-Pro",
             self.settings.ui.tr("Microsoft Translator"): "Microsoft Translator",
             self.settings.ui.tr("DeepL"): "DeepL",
-            self.settings.ui.tr("Yandex"): "Yandex"
+            self.settings.ui.tr("Yandex"): "Yandex",
+            self.settings.ui.tr("LiteLLM"): "LiteLLM"
         }
         return translator_map.get(localized_translator, localized_translator)
     
