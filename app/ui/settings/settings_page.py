@@ -100,7 +100,7 @@ class SettingsPage(QtWidgets.QWidget):
 
     def _sync_extra_context_limit(self, translator: str) -> None:
         normalized = self.ui.reverse_mappings.get(translator, translator)
-        self.ui.llms_page.set_extra_context_unlimited(normalized == "Custom")
+        self.ui.llms_page.set_extra_context_unlimited(normalized in ("Custom", "LiteLLM"))
 
     def on_theme_changed(self, theme: str):
         self.theme_changed.emit(theme)
@@ -168,6 +168,9 @@ class SettingsPage(QtWidgets.QWidget):
             if normalized == "Custom":
                 for field in ("api_key", "api_url", "model"):
                     creds[field] = _text_or_none(f"Custom_{field}")
+            elif normalized == "LiteLLM":
+                for field in ("api_key", "model"):
+                    creds[field] = _text_or_none(f"LiteLLM_{field}")
 
             return creds
 
@@ -310,6 +313,9 @@ class SettingsPage(QtWidgets.QWidget):
                     settings.setValue(f"{translated_service}_api_key", cred['api_key'])
                     settings.setValue(f"{translated_service}_api_url", cred['api_url'])
                     settings.setValue(f"{translated_service}_model", cred['model'])
+                elif translated_service == "LiteLLM":
+                    settings.setValue(f"{translated_service}_api_key", cred['api_key'])
+                    settings.setValue(f"{translated_service}_model", cred['model'])
         else:
             settings.remove('credentials')  # Clear all credentials if save_keys is unchecked
         settings.endGroup()
@@ -429,6 +435,9 @@ class SettingsPage(QtWidgets.QWidget):
                 if translated_service == "Custom":
                     self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
                     self.ui.credential_widgets[f"{translated_service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
+                    self.ui.credential_widgets[f"{translated_service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                elif translated_service == "LiteLLM":
+                    self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
                     self.ui.credential_widgets[f"{translated_service}_model"].setText(settings.value(f"{translated_service}_model", ''))
         settings.endGroup()
 
