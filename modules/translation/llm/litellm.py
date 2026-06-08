@@ -1,5 +1,6 @@
 from typing import Any
 import numpy as np
+import litellm
 
 from .base import BaseLLMTranslation
 
@@ -28,14 +29,6 @@ class LiteLLMTranslation(BaseLLMTranslation):
 
     def _perform_translation(self, user_prompt: str, system_prompt: str,
                              image: np.ndarray) -> str:
-        try:
-            import litellm
-        except ImportError:
-            raise ImportError(
-                "The 'litellm' package is required for LiteLLM translations. "
-                "Install it with: pip install litellm"
-            )
-
         if self.supports_images and self.img_as_llm_input and image is not None:
             encoded_image, mime_type = self.encode_image(image)
             messages = [
