@@ -159,19 +159,33 @@ class OCRFactory:
             'Gemini-2.5-Flash-Lite': lambda s: cls._create_gemini_ocr(s, ocr_model),
         }
         
+        make_japanese = lambda s: cls._create_manga_ocr(s, effective_backend)
+        make_korean = lambda s: cls._create_ppocr(s, 'ko', effective_backend)
+        make_chinese = lambda s: cls._create_ppocr(s, 'ch', effective_backend)
+        make_cyrillic = lambda s: cls._create_ppocr(s, 'ru', effective_backend)
+        make_latin = lambda s: cls._create_ppocr(s, 'latin', effective_backend)
+        make_english = lambda s: cls._create_ppocr(s, 'en', effective_backend)
+
         # Language-specific factory functions (for Default model)
         language_factories = {
-            'Japanese': lambda s: cls._create_manga_ocr(s, effective_backend),
+            'Japanese': make_japanese,
             # 'Korean': lambda s: cls._create_pororo_ocr(s, effective_backend),
-            'Korean': lambda s: cls._create_ppocr(s, 'ko', effective_backend),
-            'Chinese': lambda s: cls._create_ppocr(s, 'ch', effective_backend),
-            'Russian': lambda s: cls._create_ppocr(s, 'ru', effective_backend),
-            'French': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'English': lambda s: cls._create_ppocr(s, 'en', effective_backend),
-            'Spanish': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'Italian': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'German': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'Dutch': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
+            'Korean': make_korean,
+            'Chinese': make_chinese,
+            'Russian': make_cyrillic,
+            'French': make_latin,
+            'English': make_english,
+            'Spanish': make_latin,
+            'Italian': make_latin,
+            'German': make_latin,
+            'Dutch': make_latin,
+
+            # Script buckets used when source language is "Auto". 
+            'latin': make_latin,
+            'cyrillic': make_cyrillic,
+            'japanese': make_japanese,
+            'korean': make_korean,
+            'chinese': make_chinese,
         }
         
         # Check if we have a specific model factory

@@ -150,6 +150,9 @@ class BatchProcessor:
             if self._is_cancelled():
                 return
 
+            source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
+            self.block_detection.annotate_language_if_auto(image, blk_list, source_lang_english)
+
             if blk_list:
                 # Get ocr cache key for batch processing
                 ocr_model = settings_page.get_tool_selection('ocr')
@@ -161,7 +164,6 @@ class BatchProcessor:
                     self.ocr_handler.ocr.process(image, blk_list)
                     # Cache the OCR results for potential future use
                     self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list)
-                    source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
                     rtl = True if source_lang_english == 'Japanese' else False
                     blk_list = sort_blk_list(blk_list, rtl)
                     

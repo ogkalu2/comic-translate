@@ -1413,11 +1413,11 @@ class ProjectController:
         settings.beginGroup("main_page")
 
         # Load languages and convert back to current language
-        source_lang = settings.value("source_language", "Korean")
+        source_lang = settings.value("source_language", "Auto")
         target_lang = settings.value("target_language", "English")
 
         # Use reverse mapping to get the translated language names
-        self.main.s_combo.setCurrentText(self.main.reverse_lang_mapping.get(source_lang, self.main.tr("Korean")))
+        self.main.s_combo.setCurrentText(self.main.reverse_lang_mapping.get(source_lang, self.main.tr("Auto")))
         self.main.t_combo.setCurrentText(self.main.reverse_lang_mapping.get(target_lang, self.main.tr("English")))
 
         mode = settings.value("mode", "manual")

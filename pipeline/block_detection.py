@@ -3,6 +3,7 @@ from typing import List
 from PySide6 import QtCore
 
 from modules.detection.processor import TextBlockDetector
+from modules.detection.script_detection import ScriptDetector
 from modules.utils.textblock import TextBlock, sort_blk_list
 from modules.rendering.render import get_best_render_area
 from pipeline.webtoon_utils import get_first_visible_block
@@ -18,6 +19,7 @@ class BlockDetectionHandler:
     def __init__(self, main_page):
         self.main_page = main_page
         self.block_detector_cache = None
+        self.script_detector_cache = None
 
     def load_box_coords(self, blk_list: List[TextBlock]):
         # Clear rectangles appropriately based on mode
@@ -60,6 +62,22 @@ class BlockDetectionHandler:
 
         state["blk_list"] = [blk.deep_copy() for blk in self.main_page.blk_list]
 
+    def _source_lang_english(self) -> str:
+        source_lang = self.main_page.s_combo.currentText()
+        return self.main_page.lang_mapping.get(source_lang, source_lang)
+
+    def get_script_detector(self) -> ScriptDetector:
+        if self.script_detector_cache is None:
+            self.script_detector_cache = ScriptDetector()
+        return self.script_detector_cache
+
+    def annotate_language_if_auto(self, image, blk_list: List[TextBlock], source_lang_english: str):
+        if blk_list and source_lang_english == 'Auto':
+            self.get_script_detector().annotate_blocks(image, blk_list)
+
+    def _maybe_annotate_language(self, image, blk_list: List[TextBlock]):
+        self.annotate_language_if_auto(image, blk_list, self._source_lang_english())
+
     def detect_blocks(self, load_rects=True):
         if self.main_page.image_viewer.hasPhoto():
             if self.block_detector_cache is None:
@@ -77,6 +95,7 @@ class BlockDetectionHandler:
                 # Optimize render area immediately after detection (on local visible coordinates)
                 if blk_list:
                     get_best_render_area(blk_list, image)
+                    self._maybe_annotate_language(image, blk_list)
                 
                 # Convert coordinates from visible area to scene coordinates
                 for blk in blk_list:
@@ -126,6 +145,7 @@ class BlockDetectionHandler:
                 blk_list = self.block_detector_cache.detect(image)
                 if blk_list:
                     get_best_render_area(blk_list, image)
+                    self._maybe_annotate_language(image, blk_list)
                 return blk_list, load_rects, current_page
 
     def on_blk_detect_complete(self, result): 

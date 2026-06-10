@@ -1,8 +1,8 @@
 import numpy as np
 from typing import Any
 
-from ..utils.textblock import TextBlock
-from ..utils.language_utils import language_codes
+from modules.utils.textblock import TextBlock
+from modules.utils.language_utils import language_codes, get_lang_code_for_script, get_ocr_bucket_for_script
 from .factory import OCRFactory
 
 
@@ -50,10 +50,32 @@ class OCRProcessor:
         """
 
         self._set_source_language(blk_list)
+
+        if self.source_lang_english == 'Auto':
+            return self._process_auto(img, blk_list)
+
         engine = OCRFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
         return engine.process_image(img, blk_list)
-            
+
+    def _process_auto(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
+        """Route each block to an OCR engine based on its detected script (blk.language)."""
+        groups: dict[str, list[TextBlock]] = {}
+        for blk in blk_list:
+            bucket = get_ocr_bucket_for_script(blk.language)
+            groups.setdefault(bucket, []).append(blk)
+
+        for bucket, blks in groups.items():
+            engine = OCRFactory.create_engine(self.settings, bucket, self.ocr_key)
+            engine.process_image(img, blks)
+
+        return blk_list
+
     def _set_source_language(self, blk_list: list[TextBlock]) -> None:
+        if self.source_lang_english == 'Auto':
+            for blk in blk_list:
+                blk.source_lang = get_lang_code_for_script(blk.language)
+            return
+
         source_lang_code = language_codes.get(self.source_lang_english, 'en')
         for blk in blk_list:
             blk.source_lang = source_lang_code

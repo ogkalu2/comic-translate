@@ -117,11 +117,13 @@ class ChunkMixin:
         if not blocks:
             return blocks
 
+        source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
+        self.block_detection.annotate_language_if_auto(image, blocks, source_lang_en)
+
         self.ocr_handler.ocr.initialize(self.main_page, source_lang)
         try:
             self.ocr_handler.ocr.process(image, blocks)
             if sort_after:
-                source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
                 rtl = source_lang_en == "Japanese"
                 return sort_blk_list(blocks, rtl)
             return blocks

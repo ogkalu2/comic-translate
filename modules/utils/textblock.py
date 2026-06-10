@@ -25,6 +25,7 @@ class TextBlock(object):
                  alignment: str = '',
                  source_lang: str = "",
                  target_lang: str = "",
+                 language: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
                  font_color: str|tuple = (),
@@ -48,6 +49,7 @@ class TextBlock(object):
         
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.language = language
 
         self.min_font_size = min_font_size
         self.max_font_size = max_font_size
@@ -98,6 +100,7 @@ class TextBlock(object):
         new_block.alignment = self.alignment
         new_block.source_lang = self.source_lang
         new_block.target_lang = self.target_lang
+        new_block.language = self.language
         new_block.min_font_size = self.min_font_size
         new_block.max_font_size = self.max_font_size
         new_block.font_color = self.font_color

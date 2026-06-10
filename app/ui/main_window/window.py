@@ -97,6 +97,7 @@ class ComicTranslateUI(
         self.grabGesture(QtCore.Qt.GestureType.PinchGesture)
 
         self.lang_mapping = {
+            self.tr("Auto"): "Auto",
             self.tr("English"): "English",
             self.tr("Korean"): "Korean",
             self.tr("Japanese"): "Japanese",

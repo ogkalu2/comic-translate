@@ -6,6 +6,7 @@ user_font_path = os.path.join(get_user_data_dir(), "fonts")
 os.makedirs(user_font_path, exist_ok=True)
 
 supported_source_languages = [
+    "Auto",
     "Korean",
     "Japanese",
     "French",

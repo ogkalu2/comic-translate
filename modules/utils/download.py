@@ -94,6 +94,9 @@ class ModelID(Enum):
     FONT_DETECTOR_ONNX = "font-detector-onnx"
     FONT_DETECTOR_TORCH = "font-detector-torch"
 
+    # Script (OSD) Detection
+    OSD_SCRIPT_DETECTOR_ONNX = "osd-script-detector-onnx"
+
 
 @dataclass(frozen=True)
 class ModelSpec:
@@ -637,6 +640,18 @@ def _register_defaults():
         sha256=['9053615071c31978a3988143c9a3bdec8da53e269a8f84b5908d6f15747a1a81'],
         save_dir=os.path.join(models_base_dir, 'detection', 'font'),
         save_as={'name%3D4x-epoch%3D84-step%3D1649340.ckpt': 'font-detector.ckpt'}
+    ))
+
+    # Script (OSD) Detection: Tesseract OSD LSTM model ported to ONNX
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.OSD_SCRIPT_DETECTOR_ONNX,
+        url='https://huggingface.co/ogkalu/image-script-identification/resolve/main/',
+        files=['osd_lstm.onnx', 'osd_labels.json'],
+        sha256=[
+            'b18e0c1479d9eb67394993098f7e1079c9a93ef6f7b0416ee333fccb865c6e72',
+            'a1888156b005065039c356e13a7bbef1ec454b45bf6aaf18c11f4a59b1ee35c5',
+        ],
+        save_dir=os.path.join(models_base_dir, 'detection', 'script_id')
     ))
 
 _register_defaults()
