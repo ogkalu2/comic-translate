@@ -22,3 +22,5 @@ uv.lock
 test_*.py
 demo_*.py
 benchmarks/
+
+scripts
