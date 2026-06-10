@@ -2,7 +2,8 @@ import numpy as np
 from typing import Any
 
 from modules.utils.textblock import TextBlock
-from modules.utils.language_utils import language_codes, get_lang_code_for_script, get_ocr_bucket_for_script
+from modules.utils.language_utils import language_codes, \
+    get_lang_code_for_script, get_ocr_bucket_for_script
 from .factory import OCRFactory
 
 
