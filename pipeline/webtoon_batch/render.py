@@ -16,7 +16,7 @@ from modules.rendering.render import get_best_render_area, is_vertical_block, py
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.textblock import TextBlock
-from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
+from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation, is_renderable_translation
 
 if TYPE_CHECKING:
     from .processor import WebtoonBatchProcessor
@@ -106,7 +106,7 @@ class RenderMixin:
             height = max(1.0, y2 - y1)
 
             translation = block.translation
-            if not translation:
+            if not is_renderable_translation(translation):
                 continue
 
             vertical = is_vertical_block(block, target_lang_code)
