@@ -133,12 +133,22 @@ def _largest_line_crop(image: np.ndarray, blk: TextBlock) -> tuple[np.ndarray, s
         return None
 
     crop = image[y1:y2, x1:x2]
-    lines, direction = _detect_lines_and_direction_in_crop(crop, getattr(blk, "source_lang", ""))
-    if not lines:
-        return crop, direction
 
-    best = max(lines, key=_line_area)
-    lx1, ly1, lx2, ly2 = _line_axis_box(best)
+    # Reuse the heuristic lines annotated at detection time (image coordinates);
+    # only fall back to a fresh per-crop detection when they are missing.
+    lines = getattr(blk, "lines", None)
+    direction = getattr(blk, "direction", None)
+    if lines and direction in ("horizontal", "vertical"):
+        best = max(lines, key=_line_area)
+        lx1, ly1, lx2, ly2 = _line_axis_box(best)
+        lx1, ly1, lx2, ly2 = lx1 - x1, ly1 - y1, lx2 - x1, ly2 - y1
+    else:
+        rel_lines, direction = _detect_lines_and_direction_in_crop(crop, getattr(blk, "source_lang", ""))
+        if not rel_lines:
+            return crop, direction
+        best = max(rel_lines, key=_line_area)
+        lx1, ly1, lx2, ly2 = _line_axis_box(best)
+
     ch, cw = crop.shape[:2]
     lx1, ly1 = max(0, lx1), max(0, ly1)
     lx2, ly2 = min(cw, lx2), min(ch, ly2)
