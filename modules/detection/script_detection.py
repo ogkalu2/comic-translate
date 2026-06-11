@@ -159,7 +159,7 @@ def _largest_line_crop(image: np.ndarray, blk: TextBlock) -> tuple[np.ndarray, s
 
 
 class ScriptDetector:
-    """Runs the OSD LSTM script-detection model to populate TextBlock.language."""
+    """Runs the OSD LSTM script-detection model to populate TextBlock.script."""
 
     def __init__(self):
         self.session: ort.InferenceSession | None = None
@@ -205,10 +205,10 @@ class ScriptDetector:
         return _dominant_script(scores, self.labels)
 
     def annotate_blocks(self, image: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """Populate blk.language for every block using the OSD script-detection model."""
+        """Populate blk.script for every block using the OSD script-detection model."""
         for blk in blk_list:
             try:
-                blk.language = self.detect_block_script(image, blk)
+                blk.script = self.detect_block_script(image, blk)
             except Exception:
-                blk.language = ""
+                blk.script = ""
         return blk_list

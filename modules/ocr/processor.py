@@ -59,10 +59,10 @@ class OCRProcessor:
         return engine.process_image(img, blk_list)
 
     def _process_auto(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
-        """Route each block to an OCR engine based on its detected script (blk.language)."""
+        """Route each block to an OCR engine based on its detected script (blk.script)."""
         groups: dict[str, list[TextBlock]] = {}
         for blk in blk_list:
-            bucket = get_ocr_bucket_for_script(blk.language)
+            bucket = get_ocr_bucket_for_script(blk.script)
             groups.setdefault(bucket, []).append(blk)
 
         for bucket, blks in groups.items():
@@ -74,7 +74,7 @@ class OCRProcessor:
     def _set_source_language(self, blk_list: list[TextBlock]) -> None:
         if self.source_lang_english == 'Auto':
             for blk in blk_list:
-                blk.source_lang = get_lang_code_for_script(blk.language)
+                blk.source_lang = get_lang_code_for_script(blk.script)
             return
 
         source_lang_code = language_codes.get(self.source_lang_english, 'en')
