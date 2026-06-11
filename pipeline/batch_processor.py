@@ -19,7 +19,7 @@ from modules.utils.textblock import sort_blk_list
 from modules.utils.pipeline_config import get_config
 from modules.utils.image_utils import generate_mask, get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
-from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations
+from modules.utils.translator_utils import get_raw_translation, get_raw_text, format_translations, is_renderable_translation
 from modules.rendering.render import get_best_render_area, pyside_word_wrap, is_vertical_block
 from modules.utils.device import resolve_device
 from modules.utils.exceptions import InsufficientCreditsException
@@ -311,9 +311,12 @@ class BatchProcessor:
             config = get_config(settings_page)
             
             # Filter blocks to only inpaint if both OCR text and Translation are non-empty
+            # and the translation will actually be rendered (single-character translations
+            # like an echoed "?" are skipped at render time).
             inpaint_blk_list = [
                 blk for blk in blk_list
                 if blk.text and blk.text.strip() and blk.translation and blk.translation.strip()
+                and is_renderable_translation(blk.translation)
             ]
             
             logger.info("pre-inpaint: generating mask (inpaint_blk_list=%d blocks out of %d)", len(inpaint_blk_list), len(blk_list))
@@ -370,7 +373,7 @@ class BatchProcessor:
                 x1, y1, block_width, block_height = blk.xywh
 
                 translation = blk.translation
-                if not translation or len(translation) == 1:
+                if not is_renderable_translation(translation):
                     continue
                 
                 # Determine if this block should use vertical rendering

@@ -20,7 +20,7 @@ from modules.utils.pipeline_config import font_selected
 from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.common_utils import is_close
-from modules.utils.translator_utils import format_translations
+from modules.utils.translator_utils import format_translations, is_renderable_translation
 
 if TYPE_CHECKING:
     from controller import ComicTranslate
@@ -841,7 +841,7 @@ class TextController:
 
                         x1, y1, block_width, block_height = blk.xywh
                         translation = blk.translation
-                        if not translation or len(translation) == 1:
+                        if not is_renderable_translation(translation):
                             continue
 
                         vertical = is_vertical_block(blk, trg_lng_cd)

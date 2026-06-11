@@ -84,3 +84,12 @@ def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: 
 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
+
+def is_renderable_translation(translation: str | None) -> bool:
+    """True if the render stage will draw this translation.
+
+    Single-character translations (e.g. an echoed "?" or "!") are skipped at render
+    time, so anything gated on this (like inpainting) must skip them too — otherwise
+    the bubble gets cleaned with nothing drawn over it.
+    """
+    return bool(translation) and len(translation) != 1
