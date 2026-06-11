@@ -71,6 +71,7 @@
         <translation>クレジット:</translation>
     </message>
     <message>
+        <location filename="../../app/ui/messages.py" line="89"/>
         <location filename="../../app/ui/settings/account_page.py" line="92"/>
         <source>Buy Credits</source>
         <translation>クレジットを購入する</translation>
@@ -125,141 +126,146 @@
     <name>ComicTranslateUI</name>
     <message>
         <location filename="../../app/ui/main_window/window.py" line="100"/>
+        <source>Auto</source>
+        <translation>自動</translation>
+    </message>
+    <message>
+        <location filename="../../app/ui/main_window/window.py" line="101"/>
         <source>English</source>
         <translation>英語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="101"/>
+        <location filename="../../app/ui/main_window/window.py" line="102"/>
         <source>Korean</source>
         <translation>韓国人</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="102"/>
+        <location filename="../../app/ui/main_window/window.py" line="103"/>
         <source>Japanese</source>
         <translation>日本語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="103"/>
+        <location filename="../../app/ui/main_window/window.py" line="104"/>
         <source>French</source>
         <translation>フランス語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="104"/>
+        <location filename="../../app/ui/main_window/window.py" line="105"/>
         <source>Simplified Chinese</source>
         <translation>簡体字中国語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="105"/>
+        <location filename="../../app/ui/main_window/window.py" line="106"/>
         <source>Traditional Chinese</source>
         <translation>繁体字中国語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="106"/>
+        <location filename="../../app/ui/main_window/window.py" line="107"/>
         <source>Chinese</source>
         <translation>中国語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="107"/>
+        <location filename="../../app/ui/main_window/window.py" line="108"/>
         <source>Russian</source>
         <translation>ロシア</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="108"/>
+        <location filename="../../app/ui/main_window/window.py" line="109"/>
         <source>German</source>
         <translation>ドイツ語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="109"/>
+        <location filename="../../app/ui/main_window/window.py" line="110"/>
         <source>Dutch</source>
         <translation>オランダ語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="110"/>
+        <location filename="../../app/ui/main_window/window.py" line="111"/>
         <source>Spanish</source>
         <translation>スペイン語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="111"/>
+        <location filename="../../app/ui/main_window/window.py" line="112"/>
         <source>Italian</source>
         <translation>イタリア語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="112"/>
+        <location filename="../../app/ui/main_window/window.py" line="113"/>
         <source>Turkish</source>
         <translation>トルコ語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="113"/>
+        <location filename="../../app/ui/main_window/window.py" line="114"/>
         <source>Polish</source>
         <translation>研磨</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="114"/>
+        <location filename="../../app/ui/main_window/window.py" line="115"/>
         <source>Portuguese</source>
         <translation>ポルトガル語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="115"/>
+        <location filename="../../app/ui/main_window/window.py" line="116"/>
         <source>Brazilian Portuguese</source>
         <translation>ブラジル系ポルトガル語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="116"/>
+        <location filename="../../app/ui/main_window/window.py" line="117"/>
         <source>Thai</source>
         <translation>タイ語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="117"/>
+        <location filename="../../app/ui/main_window/window.py" line="118"/>
         <source>Vietnamese</source>
         <translation>ベトナム語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="118"/>
+        <location filename="../../app/ui/main_window/window.py" line="119"/>
         <source>Indonesian</source>
         <translation>インドネシア語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="119"/>
+        <location filename="../../app/ui/main_window/window.py" line="120"/>
         <source>Hungarian</source>
         <translation>ハンガリー語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="120"/>
+        <location filename="../../app/ui/main_window/window.py" line="121"/>
         <source>Finnish</source>
         <translation>フィンランド語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="121"/>
+        <location filename="../../app/ui/main_window/window.py" line="122"/>
         <source>Arabic</source>
         <translation>アラビア語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="122"/>
+        <location filename="../../app/ui/main_window/window.py" line="123"/>
         <source>Hebrew</source>
         <translation>ヘブライ語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="123"/>
+        <location filename="../../app/ui/main_window/window.py" line="124"/>
         <source>Czech</source>
         <translation>チェコ語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="124"/>
+        <location filename="../../app/ui/main_window/window.py" line="125"/>
         <source>Croatian</source>
         <translation>クロアチア語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="125"/>
+        <location filename="../../app/ui/main_window/window.py" line="126"/>
         <source>Persian</source>
         <translation>ペルシア語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="126"/>
+        <location filename="../../app/ui/main_window/window.py" line="127"/>
         <source>Romanian</source>
         <translation>ルーマニア語</translation>
     </message>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="127"/>
+        <location filename="../../app/ui/main_window/window.py" line="128"/>
         <source>Mongolian</source>
         <translation>モンゴル語</translation>
     </message>
@@ -514,110 +520,110 @@ Go to Settings &gt; Account to buy more credits.</source>
 さらにクレジットを購入するには、[設定] &gt; [アカウント] に移動します。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="88"/>
-        <location filename="../../app/ui/messages.py" line="136"/>
+        <location filename="../../app/ui/messages.py" line="93"/>
+        <location filename="../../app/ui/messages.py" line="148"/>
         <source>OK</source>
         <translation>わかりました</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="99"/>
+        <location filename="../../app/ui/messages.py" line="111"/>
         <source>Custom requires advanced API configuration. Most users should use the Credits system instead.
 Please sign in via Settings &gt; Account to use credits, or configure Custom API settings in Settings &gt; Advanced.</source>
         <translation>カスタムには高度な API 構成が必要です。ほとんどのユーザーは代わりにクレジット システムを使用する必要があります。
 クレジットを使用するには、[設定] &gt; [アカウント] からサインインするか、[設定] &gt; [詳細設定] でカスタム API 設定を構成してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="135"/>
+        <location filename="../../app/ui/messages.py" line="147"/>
         <source>Copy</source>
         <translation>コピー</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="137"/>
+        <location filename="../../app/ui/messages.py" line="149"/>
         <source>Close</source>
         <translation>近い</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="159"/>
+        <location filename="../../app/ui/messages.py" line="171"/>
         <source>We encountered an unexpected server error.
 Please try again in a few moments.</source>
         <translation>予期しないサーバー エラーが発生しました。
 しばらくしてからもう一度お試しください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="160"/>
+        <location filename="../../app/ui/messages.py" line="172"/>
         <source>The external service provider is having trouble.
 Please try again later.</source>
         <translation>外部サービスプロバイダーに問題が発生しています。
 後でもう一度試してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="161"/>
+        <location filename="../../app/ui/messages.py" line="173"/>
         <source>The server is currently busy or under maintenance.
 Please try again shortly.</source>
         <translation>現在サーバーがビジー状態かメンテナンス中です。
 しばらくしてからもう一度お試しください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="162"/>
+        <location filename="../../app/ui/messages.py" line="174"/>
         <source>The server took too long to respond.
 Please check your connection or try again later.</source>
         <translation>サーバーの応答に時間がかかりすぎました。
 接続を確認するか、後でもう一度試してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="167"/>
+        <location filename="../../app/ui/messages.py" line="179"/>
         <source>The selected text recognition tool is not supported.
 Please select a different tool in Settings.</source>
         <translation>選択したテキスト認識ツールはサポートされていません。
 設定で別のツールを選択してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="169"/>
+        <location filename="../../app/ui/messages.py" line="181"/>
         <source>The selected translator is not supported.
 Please select a different tool in Settings.</source>
         <translation>選択したトランスレータはサポートされていません。
 設定で別のツールを選択してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="171"/>
+        <location filename="../../app/ui/messages.py" line="183"/>
         <source>The selected tool is not supported.
 Please select a different tool in Settings.</source>
         <translation>選択したツールはサポートされていません。
 設定で別のツールを選択してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="199"/>
-        <location filename="../../pipeline/batch_processor.py" line="174"/>
-        <location filename="../../pipeline/batch_processor.py" line="264"/>
-        <location filename="../../pipeline/webtoon_batch/chunk.py" line="90"/>
+        <location filename="../../app/ui/messages.py" line="211"/>
+        <location filename="../../pipeline/batch_processor.py" line="175"/>
+        <location filename="../../pipeline/batch_processor.py" line="229"/>
+        <location filename="../../pipeline/webtoon_batch/chunk.py" line="92"/>
         <source>Unable to connect to the server.
 Please check your internet connection.</source>
         <translation>サーバーに接続できません。
 インターネット接続を確認してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="214"/>
+        <location filename="../../app/ui/messages.py" line="226"/>
         <source>Text Recognition blocked: The AI provider flagged this content.
 Please try a different Text Recognition tool.</source>
         <translation>テキスト認識がブロックされました: AI プロバイダーがこのコンテンツにフラグを立てました。
 別のテキスト認識ツールを試してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="219"/>
+        <location filename="../../app/ui/messages.py" line="231"/>
         <source>Translation blocked: The AI provider flagged this content.
 Please try a different translator.</source>
         <translation>翻訳はブロックされました: AI プロバイダーがこのコンテンツにフラグを立てました。
 別の翻訳者を試してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="224"/>
+        <location filename="../../app/ui/messages.py" line="236"/>
         <source>Operation blocked: The AI provider flagged this content.
 Please try a different tool.</source>
         <translation>操作がブロックされました: AI プロバイダーがこのコンテンツにフラグを立てました。
 別のツールを試してください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/messages.py" line="249"/>
+        <location filename="../../app/ui/messages.py" line="261"/>
         <source>{0} image(s) were skipped in this batch.
 Open Batch Report to see all skipped images and reasons.</source>
         <translation>このバッチでは {0} 個の画像がスキップされました。
@@ -1034,194 +1040,194 @@ This folder is separate from Auto-Recover snapshots.</source>
         <translation>わかりました</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="524"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="869"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="528"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="873"/>
         <source>Yes</source>
         <translation>はい</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="525"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="870"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="529"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="874"/>
         <source>No</source>
         <translation>いいえ</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="534"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="538"/>
         <source>Restart Required</source>
         <translation>再起動が必要です</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="535"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="539"/>
         <source>The application needs to restart for the language changes to take effect.
 Restart now?</source>
         <translation>言語の変更を有効にするには、アプリケーションを再起動する必要があります。
 今すぐ再起動しますか?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="578"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="914"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="582"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="918"/>
         <source>Cancel</source>
         <translation>キャンセル</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="586"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="590"/>
         <source>Failed to initiate sign-in process.</source>
         <translation>サインインプロセスを開始できませんでした。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="603"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="831"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="607"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="835"/>
         <source>Sign In</source>
         <translation>サインイン</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="620"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="624"/>
         <source>Sign In Required</source>
         <translation>サインインが必要です</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="621"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="625"/>
         <source>Please sign in to purchase or manage credits.</source>
         <translation>クレジットを購入または管理するにはサインインしてください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="630"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="634"/>
         <source>Unable to Open Browser</source>
         <translation>ブラウザを開けません</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="631"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="635"/>
         <source>Please open the pricing page in your browser: {url}</source>
         <translation>ブラウザで価格ページを開いてください: {url}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="703"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="707"/>
         <source>Sign In Error</source>
         <translation>サインインエラー</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="704"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="708"/>
         <source>Authentication failed: {error}</source>
         <translation>認証に失敗しました: {error}</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="718"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="722"/>
         <source>Confirm Sign Out</source>
         <translation>サインアウトの確認</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="719"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="723"/>
         <source>Are you sure you want to sign out?</source>
         <translation>サインアウトしてもよろしいですか?</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="723"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="727"/>
         <source>Signing Out...</source>
         <translation>サインアウト中...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="746"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="824"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="750"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="828"/>
         <source>Sign Out</source>
         <translation>サインアウト</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="762"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="766"/>
         <source>Session Expired</source>
         <translation>セッションが期限切れになりました</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="763"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="767"/>
         <source>Your session has expired. Please sign in again.</source>
         <translation>セッションの有効期限が切れました。再度サインインしてください。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="777"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="780"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="799"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="781"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="784"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="803"/>
         <source>N/A</source>
         <translation>該当なし</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="791"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="795"/>
         <source>Free</source>
         <translation>無料</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="806"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="810"/>
         <source>Subscription</source>
         <translation>サブスクリプション</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="809"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="813"/>
         <source>One-time</source>
         <translation>一度</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="812"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="817"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="816"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="821"/>
         <source>Total</source>
         <translation>合計</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="846"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="850"/>
         <source>Checking...</source>
         <translation>チェック中...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="852"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="889"/>
-        <location filename="../../app/ui/settings/settings_page.py" line="902"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="856"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="893"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="906"/>
         <source>Check for Updates</source>
         <translation>アップデートをチェックする</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="862"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="866"/>
         <source>Update Available</source>
         <translation>利用可能なアップデート</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="865"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="869"/>
         <source>A new version {version} is available.</source>
         <translation>新しいバージョン {version} が利用可能です。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="866"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="870"/>
         <source>Release Notes</source>
         <translation>リリースノート</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="874"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="878"/>
         <source>Skip This Version</source>
         <translation>このバージョンをスキップする</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="892"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="896"/>
         <source>Up to Date</source>
         <translation>最新の</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="893"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="897"/>
         <source>You are using the latest version.</source>
         <translation>最新バージョンを使用しています。</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="908"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="912"/>
         <source>Update Error</source>
         <translation>更新エラー</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="914"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="918"/>
         <source>Downloading update...</source>
         <translation>アップデートをダウンロード中...</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="931"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="935"/>
         <source>Download Complete</source>
         <translation>ダウンロード完了</translation>
     </message>
     <message>
-        <location filename="../../app/ui/settings/settings_page.py" line="932"/>
+        <location filename="../../app/ui/settings/settings_page.py" line="936"/>
         <source>Installer downloaded to {path}. Run it now?</source>
         <translation>インストーラーは {path} にダウンロードされました。今すぐ実行しますか?</translation>
     </message>
@@ -2434,8 +2440,8 @@ It may have been moved, renamed, or deleted.
     </message>
     <message>
         <location filename="../../app/controllers/projects.py" line="1420"/>
-        <source>Korean</source>
-        <translation>韓国人</translation>
+        <source>Auto</source>
+        <translation>自動</translation>
     </message>
     <message>
         <location filename="../../app/controllers/projects.py" line="1421"/>
@@ -2446,28 +2452,28 @@ It may have been moved, renamed, or deleted.
 <context>
     <name>self.settings.ui</name>
     <message>
-        <location filename="../../modules/ocr/processor.py" line="63"/>
+        <location filename="../../modules/ocr/processor.py" line="86"/>
         <location filename="../../modules/translation/processor.py" line="61"/>
         <source>GPT-4.1-mini</source>
         <translation>GPT-4.1-ミニ</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/processor.py" line="64"/>
+        <location filename="../../modules/ocr/processor.py" line="87"/>
         <source>Microsoft OCR</source>
         <translation>マイクロソフトOCR</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/processor.py" line="65"/>
+        <location filename="../../modules/ocr/processor.py" line="88"/>
         <source>Google Cloud Vision</source>
         <translation>Googleクラウドビジョン</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/processor.py" line="66"/>
+        <location filename="../../modules/ocr/processor.py" line="89"/>
         <source>Gemini-2.5-Flash-Lite</source>
         <translation>Gemini-2.5-Flash-Lite</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/processor.py" line="67"/>
+        <location filename="../../modules/ocr/processor.py" line="90"/>
         <source>Default</source>
         <translation>デフォルト</translation>
     </message>
@@ -2525,8 +2531,8 @@ It may have been moved, renamed, or deleted.
 <context>
     <name>self.settings_page.ui</name>
     <message>
-        <location filename="../../app/ui/main_window/window.py" line="412"/>
-        <location filename="../../app/ui/main_window/window.py" line="419"/>
+        <location filename="../../app/ui/main_window/window.py" line="413"/>
+        <location filename="../../app/ui/main_window/window.py" line="420"/>
         <source>Light</source>
         <translation>ライト</translation>
     </message>
@@ -2547,18 +2553,18 @@ It may have been moved, renamed, or deleted.
 <context>
     <name>settings.ui</name>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="189"/>
+        <location filename="../../modules/ocr/factory.py" line="203"/>
         <location filename="../../modules/translation/microsoft.py" line="25"/>
         <source>Microsoft Azure</source>
         <translation>マイクロソフトアジュール</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="199"/>
+        <location filename="../../modules/ocr/factory.py" line="213"/>
         <source>Google Cloud</source>
         <translation>グーグルクラウド</translation>
     </message>
     <message>
-        <location filename="../../modules/ocr/factory.py" line="206"/>
+        <location filename="../../modules/ocr/factory.py" line="220"/>
         <location filename="../../modules/translation/llm/gpt.py" line="33"/>
         <source>Open AI GPT</source>
         <translation>AI GPT を開く</translation>
