@@ -157,10 +157,23 @@ class PPOCRv5Engine(OCREngine):
 		if self.rec_sess is None or self.decoder is None:
 			return blk_list
 		if self.use_text_lines and any(getattr(blk, 'lines', None) for blk in blk_list):
+			# Batch all blocks' line crops together so width-bucketing happens
+			# across the whole page, not once per block (fewer ORT calls).
+			block_crops: list[list[np.ndarray]] = []
+			all_crops: list[np.ndarray] = []
 			for blk in blk_list:
 				lines = getattr(blk, 'lines', None) or [blk.xyxy]
 				crops = [_crop_line(img, line) for line in lines]
-				texts, _ = self._rec_infer([crop for crop in crops if crop is not None and crop.size > 0])
+				crops = [crop for crop in crops if crop is not None and crop.size > 0]
+				block_crops.append(crops)
+				all_crops.extend(crops)
+
+			all_texts, _ = self._rec_infer(all_crops)
+
+			offset = 0
+			for blk, crops in zip(blk_list, block_crops):
+				texts = all_texts[offset:offset + len(crops)]
+				offset += len(crops)
 				texts = [text.strip() for text in texts if text and text.strip()]
 				blk.texts = texts
 				blk.text = ''.join(texts) if is_no_space_lang(getattr(blk, 'source_lang', '')) else ' '.join(texts)
