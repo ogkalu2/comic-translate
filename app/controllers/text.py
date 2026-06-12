@@ -18,6 +18,7 @@ from modules.utils.textblock import TextBlock
 from modules.rendering.render import TextRenderingSettings, manual_wrap, is_vertical_block, pyside_word_wrap
 from modules.utils.pipeline_config import font_selected
 from modules.utils.language_utils import get_language_code, get_layout_direction, is_no_space_lang
+from modules.utils.language_utils import to_canonical_language_name
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.common_utils import is_close
 from modules.utils.translator_utils import format_translations, is_renderable_translation
@@ -335,15 +336,15 @@ class TextController:
         cursor.endEditBlock()
 
     def save_src_trg(self):
-        source_lang = self.main.s_combo.currentText()
-        target_lang = self.main.t_combo.currentText()
+        source_lang = to_canonical_language_name(self.main.s_combo.currentText(), self.main.lang_mapping)
+        target_lang = to_canonical_language_name(self.main.t_combo.currentText(), self.main.lang_mapping)
         
         if self.main.curr_img_idx >= 0:
             current_file = self.main.image_files[self.main.curr_img_idx]
             self.main.image_states[current_file]['source_lang'] = source_lang
             self.main.image_states[current_file]['target_lang'] = target_lang
 
-        target_en = self.main.lang_mapping.get(target_lang, None)
+        target_en = self.main.lang_mapping.get(target_lang, target_lang)
         t_direction = get_layout_direction(target_en)
         t_text_option = self.main.t_text_edit.document().defaultTextOption()
         t_text_option.setTextDirection(t_direction)
@@ -353,8 +354,8 @@ class TextController:
             self.main.mark_project_dirty()
 
     def set_src_trg_all(self):
-        source_lang = self.main.s_combo.currentText()
-        target_lang = self.main.t_combo.currentText()
+        source_lang = to_canonical_language_name(self.main.s_combo.currentText(), self.main.lang_mapping)
+        target_lang = to_canonical_language_name(self.main.t_combo.currentText(), self.main.lang_mapping)
         for image_path in self.main.image_files:
             self.main.image_states[image_path]['source_lang'] = source_lang
             self.main.image_states[image_path]['target_lang'] = target_lang

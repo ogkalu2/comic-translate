@@ -30,6 +30,7 @@ from app.projects.project_state import (
 )
 from modules.utils.archives import make
 from modules.utils.paths import get_user_data_dir, get_default_project_autosave_dir
+from modules.utils.language_utils import to_canonical_language_name
 
 logger = logging.getLogger(__name__)
 
@@ -1274,6 +1275,18 @@ class ProjectController:
         save_state_to_proj_file(self.main, file_name)
 
     def update_ui_from_project(self):
+        for state in self.main.image_states.values():
+            if not isinstance(state, dict):
+                continue
+            state["source_lang"] = to_canonical_language_name(
+                state.get("source_lang", "Auto"),
+                self.main.lang_mapping,
+            )
+            state["target_lang"] = to_canonical_language_name(
+                state.get("target_lang", "English"),
+                self.main.lang_mapping,
+            )
+
         self.main.batch_report_ctrl.refresh_button_state()
         if not self.main.image_files:
             self.main.curr_img_idx = -1

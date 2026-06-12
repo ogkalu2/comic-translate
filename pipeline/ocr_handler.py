@@ -1,6 +1,7 @@
 import logging
 from modules.ocr.processor import OCRProcessor
 from modules.utils.device import resolve_device
+from modules.utils.language_utils import to_canonical_language_name
 from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_original_block_coordinates
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,10 @@ class OCRHandler:
         self.ocr = OCRProcessor()
 
     def OCR_image(self, single_block: bool = False):
-        source_lang = self.main_page.s_combo.currentText()
+        source_lang = to_canonical_language_name(
+            self.main_page.s_combo.currentText(),
+            self.main_page.lang_mapping,
+        )
         if self.main_page.image_viewer.hasPhoto() and self.main_page.image_viewer.rectangles:
             image = self.main_page.image_viewer.get_image_array()
             ocr_model = self.main_page.settings_page.get_tool_selection('ocr')
@@ -91,7 +95,10 @@ class OCRHandler:
 
     def OCR_webtoon_visible_area(self, single_block: bool = False):
         """Perform OCR on the visible area in webtoon mode."""
-        source_lang = self.main_page.s_combo.currentText()
+        source_lang = to_canonical_language_name(
+            self.main_page.s_combo.currentText(),
+            self.main_page.lang_mapping,
+        )
         
         if not (self.main_page.image_viewer.hasPhoto() and 
                 self.main_page.webtoon_mode):

@@ -39,6 +39,20 @@ def get_language_code(lng: str):
     lng_cd = language_codes.get(lng, None)
     return lng_cd
 
+
+def to_canonical_language_name(language: str, language_map: dict | None = None) -> str:
+    """Convert a localized UI language label to its stable English identifier."""
+    if language_map:
+        return language_map.get(language, language)
+    return language
+
+
+def to_ui_language_label(language: str, reverse_language_map: dict | None = None) -> str:
+    """Convert a canonical language name back to the current UI label."""
+    if reverse_language_map:
+        return reverse_language_map.get(language, language)
+    return language
+
 # Mapping from OSD script-detection labels to the OCR engine "buckets" 
 # used by OCRFactory when source language is "Auto".
 SCRIPT_TO_OCR_BUCKET = {

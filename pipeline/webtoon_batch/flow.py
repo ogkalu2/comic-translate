@@ -11,6 +11,7 @@ from PIL import Image, UnidentifiedImageError
 from app.path_materialization import ensure_path_materialized
 from modules.utils.textblock import sort_blk_list
 from modules.detection.heuristic_lines import annotate_blocks_with_heuristic_lines
+from modules.utils.language_utils import to_canonical_language_name
 from pipeline.virtual_page import VirtualPage
 
 if TYPE_CHECKING:
@@ -348,7 +349,13 @@ class FlowMixin:
 
         blocks = list(page_accum[image_path]["blocks"])
         patches = list(page_accum[image_path]["patches"])
-        source_lang = page_state.get("source_lang", self.main_page.s_combo.currentText())
+        source_lang = page_state.get(
+            "source_lang",
+            to_canonical_language_name(
+                self.main_page.s_combo.currentText(),
+                self.main_page.lang_mapping,
+            ),
+        )
         source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
         rtl = source_lang_en == "Japanese"
         if blocks:
@@ -564,7 +571,13 @@ class FlowMixin:
 
                 self._emit_progress(current_record["selected_index"], total_images, 2, False)
                 page_state = self.main_page.image_states.get(current_record["path"], {})
-                source_lang = page_state.get("source_lang", self.main_page.s_combo.currentText())
+                source_lang = page_state.get(
+                    "source_lang",
+                    to_canonical_language_name(
+                        self.main_page.s_combo.currentText(),
+                        self.main_page.lang_mapping,
+                    ),
+                )
                 ocr_image = self._build_extended_ocr_image_for_pair(
                     current_record=current_record,
                     next_record=next_record,
@@ -589,7 +602,13 @@ class FlowMixin:
                 )
 
                 self._emit_progress(current_record["selected_index"], total_images, 7, False)
-                target_lang = page_state.get("target_lang", self.main_page.t_combo.currentText())
+                target_lang = page_state.get(
+                    "target_lang",
+                    to_canonical_language_name(
+                        self.main_page.t_combo.currentText(),
+                        self.main_page.lang_mapping,
+                    ),
+                )
                 self._run_translation_on_blocks(
                     image=current_record["image"],
                     blocks=ocr_blocks,
