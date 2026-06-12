@@ -7,14 +7,15 @@ import time
 from typing import Any, List, Optional
 
 from .base import TranslationEngine
-from ..utils.textblock import TextBlock 
+from modules.utils.textblock import TextBlock 
+from modules.utils.language_utils import resolve_auto_source_language
 
 from app.account.auth.auth_client import AuthClient
 from app.account.auth.token_storage import get_token
 from app.ui.settings.settings_page import SettingsPage
 from app.account.config import WEB_API_TRANSLATE_URL
-from ..utils.exceptions import InsufficientCreditsException, ContentFlaggedException
-from ..utils.platform_utils import get_client_os
+from modules.utils.exceptions import InsufficientCreditsException, ContentFlaggedException
+from modules.utils.platform_utils import get_client_os
 
 
 logger = logging.getLogger(__name__)
@@ -129,10 +130,12 @@ class UserTranslator(TranslationEngine):
             logger.debug("UserTranslator: Encoded image for web API request.")
         after_encode_t = time.perf_counter()
 
+        api_source_language = resolve_auto_source_language(blk_list, self.source_lang)
+
         # 5. Construct Full Payload
         request_payload = {
             "translator": self.translator_key,
-            "source_language": self.source_lang,
+            "source_language": api_source_language,
             "target_language": self.target_lang,
             "texts": texts_payload,
         }

@@ -1,11 +1,10 @@
 import numpy as np
-from collections import defaultdict
 from typing import Any
 
 from modules.utils.textblock import TextBlock
 from modules.utils.language_utils import language_codes, \
     get_lang_code_for_script, get_ocr_bucket_for_script, \
-    is_supported_script, normalize_script
+    get_dominant_page_script, is_supported_script, normalize_script
 from .factory import OCRFactory
 
 
@@ -94,33 +93,7 @@ class OCRProcessor:
         return dominant_script or script
 
     def _get_dominant_page_script(self, blk_list: list[TextBlock]) -> str:
-        area_by_script: dict[str, float] = defaultdict(float)
-        total_area = 0.0
-
-        for blk in blk_list:
-            script = normalize_script(getattr(blk, 'script', ''))
-            if not is_supported_script(script):
-                continue
-
-            area = self._block_area(blk)
-            area_by_script[script] += area
-            total_area += area
-
-        if not area_by_script or total_area <= 0.0:
-            return ''
-
-        dominant_script, dominant_area = max(area_by_script.items(), key=lambda item: item[1])
-        if dominant_area / total_area < 0.7:
-            return ''
-        return dominant_script
-
-    @staticmethod
-    def _block_area(blk: TextBlock) -> float:
-        try:
-            x1, y1, x2, y2 = blk.xyxy
-        except (TypeError, ValueError):
-            return 1.0
-        return max(1.0, float(x2 - x1)) * max(1.0, float(y2 - y1))
+        return get_dominant_page_script(blk_list)
 
     def _get_ocr_key(self, localized_ocr: str) -> str:
         translator_map = {

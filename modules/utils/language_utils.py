@@ -61,6 +61,18 @@ SCRIPT_TO_LANG_CODE = {
     "HanT": "zh",
 }
 
+# Mapping from OSD script-detection labels to the source language names sent
+# to remote OCR/translation APIs when "Auto" should be resolved to a concrete
+# language. Latin is intentionally omitted because script alone cannot identify
+# which Latin-script language the page uses.
+SCRIPT_TO_SOURCE_LANGUAGE = {
+    "Cyrillic": "Russian",
+    "Japanese": "Japanese",
+    "Hangul": "Korean",
+    "HanS": "Chinese",
+    "HanT": "Chinese",
+}
+
 
 def normalize_script(script: str) -> str:
     """Strip OSD '_vert'/'-dn' suffixes, returning the base script name."""
@@ -84,9 +96,60 @@ def get_lang_code_for_script(script: str) -> str:
     return SCRIPT_TO_LANG_CODE.get(normalize_script(script), "en")
 
 
+def get_source_language_for_script(script: str) -> str:
+    """Resolve a detected OSD script label to an English source-language name."""
+    return SCRIPT_TO_SOURCE_LANGUAGE.get(normalize_script(script), "Auto")
+
+
 def is_supported_script(script: str) -> bool:
     """Return whether a detected script cleanly maps to an OCR routing bucket."""
     return normalize_script(script) in SCRIPT_TO_OCR_BUCKET
+
+
+def get_dominant_page_script(blocks: list, threshold: float = 0.7) -> str:
+    """
+    Derive a dominant page script from supported block scripts weighted by area.
+    Returns an empty string when the page is mixed or there is no script data.
+    """
+    area_by_script: dict[str, float] = {}
+    total_area = 0.0
+
+    for block in blocks:
+        script = normalize_script(getattr(block, "script", ""))
+        if not is_supported_script(script):
+            continue
+
+        area = _block_area(block)
+        area_by_script[script] = area_by_script.get(script, 0.0) + area
+        total_area += area
+
+    if not area_by_script or total_area <= 0.0:
+        return ""
+
+    dominant_script, dominant_area = max(area_by_script.items(), key=lambda item: item[1])
+    if dominant_area / total_area < threshold:
+        return ""
+    return dominant_script
+
+
+def resolve_auto_source_language(blocks: list, source_language: str) -> str:
+    """
+    Resolve "Auto" to a concrete English source-language name for remote APIs.
+    Latin-script or mixed pages remain "Auto" so the backend can auto-detect.
+    """
+    if source_language != "Auto":
+        return source_language
+
+    dominant_script = get_dominant_page_script(blocks) or get_dominant_page_script(blocks, 0.0)
+    return get_source_language_for_script(dominant_script) if dominant_script else "Auto"
+
+
+def _block_area(block) -> float:
+    try:
+        x1, y1, x2, y2 = block.xyxy
+    except (AttributeError, TypeError, ValueError):
+        return 1.0
+    return max(1.0, float(x2 - x1)) * max(1.0, float(y2 - y1))
 
 
 def is_no_space_lang(lang_code: str | None) -> bool:
