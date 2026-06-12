@@ -84,6 +84,11 @@ def get_lang_code_for_script(script: str) -> str:
     return SCRIPT_TO_LANG_CODE.get(normalize_script(script), "en")
 
 
+def is_supported_script(script: str) -> bool:
+    """Return whether a detected script cleanly maps to an OCR routing bucket."""
+    return normalize_script(script) in SCRIPT_TO_OCR_BUCKET
+
+
 def is_no_space_lang(lang_code: str | None) -> bool:
     """
     Check if the language usually does not use spaces between words.
