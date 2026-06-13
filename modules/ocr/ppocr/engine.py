@@ -16,7 +16,7 @@ from .postprocessing import DBPostProcessor, CTCLabelDecoder
 
 
 LANG_TO_REC_MODEL: dict[str, ModelID] = {
-	'ch': ModelID.PPOCR_V5_REC_MOBILE,
+	'ch': ModelID.PPOCR_V6_REC_SMALL,
 	'en': ModelID.PPOCR_V5_REC_EN_MOBILE,
 	'ko': ModelID.PPOCR_V5_REC_KOREAN_MOBILE,
 	'latin': ModelID.PPOCR_V5_REC_LATIN_MOBILE,
@@ -76,7 +76,7 @@ class PPOCRv5Engine(OCREngine):
 			self.rec_threads = 6
 		else:
 			self.rec_threads = 4
-		rec_id = LANG_TO_REC_MODEL.get(lang, ModelID.PPOCR_V5_REC_LATIN_MOBILE)
+		rec_id = LANG_TO_REC_MODEL.get(lang, ModelID.PPOCR_V6_REC_SMALL)
 		ModelDownloader.ensure([rec_id])
 
 		rec_paths = ModelDownloader.file_path_map(rec_id)

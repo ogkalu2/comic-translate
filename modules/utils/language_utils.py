@@ -101,13 +101,13 @@ def normalize_script(script: str) -> str:
 
 
 def get_ocr_bucket_for_script(script: str) -> str:
-    """Resolve a detected OSD script label to an OCR engine bucket, defaulting to 'latin'."""
-    return SCRIPT_TO_OCR_BUCKET.get(normalize_script(script), "latin")
+    """Resolve a detected OSD script label to an OCR engine bucket, defaulting to Chinese OCR."""
+    return SCRIPT_TO_OCR_BUCKET.get(normalize_script(script), "chinese")
 
 
 def get_lang_code_for_script(script: str) -> str:
-    """Resolve a detected OSD script label to a language code, defaulting to 'en'."""
-    return SCRIPT_TO_LANG_CODE.get(normalize_script(script), "en")
+    """Resolve a detected OSD script label to a language code, defaulting to 'zh'."""
+    return SCRIPT_TO_LANG_CODE.get(normalize_script(script), "zh")
 
 
 def get_source_language_for_script(script: str) -> str:

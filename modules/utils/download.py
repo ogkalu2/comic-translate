@@ -74,6 +74,7 @@ class ModelID(Enum):
     PPOCR_V5_REC_MOBILE = "ppocr-v5-rec-ch-mobile"
     PPOCR_V5_REC_SERVER = "ppocr-v5-rec-ch-server"
     PPOCR_V5_REC_MOBILE_TORCH = "ppocr-v5-rec-ch-mobile-torch"
+    PPOCR_V6_REC_SMALL = "ppocr-v6-rec-ch-small"
     
     # PPOCRv5 Recognition Models - Other Languages
     PPOCR_V5_REC_EN_MOBILE = "ppocr-v5-rec-en-mobile"
@@ -510,6 +511,17 @@ def _register_defaults():
         files=['ch_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_dict.txt'],
         sha256=['5825fc7ebf84ae7a412be049820b4d86d77620f204a041697b0494669b1742c5', 'd1979e9f794c464c0d2e0b70a7fe14dd978e9dc644c0e71f14158cdf8342af1b'],
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
+    ))
+
+    ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V6_REC_SMALL,
+        url='https://huggingface.co/ogkalu/ppocr-v6-onnx/resolve/main/',
+        files=['PP-OCRv6_small_rec.onnx', 'PP-OCRv6_small_rec.txt'],
+        sha256=[
+            '5435fd747c9e0efe15a96d0b378d5bd157e9492ed8fd80edf08f30d02fa24634',
+            'b5f2bfe2bdd9448429e3e82b51c789775d9b42f2403d082b00662eb77e401c5d',
+        ],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v6-onnx')
     ))
 
     ModelDownloader.register(ModelSpec(

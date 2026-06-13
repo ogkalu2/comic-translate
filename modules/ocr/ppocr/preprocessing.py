@@ -4,6 +4,13 @@ import numpy as np
 import imkit as imk
 
 
+def _to_bgr(img: np.ndarray) -> np.ndarray:
+	"""Convert the app's default RGB numpy images to BGR for PaddleOCR models."""
+	if img.ndim == 3 and img.shape[2] == 3:
+		return img[:, :, ::-1]
+	return img
+
+
 def resize_keep_stride(img: np.ndarray, limit_side_len: int = 960, limit_type: str = "min") -> np.ndarray:
 	"""Resize image so that min or max side meets threshold, snapping to multiple of 32.
 
@@ -35,7 +42,7 @@ def det_preprocess(img: np.ndarray, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5),
 				   limit_side_len: int = 960, limit_type: str = "min") -> np.ndarray:
 	"""Preprocess for DB detector: resize, normalize, CHW, NCHW float32."""
 	resized = resize_keep_stride(img, limit_side_len, limit_type)
-	x = resized.astype(np.float32) / 255.0
+	x = _to_bgr(resized).astype(np.float32) / 255.0
 	x = (x - np.array(mean, dtype=np.float32)) / np.array(std, dtype=np.float32)
 	x = x.transpose(2, 0, 1)
 	x = np.expand_dims(x, 0).astype(np.float32)
@@ -59,7 +66,7 @@ def rec_resize_norm(img: np.ndarray, img_shape=(3, 48, 320), max_wh_ratio: float
 	target_w = int(H * max_wh_ratio)
 	resized_w = min(target_w, int(np.ceil(H * ratio)))
 
-	resized = imk.resize(img, (resized_w, H))
+	resized = _to_bgr(imk.resize(img, (resized_w, H)))
 	x = resized.astype(np.float32) / 255.0
 	x = x.transpose(2, 0, 1)
 	x = (x - 0.5) / 0.5
