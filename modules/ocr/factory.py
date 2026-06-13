@@ -159,7 +159,7 @@ class OCRFactory:
             'Gemini-2.5-Flash-Lite': lambda s: cls._create_gemini_ocr(s, ocr_model),
         }
         
-        make_japanese = lambda s: cls._create_manga_ocr(s, effective_backend)
+        make_japanese = lambda s: cls._create_ppocr(s, 'ja', effective_backend)
         make_korean = lambda s: cls._create_ppocr(s, 'ko', effective_backend)
         make_chinese = lambda s: cls._create_ppocr(s, 'ch', effective_backend)
         make_cyrillic = lambda s: cls._create_ppocr(s, 'ru', effective_backend)

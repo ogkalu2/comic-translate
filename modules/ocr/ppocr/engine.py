@@ -4,7 +4,7 @@ from typing import Any, List, Tuple, Optional
 import numpy as np
 import onnxruntime as ort
 
-from ..base import OCREngine
+from modules.ocr.base import OCREngine
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import lists_to_blk_list
 from modules.utils.language_utils import is_no_space_lang
@@ -17,6 +17,7 @@ from .postprocessing import DBPostProcessor, CTCLabelDecoder
 
 LANG_TO_REC_MODEL: dict[str, ModelID] = {
 	'ch': ModelID.PPOCR_V6_REC_SMALL,
+	'ja': ModelID.PPOCR_V6_REC_SMALL,
 	'en': ModelID.PPOCR_V5_REC_EN_MOBILE,
 	'ko': ModelID.PPOCR_V5_REC_KOREAN_MOBILE,
 	'latin': ModelID.PPOCR_V5_REC_LATIN_MOBILE,
