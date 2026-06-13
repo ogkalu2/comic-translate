@@ -108,8 +108,7 @@ class BatchProcessor:
             source_lang = self.main_page.image_states[image_path]['source_lang']
             target_lang = self.main_page.image_states[image_path]['target_lang']
 
-            target_lang_en = self.main_page.lang_mapping.get(target_lang, None)
-            trg_lng_cd = get_language_code(target_lang_en)
+            trg_lng_cd = get_language_code(target_lang)
             
             base_name = os.path.splitext(os.path.basename(image_path))[0].strip()
             extension = os.path.splitext(image_path)[1]
@@ -150,8 +149,7 @@ class BatchProcessor:
             if self._is_cancelled():
                 return
 
-            source_lang_english = self.main_page.lang_mapping.get(source_lang, source_lang)
-            self.block_detection.annotate_language_if_auto(image, blk_list, source_lang_english)
+            self.block_detection.annotate_language_if_auto(image, blk_list, source_lang)
 
             if blk_list:
                 # Get ocr cache key for batch processing
@@ -164,7 +162,7 @@ class BatchProcessor:
                     self.ocr_handler.ocr.process(image, blk_list)
                     # Cache the OCR results for potential future use
                     self.cache_manager._cache_ocr_results(cache_key, self.main_page.blk_list)
-                    rtl = True if source_lang_english == 'Japanese' else False
+                    rtl = True if source_lang == 'Japanese' else False
                     blk_list = sort_blk_list(blk_list, rtl)
                     
                 except InsufficientCreditsException:

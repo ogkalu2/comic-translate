@@ -356,8 +356,7 @@ class FlowMixin:
                 self.main_page.lang_mapping,
             ),
         )
-        source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
-        rtl = source_lang_en == "Japanese"
+        rtl = source_lang == "Japanese"
         if blocks:
             blocks = sort_blk_list(blocks, rtl)
 
@@ -647,8 +646,7 @@ class FlowMixin:
                                 page_accum[patch_path]["patches"].append(patch)
 
                 final_blocks_virtual = regular_blocks + split_owned_blocks
-                source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
-                rtl = source_lang_en == "Japanese"
+                rtl = source_lang == "Japanese"
                 final_blocks_virtual = (
                     sort_blk_list(final_blocks_virtual, rtl) if final_blocks_virtual else []
                 )

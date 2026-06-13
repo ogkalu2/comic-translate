@@ -39,8 +39,7 @@ class RenderMixin:
 
         render_settings = self.main_page.render_settings()
         target_lang = page_state["target_lang"]
-        target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
-        target_lang_code = get_language_code(target_lang_en)
+        target_lang_code = get_language_code(target_lang)
 
         format_translations(
             blocks, target_lang_code, upper_case=render_settings.upper_case
@@ -81,8 +80,7 @@ class RenderMixin:
         direction = render_settings.direction
 
         target_lang = page_state["target_lang"]
-        target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
-        target_lang_code = get_language_code(target_lang_en)
+        target_lang_code = get_language_code(target_lang)
 
         virtual_img = SimpleNamespace(shape=image_shape)
         # Avoid clipping seam-owned overflow blocks (needed for page-spanning text).
