@@ -40,11 +40,46 @@ def annotate_blocks_with_heuristic_lines(
         crop = image[y1:y2, x1:x2]
         lines, direction = _detect_lines_and_direction_in_crop(crop, block_source_language)
         image_lines = [_offset_line(line, x1, y1) for line in lines]
+        if direction == "vertical":
+            image_lines = _align_vertical_lines_to_detector_block(image_lines, _to_box(block.xyxy))
 
         block.lines = _sort_lines(image_lines, direction)
         block.direction = direction
 
     return blocks
+
+def _align_vertical_lines_to_detector_block(
+    lines: list[list[int]],
+    block_box: list[int],
+) -> list[list[int]]:
+    if not lines:
+        return lines
+
+    _, block_top, _, block_bottom = [int(v) for v in block_box]
+    block_height = max(1, block_bottom - block_top)
+    vertical_count = len(lines)
+    aligned: list[list[int]] = []
+    for line in lines:
+        box = list(_line_axis_box(line))
+        if box[1] < block_top:
+            box[1] = block_top
+
+        line_height = max(1, box[3] - box[1])
+        top_gap = max(0, box[1] - block_top)
+        bottom_gap = max(0, block_bottom - box[3])
+        if line_height >= block_height * 0.65 and top_gap <= block_height * 0.25:
+            box[1] = block_top
+            top_gap = 0
+
+        if vertical_count <= 4 and line_height >= block_height * 0.40 and top_gap <= block_height * 0.12:
+            box[1] = block_top
+
+        if vertical_count <= 3 and line_height >= block_height * 0.70 and bottom_gap <= block_height * 0.20:
+            box[3] = block_bottom
+
+        aligned.append(box)
+
+    return aligned
 
 def _detect_lines_in_crop(image: np.ndarray, direction_hint: str | None) -> list[list[int]]:
     if direction_hint in {"horizontal", "vertical"}:
