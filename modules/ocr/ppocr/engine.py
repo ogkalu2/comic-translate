@@ -7,7 +7,7 @@ import onnxruntime as ort
 from modules.ocr.base import OCREngine
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import lists_to_blk_list
-from modules.utils.language_utils import is_no_space_lang
+from modules.utils.language_utils import is_no_space_lang, normalize_script
 from modules.utils.device import get_providers
 from modules.utils.download import ModelDownloader, ModelID
 from modules.utils.onnx import make_session
@@ -24,6 +24,9 @@ LANG_TO_REC_MODEL: dict[str, ModelID] = {
 	'ru': ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
 	'eslav': ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
 }
+
+JA_SMALL_LINE_THICKNESS_RATIO = 0.7
+JA_SMALL_LINE_AREA_RATIO = 0.75
 
 
 def _make_ppocr_session_options(threads: int = 4):
@@ -161,23 +164,32 @@ class PPOCRv5Engine(OCREngine):
 			# Batch all blocks' line crops together so width-bucketing happens
 			# across the whole page, not once per block (fewer ORT calls).
 			block_crops: list[list[np.ndarray]] = []
+			block_lines: list[list[Any]] = []
 			all_crops: list[np.ndarray] = []
 			for blk in blk_list:
 				lines = getattr(blk, 'lines', None) or [blk.xyxy]
 				crops = [_crop_line(img, line) for line in lines]
-				crops = [crop for crop in crops if crop is not None and crop.size > 0]
+				valid_lines: list[Any] = []
+				valid_crops: list[np.ndarray] = []
+				for line, crop in zip(lines, crops):
+					if crop is None or crop.size == 0:
+						continue
+					valid_lines.append(line)
+					valid_crops.append(crop)
+				crops = valid_crops
 				block_crops.append(crops)
+				block_lines.append(valid_lines)
 				all_crops.extend(crops)
 
 			all_texts, _ = self._rec_infer(all_crops)
 
 			offset = 0
-			for blk, crops in zip(blk_list, block_crops):
+			for blk, lines, crops in zip(blk_list, block_lines, block_crops):
 				texts = all_texts[offset:offset + len(crops)]
 				offset += len(crops)
-				texts = [text.strip() for text in texts if text and text.strip()]
-				blk.texts = texts
-				blk.text = ''.join(texts) if is_no_space_lang(getattr(blk, 'source_lang', '')) else ' '.join(texts)
+				texts = [text.strip() if text else "" for text in texts]
+				blk.texts, blk.skipped_small_texts = _split_japanese_small_line_texts(blk, lines, texts)
+				blk.text = ''.join(blk.texts) if is_no_space_lang(getattr(blk, 'source_lang', '')) else ' '.join(blk.texts)
 			return blk_list
 		boxes, _ = self._det_infer(img)
 		if boxes is None or len(boxes) == 0:
@@ -219,4 +231,95 @@ def _rec_target_width(img: np.ndarray, img_shape=(3, 48, 320)) -> int:
 	h, w = img.shape[:2]
 	ratio = w / float(max(1, h))
 	return max(W, int(np.ceil(H * ratio)))
+
+
+def _split_japanese_small_line_texts(
+	blk: TextBlock,
+	lines: List[Any],
+	texts: List[str],
+) -> tuple[list[str], list[dict[str, Any]]]:
+	cleaned = [text.strip() for text in texts if text and text.strip()]
+	if not _should_filter_japanese_small_lines(blk, texts):
+		return cleaned, []
+	if len(lines) < 2 or len(lines) != len(texts):
+		return cleaned, []
+
+	line_infos: list[dict[str, Any]] = []
+	for index, (line, text) in enumerate(zip(lines, texts)):
+		box = _line_axis_box(line)
+		if box is None:
+			continue
+		x1, y1, x2, y2 = box
+		width = max(1.0, float(x2 - x1))
+		height = max(1.0, float(y2 - y1))
+		line_infos.append(
+			{
+				"line_index": index,
+				"line": line,
+				"text": (text or "").strip(),
+				"width": width,
+				"height": height,
+				"area": width * height,
+			}
+		)
+
+	if len(line_infos) < 2:
+		return cleaned, []
+
+	direction = (getattr(blk, "direction", "") or "").strip().lower()
+	use_width_as_thickness = direction == "vertical"
+	median_thickness = float(
+		np.median([info["width"] if use_width_as_thickness else info["height"] for info in line_infos])
+	)
+	median_area = float(np.median([info["area"] for info in line_infos]))
+	kept_infos: list[dict[str, Any]] = []
+	skipped_infos: list[dict[str, Any]] = []
+
+	for info in line_infos:
+		thickness = info["width"] if use_width_as_thickness else info["height"]
+		thickness_ratio = thickness / max(1.0, median_thickness)
+		area_ratio = info["area"] / max(1.0, median_area)
+		info["thickness_ratio_to_block_median"] = thickness_ratio
+		info["height_ratio_to_block_median"] = info["height"] / max(1.0, float(np.median([entry["height"] for entry in line_infos])))
+		info["width_ratio_to_block_median"] = info["width"] / max(1.0, float(np.median([entry["width"] for entry in line_infos])))
+		info["area_ratio_to_block_median"] = area_ratio
+		is_small = (
+			thickness_ratio < JA_SMALL_LINE_THICKNESS_RATIO
+			and area_ratio < JA_SMALL_LINE_AREA_RATIO
+		)
+		if is_small:
+			skipped_infos.append(info)
+		else:
+			kept_infos.append(info)
+
+	if not kept_infos:
+		return cleaned, []
+
+	kept_texts = [info["text"] for info in kept_infos if info["text"]]
+	skipped_texts = [info for info in skipped_infos if info["text"]]
+	return kept_texts, skipped_texts
+
+
+def _line_axis_box(line: Any) -> tuple[int, int, int, int] | None:
+	arr = np.asarray(line)
+	if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
+		xs = arr[:, 0]
+		ys = arr[:, 1]
+		return int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
+	if arr.size != 4:
+		return None
+	x1, y1, x2, y2 = [int(round(float(v))) for v in arr.reshape(-1)[:4]]
+	return x1, y1, x2, y2
+
+
+def _is_japanese_source_lang(lang_code: str | None) -> bool:
+	return (lang_code or "").strip().lower().startswith("ja")
+
+
+def _should_filter_japanese_small_lines(blk: TextBlock, texts: List[str]) -> bool:
+	if _is_japanese_source_lang(getattr(blk, "source_lang", "")):
+		return True
+	if normalize_script(getattr(blk, "script", "")) == "Japanese":
+		return True
+	return False
 

@@ -20,6 +20,7 @@ class TextBlock(object):
                  angle = 0,
                  text: str = "",
                  texts: List[str] = None,
+                 skipped_small_texts: List[dict] = None,
                  translation: str = "",
                  line_spacing = 1,
                  alignment: str = '',
@@ -41,6 +42,7 @@ class TextBlock(object):
  
         self.lines = lines
         self.texts = texts if texts is not None else []
+        self.skipped_small_texts = skipped_small_texts if skipped_small_texts is not None else []
         self.text = ' '.join(self.texts) if self.texts else text
         self.translation = translation
 
@@ -94,6 +96,7 @@ class TextBlock(object):
         new_block.tr_origin_point = copy.deepcopy(self.tr_origin_point)
         new_block.lines = copy.deepcopy(self.lines)
         new_block.texts = copy.deepcopy(self.texts)
+        new_block.skipped_small_texts = copy.deepcopy(self.skipped_small_texts)
         new_block.text = self.text
         new_block.translation = self.translation
         new_block.line_spacing = self.line_spacing
@@ -104,6 +107,7 @@ class TextBlock(object):
         new_block.min_font_size = self.min_font_size
         new_block.max_font_size = self.max_font_size
         new_block.font_color = self.font_color
+        new_block.direction = self.direction
         
         return new_block
 
