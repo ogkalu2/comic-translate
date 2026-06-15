@@ -96,7 +96,7 @@ class MIGAN(TorchAutocastMixin, InpaintModel):
         return: BGR IMAGE
         """
 
-        backend = getattr(self, 'backend', 'torch')
+        backend = getattr(self, 'backend', 'onnx')
         if backend == 'onnx' and getattr(self, 'use_pipeline', False):
             # Pipeline model expects uint8 RGB image and uint8 grayscale mask
             # Convert mask to binary (255 for known, 0 for masked)

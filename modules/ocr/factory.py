@@ -256,7 +256,7 @@ class OCRFactory:
         device = resolve_device(settings.is_gpu_enabled(), backend)
         if backend.lower() == 'torch' and torch_available():
             from .ppocr.torch.engine import PPOCRv5TorchEngine
-            device = resolve_device(settings.is_gpu_enabled(), 'torch')
+            device = resolve_device(settings.is_gpu_enabled(), 'onnx')
             engine = PPOCRv5TorchEngine()
             engine.initialize(lang=lang, device=device, use_text_lines=True)
         else:

@@ -57,7 +57,7 @@ class LaMa(TorchAutocastMixin, InpaintModel):
         mask_n = norm_img(mask)
         # mask_n = (mask_n > 0) * 1
         mask_n = (mask_n > 0).astype('float32')
-        backend = getattr(self, 'backend', 'torch')
+        backend = getattr(self, 'backend', 'onnx')
         if backend == 'onnx':
             image_tensor = image_n[np.newaxis, ...]
             mask_tensor = mask_n[np.newaxis, ...]
