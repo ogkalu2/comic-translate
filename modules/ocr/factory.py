@@ -166,28 +166,35 @@ class OCRFactory:
         make_latin = lambda s: cls._create_ppocr(s, 'latin', effective_backend)
         make_english = lambda s: cls._create_ppocr(s, 'en', effective_backend)
 
-        # Language-specific factory functions (for Default model)
-        language_factories = {
-            'Japanese': make_japanese,
-            # 'Korean': lambda s: cls._create_pororo_ocr(s, effective_backend),
-            'Korean': make_korean,
-            'Chinese': make_chinese,
-            'Russian': make_cyrillic,
-            'French': make_latin,
-            'English': make_english,
-            'Spanish': make_latin,
-            'Italian': make_latin,
-            'German': make_latin,
-            'Dutch': make_latin,
-
-            # Script buckets used when source language is "Auto". 
+        # Script-bucket factories (also used directly when source language is "Auto").
+        script_factories = {
             'latin': make_latin,
             'cyrillic': make_cyrillic,
             'japanese': make_japanese,
             'korean': make_korean,
             'chinese': make_chinese,
         }
-        
+
+        # Explicit language names (for Default model) that map 1:1 onto a script bucket.
+        language_to_bucket = {
+            'Japanese': 'japanese',
+            'Korean': 'korean',
+            'Chinese': 'chinese',
+            'Russian': 'cyrillic',
+            'French': 'latin',
+            'Spanish': 'latin',
+            'Italian': 'latin',
+            'German': 'latin',
+            'Dutch': 'latin',
+        }
+
+        # Language-specific factory functions (for Default model)
+        language_factories = {
+            **script_factories,
+            **{lang: script_factories[bucket] for lang, bucket in language_to_bucket.items()},
+            'English': make_english,
+        }
+
         # Check if we have a specific model factory
         if ocr_model in general:
             return general[ocr_model](settings)
