@@ -6,6 +6,14 @@ from modules.utils.language_utils import language_codes, \
     get_lang_code_for_script, get_ocr_bucket_for_script, \
     get_dominant_page_script, is_supported_script, normalize_script
 from .factory import OCRFactory
+_MANGA_OCR_CLASS_NAMES = {"MangaOCRMobileONNXEngine", "MangaOCREngine", "MangaOCREngineONNX"}
+
+
+def _should_override_to_ppocr(blk: TextBlock, image_width: int, image_height: int) -> bool:
+    if blk.text_class != "text_free" or blk.xyxy is None:
+        return False
+    x1, y1, x2, y2 = blk.xyxy[:4]
+    return (y2 - y1) / image_height > 0.30 or (x2 - x1) / image_width > 0.50
 
 
 class OCRProcessor:
@@ -57,7 +65,7 @@ class OCRProcessor:
             return self._process_auto(img, blk_list)
 
         engine = OCRFactory.create_engine(self.settings, self.source_lang_english, self.ocr_key)
-        return engine.process_image(img, blk_list)
+        return self._dispatch_with_override(img, blk_list, engine)
 
     def _process_auto(self, img: np.ndarray, blk_list: list[TextBlock]) -> list[TextBlock]:
         """Route each block to an OCR engine using block script plus a page-level fallback."""
@@ -70,7 +78,7 @@ class OCRProcessor:
 
         for bucket, blks in groups.items():
             engine = OCRFactory.create_engine(self.settings, bucket, self.ocr_key)
-            engine.process_image(img, blks)
+            self._dispatch_with_override(img, blks, engine)
 
         return blk_list
 
@@ -85,6 +93,27 @@ class OCRProcessor:
         source_lang_code = language_codes.get(self.source_lang_english, 'en')
         for blk in blk_list:
             blk.source_lang = source_lang_code
+
+    def _dispatch_with_override(self, img: np.ndarray, blk_list: list[TextBlock], engine) -> list[TextBlock]:
+        if type(engine).__name__ not in _MANGA_OCR_CLASS_NAMES:
+            return engine.process_image(img, blk_list)
+
+        h, w = img.shape[:2]
+        override = []
+        normal = []
+        for blk in blk_list:
+            if _should_override_to_ppocr(blk, w, h):
+                override.append(blk)
+            else:
+                normal.append(blk)
+
+        if override:
+            ppocr_engine = OCRFactory._create_ppocr(self.settings, 'ja')
+            ppocr_engine.process_image(img, override)
+        if normal:
+            engine.process_image(img, normal)
+
+        return blk_list
 
     def _resolve_auto_script(self, blk: TextBlock, dominant_script: str) -> str:
         script = normalize_script(getattr(blk, 'script', ''))
