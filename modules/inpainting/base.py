@@ -82,7 +82,7 @@ class InpaintModel:
         return: BGR IMAGE
         """
         # Only import torch if we're using a torch backend; otherwise avoid dependency
-        backend = getattr(self, 'backend', 'torch')
+        backend = getattr(self, 'backend', 'onnx')
         if backend == 'onnx':
             no_grad_ctx = nullcontext()
         else:
@@ -272,7 +272,7 @@ class DiffusionInpaintModel(InpaintModel):
         masks: [H, W]
         return: BGR IMAGE
         """
-        backend = getattr(self, 'backend', 'torch')
+        backend = getattr(self, 'backend', 'onnx')
         if backend == 'onnx':
             no_grad_ctx = nullcontext()
         else:

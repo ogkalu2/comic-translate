@@ -74,6 +74,7 @@ class ModelID(Enum):
     PPOCR_V5_REC_MOBILE = "ppocr-v5-rec-ch-mobile"
     PPOCR_V5_REC_SERVER = "ppocr-v5-rec-ch-server"
     PPOCR_V5_REC_MOBILE_TORCH = "ppocr-v5-rec-ch-mobile-torch"
+    PPOCR_V6_REC_SMALL = "ppocr-v6-rec-ch-small"
     
     # PPOCRv5 Recognition Models - Other Languages
     PPOCR_V5_REC_EN_MOBILE = "ppocr-v5-rec-en-mobile"
@@ -90,9 +91,8 @@ class ModelID(Enum):
     # PPOCRv4 Classifier
     PPOCR_V4_CLS = "ppocr-v4-cls"
 
-    # Font Detection
-    FONT_DETECTOR_ONNX = "font-detector-onnx"
-    FONT_DETECTOR_TORCH = "font-detector-torch"
+    # Script (OSD) Detection
+    OSD_SCRIPT_DETECTOR_ONNX = "osd-script-detector-onnx"
 
 
 @dataclass(frozen=True)
@@ -510,6 +510,17 @@ def _register_defaults():
     ))
 
     ModelDownloader.register(ModelSpec(
+        id=ModelID.PPOCR_V6_REC_SMALL,
+        url='https://huggingface.co/ogkalu/ppocr-v6-onnx/resolve/main/',
+        files=['PP-OCRv6_small_rec.onnx', 'PP-OCRv6_small_rec.txt'],
+        sha256=[
+            '5435fd747c9e0efe15a96d0b378d5bd157e9492ed8fd80edf08f30d02fa24634',
+            'b5f2bfe2bdd9448429e3e82b51c789775d9b42f2403d082b00662eb77e401c5d',
+        ],
+        save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v6-onnx')
+    ))
+
+    ModelDownloader.register(ModelSpec(
         id=ModelID.PPOCR_V5_REC_MOBILE_TORCH,
         url='https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.8.0/torch/PP-OCRv5/rec/',
         files=['ch_PP-OCRv5_rec_mobile.pth', 'ppocrv5_dict.txt'],
@@ -621,22 +632,16 @@ def _register_defaults():
         save_dir=os.path.join(models_base_dir, 'ocr', 'ppocr-v5-onnx')
     ))
 
-    # Font Detection
+    # Script (OSD) Detection: Tesseract OSD LSTM model ported to ONNX
     ModelDownloader.register(ModelSpec(
-        id=ModelID.FONT_DETECTOR_ONNX,
-        url='https://huggingface.co/ogkalu/yuzumarker-font-detection-onnx/resolve/main/',
-        files=['font-detector.onnx'],
-        sha256=['99dd351e94f06e31397113602ae000a24c1d38ad76275066e844a0c836f75d4f'],
-        save_dir=os.path.join(models_base_dir, 'detection', 'font')
-    ))
-
-    ModelDownloader.register(ModelSpec(
-        id=ModelID.FONT_DETECTOR_TORCH,
-        url='https://huggingface.co/gyrojeff/YuzuMarker.FontDetection/resolve/main/',
-        files=['name%3D4x-epoch%3D84-step%3D1649340.ckpt'],
-        sha256=['9053615071c31978a3988143c9a3bdec8da53e269a8f84b5908d6f15747a1a81'],
-        save_dir=os.path.join(models_base_dir, 'detection', 'font'),
-        save_as={'name%3D4x-epoch%3D84-step%3D1649340.ckpt': 'font-detector.ckpt'}
+        id=ModelID.OSD_SCRIPT_DETECTOR_ONNX,
+        url='https://huggingface.co/ogkalu/image-script-identification/resolve/main/',
+        files=['osd_lstm.onnx', 'osd_labels.json'],
+        sha256=[
+            'b18e0c1479d9eb67394993098f7e1079c9a93ef6f7b0416ee333fccb865c6e72',
+            'a1888156b005065039c356e13a7bbef1ec454b45bf6aaf18c11f4a59b1ee35c5',
+        ],
+        save_dir=os.path.join(models_base_dir, 'detection', 'script_id')
     ))
 
 _register_defaults()

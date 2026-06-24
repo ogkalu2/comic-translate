@@ -16,6 +16,7 @@ from modules.utils.exceptions import InsufficientCreditsException
 from modules.utils.image_utils import generate_mask
 from modules.utils.pipeline_config import get_config, get_inpainter_backend, inpaint_map
 from modules.utils.textblock import TextBlock, sort_blk_list
+from modules.utils.translator_utils import is_renderable_translation
 from pipeline.inpainting import call_inpaint_image
 
 if TYPE_CHECKING:
@@ -117,11 +118,13 @@ class ChunkMixin:
         if not blocks:
             return blocks
 
+        source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
+        self.block_detection.annotate_language_if_auto(image, blocks, source_lang_en)
+
         self.ocr_handler.ocr.initialize(self.main_page, source_lang)
         try:
             self.ocr_handler.ocr.process(image, blocks)
             if sort_after:
-                source_lang_en = self.main_page.lang_mapping.get(source_lang, source_lang)
                 rtl = source_lang_en == "Japanese"
                 return sort_blk_list(blocks, rtl)
             return blocks
@@ -174,6 +177,7 @@ class ChunkMixin:
                 or not mask_block.text.strip()
                 or not getattr(mask_block, "translation", "")
                 or not mask_block.translation.strip()
+                or not is_renderable_translation(mask_block.translation)
             ):
                 continue
             x1, y1, x2, y2 = [float(v) for v in mask_block.xyxy]

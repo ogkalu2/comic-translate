@@ -16,7 +16,7 @@ from modules.rendering.render import get_best_render_area, is_vertical_block, py
 from modules.utils.image_utils import get_smart_text_color
 from modules.utils.language_utils import get_language_code, is_no_space_lang
 from modules.utils.textblock import TextBlock
-from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation
+from modules.utils.translator_utils import format_translations, get_raw_text, get_raw_translation, is_renderable_translation
 
 if TYPE_CHECKING:
     from .processor import WebtoonBatchProcessor
@@ -39,8 +39,7 @@ class RenderMixin:
 
         render_settings = self.main_page.render_settings()
         target_lang = page_state["target_lang"]
-        target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
-        target_lang_code = get_language_code(target_lang_en)
+        target_lang_code = get_language_code(target_lang)
 
         format_translations(
             blocks, target_lang_code, upper_case=render_settings.upper_case
@@ -81,8 +80,7 @@ class RenderMixin:
         direction = render_settings.direction
 
         target_lang = page_state["target_lang"]
-        target_lang_en = self.main_page.lang_mapping.get(target_lang, target_lang)
-        target_lang_code = get_language_code(target_lang_en)
+        target_lang_code = get_language_code(target_lang)
 
         virtual_img = SimpleNamespace(shape=image_shape)
         # Avoid clipping seam-owned overflow blocks (needed for page-spanning text).
@@ -106,7 +104,7 @@ class RenderMixin:
             height = max(1.0, y2 - y1)
 
             translation = block.translation
-            if not translation:
+            if not is_renderable_translation(translation):
                 continue
 
             vertical = is_vertical_block(block, target_lang_code)

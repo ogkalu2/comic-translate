@@ -20,11 +20,13 @@ class TextBlock(object):
                  angle = 0,
                  text: str = "",
                  texts: List[str] = None,
+                 skipped_small_texts: List[dict] = None,
                  translation: str = "",
                  line_spacing = 1,
                  alignment: str = '',
                  source_lang: str = "",
                  target_lang: str = "",
+                 script: str = "",
                  min_font_size: int = 0,
                  max_font_size: int = 0,
                  font_color: str|tuple = (),
@@ -40,6 +42,7 @@ class TextBlock(object):
  
         self.lines = lines
         self.texts = texts if texts is not None else []
+        self.skipped_small_texts = skipped_small_texts if skipped_small_texts is not None else []
         self.text = ' '.join(self.texts) if self.texts else text
         self.translation = translation
 
@@ -48,6 +51,7 @@ class TextBlock(object):
         
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.script = script
 
         self.min_font_size = min_font_size
         self.max_font_size = max_font_size
@@ -92,15 +96,18 @@ class TextBlock(object):
         new_block.tr_origin_point = copy.deepcopy(self.tr_origin_point)
         new_block.lines = copy.deepcopy(self.lines)
         new_block.texts = copy.deepcopy(self.texts)
+        new_block.skipped_small_texts = copy.deepcopy(self.skipped_small_texts)
         new_block.text = self.text
         new_block.translation = self.translation
         new_block.line_spacing = self.line_spacing
         new_block.alignment = self.alignment
         new_block.source_lang = self.source_lang
         new_block.target_lang = self.target_lang
+        new_block.script = self.script
         new_block.min_font_size = self.min_font_size
         new_block.max_font_size = self.max_font_size
         new_block.font_color = self.font_color
+        new_block.direction = self.direction
         
         return new_block
 

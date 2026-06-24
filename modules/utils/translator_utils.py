@@ -84,3 +84,16 @@ def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: 
 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
+
+def is_renderable_translation(translation: str | None) -> bool:
+    """True if the render stage should draw this translation.
+
+    Punctuation-only translations (an echoed "?", "!?", "...") aren't worth
+    redrawing — the original artwork already shows the same thing. Anything
+    gated on rendering (like inpainting) must skip them too, otherwise the
+    bubble gets cleaned with nothing drawn over it. Unlike a length check,
+    this keeps legitimate single-character translations (e.g. "何", "5").
+    """
+    if not translation:
+        return False
+    return any(ch.isalnum() for ch in translation)

@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 from modules.translation.processor import Translator
 from modules.utils.translator_utils import set_upper_case
+from modules.utils.language_utils import to_canonical_language_name
 from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_original_block_coordinates
 from .cache_manager import CacheManager
 
@@ -29,8 +30,14 @@ class TranslationHandler:
         self.pipeline = pipeline
 
     def translate_image(self, single_block=False):
-        source_lang = self.main_page.s_combo.currentText()
-        target_lang = self.main_page.t_combo.currentText()
+        source_lang = to_canonical_language_name(
+            self.main_page.s_combo.currentText(),
+            self.main_page.lang_mapping,
+        )
+        target_lang = to_canonical_language_name(
+            self.main_page.t_combo.currentText(),
+            self.main_page.lang_mapping,
+        )
         if self.main_page.image_viewer.hasPhoto() and self.main_page.blk_list:
             settings_page = self.main_page.settings_page
             image = self.main_page.image_viewer.get_image_array()
@@ -111,8 +118,14 @@ class TranslationHandler:
 
     def translate_webtoon_visible_area(self, single_block=False):
         """Perform translation on the visible area in webtoon mode."""
-        source_lang = self.main_page.s_combo.currentText()
-        target_lang = self.main_page.t_combo.currentText()
+        source_lang = to_canonical_language_name(
+            self.main_page.s_combo.currentText(),
+            self.main_page.lang_mapping,
+        )
+        target_lang = to_canonical_language_name(
+            self.main_page.t_combo.currentText(),
+            self.main_page.lang_mapping,
+        )
         
         if not (self.main_page.image_viewer.hasPhoto() and 
                 self.main_page.webtoon_mode):

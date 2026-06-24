@@ -81,7 +81,7 @@ class AOT(TorchAutocastMixin, InpaintModel):
             image = resize_keep_aspect(image, self.max_size)
             mask = resize_keep_aspect(mask, self.max_size)
             
-        backend = getattr(self, 'backend', 'torch')
+        backend = getattr(self, 'backend', 'onnx')
         if backend == 'onnx':
             # Pure numpy preprocessing
             img_np = (image.astype(np.float32) / 127.5) - 1.0  # HWC -> later CHW

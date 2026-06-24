@@ -159,21 +159,42 @@ class OCRFactory:
             'Gemini-2.5-Flash-Lite': lambda s: cls._create_gemini_ocr(s, ocr_model),
         }
         
+        make_japanese = lambda s: cls._create_manga_ocr(s, effective_backend)
+        make_korean = lambda s: cls._create_ppocr(s, 'ko', effective_backend)
+        make_chinese = lambda s: cls._create_ppocr(s, 'ch', effective_backend)
+        make_cyrillic = lambda s: cls._create_ppocr(s, 'ru', effective_backend)
+        make_latin = lambda s: cls._create_ppocr(s, 'latin', effective_backend)
+        make_english = lambda s: cls._create_ppocr(s, 'en', effective_backend)
+
+        # Script-bucket factories (also used directly when source language is "Auto").
+        script_factories = {
+            'latin': make_latin,
+            'cyrillic': make_cyrillic,
+            'japanese': make_japanese,
+            'korean': make_korean,
+            'chinese': make_chinese,
+        }
+
+        # Explicit language names (for Default model) that map 1:1 onto a script bucket.
+        language_to_bucket = {
+            'Japanese': 'japanese',
+            'Korean': 'korean',
+            'Chinese': 'chinese',
+            'Russian': 'cyrillic',
+            'French': 'latin',
+            'Spanish': 'latin',
+            'Italian': 'latin',
+            'German': 'latin',
+            'Dutch': 'latin',
+        }
+
         # Language-specific factory functions (for Default model)
         language_factories = {
-            'Japanese': lambda s: cls._create_manga_ocr(s, effective_backend),
-            # 'Korean': lambda s: cls._create_pororo_ocr(s, effective_backend),
-            'Korean': lambda s: cls._create_ppocr(s, 'ko', effective_backend),
-            'Chinese': lambda s: cls._create_ppocr(s, 'ch', effective_backend),
-            'Russian': lambda s: cls._create_ppocr(s, 'ru', effective_backend),
-            'French': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'English': lambda s: cls._create_ppocr(s, 'en', effective_backend),
-            'Spanish': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'Italian': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'German': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
-            'Dutch': lambda s: cls._create_ppocr(s, 'latin', effective_backend),
+            **script_factories,
+            **{lang: script_factories[bucket] for lang, bucket in language_to_bucket.items()},
+            'English': make_english,
         }
-        
+
         # Check if we have a specific model factory
         if ocr_model in general:
             return general[ocr_model](settings)
@@ -242,7 +263,7 @@ class OCRFactory:
         device = resolve_device(settings.is_gpu_enabled(), backend)
         if backend.lower() == 'torch' and torch_available():
             from .ppocr.torch.engine import PPOCRv5TorchEngine
-            device = resolve_device(settings.is_gpu_enabled(), 'torch')
+            device = resolve_device(settings.is_gpu_enabled(), 'onnx')
             engine = PPOCRv5TorchEngine()
             engine.initialize(lang=lang, device=device, use_text_lines=True)
         else:

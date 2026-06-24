@@ -30,6 +30,7 @@ from app.projects.project_state import (
 )
 from modules.utils.archives import make
 from modules.utils.paths import get_user_data_dir, get_default_project_autosave_dir
+from modules.utils.language_utils import to_canonical_language_name
 
 logger = logging.getLogger(__name__)
 
@@ -1274,6 +1275,18 @@ class ProjectController:
         save_state_to_proj_file(self.main, file_name)
 
     def update_ui_from_project(self):
+        for state in self.main.image_states.values():
+            if not isinstance(state, dict):
+                continue
+            state["source_lang"] = to_canonical_language_name(
+                state.get("source_lang", "Auto"),
+                self.main.lang_mapping,
+            )
+            state["target_lang"] = to_canonical_language_name(
+                state.get("target_lang", "English"),
+                self.main.lang_mapping,
+            )
+
         self.main.batch_report_ctrl.refresh_button_state()
         if not self.main.image_files:
             self.main.curr_img_idx = -1
@@ -1413,11 +1426,11 @@ class ProjectController:
         settings.beginGroup("main_page")
 
         # Load languages and convert back to current language
-        source_lang = settings.value("source_language", "Korean")
+        source_lang = settings.value("source_language", "Auto")
         target_lang = settings.value("target_language", "English")
 
         # Use reverse mapping to get the translated language names
-        self.main.s_combo.setCurrentText(self.main.reverse_lang_mapping.get(source_lang, self.main.tr("Korean")))
+        self.main.s_combo.setCurrentText(self.main.reverse_lang_mapping.get(source_lang, self.main.tr("Auto")))
         self.main.t_combo.setCurrentText(self.main.reverse_lang_mapping.get(target_lang, self.main.tr("English")))
 
         mode = settings.value("mode", "manual")

@@ -8,6 +8,7 @@ from .base import OCREngine
 from ..utils.textblock import TextBlock 
 from ..utils.textblock import lists_to_blk_list
 from ..utils.textblock import adjust_text_line_coordinates
+from ..utils.language_utils import resolve_auto_source_language
 
 from app.account.auth.auth_client import AuthClient
 from app.account.auth.token_storage import get_token
@@ -152,6 +153,7 @@ class UserOCR(OCREngine):
             "X-Client-OS": client_os
         }
         llm_options = self._get_llm_options()
+        api_source_language = resolve_auto_source_language(blk_list, self.source_lang_english)
 
         # 1. Prepare Validation & Coordinates
         valid_indices = []
@@ -199,7 +201,7 @@ class UserOCR(OCREngine):
             "ocr_name": self.ocr_key,
             "image_base64": img_b64,
             "llm_options": llm_options,
-            "source_language": self.source_lang_english,
+            "source_language": api_source_language,
             "coordinates": coordinates  # New field for batch processing
         }
 
@@ -309,12 +311,13 @@ class UserOCR(OCREngine):
             logger.error("UserOCR: Failed to encode the full image.")
             return blk_list
         after_encode_t = time.perf_counter()
+        api_source_language = resolve_auto_source_language(blk_list, self.source_lang_english)
 
         # Prepare Payload
         payload = {
             "ocr_name": self.ocr_key,
             "image_base64": img_b64,
-            "source_language": self.source_lang_english 
+            "source_language": api_source_language 
         }
 
         # Single API call for the whole page
