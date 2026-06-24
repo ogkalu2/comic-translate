@@ -68,24 +68,25 @@ class PatchManager:
                 prop['page_index'] = page_idx
                 
                 # Check if this patch item already exists in the scene to avoid duplicates
-                if not PatchCommandBase.find_matching_item(self._scene, prop):
+                patch_item = PatchCommandBase.find_matching_item(self._scene, prop)
+                if patch_item is None:
                     # Create and position the patch item using scene coordinates
                     patch_item = PatchCommandBase.create_patch_item(prop, self.viewer)
-                    if patch_item:
-                        self.loaded_patch_items[page_idx].append(patch_item)
-                        # Also add to in-memory patches if not already there
-                        mem_list = self.main_controller.in_memory_patches.setdefault(file_path, [])
-                        if not any(p['hash'] == prop['hash'] for p in mem_list):
-                            # Load image for in-memory storage
-                            ensure_path_materialized(patch_data['png_path'])
-                            cv_img = imk.read_image(patch_data['png_path'])
-                            if cv_img is not None:
-                                mem_prop = {
-                                    'bbox': patch_data['bbox'],
-                                    'image': cv_img,
-                                    'hash': patch_data['hash']
-                                }
-                                mem_list.append(mem_prop)
+                if patch_item:
+                    self.loaded_patch_items[page_idx].append(patch_item)
+                    # Also add to in-memory patches if not already there
+                    mem_list = self.main_controller.in_memory_patches.setdefault(file_path, [])
+                    if not any(p['hash'] == prop['hash'] for p in mem_list):
+                        # Load image for in-memory storage
+                        ensure_path_materialized(patch_data['png_path'])
+                        cv_img = imk.read_image(patch_data['png_path'])
+                        if cv_img is not None:
+                            mem_prop = {
+                                'bbox': patch_data['bbox'],
+                                'image': cv_img,
+                                'hash': patch_data['hash']
+                            }
+                            mem_list.append(mem_prop)
     
     def unload_patches(self, page_idx: int):
         """Unload inpaint patches for a specific page."""

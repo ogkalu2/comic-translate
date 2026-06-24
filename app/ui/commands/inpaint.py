@@ -103,8 +103,25 @@ class PatchInsertCommand(QUndoCommand, PatchCommandBase):
         
         # add new patch items
         for prop in self.properties_list:
-            if not self.find_matching_item(self.scene, prop):
-                self.create_patch_item(prop, self.viewer)
+            item = self.find_matching_item(self.scene, prop)
+            if item is None:
+                item = self.create_patch_item(prop, self.viewer)
+            if item is not None:
+                self._register_with_webtoon_patch_manager(item, prop)
+
+    def _register_with_webtoon_patch_manager(self, item, prop):
+        if not getattr(self.viewer, 'webtoon_mode', False):
+            return
+        page_idx = prop.get('page_index')
+        if page_idx is None:
+            return
+        manager = getattr(getattr(self.viewer, 'webtoon_manager', None), 'scene_item_manager', None)
+        patch_manager = getattr(manager, 'patch_manager', None) if manager is not None else None
+        if patch_manager is None:
+            return
+        page_items = patch_manager.loaded_patch_items.setdefault(page_idx, [])
+        if item not in page_items:
+            page_items.append(item)
 
     def _remove_pixmaps(self):
         # only remove when display=True
