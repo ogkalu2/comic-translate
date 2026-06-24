@@ -377,6 +377,23 @@ class InpaintingHandler:
         ]
         selected = max(bright_candidates, key=lambda item: item["count"]) if bright_candidates else largest
 
+        # Check if the selected color dominates the background region, ignoring dark outlines/borders for light bubbles
+        selected_brightness = selected["brightness"]
+        if selected_brightness >= 80.0:
+            pixel_brightness = 0.299 * pixels[:, 2] + 0.587 * pixels[:, 1] + 0.114 * pixels[:, 0]
+            valid_pixels = pixels[pixel_brightness >= 50.0]
+        else:
+            valid_pixels = pixels
+
+        if valid_pixels.size == 0:
+            valid_pixels = pixels
+
+        diff = np.abs(valid_pixels - selected["median"])
+        is_close = np.all(diff <= 15, axis=1)
+        neighborhood_coverage = np.count_nonzero(is_close) / float(valid_pixels.shape[0])
+
+        if neighborhood_coverage < 0.55:
+            return None, f"selected-too-low-coverage:coverage={neighborhood_coverage:.3f}"
         if selected["count"] < 96 and selected["coverage"] < 0.03:
             return None, f"selected-too-small:count={selected['count']},coverage={selected['coverage']:.3f}"
         if selected["spread"] > 48.0:
