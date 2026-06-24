@@ -10,7 +10,7 @@ from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, 
                             SegmentBoxesCommand, EraseUndoCommand
 from app.ui.commands.base import PathCommandBase as pcb
 import imkit as imk
-from modules.utils.image_utils import clip_mask_to_bubble, clip_mask_components_to_bubble
+from modules.utils.image_utils import build_block_mask_data, clip_mask_to_bubble, clip_mask_components_to_bubble
 
 
 class DrawingManager:
@@ -405,40 +405,29 @@ class DrawingManager:
         cx1, cy1 = 0, 0
         if image is not None:
             try:
-                from modules.detection.utils.content import detect_content_mask_in_bbox
-                from modules.utils.textblock import adjust_text_line_coordinates
-                
-                if self.viewer.webtoon_mode:
-                    crop_bbox = [img_min_x, img_min_y, img_max_x, img_max_y]
+                if blk is not None and not self.viewer.webtoon_mode:
+                    crop_mask, bounds = build_block_mask_data(
+                        image,
+                        blk,
+                        default_padding=5,
+                        require_text_or_translation=False,
+                        clip_to_bubble=True,
+                    )
+                    if crop_mask is not None and bounds is not None:
+                        cx1, cy1, _cx2, _cy2 = [int(v) for v in bounds]
                 else:
-                    crop_bbox = [min_x, min_y, max_x, max_y]
-                
-                # Get the padded coordinates to crop the image
-                cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(crop_bbox, 10, 10, image)
-                crop = image[cy1:cy2, cx1:cx2]
-                
-                crop_mask = detect_content_mask_in_bbox(crop)
-                if crop_mask is not None and np.any(crop_mask):
-                    close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
-                    crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
-
-                    if (
-                        blk is not None
-                        and not self.viewer.webtoon_mode
-                        and getattr(blk, "text_class", None) == "text_bubble"
-                        and getattr(blk, "bubble_xyxy", None) is not None
-                    ):
-                        crop_mask = clip_mask_components_to_bubble(
-                            crop_mask,
-                            (cx1, cy1, cx2, cy2),
-                            blk.bubble_xyxy,
-                            inset=5,
-                            image=image,
-                            seed_bbox=blk.xyxy,
-                            dilate_kernel_size=5,
-                            dilate_iterations=1,
-                        )
+                    if self.viewer.webtoon_mode:
+                        crop_bbox = [img_min_x, img_min_y, img_max_x, img_max_y]
                     else:
+                        crop_bbox = [min_x, min_y, max_x, max_y]
+
+                    cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(crop_bbox, 10, 10, image)
+                    crop = image[cy1:cy2, cx1:cx2]
+
+                    crop_mask = detect_content_mask_in_bbox(crop)
+                    if crop_mask is not None and np.any(crop_mask):
+                        close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
+                        crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
                         dil_kernel = np.ones((5, 5), np.uint8)
                         crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=1)
             except Exception as e:
