@@ -152,8 +152,14 @@ def build_bubble_clip_mask(
                             b_x2 = overlap_x2 - crop_x1
                             
                             final_clip[f_y1:f_y2, f_x1:f_x2] = bubble_mask[b_y1:b_y2, b_x1:b_x2]
-                            
-                        return final_clip
+
+                        cy_grid2, cx_grid2 = np.ogrid[:height, :width]
+                        ellipse_cx2 = (bx1_rel + bx2_rel) / 2.0
+                        ellipse_cy2 = (by1_rel + by2_rel) / 2.0
+                        rx2 = max(1.0, (bx2_rel - bx1_rel) / 2.0)
+                        ry2 = max(1.0, (by2_rel - by1_rel) / 2.0)
+                        ellipse_clip = (((cx_grid2 - ellipse_cx2) / rx2) ** 2 + ((cy_grid2 - ellipse_cy2) / ry2) ** 2) <= 1.0
+                        return np.logical_or(final_clip, ellipse_clip)
         except Exception as e:
             # Fall back to ellipse on any error
             pass
@@ -229,14 +235,15 @@ def clip_mask_components_to_bubble(
         return np.zeros_like(mask)
 
     kept_mask = np.isin(labeled_text, keep_labels)
+    kept_mask_clipped = kept_mask & bubble_clip
 
     if dilate_kernel_size > 0:
         dil_kernel = np.ones((dilate_kernel_size, dilate_kernel_size), np.uint8)
-        dilated = imk.dilate(kept_mask.astype(np.uint8) * 255, dil_kernel, iterations=dilate_iterations)
+        dilated = imk.dilate(kept_mask_clipped.astype(np.uint8) * 255, dil_kernel, iterations=dilate_iterations)
         final_mask = np.where(bubble_clip, dilated, 0).astype(np.uint8)
-        return np.bitwise_or(final_mask, (kept_mask * 255).astype(np.uint8)).astype(mask.dtype, copy=False)
+        return np.bitwise_or(final_mask, (kept_mask_clipped * 255).astype(np.uint8)).astype(mask.dtype, copy=False)
     else:
-        return (kept_mask * 255).astype(mask.dtype, copy=False)
+        return (kept_mask_clipped * 255).astype(mask.dtype, copy=False)
 
 def rgba2hex(rgba_list):
     r,g,b,a = [int(num) for num in rgba_list]
@@ -277,6 +284,29 @@ def get_smart_text_color(
 
     return setting_color
 
+def _resolve_block_crop_bounds(
+    img: np.ndarray,
+    blk: TextBlock,
+    default_padding: int,
+) -> tuple[int, int, int, int]:
+    from modules.utils.textblock import adjust_text_line_coordinates
+
+    cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(blk.xyxy, 10, 10, img)
+    bubble_xyxy = getattr(blk, "bubble_xyxy", None)
+    if getattr(blk, "text_class", None) != "text_bubble" or bubble_xyxy is None or len(bubble_xyxy) < 4:
+        return cx1, cy1, cx2, cy2
+
+    bx1, by1, bx2, by2 = [int(v) for v in bubble_xyxy[:4]]
+    bubble_margin = max(4, min(default_padding + 3, 12))
+    bubble_inset_y = max(2, min(default_padding + 1, 8))
+
+    cx1 = min(cx1, max(0, bx1 - bubble_margin))
+    cy1 = min(cy1, max(0, by1 + bubble_inset_y))
+    cx2 = max(cx2, min(img.shape[1], bx2 + bubble_margin))
+    cy2 = max(cy2, min(img.shape[0], by2 - bubble_inset_y))
+    return cx1, cy1, cx2, cy2
+
+
 def build_block_mask_data(
     img: np.ndarray,
     blk: TextBlock,
@@ -284,13 +314,12 @@ def build_block_mask_data(
     require_text_or_translation: bool = True,
     clip_to_bubble: bool = False,
 ) -> tuple[np.ndarray | None, tuple[int, int, int, int] | None]:
-    from modules.utils.textblock import adjust_text_line_coordinates
     from modules.detection.utils.content import detect_content_mask_in_bbox
 
     if require_text_or_translation and not blk.text and not blk.translation:
         return None, None
 
-    cx1, cy1, cx2, cy2 = adjust_text_line_coordinates(blk.xyxy, 10, 10, img)
+    cx1, cy1, cx2, cy2 = _resolve_block_crop_bounds(img, blk, default_padding)
     crop = img[cy1:cy2, cx1:cx2]
 
     crop_mask = detect_content_mask_in_bbox(crop)
