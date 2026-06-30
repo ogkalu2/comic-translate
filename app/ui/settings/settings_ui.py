@@ -1,4 +1,4 @@
-﻿import os
+import os
 from PySide6 import QtWidgets
 from PySide6 import QtCore
 
@@ -65,6 +65,14 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
         self.credential_services = [
+            self.tr("Google Gemini"),
+            self.tr("Open AI GPT"),
+            self.tr("Anthropic Claude"),
+            self.tr("Deepseek"),
+            self.tr("Microsoft Azure"),
+            self.tr("Google Cloud"),
+            self.tr("DeepL"),
+            self.tr("Yandex"),
             self.tr("Custom"), 
         ]
         

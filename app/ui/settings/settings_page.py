@@ -168,6 +168,14 @@ class SettingsPage(QtWidgets.QWidget):
             if normalized == "Custom":
                 for field in ("api_key", "api_url", "model"):
                     creds[field] = _text_or_none(f"Custom_{field}")
+            elif normalized == "Microsoft Azure":
+                creds['api_key_ocr'] = _text_or_none(f"{normalized}_api_key_ocr")
+                creds['endpoint'] = _text_or_none(f"{normalized}_endpoint")
+            elif normalized == "Yandex":
+                creds['api_key'] = _text_or_none(f"{normalized}_api_key")
+                creds['folder_id'] = _text_or_none(f"{normalized}_folder_id")
+            else:
+                creds['api_key'] = _text_or_none(f"{normalized}_api_key")
 
             return creds
 
@@ -304,12 +312,20 @@ class SettingsPage(QtWidgets.QWidget):
         settings.setValue('save_keys', save_keys)
         if save_keys:
             for service, cred in credentials.items():
-                translated_service = self.ui.value_mappings.get(service, service)
+                normalized = self.ui.value_mappings.get(service, service)
                 
-                if translated_service == "Custom":
-                    settings.setValue(f"{translated_service}_api_key", cred['api_key'])
-                    settings.setValue(f"{translated_service}_api_url", cred['api_url'])
-                    settings.setValue(f"{translated_service}_model", cred['model'])
+                if normalized == "Custom":
+                    settings.setValue(f"{normalized}_api_key", cred.get('api_key', ''))
+                    settings.setValue(f"{normalized}_api_url", cred.get('api_url', ''))
+                    settings.setValue(f"{normalized}_model", cred.get('model', ''))
+                elif normalized == "Microsoft Azure":
+                    settings.setValue(f"{normalized}_api_key_ocr", cred.get('api_key_ocr', ''))
+                    settings.setValue(f"{normalized}_endpoint", cred.get('endpoint', ''))
+                elif normalized == "Yandex":
+                    settings.setValue(f"{normalized}_api_key", cred.get('api_key', ''))
+                    settings.setValue(f"{normalized}_folder_id", cred.get('folder_id', ''))
+                else:
+                    settings.setValue(f"{normalized}_api_key", cred.get('api_key', ''))
         else:
             settings.remove('credentials')  # Clear all credentials if save_keys is unchecked
         settings.endGroup()
@@ -424,12 +440,22 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.save_keys_checkbox.setChecked(save_keys)
         if save_keys:
             for service in self.ui.credential_services:
-                translated_service = self.ui.value_mappings.get(service, service)
+                normalized = self.ui.value_mappings.get(service, service)
                 
-                if translated_service == "Custom":
-                    self.ui.credential_widgets[f"{translated_service}_api_key"].setText(settings.value(f"{translated_service}_api_key", ''))
-                    self.ui.credential_widgets[f"{translated_service}_api_url"].setText(settings.value(f"{translated_service}_api_url", ''))
-                    self.ui.credential_widgets[f"{translated_service}_model"].setText(settings.value(f"{translated_service}_model", ''))
+                if normalized == "Custom":
+                    self.ui.credential_widgets[f"{normalized}_api_key"].setText(settings.value(f"{normalized}_api_key", ''))
+                    self.ui.credential_widgets[f"{normalized}_api_url"].setText(settings.value(f"{normalized}_api_url", ''))
+                    self.ui.credential_widgets[f"{normalized}_model"].setText(settings.value(f"{normalized}_model", ''))
+                elif normalized == "Microsoft Azure":
+                    self.ui.credential_widgets[f"{normalized}_api_key_ocr"].setText(settings.value(f"{normalized}_api_key_ocr", ''))
+                    self.ui.credential_widgets[f"{normalized}_endpoint"].setText(settings.value(f"{normalized}_endpoint", ''))
+                elif normalized == "Yandex":
+                    self.ui.credential_widgets[f"{normalized}_api_key"].setText(settings.value(f"{normalized}_api_key", ''))
+                    self.ui.credential_widgets[f"{normalized}_folder_id"].setText(settings.value(f"{normalized}_folder_id", ''))
+                else:
+                    widget_key = f"{normalized}_api_key"
+                    if widget_key in self.ui.credential_widgets:
+                        self.ui.credential_widgets[widget_key].setText(settings.value(widget_key, ''))
         settings.endGroup()
 
         # ADDED: Load user info and update account view 
