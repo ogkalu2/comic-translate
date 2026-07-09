@@ -512,6 +512,23 @@ class InpaintingHandler:
                 reason,
             )
 
+        if cleaned_blocks:
+            bubble_scope = np.zeros(mask.shape, dtype=bool)
+            bubble_allowed = np.zeros(mask.shape, dtype=bool)
+            for bubble_block in blk_list:
+                if getattr(bubble_block, "text_class", None) != "text_bubble" or getattr(bubble_block, "bubble_xyxy", None) is None:
+                    continue
+                bubble_bounds = self._get_fast_fill_bounds(bubble_block, image)
+                if bubble_bounds is None:
+                    continue
+                bx1, by1, bx2, by2 = bubble_bounds
+                bubble_scope[by1:by2, bx1:bx2] = True
+                bubble_clip = build_bubble_clip_mask((by2 - by1, bx2 - bx1), bubble_bounds, bubble_block.bubble_xyxy, inset=FAST_FILL_BUBBLE_INSET, image=image, seed_bbox=bubble_block.xyxy)
+                if bubble_clip is not None:
+                    bubble_allowed[by1:by2, bx1:bx2] |= bubble_clip
+            spill = (residual_mask > 0) & bubble_scope & ~bubble_allowed
+            if np.any(spill):
+                residual_mask[spill] = 0
         return cleaned_image, residual_mask, cleaned_blocks
 
     def _fast_fill_block(
@@ -534,6 +551,7 @@ class InpaintingHandler:
             return False, color_reason
 
         fill_region = self._get_associated_residual_components(residual_crop, masked_region)
+        applied_region = fill_region
         
         if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
             bubble_mask = build_bubble_clip_mask(
@@ -549,13 +567,16 @@ class InpaintingHandler:
                 overlapping_labels = np.unique(labeled_fill[bubble_mask])
                 keep_labels = overlapping_labels[overlapping_labels > 0]
                 if keep_labels.size > 0:
-                    fill_region = np.isin(labeled_fill, keep_labels)
+                    # Saved segmentation strokes can bridge into a neighbouring, overlapping
+                    # bubble after dilation. Only paint the pixels inside this bubble; leave
+                    # the rest in the residual for the neighbouring bubble's cleanup pass.
+                    applied_region = np.isin(labeled_fill, keep_labels) & bubble_mask
                 else:
-                    fill_region = np.zeros_like(fill_region)
+                    applied_region = np.zeros_like(fill_region)
         else:
             bubble_mask = None
 
-        soft_mask = imk.gaussian_blur(fill_region.astype(np.uint8) * 255, 1.0).astype(np.float32) / 255.0
+        soft_mask = imk.gaussian_blur(applied_region.astype(np.uint8) * 255, 1.0).astype(np.float32) / 255.0
         soft_mask = np.clip(soft_mask, 0.0, 1.0)[..., np.newaxis]
         
         if bubble_mask is not None:
@@ -564,7 +585,7 @@ class InpaintingHandler:
         fill_rgb = np.broadcast_to(fill_color, crop.shape).astype(np.float32)
         blended = crop_f * (1.0 - soft_mask) + fill_rgb * soft_mask
         cleaned_image[y1:y2, x1:x2] = np.clip(np.round(blended), 0, 255).astype(np.uint8)
-        residual_crop[fill_region] = 0
+        residual_crop[applied_region] = 0
         return True, color_reason
 
     def _get_associated_residual_components(self, residual_crop: np.ndarray, masked_region: np.ndarray) -> np.ndarray:

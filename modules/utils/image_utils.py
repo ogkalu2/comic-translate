@@ -159,7 +159,7 @@ def build_bubble_clip_mask(
                         rx2 = max(1.0, (bx2_rel - bx1_rel) / 2.0)
                         ry2 = max(1.0, (by2_rel - by1_rel) / 2.0)
                         ellipse_clip = (((cx_grid2 - ellipse_cx2) / rx2) ** 2 + ((cy_grid2 - ellipse_cy2) / ry2) ** 2) <= 1.0
-                        return np.logical_or(final_clip, ellipse_clip)
+                        return final_clip
         except Exception as e:
             # Fall back to ellipse on any error
             pass
@@ -329,6 +329,22 @@ def build_block_mask_data(
     close_kernel = imk.get_structuring_element(imk.MORPH_RECT, (3, 3))
     crop_mask = imk.morphology_ex(crop_mask, imk.MORPH_CLOSE, close_kernel)
 
+    if clip_to_bubble and getattr(blk, "text_class", None) == "text_bubble" and getattr(blk, "bubble_xyxy", None) is not None:
+        # The crop expands to the bubble so coloured text remains detectable, but
+        # that also exposes the bubble outline to the content detector. Keep only
+        # components touching the padded text envelope before the mask is dilated.
+        text_padding = max(6, min(default_padding + 5, 14))
+        tx1, ty1, tx2, ty2 = [int(round(float(v))) for v in blk.xyxy[:4]]
+        sx1 = max(0, tx1 - cx1 - text_padding)
+        sy1 = max(0, ty1 - cy1 - text_padding)
+        sx2 = min(crop_mask.shape[1], tx2 - cx1 + text_padding)
+        sy2 = min(crop_mask.shape[0], ty2 - cy1 + text_padding)
+        if sx2 > sx1 and sy2 > sy1:
+            _num_labels, labels = imk.connected_components(crop_mask > 0, connectivity=4)
+            seed_labels = np.unique(labels[sy1:sy2, sx1:sx2])
+            seed_labels = seed_labels[seed_labels > 0]
+            if seed_labels.size > 0:
+                crop_mask = (np.isin(labels, seed_labels).astype(np.uint8) * 255)
     kernel_size = default_padding
     dilate_iterations = 3
 
@@ -348,6 +364,20 @@ def build_block_mask_data(
         dil_kernel = np.ones((kernel_size, kernel_size), np.uint8)
         dilated_crop_mask = imk.dilate(crop_mask, dil_kernel, iterations=dilate_iterations)
 
+    if clip_to_bubble and getattr(blk, "text_class", None) == "text_bubble" and getattr(blk, "bubble_xyxy", None) is not None:
+        # The generated stroke is dilated again when it is rasterized. Clamp this
+        # source mask to the text envelope so that expansion covers glyph edges but
+        # cannot turn a bubble-outline fragment into an inpainting patch.
+        final_padding = 2
+        tx1, ty1, tx2, ty2 = [int(round(float(v))) for v in blk.xyxy[:4]]
+        ex1 = max(0, tx1 - cx1 - final_padding)
+        ey1 = max(0, ty1 - cy1 - final_padding)
+        ex2 = min(dilated_crop_mask.shape[1], tx2 - cx1 + final_padding)
+        ey2 = min(dilated_crop_mask.shape[0], ty2 - cy1 + final_padding)
+        text_envelope = np.zeros(dilated_crop_mask.shape, dtype=bool)
+        if ex2 > ex1 and ey2 > ey1:
+            text_envelope[ey1:ey2, ex1:ex2] = True
+            dilated_crop_mask = np.where(text_envelope, dilated_crop_mask, 0).astype(np.uint8)
     return dilated_crop_mask, (cx1, cy1, cx2, cy2)
 
 
