@@ -131,5 +131,6 @@ class OCRProcessor:
             self.settings.ui.tr('Google Cloud Vision'): 'Google Cloud Vision',
             self.settings.ui.tr('Gemini-2.5-Flash-Lite'): 'Gemini-2.5-Flash-Lite',
             self.settings.ui.tr('Default'): 'Default',
+            self.settings.ui.tr('Custom'): 'Custom',
         }
         return translator_map.get(localized_ocr, localized_ocr)
