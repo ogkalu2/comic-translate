@@ -36,26 +36,48 @@ def get_config(settings_page: SettingsPage):
     return config
 
 def validate_ocr(main: ComicTranslate):
-    """Ensure either API credentials are set or the user is authenticated."""
+    """Ensure the OCR tool can run.
+
+    Account/credit-backed cloud tools (Gemini, Microsoft OCR) require the user
+    to be signed in. Local tools ('Default') and user-provided endpoints
+    ('Custom') run without an account, so they must not be gated behind login.
+    """
     settings_page = main.settings_page
     tr = settings_page.ui.tr
     settings = settings_page.get_all_settings()
-    credentials = settings.get('credentials', {})
     ocr_tool = settings['tools']['ocr']
 
     if not ocr_tool:
         Messages.show_missing_tool_error(main, QCoreApplication.translate("Messages", "Text Recognition model"))
         return False
-    
-    if not settings_page.is_logged_in():
-        Messages.show_not_logged_in_error(main)
-        return False
-        
+
+    # Normalize the (localized) tool name to its internal English key.
+    ocr_key = settings_page.ui.value_mappings.get(ocr_tool, ocr_tool)
+
+    # Only account/credit-backed cloud tools require authentication.
+    account_backed_ocr = {tr('Gemini-2.5-Flash-Lite'), tr('Microsoft OCR')}
+    if ocr_tool in account_backed_ocr:
+        if not settings_page.is_logged_in():
+            Messages.show_not_logged_in_error(main)
+            return False
+
+    # The custom provider uses the user's own endpoint and must be configured.
+    if ocr_key == 'Custom':
+        creds = settings_page.get_ocr_credentials()
+        if not all([creds.get('api_url'), creds.get('model')]):
+            Messages.show_custom_not_configured_error(main)
+            return False
+
     return True
 
 
 def validate_translator(main: ComicTranslate, target_lang: str):
-    """Ensure either API credentials are set or the user is authenticated, plus check compatibility."""
+    """Ensure the translator can run.
+
+    The custom translator uses the user's own API (configured in Advanced) and
+    must not be gated behind account login. Cloud/account translators require
+    the user to be signed in.
+    """
     settings_page = main.settings_page
     tr = settings_page.ui.tr
     settings = settings_page.get_all_settings()
@@ -66,21 +88,24 @@ def validate_translator(main: ComicTranslate, target_lang: str):
         Messages.show_missing_tool_error(main, QCoreApplication.translate("Messages", "Translator"))
         return False
 
-    if not settings_page.is_logged_in():
-        Messages.show_not_logged_in_error(main)
-        return False
+    # Normalize the (localized) tool name to its internal English key.
+    translator_key = settings_page.ui.value_mappings.get(translator_tool, translator_tool)
 
-    # Credential checks
-    if "Custom" in translator_tool:
-        # Custom requires api_key, api_url, and model to be configured LOCALLY
+    # The custom translator is configured locally (Advanced > Custom) and does
+    # not require an account. Only validate that the credentials are present.
+    if translator_key == 'Custom':
         service = tr('Custom')
         creds = credentials.get(service, {})
-        # Check if all required fields are present and non-empty
         if not all([creds.get('api_key'), creds.get('api_url'), creds.get('model')]):
             Messages.show_custom_not_configured_error(main)
             return False
         return True
-        
+
+    # All other translators are account/credit-backed cloud models.
+    if not settings_page.is_logged_in():
+        Messages.show_not_logged_in_error(main)
+        return False
+
     return True
 
 def font_selected(main: ComicTranslate):

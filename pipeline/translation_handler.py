@@ -50,7 +50,7 @@ class TranslationHandler:
             
             # Get translation cache key
             translation_cache_key = self.cache_manager._get_translation_cache_key(
-                image, source_lang, target_lang, translator_key, extra_context
+                image, source_lang, target_lang, translator_key, extra_context, settings=settings_page
             )
             
             if single_block:

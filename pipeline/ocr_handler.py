@@ -27,7 +27,7 @@ class OCRHandler:
             device = resolve_device(
                 self.main_page.settings_page.is_gpu_enabled()
             )
-            cache_key = self.cache_manager._get_ocr_cache_key(image, source_lang, ocr_model, device)
+            cache_key = self.cache_manager._get_ocr_cache_key(image, source_lang, ocr_model, device, settings=self.main_page.settings_page)
             
             if single_block:
                 blk = self.pipeline.get_selected_block()

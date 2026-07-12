@@ -34,11 +34,25 @@ class CacheManager:
             fallback_data = shape_str.encode() + str(image.dtype).encode() if hasattr(image, 'dtype') else b'fallback'
             return hashlib.md5(fallback_data).hexdigest()
 
-    def _get_ocr_cache_key(self, image, source_lang, ocr_model, device=None):
-        """Generate cache key for OCR results"""
+    def _get_ocr_cache_key(self, image, source_lang, ocr_model, device=None, settings=None):
+        """Generate cache key for OCR results.
+
+        For the custom OCR provider the model is user-selected, so the model
+        name is folded into the key. This prevents serving stale results that
+        were produced by a different (e.g. previously misconfigured) custom
+        model -- previously the cache key was identical for every custom model.
+        """
         image_hash = self._generate_image_hash(image)
         if device is None:
             device = "unknown"
+        if settings is not None:
+            internal = settings.ui.value_mappings.get(ocr_model, ocr_model)
+            if internal == 'Custom':
+                try:
+                    model = settings.get_ocr_credentials().get('model', '')
+                    ocr_model = f"Custom:{model}"
+                except Exception:
+                    pass
         return (image_hash, ocr_model, source_lang, device)
 
     def _get_block_id(self, block):
@@ -209,12 +223,29 @@ class CacheManager:
             logger.debug(f"Available block IDs in cache: {list(cached_results.keys())}")
             return None  # Indicate block needs processing
 
-    def _get_translation_cache_key(self, image, source_lang, target_lang, translator_key, extra_context):
-        """Generate cache key for translation results"""
+    def _get_translation_cache_key(self, image, source_lang, target_lang, translator_key, extra_context, settings=None):
+        """Generate cache key for translation results.
+
+        For the custom translator the model and endpoint are user-selected, so
+        they are folded into the key. This prevents serving stale translations
+        produced by a different (e.g. previously used) custom provider -- the key
+        used to be identical for every custom translator.
+        """
         image_hash = self._generate_image_hash(image)
         # Include extra_context in cache key since it affects translation results
         context_hash = hashlib.md5(extra_context.encode()).hexdigest() if extra_context else "no_context"
-        return (image_hash, translator_key, source_lang, target_lang, context_hash)
+        key = translator_key
+        if settings is not None:
+            internal = settings.ui.value_mappings.get(translator_key, translator_key)
+            if internal == 'Custom':
+                try:
+                    creds = settings.get_credentials(settings.ui.tr('Custom'))
+                    model = creds.get('model', '')
+                    endpoint = creds.get('api_url', '')
+                    key = f"Custom:{endpoint}:{model}"
+                except Exception:
+                    pass
+        return (image_hash, key, source_lang, target_lang, context_hash)
 
     def _is_translation_cached(self, cache_key):
         """Check if translation results are cached for this image/translator/language combination"""
