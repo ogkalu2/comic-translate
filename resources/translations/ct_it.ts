@@ -1722,6 +1722,10 @@ quindi esegui l&apos;inpainting sull&apos;immagine ridimensionata.</translation>
         <source>Original</source>
         <translation>Originale</translation>
     </message>
+    <message>
+        <source>Add Custom Model</source>
+        <translation>Aggiungi modello personalizzato</translation>
+    </message>
 </context>
 <context>
     <name>WorkspaceMixin</name>
@@ -2620,6 +2624,50 @@ Potrebbe essere stato spostato, rinominato o eliminato.
         <location filename="../../app/ui/canvas/rectangle.py" line="81"/>
         <source>Translate</source>
         <translation>Traduci</translation>
+    </message>
+</context>
+
+<context>
+    <name>CustomOCRDialog</name>
+    <message>
+        <source>Custom OCR Provider</source>
+        <translation>Provider OCR personalizzato</translation>
+    </message>
+    <message>
+        <source>Connect any OpenAI-compatible vision API (e.g. Ollama, LM Studio, vLLM, or a cloud provider). The base URL should point to the API root, e.g. http://localhost:11434/v1 — '/chat/completions' is added automatically.</source>
+        <translation>Collega qualsiasi API di visione compatibile con OpenAI (es. Ollama, LM Studio, vLLM o un provider cloud). L'URL di base deve puntare alla radice dell'API, es. http://localhost:11434/v1 — '/chat/completions' viene aggiunto automaticamente.</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>URL API</translation>
+    </message>
+    <message>
+        <source>Load Models</source>
+        <translation>Carica modelli</translation>
+    </message>
+    <message>
+        <source>The model must support image (vision) input — e.g. llama3.2-vision, llava, or qwen2.5-vl. Plain text models will return an error.</source>
+        <translation>Il modello deve supportare l'input immagine (visione), es. llama3.2-vision, llava o qwen2.5-vl. I modelli di soli testo restituiranno un errore.</translation>
+    </message>
+    <message>
+        <source>Save API Key</source>
+        <translation>Salva chiave API</translation>
+    </message>
+    <message>
+        <source>API Key</source>
+        <translation>Chiave API</translation>
+    </message>
+    <message>
+        <source>Model</source>
+        <translation>Modello</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Annulla</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Salva</translation>
     </message>
 </context>
 </TS>
