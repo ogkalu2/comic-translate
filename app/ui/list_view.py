@@ -233,11 +233,14 @@ class PageListView(QListWidget):
         if not selected:
             return
             
-        names = [item.text() for item in selected]
+        # Use the stable path stored on the item rather than its displayed
+        # filename. Different comics commonly contain pages with the same
+        # filename (for example, "001.jpg").
+        file_paths = [self._item_identity(item) for item in selected]
         # If all selected items are striked out, we're unskipping (False)
         # Otherwise, we're skipping (True)
         skip_status = not all(item.font().strikeOut() for item in selected)
-        self.toggle_skip_img.emit(names, skip_status)
+        self.toggle_skip_img.emit(file_paths, skip_status)
 
     def translate_selected_items(self):
         selected = self.selectedItems()

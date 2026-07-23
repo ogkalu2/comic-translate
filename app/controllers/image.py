@@ -915,32 +915,46 @@ class ImageStateController:
         if removed_any:
             self.main.mark_project_dirty()
 
-    def handle_toggle_skip_images(self, file_names: list[str], skip_status: bool):
+    def handle_toggle_skip_images(self, file_paths: list[str], skip_status: bool):
         """
         Handle toggling skip status for images
         
         Args:
-            file_names: List of file names to update
+            file_paths: List of image paths to update. A uniquely matching
+                filename is accepted for compatibility with legacy callers.
             skip_status: If True, mark as skipped; if False, mark as not skipped
         """
-        file_paths = []
-        for name in file_names:
-            path = next((p for p in self.main.image_files if os.path.basename(p) == name), None)
-            if path:
-                file_paths.append(path)
+        resolved_paths = []
+        seen_paths = set()
+        for identifier in file_paths:
+            if identifier in self.main.image_files:
+                path = identifier
+            else:
+                matches = [
+                    image_path
+                    for image_path in self.main.image_files
+                    if os.path.basename(image_path) == identifier
+                ]
+                # An ambiguous filename must not silently toggle a different
+                # page. The page list now always supplies the full path.
+                path = matches[0] if len(matches) == 1 else None
 
-        if not file_paths:
+            if path and path not in seen_paths:
+                resolved_paths.append(path)
+                seen_paths.add(path)
+
+        if not resolved_paths:
             return
 
         changed = False
-        for path in file_paths:
+        for path in resolved_paths:
             if self.main.image_states.get(path, {}).get('skip', False) != skip_status:
                 changed = True
                 break
         if not changed:
             return
 
-        command = ToggleSkipImagesCommand(self.main, file_paths, skip_status)
+        command = ToggleSkipImagesCommand(self.main, resolved_paths, skip_status)
         stack = self.main.undo_group.activeStack()
         if stack:
             stack.push(command)
