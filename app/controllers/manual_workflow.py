@@ -396,6 +396,7 @@ class ManualWorkflowController:
                         )
 
                 if results:
+                    self.main.batch_report_ctrl.resolve_translated_pages(list(results))
                     self.main.mark_project_dirty()
 
             self.main.run_threaded(
@@ -457,6 +458,7 @@ class ManualWorkflowController:
         trg_lng_cd = get_language_code(target_lang_en)
 
         def on_format_finished() -> None:
+            self._resolve_current_page_if_translated()
             for text_item in text_items_to_process:
                 text_item.handleDeselection()
                 x1, y1 = int(text_item.pos().x()), int(text_item.pos().y())
@@ -512,6 +514,16 @@ class ManualWorkflowController:
             self.main.default_error_handler,
             on_format_finished,
         )
+
+    def _resolve_current_page_if_translated(self) -> None:
+        """Remove a fully translated manual page from the batch report."""
+        file_path = self._current_file_path()
+        if not file_path:
+            return
+        blocks = self.main.image_states.get(file_path, {}).get("blk_list", self.main.blk_list)
+        text_blocks = [blk for blk in blocks if getattr(blk, "text", "")]
+        if text_blocks and all(getattr(blk, "translation", "") for blk in text_blocks):
+            self.main.batch_report_ctrl.resolve_translated_pages([file_path])
 
     def inpaint_and_set(self) -> None:
         if not self.main.image_viewer.hasPhoto():

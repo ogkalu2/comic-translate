@@ -37,11 +37,28 @@ class BatchReportController:
             for path in batch_paths
             if not self.main.image_states.get(path, {}).get("skip", False)
         ]
+        # A selected-page batch is often used to fix one page from the report.
+        # Keep the other outstanding pages so a successful retry cannot replace
+        # the report with an empty one.
+        previous_pending = {}
+        previous_total = 0
+        if self._latest_batch_report:
+            previous_total = self._latest_batch_report.get("total_images", 0)
+            for entry in self._latest_batch_report.get("skipped_entries", []):
+                image_path = entry.get("image_path")
+                if isinstance(image_path, str):
+                    previous_pending[image_path] = {
+                        "image_path": image_path,
+                        "image_name": entry.get("image_name", os.path.basename(image_path)),
+                        "reasons": list(entry.get("reasons", [])),
+                    }
         self._current_batch_report = {
             "started_at": datetime.now(),
             "paths": tracked_paths,
             "path_set": set(tracked_paths),
             "skipped": {},
+            "previous_pending": previous_pending,
+            "previous_total": previous_total,
         }
 
     def _sanitize_batch_skip_error(self, error: str) -> str:
@@ -239,12 +256,20 @@ class BatchReportController:
         if not report:
             return None
 
-        total_images = len(report["paths"])
+        # Current failures supersede their previous details. Previous entries
+        # outside this batch remain pending; successful pages are removed.
+        pending = {
+            path: entry
+            for path, entry in report["previous_pending"].items()
+            if path not in report["path_set"]
+        }
+        pending.update(report["skipped"])
         skipped_entries = sorted(
-            report["skipped"].values(),
+            pending.values(),
             key=lambda entry: entry["image_name"].lower(),
         )
         skipped_count = len(skipped_entries)
+        total_images = max(report["previous_total"], len(report["paths"]))
 
         finalized = {
             "started_at": report["started_at"],
@@ -260,6 +285,25 @@ class BatchReportController:
         self.main.mark_project_dirty()
         return finalized
 
+
+    def resolve_translated_pages(self, image_paths: list[str]) -> None:
+        """Remove pages completed outside a batch from the outstanding report."""
+        report = self._latest_batch_report
+        if not report:
+            return
+
+        resolved_paths = {path for path in image_paths if isinstance(path, str)}
+        entries = report.get("skipped_entries", [])
+        remaining = [entry for entry in entries if entry.get("image_path") not in resolved_paths]
+        if len(remaining) == len(entries):
+            return
+
+        report["skipped_entries"] = remaining
+        report["skipped_count"] = len(remaining)
+        report["completed_count"] = max(0, report.get("total_images", 0) - len(remaining))
+        report["finished_at"] = datetime.now()
+        self.refresh_button_state()
+        self.main.mark_project_dirty()
     def _open_image_from_batch_report(self, image_path: str):
         if image_path not in self.main.image_files:
             MMessage.warning(
