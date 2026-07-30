@@ -431,11 +431,11 @@ class InpaintingHandler:
         if bubble_mask is None:
             return False, "bubble-background-unavailable"
 
-        # Judge the whole bubble rather than only the immediate text area. A
-        # translucent fill can look locally flat while still revealing different
-        # characters, line art, or panel tones elsewhere in the same bubble.
+        # First use a halo to remove antialiased glyph edges from the normal
+        # bubble-wide sample.
+        binary_mask = (crop_mask > 0).astype(np.uint8)
         mask_halo = imk.dilate(
-            (crop_mask > 0).astype(np.uint8),
+            binary_mask,
             np.ones((5, 5), np.uint8),
             iterations=2,
         ) > 0
@@ -454,8 +454,89 @@ class InpaintingHandler:
         if uniform_coverage < FAST_FILL_MIN_UNIFORM_COVERAGE:
             return False, f"bubble-background-nonuniform:coverage={uniform_coverage:.3f}"
 
-        return True, f"bubble-background-uniform:coverage={uniform_coverage:.3f}"
+        bubble_ys, bubble_xs = np.nonzero(bubble_mask)
+        if bubble_ys.size and bubble_xs.size:
+            bubble_y1, bubble_y2 = int(bubble_ys.min()), int(bubble_ys.max()) + 1
+            bubble_x1, bubble_x2 = int(bubble_xs.min()), int(bubble_xs.max()) + 1
+            spatial_min_count = max(64, int(round(sample_count * 0.015)))
+            for grid_y in range(3):
+                cell_y1 = bubble_y1 + round(grid_y * (bubble_y2 - bubble_y1) / 3)
+                cell_y2 = bubble_y1 + round((grid_y + 1) * (bubble_y2 - bubble_y1) / 3)
+                for grid_x in range(3):
+                    cell_x1 = bubble_x1 + round(grid_x * (bubble_x2 - bubble_x1) / 3)
+                    cell_x2 = bubble_x1 + round((grid_x + 1) * (bubble_x2 - bubble_x1) / 3)
+                    cell_region = sample_region[cell_y1:cell_y2, cell_x1:cell_x2]
+                    cell_count = int(np.count_nonzero(cell_region))
+                    if cell_count < spatial_min_count:
+                        continue
+                    cell_pixels = crop[cell_y1:cell_y2, cell_x1:cell_x2][cell_region, :3].astype(np.float32)
+                    cell_median = np.median(cell_pixels, axis=0)
+                    median_shift = float(np.max(np.abs(cell_median - median)))
+                    if median_shift > FAST_FILL_UNIFORM_COLOR_TOLERANCE:
+                        return False, (
+                            "bubble-background-nonuniform:"
+                            f"spatial-color-shift={median_shift:.1f},"
+                            f"cell={grid_y}:{grid_x},count={cell_count}"
+                        )
+        # Recovered segmentation can cover enough of a translucent bubble that
+        # the outside-mask sample sees only one flat tonal region. For a broad
+        # mask, compare its robust source colour with the sampled background.
+        # Normal thin glyph masks stay below this coverage gate, so dark text in
+        # an otherwise opaque bubble does not create a false translucency signal.
+        masked_bubble = bubble_mask & (binary_mask > 0)
+        bubble_count = int(np.count_nonzero(bubble_mask))
+        masked_count = int(np.count_nonzero(masked_bubble))
+        masked_coverage = masked_count / float(max(1, bubble_count))
+        if masked_count >= 64 and masked_coverage >= 0.20:
+            masked_median = np.median(crop[masked_bubble, :3].astype(np.float32), axis=0)
+            median_shift = float(np.max(np.abs(masked_median - median)))
+            if median_shift > FAST_FILL_UNIFORM_COLOR_TOLERANCE:
+                return False, (
+                    "bubble-background-nonuniform:"
+                    f"expanded-mask-color-shift={median_shift:.1f},"
+                    f"mask-coverage={masked_coverage:.3f}"
+                )
 
+        return True, (
+            "bubble-background-uniform:"
+            f"coverage={uniform_coverage:.3f},mask-coverage={masked_coverage:.3f}"
+        )
+
+    def _get_fast_fill_uniformity_mask(
+        self,
+        image: np.ndarray,
+        block,
+        bounds: tuple[int, int, int, int],
+        fallback_mask: np.ndarray,
+    ) -> np.ndarray:
+        """Build a block-local mask so GUI stroke dilation cannot hide bubble tones."""
+        try:
+            block_mask, block_bounds = build_block_mask_data(
+                image,
+                block,
+                require_text_or_translation=False,
+                clip_to_bubble=True,
+            )
+        except Exception as exc:
+            logger.debug("Inpaint fast-fill: failed to rebuild routing mask: %s", exc)
+            return fallback_mask
+
+        if block_mask is None or block_bounds is None or not np.any(block_mask):
+            return fallback_mask
+
+        x1, y1, x2, y2 = [int(v) for v in bounds]
+        bx1, by1, bx2, by2 = [int(v) for v in block_bounds]
+        ix1, iy1 = max(x1, bx1), max(y1, by1)
+        ix2, iy2 = min(x2, bx2), min(y2, by2)
+        if ix2 <= ix1 or iy2 <= iy1:
+            return fallback_mask
+
+        routing_mask = np.zeros_like(fallback_mask)
+        routing_mask[iy1 - y1:iy2 - y1, ix1 - x1:ix2 - x1] = block_mask[
+            iy1 - by1:iy2 - by1,
+            ix1 - bx1:ix2 - bx1,
+        ]
+        return routing_mask if np.any(routing_mask) else fallback_mask
     def _apply_fast_bubble_cleanup(
         self,
         image: np.ndarray,
@@ -483,8 +564,14 @@ class InpaintingHandler:
             if not np.any(residual_crop):
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
+            uniformity_mask = self._get_fast_fill_uniformity_mask(
+                image,
+                block,
+                bounds,
+                crop_mask,
+            )
             background_is_uniform, uniformity_reason = self._is_fast_fill_bubble_background_uniform(
-                image, block, bounds, crop_mask
+                image, block, bounds, uniformity_mask
             )
             if not background_is_uniform:
                 logger.info("Inpaint fast-fill: block[%d] routed to NN (%s)", idx, uniformity_reason)
@@ -729,9 +816,6 @@ class InpaintingHandler:
         working_image, working_mask, cleaned_blocks = self._apply_fast_bubble_cleanup(image, mask, blk_list)
         if cleaned_blocks:
             logger.info("Inpaint hybrid: fast-cleaned %d bubble blocks", cleaned_blocks)
-            working_mask, dropped_pixels = self._drop_tiny_residual_components(working_mask)
-            if dropped_pixels:
-                logger.info("Inpaint hybrid: discarded %d tiny residual mask pixels after fast cleanup", dropped_pixels)
         if working_mask is None or not np.any(working_mask):
             return working_image
 
