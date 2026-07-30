@@ -564,15 +564,19 @@ class InpaintingHandler:
             if not np.any(residual_crop):
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
-            uniformity_mask = self._get_fast_fill_uniformity_mask(
-                image,
-                block,
-                bounds,
-                crop_mask,
-            )
             background_is_uniform, uniformity_reason = self._is_fast_fill_bubble_background_uniform(
-                image, block, bounds, uniformity_mask
+                image, block, bounds, crop_mask
             )
+            if background_is_uniform:
+                uniformity_mask = self._get_fast_fill_uniformity_mask(
+                    image,
+                    block,
+                    bounds,
+                    crop_mask,
+                )
+                background_is_uniform, uniformity_reason = self._is_fast_fill_bubble_background_uniform(
+                    image, block, bounds, uniformity_mask
+                )
             if not background_is_uniform:
                 logger.info("Inpaint fast-fill: block[%d] routed to NN (%s)", idx, uniformity_reason)
                 continue
