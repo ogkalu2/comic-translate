@@ -11,6 +11,8 @@ from app.ui.commands.brush import BrushStrokeCommand, ClearBrushStrokesCommand, 
 from app.ui.commands.base import PathCommandBase as pcb
 import imkit as imk
 from modules.utils.image_utils import build_block_mask_data, clip_mask_to_bubble, clip_mask_components_to_bubble
+from modules.utils.textblock import adjust_text_line_coordinates
+from modules.detection.utils.content import detect_content_mask_in_bbox
 
 
 class DrawingManager:
