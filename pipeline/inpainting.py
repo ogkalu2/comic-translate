@@ -17,6 +17,8 @@ from pipeline.webtoon_utils import filter_and_convert_visible_blocks, restore_or
 logger = logging.getLogger(__name__)
 
 FAST_FILL_BUBBLE_INSET = 7
+FAST_FILL_UNIFORM_COLOR_TOLERANCE = 12
+FAST_FILL_MIN_UNIFORM_COVERAGE = 0.94
 
 
 def call_inpaint_image(inpainting_handler, image: np.ndarray, mask: np.ndarray, config, blk_list: list | None = None):
@@ -405,6 +407,55 @@ class InpaintingHandler:
             f"brightness={selected['brightness']:.1f},spread={selected['spread']:.1f}"
         )
 
+    def _is_fast_fill_bubble_background_uniform(
+        self,
+        image: np.ndarray,
+        block,
+        bounds: tuple[int, int, int, int],
+        crop_mask: np.ndarray,
+    ) -> tuple[bool, str]:
+        """Reject flat fills when the bubble preserves visible underlying artwork."""
+        x1, y1, x2, y2 = bounds
+        crop = image[y1:y2, x1:x2]
+        if crop.size == 0 or crop.ndim != 3 or crop.shape[2] < 3:
+            return False, "bubble-background-invalid"
+
+        bubble_mask = build_bubble_clip_mask(
+            crop.shape[:2],
+            bounds,
+            block.bubble_xyxy,
+            inset=FAST_FILL_BUBBLE_INSET,
+            image=image,
+            seed_bbox=block.xyxy,
+        )
+        if bubble_mask is None:
+            return False, "bubble-background-unavailable"
+
+        # Judge the whole bubble rather than only the immediate text area. A
+        # translucent fill can look locally flat while still revealing different
+        # characters, line art, or panel tones elsewhere in the same bubble.
+        mask_halo = imk.dilate(
+            (crop_mask > 0).astype(np.uint8),
+            np.ones((5, 5), np.uint8),
+            iterations=2,
+        ) > 0
+        sample_region = bubble_mask & ~mask_halo
+        sample_count = int(np.count_nonzero(sample_region))
+        if sample_count < 64:
+            return False, f"bubble-background-too-small:{sample_count}"
+
+        pixels = crop[sample_region, :3].astype(np.float32)
+        median = np.median(pixels, axis=0)
+        close_to_median = np.all(
+            np.abs(pixels - median) <= FAST_FILL_UNIFORM_COLOR_TOLERANCE,
+            axis=1,
+        )
+        uniform_coverage = float(np.count_nonzero(close_to_median)) / float(sample_count)
+        if uniform_coverage < FAST_FILL_MIN_UNIFORM_COVERAGE:
+            return False, f"bubble-background-nonuniform:coverage={uniform_coverage:.3f}"
+
+        return True, f"bubble-background-uniform:coverage={uniform_coverage:.3f}"
+
     def _apply_fast_bubble_cleanup(
         self,
         image: np.ndarray,
@@ -417,6 +468,7 @@ class InpaintingHandler:
         cleaned_image = image.copy()
         residual_mask = mask.copy()
         cleaned_blocks = 0
+        cleaned_bubble_blocks = []
 
         for idx, block in enumerate(blk_list):
             if getattr(block, "xyxy", None) is None or len(block.xyxy) < 4:
@@ -431,6 +483,13 @@ class InpaintingHandler:
             if not np.any(residual_crop):
                 continue
             crop_mask = np.where(residual_crop > 0, 255, 0).astype(np.uint8)
+            background_is_uniform, uniformity_reason = self._is_fast_fill_bubble_background_uniform(
+                image, block, bounds, crop_mask
+            )
+            if not background_is_uniform:
+                logger.info("Inpaint fast-fill: block[%d] routed to NN (%s)", idx, uniformity_reason)
+                continue
+
             if getattr(block, "text_class", None) == "text_bubble" and getattr(block, "bubble_xyxy", None) is not None:
                 crop_mask = clip_mask_components_to_bubble(
                     crop_mask,
@@ -501,6 +560,7 @@ class InpaintingHandler:
                             reason = f"{reason}+retry_failed:{retry_reason}"
 
             cleaned_blocks += 1
+            cleaned_bubble_blocks.append(block)
             remaining_overlap = int(np.count_nonzero(residual_mask[y1:y2, x1:x2]))
             logger.info(
                 "Inpaint fast-fill: block[%d] cleaned overlap=%d remaining=%d bounds=%s %s reason=%s",
@@ -515,7 +575,7 @@ class InpaintingHandler:
         if cleaned_blocks:
             bubble_scope = np.zeros(mask.shape, dtype=bool)
             bubble_allowed = np.zeros(mask.shape, dtype=bool)
-            for bubble_block in blk_list:
+            for bubble_block in cleaned_bubble_blocks:
                 if getattr(bubble_block, "text_class", None) != "text_bubble" or getattr(bubble_block, "bubble_xyxy", None) is None:
                     continue
                 bubble_bounds = self._get_fast_fill_bounds(bubble_block, image)
