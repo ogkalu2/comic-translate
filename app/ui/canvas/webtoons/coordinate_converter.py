@@ -148,8 +148,10 @@ class CoordinateConverter:
         if not local_path.isEmpty():
             return {
                 'path': local_path,
-                'pen': stroke_item.pen().color().name() if hasattr(stroke_item, 'pen') else '#80ff0000',
-                'brush': stroke_item.brush().color().name() if hasattr(stroke_item, 'brush') else '#00000000',
+                # Preserve alpha. Segmentation masks use a semi-transparent
+                # brush; QColor.name() drops that channel on lazy unload.
+                'pen': stroke_item.pen().color().name(QColor.HexArgb) if hasattr(stroke_item, 'pen') else '#80ff0000',
+                'brush': stroke_item.brush().color().name(QColor.HexArgb) if hasattr(stroke_item, 'brush') else '#00000000',
                 'width': stroke_item.pen().width() if hasattr(stroke_item, 'pen') else 25
             }
         

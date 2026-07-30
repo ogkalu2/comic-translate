@@ -4,7 +4,7 @@ import logging
 import inspect
 import imkit as imk
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QColor, QImage, QPainter, QPen, QBrush
 
 from modules.utils.device import resolve_device
@@ -939,7 +939,19 @@ class InpaintingHandler:
             # Regular mode - original behavior
             self.main_page.apply_inpaint_patches(patch_list)
         
-        self.main_page.image_viewer.clear_brush_strokes() 
+        if self.main_page.webtoon_mode:
+            # Lazy loading keeps paths from neighbouring pages in the scene.
+            # Clearing them all also persists an empty state when those pages
+            # unload, losing segmentation that was never inpainted.
+            painted_rects = []
+            for patch in patch_list:
+                scene_pos = patch.get('scene_pos')
+                bbox = patch.get('bbox')
+                if scene_pos is not None and bbox is not None:
+                    painted_rects.append(QRectF(scene_pos[0], scene_pos[1], bbox[2], bbox[3]))
+            self.main_page.image_viewer.drawing_manager.clear_brush_strokes_in_scene_rects(painted_rects)
+        else:
+            self.main_page.image_viewer.clear_brush_strokes()
         self.main_page.undo_group.activeStack().endMacro()  
         # get_best_render_area(self.main_page.blk_list, original_image, inpainted)    
 

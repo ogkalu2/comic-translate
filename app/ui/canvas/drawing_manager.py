@@ -245,6 +245,11 @@ class DrawingManager:
             command = ClearBrushStrokesCommand(self.viewer)
             self.viewer.command_emitted.emit(command)
             
+    def clear_brush_strokes_in_scene_rects(self, scene_rects):
+        """Clear only strokes covered by completed webtoon inpainting patches."""
+        if not scene_rects:
+            return
+        self.viewer.command_emitted.emit(ClearBrushStrokesCommand(self.viewer, scene_rects))
     def has_drawn_elements(self):
         for item in self._scene.items():
             if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:

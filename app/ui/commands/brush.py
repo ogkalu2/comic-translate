@@ -1,5 +1,6 @@
 from typing import List
 from PySide6.QtGui import QUndoCommand
+from PySide6.QtCore import QRectF
 from PySide6.QtWidgets import QGraphicsPathItem
 from .base import PathCommandBase, PathProperties
 
@@ -45,16 +46,21 @@ class SegmentBoxesCommand(QUndoCommand, PathCommandBase):
         self.scene.update()
 
 class ClearBrushStrokesCommand(QUndoCommand, PathCommandBase):
-    def __init__(self, viewer):
+    def __init__(self, viewer, scene_rects: List[QRectF] | None = None):
         super().__init__()
         self.viewer = viewer
         self.scene = viewer._scene
         self.properties_list = []
+        self.scene_rects = scene_rects or []
 
     def redo(self):
         self.properties_list = []
         for item in self.scene.items():
             if isinstance(item, QGraphicsPathItem) and item != self.viewer.photo:
+                if self.scene_rects:
+                    item_rect = item.mapRectToScene(item.boundingRect())
+                    if not any(item_rect.intersects(rect) for rect in self.scene_rects):
+                        continue
                 self.properties_list.append(self.save_path_properties(item))
                 self.scene.removeItem(item)
         self.scene.update()
