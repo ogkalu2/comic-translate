@@ -22,6 +22,7 @@ from app.ui.canvas.text.text_item_properties import TextItemProperties
 from app.ui.canvas.save_renderer import ImageSaveRenderer
 from app.ui.export_chapters_dialog import ExportChaptersDialog, ExportChapterRow
 from app.controllers.psd_exporter import PsdPageData, export_psd_pages
+from app.controllers.psd_support import require_photoshopapi
 from app.projects.project_state import (
     close_state_store,
     load_state_from_proj_file,
@@ -706,6 +707,11 @@ class ProjectController:
             self.export_to_psd(selected_folder)
 
     def export_to_psd(self, output_folder: str, single_file_path: str | None = None):
+        try:
+            require_photoshopapi()
+        except Exception as exc:
+            self.main.default_error_handler((type(exc), exc, ''))
+            return
         self.main.image_ctrl.save_current_image_state()
         all_pages_current_state = self._build_all_pages_current_state()
         bundle_name = self._get_export_bundle_name()
@@ -716,6 +722,11 @@ class ProjectController:
         )
 
     def export_psd_plan(self, export_plan: list[dict]) -> None:
+        try:
+            require_photoshopapi()
+        except Exception as exc:
+            self.main.default_error_handler((type(exc), exc, ''))
+            return
         self.main.image_ctrl.save_current_image_state()
         all_pages_current_state = self._build_all_pages_current_state()
         bundle_name = self._get_export_bundle_name()

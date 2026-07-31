@@ -10,7 +10,7 @@ from typing import Any
 
 import imkit as imk
 import numpy as np
-import photoshopapi as psapi
+from app.controllers.psd_support import photoshopapi as psapi
 from PySide6 import QtCore, QtGui
 
 from app.ui.canvas.text_item import OutlineInfo, OutlineType

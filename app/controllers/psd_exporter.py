@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 import imkit as imk
 import numpy as np
-import photoshopapi as psapi
+from app.controllers.psd_support import photoshopapi as psapi
 from PySide6 import QtCore, QtGui
 
 from app.ui.canvas.text.text_item_properties import TextItemProperties

@@ -16,6 +16,7 @@ from app.ui.list_view_image_loader import ListViewImageLoader
 from app.thread_worker import GenericWorker
 from app.path_materialization import ensure_path_materialized
 from app.controllers.psd_importer import ImportedPsdPage, import_psd_files, prepare_psd_font_catalog
+from app.controllers.psd_support import require_photoshopapi
 from modules.utils.language_utils import to_canonical_language_name, to_ui_language_label
 
 if TYPE_CHECKING:
@@ -349,9 +350,11 @@ class ImageStateController:
                 )
                 return
             try:
+                require_photoshopapi()
                 prepare_psd_font_catalog()
-            except Exception:
-                pass
+            except Exception as exc:
+                self.main.default_error_handler((type(exc), exc, ''))
+                return
             self.main.project_ctrl.clear_recovery_checkpoint()
             self.clear_state()
             if prev_project_file:
