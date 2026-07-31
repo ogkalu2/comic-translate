@@ -7,7 +7,7 @@ This class is stateless and relies on live data from other managers.
 
 from typing import Optional
 from PySide6.QtCore import QPointF, QRectF
-from PySide6.QtGui import QPainterPath
+from PySide6.QtGui import QColor, QPainterPath
 
 
 class CoordinateConverter:
