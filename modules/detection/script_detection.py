@@ -80,6 +80,10 @@ def _preprocess(crop: np.ndarray) -> np.ndarray:
     else:
         grey = np.asarray(scaled, dtype=np.uint8)
 
+    # Normalize white text on a black background to the model's expected polarity.
+    if float(np.median(grey)) < 64.0:
+        grey = np.subtract(255, grey, dtype=np.uint8)
+
     black, white = _black_white(grey)
     contrast = (white - black) / 2.0
     if contrast <= 0.0:
