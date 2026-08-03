@@ -55,6 +55,7 @@ class RenderMixin:
         image_path: str,
         blocks: List[TextBlock],
         image_shape: tuple,
+        live_blocks: List[TextBlock] | None = None,
     ) -> None:
         page_state = self.main_page.image_states[image_path]
         viewer_state = page_state.setdefault("viewer_state", {})
@@ -96,6 +97,9 @@ class RenderMixin:
         webtoon_manager = getattr(self.main_page.image_viewer, "webtoon_manager", None)
         if self.main_page.webtoon_mode and webtoon_manager:
             should_emit_live = page_index in webtoon_manager.loaded_pages
+        live_block_ids = (
+            None if live_blocks is None else {id(block) for block in live_blocks}
+        )
         page_scene_offset = self._get_page_scene_offset(page_index)
 
         for block in blocks:
@@ -133,7 +137,7 @@ class RenderMixin:
             )
 
             font_color = get_smart_text_color(block.font_color, base_font_color)
-            if should_emit_live:
+            if should_emit_live and (live_block_ids is None or id(block) in live_block_ids):
                 render_block = block.deep_copy()
                 render_block.translation = wrapped_translation
                 render_block.xyxy = list(render_block.xyxy)
