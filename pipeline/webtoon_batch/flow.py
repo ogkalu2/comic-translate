@@ -324,12 +324,73 @@ class FlowMixin:
             physical_blocks.append(out)
         return physical_blocks
 
+    def _publish_physical_page_progress(
+        self: WebtoonBatchProcessor,
+        page_info: Dict,
+        page_accum: Dict[str, Dict],
+        patch_paths: set[str] | None = None,
+    ) -> None:
+        image_path = page_info["path"]
+        global_index = int(page_info["global_index"])
+        page_state = self.main_page.image_states.setdefault(image_path, {})
+        page_state.setdefault("viewer_state", {})
+
+        accumulated = page_accum[image_path]
+        blocks = list(accumulated["blocks"])
+        source_lang = page_state.get(
+            "source_lang",
+            to_canonical_language_name(
+                self.main_page.s_combo.currentText(),
+                self.main_page.lang_mapping,
+            ),
+        )
+        rtl = source_lang == "Japanese"
+        if blocks:
+            blocks = sort_blk_list(blocks, rtl)
+
+        emitted_block_count = int(accumulated.get("emitted_block_count", 0))
+        live_blocks = list(accumulated["blocks"][emitted_block_count:])
+        prepared_blocks = self._prepare_page_blocks_for_render(
+            image_path=image_path,
+            blocks=blocks,
+            has_patches=bool(accumulated["patches"]),
+        )
+        self._store_page_text_items(
+            page_index=global_index,
+            image_path=image_path,
+            blocks=prepared_blocks,
+            image_shape=(page_info["height"], page_info["width"], 3),
+            live_blocks=live_blocks,
+        )
+        accumulated["emitted_block_count"] = len(accumulated["blocks"])
+
+        pending_patch_paths = set(patch_paths or ())
+        pending_patch_paths.add(image_path)
+        for patch_path in pending_patch_paths:
+            patch_accum = page_accum.get(patch_path)
+            if patch_accum is None:
+                continue
+            emitted_patch_count = int(patch_accum.get("emitted_patch_count", 0))
+            pending_patches = list(patch_accum["patches"][emitted_patch_count:])
+            if pending_patches:
+                self.main_page.patches_processed.emit(pending_patches, patch_path)
+            patch_accum["emitted_patch_count"] = len(patch_accum["patches"])
+
+        logger.info(
+            "Webtoon batch page-progress: page=%s blocks=%d patches=%d",
+            image_path,
+            len(prepared_blocks),
+            len(accumulated["patches"]),
+        )
+
     def _finalize_physical_page(
         self: WebtoonBatchProcessor,
         page_info: Dict,
-        page_accum: Dict[str, Dict[str, List]],
+        page_accum: Dict[str, Dict],
         total_images: int,
         timestamp: str,
+        emit_live: bool = True,
+        emit_patches: bool = True,
     ) -> None:
         image_path = page_info["path"]
         selected_index = int(page_info["selected_index"])
@@ -371,10 +432,11 @@ class FlowMixin:
             image_path=image_path,
             blocks=prepared_blocks,
             image_shape=(page_info["height"], page_info["width"], 3),
+            live_blocks=None if emit_live else [],
         )
 
         self.final_patches_for_save[image_path] = patches
-        if patches:
+        if patches and emit_patches:
             self.main_page.patches_processed.emit(patches, image_path)
         self.main_page.render_state_ready.emit(image_path)
 
@@ -493,7 +555,12 @@ class FlowMixin:
 
             page_info_by_path = {info["path"]: info for info in physical_pages}
             page_accum = {
-                info["path"]: {"blocks": [], "patches": []}
+                info["path"]: {
+                    "blocks": [],
+                    "patches": [],
+                    "emitted_block_count": 0,
+                    "emitted_patch_count": 0,
+                }
                 for info in physical_pages
             }
 
@@ -616,6 +683,7 @@ class FlowMixin:
                     image_path=current_record["path"],
                 )
 
+                progress_patch_paths = {current_record["path"]}
                 self._emit_progress(current_record["selected_index"], total_images, 4, False)
                 mask, inpainted = self._inpaint_image_with_blocks(
                     current_record["image"], regular_blocks
@@ -644,6 +712,7 @@ class FlowMixin:
                             patch_path = patch.get("file_path")
                             if patch_path in page_accum:
                                 page_accum[patch_path]["patches"].append(patch)
+                                progress_patch_paths.add(patch_path)
 
                 final_blocks_virtual = regular_blocks + split_owned_blocks
                 rtl = source_lang == "Japanese"
@@ -656,12 +725,20 @@ class FlowMixin:
                 )
                 page_accum[current_record["path"]]["blocks"].extend(final_blocks_physical)
 
+                self._publish_physical_page_progress(
+                    page_info=page_info_by_path[current_record["path"]],
+                    page_accum=page_accum,
+                    patch_paths=progress_patch_paths,
+                )
+
                 if current_record.get("is_last_virtual", False):
                     self._finalize_physical_page(
                         page_info=page_info_by_path[current_record["path"]],
                         page_accum=page_accum,
                         total_images=total_images,
                         timestamp=timestamp,
+                        emit_live=False,
+                        emit_patches=False,
                     )
 
                 cached_current = next_record

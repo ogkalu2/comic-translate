@@ -168,7 +168,13 @@ class PPOCRv5Engine(OCREngine):
 			all_crops: list[np.ndarray] = []
 			for blk in blk_list:
 				lines = getattr(blk, 'lines', None) or [blk.xyxy]
-				crops = [_crop_line(img, line) for line in lines]
+				rotate_vertical = _should_rotate_line_crops(blk)
+				if (
+					(getattr(blk, 'direction', '') or '').strip().lower() == 'vertical'
+					and not rotate_vertical
+				):
+					lines = [blk.xyxy]
+				crops = [_crop_line(img, line, rotate_vertical) for line in lines]
 				valid_lines: list[Any] = []
 				valid_crops: list[np.ndarray] = []
 				for line, crop in zip(lines, crops):
@@ -206,7 +212,19 @@ class PPOCRv5Engine(OCREngine):
 		return lists_to_blk_list(blk_list, bboxes, texts)
 
 
-def _crop_line(img: np.ndarray, line) -> np.ndarray | None:
+def _should_rotate_line_crops(blk: TextBlock) -> bool:
+	if (getattr(blk, 'direction', '') or '').strip().lower() != 'vertical':
+		return False
+	if getattr(blk, 'xyxy', None) is None:
+		return False
+	x1, y1, x2, y2 = [float(value) for value in blk.xyxy[:4]]
+	width = max(1.0, x2 - x1)
+	height = max(1.0, y2 - y1)
+	# A square-ish block is usually one or two tall glyphs, not vertical text.
+	return height > width * 1.15
+
+
+def _crop_line(img: np.ndarray, line, rotate_vertical: bool = False) -> np.ndarray | None:
 	arr = np.asarray(line)
 	if arr.ndim == 2 and arr.shape[0] >= 4 and arr.shape[1] == 2:
 		return crop_quad(img, arr.astype(np.float32))
@@ -221,7 +239,7 @@ def _crop_line(img: np.ndarray, line) -> np.ndarray | None:
 		return None
 	crop = img[y1:y2, x1:x2]
 	h, w = crop.shape[:2]
-	if h > 0 and w > 0 and h / float(w) >= 1.5:
+	if rotate_vertical and h > 0 and w > 0:
 		crop = np.rot90(crop)
 	return crop
 

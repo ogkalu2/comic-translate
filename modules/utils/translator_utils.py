@@ -85,6 +85,12 @@ def format_translations(blk_list: list[TextBlock], trg_lng_cd: str, upper_case: 
 def is_there_text(blk_list: list[TextBlock]) -> bool:
     return any(blk.text for blk in blk_list)
 
+def has_translatable_content(text: str | None) -> bool:
+    """True when source text contains a letter or number worth translating."""
+    if not text:
+        return False
+    return any(ch.isalnum() for ch in text)
+
 def is_renderable_translation(translation: str | None) -> bool:
     """True if the render stage should draw this translation.
 
@@ -94,6 +100,4 @@ def is_renderable_translation(translation: str | None) -> bool:
     bubble gets cleaned with nothing drawn over it. Unlike a length check,
     this keeps legitimate single-character translations (e.g. "何", "5").
     """
-    if not translation:
-        return False
-    return any(ch.isalnum() for ch in translation)
+    return has_translatable_content(translation)

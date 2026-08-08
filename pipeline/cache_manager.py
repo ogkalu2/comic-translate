@@ -1,6 +1,8 @@
 import hashlib
 import logging
 
+from modules.utils.translator_utils import has_translatable_content
+
 logger = logging.getLogger(__name__)
 
 
@@ -321,10 +323,15 @@ class CacheManager:
 
     def _can_serve_all_blocks_from_translation_cache(self, cache_key, block_list):
         """Check if all blocks in the list can be served from translation cache with matching source text"""
+        translatable_blocks = [
+            block for block in block_list if has_translatable_content(getattr(block, "text", ""))
+        ]
+        if not translatable_blocks:
+            return True
         if not self._is_translation_cached(cache_key):
             return False
         
-        for block in block_list:
+        for block in translatable_blocks:
             cached_translation = self._get_cached_translation_for_block(cache_key, block)
             if cached_translation is None:  # Block not found in cache or source text changed
                 return False
@@ -341,6 +348,9 @@ class CacheManager:
     def _apply_cached_translations_to_blocks(self, cache_key, block_list):
         """Apply cached translation results to all blocks in the list"""
         for block in block_list:
+            if not has_translatable_content(getattr(block, "text", "")):
+                block.translation = ""
+                continue
             cached_translation = self._get_cached_translation_for_block(cache_key, block)
             if cached_translation is not None: 
                 block.translation = cached_translation  

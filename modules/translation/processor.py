@@ -1,6 +1,7 @@
 import numpy as np
 
 from ..utils.textblock import TextBlock
+from ..utils.translator_utils import has_translatable_content
 from .base import LLMTranslation
 from .factory import TranslationFactory
 
@@ -94,9 +95,20 @@ class Translator:
         Returns:
             List of updated TextBlock objects with translations
         """
+        translatable_blocks = []
+        for block in blk_list:
+            if has_translatable_content(getattr(block, "text", "")):
+                translatable_blocks.append(block)
+            else:
+                block.translation = ""
+
+        if not translatable_blocks:
+            return blk_list
+
         if self.is_llm_engine:
             # LLM translators need image and extra context
-            return self.engine.translate(blk_list, image, extra_context)
+            self.engine.translate(translatable_blocks, image, extra_context)
         else:
             # Text-based translators only need the text blocks
-            return self.engine.translate(blk_list)
+            self.engine.translate(translatable_blocks)
+        return blk_list
