@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, List, Tuple, Optional
 import numpy as np
 import onnxruntime as ort
-
 from modules.ocr.base import OCREngine
 from modules.utils.textblock import TextBlock
 from modules.utils.textblock import lists_to_blk_list
@@ -18,9 +17,9 @@ from .postprocessing import DBPostProcessor, CTCLabelDecoder
 LANG_TO_REC_MODEL: dict[str, ModelID] = {
 	'ch': ModelID.PPOCR_V6_REC_SMALL,
 	'ja': ModelID.PPOCR_V6_REC_SMALL,
-	'en': ModelID.PPOCR_V5_REC_EN_MOBILE,
+	'en': ModelID.PPOCR_V6_REC_SMALL,
 	'ko': ModelID.PPOCR_V5_REC_KOREAN_MOBILE,
-	'latin': ModelID.PPOCR_V5_REC_LATIN_MOBILE,
+	'latin': ModelID.PPOCR_V6_REC_SMALL,
 	'ru': ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
 	'eslav': ModelID.PPOCR_V5_REC_ESLAV_MOBILE,
 }
@@ -89,7 +88,10 @@ class PPOCRv5Engine(OCREngine):
 		dict_file = [p for n, p in rec_paths.items() if n.endswith('.txt')]
 		dict_path = dict_file[0] if dict_file else None
 
-		providers = get_providers(device)
+		# Recognition runs reliably on CPU. The CUDA execution provider is
+		# known to return empty output for this PPOCRv5 rec model, so we always
+		# force the CPU provider regardless of the requested device.
+		providers = ['CPUExecutionProvider']
 		sess_opt = _make_ppocr_session_options(self.rec_threads)
 		self.rec_sess = make_session(rec_model, sess_options=sess_opt, providers=providers)
 
