@@ -116,91 +116,95 @@ def download_url_to_file(
         total = None
 
         try:
-            with _open_url(url, headers=headers, timeout=timeout) as response:
-                # If we requested a Range and got 200 instead of 206, server ignored resume -> restart
-                if partial_size and getattr(response, 'status', getattr(response, 'code', None)) not in (206,):
-                    partial_size = 0
-                    downloaded = 0
-                    # Truncate the temp file
-                    try:
-                        with open(tmp_dst, 'wb'):
-                            pass
-                    except Exception:
-                        pass
-
-                total_str = response.headers.get("Content-Length")
-                content_range = response.headers.get("Content-Range")
-                if content_range:
-                    # Format: bytes start-end/total
-                    try:
-                        total = int(content_range.split("/")[-1])
-                    except Exception:
-                        total = None
-                elif total_str and total_str.isdigit():
-                    t = int(total_str)
-                    total = t + partial_size if partial_size and headers.get("Range") else t
-
-                # Pre-hash existing partial bytes if resuming and hash needed
-                if sha256 and partial_size:
-                    try:
-                        with open(tmp_dst, 'rb') as existing:
-                            for chunk in iter(lambda: existing.read(CHUNK_SIZE), b""):
-                                sha256.update(chunk)
-                    except Exception:
-                        # If we fail to read partial, start over
-                        sha256 = hashlib.sha256() if hash_prefix else None
+            try:
+                with _open_url(url, headers=headers, timeout=timeout) as response:
+                    # If we requested a Range and got 200 instead of 206, server ignored resume -> restart
+                    if partial_size and getattr(response, 'status', getattr(response, 'code', None)) not in (206,):
                         partial_size = 0
                         downloaded = 0
+                        # Truncate the temp file
+                        try:
+                            with open(tmp_dst, 'wb'):
+                                pass
+                        except Exception:
+                            pass
 
-                mode = 'ab' if partial_size else 'wb'
-                with open(tmp_dst, mode) as f:
-                    while True:
-                        chunk = response.read(CHUNK_SIZE)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        if sha256:
-                            sha256.update(chunk)
-                        if progress:
-                            if total:
-                                pct = min(downloaded / total * 100, 100)
-                                bar_len = 30
-                                filled = int(bar_len * downloaded / total)
-                                bar = "#" * filled + "-" * (bar_len - filled)
+                    total_str = response.headers.get("Content-Length")
+                    content_range = response.headers.get("Content-Range")
+                    if content_range:
+                        # Format: bytes start-end/total
+                        try:
+                            total = int(content_range.split("/")[-1])
+                        except Exception:
+                            total = None
+                    elif total_str and total_str.isdigit():
+                        t = int(total_str)
+                        total = t + partial_size if partial_size and headers.get("Range") else t
+
+                    # Pre-hash existing partial bytes if resuming and hash needed
+                    if sha256 and partial_size:
+                        try:
+                            with open(tmp_dst, 'rb') as existing:
+                                for chunk in iter(lambda: existing.read(CHUNK_SIZE), b""):
+                                    sha256.update(chunk)
+                        except Exception:
+                            # If we fail to read partial, start over
+                            sha256 = hashlib.sha256() if hash_prefix else None
+                            partial_size = 0
+                            downloaded = 0
+
+                    mode = 'ab' if partial_size else 'wb'
+                    with open(tmp_dst, mode) as f:
+                        while True:
+                            chunk = response.read(CHUNK_SIZE)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            if sha256:
+                                sha256.update(chunk)
+                            if progress:
+                                if total:
+                                    pct = min(downloaded / total * 100, 100)
+                                    bar_len = 30
+                                    filled = int(bar_len * downloaded / total)
+                                    bar = "#" * filled + "-" * (bar_len - filled)
+                                    if sys.stderr:
+                                        sys.stderr.write(
+                                            f"\r[{bar}] {pct:5.1f}% ({_format_size(downloaded)}/{_format_size(total)})"
+                                        )
+                                else:
+                                    if sys.stderr:
+                                        sys.stderr.write(f"\rDownloaded {_format_size(downloaded)}")
+                                
                                 if sys.stderr:
-                                    sys.stderr.write(
-                                        f"\r[{bar}] {pct:5.1f}% ({_format_size(downloaded)}/{_format_size(total)})"
-                                    )
-                            else:
-                                if sys.stderr:
-                                    sys.stderr.write(f"\rDownloaded {_format_size(downloaded)}")
-                            
-                            if sys.stderr:
-                                sys.stderr.flush()
+                                    sys.stderr.flush()
 
-            if progress:
-                if sys.stderr:
-                    sys.stderr.write("\n")
+                if progress:
+                    if sys.stderr:
+                        sys.stderr.write("\n")
 
-            # Hash verification
-            if sha256 and hash_prefix:
-                digest = sha256.hexdigest()
-                if not digest.startswith(hash_prefix):
-                    try:
-                        os.remove(tmp_dst)
-                    except Exception:
-                        pass
-                    raise RuntimeError(
-                        f"Downloaded file hash mismatch: expected prefix {hash_prefix}, got {digest}."
-                    )
+                # Hash verification
+                if sha256 and hash_prefix:
+                    digest = sha256.hexdigest()
+                    if not digest.startswith(hash_prefix):
+                        try:
+                            os.remove(tmp_dst)
+                        except Exception:
+                            pass
+                        raise RuntimeError(
+                            f"Downloaded file hash mismatch: expected prefix {hash_prefix}, got {digest}."
+                        )
 
-            # If total known but mismatch in size -> treat as retryable incomplete read
-            if total is not None and downloaded < total:
-                raise http.client.IncompleteRead(partial=downloaded)
+                # If total known but mismatch in size -> treat as retryable incomplete read
+                if total is not None and downloaded < total:
+                    raise http.client.IncompleteRead(partial=downloaded)
 
-            os.replace(tmp_dst, dst)
-            return  # Success
+                os.replace(tmp_dst, dst)
+                return  # Success
+            except urllib.error.URLError as e:
+                # Wrap URLError with the failing URL for better diagnostics
+                raise urllib.error.URLError(f"Failed to reach {url}. Reason: {e.reason}") from e
 
         except KeyboardInterrupt:
             raise
