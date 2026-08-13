@@ -106,7 +106,9 @@ class InpaintingHandler:
         gen_painter = QPainter(gen_qimg)
 
         human_painter.setPen(QPen(QColor(255, 255, 255), 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        gen_painter.setPen(QPen(QColor(255, 255, 255), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        # Auto-generated segmentation paths already represent the automatic
+        # mask.  Do not widen their contour when rebuilding saved strokes.
+        gen_painter.setPen(QPen(Qt.PenStyle.NoPen))
         human_painter.setBrush(QBrush(QColor(255, 255, 255)))
         gen_painter.setBrush(QBrush(QColor(255, 255, 255)))
 
@@ -137,7 +139,6 @@ class InpaintingHandler:
         gen_mask = self._qimage_to_np(gen_qimg)
         kernel = np.ones((5, 5), np.uint8)
         human_mask = imk.dilate(human_mask, kernel, iterations=2)
-        gen_mask = imk.dilate(gen_mask, kernel, iterations=3)
         mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         if np.count_nonzero(mask) == 0:
             return None
