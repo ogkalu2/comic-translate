@@ -276,9 +276,11 @@ class InpaintingHandler:
         if getattr(block, "text_class", None) == "text_bubble":
             bubble_bounds = getattr(block, "bubble_xyxy", None)
             if bubble_bounds is not None and len(bubble_bounds) >= 4:
-                return adjust_text_line_coordinates(bubble_bounds, 10, 10, image)
+                bounds = adjust_text_line_coordinates(bubble_bounds, 10, 10, image)
+                return tuple(int(value) for value in bounds)
 
-        return adjust_text_line_coordinates(base_bounds, 10, 10, image)
+        bounds = adjust_text_line_coordinates(base_bounds, 10, 10, image)
+        return tuple(int(value) for value in bounds)
 
     @staticmethod
     def _same_bounds(
