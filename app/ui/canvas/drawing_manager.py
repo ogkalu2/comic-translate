@@ -351,8 +351,9 @@ class DrawingManager:
         # Human brush strokes are intentionally expanded for forgiving manual
         # cleanup.  Generated segmentation paths must retain their original
         # automatic-mask geometry.
-        kernel = np.ones((5,5), np.uint8)
-        human_mask = imk.dilate(human_mask, kernel, iterations=2)
+        # A one-pixel halo catches antialiased edges without making the actual
+        # cleanup area noticeably wider than the brush the user painted.
+        human_mask = imk.dilate(human_mask, np.ones((3, 3), np.uint8), iterations=1)
 
         # Combine masks (bitwise_or equivalent)
         final_mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)

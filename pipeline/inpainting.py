@@ -137,8 +137,9 @@ class InpaintingHandler:
 
         human_mask = self._qimage_to_np(human_qimg)
         gen_mask = self._qimage_to_np(gen_qimg)
-        kernel = np.ones((5, 5), np.uint8)
-        human_mask = imk.dilate(human_mask, kernel, iterations=2)
+        # Match the live canvas: retain only a one-pixel antialiasing halo
+        # around hand-painted strokes.
+        human_mask = imk.dilate(human_mask, np.ones((3, 3), np.uint8), iterations=1)
         mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         if np.count_nonzero(mask) == 0:
             return None
