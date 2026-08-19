@@ -65,7 +65,8 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
         self.credential_services = [
-            self.tr("Custom"), 
+            self.tr("Custom"),
+            self.tr("LiteLLM"),
         ]
         
         self.supported_translators = [
@@ -75,6 +76,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Claude-4.6-Sonnet"),
             self.tr("Claude-4.5-Haiku"),
             self.tr("Deepseek"),
+            self.tr("LiteLLM"),
             self.tr("Custom"),
         ]
         
@@ -154,6 +156,7 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("DeepL"): "DeepL",
             self.tr("Anthropic Claude"): "Anthropic Claude",
             self.tr("Yandex"): "Yandex",
+            self.tr("LiteLLM"): "LiteLLM",
         }
 
         # Create reverse mappings for loading

@@ -18,3 +18,4 @@ six>=1.16.0
 PhotoshopAPI>=0.9.0
 send2trash>=2.1.0
 PyJWT>=2.8.0
+litellm
