@@ -14,7 +14,7 @@ from modules.utils.language_utils import language_codes
 logger = logging.getLogger(__name__)
 
 _SETTINGS_KEY = "client_catalog/json"
-_SCHEMA_VERSION = 4
+_SCHEMA_VERSION = 1
 
 
 def _fallback_rendering(language: str) -> dict[str, bool | str]:
