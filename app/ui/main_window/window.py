@@ -13,7 +13,7 @@ from app.ui.list_view import PageListView
 from app.ui.settings.settings_page import SettingsPage
 from app.ui.startup_home import StartupHomeScreen
 from app.ui.title_bar import CustomTitleBar, RESIZE_MARGIN
-from modules.utils.language_utils import language_codes
+from modules.utils.language_utils import register_target_language
 from .builders import MainWindowBuildersMixin
 from .frame import EdgeResizer
 from .tools import ToolStateMixin
@@ -200,7 +200,7 @@ class ComicTranslateUI(
         for item in target_languages:
             self.lang_mapping[item["label"]] = item["value"]
             self.reverse_lang_mapping[item["value"]] = item["label"]
-            language_codes[item["value"]] = item["code"]
+            register_target_language(item["value"], item["code"], item.get("rendering"))
         self.t_combo.blockSignals(True)
         self.t_combo.clear()
         self.t_combo.addItems(labels)

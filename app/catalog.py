@@ -17,6 +17,14 @@ _SETTINGS_KEY = "client_catalog/json"
 _SCHEMA_VERSION = 4
 
 
+def _fallback_rendering(language: str) -> dict[str, bool | str]:
+    return {
+        "direction": "rtl" if language in {"Arabic", "Hebrew", "Persian"} else "ltr",
+        "no_space": language in {"Japanese", "Simplified Chinese", "Traditional Chinese", "Thai"},
+        "vertical": language in {"Japanese", "Simplified Chinese", "Traditional Chinese"},
+    }
+
+
 class ClientCatalog(QObject):
     """Provides a bundled fallback, persisted cache, and non-blocking refresh."""
 
@@ -45,7 +53,7 @@ class ClientCatalog(QObject):
             ],
             "image_context_credits": 1,
             "target_languages": [
-                {"value": value, "label": label, "code": language_codes[value]} for value, label in [
+                {"value": value, "label": label, "code": language_codes[value], "rendering": _fallback_rendering(value)} for value, label in [
                     ("English", "English"), ("Korean", "한국어"), ("Japanese", "日本語"),
                     ("French", "Français"), ("Simplified Chinese", "简体中文"),
                     ("Traditional Chinese", "繁體中文"), ("Russian", "Русский"), ("German", "Deutsch"),
@@ -96,5 +104,13 @@ class ClientCatalog(QObject):
             and isinstance(catalog.get("target_languages"), list)
             and all(isinstance(item, dict) and isinstance(item.get("value"), str) and isinstance(item.get("label"), str)
                     and isinstance(item.get("code"), str)
+                    and (
+                        "rendering" not in item or (
+                            isinstance(item["rendering"], dict)
+                            and item["rendering"].get("direction") in {"ltr", "rtl"}
+                            and isinstance(item["rendering"].get("no_space"), bool)
+                            and isinstance(item["rendering"].get("vertical"), bool)
+                        )
+                    )
                     for item in catalog.get("target_languages", []))
         )
