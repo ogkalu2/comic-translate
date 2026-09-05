@@ -200,11 +200,20 @@ class PPOCRv5Engine(OCREngine):
 		boxes, _ = self._det_infer(img)
 		if boxes is None or len(boxes) == 0:
 			return blk_list
-		crops = [crop_quad(img, quad.astype(np.float32)) for quad in boxes]
+		# Keep boxes and crops paired: malformed detector quads are skipped rather
+		# than aborting OCR for the entire page.
+		valid_detections = [
+			(quad, crop)
+			for quad in boxes
+			if (crop := crop_quad(img, quad.astype(np.float32))) is not None and crop.size > 0
+		]
+		if not valid_detections:
+			return blk_list
+		valid_boxes, crops = zip(*valid_detections)
 		texts, _ = self._rec_infer(crops)
 		# map quads -> axis-aligned boxes
 		bboxes = []
-		for quad in boxes:
+		for quad in valid_boxes:
 			xs = quad[:, 0]
 			ys = quad[:, 1]
 			x1, y1, x2, y2 = int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
