@@ -59,8 +59,14 @@ class SettingsPageUI(QtWidgets.QWidget):
             self.tr("Default"), 
             self.tr('Microsoft OCR'), 
             self.tr('Gemini-2.5-Flash-Lite'), 
+            self.tr('Custom'),
         ]
+        # Internal (translation-independent) values for the OCR combo. These
+        # must match the keys the OCR factory expects (e.g. "Custom").
+        self.ocr_engine_values = ["Default", "Microsoft OCR", "Gemini-2.5-Flash-Lite", "Custom"]
         self.inpaint_strategy = [self.tr('Resize'), self.tr('Original'), self.tr('Crop')]
+        # Internal values for the HD strategy combo (stable keys).
+        self.inpaint_strategy_values = ["Resize", "Original", "Crop"]
         self.themes = [self.tr('Dark'), self.tr('Light')]
         self.alignment = [self.tr("Left"), self.tr("Center"), self.tr("Right")]
 
@@ -178,9 +184,11 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.tools_page = ToolsPage(
             translators=self.supported_translators,
             ocr_engines=self.ocr_engines,
+            ocr_engine_values=self.ocr_engine_values,
             detectors=self.detectors,
             inpainters=self.inpainters,
             inpaint_strategy=self.inpaint_strategy,
+            inpaint_strategy_values=self.inpaint_strategy_values,
             parent=self,
         )
         self.credentials_page = CredentialsPage(

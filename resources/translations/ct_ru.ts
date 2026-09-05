@@ -1722,6 +1722,10 @@ then do inpainting on the resized image.</source>
         <source>Original</source>
         <translation>Оригинал</translation>
     </message>
+    <message>
+        <source>Add Custom Model</source>
+        <translation>Добавить пользовательскую модель</translation>
+    </message>
 </context>
 <context>
     <name>WorkspaceMixin</name>
@@ -2620,6 +2624,50 @@ It may have been moved, renamed, or deleted.
         <location filename="../../app/ui/canvas/rectangle.py" line="81"/>
         <source>Translate</source>
         <translation>Перевести</translation>
+    </message>
+</context>
+
+<context>
+    <name>CustomOCRDialog</name>
+    <message>
+        <source>Custom OCR Provider</source>
+        <translation>Пользовательский OCR-провайдер</translation>
+    </message>
+    <message>
+        <source>Connect any OpenAI-compatible vision API (e.g. Ollama, LM Studio, vLLM, or a cloud provider). The base URL should point to the API root, e.g. http://localhost:11434/v1 — '/chat/completions' is added automatically.</source>
+        <translation>Подключите любой совместимый с OpenAI API компьютерного зрения (например, Ollama, LM Studio, vLLM или облачный провайдер). Базовый URL должен указывать на корень API, напр. http://localhost:11434/v1 — '/chat/completions' добавляется автоматически.</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>URL API</translation>
+    </message>
+    <message>
+        <source>Load Models</source>
+        <translation>Загрузить модели</translation>
+    </message>
+    <message>
+        <source>The model must support image (vision) input — e.g. llama3.2-vision, llava, or qwen2.5-vl. Plain text models will return an error.</source>
+        <translation>Модель должна поддерживать ввод изображений (компьютерное зрение) — напр. llama3.2-vision, llava или qwen2.5-vl. Текстовые модели вернут ошибку.</translation>
+    </message>
+    <message>
+        <source>Save API Key</source>
+        <translation>Сохранить ключ API</translation>
+    </message>
+    <message>
+        <source>API Key</source>
+        <translation>Ключ API</translation>
+    </message>
+    <message>
+        <source>Model</source>
+        <translation>Модель</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>Отмена</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Сохранить</translation>
     </message>
 </context>
 </TS>

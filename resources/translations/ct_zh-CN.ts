@@ -1720,6 +1720,10 @@ then do inpainting on the resized image.</source>
         <source>Original</source>
         <translation>原始</translation>
     </message>
+    <message>
+        <source>Add Custom Model</source>
+        <translation>添加自定义模型</translation>
+    </message>
 </context>
 <context>
     <name>WorkspaceMixin</name>
@@ -2617,6 +2621,50 @@ It may have been moved, renamed, or deleted.
         <location filename="../../app/ui/canvas/rectangle.py" line="81"/>
         <source>Translate</source>
         <translation>翻译</translation>
+    </message>
+</context>
+
+<context>
+    <name>CustomOCRDialog</name>
+    <message>
+        <source>Custom OCR Provider</source>
+        <translation>自定义 OCR 提供方</translation>
+    </message>
+    <message>
+        <source>Connect any OpenAI-compatible vision API (e.g. Ollama, LM Studio, vLLM, or a cloud provider). The base URL should point to the API root, e.g. http://localhost:11434/v1 — '/chat/completions' is added automatically.</source>
+        <translation>可连接任何兼容 OpenAI 的视觉 API（例如 Ollama、LM Studio、vLLM 或云服务商）。基础 URL 应指向 API 根地址，例如 http://localhost:11434/v1 — 系统会自动附加“/chat/completions”。</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>API 地址</translation>
+    </message>
+    <message>
+        <source>Load Models</source>
+        <translation>加载模型</translation>
+    </message>
+    <message>
+        <source>The model must support image (vision) input — e.g. llama3.2-vision, llava, or qwen2.5-vl. Plain text models will return an error.</source>
+        <translation>模型必须支持图像（视觉）输入，例如 llama3.2-vision、llava 或 qwen2.5-vl。纯文本模型会返回错误。</translation>
+    </message>
+    <message>
+        <source>Save API Key</source>
+        <translation>保存 API 密钥</translation>
+    </message>
+    <message>
+        <source>API Key</source>
+        <translation>API 密钥</translation>
+    </message>
+    <message>
+        <source>Model</source>
+        <translation>模型</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>保存</translation>
     </message>
 </context>
 </TS>

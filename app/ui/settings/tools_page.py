@@ -1,11 +1,16 @@
 from PySide6 import QtWidgets
+from PySide6.QtCore import Signal
 from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.check_box import MCheckBox
 from ..dayu_widgets.spin_box import MSpinBox
+from ..dayu_widgets.push_button import MPushButton
 from .utils import create_title_and_combo, set_combo_box_width
 from modules.utils.device import is_gpu_available
 
 class ToolsPage(QtWidgets.QWidget):
+    # Emitted when the user wants to configure the custom OCR provider.
+    custom_ocr_requested = Signal()
+
     def __init__(
         self, 
         translators: list[str], 
@@ -13,22 +18,31 @@ class ToolsPage(QtWidgets.QWidget):
         detectors: list[str],
         inpainters: list[str], 
         inpaint_strategy: list[str], 
+        ocr_engine_values: list[str] | None = None,
+        inpaint_strategy_values: list[str] | None = None,
         parent=None
     ):
         super().__init__(parent)
         self.translators = translators
         self.ocr_engines = ocr_engines
+        self.ocr_engine_values = ocr_engine_values
         self.detectors = detectors
         self.inpainters = inpainters
         self.inpaint_strategy = inpaint_strategy
+        self.inpaint_strategy_values = inpaint_strategy_values
 
         layout = QtWidgets.QVBoxLayout(self)
 
         translator_widget, self.translator_combo = create_title_and_combo(self.tr("Translator"), self.translators, h4=True)
         set_combo_box_width(self.translator_combo, self.translators)
 
-        ocr_widget, self.ocr_combo = create_title_and_combo(self.tr("Text Recognition"), self.ocr_engines, h4=True)
+        ocr_widget, self.ocr_combo = create_title_and_combo(self.tr("Text Recognition"), self.ocr_engines, h4=True, values=self.ocr_engine_values)
         set_combo_box_width(self.ocr_combo, self.ocr_engines)
+
+        self.custom_ocr_button = MPushButton(self.tr("Add Custom Model"))
+        self.custom_ocr_button.setVisible(False)
+        self.custom_ocr_button.clicked.connect(lambda: self.custom_ocr_requested.emit())
+        self.ocr_combo.currentTextChanged.connect(self._update_custom_ocr_button)
 
         detector_widget, self.detector_combo = create_title_and_combo(self.tr("Text Detector"), self.detectors, h4=True)
         set_combo_box_width(self.detector_combo, self.detectors)
@@ -38,7 +52,7 @@ class ToolsPage(QtWidgets.QWidget):
         set_combo_box_width(self.inpainter_combo, self.inpainters)
         self.inpainter_combo.setCurrentText(self.tr("AOT"))
 
-        inpaint_strategy_widget, self.inpaint_strategy_combo = create_title_and_combo(self.tr("HD Strategy"), self.inpaint_strategy, h4=False)
+        inpaint_strategy_widget, self.inpaint_strategy_combo = create_title_and_combo(self.tr("HD Strategy"), self.inpaint_strategy, h4=False, values=self.inpaint_strategy_values)
         set_combo_box_width(self.inpaint_strategy_combo, self.inpaint_strategy)
         self.inpaint_strategy_combo.setCurrentText(self.tr("Resize"))
 
@@ -111,6 +125,7 @@ class ToolsPage(QtWidgets.QWidget):
         layout.addWidget(detector_widget)
         layout.addSpacing(10)
         layout.addWidget(ocr_widget)
+        layout.addWidget(self.custom_ocr_button)
         layout.addSpacing(10)
         layout.addWidget(inpainting_label)
         layout.addWidget(inpainter_widget)
@@ -121,12 +136,21 @@ class ToolsPage(QtWidgets.QWidget):
         layout.addStretch(1)
 
         self._update_hd_strategy_widgets(self.inpaint_strategy_combo.currentIndex())
+        self._update_custom_ocr_button(self.ocr_combo.currentText())
+
+    def _update_custom_ocr_button(self, text: str):
+        """Show the custom OCR button only when 'Custom' is selected.
+
+        Uses the combo's internal item data (not the translated display text)
+        so the button appears regardless of the UI language.
+        """
+        self.custom_ocr_button.setVisible(self.ocr_combo.currentData() == "Custom")
 
     def _update_hd_strategy_widgets(self, index: int):
-        strategy = self.inpaint_strategy_combo.itemText(index)
-        self.resize_widget.setVisible(strategy == self.tr("Resize"))
-        self.crop_widget.setVisible(strategy == self.tr("Crop"))
-        if strategy == self.tr("Original"):
+        strategy = self.inpaint_strategy_combo.itemData(index)
+        self.resize_widget.setVisible(strategy == "Resize")
+        self.crop_widget.setVisible(strategy == "Crop")
+        if strategy == "Original":
             self.hd_strategy_widgets.setFixedHeight(0)
         else:
             self.hd_strategy_widgets.setFixedHeight(self.hd_strategy_widgets.sizeHint().height())

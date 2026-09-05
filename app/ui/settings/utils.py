@@ -5,8 +5,13 @@ from ..dayu_widgets.label import MLabel
 from ..dayu_widgets.combo_box import MComboBox
 
 
-def create_title_and_combo(title: str, options: list[str], h4: bool = True) -> tuple[QtWidgets.QWidget, MComboBox]:
+def create_title_and_combo(title: str, options: list[str], h4: bool = True, values: list[str] | None = None) -> tuple[QtWidgets.QWidget, MComboBox]:
     """Create a small widget containing a title label and a combo box.
+
+    If ``values`` is provided (parallel to ``options``), each item's internal
+    value is stored as ``itemData`` so callers can read a stable,
+    translation-independent key via ``combo.currentData()`` instead of the
+    translated display text.
 
     Returns (widget, combo_box).
     """
@@ -14,7 +19,11 @@ def create_title_and_combo(title: str, options: list[str], h4: bool = True) -> t
     v = QtWidgets.QVBoxLayout(w)
     label = MLabel(title).h4() if h4 else MLabel(title)
     combo = MComboBox().small()
-    combo.addItems(options)
+    if values is not None:
+        for opt, val in zip(options, values):
+            combo.addItem(opt, val)
+    else:
+        combo.addItems(options)
     v.addWidget(label)
     v.addWidget(combo)
     return w, combo

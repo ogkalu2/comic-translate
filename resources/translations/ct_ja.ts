@@ -1722,6 +1722,10 @@ then do inpainting on the resized image.</source>
         <source>Original</source>
         <translation>オリジナル</translation>
     </message>
+    <message>
+        <source>Add Custom Model</source>
+        <translation>カスタムモデルを追加</translation>
+    </message>
 </context>
 <context>
     <name>WorkspaceMixin</name>
@@ -2620,6 +2624,50 @@ It may have been moved, renamed, or deleted.
         <location filename="../../app/ui/canvas/rectangle.py" line="81"/>
         <source>Translate</source>
         <translation>翻訳する</translation>
+    </message>
+</context>
+
+<context>
+    <name>CustomOCRDialog</name>
+    <message>
+        <source>Custom OCR Provider</source>
+        <translation>カスタムOCRプロバイダー</translation>
+    </message>
+    <message>
+        <source>Connect any OpenAI-compatible vision API (e.g. Ollama, LM Studio, vLLM, or a cloud provider). The base URL should point to the API root, e.g. http://localhost:11434/v1 — '/chat/completions' is added automatically.</source>
+        <translation>Ollama、LM Studio、vLLM、クラウドプロバイダーなど、OpenAI互換の画像認識APIを接続できます。ベースURLはAPIのルートを指す必要があります（例: http://localhost:11434/v1）。「/chat/completions」は自動的に追加されます。</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>API URL</translation>
+    </message>
+    <message>
+        <source>Load Models</source>
+        <translation>モデルを読み込む</translation>
+    </message>
+    <message>
+        <source>The model must support image (vision) input — e.g. llama3.2-vision, llava, or qwen2.5-vl. Plain text models will return an error.</source>
+        <translation>モデルは画像（ビジョン）入力をサポートしている必要があります（例: llama3.2-vision、llava、qwen2.5-vl）。テキストのみのモデルはエラーを返します。</translation>
+    </message>
+    <message>
+        <source>Save API Key</source>
+        <translation>APIキーを保存</translation>
+    </message>
+    <message>
+        <source>API Key</source>
+        <translation>APIキー</translation>
+    </message>
+    <message>
+        <source>Model</source>
+        <translation>モデル</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>保存</translation>
     </message>
 </context>
 </TS>

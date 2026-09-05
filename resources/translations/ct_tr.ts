@@ -1722,6 +1722,10 @@ sonra yeniden boyutlandırılmış görselde boyama işlemi yapın.</translation
         <source>Original</source>
         <translation>Orijinal</translation>
     </message>
+    <message>
+        <source>Add Custom Model</source>
+        <translation>Özel model ekle</translation>
+    </message>
 </context>
 <context>
     <name>WorkspaceMixin</name>
@@ -2619,6 +2623,50 @@ Taşınmış, yeniden adlandırılmış veya silinmiş olabilir.
         <location filename="../../app/ui/canvas/rectangle.py" line="81"/>
         <source>Translate</source>
         <translation>Çevir</translation>
+    </message>
+</context>
+
+<context>
+    <name>CustomOCRDialog</name>
+    <message>
+        <source>Custom OCR Provider</source>
+        <translation>Özel OCR sağlayıcı</translation>
+    </message>
+    <message>
+        <source>Connect any OpenAI-compatible vision API (e.g. Ollama, LM Studio, vLLM, or a cloud provider). The base URL should point to the API root, e.g. http://localhost:11434/v1 — '/chat/completions' is added automatically.</source>
+        <translation>Ollama, LM Studio, vLLM veya bir bulut sağlayıcı gibi OpenAI uyumlu herhangi bir görme API'sine bağlanın. Temel URL, API kökünü göstermelidir; ör. http://localhost:11434/v1 — '/chat/completions' otomatik olarak eklenir.</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>API URL</translation>
+    </message>
+    <message>
+        <source>Load Models</source>
+        <translation>Modelleri yükle</translation>
+    </message>
+    <message>
+        <source>The model must support image (vision) input — e.g. llama3.2-vision, llava, or qwen2.5-vl. Plain text models will return an error.</source>
+        <translation>Model görsel (vision) girişini desteklemelidir; ör. llama3.2-vision, llava veya qwen2.5-vl. Yalnızca metin olan modeller hata döndürür.</translation>
+    </message>
+    <message>
+        <source>Save API Key</source>
+        <translation>API Anahtarını Kaydet</translation>
+    </message>
+    <message>
+        <source>API Key</source>
+        <translation>API Anahtarı</translation>
+    </message>
+    <message>
+        <source>Model</source>
+        <translation>Model</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>İptal</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>Kaydet</translation>
     </message>
 </context>
 </TS>

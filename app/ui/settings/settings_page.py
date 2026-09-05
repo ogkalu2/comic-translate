@@ -11,6 +11,7 @@ from PySide6.QtGui import QFont, QFontDatabase, QDesktopServices
 
 from app.shortcuts import get_default_shortcuts
 from .settings_ui import SettingsPageUI
+from .custom_ocr_dialog import CustomOCRDialog, DEFAULT_API_URL
 from modules.utils.device import is_gpu_available
 from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
     EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
@@ -96,6 +97,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.ui.buy_credits_button.clicked.connect(self.open_pricing_page)
         self.ui.sign_out_button.clicked.connect(self.sign_out)
         self.ui.check_update_button.clicked.connect(self.check_for_updates)
+        self.ui.tools_page.custom_ocr_requested.connect(self._open_custom_ocr_dialog)
         self._sync_extra_context_limit(self.ui.translator_combo.currentText())
 
     def _sync_extra_context_limit(self, translator: str) -> None:
@@ -173,7 +175,40 @@ class SettingsPage(QtWidgets.QWidget):
 
         # no `service` passed → recurse over all known services
         return {s: self.get_credentials(s) for s in self.ui.credential_services}
-        
+
+    def get_ocr_credentials(self) -> dict:
+        """Return the custom OCR provider config (isolated from translation 'Custom')."""
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup("custom_ocr")
+        save_key = settings.value("save_key", False, type=bool)
+        creds = {
+            "api_url": settings.value("api_url", DEFAULT_API_URL, type=str),
+            "api_key": settings.value("api_key", "", type=str) if save_key else "",
+            "model": settings.value("model", "", type=str),
+            "save_key": save_key,
+        }
+        settings.endGroup()
+        return creds
+
+    def set_ocr_credentials(self, data: dict) -> None:
+        """Persist the custom OCR provider config to the isolated 'custom_ocr' group."""
+        settings = QSettings("ComicLabs", "ComicTranslate")
+        settings.beginGroup("custom_ocr")
+        settings.setValue("api_url", data.get("api_url", DEFAULT_API_URL))
+        settings.setValue("model", data.get("model", ""))
+        save_key = bool(data.get("save_key", False))
+        settings.setValue("save_key", save_key)
+        if save_key:
+            settings.setValue("api_key", data.get("api_key", ""))
+        else:
+            settings.remove("api_key")
+        settings.endGroup()
+
+    def _open_custom_ocr_dialog(self) -> None:
+        """Open the custom OCR provider configuration dialog."""
+        dialog = CustomOCRDialog(self, parent=self)
+        dialog.exec()
+
     def get_hd_strategy_settings(self):
         strategy = self.ui.inpaint_strategy_combo.currentText()
         settings = {

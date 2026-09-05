@@ -1722,6 +1722,10 @@ then do inpainting on the resized image.</source>
         <source>Original</source>
         <translation>원본</translation>
     </message>
+    <message>
+        <source>Add Custom Model</source>
+        <translation>사용자 지정 모델 추가</translation>
+    </message>
 </context>
 <context>
     <name>WorkspaceMixin</name>
@@ -2620,6 +2624,50 @@ It may have been moved, renamed, or deleted.
         <location filename="../../app/ui/canvas/rectangle.py" line="81"/>
         <source>Translate</source>
         <translation>번역</translation>
+    </message>
+</context>
+
+<context>
+    <name>CustomOCRDialog</name>
+    <message>
+        <source>Custom OCR Provider</source>
+        <translation>사용자 지정 OCR 공급자</translation>
+    </message>
+    <message>
+        <source>Connect any OpenAI-compatible vision API (e.g. Ollama, LM Studio, vLLM, or a cloud provider). The base URL should point to the API root, e.g. http://localhost:11434/v1 — '/chat/completions' is added automatically.</source>
+        <translation>Ollama, LM Studio, vLLM 또는 클라우드 공급자 등 OpenAI 호환 비전 API를 연결할 수 있습니다. 기본 URL은 API 루트를 가리커야 합니다(예: http://localhost:11434/v1). '/chat/completions'은(는) 자동으로 추가됩니다.</translation>
+    </message>
+    <message>
+        <source>API URL</source>
+        <translation>API URL</translation>
+    </message>
+    <message>
+        <source>Load Models</source>
+        <translation>모델 불러오기</translation>
+    </message>
+    <message>
+        <source>The model must support image (vision) input — e.g. llama3.2-vision, llava, or qwen2.5-vl. Plain text models will return an error.</source>
+        <translation>모델은 이미지(비전) 입력을 지원해야 합니다(예: llama3.2-vision, llava, qwen2.5-vl). 텍스트만 지원하는 모델은 오류를 반환합니다.</translation>
+    </message>
+    <message>
+        <source>Save API Key</source>
+        <translation>API 키 저장</translation>
+    </message>
+    <message>
+        <source>API Key</source>
+        <translation>API 키</translation>
+    </message>
+    <message>
+        <source>Model</source>
+        <translation>모델</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>취소</translation>
+    </message>
+    <message>
+        <source>Save</source>
+        <translation>저장</translation>
     </message>
 </context>
 </TS>

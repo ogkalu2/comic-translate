@@ -1,5 +1,8 @@
 import json
 import hashlib
+import logging
+
+logger = logging.getLogger(__name__)
 
 from modules.utils.device import resolve_device, torch_available
 from app.account.auth.token_storage import get_token
@@ -12,6 +15,7 @@ from .manga_ocr.mobile import MangaOCRMobileONNXEngine
 from .pororo.onnx_engine import PororoOCREngineONNX  
 from .gemini_ocr import GeminiOCR
 from .user_ocr import UserOCR
+from .custom_ocr import CustomOCR
 
 
 class OCRFactory:
@@ -101,7 +105,12 @@ class OCRFactory:
         # Gather any dynamic bits we care about:
         extras = {}
 
-        creds = settings.get_credentials(ocr_key)
+        # The custom OCR provider uses its own isolated credential storage
+        # (separate from the translation "Custom" service in the Advanced tab).
+        if ocr_key == "Custom":
+            creds = settings.get_ocr_credentials()
+        else:
+            creds = settings.get_credentials(ocr_key)
         device = resolve_device(settings.is_gpu_enabled(), effective_backend)
 
         if creds:
@@ -150,17 +159,25 @@ class OCRFactory:
     ) -> OCREngine:
         """Create a new OCR engine instance based on model and language."""
         effective_backend = cls._resolve_backend(backend)
-        
+
+        # The custom provider is language-agnostic: regardless of the source
+        # language or script bucket, always use the model the user configured
+        # in the Custom OCR dialog. This must be checked before any
+        # language-based model selection below.
+        if ocr_model == 'Custom':
+            return cls._create_custom_ocr(settings)
+
         # Model-specific factory functions
         general = {
             'Microsoft OCR': cls._create_microsoft_ocr,
             'Google Cloud Vision': cls._create_google_ocr,
             'GPT-4.1-mini': lambda s: cls._create_gpt_ocr(s, ocr_model),
             'Gemini-2.5-Flash-Lite': lambda s: cls._create_gemini_ocr(s, ocr_model),
+            'Custom': cls._create_custom_ocr,
         }
         
         make_japanese = lambda s: cls._create_manga_ocr(s, effective_backend)
-        make_korean = lambda s: cls._create_ppocr(s, 'ko', effective_backend)
+        make_korean = lambda s: cls._create_pororo_ocr(s, effective_backend)
         make_chinese = lambda s: cls._create_ppocr(s, 'ch', effective_backend)
         make_cyrillic = lambda s: cls._create_ppocr(s, 'ru', effective_backend)
         make_latin = lambda s: cls._create_ppocr(s, 'latin', effective_backend)
@@ -206,6 +223,25 @@ class OCRFactory:
         return 
     
     @staticmethod
+    def _initialize_engine(engine: OCREngine, name: str, **kwargs) -> None:
+        """Initialize a local OCR engine, surfacing model-load failures.
+
+        Local engines download their models from HuggingFace on first use. If
+        that fails (e.g. no internet), the underlying exception is logged with
+        a traceback and re-raised as a clear RuntimeError so the UI can present
+        it instead of silently producing empty OCR text.
+        """
+        try:
+            engine.initialize(**kwargs)
+        except Exception as e:
+            logger.error("Failed to initialize OCR engine '%s': %s", name, e, exc_info=True)
+            raise RuntimeError(
+                f"Failed to load the local OCR model '{name}'. Local models are "
+                f"downloaded from HuggingFace \u2014 please check your internet "
+                f"connection (see the console for details)."
+            ) from e
+
+    @staticmethod
     def _create_microsoft_ocr(settings) -> OCREngine:
         credentials = settings.get_credentials(settings.ui.tr("Microsoft Azure"))
         engine = MicrosoftOCR()
@@ -237,10 +273,10 @@ class OCRFactory:
         if backend.lower() == 'torch' and torch_available():
             from .manga_ocr.engine import MangaOCREngine
             engine = MangaOCREngine()
-            engine.initialize(device=device)
+            OCRFactory._initialize_engine(engine, "MangaOCR", device=device)
         else:
             engine = MangaOCRMobileONNXEngine()
-            engine.initialize(device=device)
+            OCRFactory._initialize_engine(engine, "MangaOCR (ONNX)", device=device)
         
         return engine
     
@@ -251,10 +287,10 @@ class OCRFactory:
         if backend.lower() == 'torch' and torch_available():
             from .pororo.engine import PororoOCREngine
             engine = PororoOCREngine()
-            engine.initialize(device=device, use_text_lines=True)
+            OCRFactory._initialize_engine(engine, "Pororo OCR", device=device, use_text_lines=True)
         else:
             engine = PororoOCREngineONNX()
-            engine.initialize(device=device, use_text_lines=True)
+            OCRFactory._initialize_engine(engine, "Pororo OCR (ONNX)", device=device, use_text_lines=True)
         
         return engine
     
@@ -265,15 +301,27 @@ class OCRFactory:
             from .ppocr.torch.engine import PPOCRv5TorchEngine
             device = resolve_device(settings.is_gpu_enabled(), 'onnx')
             engine = PPOCRv5TorchEngine()
-            engine.initialize(lang=lang, device=device, use_text_lines=True)
+            OCRFactory._initialize_engine(engine, "PPOCRv5", lang=lang, device=device, use_text_lines=True)
         else:
             engine = PPOCRv5Engine()
-            engine.initialize(lang=lang, device=device, use_text_lines=True)
+            OCRFactory._initialize_engine(engine, "PPOCRv5", lang=lang, device=device, use_text_lines=True)
         
         return engine
     
+    @staticmethod
+    def _create_custom_ocr(settings) -> OCREngine:
+        credentials = settings.get_ocr_credentials()
+        engine = CustomOCR()
+        engine.initialize(
+            api_key=credentials.get('api_key', ''),
+            api_url=credentials.get('api_url', CustomOCR.DEFAULT_API_URL),
+            model=credentials.get('model', ''),
+        )
+        return engine
+
     @staticmethod
     def _create_gemini_ocr(settings, model) -> OCREngine:
         engine = GeminiOCR()
         engine.initialize(settings, model)
         return engine
+
