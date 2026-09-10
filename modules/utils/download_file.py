@@ -17,6 +17,7 @@ import hashlib
 import http.client
 import os
 import random
+import ssl
 import sys
 import time
 import urllib.error
@@ -27,10 +28,33 @@ from typing import Optional
 CHUNK_SIZE = 64 * 1024  # 64KB per read
 
 
+def _certifi_context() -> ssl.SSLContext | None:
+    """Return a bundled public-CA context without changing process-wide trust."""
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except (ImportError, OSError, ssl.SSLError):
+        return None
+
+
 @contextmanager
 def _open_url(url: str, *, headers: Optional[dict] = None, timeout: Optional[float] = None):
     req = urllib.request.Request(url, headers=headers or {})
-    response = urllib.request.urlopen(req, timeout=timeout)  # nosec - controlled sources
+    try:
+        response = urllib.request.urlopen(req, timeout=timeout)  # nosec - controlled sources
+    except urllib.error.URLError as exc:
+        # A bundled Python can occasionally have no usable default CA file.
+        # Retry only certificate verification failures, and only for this
+        # request.  Do not override SSL_CERT_FILE/SSL_CERT_DIR: those are an
+        # explicit user or organisation trust configuration.
+        has_explicit_ca = bool(os.environ.get("SSL_CERT_FILE") or os.environ.get("SSL_CERT_DIR"))
+        if has_explicit_ca or not isinstance(exc.reason, ssl.SSLCertVerificationError):
+            raise
+        context = _certifi_context()
+        if context is None:
+            raise
+        response = urllib.request.urlopen(req, timeout=timeout, context=context)  # nosec - controlled sources
     try:
         yield response
     finally:
