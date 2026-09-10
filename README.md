@@ -124,7 +124,7 @@ uv run comic.py
 This will launch the GUI
 
 ### Tips
-* If you have a CBR file, you'll need to install Winrar or 7-Zip then add the folder it's installed to (e.g "C:\Program Files\WinRAR" for Windows) to Path. If it's installed but not to Path, you may get the error, 
+* CBR/RAR extraction requires a supported helper such as UnRAR, Unar, or 7-Zip. On Windows, install WinRAR or 7-Zip and add its folder (for example, `C:\Program Files\WinRAR`) to `PATH`. On macOS, the desktop app automatically checks standard Homebrew and MacPorts locations when launched from Finder. If no supported extraction tool is available, you may get the error:
 ```bash
 raise RarCannotExec("Cannot find working tool")
 ```
