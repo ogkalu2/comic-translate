@@ -1444,7 +1444,7 @@ class ProjectController:
         self.main.s_combo.setCurrentText(self.main.reverse_lang_mapping.get(source_lang, self.main.tr("Auto")))
         self.main.t_combo.setCurrentText(self.main.reverse_lang_mapping.get(target_lang, self.main.tr("English")))
 
-        mode = settings.value("mode", "manual")
+        mode = settings.value("mode", "automatic")
         if mode == "manual":
             self.main.manual_radio.setChecked(True)
             self.main.manual_mode_selected()

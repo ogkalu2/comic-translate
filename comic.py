@@ -10,6 +10,7 @@ from PySide6.QtCore import QLibraryInfo
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import QApplication
 from app.ui.splash_screen import SplashScreen
+from modules.utils.runtime import configure_runtime
 
 
 def _extract_project_file(argv: list[str]) -> str | None:
@@ -134,6 +135,8 @@ class LoadingWorker(QObject):
 
 
 def main():
+    # Must run before model downloaders or archive readers are imported.
+    configure_runtime()
     
     # Configure logging
     logging.basicConfig(

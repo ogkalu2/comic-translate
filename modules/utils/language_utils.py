@@ -31,9 +31,24 @@ language_codes = {
     "Mongolian": "mn",
 }
 
+_language_rendering: dict[str, dict[str, bool | str]] = {}
+
+
+def register_target_language(language: str, code: str, rendering: dict | None = None) -> None:
+    """Register catalog-provided target-language behavior for this session."""
+    language_codes[language] = code
+    _language_rendering[language] = {
+        "direction": "ltr",
+        "no_space": False,
+        "vertical": False,
+        **(rendering or {}),
+    }
+
 def get_layout_direction(language: str) -> Qt.LayoutDirection:
-    rtl_languages = {"Arabic", "Hebrew", "Persian"}
-    return Qt.LayoutDirection.RightToLeft if language in rtl_languages else Qt.LayoutDirection.LeftToRight
+    rendering = _language_rendering.get(language, {})
+    if rendering.get("direction") == "rtl" or language in {"Arabic", "Hebrew", "Persian"}:
+        return Qt.LayoutDirection.RightToLeft
+    return Qt.LayoutDirection.LeftToRight
 
 def get_language_code(lng: str):
     lng_cd = language_codes.get(lng, None)
@@ -174,4 +189,21 @@ def is_no_space_lang(lang_code: str | None) -> bool:
     if not lang_code:
         return False
     code = lang_code.lower()
-    return any(lang in code for lang in ['zh', 'ja', 'th'])
+    if any(lang in code for lang in ['zh', 'ja', 'th']):
+        return True
+    return any(
+        item.get("no_space") and language_codes.get(language, "").lower() == code
+        for language, item in _language_rendering.items()
+    )
+
+
+def is_vertical_language_code(lang_code: str | None) -> bool:
+    if not lang_code:
+        return False
+    code = lang_code.lower()
+    if code in {"zh-cn", "zh-tw", "ja"}:
+        return True
+    return any(
+        item.get("vertical") and language_codes.get(language, "").lower() == code
+        for language, item in _language_rendering.items()
+    )

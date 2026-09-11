@@ -85,7 +85,6 @@ class GPTTranslation(BaseLLMTranslation):
             "messages": messages,
             "temperature": self.temperature,
             "max_completion_tokens": self.max_tokens,
-            "top_p": self.top_p,
         }
 
         return self._make_api_request(payload, headers)

@@ -14,7 +14,8 @@ class LlmsPage(QtWidgets.QWidget):
         v = QtWidgets.QVBoxLayout(self)
         main_layout = QtWidgets.QHBoxLayout()
 
-        self.image_checkbox = MCheckBox(self.tr("Provide Image as Input to AI"))
+        self.image_checkbox = MCheckBox()
+        self.set_image_context_credits(1)
         self.image_checkbox.setChecked(False)
 
         # Left
@@ -46,6 +47,10 @@ class LlmsPage(QtWidgets.QWidget):
     def set_extra_context_unlimited(self, enabled: bool) -> None:
         self._extra_context_limit = None if enabled else self.DEFAULT_EXTRA_CONTEXT_LIMIT
         self._limit_extra_context()
+
+    def set_image_context_credits(self, credits: int) -> None:
+        unit = "Credit" if credits == 1 else "Credits"
+        self.image_checkbox.setText(f"{self.tr('Provide Image as Input to AI')} (+{credits} {unit})")
 
     def _limit_extra_context(self):
         max_length = self._extra_context_limit

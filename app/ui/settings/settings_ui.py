@@ -17,6 +17,7 @@ from .export_page import ExportPage
 from .shortcuts_page import ShortcutsPage
 from .account_page import AccountPage
 from .about_page import AboutPage
+from .utils import set_combo_box_width
 
 
 class CurrentPageStack(QtWidgets.QStackedWidget):
@@ -160,6 +161,40 @@ class SettingsPageUI(QtWidgets.QWidget):
         self.reverse_mappings = {v: k for k, v in self.value_mappings.items()}
 
         self._init_ui()
+
+    def apply_remote_catalog(self, catalog: dict) -> None:
+        """Update only server-backed choices; local tools remain bundled."""
+        translators = [item for item in catalog["translators"] if isinstance(item, dict) and item.get("id")]
+        ocr_models = [item for item in catalog["ocr_models"] if isinstance(item, dict) and item.get("id")]
+        self.llms_page.set_image_context_credits(int(catalog.get("image_context_credits", 1)))
+        if translators:
+            self._replace_combo_items(self.translator_combo, translators, include_custom=True)
+            self.supported_translators = [self._catalog_label(item, is_ocr=False) for item in translators] + [self.tr("Custom")]
+            set_combo_box_width(self.translator_combo, self.supported_translators)
+        if ocr_models:
+            self._replace_combo_items(self.ocr_combo, ocr_models)
+            self.ocr_engines = [self._catalog_label(item, is_ocr=True) for item in ocr_models]
+            set_combo_box_width(self.ocr_combo, self.ocr_engines)
+
+    def _catalog_label(self, item: dict, is_ocr: bool) -> str:
+        label = item.get("label", item["id"])
+        if item.get("id") == "Custom":
+            return label
+        credits = int(item.get("credits", 0))
+        if is_ocr:
+            return f"{label} (+{credits} Credit{'s' if credits != 1 else ''})" if credits else label
+        return f"{label} ({credits} Credit{'s' if credits != 1 else ''})"
+    def _replace_combo_items(self, combo, items: list[dict], include_custom: bool = False) -> None:
+        current_id = combo.currentData() or combo.currentText()
+        by_id = {item["id"]: item for item in items}
+        if include_custom:
+            by_id["Custom"] = {"id": "Custom", "label": combo.tr("Custom")}
+        combo.blockSignals(True)
+        combo.clear()
+        for item in by_id.values():
+            combo.addItem(self._catalog_label(item, is_ocr=combo is self.ocr_combo), item["id"])
+        combo.setCurrentIndex(combo.findData(current_id))
+        combo.blockSignals(False)
 
     def _init_ui(self):
         self.stacked_widget = CurrentPageStack()

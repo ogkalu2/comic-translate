@@ -3,7 +3,7 @@ from .gpt import GPTTranslation
 
 
 class CustomTranslation(GPTTranslation):
-    """Translation engine using custom LLM configurations with OpenAI-compatible API."""
+    """Translation engine using a custom OpenAI-compatible API."""
     
     def __init__(self):
         super().__init__()

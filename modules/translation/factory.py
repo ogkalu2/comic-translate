@@ -104,7 +104,7 @@ class TranslationFactory:
         - Always includes per-translator credentials (if available),
           so changing any API key, URL, region, etc. triggers a new engine.
         - For LLM engines, also includes all LLM-specific settings
-          (temperature, top_p, context, etc.).
+          (temperature, context, etc.).
         - The cache key is a hash of these dynamic values, combined with
           the translator key and language pair.
         - If no dynamic values are found, falls back to a simple key

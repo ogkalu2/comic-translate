@@ -16,6 +16,7 @@ from app.account.auth.auth_client import AuthClient, USER_INFO_GROUP, \
     EMAIL_KEY, TIER_KEY, CREDITS_KEY, MONTHLY_CREDITS_KEY
 from app.account.config import API_BASE_URL, FRONTEND_BASE_URL
 from app.update_checker import UpdateChecker
+from app.catalog import ClientCatalog
 from modules.utils.paths import get_user_data_dir, get_default_project_autosave_dir
 
 
@@ -26,6 +27,7 @@ class SettingsPage(QtWidgets.QWidget):
     theme_changed = Signal(str)
     font_imported = Signal(str)
     login_state_changed = Signal(bool)
+    catalog_updated = Signal(dict)
 
     def __init__(self, parent=None):
         super(SettingsPage, self).__init__(parent)
@@ -40,6 +42,8 @@ class SettingsPage(QtWidgets.QWidget):
         self._pricing_refresh_attempts: int = 0
         self._pricing_refresh_baseline: Optional[Any] = None
         self.auth_client = AuthClient(API_BASE_URL, FRONTEND_BASE_URL)
+        self.catalog = ClientCatalog(self)
+        self.catalog.updated.connect(self._apply_remote_catalog)
         self.auth_client.auth_success.connect(self.handle_auth_success)
         self.auth_client.auth_error.connect(self.handle_auth_error)
         self.auth_client.auth_cancelled.connect(self.handle_auth_cancelled)
@@ -70,6 +74,12 @@ class SettingsPage(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
         self._refresh_credits_on_startup()
+        self._apply_remote_catalog(self.catalog.load())
+        self.catalog.refresh_async()
+
+    def _apply_remote_catalog(self, catalog: dict) -> None:
+        self.ui.apply_remote_catalog(catalog)
+        self.catalog_updated.emit(catalog)
 
     def _is_online(self) -> bool:
         try:
@@ -118,7 +128,10 @@ class SettingsPage(QtWidgets.QWidget):
             'inpainter': self.ui.inpainter_combo,
             'detector': self.ui.detector_combo
         }
-        return tool_combos[tool_type].currentText()
+        combo = tool_combos[tool_type]
+        # Server catalog choices have a stable protocol ID in item data while
+        # their visible labels may change at any time.
+        return combo.currentData() or combo.currentText()
 
     def is_gpu_enabled(self):
         if not is_gpu_available():
@@ -333,15 +346,21 @@ class SettingsPage(QtWidgets.QWidget):
         settings.beginGroup('tools')
         translator = settings.value('translator', 'Gemini-3.1-Flash-Lite')
         translated_translator = self.ui.reverse_mappings.get(translator, translator)
-        if self.ui.translator_combo.findText(translated_translator) != -1:
-            self.ui.translator_combo.setCurrentText(translated_translator)
+        translator_index = self.ui.translator_combo.findData(translator)
+        if translator_index < 0:
+            translator_index = self.ui.translator_combo.findText(translated_translator)
+        if translator_index >= 0:
+            self.ui.translator_combo.setCurrentIndex(translator_index)
         else:
             self.ui.translator_combo.setCurrentIndex(-1)
 
         ocr = settings.value('ocr', 'Default')
         translated_ocr = self.ui.reverse_mappings.get(ocr, ocr)
-        if self.ui.ocr_combo.findText(translated_ocr) != -1:
-            self.ui.ocr_combo.setCurrentText(translated_ocr)
+        ocr_index = self.ui.ocr_combo.findData(ocr)
+        if ocr_index < 0:
+            ocr_index = self.ui.ocr_combo.findText(translated_ocr)
+        if ocr_index >= 0:
+            self.ui.ocr_combo.setCurrentIndex(ocr_index)
         else:
             self.ui.ocr_combo.setCurrentIndex(-1)
 

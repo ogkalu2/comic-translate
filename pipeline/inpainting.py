@@ -106,7 +106,9 @@ class InpaintingHandler:
         gen_painter = QPainter(gen_qimg)
 
         human_painter.setPen(QPen(QColor(255, 255, 255), 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        gen_painter.setPen(QPen(QColor(255, 255, 255), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        # Auto-generated segmentation paths already represent the automatic
+        # mask.  Do not widen their contour when rebuilding saved strokes.
+        gen_painter.setPen(QPen(Qt.PenStyle.NoPen))
         human_painter.setBrush(QBrush(QColor(255, 255, 255)))
         gen_painter.setBrush(QBrush(QColor(255, 255, 255)))
 
@@ -135,9 +137,9 @@ class InpaintingHandler:
 
         human_mask = self._qimage_to_np(human_qimg)
         gen_mask = self._qimage_to_np(gen_qimg)
-        kernel = np.ones((5, 5), np.uint8)
-        human_mask = imk.dilate(human_mask, kernel, iterations=2)
-        gen_mask = imk.dilate(gen_mask, kernel, iterations=3)
+        # Match the live canvas: retain only a one-pixel antialiasing halo
+        # around hand-painted strokes.
+        human_mask = imk.dilate(human_mask, np.ones((3, 3), np.uint8), iterations=1)
         mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
         if np.count_nonzero(mask) == 0:
             return None
@@ -276,9 +278,11 @@ class InpaintingHandler:
         if getattr(block, "text_class", None) == "text_bubble":
             bubble_bounds = getattr(block, "bubble_xyxy", None)
             if bubble_bounds is not None and len(bubble_bounds) >= 4:
-                return adjust_text_line_coordinates(bubble_bounds, 10, 10, image)
+                bounds = adjust_text_line_coordinates(bubble_bounds, 10, 10, image)
+                return tuple(int(value) for value in bounds)
 
-        return adjust_text_line_coordinates(base_bounds, 10, 10, image)
+        bounds = adjust_text_line_coordinates(base_bounds, 10, 10, image)
+        return tuple(int(value) for value in bounds)
 
     @staticmethod
     def _same_bounds(

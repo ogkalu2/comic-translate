@@ -311,7 +311,10 @@ class DrawingManager:
                 print(f"[DEBUG] No mappings available, using direct scene coordinates")
         
         human_pen = QPen(QColor(255, 255, 255), self.brush_size)
-        gen_pen = QPen(QColor(255, 255, 255), 2, Qt.SolidLine)
+        # Generated segmentation paths already encode the dilated automatic
+        # mask.  Rasterize their fill only: adding an outline and dilating it
+        # again makes manual Clean cover substantially more than Automatic.
+        gen_pen = QPen(Qt.PenStyle.NoPen)
         human_painter.setPen(human_pen)
         gen_painter.setPen(gen_pen)
         brush = QBrush(QColor(255, 255, 255))
@@ -345,10 +348,12 @@ class DrawingManager:
         human_mask = qimage_to_np(human_qimg)
         gen_mask = qimage_to_np(gen_qimg)
 
-        # Dilate using backend (ksize approximated by kernel size)
-        kernel = np.ones((5,5), np.uint8)
-        human_mask = imk.dilate(human_mask, kernel, iterations=2)
-        gen_mask = imk.dilate(gen_mask, kernel, iterations=3)
+        # Human brush strokes are intentionally expanded for forgiving manual
+        # cleanup.  Generated segmentation paths must retain their original
+        # automatic-mask geometry.
+        # A one-pixel halo catches antialiased edges without making the actual
+        # cleanup area noticeably wider than the brush the user painted.
+        human_mask = imk.dilate(human_mask, np.ones((3, 3), np.uint8), iterations=1)
 
         # Combine masks (bitwise_or equivalent)
         final_mask = np.where((human_mask > 0) | (gen_mask > 0), 255, 0).astype(np.uint8)
