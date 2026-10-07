@@ -457,6 +457,110 @@
         <source>Extra Context:</source>
         <translation>额外上下文：</translation>
     </message>
+    <message>
+        <source>Translation presets</source>
+        <translation>翻译预设</translation>
+    </message>
+    <message>
+        <source>For LLM translators. Choose a glossary matching your translation languages. Apply to load editable instructions into Extra Context.</source>
+        <translation>适用于大语言模型翻译器。请选择与翻译语言一致的词库，再应用到额外上下文；生成的要求可以继续编辑。</translation>
+    </message>
+    <message>
+        <source>Name glossary</source>
+        <translation>人名词库</translation>
+    </message>
+    <message>
+        <source>No glossary</source>
+        <translation>不使用词库</translation>
+    </message>
+    <message>
+        <source>Marvel (Mainland China)</source>
+        <translation>漫威（中国大陆）</translation>
+    </message>
+    <message>
+        <source>Marvel (Taiwan)</source>
+        <translation>漫威（台湾）</translation>
+    </message>
+    <message>
+        <source>Marvel (Hong Kong)</source>
+        <translation>漫威（香港）</translation>
+    </message>
+    <message>
+        <source>Import glossary (JSON)…</source>
+        <translation>导入词库（JSON）…</translation>
+    </message>
+    <message>
+        <source>Dialogue style</source>
+        <translation>对话风格</translation>
+    </message>
+    <message>
+        <source>No style instructions</source>
+        <translation>不添加风格要求</translation>
+    </message>
+    <message>
+        <source>Faithful to original</source>
+        <translation>忠实原作</translation>
+    </message>
+    <message>
+        <source>Natural dialogue</source>
+        <translation>自然口语</translation>
+    </message>
+    <message>
+        <source>Apply to Extra Context</source>
+        <translation>应用到额外上下文</translation>
+    </message>
+    <message>
+        <source>Preset: {count} characters (Custom: no limit).</source>
+        <translation>预设：{count} 字符（Custom 无限制）。</translation>
+    </message>
+    <message>
+        <source>Preset: {count} / {limit} characters.</source>
+        <translation>预设：{count} / {limit} 字符。</translation>
+    </message>
+    <message>
+        <source>Preset too long</source>
+        <translation>预设过长</translation>
+    </message>
+    <message>
+        <source>This preset exceeds the {limit}-character limit. Use a smaller glossary or select the Custom translator. Extra Context was not changed.</source>
+        <translation>此预设超过 {limit} 字符限制。请缩减词库，或选择 Custom 翻译器。额外上下文未作更改。</translation>
+    </message>
+    <message>
+        <source>Replace Extra Context?</source>
+        <translation>替换额外上下文？</translation>
+    </message>
+    <message>
+        <source>Applying this preset will replace your current Extra Context. Continue?</source>
+        <translation>应用此预设将替换当前的额外上下文。是否继续？</translation>
+    </message>
+    <message>
+        <source>Import glossary</source>
+        <translation>导入词库</translation>
+    </message>
+    <message>
+        <source>JSON files (*.json)</source>
+        <translation>JSON 文件 (*.json)</translation>
+    </message>
+    <message>
+        <source>Cannot import glossary</source>
+        <translation>无法导入词库</translation>
+    </message>
+    <message>
+        <source>Replace glossary?</source>
+        <translation>替换词库？</translation>
+    </message>
+    <message>
+        <source>A glossary named {name} already exists. Replace it?</source>
+        <translation>已存在名为 {name} 的词库，是否替换？</translation>
+    </message>
+    <message>
+        <source>Cannot save glossary</source>
+        <translation>无法保存词库</translation>
+    </message>
+    <message>
+        <source>Could not save the glossary to application settings.</source>
+        <translation>无法将词库保存到应用设置。</translation>
+    </message>
 </context>
 <context>
     <name>Messages</name>

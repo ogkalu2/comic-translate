@@ -4,6 +4,7 @@ from ..utils.textblock import TextBlock
 from ..utils.translator_utils import has_translatable_content
 from .base import LLMTranslation
 from .factory import TranslationFactory
+from .user import UserTranslator
 
 
 class Translator:
@@ -105,8 +106,9 @@ class Translator:
         if not translatable_blocks:
             return blk_list
 
-        if self.is_llm_engine:
-            # LLM translators need image and extra context
+        if self.is_llm_engine or isinstance(self.engine, UserTranslator):
+            # Account-backed translators also accept image and context; the
+            # proxy only includes those options for its LLM requests.
             self.engine.translate(translatable_blocks, image, extra_context)
         else:
             # Text-based translators only need the text blocks
