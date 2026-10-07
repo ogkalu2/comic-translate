@@ -123,6 +123,12 @@ uv run comic.py
 ```
 This will launch the GUI
 
+### Name glossaries and dialogue styles
+
+In **Settings → LLMs**, choose a name glossary and dialogue style, then click **Apply to Extra Context**. Marvel starter glossaries cover Mainland China, Taiwan and Hong Kong; custom UTF-8 JSON glossaries can be imported and reused. The generated instructions remain editable and are saved with the project. Existing context is replaced only after confirmation, and presets exceeding the current translator's context limit are rejected without changing it.
+
+See [translation presets](docs/translation_presets.md) for screenshots, the JSON format, regional name sources and limitations. These instructions apply to LLM translators, including Custom; traditional translators do not use them.
+
 ### Tips
 * CBR/RAR extraction requires a supported helper such as UnRAR, Unar, or 7-Zip. On Windows, install WinRAR or 7-Zip and add its folder (for example, `C:\Program Files\WinRAR`) to `PATH`. On macOS, the desktop app automatically checks standard Homebrew and MacPorts locations when launched from Finder. If no supported extraction tool is available, you may get the error:
 ```bash
